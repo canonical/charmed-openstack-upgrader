@@ -32,12 +32,6 @@ class YourModuleTestCase(unittest.TestCase):
             mock_logging.StreamHandler.assert_called_once()
             mock_console_handler.setFormatter.assert_called_once()
 
-    def test_setup_logging_exception(self):
-        with patch("cou.cli.logging") as mock_logging:
-            mock_logging.INFO = "AA"
-            with pytest.raises(ValueError):
-                setup_logging("INFO")
-
     def test_entrypoint_with_exception(self):
         with patch("cou.cli.parse_args"), patch("cou.cli.setup_logging"), patch(
             "cou.cli.generate_plan"

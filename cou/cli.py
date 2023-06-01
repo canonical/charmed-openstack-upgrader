@@ -55,14 +55,11 @@ def setup_logging(log_level: str = "INFO") -> None:
     :returns: Nothing: This function is executed for its side effect
     :rtype: None
     """
-    level = getattr(logging, log_level.upper(), None)
-    if not isinstance(level, int):
-        raise ValueError(f'Invalid log level: "{log_level}"')
     log_formatter = logging.Formatter(
         fmt="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
     root_logger = logging.getLogger()
-    root_logger.setLevel(level)
+    root_logger.setLevel(log_level)
     if not root_logger.hasHandlers():
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(log_formatter)
