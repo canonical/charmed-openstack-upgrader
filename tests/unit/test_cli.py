@@ -7,7 +7,7 @@ import pytest
 from cou.cli import entrypoint, parse_args, setup_logging
 
 
-class YourModuleTestCase(unittest.TestCase):
+class CliTestCase(unittest.TestCase):
     def test_parse_args(self):
         args = ["--dry-run", "--log-level", "DEBUG", "--interactive"]
         parsed_args = parse_args(args)
@@ -20,7 +20,7 @@ class YourModuleTestCase(unittest.TestCase):
 
     def test_setup_logging(self):
         with patch("cou.cli.logging") as mock_logging:
-            mock_logging.INFO = 20
+            mock_logging.INFO = "INFO"
             handlers = MagicMock()
             handlers.return_value = False
             mock_logging.getLogger.return_value.hasHandlers = handlers
