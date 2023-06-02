@@ -5,7 +5,7 @@ from cou.steps.backup import backup
 from cou.steps.plan import apply_plan, dump_plan, generate_plan
 
 
-class YourModuleTestCase(unittest.TestCase):
+class StepsPlanTestCase(unittest.TestCase):
     def test_generate_plan(self):
         args = MagicMock()
         plan = generate_plan(args)
@@ -23,29 +23,14 @@ class YourModuleTestCase(unittest.TestCase):
     def test_apply_plan_continue(self):
         upgrade_plan = MagicMock()
         upgrade_plan.description = "Test Plan"
-        upgrade_plan.function = MagicMock()
-        upgrade_plan.params = MagicMock()
+        upgrade_plan.run = MagicMock()
 
         with patch("cou.steps.plan.input") as mock_input, patch("cou.steps.plan.sys") as mock_sys:
             mock_input.return_value = "C"
             apply_plan(upgrade_plan)
 
             mock_input.assert_called_once_with("Test Plan[Continue/abort/skip]")
-            upgrade_plan.function.assert_called_once_with(upgrade_plan.params)
-            mock_sys.exit.assert_not_called()
-
-    def test_apply_plan_continue_empty_function(self):
-        upgrade_plan = MagicMock()
-        upgrade_plan.description = "Test Plan"
-        upgrade_plan.function = MagicMock()
-        upgrade_plan.params = None
-
-        with patch("cou.steps.plan.input") as mock_input, patch("cou.steps.plan.sys") as mock_sys:
-            mock_input.return_value = "C"
-            apply_plan(upgrade_plan)
-
-            mock_input.assert_called_once_with("Test Plan[Continue/abort/skip]")
-            upgrade_plan.function.assert_called_once_with()
+            upgrade_plan.run.assert_called_once()
             mock_sys.exit.assert_not_called()
 
     def test_apply_plan_abort(self):

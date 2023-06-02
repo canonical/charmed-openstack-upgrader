@@ -41,7 +41,10 @@ class UpgradeStep:
         """Add a single step."""
         self.sub_steps.append(step)
 
-    def set_function(self, function: Callable, **params: Any) -> None:
-        """Set the function."""
-        self.params = params
-        self.function = function
+    def run(self) -> Any:
+        """Run the function."""
+        if self.function is not None:
+            if self.params:
+                return self.function(**self.params)
+            return self.function()
+        return None

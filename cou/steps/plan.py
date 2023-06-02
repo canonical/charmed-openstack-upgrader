@@ -38,13 +38,11 @@ def apply_plan(upgrade_plan: Any) -> None:
     """Apply the plan for upgrade."""
     result = input(upgrade_plan.description + "[Continue/abort/skip]")
     if result.casefold() == "c".casefold():
-        if upgrade_plan.function is not None:
-            if upgrade_plan.params:
-                upgrade_plan.function(upgrade_plan.params)
-            else:
-                upgrade_plan.function()
+        upgrade_plan.run()
     elif result.casefold() == "a".casefold():
         sys.exit(1)
+    else:
+        logging.info("Skipped")
 
     for sub_step in upgrade_plan.sub_steps:
         apply_plan(sub_step)

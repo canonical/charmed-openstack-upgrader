@@ -35,11 +35,25 @@ class TestSteps(BaseTestCase):
         u.add_step(substep)
         assert u.sub_steps[0] is substep
 
-    def test_upgrade_step_set_function(self):
-        u = UpgradeStep(description="test", function=None, parallel=False, params=None)
-
+    def test_upgrade_step_run(self):
         def sample_function(**kwargs):
             return kwargs["x"]
 
-        u.set_function(function=sample_function, x=10)
-        assert u.function(**u.params) == 10
+        u = UpgradeStep(description="test", function=sample_function, parallel=False, **{"x": 10})
+
+        result = u.run()
+        assert result == 10
+
+    def test_upgrade_step_run_empty(self):
+        def sample_function(**kwargs):
+            return 5
+
+        u = UpgradeStep(description="test", function=sample_function, parallel=False)
+
+        result = u.run()
+        assert result == 5
+
+    def test_upgrade_step_run_none(self):
+        u = UpgradeStep(description="test", function=None, parallel=False)
+        result = u.run()
+        assert result is None
