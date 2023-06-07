@@ -15,24 +15,17 @@
 
 """Charm operation utilities."""
 import logging
-from cou.zaza_utils.model import upgrade_charm, block_until_all_units_idle
+
+from cou.zaza_utils.model import upgrade_charm
 
 
 def charm_upgrade(application_name: str) -> None:
     """Upgrade a charm to the latest revision in the current channel."""
-    logging.info(
-        "Upgrading %s to the latest revision in the current channel",
-        application_name
-    )
+    logging.info("Upgrading %s to the latest revision in the current channel", application_name)
     upgrade_charm(application_name)
-    block_until_all_units_idle()
 
 
 def charm_channel_refresh(application_name: str, target_channel: str) -> None:
     """Refresh a charm to track a target channel."""
-    logging.info(
-        "Refresh %s to the %s channel",
-        application_name, target_channel
-    )
-    upgrade_charm(application_name, target_channel)
-    block_until_all_units_idle()
+    logging.info("Refresh %s to the %s channel", application_name, target_channel)
+    upgrade_charm(application_name, channel=target_channel)
