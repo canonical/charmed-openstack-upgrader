@@ -20,6 +20,15 @@ import logging
 import re
 
 from cou.zaza_utils import model, os_versions
+from cou.zaza_utils.exceptions import InvalidCharmNameError
+
+
+def extract_charm_name(charm):
+    """Extract the charm name using regex."""
+    match = re.match(r"^(?:\w+:)?(?:~[\w\.-]+/)?(?:\w+/)*([a-zA-Z0-9-]+?)(?:-\d+)?$", charm)
+    if not match:
+        raise InvalidCharmNameError("charm name '{}' is invalid".format(charm))
+    return match.group(1)
 
 
 def extract_charm_name_from_url(charm_url):
