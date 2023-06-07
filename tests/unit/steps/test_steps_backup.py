@@ -47,6 +47,24 @@ def test_get_database_app():
         assert app == "mysql"
 
 
+def test_get_database_app_negative():
+    with patch("cou.steps.backup.get_upgrade_candidates") as upgrade_candidates:
+        upgrade_candidates.return_value = {
+            "mysql": {
+                "charm": "percona",
+                "relations": {
+                    "cluster": ["percona"],
+                    "coordinator": ["percona"],
+                    "db-router": [
+                        "placement-mysql-router",
+                    ],
+                },
+            }
+        }
+        app = get_database_app()
+        assert app is None
+
+
 def test_check_db_relations():
     app_config = {
         "relations": {
