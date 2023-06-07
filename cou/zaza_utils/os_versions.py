@@ -167,8 +167,8 @@ SWIFT_CODENAMES = OrderedDict(
         ("rocky", ["2.18.0", "2.19.0"]),
         ("stein", ["2.20.0", "2.21.0"]),
         ("train", ["2.22.0"]),
-        ("ussuri", ["2.24.0", "2.25.0"]),
-        ("victoria", ["2.25.0"]),
+        ("ussuri", ["2.25.2", "2.25.3"]),
+        ("victoria", ["2.26.0"]),
     ]
 )
 
@@ -472,3 +472,19 @@ class CompareOpenStack(BasicStringComparator):
     """
 
     _list = list(OPENSTACK_CODENAMES.values())
+
+
+def determine_next_openstack_release(release):
+    """Determine the next release after the one passed as a str.
+
+    The returned value is a tuple of the form: ('2020.1', 'ussuri')
+
+    :param release: the release to use as the base
+    :type release: str
+    :returns: the release tuple immediately after the current one.
+    :rtype: Tuple[str, str]
+    :raises: KeyError if the current release doesn't actually exist
+    """
+    old_index = list(OPENSTACK_CODENAMES.values()).index(release)
+    new_index = old_index + 1
+    return list(OPENSTACK_CODENAMES.items())[new_index]

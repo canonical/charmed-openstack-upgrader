@@ -104,6 +104,10 @@ class TestGenericUtils(ut_utils.BaseTestCase):
         self.patch_object(generic_utils.juju_utils, "remote_run")
         _pkg = "os-thingy"
         _version = "2:27.0.0-0ubuntu1~cloud0"
+        expected = {
+            "os-thingy/7": "2:27.0.0-0ubuntu1~cloud0",
+            "os-thingy/12": "2:27.0.0-0ubuntu1~cloud0",
+        }
         _dpkg_output = "ii {} {} all OpenStack thingy\n".format(_pkg, _version)
         self.remote_run.return_value = _dpkg_output
         _unit1 = mock.MagicMock()
@@ -114,7 +118,7 @@ class TestGenericUtils(ut_utils.BaseTestCase):
         self.get_units.return_value = _units
 
         # Matching
-        self.assertEqual(generic_utils.get_pkg_version(_pkg, _pkg), _version)
+        self.assertEqual(generic_utils.get_pkg_version((_pkg, _pkg), _pkg), expected)
 
         # Mismatched
         _different_dpkg_output = "ii {} {} all OpenStack thingy\n".format(_pkg, "DIFFERENT")
