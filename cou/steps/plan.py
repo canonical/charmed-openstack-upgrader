@@ -59,16 +59,17 @@ def prompt(parameter: str) -> str:
 def apply_plan(upgrade_plan: Any) -> None:
     """Apply the plan for upgrade."""
     result = "X"
-    while result not in "CcAsSs":
-        result = input(prompt(upgrade_plan.description))
+    while result.casefold() not in "cas".casefold():
+        result = input(prompt(upgrade_plan.description)).casefold()
         match result:
-            case "c" | "C":
+            case "c":
                 upgrade_plan.run()
                 for sub_step in upgrade_plan.sub_steps:
                     apply_plan(sub_step)
-            case "a" | "A":
+            case "a":
+                logging.info("Aborning plan")
                 sys.exit(1)
-            case "s" | "S":
+            case "s":
                 logging.info("Skipped")
             case _:
                 logging.info("No valid input provided!")
@@ -77,6 +78,6 @@ def apply_plan(upgrade_plan: Any) -> None:
 def dump_plan(upgrade_plan: UpgradeStep, ident: int = 0) -> None:
     """Dump the plan for upgrade."""
     tab = "\t"
-    logging.info(f"{tab*ident}{upgrade_plan.description}")  # pylint: disable=W1203
+    logging.info(f"{tab * ident}{upgrade_plan.description}")  # pylint: disable=W1203
     for sub_step in upgrade_plan.sub_steps:
         dump_plan(sub_step, ident + 1)
