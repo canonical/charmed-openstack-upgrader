@@ -25,7 +25,7 @@ def charm_upgrade(application_name: str) -> None:
     upgrade_charm(application_name)
 
 
-def charm_channel_refresh(application_name: str, target_channel: str) -> None:
+def charm_channel_refresh(application_name: str, channel: str) -> None:
     """Refresh a charm to track a target channel."""
     logging.info("Refresh %s to the %s channel", application_name, target_channel)
     upgrade_charm(application_name, channel=target_channel)
