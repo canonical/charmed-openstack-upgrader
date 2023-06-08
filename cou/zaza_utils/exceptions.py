@@ -196,9 +196,3 @@ class DestroyModelFailed(Exception):
     """The controller.destroy_model() failed in some interesting way."""
 
     pass
-
-
-class InvalidCharmNameError(Exception):
-    """Represents an invalid charm name being processed."""
-
-    pass
