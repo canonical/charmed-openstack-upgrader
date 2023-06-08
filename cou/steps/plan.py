@@ -25,6 +25,8 @@ from termcolor import colored
 from cou.steps import UpgradeStep
 from cou.steps.backup import backup
 
+AVAILABLE_OPTIONS = "cas"
+
 
 def generate_plan(args: Namespace) -> UpgradeStep:
     """Generate plan for upgrade."""
@@ -59,7 +61,7 @@ def prompt(parameter: str) -> str:
 def apply_plan(upgrade_plan: Any) -> None:
     """Apply the plan for upgrade."""
     result = "X"
-    while result.casefold() not in "cas".casefold():
+    while result.casefold() not in AVAILABLE_OPTIONS:
         result = input(prompt(upgrade_plan.description)).casefold()
         match result:
             case "c":
