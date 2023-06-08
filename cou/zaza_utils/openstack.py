@@ -85,46 +85,42 @@ def get_openstack_release(application, model_name=None) -> DefaultDict:
     return versions
 
 
-def get_os_code_info(package: str, unit_pkg_version: Dict) -> DefaultDict:
+def get_os_code_info(package, pkg_version):
     """Determine OpenStack codename that corresponds to package version.
 
     :param package: Package name
     :type package: string
-    :param unit_pkg_version: Package version on units of an application
-    :type unit_pkg_version: Dict
-    :returns: Codename for package on units
-    :rtype: DefaultDict
+    :param pkg_version: Package version
+    :type pkg_version: string
+    :returns: Codename for package
+    :rtype: string
     """
-    versions = defaultdict(set)
-    for unit, pkg_version in unit_pkg_version.items():
-        # Remove epoch if it exists
-        if ":" in pkg_version:
-            pkg_version = pkg_version.split(":")[1:][0]
+    # Remove epoch if it exists
+    if ":" in pkg_version:
+        pkg_version = pkg_version.split(":")[1:][0]
+    if "swift" in package:
+        # Fully x.y.z match for swift versions
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", pkg_version)
+    else:
+        # x.y match only for 20XX.X
+        # and ignore patch level for other packages
+        match = re.match(r"^(\d+)\.(\d+)", pkg_version)
+
+    if match:
+        vers = match.group(0)
+    # Generate a major version number for newer semantic
+    # versions of openstack projects
+    major_vers = vers.split(".")[0]
+    if package in PACKAGE_CODENAMES and major_vers in PACKAGE_CODENAMES[package]:
+        return PACKAGE_CODENAMES[package][major_vers]
+    else:
+        # < Liberty co-ordinated project versions
         if "swift" in package:
-            # Fully x.y.z match for swift versions
-            match = re.match(r"^(\d+)\.(\d+)\.(\d+)", pkg_version)
+            return get_swift_codename(vers)
+        elif "ovn" in package:
+            return get_ovn_codename(vers)
         else:
-            # x.y match only for 20XX.X
-            # and ignore patch level for other packages
-            match = re.match(r"^(\d+)\.(\d+)", pkg_version)
-
-        if match:
-            vers = match.group(0)
-        # Generate a major version number for newer semantic
-        # versions of openstack projects
-        major_vers = vers.split(".")[0]
-        if package in PACKAGE_CODENAMES and major_vers in PACKAGE_CODENAMES[package]:
-            versions[PACKAGE_CODENAMES[package][major_vers]].add(unit)
-        else:
-            # < Liberty co-ordinated project versions
-            if "swift" in package:
-                versions[get_swift_codename(vers)].add(unit)
-            elif "ovn" in package:
-                versions[get_ovn_codename(vers)].add(unit)
-            else:
-                versions[OPENSTACK_CODENAMES[vers]].add(unit)
-
-    return versions
+            return OPENSTACK_CODENAMES[vers]
 
 
 # Codename and package versions

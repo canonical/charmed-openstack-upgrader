@@ -24,7 +24,7 @@ class TestOpenStackUtils(ut_utils.BaseTestCase):
     def test_compare_openstack(self):
         releases = ["zed", "xena", "antelope", "ussuri", "icehouse"]
         expected_order = ["icehouse", "ussuri", "xena", "zed", "antelope"]
-        result = sorted(releases, key=lambda release: os_versions.CompareOpenStack(release))
+        result = sorted(releases, key=os_versions.CompareOpenStack)
         self.assertEqual(result, expected_order)
 
     def test_determine_next_openstack_release(self):
