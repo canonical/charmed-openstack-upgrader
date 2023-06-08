@@ -127,39 +127,3 @@ def get_upgrade_groups(model_name=None):
     apps_in_model = get_upgrade_candidates(model_name=model_name, filters=filters)
 
     return _build_service_groups(apps_in_model)
-
-
-def _check_db_relations(app_config):
-    """Check the db relations.
-
-    Gets the openstack database mysql-innodb-cluster application if there are more than one
-    application the one with the keystone relation is selected.
-
-    :param app_config: juju app config
-    :type app_config: str
-    :returns: True if it has a relation with keystone
-    :rtype: bool
-    """
-    for relation, app_list in app_config.relations.items():
-        if relation == "db-router":
-            if len([a for a in app_list if "keystone".casefold() in a.casefold()]) > 0:
-                return True
-    return False
-
-
-def get_database_app(model_name=None):
-    """Get mysql-innodb-cluster application name.
-
-    Gets the openstack database mysql-innodb-cluster application if there are more than one
-    application the one with the keystone relation is selected.
-
-    :param model_name: Name of model to query.
-    :type model_name: str
-    :returns: Name of the mysql-innodb-cluster application name
-    :rtype: str
-    """
-    candidates = get_upgrade_candidates(model_name=model_name)
-    for app, app_config in candidates.items():
-        charm_name = extract_charm_name_from_url(app_config["charm"])
-        if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
-            return app
