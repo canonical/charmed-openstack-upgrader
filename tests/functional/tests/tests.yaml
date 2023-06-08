@@ -1,0 +1,11 @@
+tests:
+  - openstack:
+    - tests.functional.tests.backup.BackupTest
+gate_bundles:
+  - openstack: openstack
+
+configure:
+  - openstack:
+    - zaza.openstack.charm_tests.keystone.setup.add_demo_user
+    - zaza.openstack.charm_tests.nova.setup.create_flavors
+    - zaza.openstack.charm_tests.nova.setup.manage_ssh_key

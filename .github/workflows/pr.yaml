@@ -13,12 +13,30 @@ on:
       - '**.rst'
 
 jobs:
-  pr:
-    uses: canonical/bootstack-actions/.github/workflows/pull-request.yaml@main
+  lint-unit:
+    name: Lint checkers and unit tests
+    uses: canonical/bootstack-actions/.github/workflows/_lint-unit.yaml@main
     secrets: inherit
     with:
-      python-version-unit: "['3.10']"
-      python-version-func: "3.10"
-      tox-version: "<4"
-      snapcraft: true
-      commands: "['make functional']"
+      python-version: "['3.10']"
+      tox-version: ""
+      working-directory: "."
+
+  func:
+    name: Functional tests
+    runs-on: self-hosted
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version:  '3.10'
+      - name: Install tox
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "tox<4"
+      - name: Run func tests
+        run: make functional
