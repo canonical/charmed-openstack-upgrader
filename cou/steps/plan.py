@@ -20,8 +20,12 @@ import sys
 from argparse import Namespace
 from typing import Any
 
+from termcolor import colored
+
 from cou.steps import UpgradeStep
 from cou.steps.backup import backup
+
+AVAILABLE_OPTIONS = "cas"
 
 
 def generate_plan(args: Namespace) -> UpgradeStep:
@@ -34,23 +38,48 @@ def generate_plan(args: Namespace) -> UpgradeStep:
     return plan
 
 
+def prompt(parameter: str) -> str:
+    """Generate eye-catching prompt."""
+
+    def bold(text: str) -> str:
+        return colored(text, "red", attrs=["bold"])
+
+    def normal(text: str) -> str:
+        return colored(text, "red", attrs=["blink"])
+
+    return (
+        normal(parameter + " (")
+        + bold("c")
+        + normal(")ontinue/(")
+        + bold("a")
+        + normal(")bort/(")
+        + bold("s")
+        + normal(")kip:")
+    )
+
+
 def apply_plan(upgrade_plan: Any) -> None:
     """Apply the plan for upgrade."""
-    result = input(upgrade_plan.description + "[Continue/abort/skip]")
-    if result.casefold() == "c".casefold():
-        upgrade_plan.run()
-    elif result.casefold() == "a".casefold():
-        sys.exit(1)
-    else:
-        logging.info("Skipped")
-
-    for sub_step in upgrade_plan.sub_steps:
-        apply_plan(sub_step)
+    result = "X"
+    while result.casefold() not in AVAILABLE_OPTIONS:
+        result = input(prompt(upgrade_plan.description)).casefold()
+        match result:
+            case "c":
+                upgrade_plan.run()
+                for sub_step in upgrade_plan.sub_steps:
+                    apply_plan(sub_step)
+            case "a":
+                logging.info("Aborning plan")
+                sys.exit(1)
+            case "s":
+                logging.info("Skipped")
+            case _:
+                logging.info("No valid input provided!")
 
 
 def dump_plan(upgrade_plan: UpgradeStep, ident: int = 0) -> None:
     """Dump the plan for upgrade."""
     tab = "\t"
-    logging.info(f"{tab*ident}{upgrade_plan.description}")  # pylint: disable=W1203
+    logging.info(f"{tab * ident}{upgrade_plan.description}")  # pylint: disable=W1203
     for sub_step in upgrade_plan.sub_steps:
         dump_plan(sub_step, ident + 1)
