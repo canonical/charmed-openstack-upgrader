@@ -1,7 +1,7 @@
 import logging
 import re
 from collections import defaultdict
-from typing import DefaultDict, Dict
+from typing import DefaultDict
 
 import six
 
@@ -85,7 +85,7 @@ def get_openstack_release(application, model_name=None) -> DefaultDict:
     return versions
 
 
-def get_os_code_info(package, pkg_version):
+def get_os_code_info(package, pkg_version) -> str:
     """Determine OpenStack codename that corresponds to package version.
 
     :param package: Package name

@@ -19,11 +19,12 @@ import logging
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Set, Tuple
+from typing import List, Tuple, Union
 
+import yaml
 from juju.client._definitions import ApplicationStatus
 
-from cou.zaza_utils import juju, model
+from cou.zaza_utils import model
 from cou.zaza_utils.juju import get_full_juju_status
 from cou.zaza_utils.openstack import CHARM_TYPES, get_os_code_info
 from cou.zaza_utils.os_versions import (
@@ -35,44 +36,80 @@ from cou.zaza_utils.os_versions import (
 class InvalidCharmNameError(Exception):
     """Represents an invalid charm name being processed."""
 
-    pass
-
 
 @dataclass
 class Analyze:
     """Analyze result."""
 
-    upgrade_units: defaultdict(set)
-    upgrade_charms: defaultdict(set)
-    change_channel: defaultdict(set)
-    charmhub_migration: defaultdict(set)
-    change_openstack_release: defaultdict(set)
+    upgrade_units: defaultdict[str, set]
+    upgrade_charms: defaultdict[str, set]
+    change_channel: defaultdict[str, set]
+    charmhub_migration: defaultdict[str, set]
+    change_openstack_release: defaultdict[str, set]
 
 
 @dataclass
 class Application:
-    "Representation of an application in the deployment"
+    """Representation of an application in the deployment."""
+
+    # pylint: disable=too-many-instance-attributes
+
     name: str
     status: ApplicationStatus
     config: dict
     model_name: str
-    os_version_units: set | None = None
-    charm: str | None = None
-    units: set | None = None
-    channel: str | None = None
-    pkg_name: str | None = None
-    os_release_units: defaultdict(set) = field(default_factory=lambda: defaultdict(set))
-    pkg_version_units: defaultdict(set) = field(default_factory=lambda: defaultdict(set))
+    charm: str = ""
+    charm_origin: str = ""
+    os_origin: str = ""
+    channel: str = ""
+    pkg_name: str = ""
+    # E.g of units: {"keystone/0": {'os_version': 'victoria', 'pkg_version': '2:18.1'}}
+    units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
+    #  E.g of os_release_units: {"ussuri":{"keystone/0"}, "victoria": {"keystone/1"}}
+    os_release_units: defaultdict[str, set] = field(default_factory=lambda: defaultdict(set))
+    #  E.g of pkg_version_units: {"2:17.0": {"keystone/0"}, "2:18.0": {"keystone/1"}}
+    pkg_version_units: defaultdict[str, set] = field(default_factory=lambda: defaultdict(set))
 
-    def __post_init__(self):
-        self.extract_charm_name()
+    def __post_init__(self) -> None:
+        """Initiate the Apllication dataclass."""
+        self.charm = self.extract_charm_name()
         self.channel = self.status.base.get("channel")
-        self.origin = self.status.charm.split(":")[0]
-        self.units = self.status.units.keys()
+        self.charm_origin = self.status.charm.split(":")[0]
         self.pkg_name = self.get_pkg_name()
-        for unit in self.units:
-            self.os_release_units[self.get_current_os_versions(unit, self.model_name)].add(unit)
-        self.os_version_units = set(self.os_release_units.keys())
+        self.os_origin = self.get_os_origin()
+        for unit in self.status.units.keys():
+            os_version = self.get_current_os_versions(unit)
+            self.units[unit]["os_version"] = os_version
+            self.os_release_units[os_version].add(unit)
+
+    def to_yaml(self) -> str:
+        """Return a string in yaml format.
+
+        Passing the Application class directly to dump contain some fields that are big,
+        e.g: config and status. This output contains just the important fields for
+        the operator.
+        """
+        app = {
+            self.name: {
+                "channel": self.channel,
+                "model_name": self.model_name,
+                "pkg_name": self.pkg_name,
+                "units": {
+                    unit: {
+                        "pkg_version": details.get("pkg_version"),
+                        "os_version": details.get("os_version"),
+                    }
+                    for unit, details in self.units.items()
+                },
+            }
+        }
+        return yaml.dump(
+            app,
+            default_flow_style=False,
+            allow_unicode=True,
+            encoding=None,
+            sort_keys=False,
+        )
 
     def extract_charm_name(self) -> str:
         """Extract the charm name using regex."""
@@ -80,20 +117,26 @@ class Application:
             r"^(?:\w+:)?(?:~[\w\.-]+/)?(?:\w+/)*([a-zA-Z0-9-]+?)(?:-\d+)?$", self.status.charm
         )
         if not match:
-            raise InvalidCharmNameError("charm name '{}' is invalid".format(self.status.charm))
-        self.charm = match.group(1)
+            raise InvalidCharmNameError(f"charm name '{self.status.charm}' is invalid")
+        return match.group(1)
 
     def get_pkg_name(self) -> str:
-        return CHARM_TYPES.get(self.charm, {self.charm: {"pkg": None}}).get("pkg")
+        """Get the package name depending on the name of the charm."""
+        return CHARM_TYPES[self.charm]["pkg"]
 
-    def get_current_os_versions(self, unit, model_name=None) -> str:
+    def get_current_os_versions(self, unit: str) -> str:
+        """Get the openstack version of a unit."""
         version = None
-        codename = get_openstack_release(unit, model_name=model_name)
+        pkg_version = get_pkg_version(unit, self.pkg_name, self.model_name)
+        self.units[unit]["pkg_version"] = pkg_version
+        self.pkg_version_units[pkg_version].add(unit)
+
+        # for openstack releases >= wallaby
+        codename = get_openstack_release(unit, model_name=self.model_name)
         if codename:
             version = codename
+        # for openstack releases < wallaby
         else:
-            pkg_version = get_pkg_version(unit, self.pkg_name, model_name)
-            self.pkg_version_units[pkg_version].add(unit)
             version = get_os_code_info(self.pkg_name, pkg_version)
         return version
 
@@ -101,16 +144,19 @@ class Application:
         """Get application configuration for openstack-origin or source."""
         for origin in ("openstack-origin", "source"):
             if self.config.get(origin):
-                return self.config.get(origin).get("value")
+                return self.config[origin]["value"]
 
         logging.warning("Failed to get origin for %s, no origin config found", self.name)
+        return ""
 
-    def check_os_versions_units(self, upgrade_units: defaultdict(set)) -> defaultdict(set):
+    def check_os_versions_units(
+        self, upgrade_units: defaultdict[str, set]
+    ) -> defaultdict[str, set]:
         """Check openstack versions in an application."""
-        if len(self.os_version_units) > 1:
+        if len(self.os_release_units.keys()) > 1:
             logging.warning("Units from %s are not in the same openstack version", self.name)
             os_sequence = sorted(
-                list(self.os_version_units),
+                list(self.os_release_units.keys()),
                 key=CompareOpenStack,
             )
             for os_release in os_sequence[:-1]:
@@ -125,45 +171,48 @@ class Application:
         return upgrade_units
 
     def check_os_channels_and_migration(
-        self, change_channel: defaultdict(set), charmhub_migration: defaultdict(set)
+        self, change_channel: defaultdict[str, set], charmhub_migration: defaultdict[str, set]
     ) -> Tuple:
-        if len(self.os_version_units) > 1:
+        """Check openstack channel and if it's necessary a charmhub migration."""
+        if len(self.os_release_units.keys()) > 1:
             logging.warning(
                 "Skip check of channels. App %s has units with different openstack version",
                 self.name,
             )
         else:
-            actual_release = list(self.os_version_units)[0]
+            actual_release = list(self.os_release_units.keys())[0]
             expected_channel = f"{actual_release}/stable"
             if actual_release not in self.channel:
                 change_channel[expected_channel].add(self.name)
                 logging.warning(
                     "App:%s need to track the channel: %s", self.name, expected_channel
                 )
-            if self.origin == "cs":
+            if self.charm_origin == "cs":
                 charmhub_migration[expected_channel].add(self.name)
                 logging.warning("App:%s need to perform migration to charmhub", self.name)
         return change_channel, charmhub_migration
 
-    def check_os_origin(self, change_openstack_release: defaultdict(set)) -> defaultdict(set):
-        os_charm_config = self.get_os_origin()
-        if len(self.os_version_units) > 1:
+    def check_os_origin(
+        self, change_openstack_release: defaultdict[str, set]
+    ) -> defaultdict[str, set]:
+        """Check if charm configuration for openstack-origin is set correct."""
+        if len(self.os_release_units.keys()) > 1:
             logging.warning(
                 "Skip openstack-origin check. App %s has units with different openstack version",
                 self.name,
             )
         else:
-            actual_release = list(self.os_version_units)[0]
+            actual_release = list(self.os_release_units.keys())[0]
             expected_os_origin = f"cloud:focal-{actual_release}"
             # Exceptionally, if upgrading from Ussuri to Victoria
             if actual_release == "ussuri":
-                if os_charm_config != "distro":
+                if self.os_origin != "distro":
                     logging.warning(
                         "App: %s need to set openstack-origin or source to 'distro'", self.name
                     )
                     change_openstack_release["distro"].add(self.name)
             else:
-                if expected_os_origin not in os_charm_config:
+                if expected_os_origin not in self.os_origin:
                     change_openstack_release[expected_os_origin].add(self.name)
                     logging.warning(
                         "App: %s need to set openstack-origin or source to %s",
@@ -173,24 +222,26 @@ class Application:
         return change_openstack_release
 
 
-def get_openstack_release(unit, model_name):
+def get_openstack_release(unit: str, model_name: Union[str, None] = None) -> Union[str, None]:
     """Return the openstack release codename based on /etc/openstack-release."""
-    cmd = "cat /etc/openstack-release | grep OPENSTACK_CODENAME"
+    cmd = "grep -Po '(?<=OPENSTACK_CODENAME=).*' /etc/openstack-release"
     try:
-        out = juju.remote_run(unit, cmd, model_name=model_name)
+        out = model.run_on_unit(unit, cmd, model_name=model_name, timeout=20)
     except model.CommandRunFailed:
         logging.debug("Fall back to version check for OpenStack codename")
-    else:
-        return out.split("=")[1].strip()
+        return None
+    return out["Stdout"]
 
 
-def get_pkg_version(unit, pkg, model_name=None):
-    cmd = "dpkg -l | grep {}".format(pkg)
-    out = juju.remote_run(unit, cmd, model_name=model_name)
-    return out.split("\n")[0].split()[2]
+def get_pkg_version(unit: str, pkg: str, model_name: Union[str, None] = None) -> str:
+    """Get package version of a specific package in a unit."""
+    cmd = f"dpkg-query --show --showformat='${{Version}}' {pkg}"
+    out = model.run_on_unit(unit, cmd, model_name=model_name, timeout=20)
+    return out["Stdout"]
 
 
-def generate_model():
+def generate_model() -> List[Application]:
+    """Generate the applications model."""
     juju_status = get_full_juju_status()
     model_name = juju_status.model.name
     apps = [
@@ -209,13 +260,13 @@ def analyze() -> Analyze:
     """Analyze the deployment before planning."""
     logging.info("Analyzing the Openstack release in the deployment...")
     apps = generate_model()
-    os_versions = defaultdict(set)
-    upgrade_units = defaultdict(set)
-    change_channel = defaultdict(set)
-    charmhub_migration = defaultdict(set)
-    change_openstack_release = defaultdict(set)
+    os_versions: defaultdict[str, set] = defaultdict(set)
+    upgrade_units: defaultdict[str, set] = defaultdict(set)
+    change_channel: defaultdict[str, set] = defaultdict(set)
+    charmhub_migration: defaultdict[str, set] = defaultdict(set)
+    change_openstack_release: defaultdict[str, set] = defaultdict(set)
     for app in apps:
-        for os_version_unit in app.os_version_units:
+        for os_version_unit in app.os_release_units.keys():
             os_versions[os_version_unit].add(app.name)
         upgrade_units = app.check_os_versions_units(upgrade_units)
         change_channel, charmhub_migration = app.check_os_channels_and_migration(
@@ -230,7 +281,8 @@ def analyze() -> Analyze:
     )
 
 
-def check_upgrade_charms(os_versions: defaultdict(set)) -> defaultdict(set):
+def check_upgrade_charms(os_versions: defaultdict[str, set]) -> defaultdict[str, set]:
+    """Check if all charms of a model are in the same openstack release."""
     upgrade_charms = defaultdict(set)
     if len(os_versions) > 1:
         logging.warning("Charms are not in the same openstack version")
@@ -252,5 +304,5 @@ def check_upgrade_charms(os_versions: defaultdict(set)) -> defaultdict(set):
             actual_release,
             next_release,
         )
-        upgrade_charms[next_release].update(os_versions.values())
+        upgrade_charms[next_release].update(os_versions[actual_release])
     return upgrade_charms
