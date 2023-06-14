@@ -41,7 +41,7 @@ def test_application(issues, status, config, mocker, units):
     expected_change_openstack_release = defaultdict(set)
 
     app_status = status["keystone_ch"]
-    app_config = config["keystone"]
+    app_config = config["openstack_ussuri"]
     expected_charm_origin = "ch"
     expected_os_origin = "distro"
     expected_units = units["units_ussuri"]
@@ -162,7 +162,7 @@ def test_application_to_yaml(mocker, status, config):
         }
     }
     app_status = status["keystone_ch"]
-    app_config = config["keystone"]
+    app_config = config["openstack_ussuri"]
     mocker.patch.object(analyze, "get_pkg_version", return_value="2:17.0.1-0ubuntu1")
     mocker.patch.object(analyze, "get_openstack_release", return_value=None)
     app = analyze.Application("keystone", app_status, app_config, "my_model")
@@ -173,7 +173,9 @@ def test_application_invalid_charm_name(mocker, status, config):
     """Assert that raises error if charm name is invalid."""
     mocker.patch.object(analyze.re, "match", return_value=None)
     with pytest.raises(analyze.InvalidCharmNameError):
-        analyze.Application("keystone", status["keystone_ch"], config["keystone"], "my_model")
+        analyze.Application(
+            "keystone", status["keystone_ch"], config["openstack_ussuri"], "my_model"
+        )
 
 
 @pytest.mark.parametrize(
@@ -200,7 +202,7 @@ def test_application_bigger_than_wallaby(issues, mocker, status, config, units):
     }
 
     if issues == "no_issues":
-        app_config = config["keystone_wallaby"]
+        app_config = config["openstack_wallaby"]
 
     elif issues == "change_openstack_release":
         # application has wrong configuration for openstack-release
@@ -274,21 +276,27 @@ def test_get_pkg_version(mocker):
 
 def test_generate_model(mocker, full_status, config):
     mocker.patch.object(analyze, "get_full_juju_status", return_value=full_status)
-    mocker.patch.object(analyze.model, "get_application_config", return_value=config["keystone"])
+    mocker.patch.object(
+        analyze.model, "get_application_config", return_value=config["openstack_ussuri"]
+    )
     mocker.patch.object(analyze, "get_openstack_release", return_value=None)
     mocker.patch.object(
         analyze,
         "get_pkg_version",
         side_effect=[
+            "2:17.0.1-0ubuntu1~cloud0",  # keystone units
             "2:17.0.1-0ubuntu1~cloud0",
             "2:17.0.1-0ubuntu1~cloud0",
-            "2:17.0.1-0ubuntu1~cloud0",
+            "2:16.4.2-0ubuntu2.2~cloud0",  # cinder units
             "2:16.4.2-0ubuntu2.2~cloud0",
             "2:16.4.2-0ubuntu2.2~cloud0",
-            "2:16.4.2-0ubuntu2.2~cloud0",
+            "",  # rabbitmq-server unit
         ],
     )
+    # Initially, 3 applications are in the status (keystone, cinder and rabbitmq-server)
+    assert len(full_status.applications) == 3
     apps = analyze.generate_model()
+    # rabbitmq-server is filtered from supported openstack charms.
     assert len(apps) == 2
     assert apps[0].name == "keystone"
     assert apps[1].name == "cinder"
