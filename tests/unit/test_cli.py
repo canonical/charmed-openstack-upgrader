@@ -32,7 +32,7 @@ class CliTestCase(unittest.TestCase):
     def test_entrypoint_with_exception(self):
         with patch("cou.cli.parse_args"), patch("cou.cli.setup_logging"), patch(
             "cou.cli.generate_plan"
-        ) as mock_generate_plan, patch("cou.cli.apply_plan"):
+        ) as mock_generate_plan, patch("cou.cli.apply_plan"), patch("cou.cli.analyze"):
             mock_generate_plan.side_effect = Exception("An error occurred")
 
             result = entrypoint()
@@ -43,7 +43,9 @@ class CliTestCase(unittest.TestCase):
     def test_entrypoint_dry_run(self):
         with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
             "cou.cli.generate_plan"
-        ), patch("cou.cli.dump_plan") as mock_dump_plan, patch("cou.cli.apply_plan"):
+        ), patch("cou.cli.dump_plan") as mock_dump_plan, patch("cou.cli.apply_plan"), patch(
+            "cou.cli.analyze"
+        ):
             mock_parse_args.return_value = MagicMock()
             mock_parse_args.return_value.dry_run = True
 
@@ -55,7 +57,9 @@ class CliTestCase(unittest.TestCase):
     def test_entrypoint_real_run(self):
         with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
             "cou.cli.generate_plan"
-        ), patch("cou.cli.dump_plan"), patch("cou.cli.apply_plan") as mock_apply_plan:
+        ), patch("cou.cli.dump_plan"), patch("cou.cli.apply_plan") as mock_apply_plan, patch(
+            "cou.cli.analyze"
+        ):
             mock_parse_args.return_value = MagicMock()
             mock_parse_args.return_value.dry_run = False
 

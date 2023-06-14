@@ -120,11 +120,18 @@ class Application:
 
     def get_pkg_name(self) -> str:
         """Get the package name depending on the name of the charm."""
-        return CHARM_TYPES[self.charm]["pkg"]
+        try:
+            pkg_name = CHARM_TYPES[self.charm]["pkg"]
+        except KeyError:
+            logging.debug("package not found for application: %s", self.name)
+            pkg_name = ""
+        return pkg_name
 
+    # NOTE (gabrielcocenza) Ideally, the application should provide the openstack version
+    # and packages versions by a charm action. This might be possible with Sunbeam.
     def get_current_os_versions(self, unit: str) -> str:
         """Get the openstack version of a unit."""
-        version = None
+        version = ""
         pkg_version = get_pkg_version(unit, self.pkg_name, self.model_name)
         self.units[unit]["pkg_version"] = pkg_version
         self.pkg_version_units[pkg_version].add(unit)
@@ -135,14 +142,15 @@ class Application:
             version = codename
         # for openstack releases < wallaby
         else:
-            version = get_os_code_info(self.pkg_name, pkg_version)
+            if self.pkg_name and pkg_version:
+                version = get_os_code_info(self.pkg_name, pkg_version)
         return version
 
     def get_os_origin(self) -> str:
         """Get application configuration for openstack-origin or source."""
         for origin in ("openstack-origin", "source"):
             if self.config.get(origin):
-                return self.config[origin]["value"]
+                return self.config[origin].get("value", "")
 
         logging.warning("Failed to get origin for %s, no origin config found", self.name)
         return ""
@@ -251,7 +259,10 @@ def generate_model() -> List[Application]:
         )
         for app, app_status in juju_status.applications.items()
     ]
-    return apps
+    # NOTE(gabrielcocenza) Not all openstack-charms are mapped in the zaza lookup.
+    supported_os_charms = CHARM_TYPES.keys()
+    openstack_apps = [app for app in apps if app.charm in supported_os_charms]
+    return openstack_apps
 
 
 def analyze() -> Analyze:

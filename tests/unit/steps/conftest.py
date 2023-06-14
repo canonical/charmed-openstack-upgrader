@@ -56,9 +56,15 @@ def status():
         [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
     )
 
+    mock_rmq = mock.MagicMock()
+    mock_rmq.base = {"channel": "3.9/stable"}
+    mock_rmq.charm = "ch:amd64/focal/rabbitmq-server-638"
+    mock_rmq.units = OrderedDict([("rabbitmq-server/0", {})])
+
     status = {
         "keystone_ch": mock_keystone_ch,
         "cinder_ch": mock_cinder_ch,
+        "rabbitmq_server": mock_rmq,
         "keystone_cs": mock_keystone_cs,
         "keystone_wrong_channel": mock_keystone_wrong_channel,
         "keystone_wallaby": mock_keystone_wallaby,
@@ -71,7 +77,11 @@ def full_status(status):
     mock_full_status = mock.MagicMock()
     mock_full_status.model.name = "my_model"
     mock_full_status.applications = OrderedDict(
-        [("keystone", status["keystone_ch"]), ("cinder", status["cinder_ch"])]
+        [
+            ("keystone", status["keystone_ch"]),
+            ("cinder", status["cinder_ch"]),
+            ("rabbitmq_server", status["rabbitmq_server"]),
+        ]
     )
     return mock_full_status
 
@@ -92,15 +102,15 @@ def units():
 def apps(mocker, status, config):
     keystone_status = status["keystone_ch"]
     cinder_status = status["cinder_ch"]
-    app_config = config["keystone"]
+    app_config = config["openstack_ussuri"]
     mocker.patch.object(
         analyze,
         "get_pkg_version",
         side_effect=[
+            "2:17.0.1-0ubuntu1~cloud0",  # keystone units
             "2:17.0.1-0ubuntu1~cloud0",
             "2:17.0.1-0ubuntu1~cloud0",
-            "2:17.0.1-0ubuntu1~cloud0",
-            "2:16.4.2-0ubuntu2.2~cloud0",
+            "2:16.4.2-0ubuntu2.2~cloud0",  # cinder units
             "2:16.4.2-0ubuntu2.2~cloud0",
             "2:16.4.2-0ubuntu2.2~cloud0",
         ],
@@ -115,8 +125,8 @@ def apps(mocker, status, config):
 @pytest.fixture
 def config():
     return {
-        "keystone": {
+        "openstack_ussuri": {
             "openstack-origin": {"value": "distro"},
         },
-        "keystone_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
+        "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
     }
