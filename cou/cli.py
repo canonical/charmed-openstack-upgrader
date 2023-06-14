@@ -23,6 +23,7 @@ import sys
 from datetime import datetime
 from typing import Any
 
+from cou.steps.analyze import analyze
 from cou.steps.plan import apply_plan, dump_plan, generate_plan
 
 COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
@@ -90,6 +91,7 @@ def entrypoint() -> int:
         args = parse_args(sys.argv[1:])
         setup_logging(log_level=args.loglevel)
 
+        analyze()
         upgrade_plan = generate_plan(args)
         if args.dry_run:
             dump_plan(upgrade_plan)

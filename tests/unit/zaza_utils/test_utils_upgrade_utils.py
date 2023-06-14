@@ -111,3 +111,13 @@ class TestUpgradeUtils(ut_utils.BaseTestCase):
             openstack_upgrade.extract_charm_name_from_url("cs:bionic/heat-12"), "heat"
         )
         self.assertEqual(openstack_upgrade.extract_charm_name_from_url("cs:heat"), "heat")
+
+    def test_determine_next_openstack_release(self):
+        releases = ["ussuri", "victoria", "wallaby", "xena"]
+        expected_next_release = ["victoria", "wallaby", "xena", "yoga"]
+
+        results = []
+        for release in releases:
+            result = openstack_upgrade.determine_next_openstack_release(release)[1]
+            results.append(result)
+        self.assertEqual(results, expected_next_release)
