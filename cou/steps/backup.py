@@ -25,7 +25,7 @@ from cou.zaza_utils.upgrade_utils import (
 )
 
 
-def backup() -> None:
+def backup() -> str:
     """Backup mysql database of openstack."""
     logging.info("Backing up mysql database")
 
@@ -46,6 +46,7 @@ def backup() -> None:
 
     logging.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
     model.run_on_leader(mysql_app, f"chmod o-rx {basedir}")
+    return local_file
 
 
 def _check_db_relations(app_config: dict) -> bool:

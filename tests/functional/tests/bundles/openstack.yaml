@@ -1,0 +1,260 @@
+variables:
+  openstack-origin: &openstack-origin distro
+  # We are using `candidate` channel for charm that do not support bionic
+  # release in `stable`
+  channel: &channel ussuri/stable
+
+series: &series focal
+
+applications:
+  mysql:
+    charm: mysql-innodb-cluster
+    channel: 8.0/stable
+    num_units: 3
+    to:
+    - "0"
+    - "1"
+    - "2"
+    options:
+      innodb-buffer-pool-size: 50%
+      max-connections: 20000
+      tuning-level: fast
+    constraints: arch=amd64 mem=4096
+  neutron-gateway:
+    charm: neutron-gateway
+    channel: *channel
+    num_units: 1
+    to:
+    - "3"
+    options:
+      bridge-mappings: physnet1:br-data
+      data-port: br-data:fa:16:3e:b5:c1:60
+      debug: true
+      dns-servers: 10.245.160.2
+      enable-isolated-metadata: true
+      verbose: true
+    constraints: arch=amd64 mem=4096
+  cinder:
+    charm: cinder
+    channel: *channel
+    num_units: 1
+    to:
+    - "7"
+    options:
+      block-device: None
+      debug: true
+      glance-api-version: 2
+      verbose: true
+    constraints: arch=amd64 mem=2048
+    storage:
+      block-devices: loop,10240M
+  cinder-mysql-router:
+    charm: mysql-router
+    channel: 8.0/stable
+  glance:
+    charm: glance
+    channel: *channel
+    num_units: 1
+    to:
+    - "10"
+    options:
+      debug: true
+      verbose: true
+    constraints: arch=amd64 mem=1024
+  glance-mysql-router:
+    charm: mysql-router
+    channel: 8.0/stable
+  keystone:
+    charm: keystone
+    channel: *channel
+    num_units: 1
+    to:
+    - "11"
+    options:
+      admin-password: openstack
+      debug: true
+      verbose: true
+    constraints: arch=amd64 mem=1024
+  keystone-mysql-router:
+    charm: mysql-router
+    channel: 8.0/stable
+  neutron-api:
+    charm: neutron-api
+    channel: *channel
+    num_units: 1
+    to:
+    - "4"
+    options:
+      debug: true
+      default-tenant-network-type: vxlan
+      dns-domain: fu.stsstack.qa.1ss.
+      enable-ml2-dns: true
+      enable-ml2-port-security: true
+      flat-network-providers: physnet1
+      global-physnet-mtu: 8958
+      manage-neutron-plugin-legacy-mode: true
+      neutron-security-groups: true
+      overlay-network-type: vxlan gre
+      path-mtu: 1550
+      physical-network-mtus: physnet1:1500
+      verbose: true
+    constraints: arch=amd64 mem=2048
+  neutron-api-mysql-router:
+    charm: mysql-router
+    channel: 8.0/stable
+  neutron-openvswitch:
+    charm: neutron-openvswitch
+    channel: *channel
+    options:
+      debug: true
+      dns-servers: 10.245.160.2
+      enable-local-dhcp-and-metadata: true
+      firewall-driver: openvswitch
+      verbose: true
+  nova-cloud-controller:
+    charm: nova-cloud-controller
+    channel: *channel
+    num_units: 1
+    to:
+    - "6"
+    options:
+      debug: true
+      network-manager: Neutron
+      verbose: true
+    constraints: arch=amd64 mem=2048
+  nova-cloud-controller-mysql-router:
+    charm: mysql-router
+    channel: 8.0/stable
+  nova-compute:
+    charm: nova-compute
+    channel: *channel
+    num_units: 1
+    to:
+    - "5"
+    options:
+      debug: true
+      enable-live-migration: true
+      enable-resize: true
+      force-raw-images: false
+      migration-auth-type: ssh
+      verbose: true
+    constraints: arch=amd64 mem=4096
+    storage:
+      ephemeral-device: loop,10240M
+  placement:
+    charm: placement
+    channel: *channel
+    num_units: 1
+    to:
+    - "8"
+    options:
+      debug: true
+    constraints: arch=amd64 mem=1024
+  placement-mysql-router:
+    charm: mysql-router
+    channel: 8.0/stable
+  rabbitmq-server:
+    charm: rabbitmq-server
+    channel: 3.8/stable
+    num_units: 1
+    to:
+    - "9"
+    options:
+      min-cluster-size: 1
+    constraints: arch=amd64 mem=1024
+machines:
+  "0":
+    constraints: arch=amd64 mem=4096
+  "1":
+    constraints: arch=amd64 mem=4096
+  "2":
+    constraints: arch=amd64 mem=4096
+  "3":
+    constraints: arch=amd64 mem=4096
+  "4":
+    constraints: arch=amd64 mem=2048
+  "5":
+    constraints: arch=amd64 mem=4096
+  "6":
+    constraints: arch=amd64 mem=2048
+  "7":
+    constraints: arch=amd64 mem=2048
+  "8":
+    constraints: arch=amd64 mem=1024
+  "9":
+    constraints: arch=amd64 mem=1024
+  "10":
+    constraints: arch=amd64 mem=1024
+  "11":
+    constraints: arch=amd64 mem=1024
+relations:
+- - nova-cloud-controller:shared-db
+  - nova-cloud-controller-mysql-router:shared-db
+- - nova-cloud-controller:amqp
+  - rabbitmq-server:amqp
+- - nova-cloud-controller:image-service
+  - glance:image-service
+- - nova-cloud-controller:identity-service
+  - keystone:identity-service
+- - nova-compute:cloud-compute
+  - nova-cloud-controller:cloud-compute
+- - nova-compute:amqp
+  - rabbitmq-server:amqp
+- - nova-compute:image-service
+  - glance:image-service
+- - glance:image-service
+  - cinder:image-service
+- - glance:amqp
+  - rabbitmq-server:amqp
+- - cinder:shared-db
+  - cinder-mysql-router:shared-db
+- - cinder:amqp
+  - rabbitmq-server:amqp
+- - cinder:cinder-volume-service
+  - nova-cloud-controller:cinder-volume-service
+- - cinder:identity-service
+  - keystone:identity-service
+- - neutron-api:shared-db
+  - neutron-api-mysql-router:shared-db
+- - neutron-api:amqp
+  - rabbitmq-server:amqp
+- - neutron-api:neutron-api
+  - nova-cloud-controller:neutron-api
+- - neutron-api:identity-service
+  - keystone:identity-service
+- - glance:shared-db
+  - glance-mysql-router:shared-db
+- - glance:identity-service
+  - keystone:identity-service
+- - keystone:shared-db
+  - keystone-mysql-router:shared-db
+- - neutron-gateway:quantum-network-service
+  - nova-cloud-controller:quantum-network-service
+- - neutron-gateway:amqp
+  - rabbitmq-server:amqp
+- - neutron-api:neutron-plugin-api
+  - neutron-gateway:neutron-plugin-api
+- - neutron-api:neutron-plugin-api
+  - neutron-openvswitch:neutron-plugin-api
+- - neutron-openvswitch:neutron-plugin
+  - nova-compute:neutron-plugin
+- - neutron-openvswitch:amqp
+  - rabbitmq-server:amqp
+- - mysql:db-router
+  - cinder-mysql-router:db-router
+- - mysql:db-router
+  - glance-mysql-router:db-router
+- - mysql:db-router
+  - keystone-mysql-router:db-router
+- - mysql:db-router
+  - neutron-api-mysql-router:db-router
+- - mysql:db-router
+  - nova-cloud-controller-mysql-router:db-router
+- - mysql:db-router
+  - placement-mysql-router:db-router
+- - placement:shared-db
+  - placement-mysql-router:shared-db
+- - placement:identity-service
+  - keystone:identity-service
+- - placement:placement
+  - nova-cloud-controller:placement
