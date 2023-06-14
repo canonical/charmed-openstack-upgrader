@@ -27,10 +27,8 @@ from juju.client._definitions import ApplicationStatus
 from cou.zaza_utils import model
 from cou.zaza_utils.juju import get_full_juju_status
 from cou.zaza_utils.openstack import CHARM_TYPES, get_os_code_info
-from cou.zaza_utils.os_versions import (
-    CompareOpenStack,
-    determine_next_openstack_release,
-)
+from cou.zaza_utils.os_versions import CompareOpenStack
+from cou.zaza_utils.upgrade_utils import determine_next_openstack_release
 
 
 class InvalidCharmNameError(Exception):
@@ -260,12 +258,27 @@ def analyze() -> Analyze:
     """Analyze the deployment before planning."""
     logging.info("Analyzing the Openstack release in the deployment...")
     apps = generate_model()
+    # E.g: {"ussuri": {"keystone"}, "victoria": {"cinder"}}
     os_versions: defaultdict[str, set] = defaultdict(set)
+
+    # E.g {"victoria": {"keystone/0", "keystone/1"}} this means that units
+    # keystone/0 and keystone/1 should be upgraded to victoria
     upgrade_units: defaultdict[str, set] = defaultdict(set)
+
+    # E.g: {"ussuri/stable": {"keystone"}} this means that keystone channel
+    # should change to "ussuri/stable"
     change_channel: defaultdict[str, set] = defaultdict(set)
+
+    #  E.g: {"ussuri/stable": {"keystone"}} this means that keystone should
+    # migrate from charstore to charmhub on channel "ussuri/stable"
     charmhub_migration: defaultdict[str, set] = defaultdict(set)
+
+    # E.g: {"distro": {"keystone"}} this means that keystone should change
+    # openstack-origin config to "distro".
     change_openstack_release: defaultdict[str, set] = defaultdict(set)
+
     for app in apps:
+        logging.info(app.to_yaml())
         for os_version_unit in app.os_release_units.keys():
             os_versions[os_version_unit].add(app.name)
         upgrade_units = app.check_os_versions_units(upgrade_units)

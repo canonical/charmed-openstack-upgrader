@@ -1,11 +1,7 @@
-import logging
 import re
-from collections import defaultdict
-from typing import DefaultDict
 
 import six
 
-from cou.zaza_utils import generic, juju, model
 from cou.zaza_utils.os_versions import (
     OPENSTACK_CODENAMES,
     OVN_CODENAMES,
@@ -26,63 +22,6 @@ CHARM_TYPES = {
     "ceph-mon": {"pkg": "ceph-common", "origin_setting": "source"},
     "placement": {"pkg": "placement-common", "origin_setting": "openstack-origin"},
 }
-
-
-def get_current_os_versions(application_charm, model_name=None) -> DefaultDict:
-    """Determine OpenStack codename of deployed applications.
-
-    Initially, see if the openstack-release pkg is available and use it
-    instead.
-
-    If it isn't then it falls back to the existing method of checking the
-    version of the package passed and then resolving the version from that
-    using lookup tables.
-
-    :param application_charm: Tuple of application and charm name
-    :type deployed_applications: Tuple
-    :param model_name: Name of model to query.
-    :type model_name: str
-    :returns: DefaultDict of OpenStack version and units
-    :rtype: DefaultDict
-    """
-    application, charm = application_charm
-    versions = {}
-    codename = get_openstack_release(application, model_name=model_name)
-    if codename:
-        versions = codename
-    else:
-        version = generic.get_pkg_version(
-            application_charm, CHARM_TYPES[charm]["pkg"], model_name=model_name
-        )
-        versions = get_os_code_info(CHARM_TYPES[charm]["pkg"], version)
-    return versions
-
-
-def get_openstack_release(application, model_name=None) -> DefaultDict:
-    """Return the openstack release codename based on /etc/openstack-release.
-
-    This will only return a codename if the openstack-release package is
-    installed on the unit.
-
-    :param application: Application name
-    :type application: string
-    :param model_name: Name of model to query.
-    :type model_name: str
-    :returns: OpenStack release codename for application and units
-    :rtype: DefaultDict
-    """
-    versions = defaultdict(set)
-    units = model.get_units(application, model_name=model_name)
-    for unit in units:
-        cmd = "cat /etc/openstack-release | grep OPENSTACK_CODENAME"
-        try:
-            out = juju.remote_run(unit.entity_id, cmd, model_name=model_name)
-        except model.CommandRunFailed:
-            logging.debug("Fall back to version check for OpenStack codename")
-        else:
-            codename = out.split("=")[1].strip()
-            versions[codename].add(unit.entity_id)
-    return versions
 
 
 def get_os_code_info(package, pkg_version) -> str:

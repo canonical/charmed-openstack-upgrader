@@ -19,6 +19,7 @@ import logging
 import sys
 from typing import Any
 
+from cou.steps.analyze import analyze
 from cou.steps.plan import apply_plan, dump_plan, generate_plan
 
 
@@ -72,6 +73,7 @@ def entrypoint() -> int:
         args = parse_args(sys.argv[1:])
         setup_logging(log_level=args.loglevel)
 
+        analyze()
         upgrade_plan = generate_plan(args)
         if args.dry_run:
             dump_plan(upgrade_plan)
