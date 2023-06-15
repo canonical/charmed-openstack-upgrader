@@ -130,3 +130,30 @@ def config():
         },
         "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
     }
+
+
+@pytest.fixture
+def outputs():
+    return {
+        "keystone": {
+            "model_name": "my_model",
+            "charm_origin": "cs",
+            "os_origin": "distro",
+            "channel": "ussuri/stable",
+            "pkg_name": "keystone",
+            "units": {
+                "keystone/0": {
+                    "pkg_version": "2:17.0.1-0ubuntu1",
+                    "os_version": "ussuri",
+                },
+                "keystone/1": {
+                    "pkg_version": "2:17.0.1-0ubuntu1",
+                    "os_version": "ussuri",
+                },
+                "keystone/2": {
+                    "pkg_version": "2:17.0.1-0ubuntu1",
+                    "os_version": "ussuri",
+                },
+            },
+        }
+    }
