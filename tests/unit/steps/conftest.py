@@ -24,40 +24,40 @@ from cou.steps import analyze
 @pytest.fixture
 def status():
     mock_keystone_ch = mock.MagicMock()
-    mock_keystone_ch.base = {"channel": "ussuri/stable"}
+    mock_keystone_ch.charm_channel = "ussuri/stable"
     mock_keystone_ch.charm = "ch:amd64/focal/keystone-638"
     mock_keystone_ch.units = OrderedDict(
         [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
     )
 
     mock_cinder_ch = mock.MagicMock()
-    mock_cinder_ch.base = {"channel": "ussuri/stable"}
+    mock_cinder_ch.charm_channel = "ussuri/stable"
     mock_cinder_ch.charm = "ch:amd64/focal/cinder-633"
     mock_cinder_ch.units = OrderedDict([("cinder/0", {}), ("cinder/1", {}), ("cinder/2", {})])
 
     mock_keystone_cs = mock.MagicMock()
-    mock_keystone_cs.base = {"channel": "ussuri/stable"}
+    mock_keystone_cs.charm_channel = "ussuri/stable"
     mock_keystone_cs.charm = "cs:amd64/focal/keystone-638"
     mock_keystone_cs.units = OrderedDict(
         [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
     )
 
     mock_keystone_wrong_channel = mock.MagicMock()
-    mock_keystone_wrong_channel.base = {"channel": "latest/stable"}
+    mock_keystone_wrong_channel.charm_channel = "latest/stable"
     mock_keystone_wrong_channel.charm = "ch:amd64/focal/keystone-638"
     mock_keystone_wrong_channel.units = OrderedDict(
         [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
     )
 
     mock_keystone_wallaby = mock.MagicMock()
-    mock_keystone_wallaby.base = {"channel": "wallaby/stable"}
+    mock_keystone_wallaby.charm_channel = "wallaby/stable"
     mock_keystone_wallaby.charm = "ch:amd64/focal/keystone-638"
     mock_keystone_wallaby.units = OrderedDict(
         [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
     )
 
     mock_rmq = mock.MagicMock()
-    mock_rmq.base = {"channel": "3.9/stable"}
+    mock_rmq.charm_channel = "3.9/stable"
     mock_rmq.charm = "ch:amd64/focal/rabbitmq-server-638"
     mock_rmq.units = OrderedDict([("rabbitmq-server/0", {})])
 
