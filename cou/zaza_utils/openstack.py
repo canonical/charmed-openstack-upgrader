@@ -21,6 +21,7 @@ CHARM_TYPES = {
     "ovn-central": {"pkg": "ovn-common", "origin_setting": "source"},
     "ceph-mon": {"pkg": "ceph-common", "origin_setting": "source"},
     "placement": {"pkg": "placement-common", "origin_setting": "openstack-origin"},
+    "nova-cloud-controller": {"pkg": "nova-common", "origin_setting": "openstack-origin"},
 }
 
 

@@ -91,8 +91,8 @@ def entrypoint() -> int:
         args = parse_args(sys.argv[1:])
         setup_logging(log_level=args.loglevel)
 
-        analyze()
-        upgrade_plan = generate_plan(args)
+        analyze_result = analyze()
+        upgrade_plan = generate_plan(analyze_result)
         if args.dry_run:
             dump_plan(upgrade_plan)
         else:
