@@ -19,7 +19,7 @@ import logging
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 import yaml
 from colorama import Fore, Style
@@ -100,6 +100,14 @@ class Application:
             os_version = self.get_current_os_versions(unit)
             self.units[unit]["os_version"] = os_version
             self.os_release_units[os_version].add(unit)
+
+    def __hash__(self) -> int:
+        """Hash magic method for Application."""
+        return hash(self.name)
+
+    def __eq__(self, other: Any) -> Any:
+        """Equal magic method for Application."""
+        return other.name == self.name
 
     def to_dict(self) -> Dict:
         """Return a string in yaml format.
@@ -260,11 +268,11 @@ def get_pkg_version(unit: str, pkg: str, model_name: Union[str, None] = None) ->
     return out["Stdout"]
 
 
-def generate_model() -> List[Application]:
+def generate_model() -> set[Application]:
     """Generate the applications model."""
     juju_status = get_full_juju_status()
     model_name = juju_status.model.name
-    apps = [
+    apps = {
         Application(
             name=app,
             status=app_status,
@@ -272,16 +280,21 @@ def generate_model() -> List[Application]:
             model_name=model_name,
         )
         for app, app_status in juju_status.applications.items()
-    ]
+    }
     # NOTE(gabrielcocenza) Not all openstack-charms are mapped in the zaza lookup.
     supported_os_charms = CHARM_TYPES.keys()
-    openstack_apps = [app for app in apps if app.charm in supported_os_charms]
+    openstack_apps = {app for app in apps if app.charm in supported_os_charms}
+    not_supported_apps = apps - openstack_apps
+    not_supported_apps_names = [app.name for app in not_supported_apps]
+    logging.warning(
+        "App(s): %s are not supported in the analyze process", ", ".join(not_supported_apps_names)
+    )
     return openstack_apps
 
 
-def analyze() -> None:
+def analyze() -> Analyze:
     """Analyze the deployment before planning."""
-    logging.info("Analyzing the Openstack release in the deployment...")
+    logging.info("Analyzing the openstack release in the deployment...")
     apps = generate_model()
     # E.g: {"ussuri": {"keystone"}, "victoria": {"cinder"}}
     os_versions: defaultdict[str, set] = defaultdict(set)
@@ -320,6 +333,8 @@ def analyze() -> None:
     )
 
     log_result(result, outputs)
+
+    return result
 
 
 def check_upgrade_charms(os_versions: defaultdict[str, set]) -> defaultdict[str, set]:

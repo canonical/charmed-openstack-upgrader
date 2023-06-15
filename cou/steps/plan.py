@@ -17,7 +17,6 @@
 
 import logging
 import sys
-from argparse import Namespace
 from typing import Any
 
 from termcolor import colored
@@ -28,7 +27,7 @@ from cou.steps.backup import backup
 AVAILABLE_OPTIONS = "cas"
 
 
-def generate_plan(args: Namespace) -> UpgradeStep:
+def generate_plan(args: Any) -> UpgradeStep:
     """Generate plan for upgrade."""
     logging.info(args)  # for placeholder
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)

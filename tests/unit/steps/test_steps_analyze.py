@@ -20,6 +20,27 @@ import pytest
 from cou.steps import analyze
 
 
+def test_application_eq(status, config, mocker):
+    """Name of the app is used as comparison between Applications objects."""
+    mocker.patch.object(analyze, "get_pkg_version", return_value="2:17.0.1-0ubuntu1")
+    mocker.patch.object(analyze, "get_openstack_release", return_value=None)
+    status_keystone_1 = status["keystone_ch"]
+    config_keystone_1 = config["openstack_ussuri"]
+    status_keystone_2 = status["keystone_cs"]
+    config_keystone_2 = config["openstack_wallaby"]
+    keystone_1 = analyze.Application("keystone", status_keystone_1, config_keystone_1, "my_model")
+    keystone_2 = analyze.Application("keystone", status_keystone_2, config_keystone_2, "my_model")
+    keystone_3 = analyze.Application(
+        "keystone_foo", status_keystone_1, config_keystone_1, "my_model"
+    )
+
+    # keystone_1 is equal to keystone_2 because they have the same name
+    # even if they have different status and config.
+    assert keystone_1 == keystone_2
+    # keystone_1 is different then keystone_3 even if they have same status and config.
+    assert keystone_1 != keystone_3
+
+
 @pytest.mark.parametrize(
     "issues",
     [
@@ -299,8 +320,7 @@ def test_generate_model(mocker, full_status, config):
     apps = analyze.generate_model()
     # rabbitmq-server is filtered from supported openstack charms.
     assert len(apps) == 2
-    assert apps[0].name == "keystone"
-    assert apps[1].name == "cinder"
+    assert {app.charm for app in apps} == {"keystone", "cinder"}
 
 
 @pytest.mark.parametrize(
@@ -338,8 +358,9 @@ def test_analyze(mocker, apps):
     mocker.patch.object(analyze, "generate_model", return_value=apps)
     mock_log_result = mocker.patch.object(analyze, "log_result")
 
-    analyze.analyze()
+    result = analyze.analyze()
     mock_log_result.assert_called_once_with(expected_result, expected_outputs)
+    assert result == expected_result
 
 
 def test_log_result(mocker, outputs):
