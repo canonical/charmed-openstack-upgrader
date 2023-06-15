@@ -124,7 +124,7 @@ def test_application(issues, status, config, mocker, units):
     assert app.charm_origin == expected_charm_origin
     assert app.os_origin == expected_os_origin
     assert app.units == expected_units
-    assert app.channel == app_status.base["channel"]
+    assert app.channel == app_status.charm_channel
     assert app.pkg_name == "keystone"
     assert app.os_release_units == expected_os_release_units
     assert app.pkg_version_units == expected_pkg_version_units
@@ -223,7 +223,7 @@ def test_application_bigger_than_wallaby(issues, mocker, status, config, units):
     assert app.config == app_config
     assert app.charm == "keystone"
     assert app.units == expected_units
-    assert app.channel == app_status.base["channel"]
+    assert app.channel == app_status.charm_channel
     assert app.pkg_name == "keystone"
     assert app.os_release_units == expected_os_release_units
     assert app.pkg_version_units == expected_pkg_version_units

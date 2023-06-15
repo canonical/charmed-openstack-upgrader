@@ -66,7 +66,7 @@ def get_network_config(net_topology, ignore_env_vars=False, net_topology_file="n
     return net_info
 
 
-def get_pkg_version(application_charm, pkg, model_name=None):
+def get_pkg_version(application, pkg, model_name=None):
     """Return package version.
 
     :param application: Application name
@@ -78,14 +78,15 @@ def get_pkg_version(application_charm, pkg, model_name=None):
     :returns: List of package version
     :rtype: list
     """
-    application, charm = application_charm
-    versions = {}
+    versions = []
     units = model.get_units(application, model_name=model_name)
     for unit in units:
         cmd = "dpkg -l | grep {}".format(pkg)
         out = juju_utils.remote_run(unit.entity_id, cmd, model_name=model_name)
-        versions[unit.entity_id] = out.split("\n")[0].split()[2]
-    return versions
+        versions.append(out.split("\n")[0].split()[2])
+    if len(set(versions)) != 1:
+        raise Exception("Unexpected output from pkg version check")
+    return versions[0]
 
 
 def get_undercloud_env_vars():

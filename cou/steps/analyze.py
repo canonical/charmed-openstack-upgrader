@@ -92,7 +92,7 @@ class Application:
     def __post_init__(self) -> None:
         """Initiate the Apllication dataclass."""
         self.charm = self.extract_charm_name()
-        self.channel = self.status.base.get("channel")
+        self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.pkg_name = self.get_pkg_name()
         self.os_origin = self.get_os_origin()
@@ -227,20 +227,18 @@ class Application:
             actual_release = list(self.os_release_units.keys())[0]
             expected_os_origin = f"cloud:focal-{actual_release}"
             # Exceptionally, if upgrading from Ussuri to Victoria
-            if actual_release == "ussuri":
-                if self.os_origin != "distro":
-                    logging.warning(
-                        "App: %s need to set openstack-origin or source to 'distro'", self.name
-                    )
-                    change_openstack_release["distro"].add(self.name)
-            else:
-                if expected_os_origin not in self.os_origin:
-                    change_openstack_release[expected_os_origin].add(self.name)
-                    logging.warning(
-                        "App: %s need to set openstack-origin or source to %s",
-                        self.name,
-                        expected_os_origin,
-                    )
+            if actual_release == "ussuri" and self.os_origin != "distro":
+                logging.warning(
+                    "App: %s need to set openstack-origin or source to 'distro'", self.name
+                )
+                change_openstack_release["distro"].add(self.name)
+            elif expected_os_origin not in self.os_origin and self.os_origin != "distro":
+                change_openstack_release[expected_os_origin].add(self.name)
+                logging.warning(
+                    "App: %s need to set openstack-origin or source to %s",
+                    self.name,
+                    expected_os_origin,
+                )
         return change_openstack_release
 
 
