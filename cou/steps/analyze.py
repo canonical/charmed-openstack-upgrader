@@ -19,9 +19,11 @@ import logging
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import yaml
+from colorama import Fore, Style
+from colorama import init as colorama_init
 from juju.client._definitions import ApplicationStatus
 
 from cou.zaza_utils import model
@@ -29,6 +31,25 @@ from cou.zaza_utils.juju import get_full_juju_status
 from cou.zaza_utils.openstack import CHARM_TYPES, get_os_code_info
 from cou.zaza_utils.os_versions import CompareOpenStack
 from cou.zaza_utils.upgrade_utils import determine_next_openstack_release
+
+colorama_init()
+
+DUMP_GREEN = "\\e[32m"
+DUMP_RED = "\\e[31m"
+DUMP_BLUE = "\\e[34m"
+DUMP_RESET = "\\e[0m"
+
+ANSI_GREEN = "\x1b[32m"
+ANSI_RED = "\x1b[31m"
+ANSI_BLUE = "\x1b[34m"
+ANSI_RESET = "\x1b[0m"
+
+CHAR_TO_REPLACE = {
+    DUMP_GREEN: ANSI_GREEN,
+    DUMP_RED: ANSI_RED,
+    DUMP_RESET: ANSI_RESET,
+    DUMP_BLUE: ANSI_BLUE,
+}
 
 
 class InvalidCharmNameError(Exception):
@@ -80,34 +101,29 @@ class Application:
             self.units[unit]["os_version"] = os_version
             self.os_release_units[os_version].add(unit)
 
-    def to_yaml(self) -> str:
+    def to_dict(self) -> Dict:
         """Return a string in yaml format.
 
         Passing the Application class directly to dump contain some fields that are big,
         e.g: config and status. This output contains just the important fields for
         the operator.
         """
-        app = {
+        return {
             self.name: {
-                "channel": self.channel,
                 "model_name": self.model_name,
+                "charm_origin": self.charm_origin,
+                "os_origin": self.os_origin,
+                "channel": self.channel,
                 "pkg_name": self.pkg_name,
                 "units": {
                     unit: {
-                        "pkg_version": details.get("pkg_version"),
-                        "os_version": details.get("os_version"),
+                        "pkg_version": details.get("pkg_version", ""),
+                        "os_version": details.get("os_version", ""),
                     }
                     for unit, details in self.units.items()
                 },
             }
         }
-        return yaml.dump(
-            app,
-            default_flow_style=False,
-            allow_unicode=True,
-            encoding=None,
-            sort_keys=False,
-        )
 
     def extract_charm_name(self) -> str:
         """Extract the charm name using regex."""
@@ -265,7 +281,7 @@ def generate_model() -> List[Application]:
     return openstack_apps
 
 
-def analyze() -> Analyze:
+def analyze() -> None:
     """Analyze the deployment before planning."""
     logging.info("Analyzing the Openstack release in the deployment...")
     apps = generate_model()
@@ -288,8 +304,9 @@ def analyze() -> Analyze:
     # openstack-origin config to "distro".
     change_openstack_release: defaultdict[str, set] = defaultdict(set)
 
+    outputs = {}
     for app in apps:
-        logging.info(app.to_yaml())
+        outputs.update(app.to_dict())
         for os_version_unit in app.os_release_units.keys():
             os_versions[os_version_unit].add(app.name)
         upgrade_units = app.check_os_versions_units(upgrade_units)
@@ -300,13 +317,17 @@ def analyze() -> Analyze:
 
     upgrade_charms = check_upgrade_charms(os_versions)
 
-    return Analyze(
+    result = Analyze(
         upgrade_units, upgrade_charms, change_channel, charmhub_migration, change_openstack_release
     )
+
+    log_result(result, outputs)
 
 
 def check_upgrade_charms(os_versions: defaultdict[str, set]) -> defaultdict[str, set]:
     """Check if all charms of a model are in the same openstack release."""
+    #  E.g: {"victoria": {"keystone"}} this means that keystone should upgrade
+    # from ussuri to victoria.
     upgrade_charms = defaultdict(set)
     if len(os_versions) > 1:
         logging.warning("Charms are not in the same openstack version")
@@ -330,3 +351,104 @@ def check_upgrade_charms(os_versions: defaultdict[str, set]) -> defaultdict[str,
         )
         upgrade_charms[next_release].update(os_versions[actual_release])
     return upgrade_charms
+
+
+def log_result(result: Analyze, outputs: Dict[str, Dict]) -> None:
+    """Log the result and show the changes with color."""
+    if result.upgrade_units:
+        outputs = log_upgrade_units(result.upgrade_units, outputs)
+
+    if result.upgrade_charms:
+        outputs = log_upgrade_charms(result.upgrade_charms, outputs)
+
+    if result.change_channel:
+        outputs = log_change_channel(result.change_channel, outputs)
+
+    if result.charmhub_migration:
+        outputs = log_charmhub_migration(result.charmhub_migration, outputs)
+
+    if result.change_openstack_release:
+        outputs = log_change_openstack_release(result.change_openstack_release, outputs)
+
+    colored_outputs_dump = [yaml.dump({app: outputs[app]}) for app in outputs]
+    colored_output = []
+    # NOTE(gabrielcocenza) when dumped, the format is changed and
+    # the color it's not recognized in the terminal. The solution found is to replace
+    # for the same value as colorama uses.
+    for app in colored_outputs_dump:
+        for dump, ansi in CHAR_TO_REPLACE.items():
+            app = app.replace(dump, ansi)
+        colored_output.append(app)
+
+    for app in colored_output:
+        logging.info("\n%s", app)
+
+
+def log_upgrade_units(
+    upgrade_units: defaultdict[str, set], outputs: Dict[str, Dict]
+) -> Dict[str, Dict]:
+    """Prepare the log for upgrade units."""
+    for next_release, units in upgrade_units.items():
+        for unit in units:
+            app_name = unit.split("/")[0]
+            os_version = outputs[app_name]["units"][unit]["os_version"]
+            outputs[app_name]["units"][unit]["os_version"] = add_color_fields(
+                os_version, next_release
+            )
+    return outputs
+
+
+def log_upgrade_charms(
+    upgrade_charms: defaultdict[str, set], outputs: Dict[str, Dict]
+) -> Dict[str, Dict]:
+    """Prepare the log for upgrade charms."""
+    for next_release, app_names in upgrade_charms.items():
+        for app_name in app_names:
+            units = outputs[app_name]["units"].keys()
+            for unit in units:
+                os_version = outputs[app_name]["units"][unit]["os_version"]
+                outputs[app_name]["units"][unit]["os_version"] = add_color_fields(
+                    os_version, next_release
+                )
+    return outputs
+
+
+def log_change_channel(
+    change_channel: defaultdict[str, set], outputs: Dict[str, Dict]
+) -> Dict[str, Dict]:
+    """Prepare the log for change channel."""
+    for next_channel, app_names in change_channel.items():
+        for app_name in app_names:
+            current_channel = outputs[app_name]["channel"]
+            outputs[app_name]["channel"] = add_color_fields(current_channel, next_channel)
+    return outputs
+
+
+def log_charmhub_migration(
+    charmhub_migration: defaultdict[str, set], outputs: Dict[str, Dict]
+) -> Dict[str, Dict]:
+    """Prepare the log for charmhub migration."""
+    set_app_names = charmhub_migration.values()
+    for app_names in set_app_names:
+        for app_name in app_names:
+            outputs[app_name]["charm_origin"] = add_color_fields("cs", "ch")
+    return outputs
+
+
+def log_change_openstack_release(
+    change_openstack_release: defaultdict[str, set], outputs: Dict[str, Dict]
+) -> Dict[str, Dict]:
+    """Prepare the log for change openstack release."""
+    for next_os_origin, app_names in change_openstack_release.items():
+        for app_name in app_names:
+            current_os_origin = outputs[app_name]["os_origin"]
+            outputs[app_name]["os_origin"] = add_color_fields(current_os_origin, next_os_origin)
+    return outputs
+
+
+def add_color_fields(old: str, new: str) -> str:
+    """Add color for the output fields that will be changed."""
+    return (
+        f"{Fore.RED}{old}{Style.RESET_ALL} {Fore.BLUE}->{Style.RESET_ALL} "
+        f"{Fore.GREEN}{new}{Style.RESET_ALL}"
+    )

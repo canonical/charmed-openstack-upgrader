@@ -16,7 +16,6 @@
 from collections import defaultdict
 
 import pytest
-import yaml
 
 from cou.steps import analyze
 
@@ -138,12 +137,14 @@ def test_application(issues, status, config, mocker, units):
     assert app.check_os_origin(defaultdict(set)) == expected_change_openstack_release
 
 
-def test_application_to_yaml(mocker, status, config):
+def test_application_to_dict(mocker, status, config):
     """Test that the yaml output is as expected."""
     expected_output = {
         "keystone": {
-            "channel": "ussuri/stable",
             "model_name": "my_model",
+            "charm_origin": "ch",
+            "os_origin": "distro",
+            "channel": "ussuri/stable",
             "pkg_name": "keystone",
             "units": {
                 "keystone/0": {
@@ -166,7 +167,7 @@ def test_application_to_yaml(mocker, status, config):
     mocker.patch.object(analyze, "get_pkg_version", return_value="2:17.0.1-0ubuntu1")
     mocker.patch.object(analyze, "get_openstack_release", return_value=None)
     app = analyze.Application("keystone", app_status, app_config, "my_model")
-    assert yaml.safe_load(app.to_yaml()) == expected_output
+    assert app.to_dict() == expected_output
 
 
 def test_application_invalid_charm_name(mocker, status, config):
@@ -326,14 +327,76 @@ def test_check_upgrade_charms(issues):
 
 def test_analyze(mocker, apps):
     """Test analyze function."""
-    expected_upgrade_units = defaultdict(set)
-    expected_change_channel = defaultdict(set)
-    expected_charmhub_migration = defaultdict(set)
-    expected_change_openstack_release = defaultdict(set)
+    upgrade_charms = defaultdict(set)
+    upgrade_charms["victoria"] = {"cinder", "keystone"}
+    expected_result = analyze.Analyze(
+        defaultdict(set), upgrade_charms, defaultdict(set), defaultdict(set), defaultdict(set)
+    )
+    expected_outputs = {}
+    for app in apps:
+        expected_outputs.update(app.to_dict())
     mocker.patch.object(analyze, "generate_model", return_value=apps)
+    mock_log_result = mocker.patch.object(analyze, "log_result")
 
-    report = analyze.analyze()
-    assert report.upgrade_units == expected_upgrade_units
-    assert report.change_channel == expected_change_channel
-    assert report.charmhub_migration == expected_charmhub_migration
-    assert report.change_openstack_release == expected_change_openstack_release
+    analyze.analyze()
+    mock_log_result.assert_called_once_with(expected_result, expected_outputs)
+
+
+def test_log_result(mocker, outputs):
+    """Test log_result function."""
+    expected_string = (
+        'keystone:\n  channel: "\x1b[31mussuri/stable\x1b[0m \x1b[34m->\x1b[0m '
+        '\x1b[32mvictoria/stable\x1b[0m"\n  charm_origin: "\x1b[31mcs\x1b[0m'
+        ' \x1b[34m->\x1b[0m \x1b[32mch\x1b[0m"\n  model_name: my_model\n  '
+        'os_origin: "\x1b[31mdistro\x1b[0m \x1b[34m->\x1b[0m \x1b[32mcloud:focal-wallaby\x1b[0m"\n'
+        "  pkg_name: keystone\n  units:\n    keystone/0:\n      "
+        'os_version: "\x1b[31mussuri\x1b[0m \x1b[34m->\x1b[0m \x1b[32mvictoria\x1b[0m"\n'
+        '      pkg_version: 2:17.0.1-0ubuntu1\n    keystone/1:\n      os_version: "\x1b[3'
+        '1mussuri\x1b[0m \x1b[34m->\x1b[0m \x1b[32mvictoria\x1b[0m"\n'
+        "      pkg_version: 2:17.0.1-0ubuntu1\n    keystone/2:\n      os_version: ussuri\n"
+        "      pkg_version: 2:17.0.1-0ubuntu1\n"
+    )
+    upgrade_units = defaultdict(set)
+    upgrade_units["victoria"] = {"keystone/0", "keystone/1"}
+    change_channel = defaultdict(set)
+    change_channel["victoria/stable"] = {"keystone"}
+    change_openstack_release = defaultdict(set)
+    change_openstack_release["cloud:focal-wallaby"] = {"keystone"}
+    upgrade_charms = defaultdict(set)
+    upgrade_charms["victoria"] = {"keystone"}
+    result = analyze.Analyze(
+        upgrade_units, defaultdict(set), change_channel, change_channel, change_openstack_release
+    )
+    mock_log = mocker.patch.object(analyze.logging, "info")
+    analyze.log_result(result, outputs)
+    mock_log.assert_called_with("\n%s", expected_string)
+
+
+def test_log_result_upgrade_charm(mocker, outputs):
+    """Test log_result function for upgrade_charm."""
+    expected_string = (
+        'keystone:\n  channel: "\x1b[31mussuri/stable\x1b[0m \x1b[34m->\x1b[0m '
+        '\x1b[32mvictoria/stable\x1b[0m"\n  charm_origin: "\x1b[31mcs\x1b[0m \x1b[34m'
+        '->\x1b[0m \x1b[32mch\x1b[0m"\n  model_name: my_model\n  os_origin: "\x1b[31m'
+        'distro\x1b[0m \x1b[34m->\x1b[0m \x1b[32mcloud:focal-wallaby\x1b[0m"\n  pkg_name:'
+        ' keystone\n  units:\n    keystone/0:\n      os_version: "\x1b[31mussuri\x1b[0m \x1b[34m->'
+        '\x1b[0m \x1b[32mvictoria\x1b[0m"\n      pkg_version: 2:17.0.1-0ubuntu1\n    keystone/1:\n'
+        '      os_version: "\x1b[31mussuri\x1b[0m \x1b[34m->\x1b[0m \x1b[32mvictoria\x1b[0m"\n'
+        "      pkg_version: 2:17.0.1-0ubuntu1\n    keystone/2:\n      "
+        'os_version: "\x1b[31mussuri\x1b[0m \x1b[34m->\x1b[0m \x1b[32mvictoria\x1b[0m"\n'
+        "      pkg_version: 2:17.0.1-0ubuntu1\n"
+    )
+    upgrade_charms = defaultdict(set)
+    upgrade_charms["victoria"] = {"keystone"}
+    change_channel = defaultdict(set)
+    change_channel["victoria/stable"] = {"keystone"}
+    change_openstack_release = defaultdict(set)
+    change_openstack_release["cloud:focal-wallaby"] = {"keystone"}
+    upgrade_charms = defaultdict(set)
+    upgrade_charms["victoria"] = {"keystone"}
+    result = analyze.Analyze(
+        defaultdict(set), upgrade_charms, change_channel, change_channel, change_openstack_release
+    )
+    mock_log = mocker.patch.object(analyze.logging, "info")
+    analyze.log_result(result, outputs)
+    mock_log.assert_called_with("\n%s", expected_string)
