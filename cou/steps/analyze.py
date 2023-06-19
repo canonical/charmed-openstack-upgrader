@@ -215,11 +215,16 @@ class Application:
             if actual_release not in self.channel:
                 change_channel[expected_channel].add(self.name)
                 logging.warning(
-                    "App:%s need to track the channel: %s", self.name, expected_channel
+                    "App: '%s' has unexpected channel: '%s'. The expected channel is: '%s'",
+                    self.name,
+                    self.channel,
+                    expected_channel,
                 )
             if self.charm_origin == "cs":
                 charmhub_migration[expected_channel].add(self.name)
-                logging.warning("App:%s need to perform migration to charmhub", self.name)
+                logging.warning(
+                    "App: %s is from charmstore. It's expected to be from charmhub", self.name
+                )
         return change_channel, charmhub_migration
 
     def check_os_origin(
@@ -228,7 +233,7 @@ class Application:
         """Check if charm configuration for openstack-origin is set correct."""
         if len(self.os_release_units.keys()) > 1:
             logging.warning(
-                "Skip openstack-origin check. App %s has units with different openstack version",
+                "Skip openstack-origin check. App '%s' has units with different openstack version",
                 self.name,
             )
         else:
@@ -237,14 +242,24 @@ class Application:
             # Exceptionally, if upgrading from Ussuri to Victoria
             if actual_release == "ussuri" and self.os_origin != "distro":
                 logging.warning(
-                    "App: %s need to set openstack-origin or source to 'distro'", self.name
+                    (
+                        "App: '%s' has unexpected openstack-origin or source: '%s'. "
+                        "The expected is '%s'."
+                    ),
+                    self.name,
+                    self.os_origin,
+                    "distro",
                 )
                 change_openstack_release["distro"].add(self.name)
-            elif expected_os_origin not in self.os_origin and self.os_origin != "distro":
+            elif self.os_origin not in (expected_os_origin, "distro"):
                 change_openstack_release[expected_os_origin].add(self.name)
                 logging.warning(
-                    "App: %s need to set openstack-origin or source to %s",
+                    (
+                        "App: '%s' has unexpected openstack-origin or source: '%s'. "
+                        "The expected is '%s'."
+                    ),
                     self.name,
+                    self.os_origin,
                     expected_os_origin,
                 )
         return change_openstack_release
@@ -285,7 +300,7 @@ def generate_model() -> set[Application]:
     supported_os_charms = CHARM_TYPES.keys()
     openstack_apps = {app for app in apps if app.charm in supported_os_charms}
     not_supported_apps = apps - openstack_apps
-    not_supported_apps_names = [app.name for app in not_supported_apps]
+    not_supported_apps_names = sorted([app.name for app in not_supported_apps])
     logging.warning(
         "App(s): %s are not supported in the analyze process", ", ".join(not_supported_apps_names)
     )
@@ -350,7 +365,7 @@ def check_upgrade_charms(os_versions: defaultdict[str, set]) -> defaultdict[str,
             upgrade_charms[next_release].update(os_versions[os_release])
             logging.warning(
                 "upgrade charm: %s from: %s to %s",
-                os_versions[os_release],
+                ", ".join(sorted(list(os_versions[os_release]))),
                 os_release,
                 next_release,
             )
@@ -358,7 +373,10 @@ def check_upgrade_charms(os_versions: defaultdict[str, set]) -> defaultdict[str,
         actual_release = list(os_versions)[0]
         next_release = determine_next_openstack_release(actual_release)[1]
         logging.info(
-            "Charms are in the same openstack version and can be upgrade from: %s to: %s",
+            (
+                "All supported charms are in the same openstack version "
+                "and can be upgrade from: %s to: %s"
+            ),
             actual_release,
             next_release,
         )
