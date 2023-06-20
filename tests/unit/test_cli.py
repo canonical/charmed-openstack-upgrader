@@ -20,17 +20,14 @@ class CliTestCase(unittest.TestCase):
 
     def test_setup_logging(self):
         with patch("cou.cli.logging") as mock_logging:
-            mock_logging.INFO = "INFO"
-            handlers = MagicMock()
-            handlers.return_value = False
-            mock_logging.getLogger.return_value.hasHandlers = handlers
+            log_file_handler = MagicMock()
+            console_handler = MagicMock()
+            mock_root_logger = mock_logging.getLogger.return_value
+            mock_logging.handlers.TimedRotatingFileHandler.return_value = log_file_handler
+            mock_logging.StreamHandler.return_value = console_handler
             setup_logging("INFO")
-            mock_logger = mock_logging.getLogger.return_value
-            mock_console_handler = mock_logging.StreamHandler.return_value
-            mock_logger.setLevel.assert_called_once_with(mock_logging.INFO)
-            mock_logger.hasHandlers.assert_called_once()
-            mock_logging.StreamHandler.assert_called_once()
-            mock_console_handler.setFormatter.assert_called_once()
+            mock_root_logger.addHandler.assert_any_call(log_file_handler)
+            mock_root_logger.addHandler.assert_any_call(console_handler)
 
     def test_entrypoint_with_exception(self):
         with patch("cou.cli.parse_args"), patch("cou.cli.setup_logging"), patch(
