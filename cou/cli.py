@@ -21,6 +21,7 @@ from typing import Any
 
 from cou.steps.analyze import analyze
 from cou.steps.plan import apply_plan, dump_plan, generate_plan
+from cou.zaza_utils import clean_up_libjuju_thread
 
 
 def parse_args(args: Any) -> argparse.Namespace:
@@ -84,3 +85,5 @@ def entrypoint() -> int:
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logging.error(exc)
         return 1
+    finally:
+        clean_up_libjuju_thread()
