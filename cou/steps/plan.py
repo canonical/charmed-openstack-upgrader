@@ -19,7 +19,7 @@ import logging
 import sys
 from typing import Any
 
-from termcolor import colored
+from colorama import Fore, Style
 
 from cou.steps import UpgradeStep
 from cou.steps.backup import backup
@@ -41,10 +41,10 @@ def prompt(parameter: str) -> str:
     """Generate eye-catching prompt."""
 
     def bold(text: str) -> str:
-        return colored(text, "red", attrs=["bold"])
+        return Style.RESET_ALL + Fore.RED + Style.BRIGHT + text + Style.RESET_ALL
 
     def normal(text: str) -> str:
-        return colored(text, "red", attrs=["blink"])
+        return Style.RESET_ALL + Fore.RED + text + Style.RESET_ALL
 
     return (
         normal(parameter + " (")
