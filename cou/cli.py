@@ -25,6 +25,7 @@ from typing import Any
 
 from cou.steps.analyze import analyze
 from cou.steps.plan import apply_plan, dump_plan, generate_plan
+from cou.zaza_utils import clean_up_libjuju_thread
 
 COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
 
@@ -102,3 +103,5 @@ def entrypoint() -> int:
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logging.exception(exc)
         return 1
+    finally:
+        clean_up_libjuju_thread()
