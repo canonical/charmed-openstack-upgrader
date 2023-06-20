@@ -165,9 +165,8 @@ class Application:
         if codename:
             version = codename
         # for openstack releases < wallaby
-        else:
-            if self.pkg_name and pkg_version:
-                version = get_os_code_info(self.pkg_name, pkg_version)
+        elif self.pkg_name and pkg_version:
+            version = get_os_code_info(self.pkg_name, pkg_version)
         return version
 
     def get_os_origin(self) -> str:
@@ -183,21 +182,23 @@ class Application:
         self, upgrade_units: defaultdict[str, set]
     ) -> defaultdict[str, set]:
         """Check openstack versions in an application."""
-        if len(self.os_release_units.keys()) > 1:
-            logging.warning("Units from %s are not in the same openstack version", self.name)
-            os_sequence = sorted(
-                list(self.os_release_units.keys()),
-                key=CompareOpenStack,
+        if len(self.os_release_units.keys()) <= 1:
+            return upgrade_units
+
+        logging.warning("Units from %s are not in the same openstack version", self.name)
+        os_sequence = sorted(
+            list(self.os_release_units.keys()),
+            key=CompareOpenStack,
+        )
+        for os_release in os_sequence[:-1]:
+            next_release = determine_next_openstack_release(os_release)[1]
+            upgrade_units[next_release].update(self.os_release_units[os_release])
+            logging.warning(
+                "upgrade units: %s from: %s to %s",
+                self.os_release_units[os_release],
+                os_release,
+                next_release,
             )
-            for os_release in os_sequence[:-1]:
-                next_release = determine_next_openstack_release(os_release)[1]
-                upgrade_units[next_release].update(self.os_release_units[os_release])
-                logging.warning(
-                    "upgrade units: %s from: %s to %s",
-                    self.os_release_units[os_release],
-                    os_release,
-                    next_release,
-                )
         return upgrade_units
 
     def check_os_channels_and_migration(
@@ -209,22 +210,23 @@ class Application:
                 "Skip check of channels. App %s has units with different openstack version",
                 self.name,
             )
-        else:
-            actual_release = list(self.os_release_units.keys())[0]
-            expected_channel = f"{actual_release}/stable"
-            if actual_release not in self.channel:
-                change_channel[expected_channel].add(self.name)
-                logging.warning(
-                    "App: '%s' has unexpected channel: '%s'. The expected channel is: '%s'",
-                    self.name,
-                    self.channel,
-                    expected_channel,
-                )
-            if self.charm_origin == "cs":
-                charmhub_migration[expected_channel].add(self.name)
-                logging.warning(
-                    "App: %s is from charmstore. It's expected to be from charmhub", self.name
-                )
+            return change_channel, charmhub_migration
+
+        actual_release = list(self.os_release_units.keys())[0]
+        expected_channel = f"{actual_release}/stable"
+        if actual_release not in self.channel:
+            change_channel[expected_channel].add(self.name)
+            logging.warning(
+                "App: '%s' has unexpected channel: '%s'. The expected channel is: '%s'",
+                self.name,
+                self.channel,
+                expected_channel,
+            )
+        if self.charm_origin == "cs":
+            charmhub_migration[expected_channel].add(self.name)
+            logging.warning(
+                "App: %s is from charmstore. It's expected to be from charmhub", self.name
+            )
         return change_channel, charmhub_migration
 
     def check_os_origin(
@@ -236,32 +238,33 @@ class Application:
                 "Skip openstack-origin check. App '%s' has units with different openstack version",
                 self.name,
             )
-        else:
-            actual_release = list(self.os_release_units.keys())[0]
-            expected_os_origin = f"cloud:focal-{actual_release}"
-            # Exceptionally, if upgrading from Ussuri to Victoria
-            if actual_release == "ussuri" and self.os_origin != "distro":
-                logging.warning(
-                    (
-                        "App: '%s' has unexpected openstack-origin or source: '%s'. "
-                        "The expected is '%s'."
-                    ),
-                    self.name,
-                    self.os_origin,
-                    "distro",
-                )
-                change_openstack_release["distro"].add(self.name)
-            elif self.os_origin not in (expected_os_origin, "distro"):
-                change_openstack_release[expected_os_origin].add(self.name)
-                logging.warning(
-                    (
-                        "App: '%s' has unexpected openstack-origin or source: '%s'. "
-                        "The expected is '%s'."
-                    ),
-                    self.name,
-                    self.os_origin,
-                    expected_os_origin,
-                )
+            return change_openstack_release
+
+        actual_release = list(self.os_release_units.keys())[0]
+        expected_os_origin = f"cloud:focal-{actual_release}"
+        # Exceptionally, if upgrading from Ussuri to Victoria
+        if actual_release == "ussuri" and self.os_origin != "distro":
+            logging.warning(
+                (
+                    "App: '%s' has unexpected openstack-origin or source: '%s'. "
+                    "The expected is '%s'."
+                ),
+                self.name,
+                self.os_origin,
+                "distro",
+            )
+            change_openstack_release["distro"].add(self.name)
+        elif self.os_origin not in (expected_os_origin, "distro"):
+            change_openstack_release[expected_os_origin].add(self.name)
+            logging.warning(
+                (
+                    "App: '%s' has unexpected openstack-origin or source: '%s'. "
+                    "The expected is '%s'."
+                ),
+                self.name,
+                self.os_origin,
+                expected_os_origin,
+            )
         return change_openstack_release
 
 
@@ -412,7 +415,7 @@ def log_result(result: Analyze, outputs: Dict[str, Dict]) -> None:
         colored_output.append(app)
 
     for app in colored_output:
-        logging.info("\n%s", app)
+        print(f"\n{app}")
 
 
 def log_upgrade_units(
