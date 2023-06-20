@@ -4,7 +4,6 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -13,6 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import builtins
 from collections import defaultdict
 
 import pytest
@@ -366,10 +366,11 @@ def test_analyze(mocker, apps):
 def test_log_result(mocker, outputs):
     """Test log_result function."""
     expected_string = (
-        'keystone:\n  channel: "\x1b[31mussuri/stable\x1b[0m \x1b[34m->\x1b[0m '
+        '\nkeystone:\n  channel: "\x1b[31mussuri/stable\x1b[0m \x1b[34m->\x1b[0m '
         '\x1b[32mvictoria/stable\x1b[0m"\n  charm_origin: "\x1b[31mcs\x1b[0m'
         ' \x1b[34m->\x1b[0m \x1b[32mch\x1b[0m"\n  model_name: my_model\n  '
-        'os_origin: "\x1b[31mdistro\x1b[0m \x1b[34m->\x1b[0m \x1b[32mcloud:focal-wallaby\x1b[0m"\n'
+        'os_origin: "\x1b[31mdistro\x1b[0m \x1b[34m->\x1b[0m \x1b[32mcloud:focal-wallaby\x1b['
+        '0m"\n'
         "  pkg_name: keystone\n  units:\n    keystone/0:\n      "
         'os_version: "\x1b[31mussuri\x1b[0m \x1b[34m->\x1b[0m \x1b[32mvictoria\x1b[0m"\n'
         '      pkg_version: 2:17.0.1-0ubuntu1\n    keystone/1:\n      os_version: "\x1b[3'
@@ -377,6 +378,7 @@ def test_log_result(mocker, outputs):
         "      pkg_version: 2:17.0.1-0ubuntu1\n    keystone/2:\n      os_version: ussuri\n"
         "      pkg_version: 2:17.0.1-0ubuntu1\n"
     )
+
     upgrade_units = defaultdict(set)
     upgrade_units["victoria"] = {"keystone/0", "keystone/1"}
     change_channel = defaultdict(set)
@@ -388,15 +390,15 @@ def test_log_result(mocker, outputs):
     result = analyze.Analyze(
         upgrade_units, defaultdict(set), change_channel, change_channel, change_openstack_release
     )
-    mock_log = mocker.patch.object(analyze.logging, "info")
+    mock_print = mocker.patch.object(builtins, "print")
     analyze.log_result(result, outputs)
-    mock_log.assert_called_with("\n%s", expected_string)
+    mock_print.assert_called_with(expected_string)
 
 
 def test_log_result_upgrade_charm(mocker, outputs):
     """Test log_result function for upgrade_charm."""
     expected_string = (
-        'keystone:\n  channel: "\x1b[31mussuri/stable\x1b[0m \x1b[34m->\x1b[0m '
+        '\nkeystone:\n  channel: "\x1b[31mussuri/stable\x1b[0m \x1b[34m->\x1b[0m '
         '\x1b[32mvictoria/stable\x1b[0m"\n  charm_origin: "\x1b[31mcs\x1b[0m \x1b[34m'
         '->\x1b[0m \x1b[32mch\x1b[0m"\n  model_name: my_model\n  os_origin: "\x1b[31m'
         'distro\x1b[0m \x1b[34m->\x1b[0m \x1b[32mcloud:focal-wallaby\x1b[0m"\n  pkg_name:'
@@ -407,6 +409,7 @@ def test_log_result_upgrade_charm(mocker, outputs):
         'os_version: "\x1b[31mussuri\x1b[0m \x1b[34m->\x1b[0m \x1b[32mvictoria\x1b[0m"\n'
         "      pkg_version: 2:17.0.1-0ubuntu1\n"
     )
+
     upgrade_charms = defaultdict(set)
     upgrade_charms["victoria"] = {"keystone"}
     change_channel = defaultdict(set)
@@ -418,6 +421,6 @@ def test_log_result_upgrade_charm(mocker, outputs):
     result = analyze.Analyze(
         defaultdict(set), upgrade_charms, change_channel, change_channel, change_openstack_release
     )
-    mock_log = mocker.patch.object(analyze.logging, "info")
+    mock_print = mocker.patch.object(builtins, "print")
     analyze.log_result(result, outputs)
-    mock_log.assert_called_with("\n%s", expected_string)
+    mock_print.assert_called_with(expected_string)
