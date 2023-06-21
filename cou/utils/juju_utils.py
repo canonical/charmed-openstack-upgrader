@@ -348,6 +348,41 @@ async def async_get_lead_unit(application_name, model_name=None):
     raise JujuError("No leader found for application {}".format(application_name))
 
 
+async def async_run_action(
+    unit_name, action_name, model_name=None, action_params=None, raise_on_failure=False
+):
+    """Run action on given unit.
+
+    :param unit_name: Name of unit to run action on
+    :type unit_name: str
+    :param action_name: Name of action to run
+    :type action_name: str
+    :param model_name: Name of model to query.
+    :type model_name: str
+    :param action_params: Dictionary of config options for action
+    :type action_params: dict
+    :param raise_on_failure: Raise ActionFailed exception on failure
+    :type raise_on_failure: bool
+    :returns: Action object
+    :rtype: juju.action.Action
+    :raises: ActionFailed
+    """
+    if action_params is None:
+        action_params = {}
+
+    model = await get_model(model_name)
+    unit = await async_get_unit_from_name(unit_name, model)
+    action_obj = await unit.run_action(action_name, **action_params)
+    await action_obj.wait()
+    if raise_on_failure and action_obj.status != "completed":
+        try:
+            output = await model.get_action_output(action_obj.id)
+        except KeyError:
+            output = None
+        raise ActionFailed(action_obj, output=output)
+    return action_obj
+
+
 async def async_run_action_on_leader(
     application_name, action_name, model_name=None, action_params=None, raise_on_failure=False
 ):

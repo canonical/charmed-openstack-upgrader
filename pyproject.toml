@@ -69,6 +69,7 @@ exclude = [
 
 [tool.coverage.run]
 relative_files = true
+concurrency = ["gevent"]
 source = ["."]
 omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py", "cou/utils/**"]
 

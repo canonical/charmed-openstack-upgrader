@@ -74,4 +74,4 @@ class ActionFailed(Exception):
             "status={status} enqueued={enqueued} started={started} "
             "completed={completed} output={output})".format(**params)
         )
-        super(message)
+        super().__init__(message)
