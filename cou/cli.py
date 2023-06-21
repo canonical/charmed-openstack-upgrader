@@ -16,10 +16,16 @@
 """Entrypoint to the 'charmed openstack upgrader'."""
 import argparse
 import logging
+import logging.handlers
+import os
+import pathlib
 import sys
+from datetime import datetime
 from typing import Any
 
 from cou.steps.plan import apply_plan, dump_plan, generate_plan
+
+COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
 
 
 def parse_args(args: Any) -> argparse.Namespace:
@@ -59,11 +65,23 @@ def setup_logging(log_level: str = "INFO") -> None:
         fmt="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
     root_logger = logging.getLogger()
-    root_logger.setLevel(log_level)
-    if not root_logger.hasHandlers():
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(log_formatter)
-        root_logger.addHandler(console_handler)
+    root_logger.setLevel("DEBUG")
+
+    # handler for the log file. Log level is DEBUG
+    time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
+    pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
+    log_file_handler = logging.FileHandler(file_name)
+    log_file_handler.setFormatter(log_formatter)
+
+    # handler for the console. Log level comes from the CLI
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(log_formatter)
+
+    root_logger.addHandler(log_file_handler)
+    root_logger.addHandler(console_handler)
+    logging.info("Logs of this execution can be found at %s", file_name)
 
 
 def entrypoint() -> int:

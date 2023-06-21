@@ -18,6 +18,7 @@ apps:
       - network
       - network-bind
       - dot-local-share-juju
+      - local_cou
 
 parts:
   cou-wrapper:
@@ -41,3 +42,7 @@ plugs:
     interface: personal-files
     write:
       - $HOME/.local/share/juju
+  local_cou:
+    interface: personal-files
+    write:
+      - $HOME/.local/share/cou/
