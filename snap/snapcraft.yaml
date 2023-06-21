@@ -18,9 +18,7 @@ apps:
       - network
       - network-bind
       - dot-local-share-juju
-      - logs
-    environment:
-      COU_DIR_LOG: $HOME/.local/share/cou/log
+      - local_cou
 
 parts:
   cou-wrapper:
@@ -44,7 +42,7 @@ plugs:
     interface: personal-files
     write:
       - $HOME/.local/share/juju
-  logs:
+  local_cou:
     interface: personal-files
     write:
-      - $HOME/.local/share/cou/log
+      - $HOME/.local/share/cou/

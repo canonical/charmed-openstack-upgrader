@@ -23,7 +23,7 @@ class CliTestCase(unittest.TestCase):
             log_file_handler = MagicMock()
             console_handler = MagicMock()
             mock_root_logger = mock_logging.getLogger.return_value
-            mock_logging.handlers.TimedRotatingFileHandler.return_value = log_file_handler
+            mock_logging.FileHandler.return_value = log_file_handler
             mock_logging.StreamHandler.return_value = console_handler
             setup_logging("INFO")
             mock_root_logger.addHandler.assert_any_call(log_file_handler)
