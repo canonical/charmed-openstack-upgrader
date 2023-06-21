@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Test steps package."""
+import pytest
+
 from cou.steps import UpgradeStep
 from tests.unit.utils import BaseTestCase
 
@@ -35,25 +37,28 @@ class TestSteps(BaseTestCase):
         u.add_step(substep)
         assert u.sub_steps[0] is substep
 
-    def test_upgrade_step_run(self):
-        def sample_function(**kwargs):
+    @pytest.mark.asyncio
+    async def test_upgrade_step_run(self):
+        async def sample_function(**kwargs):
             return kwargs["x"]
 
         u = UpgradeStep(description="test", function=sample_function, parallel=False, **{"x": 10})
 
-        result = u.run()
+        result = await u.run()
         assert result == 10
 
-    def test_upgrade_step_run_empty(self):
-        def sample_function(**kwargs):
+    @pytest.mark.asyncio
+    async def test_upgrade_step_run_empty(self):
+        async def sample_function(**kwargs):
             return 5
 
         u = UpgradeStep(description="test", function=sample_function, parallel=False)
 
-        result = u.run()
+        result = await u.run()
         assert result == 5
 
-    def test_upgrade_step_run_none(self):
+    @pytest.mark.asyncio
+    async def test_upgrade_step_run_none(self):
         u = UpgradeStep(description="test", function=None, parallel=False)
-        result = u.run()
+        result = await u.run()
         assert result is None

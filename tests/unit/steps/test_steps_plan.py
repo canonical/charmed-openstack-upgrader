@@ -16,6 +16,8 @@
 import unittest
 from unittest.mock import MagicMock, call, patch
 
+import pytest
+
 from cou.steps.backup import backup
 from cou.steps.plan import apply_plan, dump_plan, generate_plan, prompt
 
@@ -35,7 +37,8 @@ class StepsPlanTestCase(unittest.TestCase):
         self.assertFalse(sub_step.parallel)
         self.assertEqual(sub_step.function, backup)
 
-    def test_apply_plan_continue(self):
+    @pytest.mark.asyncio
+    async def test_apply_plan_continue(self):
         upgrade_plan = MagicMock()
         upgrade_plan.description = "Test Plan"
         upgrade_plan.run = MagicMock()
@@ -45,26 +48,28 @@ class StepsPlanTestCase(unittest.TestCase):
 
         with patch("cou.steps.plan.input") as mock_input, patch("cou.steps.plan.sys") as mock_sys:
             mock_input.return_value = "C"
-            apply_plan(upgrade_plan)
+            await apply_plan(upgrade_plan)
 
             mock_input.assert_called_with(prompt("Test Plan"))
             assert upgrade_plan.run.call_count == 1
             assert sub_step.run.call_count == 1
             mock_sys.exit.assert_not_called()
 
-    def test_apply_plan_abort(self):
+    @pytest.mark.asyncio
+    async def test_apply_plan_abort(self):
         upgrade_plan = MagicMock()
         upgrade_plan.description = "Test Plan"
 
         with self.assertRaises(SystemExit):
             with patch("cou.steps.plan.input") as mock_input:
                 mock_input.return_value = "a"
-                apply_plan(upgrade_plan)
+                await apply_plan(upgrade_plan)
 
                 mock_input.assert_called_once_with(prompt("Test Plan"))
                 upgrade_plan.function.assert_not_called()
 
-    def test_apply_plan_nonsense(self):
+    @pytest.mark.asyncio
+    async def test_apply_plan_nonsense(self):
         upgrade_plan = MagicMock()
         upgrade_plan.description = "Test Plan"
 
@@ -73,13 +78,14 @@ class StepsPlanTestCase(unittest.TestCase):
                 "cou.steps.plan.logging.info"
             ) as log:
                 mock_input.side_effect = ["x", "a"]
-                apply_plan(upgrade_plan)
+                await apply_plan(upgrade_plan)
 
                 log.assert_called_once_with("No valid input provided!")
                 mock_input.assert_called_once_with(prompt("Test Plan"))
                 upgrade_plan.function.assert_not_called()
 
-    def test_apply_plan_skip(self):
+    @pytest.mark.asyncio
+    async def test_apply_plan_skip(self):
         upgrade_plan = MagicMock()
         upgrade_plan.description = "Test Plan"
         sub_step = MagicMock()
@@ -88,7 +94,7 @@ class StepsPlanTestCase(unittest.TestCase):
 
         with patch("cou.steps.plan.input") as mock_input, patch("cou.steps.plan.sys") as mock_sys:
             mock_input.return_value = "s"
-            apply_plan(upgrade_plan)
+            await apply_plan(upgrade_plan)
 
             upgrade_plan.function.assert_not_called()
             mock_sys.exit.assert_not_called()

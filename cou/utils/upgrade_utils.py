@@ -1,17 +1,17 @@
-# Copyright 2023 Canonical Limited.
+# mypy: disable-error-code="no-untyped-def"
+# Copyright 2018 Canonical Ltd.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Manage global upgrade utilities."""
 
@@ -19,7 +19,8 @@ import itertools
 import logging
 import re
 
-from cou.zaza_utils import model, os_versions
+from cou.utils import os_versions
+from cou.utils.juju_utils import async_get_application_config, async_get_status
 
 
 def extract_charm_name_from_url(charm_url):
@@ -36,8 +37,8 @@ def extract_charm_name_from_url(charm_url):
     return charm_name.split(":")[-1]
 
 
-def _filter_non_openstack_services(app, app_config, model_name=None):
-    charm_options = model.get_application_config(app, model_name=model_name).keys()
+async def _filter_non_openstack_services(app, app_config, model_name=None):
+    charm_options = await async_get_application_config(app, model_name=model_name).keys()
     src_options = ["openstack-origin", "source"]
     if not [x for x in src_options if x in charm_options]:
         logging.warning("Excluding {} from upgrade, no src option".format(app))
@@ -61,9 +62,9 @@ def _filter_subordinates(app, app_config, model_name=None):
     return False
 
 
-def _include_app(app, app_config, filters, model_name=None):
+async def _include_app(app, app_config, filters, model_name=None):
     for filt in filters:
-        if filt(app, app_config, model_name=model_name):
+        if await filt(app, app_config, model_name=model_name):
             return False
     return True
 
@@ -88,7 +89,7 @@ def _build_service_groups(applications):
     return groups
 
 
-def get_upgrade_candidates(model_name=None, filters=None):
+async def get_upgrade_candidates(model_name=None, filters=None):
     """Extract list of apps from model that can be upgraded.
 
     :param model_name: Name of model to query.
@@ -100,10 +101,10 @@ def get_upgrade_candidates(model_name=None, filters=None):
     """
     if filters is None:
         filters = []
-    status = model.get_status(model_name=model_name)
+    status = await async_get_status(model_name=model_name)
     candidates = {}
     for app, app_config in status.applications.items():
-        if _include_app(app, app_config, filters, model_name=model_name):
+        if await _include_app(app, app_config, filters, model_name=model_name):
             candidates[app] = app_config
     return candidates
 

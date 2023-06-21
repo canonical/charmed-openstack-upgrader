@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Functions for analyze openstack cloud before upgrade."""
+from __future__ import annotations
 
 import logging
 import re
@@ -26,11 +27,15 @@ from colorama import Fore, Style
 from colorama import init as colorama_init
 from juju.client._definitions import ApplicationStatus
 
-from cou.zaza_utils import model
-from cou.zaza_utils.juju import get_full_juju_status
-from cou.zaza_utils.openstack import CHARM_TYPES, get_os_code_info
-from cou.zaza_utils.os_versions import CompareOpenStack
-from cou.zaza_utils.upgrade_utils import determine_next_openstack_release
+from cou.exceptions import CommandRunFailed
+from cou.utils.juju_utils import (
+    async_get_application_config,
+    async_get_full_juju_status,
+    async_run_on_unit,
+)
+from cou.utils.openstack import CHARM_TYPES, get_os_code_info
+from cou.utils.os_versions import CompareOpenStack
+from cou.utils.upgrade_utils import determine_next_openstack_release
 
 colorama_init()
 
@@ -89,7 +94,7 @@ class Application:
     #  E.g of pkg_version_units: {"2:17.0": {"keystone/0"}, "2:18.0": {"keystone/1"}}
     pkg_version_units: defaultdict[str, set] = field(default_factory=lambda: defaultdict(set))
 
-    def __post_init__(self) -> None:
+    async def fill(self) -> Application:
         """Initiate the Apllication dataclass."""
         self.charm = self.extract_charm_name()
         self.channel = self.status.charm_channel
@@ -97,9 +102,10 @@ class Application:
         self.pkg_name = self.get_pkg_name()
         self.os_origin = self.get_os_origin()
         for unit in self.status.units.keys():
-            os_version = self.get_current_os_versions(unit)
+            os_version = await self.get_current_os_versions(unit)
             self.units[unit]["os_version"] = os_version
             self.os_release_units[os_version].add(unit)
+        return self
 
     def __hash__(self) -> int:
         """Hash magic method for Application."""
@@ -153,15 +159,15 @@ class Application:
 
     # NOTE (gabrielcocenza) Ideally, the application should provide the openstack version
     # and packages versions by a charm action. This might be possible with Sunbeam.
-    def get_current_os_versions(self, unit: str) -> str:
+    async def get_current_os_versions(self, unit: str) -> str:
         """Get the openstack version of a unit."""
         version = ""
-        pkg_version = get_pkg_version(unit, self.pkg_name, self.model_name)
+        pkg_version = await get_pkg_version(unit, self.pkg_name, self.model_name)
         self.units[unit]["pkg_version"] = pkg_version
         self.pkg_version_units[pkg_version].add(unit)
 
         # for openstack releases >= wallaby
-        codename = get_openstack_release(unit, model_name=self.model_name)
+        codename = await get_openstack_release(unit, model_name=self.model_name)
         if codename:
             version = codename
         # for openstack releases < wallaby
@@ -268,35 +274,37 @@ class Application:
         return change_openstack_release
 
 
-def get_openstack_release(unit: str, model_name: Union[str, None] = None) -> Union[str, None]:
+async def get_openstack_release(
+    unit: str, model_name: Union[str, None] = None
+) -> Union[str, None]:
     """Return the openstack release codename based on /etc/openstack-release."""
     cmd = "grep -Po '(?<=OPENSTACK_CODENAME=).*' /etc/openstack-release"
     try:
-        out = model.run_on_unit(unit, cmd, model_name=model_name, timeout=20)
-    except model.CommandRunFailed:
+        out = await async_run_on_unit(unit, cmd, model_name=model_name, timeout=20)
+    except CommandRunFailed:
         logging.debug("Fall back to version check for OpenStack codename")
         return None
     return out["Stdout"]
 
 
-def get_pkg_version(unit: str, pkg: str, model_name: Union[str, None] = None) -> str:
+async def get_pkg_version(unit: str, pkg: str, model_name: Union[str, None] = None) -> str:
     """Get package version of a specific package in a unit."""
     cmd = f"dpkg-query --show --showformat='${{Version}}' {pkg}"
-    out = model.run_on_unit(unit, cmd, model_name=model_name, timeout=20)
+    out = await async_run_on_unit(unit, cmd, model_name=model_name, timeout=20)
     return out["Stdout"]
 
 
-def generate_model() -> set[Application]:
+async def generate_model() -> set[Application]:
     """Generate the applications model."""
-    juju_status = get_full_juju_status()
+    juju_status = await async_get_full_juju_status()
     model_name = juju_status.model.name
     apps = {
-        Application(
+        await Application(
             name=app,
             status=app_status,
-            config=model.get_application_config(app),
+            config=await async_get_application_config(app),
             model_name=model_name,
-        )
+        ).fill()
         for app, app_status in juju_status.applications.items()
     }
     # NOTE(gabrielcocenza) Not all openstack-charms are mapped in the zaza lookup.
@@ -310,10 +318,10 @@ def generate_model() -> set[Application]:
     return openstack_apps
 
 
-def analyze() -> Analyze:
+async def analyze() -> Analyze:
     """Analyze the deployment before planning."""
     logging.info("Analyzing the openstack release in the deployment...")
-    apps = generate_model()
+    apps = await generate_model()
     # E.g: {"ussuri": {"keystone"}, "victoria": {"cinder"}}
     os_versions: defaultdict[str, set] = defaultdict(set)
 

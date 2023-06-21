@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-untyped-def"
 # Copyright 2018 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Module containing data about OpenStack versions."""
 from collections import OrderedDict
+from typing import List, Optional
 
 SERVICE_GROUPS = (
     ("Database Services", ["mysql-innodb-cluster"]),
@@ -354,7 +357,7 @@ PACKAGE_CODENAMES = {
 }
 
 
-UBUNTU_RELEASES = (
+UBUNTU_RELEASES = [
     "lucid",
     "maverick",
     "natty",
@@ -382,7 +385,7 @@ UBUNTU_RELEASES = (
     "jammy",
     "kinetic",
     "lunar",
-)
+]
 
 
 class BasicStringComparator(object):
@@ -393,7 +396,7 @@ class BasicStringComparator(object):
     z-wrap.
     """
 
-    _list = None
+    _list: Optional[List[str]] = None
 
     def __init__(self, item):
         """Do init."""

@@ -51,7 +51,8 @@ def test_application_eq(status, config, mocker):
         "change_openstack_release",
     ],
 )
-def test_application(issues, status, config, mocker, units):
+@pytest.mark.asyncio
+async def test_application(issues, status, config, mocker, units):
     """Test the object Application on different scenarios."""
     expected_os_release_units = defaultdict(set)
     expected_pkg_version_units = defaultdict(set)
@@ -136,7 +137,7 @@ def test_application(issues, status, config, mocker, units):
 
     mocker.patch.object(analyze, "get_openstack_release", return_value=None)
 
-    app = analyze.Application("keystone", app_status, app_config, "my_model")
+    app = await analyze.Application("keystone", app_status, app_config, "my_model").fill()
     assert app.name == "keystone"
     assert app.status == app_status
     assert app.config == app_config
@@ -158,7 +159,8 @@ def test_application(issues, status, config, mocker, units):
     assert app.check_os_origin(defaultdict(set)) == expected_change_openstack_release
 
 
-def test_application_to_dict(mocker, status, config):
+@pytest.mark.asyncio
+async def test_application_to_dict(mocker, status, config):
     """Test that the yaml output is as expected."""
     expected_output = {
         "keystone": {
@@ -187,17 +189,18 @@ def test_application_to_dict(mocker, status, config):
     app_config = config["openstack_ussuri"]
     mocker.patch.object(analyze, "get_pkg_version", return_value="2:17.0.1-0ubuntu1")
     mocker.patch.object(analyze, "get_openstack_release", return_value=None)
-    app = analyze.Application("keystone", app_status, app_config, "my_model")
+    app = await analyze.Application("keystone", app_status, app_config, "my_model").fill()
     assert app.to_dict() == expected_output
 
 
-def test_application_invalid_charm_name(mocker, status, config):
+@pytest.mark.asyncio
+async def test_application_invalid_charm_name(mocker, status, config):
     """Assert that raises error if charm name is invalid."""
     mocker.patch.object(analyze.re, "match", return_value=None)
     with pytest.raises(analyze.InvalidCharmNameError):
-        analyze.Application(
+        await analyze.Application(
             "keystone", status["keystone_ch"], config["openstack_ussuri"], "my_model"
-        )
+        ).fill()
 
 
 @pytest.mark.parametrize(
@@ -207,7 +210,8 @@ def test_application_invalid_charm_name(mocker, status, config):
         "change_openstack_release",
     ],
 )
-def test_application_bigger_than_wallaby(issues, mocker, status, config, units):
+@pytest.mark.asyncio
+async def test_application_bigger_than_wallaby(issues, mocker, status, config, units):
     """Test when openstack-release package is available."""
     expected_os_release_units = defaultdict(set)
     expected_pkg_version_units = defaultdict(set)
@@ -237,7 +241,7 @@ def test_application_bigger_than_wallaby(issues, mocker, status, config, units):
     mocker.patch.object(analyze, "get_pkg_version", return_value="2:18.1.0-0ubuntu1~cloud0")
     expected_os_release_units["wallaby"] = {"keystone/0", "keystone/1", "keystone/2"}
 
-    app = analyze.Application("keystone", app_status, app_config, "my_model")
+    app = await analyze.Application("keystone", app_status, app_config, "my_model").fill()
     assert app.name == "keystone"
     assert app.status == app_status
     assert app.model_name == "my_model"
@@ -268,38 +272,41 @@ def test_application_no_openstack_origin(mocker, status):
     assert app.get_os_origin() == ""
 
 
-def test_get_openstack_release(mocker):
+@pytest.mark.asyncio
+async def test_get_openstack_release(mocker):
     """Test function get_openstack_release."""
     # normal output
     mock_run = mocker.patch.object(
-        analyze.model, "run_on_unit", return_value={"Stdout": "wallaby"}
+        analyze, "async_run_on_unit", return_value={"Stdout": "wallaby"}
     )
-    assert analyze.get_openstack_release("keystone/0") == "wallaby"
+    assert await analyze.get_openstack_release("keystone/0") == "wallaby"
     assert mock_run.called_with("keystone/0", None, 20)
 
     # no output
-    mock_run = mocker.patch.object(analyze.model, "run_on_unit", return_value={"Stdout": ""})
-    assert analyze.get_openstack_release("keystone/0") == ""
+    mock_run = mocker.patch.object(analyze, "async_run_on_unit", return_value={"Stdout": ""})
+    assert await analyze.get_openstack_release("keystone/0") == ""
     assert mock_run.called_with("keystone/0", None, 20)
 
     # raises CommandRunFailed
     mock_run = mocker.patch.object(
-        analyze.model, "run_on_unit", side_effect=analyze.model.CommandRunFailed("cmd", {})
+        analyze, "async_run_on_unit", side_effect=analyze.CommandRunFailed("cmd", {})
     )
-    assert analyze.get_openstack_release("keystone/0") is None
+    assert await analyze.get_openstack_release("keystone/0") is None
     assert mock_run.called_with("keystone/0", None, 20)
 
 
-def test_get_pkg_version(mocker):
+@pytest.mark.asyncio
+async def test_get_pkg_version(mocker):
     """Test function get_pkg_version."""
-    mocker.patch.object(analyze.model, "run_on_unit", return_value={"Stdout": "2:17.0.1-0ubuntu1"})
-    assert analyze.get_pkg_version("keystone/0", "keystone") == "2:17.0.1-0ubuntu1"
+    mocker.patch.object(analyze, "async_run_on_unit", return_value={"Stdout": "2:17.0.1-0ubuntu1"})
+    assert await analyze.get_pkg_version("keystone/0", "keystone") == "2:17.0.1-0ubuntu1"
 
 
-def test_generate_model(mocker, full_status, config):
-    mocker.patch.object(analyze, "get_full_juju_status", return_value=full_status)
+@pytest.mark.asyncio
+async def test_generate_model(mocker, full_status, config):
+    mocker.patch.object(analyze, "async_get_full_juju_status", return_value=full_status)
     mocker.patch.object(
-        analyze.model, "get_application_config", return_value=config["openstack_ussuri"]
+        analyze, "async_get_application_config", return_value=config["openstack_ussuri"]
     )
     mocker.patch.object(analyze, "get_openstack_release", return_value=None)
     mocker.patch.object(
@@ -317,7 +324,7 @@ def test_generate_model(mocker, full_status, config):
     )
     # Initially, 3 applications are in the status (keystone, cinder and rabbitmq-server)
     assert len(full_status.applications) == 3
-    apps = analyze.generate_model()
+    apps = await analyze.generate_model()
     # rabbitmq-server is filtered from supported openstack charms.
     assert len(apps) == 2
     assert {app.charm for app in apps} == {"keystone", "cinder"}
@@ -345,8 +352,10 @@ def test_check_upgrade_charms(issues):
     assert result == expected_upgrade_charms
 
 
-def test_analyze(mocker, apps):
+@pytest.mark.asyncio
+async def test_analyze(mocker, async_apps):
     """Test analyze function."""
+    apps = await async_apps
     upgrade_charms = defaultdict(set)
     upgrade_charms["victoria"] = {"cinder", "keystone"}
     expected_result = analyze.Analyze(
@@ -358,7 +367,7 @@ def test_analyze(mocker, apps):
     mocker.patch.object(analyze, "generate_model", return_value=apps)
     mock_log_result = mocker.patch.object(analyze, "log_result")
 
-    result = analyze.analyze()
+    result = await analyze.analyze()
     mock_log_result.assert_called_once_with(expected_result, expected_outputs)
     assert result == expected_result
 

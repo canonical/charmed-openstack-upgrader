@@ -25,7 +25,6 @@ from typing import Any
 
 from cou.steps.analyze import analyze
 from cou.steps.plan import apply_plan, dump_plan, generate_plan
-from cou.zaza_utils import clean_up_libjuju_thread
 
 COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
 
@@ -86,22 +85,20 @@ def setup_logging(log_level: str = "INFO") -> None:
     logging.info("Logs of this execution can be found at %s", file_name)
 
 
-def entrypoint() -> int:
+async def entrypoint() -> int:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
         setup_logging(log_level=args.loglevel)
 
-        analyze_result = analyze()
+        analyze_result = await analyze()
         upgrade_plan = generate_plan(analyze_result)
         if args.dry_run:
             dump_plan(upgrade_plan)
         else:
-            apply_plan(upgrade_plan)
+            await apply_plan(upgrade_plan)
 
         return 0
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logging.exception(exc)
         return 1
-    finally:
-        clean_up_libjuju_thread()

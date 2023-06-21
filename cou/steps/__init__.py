@@ -37,14 +37,15 @@ class UpgradeStep:
         self.params = params
         self.function = function
 
-    def add_step(self, step: UpgradeStep) -> None:
+    def add_step(self, step: UpgradeStep) -> UpgradeStep:
         """Add a single step."""
         self.sub_steps.append(step)
+        return self
 
-    def run(self) -> Any:
+    async def run(self) -> Any:
         """Run the function."""
         if self.function is not None:
             if self.params:
-                return self.function(**self.params)
-            return self.function()
+                return await self.function(**self.params)
+            return await self.function()
         return None

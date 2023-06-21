@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Main entry point."""
+from juju import jasyncio
 
 from cou import cli
 
-cli.entrypoint()
+jasyncio.run(cli.entrypoint())

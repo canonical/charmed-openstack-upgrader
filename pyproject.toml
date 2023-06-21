@@ -70,7 +70,7 @@ exclude = [
 [tool.coverage.run]
 relative_files = true
 source = ["."]
-omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py", "cou/zaza_utils/**"]
+omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py", "cou/utils/**"]
 
 [tool.coverage.report]
 fail_under = 100

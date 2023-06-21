@@ -1,21 +1,27 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from cou.steps.backup import _check_db_relations, backup, get_database_app
 
 
-def test_backup():
+@pytest.mark.asyncio
+async def test_backup():
     with patch("cou.steps.backup.logging.info") as log, patch(
-        "cou.steps.backup.model"
-    ) as model, patch("cou.steps.backup.get_database_app"):
-        model.run_action_on_leader = MagicMock()
-        model.scp_from_unit = MagicMock()
-        model.get_unit_from_name = MagicMock()
+        "cou.steps.backup.utils"
+    ) as utils, patch("cou.steps.backup.get_database_app"):
+        utils.async_run_action_on_leader = AsyncMock()
+        utils.async_run_on_leader = AsyncMock()
+        utils.async_scp_from_unit = AsyncMock()
+        utils.async_get_lead_unit_name = AsyncMock()
+        utils.async_get_unit_from_name = AsyncMock()
 
-        backup()
+        await backup()
         assert log.call_count == 5
 
 
-def test_get_database_app():
+@pytest.mark.asyncio
+async def test_get_database_app():
     with patch("cou.steps.backup.get_upgrade_candidates") as upgrade_candidates:
         upgrade_candidates.return_value = {
             "mysql": {
@@ -43,11 +49,12 @@ def test_get_database_app():
                 },
             }
         }
-        app = get_database_app()
+        app = await get_database_app()
         assert app == "mysql"
 
 
-def test_get_database_app_negative():
+@pytest.mark.asyncio
+async def test_get_database_app_negative():
     with patch("cou.steps.backup.get_upgrade_candidates") as upgrade_candidates:
         upgrade_candidates.return_value = {
             "mysql": {
@@ -61,7 +68,7 @@ def test_get_database_app_negative():
                 },
             }
         }
-        app = get_database_app()
+        app = await get_database_app()
         assert app is None
 
 

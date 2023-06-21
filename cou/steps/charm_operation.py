@@ -16,16 +16,16 @@
 """Charm operation utilities."""
 import logging
 
-from cou.zaza_utils.model import upgrade_charm
+from cou.utils.juju_utils import async_upgrade_charm
 
 
-def charm_upgrade(application_name: str) -> None:
+async def charm_upgrade(application_name: str) -> None:
     """Upgrade a charm to the latest revision in the current channel."""
     logging.info("Upgrading %s to the latest revision in the current channel", application_name)
-    upgrade_charm(application_name)
+    await async_upgrade_charm(application_name)
 
 
-def charm_channel_refresh(application_name: str, channel: str) -> None:
+async def charm_channel_refresh(application_name: str, channel: str) -> None:
     """Refresh a charm to track a target channel."""
     logging.info("Refresh %s to the %s channel", application_name, channel)
-    upgrade_charm(application_name, channel=channel)
+    await async_upgrade_charm(application_name, channel=channel)

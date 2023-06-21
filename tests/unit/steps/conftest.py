@@ -99,7 +99,7 @@ def units():
 
 
 @pytest.fixture
-def apps(mocker, status, config):
+async def async_apps(mocker, status, config):
     keystone_status = status["keystone_ch"]
     cinder_status = status["cinder_ch"]
     app_config = config["openstack_ussuri"]
@@ -116,8 +116,10 @@ def apps(mocker, status, config):
         ],
     )
     mocker.patch.object(analyze, "get_openstack_release", return_value=None)
-    app_keystone = analyze.Application("keystone", keystone_status, app_config, "my_model")
-    app_cinder = analyze.Application("cinder", cinder_status, app_config, "my_model")
+    app_keystone = await analyze.Application(
+        "keystone", keystone_status, app_config, "my_model"
+    ).fill()
+    app_cinder = await analyze.Application("cinder", cinder_status, app_config, "my_model").fill()
 
     return [app_keystone, app_cinder]
 
