@@ -98,5 +98,5 @@ def entrypoint() -> int:
 
         return 0
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        logging.error(exc)
+        logging.exception(exc)
         return 1
