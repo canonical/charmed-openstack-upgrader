@@ -312,7 +312,7 @@ def generate_model() -> set[Application]:
 
 def analyze() -> Analyze:
     """Analyze the deployment before planning."""
-    logging.info("Analyzing the openstack release in the deployment...")
+    logging.info("Analyzing the OpenStack deployment...")
     apps = generate_model()
     # E.g: {"ussuri": {"keystone"}, "victoria": {"cinder"}}
     os_versions: defaultdict[str, set] = defaultdict(set)
