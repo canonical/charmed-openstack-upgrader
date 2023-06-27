@@ -17,12 +17,13 @@ import asyncio
 import collections
 import logging
 import os
+import re
 import time
 from typing import Any, Dict
 
 from juju.model import Model
 
-from cou.exceptions import ActionFailed, JujuError, UnitNotFound
+from cou.exceptions import ActionFailed, InvalidCharmNameError, JujuError, UnitNotFound
 
 JUJU_MAX_FRAME_SIZE = 2**30
 
@@ -514,3 +515,11 @@ async def async_upgrade_charm(
         revision=revision,
         switch=switch,
     )
+
+
+def extract_charm_name(charm: str) -> str:
+    """Extract the charm name using regex."""
+    match = re.match(r"^(?:\w+:)?(?:~[\w\.-]+/)?(?:\w+/)*([a-zA-Z0-9-]+?)(?:-\d+)?$", charm)
+    if not match:
+        raise InvalidCharmNameError(f"charm name '{charm}' is invalid")
+    return match.group(1)

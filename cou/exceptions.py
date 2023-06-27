@@ -75,3 +75,7 @@ class ActionFailed(Exception):
             "completed={completed} output={output})".format(**params)
         )
         super().__init__(message)
+
+
+class InvalidCharmNameError(Exception):
+    """Represents an invalid charm name being processed."""

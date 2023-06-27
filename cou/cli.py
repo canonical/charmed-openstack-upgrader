@@ -92,6 +92,7 @@ async def entrypoint() -> int:
         setup_logging(log_level=args.loglevel)
 
         analyze_result = await analyze()
+        print(analyze_result.dump())
         upgrade_plan = generate_plan(analyze_result)
         if args.dry_run:
             dump_plan(upgrade_plan)
