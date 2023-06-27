@@ -35,7 +35,7 @@ from cou.utils.openstack import CHARM_TYPES, get_os_code_info
 
 
 @dataclass
-class Analyze:
+class Analysis:
     """Analyze result."""
 
     apps: Iterable[Application]
@@ -198,9 +198,9 @@ async def generate_model() -> set[Application]:
     return openstack_apps
 
 
-async def analyze() -> Analyze:
+async def analyze() -> Analysis:
     """Analyze the deployment before planning."""
     logging.info("Analyzing the openstack release in the deployment...")
     apps = await generate_model()
 
-    return Analyze(apps=apps)
+    return Analysis(apps=apps)

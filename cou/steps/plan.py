@@ -21,13 +21,13 @@ import sys
 from colorama import Fore, Style
 
 from cou.steps import UpgradeStep
-from cou.steps.analyze import Analyze
+from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 
 AVAILABLE_OPTIONS = "cas"
 
 
-def generate_plan(args: Analyze) -> UpgradeStep:
+def generate_plan(args: Analysis) -> UpgradeStep:
     """Generate plan for upgrade."""
     logging.info(args)  # for placeholder
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)

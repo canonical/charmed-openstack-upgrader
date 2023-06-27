@@ -199,8 +199,8 @@ async def test_application_to_dict(mocker, status, config):
 
 
 @pytest.mark.asyncio
-async def test_analyze_dump(mocker, async_apps):
-    """Test Analyze dump."""
+async def test_analysis_dump(mocker, async_apps):
+    """Test analysis dump."""
     expected_result = (
         "keystone:\n"
         "  channel: ussuri/stable\n"
@@ -239,7 +239,7 @@ async def test_analyze_dump(mocker, async_apps):
         "      pkg_version: 2:16.4.2-0ubuntu2.2~cloud0\n"
     )
     apps = await async_apps
-    result = analyze.Analyze(apps=apps)
+    result = analyze.Analysis(apps=apps)
     mocker.patch.object(analyze, "generate_model", return_value=apps)
 
     result = await analyze.analyze()
@@ -382,10 +382,10 @@ async def test_generate_model(mocker, full_status, config):
 
 
 @pytest.mark.asyncio
-async def test_analyze(mocker, async_apps):
-    """Test analyze function."""
+async def test_analysis(mocker, async_apps):
+    """Test analysis function."""
     apps = await async_apps
-    expected_result = analyze.Analyze(apps=apps)
+    expected_result = analyze.Analysis(apps=apps)
     mocker.patch.object(analyze, "generate_model", return_value=apps)
 
     result = await analyze.analyze()
