@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Functions for analyze openstack cloud before upgrade."""
+"""Functions for analyzing an OpenStack cloud before an upgrade."""
 from __future__ import annotations
 
 import logging
@@ -68,7 +68,7 @@ class Application:
     pkg_version_units: defaultdict[str, set] = field(default_factory=lambda: defaultdict(set))
 
     async def fill(self) -> Application:
-        """Initiate the Application dataclass."""
+        """Initialize the Application dataclass."""
         self.charm = extract_charm_name_from_url(self.status.charm)
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
@@ -82,11 +82,11 @@ class Application:
 
     def __hash__(self) -> int:
         """Hash magic method for Application."""
-        return hash(self.name)
+        return hash(f"{self.name}{self.charm}")
 
     def __eq__(self, other: Any) -> Any:
         """Equal magic method for Application."""
-        return other.name == self.name
+        return other.name == self.name and other.charm == self.charm
 
     def to_dict(self) -> Dict:
         """Return a string in yaml format.
@@ -122,7 +122,7 @@ class Application:
         try:
             pkg_name = CHARM_TYPES[self.charm]["pkg"]
         except KeyError:
-            logging.debug("package not found for application: %s", self.name)
+            logging.warning("package not found for application: %s", self.name)
             pkg_name = ""
         return pkg_name
 
@@ -131,7 +131,7 @@ class Application:
     async def _get_current_os_versions(self, unit: str) -> str:
         """Get the openstack version of a unit."""
         version = ""
-        pkg_version = await self._get_pkg_version(unit, self.pkg_name, self.model_name)
+        pkg_version = self._get_pkg_version(unit)
         self.units[unit]["pkg_version"] = pkg_version
         self.pkg_version_units[pkg_version].add(unit)
 
@@ -161,17 +161,17 @@ class Application:
         try:
             out = await async_run_on_unit(unit, cmd, model_name=model_name, timeout=20)
         except CommandRunFailed:
-            logging.debug("Fall back to version check for OpenStack codename")
+            logging.warning("Fall back to version check for OpenStack codename")
             return None
-        return out["Stdout"]
+        return out["Stdout"].strip()
 
-    async def _get_pkg_version(
-        self, unit: str, pkg: str, model_name: Union[str, None] = None
-    ) -> str:
-        """Get package version of a specific package in a unit."""
-        cmd = f"dpkg-query --show --showformat='${{Version}}' {pkg}"
-        out = await async_run_on_unit(unit, cmd, model_name=model_name, timeout=20)
-        return out["Stdout"]
+    def _get_pkg_version(self, unit: str) -> str:
+        """Get the openstack package version in a unit."""
+        try:
+            return self.status.units[unit].workload_version
+        except AttributeError:
+            logging.warning("Failed to get pkg version for '%s'", self.name)
+            return ""
 
 
 async def generate_model() -> set[Application]:
@@ -188,8 +188,7 @@ async def generate_model() -> set[Application]:
         for app, app_status in juju_status.applications.items()
     }
     # NOTE(gabrielcocenza) Not all openstack-charms are mapped in the zaza lookup.
-    supported_os_charms = CHARM_TYPES.keys()
-    openstack_apps = {app for app in apps if app.charm in supported_os_charms}
+    openstack_apps = {app for app in apps if app.charm in CHARM_TYPES}
     not_supported_apps = apps - openstack_apps
     not_supported_apps_names = sorted([app.name for app in not_supported_apps])
     logging.warning(
@@ -200,7 +199,7 @@ async def generate_model() -> set[Application]:
 
 async def analyze() -> Analysis:
     """Analyze the deployment before planning."""
-    logging.info("Analyzing the openstack release in the deployment...")
+    logging.info("Analyzing the Openstack deployment...")
     apps = await generate_model()
 
     return Analysis(apps=apps)

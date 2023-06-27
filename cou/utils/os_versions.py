@@ -175,12 +175,16 @@ SWIFT_CODENAMES = OrderedDict(
     ]
 )
 
+# NOTE (gabrielcocenza) see the docs at
+# https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 OVN_CODENAMES = OrderedDict(
     [
-        ("train", ["2.12"]),
-        ("ussuri", ["20.03"]),
-        ("victoria", ["20.06"]),
-        ("wallaby", ["20.12"]),
+        ("train", ["22.03"]),
+        ("ussuri", ["22.03"]),
+        ("victoria", ["22.03"]),
+        ("wallaby", ["22.03"]),
+        ("xena", ["22.03"]),
+        ("yoga", ["22.03"]),
     ]
 )
 

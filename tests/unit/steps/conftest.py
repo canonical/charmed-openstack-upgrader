@@ -26,40 +26,70 @@ def status():
     mock_keystone_ch = mock.MagicMock()
     mock_keystone_ch.charm_channel = "ussuri/stable"
     mock_keystone_ch.charm = "ch:amd64/focal/keystone-638"
+    mock_units_keystone = mock.MagicMock()
+    mock_units_keystone.workload_version = "17.0.1"
     mock_keystone_ch.units = OrderedDict(
-        [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
+        [
+            ("keystone/0", mock_units_keystone),
+            ("keystone/1", mock_units_keystone),
+            ("keystone/2", mock_units_keystone),
+        ]
     )
 
     mock_cinder_ch = mock.MagicMock()
     mock_cinder_ch.charm_channel = "ussuri/stable"
     mock_cinder_ch.charm = "ch:amd64/focal/cinder-633"
-    mock_cinder_ch.units = OrderedDict([("cinder/0", {}), ("cinder/1", {}), ("cinder/2", {})])
+    mock_units_cinder = mock.MagicMock()
+    mock_units_cinder.workload_version = "16.4.2"
+    mock_cinder_ch.units = OrderedDict(
+        [
+            ("cinder/0", mock_units_cinder),
+            ("cinder/1", mock_units_cinder),
+            ("cinder/2", mock_units_cinder),
+        ]
+    )
 
     mock_keystone_cs = mock.MagicMock()
     mock_keystone_cs.charm_channel = "ussuri/stable"
     mock_keystone_cs.charm = "cs:amd64/focal/keystone-638"
     mock_keystone_cs.units = OrderedDict(
-        [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
+        [
+            ("keystone/0", mock_units_keystone),
+            ("keystone/1", mock_units_keystone),
+            ("keystone/2", mock_units_keystone),
+        ]
     )
 
     mock_keystone_wrong_channel = mock.MagicMock()
     mock_keystone_wrong_channel.charm_channel = "latest/stable"
     mock_keystone_wrong_channel.charm = "ch:amd64/focal/keystone-638"
     mock_keystone_wrong_channel.units = OrderedDict(
-        [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
+        [
+            ("keystone/0", mock_units_keystone),
+            ("keystone/1", mock_units_keystone),
+            ("keystone/2", mock_units_keystone),
+        ]
     )
 
     mock_keystone_wallaby = mock.MagicMock()
     mock_keystone_wallaby.charm_channel = "wallaby/stable"
     mock_keystone_wallaby.charm = "ch:amd64/focal/keystone-638"
+    mock_units_keystone_wallaby = mock.MagicMock()
+    mock_units_keystone_wallaby.workload_version = "18.1.0"
     mock_keystone_wallaby.units = OrderedDict(
-        [("keystone/0", {}), ("keystone/1", {}), ("keystone/2", {})]
+        [
+            ("keystone/0", mock_units_keystone_wallaby),
+            ("keystone/1", mock_units_keystone_wallaby),
+            ("keystone/2", mock_units_keystone_wallaby),
+        ]
     )
 
     mock_rmq = mock.MagicMock()
+    mock_units_rmq = mock.MagicMock()
     mock_rmq.charm_channel = "3.9/stable"
+    mock_units_rmq.workload_version = "3.9"
     mock_rmq.charm = "ch:amd64/focal/rabbitmq-server-638"
-    mock_rmq.units = OrderedDict([("rabbitmq-server/0", {})])
+    mock_rmq.units = OrderedDict([("rabbitmq-server/0", mock_units_rmq)])
 
     status = {
         "keystone_ch": mock_keystone_ch,
@@ -92,9 +122,9 @@ def units():
     units_wallaby = defaultdict(dict)
     for unit in ["keystone/0", "keystone/1", "keystone/2"]:
         units_ussuri[unit]["os_version"] = "ussuri"
-        units_ussuri[unit]["pkg_version"] = "2:17.0.1-0ubuntu1"
+        units_ussuri[unit]["pkg_version"] = "17.0.1"
         units_wallaby[unit]["os_version"] = "wallaby"
-        units_wallaby[unit]["pkg_version"] = "2:18.1.0-0ubuntu1~cloud0"
+        units_wallaby[unit]["pkg_version"] = "18.1.0"
     return {"units_ussuri": units_ussuri, "units_wallaby": units_wallaby}
 
 
@@ -103,18 +133,6 @@ async def async_apps(mocker, status, config):
     keystone_status = status["keystone_ch"]
     cinder_status = status["cinder_ch"]
     app_config = config["openstack_ussuri"]
-    mocker.patch.object(
-        analyze.Application,
-        "_get_pkg_version",
-        side_effect=[
-            "2:17.0.1-0ubuntu1~cloud0",  # keystone units
-            "2:17.0.1-0ubuntu1~cloud0",
-            "2:17.0.1-0ubuntu1~cloud0",
-            "2:16.4.2-0ubuntu2.2~cloud0",  # cinder units
-            "2:16.4.2-0ubuntu2.2~cloud0",
-            "2:16.4.2-0ubuntu2.2~cloud0",
-        ],
-    )
     mocker.patch.object(analyze.Application, "_get_openstack_release", return_value=None)
     app_keystone = await analyze.Application(
         "keystone", keystone_status, app_config, "my_model"
@@ -131,31 +149,4 @@ def config():
             "openstack-origin": {"value": "distro"},
         },
         "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
-    }
-
-
-@pytest.fixture
-def outputs():
-    return {
-        "keystone": {
-            "model_name": "my_model",
-            "charm_origin": "cs",
-            "os_origin": "distro",
-            "channel": "ussuri/stable",
-            "pkg_name": "keystone",
-            "units": {
-                "keystone/0": {
-                    "pkg_version": "2:17.0.1-0ubuntu1",
-                    "os_version": "ussuri",
-                },
-                "keystone/1": {
-                    "pkg_version": "2:17.0.1-0ubuntu1",
-                    "os_version": "ussuri",
-                },
-                "keystone/2": {
-                    "pkg_version": "2:17.0.1-0ubuntu1",
-                    "os_version": "ussuri",
-                },
-            },
-        }
     }
