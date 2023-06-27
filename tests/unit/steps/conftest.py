@@ -104,8 +104,8 @@ async def async_apps(mocker, status, config):
     cinder_status = status["cinder_ch"]
     app_config = config["openstack_ussuri"]
     mocker.patch.object(
-        analyze,
-        "get_pkg_version",
+        analyze.Application,
+        "_get_pkg_version",
         side_effect=[
             "2:17.0.1-0ubuntu1~cloud0",  # keystone units
             "2:17.0.1-0ubuntu1~cloud0",
@@ -115,7 +115,7 @@ async def async_apps(mocker, status, config):
             "2:16.4.2-0ubuntu2.2~cloud0",
         ],
     )
-    mocker.patch.object(analyze, "get_openstack_release", return_value=None)
+    mocker.patch.object(analyze.Application, "_get_openstack_release", return_value=None)
     app_keystone = await analyze.Application(
         "keystone", keystone_status, app_config, "my_model"
     ).fill()
