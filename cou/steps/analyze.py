@@ -29,9 +29,9 @@ from cou.utils.juju_utils import (
     async_get_application_config,
     async_get_full_juju_status,
     async_run_on_unit,
-    extract_charm_name,
 )
 from cou.utils.openstack import CHARM_TYPES, get_os_code_info
+from cou.utils.upgrade_utils import extract_charm_name_from_url
 
 
 @dataclass
@@ -69,7 +69,7 @@ class Application:
 
     async def fill(self) -> Application:
         """Initiate the Application dataclass."""
-        self.charm = extract_charm_name(self.status.charm)
+        self.charm = extract_charm_name_from_url(self.status.charm)
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.pkg_name = self._get_pkg_name()

@@ -17,9 +17,7 @@ from collections import defaultdict
 import pytest
 import yaml
 
-from cou import exceptions
 from cou.steps import analyze
-from cou.utils import juju_utils
 
 
 def test_application_eq(status, config, mocker):
@@ -244,16 +242,6 @@ async def test_analysis_dump(mocker, async_apps):
 
     result = await analyze.analyze()
     assert result.dump() == expected_result
-
-
-@pytest.mark.asyncio
-async def test_application_invalid_charm_name(mocker, status, config):
-    """Assert that raises error if charm name is invalid."""
-    mocker.patch.object(juju_utils.re, "match", return_value=None)
-    with pytest.raises(exceptions.InvalidCharmNameError):
-        await analyze.Application(
-            "keystone", status["keystone_ch"], config["openstack_ussuri"], "my_model"
-        ).fill()
 
 
 @pytest.mark.parametrize(
