@@ -37,6 +37,7 @@ SERVICE_GROUPS = (
             "gnocchi",
             "heat",
             "manila",
+            "manila-ganesha",
             "manila-generic",
             "neutron-api",
             "neutron-gateway",

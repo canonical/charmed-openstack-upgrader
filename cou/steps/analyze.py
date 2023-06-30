@@ -124,6 +124,7 @@ class Application:
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
+        self.action_managed_upgrade_support = self._has_action_managed_upgrade()
         for unit in self.status.units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
@@ -215,6 +216,7 @@ class Application:
         """
         for origin in ("openstack-origin", "source"):
             if self.config.get(origin):
+                self.origin_setting = origin
                 return self.config[origin].get("value", "")
 
         logging.warning("Failed to get origin for %s, no origin config found", self.name)

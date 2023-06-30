@@ -59,9 +59,7 @@ def parse_args(args: Any) -> argparse.Namespace:
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level",
     )
-    parser.add_argument(
-        "--interactive", default=True, help="Sets the interactive prompts", action="store_true"
-    )
+    parser.add_argument("--interactive", help="Sets the interactive prompts", action="store_true")
 
     return parser.parse_args(args)
 
@@ -156,7 +154,7 @@ async def entrypoint() -> None:
         if args.dry_run:
             print(upgrade_plan)
         else:
-            await apply_plan(upgrade_plan)
+            await apply_plan(upgrade_plan, args.interactive)
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logging.exception(exc)

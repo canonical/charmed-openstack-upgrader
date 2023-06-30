@@ -80,3 +80,13 @@ class ActionFailed(Exception):
             "completed={completed} output={output})".format(**params)
         )
         super().__init__(message)
+
+
+class UnitError(Exception):
+    """Exception raised for units in error state."""
+
+    def __init__(self, units):
+        """Set units in error state in messgae and raise."""
+        message = "Units {} in error state".format(",".join([u.entity_id for u in units]))
+        self.units = units
+        super(UnitError, self).__init__(message)

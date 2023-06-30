@@ -19,8 +19,12 @@ import logging
 
 import cou.utils.juju_utils as utils
 from cou.steps import UpgradeStep
-from cou.steps.analyze import Analysis
+from cou.steps.analyze import Analysis, Application
 from cou.steps.backup import backup
+from cou.steps.openstack_checks import openstack_version_check_apps
+
+from cou.steps.upgrade.ceph import CephUpgradePlan
+from cou.steps.upgrade.basic import BasicCharmUpgradePlan
 
 
 async def generate_plan(args: Analysis) -> UpgradeStep:
@@ -41,4 +45,7 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
             model_name=await utils.async_get_current_model_name(),
         )
     )
+    for app in apps:
+        app_upgrade_plan = PLAN_HANDLER.get(app.charm, BasicCharmUpgradePlan)
+        plan.add_step(app_upgrade_plan(app, current_os_release, next_release).generate_plan())
     return plan

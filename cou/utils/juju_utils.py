@@ -356,3 +356,158 @@ async def async_upgrade_charm(
         revision=revision,
         switch=switch,
     )
+
+
+async def async_set_application_config(application_name, configuration, model_name=None):
+    """Set application configuration.
+
+    NOTE: At the time of this writing python-libjuju requires all values passed
+    to `set_config` to be `str`.
+    https://github.com/juju/python-libjuju/issues/388
+
+    :param model_name: Name of model to query.
+    :type model_name: str
+    :param application_name: Name of application
+    :type application_name: str
+    :param configuration: Dictionary of configuration setting(s)
+    :type configuration: Dict[str,str]
+    """
+    model = await get_model(model_name)
+    return await model.applications[application_name].set_config(configuration)
+
+
+def units_with_wl_status_state(model, state):
+    """Return a list of unit which have a matching workload status.
+
+    :returns: Units in error state
+    :rtype: [juju.Unit, ...]
+    """
+    matching_units = []
+    for unit in model.units.values():
+        wl_status = unit.workload_status
+        if wl_status == state:
+            matching_units.append(unit)
+    return matching_units
+
+
+async def block_until_auto_reconnect_model(
+    *conditions, model=None, aconditions=None, timeout=None, wait_period=0.5
+):
+    """Async block on the model until conditions met.
+
+    This function doesn't use model.block_until() which unfortunately raises
+    websockets.exceptions.ConnectionClosed if the connections gets closed,
+    which seems to happen quite frequently.  This funtion blocks until the
+    conditions are met or a timeout occurs, and reconnects the model if it
+    becomes disconnected.
+
+    Note that conditions are just passed as an unamed list in the function call
+    to make it work more like the more simple 'block_until' function.
+
+    Note: conditions must capture libjuju objects in closures as the model may
+    change if it is disconnected. The closures should refetch the juju objects
+    from the model as needed.
+
+    :param model: the model to use
+    :type model: :class:'juju.Model()'
+    :param conditions: a list of callables that need to evaluate to True.
+    :type conditions: [List[Callable[[:class:'juju.Model()'], bool]]]
+    :param aconditions: an optional list of async callables that need to
+        evaluate to True.
+    :type aconditions:
+        Optional[List[AsyncCallable[[:class:'juju.Model()'], bool]]]
+    :param timeout: the timeout to wait for the block on.
+    :type timeout: float
+    :param wait_period: The time to sleep between checking the conditions.
+    :type wait_period: float
+    :raises: TimeoutError if the conditions never match (assuming timeout is
+        not None).
+    """
+    assert model is not None, "model can't be None in " "block_until_auto_reconnect_model()"
+    aconditions = aconditions or []
+
+    def _done():
+        return all(c() for c in conditions)
+
+    async def _adone():
+        evaluated = []
+        # note Python 3.5 doesn't support async comprehensions; do it the old
+        # fashioned way.
+        for c in aconditions:
+            evaluated.append(await c())
+            if is_model_disconnected(model):
+                return False
+        return all(evaluated)
+
+    async def _block():
+        while True:
+            # reconnect if disconnected, as the conditions still need to be
+            # checked.
+            await ensure_model_connected(model)
+            result = _done()
+            aresult = await _adone()
+            if all((not is_model_disconnected(model), result, aresult)):
+                return
+            else:
+                await asyncio.sleep(wait_period)
+
+    # finally wait for all the conditions to be true
+    await asyncio.wait_for(_block(), timeout)
+
+
+async def ensure_model_connected(model):
+    """Ensure that the model is connected.
+
+    If model is disconnected then reconnect it.
+
+    :param model: the model to check
+    :type model: :class:'juju.Model'
+    """
+    if is_model_disconnected(model):
+        model_name = model.info.name
+        logging.warning(
+            "model: %s has disconnected, forcing full disconnection " "and then reconnecting ...",
+            model_name,
+        )
+        try:
+            await model.disconnect()
+        except Exception:
+            # We don't care if disconnect fails; we're much more
+            # interested in re-connecting, and this is just to clean up
+            # anything that might be left over (i.e.
+            # model.is_connected() might be true, but
+            # model.connection().is_open may be false
+            pass
+        logging.warning("Attempting to reconnect model %s", model_name)
+        await model.connect_model(model_name)
+
+
+async def async_block_until_all_units_idle(
+    model_name=None, timeout=2700, ignore_hard_errors=False
+):
+    """Block until all units in the given model are idle.
+
+    An example accessing this function via its sync wrapper::
+
+        block_until_all_units_idle('modelname')
+
+    :param model_name: Name of model to query.
+    :type model_name: str
+    :param timeout: Time to wait for status to be achieved
+    :type timeout: float
+    :param ignore_hard_deploy_error: Whether to ignore charms going into an
+                                     error state.
+    :type ignore_hard_deploy_error: Boolean
+    """
+    model = await get_model(model_name)
+    await block_until_auto_reconnect_model(
+        lambda: units_with_wl_status_state(model, "error") or model.all_units_idle(),
+        model=model,
+        timeout=timeout,
+    )
+    errored_units = units_with_wl_status_state(model, "error")
+    if errored_units:
+        if ignore_hard_errors:
+            logging.warning("Units {} in error state. ".format(errored_units))
+        else:
+            raise UnitError(errored_units)
