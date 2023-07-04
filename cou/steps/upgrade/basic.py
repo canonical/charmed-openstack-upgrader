@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Application
 from cou.utils.juju_utils import (
@@ -8,12 +9,14 @@ from cou.utils.juju_utils import (
     async_upgrade_charm,
 )
 
+
 def wait_for_idle():
     return UpgradeStep(
         description="wait for idle",
         parallel=False,
         function=async_block_until_all_units_idle,
     )
+
 
 @dataclass
 class BasicCharmUpgradePlan:
@@ -25,16 +28,22 @@ class BasicCharmUpgradePlan:
         self.plan = UpgradeStep(
             description=f"Upgrade {self.app.name}", parallel=False, function=None
         )
-        self.refresh_current_channel()
+        self.add_refresh_current_channel()
         self.refresh_next_channel()
         self.upgrade_plan()
         return self.plan
 
-    def refresh_current_channel(self):
+    def add_plan_refresh_current_channel(self, plan):
+        plan = self._add_plan_charmhub_migration(plan)
+        plan = self._add_plan_change_current_channel(plan)
+        plan = self._add_plan_update_current_channel(plan)
+        return plan
+
+    def _add_plan_charmhub_migration(self, plan):
         if self.app.charm_origin == "cs":
-            self.plan.add_step(
+            plan.add_step(
                 UpgradeStep(
-                    description="Migration from charmstore to charmhub",
+                    description=f"App: {self.app.name} -> Migration from charmstore to charmhub",
                     parallel=False,
                     function=async_upgrade_charm,
                     application_name=self.app.name,
@@ -43,40 +52,44 @@ class BasicCharmUpgradePlan:
                     switch=f"ch:{self.app.charm}",
                 )
             )
-            self.plan.add_step(wait_for_idle())
-        elif self.app.channel != self.current_channel and self.app.channel != self.next_channel:
-            self.plan.add_step(
+        return plan
+
+    def _add_plan_change_current_channel(self, plan):
+        if self.app.channel != self.current_channel and self.app.channel != self.next_channel:
+            plan.add_step(
                 UpgradeStep(
-                    description=f"Changing channel from: {self.app.channel} to: {self.current_channel}",
+                    description=f"Changing {self.app.name} channel from: {self.app.channel} to: {self.current_channel}",
                     parallel=False,
                     function=async_upgrade_charm,
                     application_name=self.app.name,
                     channel=self.current_channel,
                 )
             )
-            self.plan.add_step(wait_for_idle())
-        elif self.app.channel == self.next_channel:
+        return plan
+
+    def _add_plan_update_current_channel(self, plan):
+        if self.app.channel == self.next_channel:
             logging.warning(
                 "App: %s already has the channel set for the next OpenStack version %s",
                 self.app.name,
                 self.next_os_release,
             )
         else:
-            self.plan.add_step(
+            plan.add_step(
                 UpgradeStep(
-                    description=f"Refresh to the latest revision of {self.current_channel}",
+                    description=f"Refresh {self.app.name} to the latest revision of {self.current_channel}",
                     parallel=False,
                     function=async_upgrade_charm,
                     application_name=self.app.name,
                 )
             )
-            self.plan.add_step(wait_for_idle())
+        return plan
 
     def refresh_next_channel(self):
         if self.app.channel != self.next_channel:
             self.plan.add_step(
                 UpgradeStep(
-                    description=f"Refresh to the new channel: '{self.next_channel}'",
+                    description=f"Refresh {self.app.name} to the new channel: '{self.next_channel}'",
                     parallel=False,
                     function=async_upgrade_charm,
                     application_name=self.app.name,

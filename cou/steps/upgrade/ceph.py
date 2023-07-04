@@ -2,6 +2,10 @@ from cou.steps.upgrade.basic import BasicCharmUpgradePlan
 
 
 class CephUpgradePlan(BasicCharmUpgradePlan):
+    """Ceph upgrade plan."""
+
+    # NOTE (gabrielcocenza)
+    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
     openstack_map = {
         "ussuri": "octopus",
         "victoria": "octopus",
