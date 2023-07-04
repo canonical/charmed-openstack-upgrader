@@ -1,8 +1,9 @@
 """Generic setup for functional tests."""
-import asyncio
 import logging
 import os
 import unittest
+
+import zaza
 
 from cou.steps.backup import backup
 
@@ -15,7 +16,9 @@ class BackupTest(unittest.TestCase):
     def test_backup(self):
         """Backup Test."""
         logger.info("Running backup test....")
-        backup_file = asyncio.run(backup())
+        sync_backup = zaza.sync_wrapper(backup)
+        zaza.get_or_create_libjuju_thread()
+        backup_file = sync_backup()
         logger.info("Backup file: %s", backup_file)
         assert os.path.getsize(backup_file) > 0
         self.addCleanup(os.remove, backup_file)
