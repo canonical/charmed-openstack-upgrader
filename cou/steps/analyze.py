@@ -44,7 +44,7 @@ class Analysis:
     @classmethod
     async def create(cls) -> Analysis:
         """Analyze the deployment before planning."""
-        logging.info("Analyzing the Openstack deployment...")
+        logging.info("Analyzing the OpenStack deployment...")
         apps = await Analysis._populate()
 
         return Analysis(apps=apps)
@@ -64,7 +64,7 @@ class Analysis:
             for app, app_status in juju_status.applications.items()
         ]
         apps = set(await asyncio.gather(*app_list))
-        # NOTE(gabrielcocenza) Not all openstack-charms are mapped in the zaza lookup.
+        # NOTE(gabrielcocenza) Not all OpenStack charms are mapped in the zaza lookup.
         openstack_apps = {app for app in apps if app.charm in CHARM_TYPES}
         not_supported_apps = apps - openstack_apps
         not_supported_apps_names = sorted([app.name for app in not_supported_apps])

@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Entrypoint to the 'charmed openstack upgrader'."""
+"""Entrypoint to the 'charmed-openstack-upgrader'."""
 import argparse
 import logging
 import logging.handlers
