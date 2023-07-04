@@ -18,6 +18,7 @@ import pytest
 import yaml
 
 from cou.steps import analyze
+from cou.steps.analyze import Analysis
 
 
 def test_application_eq(status, config, mocker):
@@ -186,11 +187,10 @@ async def test_analysis_dump(mocker, async_apps):
         "      pkg_version: 16.4.2\n"
     )
     apps = await async_apps
-    result = analyze.Analysis(apps=apps)
-    mocker.patch.object(analyze, "generate_model", return_value=apps)
 
-    result = await analyze.analyze()
-    assert result.dump() == expected_result
+    mocker.patch.object(analyze.Analysis, "_populate", return_value=apps)
+    result = await analyze.Analysis.create()
+    assert str(result) == expected_result
 
 
 @pytest.mark.asyncio
@@ -280,7 +280,7 @@ async def test_generate_model(mocker, full_status, config):
     mocker.patch.object(analyze.Application, "_get_openstack_release", return_value=None)
     # Initially, 3 applications are in the status (keystone, cinder and rabbitmq-server)
     assert len(full_status.applications) == 3
-    apps = await analyze.generate_model()
+    apps = await Analysis._populate()
     # rabbitmq-server is filtered from supported openstack charms.
     assert len(apps) == 2
     assert {app.charm for app in apps} == {"keystone", "cinder"}
@@ -291,7 +291,7 @@ async def test_analysis(mocker, async_apps):
     """Test analysis function."""
     apps = await async_apps
     expected_result = analyze.Analysis(apps=apps)
-    mocker.patch.object(analyze, "generate_model", return_value=apps)
+    mocker.patch.object(analyze.Analysis, "_populate", return_value=apps)
 
-    result = await analyze.analyze()
+    result = await Analysis.create()
     assert result == expected_result

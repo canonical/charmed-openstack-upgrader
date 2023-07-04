@@ -16,6 +16,7 @@
 """Functions for analyzing an OpenStack cloud before an upgrade."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -40,8 +41,41 @@ class Analysis:
 
     apps: Iterable[Application]
 
-    def dump(self) -> str:
-        """Dump as yaml."""
+    @classmethod
+    async def create(cls) -> Analysis:
+        """Analyze the deployment before planning."""
+        logging.info("Analyzing the Openstack deployment...")
+        apps = await Analysis._populate()
+
+        return Analysis(apps=apps)
+
+    @classmethod
+    async def _populate(cls) -> set[Application]:
+        """Generate the applications model."""
+        juju_status = await async_get_full_juju_status()
+        model_name = juju_status.model.name
+        app_list = [
+            Application(
+                name=app,
+                status=app_status,
+                config=await async_get_application_config(app),
+                model_name=model_name,
+            ).fill()
+            for app, app_status in juju_status.applications.items()
+        ]
+        apps = set(await asyncio.gather(*app_list))
+        # NOTE(gabrielcocenza) Not all openstack-charms are mapped in the zaza lookup.
+        openstack_apps = {app for app in apps if app.charm in CHARM_TYPES}
+        not_supported_apps = apps - openstack_apps
+        not_supported_apps_names = sorted([app.name for app in not_supported_apps])
+        logging.warning(
+            "App(s): %s are not supported in the analyze process",
+            ", ".join(not_supported_apps_names),
+        )
+        return openstack_apps
+
+    def __str__(self) -> str:
+        """Dump as string."""
         return "\n".join([str(app) for app in self.apps])
 
 
@@ -172,34 +206,3 @@ class Application:
         except AttributeError:
             logging.warning("Failed to get pkg version for '%s'", self.name)
             return ""
-
-
-async def generate_model() -> set[Application]:
-    """Generate the applications model."""
-    juju_status = await async_get_full_juju_status()
-    model_name = juju_status.model.name
-    apps = {
-        await Application(
-            name=app,
-            status=app_status,
-            config=await async_get_application_config(app),
-            model_name=model_name,
-        ).fill()
-        for app, app_status in juju_status.applications.items()
-    }
-    # NOTE(gabrielcocenza) Not all openstack-charms are mapped in the zaza lookup.
-    openstack_apps = {app for app in apps if app.charm in CHARM_TYPES}
-    not_supported_apps = apps - openstack_apps
-    not_supported_apps_names = sorted([app.name for app in not_supported_apps])
-    logging.warning(
-        "App(s): %s are not supported in the analyze process", ", ".join(not_supported_apps_names)
-    )
-    return openstack_apps
-
-
-async def analyze() -> Analysis:
-    """Analyze the deployment before planning."""
-    logging.info("Analyzing the Openstack deployment...")
-    apps = await generate_model()
-
-    return Analysis(apps=apps)

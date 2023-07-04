@@ -33,7 +33,7 @@ def test_setup_logging():
 async def test_entrypoint_with_exception():
     with patch("cou.cli.parse_args"), patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
-    ) as mock_generate_plan, patch("cou.cli.apply_plan"), patch("cou.cli.analyze"):
+    ) as mock_generate_plan, patch("cou.cli.apply_plan"), patch("cou.cli.Analysis.create"):
         mock_generate_plan.side_effect = Exception("An error occurred")
 
         result = await entrypoint()
@@ -47,7 +47,7 @@ async def test_entrypoint_dry_run():
     with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
     ), patch("cou.cli.dump_plan") as mock_dump_plan, patch("cou.cli.apply_plan"), patch(
-        "cou.cli.analyze"
+        "cou.cli.Analysis.create"
     ):
         mock_parse_args.return_value = MagicMock()
         mock_parse_args.return_value.dry_run = True
@@ -63,7 +63,7 @@ async def test_entrypoint_real_run():
     with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
     ), patch("cou.cli.dump_plan"), patch("cou.cli.apply_plan") as mock_apply_plan, patch(
-        "cou.cli.analyze"
+        "cou.cli.Analysis.create"
     ):
         mock_parse_args.return_value = MagicMock()
         mock_parse_args.return_value.dry_run = False
