@@ -24,6 +24,7 @@ from cou.steps.backup import backup
 from cou.steps.openstack_checks import openstack_version_check_apps
 from cou.steps.upgrade.basic import BasicCharmUpgradePlan
 from cou.steps.upgrade.ceph import CephUpgradePlan
+from cou.utils.juju_utils import async_block_until_all_units_idle
 
 
 async def generate_plan(args: Analysis) -> UpgradeStep:
@@ -50,8 +51,13 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
     plan_refresh_next_channel = UpgradeStep(
         description="Refresh next channel", parallel=False, function=None
     )
+    plan_disable_action_managed = UpgradeStep(
+        description="Set action-managed-upgrade to False (all-in-one)",
+        parallel=False,
+        function=None,
+    )
     plan_payload_upgrade = UpgradeStep(
-        description="Upgrade payload", parallel=False, function=None
+        description="Payload upgrade", parallel=False, function=None
     )
 
     for app in apps:
@@ -61,6 +67,23 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
         plan_refresh_current_channel = app_upgrade_plan.add_plan_refresh_current_channel(
             plan_refresh_current_channel
         )
+        plan_refresh_next_channel = app_upgrade_plan.add_plan_refresh_next_channel(
+            plan_refresh_next_channel
+        )
+        plan_disable_action_managed = app_upgrade_plan.add_plan_disable_action_managed(
+            plan_disable_action_managed
+        )
+        plan_payload_upgrade = app_upgrade_plan.add_plan_payload_upgrade(plan_payload_upgrade)
 
-    plan.add_step(plan_refresh_current_channel)
+    sub_plans = [
+        plan_refresh_current_channel,
+        plan_refresh_next_channel,
+        plan_disable_action_managed,
+        plan_payload_upgrade,
+    ]
+    for sub_plan in sub_plans:
+        if sub_plan.sub_steps:
+            sub_plan.add_step(wait_for_idle())
+            plan.add_step(sub_plan)
+
     return plan
