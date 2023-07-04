@@ -68,7 +68,7 @@ async def apply_plan(upgrade_plan: UpgradeStep) -> None:
                 for sub_step in upgrade_plan.sub_steps:
                     await apply_plan(sub_step)
             case "a":
-                logging.info("Aborning plan")
+                logging.info("Aborting plan")
                 sys.exit(1)
             case "s":
                 logging.info("Skipped")
