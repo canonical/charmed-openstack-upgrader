@@ -1,9 +1,10 @@
 from argparse import ArgumentError
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cou.cli import entrypoint, parse_args, setup_logging
+from cou.cli import apply_plan, entrypoint, parse_args, prompt, setup_logging
+from cou.steps import UpgradeStep
 
 
 def test_parse_args():
@@ -44,27 +45,31 @@ async def test_entrypoint_with_exception():
 
 @pytest.mark.asyncio
 async def test_entrypoint_dry_run():
+    expected = "Top level plan\n\tbackup mysql databases\n"
+    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+
     with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
-    ), patch("cou.cli.dump_plan") as mock_dump_plan, patch("cou.cli.apply_plan"), patch(
-        "cou.cli.Analysis.create"
-    ):
+    ) as mock_generate_plan, patch("cou.cli.apply_plan"), patch("cou.cli.Analysis.create"), patch(
+        "builtins.print"
+    ) as mock_print:
         mock_parse_args.return_value = MagicMock()
         mock_parse_args.return_value.dry_run = True
 
+        mock_generate_plan.return_value = plan
+
         result = await entrypoint()
+        mock_print.assert_called_with(expected)
 
         assert result == 0
-        mock_dump_plan.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_entrypoint_real_run():
     with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
-    ), patch("cou.cli.dump_plan"), patch("cou.cli.apply_plan") as mock_apply_plan, patch(
-        "cou.cli.Analysis.create"
-    ):
+    ), patch("cou.cli.apply_plan") as mock_apply_plan, patch("cou.cli.Analysis.create"):
         mock_parse_args.return_value = MagicMock()
         mock_parse_args.return_value.dry_run = False
 
@@ -72,3 +77,67 @@ async def test_entrypoint_real_run():
 
         assert result == 0
         mock_apply_plan.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_apply_plan_continue():
+    upgrade_plan = AsyncMock()
+    upgrade_plan.description = "Test Plan"
+    upgrade_plan.run = AsyncMock()
+    sub_step = AsyncMock()
+    sub_step.description = "Test Plan"
+    upgrade_plan.sub_steps = [sub_step]
+
+    with patch("cou.cli.input") as mock_input, patch("cou.cli.sys") as mock_sys:
+        mock_input.return_value = "C"
+        await apply_plan(upgrade_plan)
+
+        mock_input.assert_called_with(prompt("Test Plan"))
+        assert upgrade_plan.run.call_count == 1
+        assert sub_step.run.call_count == 1
+        mock_sys.exit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_apply_plan_abort():
+    upgrade_plan = AsyncMock()
+    upgrade_plan.description = "Test Plan"
+
+    with patch("cou.cli.input") as mock_input:
+        mock_input.return_value = "a"
+        with pytest.raises(SystemExit):
+            await apply_plan(upgrade_plan)
+
+        mock_input.assert_called_once_with(prompt("Test Plan"))
+        upgrade_plan.function.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_apply_plan_nonsense():
+    upgrade_plan = MagicMock()
+    upgrade_plan.description = "Test Plan"
+
+    with pytest.raises(SystemExit):
+        with patch("cou.cli.input") as mock_input, patch("cou.cli.logging.info") as log:
+            mock_input.side_effect = ["x", "a"]
+            await apply_plan(upgrade_plan)
+
+            log.assert_called_once_with("No valid input provided!")
+            mock_input.assert_called_once_with(prompt("Test Plan"))
+            upgrade_plan.function.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_apply_plan_skip():
+    upgrade_plan = MagicMock()
+    upgrade_plan.description = "Test Plan"
+    sub_step = MagicMock()
+    sub_step.description = sub_step
+    upgrade_plan.sub_steps = [sub_step]
+
+    with patch("cou.cli.input") as mock_input, patch("cou.cli.sys") as mock_sys:
+        mock_input.return_value = "s"
+        await apply_plan(upgrade_plan)
+
+        upgrade_plan.function.assert_not_called()
+        mock_sys.exit.assert_not_called()

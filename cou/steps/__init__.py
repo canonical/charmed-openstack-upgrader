@@ -49,3 +49,15 @@ class UpgradeStep:
                 return await self.function(**self.params)
             return await self.function()
         return None
+
+    def __str__(self) -> str:
+        """Dump the plan for upgrade."""
+        result = ""
+        tab = "\t"
+        steps_to_visit = [(self, 0)]
+        while steps_to_visit:
+            step, indent = steps_to_visit.pop()
+            result += f"{tab * indent}{step.description}\n"
+            steps_to_visit.extend([(s, indent + 1) for s in step.sub_steps])
+
+        return result

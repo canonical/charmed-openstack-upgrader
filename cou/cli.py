@@ -23,10 +23,14 @@ import sys
 from datetime import datetime
 from typing import Any
 
+from colorama import Fore, Style
+
+from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
-from cou.steps.plan import apply_plan, dump_plan, generate_plan
+from cou.steps.plan import generate_plan
 
 COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
+AVAILABLE_OPTIONS = "cas"
 
 
 def parse_args(args: Any) -> argparse.Namespace:
@@ -85,6 +89,45 @@ def setup_logging(log_level: str = "INFO") -> None:
     logging.info("Logs of this execution can be found at %s", file_name)
 
 
+def prompt(parameter: str) -> str:
+    """Generate eye-catching prompt."""
+
+    def bold(text: str) -> str:
+        return Style.RESET_ALL + Fore.RED + Style.BRIGHT + text + Style.RESET_ALL
+
+    def normal(text: str) -> str:
+        return Style.RESET_ALL + Fore.RED + text + Style.RESET_ALL
+
+    return (
+        normal(parameter + " (")
+        + bold("c")
+        + normal(")ontinue/(")
+        + bold("a")
+        + normal(")bort/(")
+        + bold("s")
+        + normal(")kip:")
+    )
+
+
+async def apply_plan(upgrade_plan: UpgradeStep) -> None:
+    """Apply the plan for upgrade."""
+    result = "X"
+    while result.casefold() not in AVAILABLE_OPTIONS:
+        result = input(prompt(upgrade_plan.description)).casefold()
+        match result:
+            case "c":
+                await upgrade_plan.run()
+                for sub_step in upgrade_plan.sub_steps:
+                    await apply_plan(sub_step)
+            case "a":
+                logging.info("Aborting plan")
+                sys.exit(1)
+            case "s":
+                logging.info("Skipped")
+            case _:
+                logging.info("No valid input provided!")
+
+
 async def entrypoint() -> int:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
@@ -95,7 +138,7 @@ async def entrypoint() -> int:
         print(analysis_result)
         upgrade_plan = generate_plan(analysis_result)
         if args.dry_run:
-            dump_plan(upgrade_plan)
+            print(str(upgrade_plan))
         else:
             await apply_plan(upgrade_plan)
 

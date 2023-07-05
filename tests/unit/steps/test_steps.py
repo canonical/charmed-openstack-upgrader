@@ -64,3 +64,10 @@ async def test_upgrade_step_run_none():
     u = UpgradeStep(description="test", function=None, parallel=False)
     result = await u.run()
     assert result is None
+
+
+def test___str__():
+    expected = "Top level plan\n\tbackup mysql databases\n"
+    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    str(plan) == expected
