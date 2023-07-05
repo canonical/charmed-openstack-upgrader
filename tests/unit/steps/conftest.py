@@ -23,51 +23,40 @@ from cou.steps import analyze
 
 @pytest.fixture
 def status():
-    mock_keystone_ch = mock.MagicMock()
-    mock_keystone_ch.charm_channel = "ussuri/stable"
-    mock_keystone_ch.charm = "ch:amd64/focal/keystone-638"
-    mock_units_keystone = mock.MagicMock()
-    mock_units_keystone.workload_version = "17.0.1"
-    mock_keystone_ch.units = OrderedDict(
+    mock_keystone_ussuri = mock.MagicMock()
+    mock_keystone_ussuri.charm_channel = "ussuri/stable"
+    mock_keystone_ussuri.charm = "ch:amd64/focal/keystone-638"
+    mock_units_keystone_ussuri = mock.MagicMock()
+    mock_units_keystone_ussuri.workload_version = "17.0.1"
+    mock_keystone_ussuri.units = OrderedDict(
         [
-            ("keystone/0", mock_units_keystone),
-            ("keystone/1", mock_units_keystone),
-            ("keystone/2", mock_units_keystone),
+            ("keystone/0", mock_units_keystone_ussuri),
+            ("keystone/1", mock_units_keystone_ussuri),
+            ("keystone/2", mock_units_keystone_ussuri),
         ]
     )
 
-    mock_cinder_ch = mock.MagicMock()
-    mock_cinder_ch.charm_channel = "ussuri/stable"
-    mock_cinder_ch.charm = "ch:amd64/focal/cinder-633"
-    mock_units_cinder = mock.MagicMock()
-    mock_units_cinder.workload_version = "16.4.2"
-    mock_cinder_ch.units = OrderedDict(
+    mock_cinder_ussuri = mock.MagicMock()
+    mock_cinder_ussuri.charm_channel = "ussuri/stable"
+    mock_cinder_ussuri.charm = "ch:amd64/focal/cinder-633"
+    mock_units_cinder_ussuri = mock.MagicMock()
+    mock_units_cinder_ussuri.workload_version = "16.4.2"
+    mock_cinder_ussuri.units = OrderedDict(
         [
-            ("cinder/0", mock_units_cinder),
-            ("cinder/1", mock_units_cinder),
-            ("cinder/2", mock_units_cinder),
+            ("cinder/0", mock_units_cinder_ussuri),
+            ("cinder/1", mock_units_cinder_ussuri),
+            ("cinder/2", mock_units_cinder_ussuri),
         ]
     )
 
-    mock_keystone_cs = mock.MagicMock()
-    mock_keystone_cs.charm_channel = "ussuri/stable"
-    mock_keystone_cs.charm = "cs:amd64/focal/keystone-638"
-    mock_keystone_cs.units = OrderedDict(
+    mock_keystone_ussuri_cs = mock.MagicMock()
+    mock_keystone_ussuri_cs.charm_channel = "ussuri/stable"
+    mock_keystone_ussuri_cs.charm = "cs:amd64/focal/keystone-638"
+    mock_keystone_ussuri_cs.units = OrderedDict(
         [
-            ("keystone/0", mock_units_keystone),
-            ("keystone/1", mock_units_keystone),
-            ("keystone/2", mock_units_keystone),
-        ]
-    )
-
-    mock_keystone_wrong_channel = mock.MagicMock()
-    mock_keystone_wrong_channel.charm_channel = "latest/stable"
-    mock_keystone_wrong_channel.charm = "ch:amd64/focal/keystone-638"
-    mock_keystone_wrong_channel.units = OrderedDict(
-        [
-            ("keystone/0", mock_units_keystone),
-            ("keystone/1", mock_units_keystone),
-            ("keystone/2", mock_units_keystone),
+            ("keystone/0", mock_units_keystone_ussuri),
+            ("keystone/1", mock_units_keystone_ussuri),
+            ("keystone/2", mock_units_keystone_ussuri),
         ]
     )
 
@@ -75,7 +64,7 @@ def status():
     mock_keystone_wallaby.charm_channel = "wallaby/stable"
     mock_keystone_wallaby.charm = "ch:amd64/focal/keystone-638"
     mock_units_keystone_wallaby = mock.MagicMock()
-    mock_units_keystone_wallaby.workload_version = "18.1.0"
+    mock_units_keystone_wallaby.workload_version = "19.1.0"
     mock_keystone_wallaby.units = OrderedDict(
         [
             ("keystone/0", mock_units_keystone_wallaby),
@@ -92,11 +81,10 @@ def status():
     mock_rmq.units = OrderedDict([("rabbitmq-server/0", mock_units_rmq)])
 
     status = {
-        "keystone_ch": mock_keystone_ch,
-        "cinder_ch": mock_cinder_ch,
+        "keystone_ussuri": mock_keystone_ussuri,
+        "cinder_ussuri": mock_cinder_ussuri,
         "rabbitmq_server": mock_rmq,
-        "keystone_cs": mock_keystone_cs,
-        "keystone_wrong_channel": mock_keystone_wrong_channel,
+        "keystone_ussuri_cs": mock_keystone_ussuri_cs,
         "keystone_wallaby": mock_keystone_wallaby,
     }
     return status
@@ -108,8 +96,8 @@ def full_status(status):
     mock_full_status.model.name = "my_model"
     mock_full_status.applications = OrderedDict(
         [
-            ("keystone", status["keystone_ch"]),
-            ("cinder", status["cinder_ch"]),
+            ("keystone", status["keystone_ussuri"]),
+            ("cinder", status["cinder_ussuri"]),
             ("rabbitmq_server", status["rabbitmq_server"]),
         ]
     )
@@ -122,22 +110,19 @@ def units():
     units_wallaby = defaultdict(dict)
     for unit in ["keystone/0", "keystone/1", "keystone/2"]:
         units_ussuri[unit]["os_version"] = "ussuri"
-        units_ussuri[unit]["pkg_version"] = "17.0.1"
+        units_ussuri[unit]["workload_version"] = "17.0.1"
         units_wallaby[unit]["os_version"] = "wallaby"
-        units_wallaby[unit]["pkg_version"] = "18.1.0"
+        units_wallaby[unit]["workload_version"] = "19.1.0"
     return {"units_ussuri": units_ussuri, "units_wallaby": units_wallaby}
 
 
 @pytest.fixture
-async def async_apps(mocker, status, config):
-    keystone_status = status["keystone_ch"]
-    cinder_status = status["cinder_ch"]
+def apps(status, config):
+    keystone_status = status["keystone_ussuri"]
+    cinder_status = status["cinder_ussuri"]
     app_config = config["openstack_ussuri"]
-    mocker.patch.object(analyze.Application, "_get_openstack_release", return_value=None)
-    app_keystone = await analyze.Application(
-        "keystone", keystone_status, app_config, "my_model"
-    ).fill()
-    app_cinder = await analyze.Application("cinder", cinder_status, app_config, "my_model").fill()
+    app_keystone = analyze.Application("keystone", keystone_status, app_config, "my_model")
+    app_cinder = analyze.Application("cinder", cinder_status, app_config, "my_model")
 
     return [app_keystone, app_cinder]
 

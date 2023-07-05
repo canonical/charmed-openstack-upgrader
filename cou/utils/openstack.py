@@ -20,59 +20,62 @@ import six
 from cou.utils.os_versions import (
     OPENSTACK_CODENAMES,
     OVN_CODENAMES,
-    PACKAGE_CODENAMES,
     SWIFT_CODENAMES,
+    WORKLOAD_CODENAMES,
 )
 
 CHARM_TYPES = {
-    "neutron": {"pkg": "neutron-common", "origin_setting": "openstack-origin"},
-    "nova": {"pkg": "nova-common", "origin_setting": "openstack-origin"},
-    "glance": {"pkg": "glance-common", "origin_setting": "openstack-origin"},
-    "cinder": {"pkg": "cinder-common", "origin_setting": "openstack-origin"},
-    "keystone": {"pkg": "keystone", "origin_setting": "openstack-origin"},
-    "openstack-dashboard": {"pkg": "openstack-dashboard", "origin_setting": "openstack-origin"},
-    "ceilometer": {"pkg": "ceilometer-common", "origin_setting": "openstack-origin"},
-    "designate": {"pkg": "designate-common", "origin_setting": "openstack-origin"},
-    "ovn-central": {"pkg": "ovn-common", "origin_setting": "source"},
-    "ceph-mon": {"pkg": "ceph-common", "origin_setting": "source"},
-    "placement": {"pkg": "placement-common", "origin_setting": "openstack-origin"},
-    "nova-cloud-controller": {"pkg": "nova-common", "origin_setting": "openstack-origin"},
+    "neutron": {"workload": "neutron-common", "origin_setting": "openstack-origin"},
+    "nova": {"workload": "nova-common", "origin_setting": "openstack-origin"},
+    "glance": {"workload": "glance-common", "origin_setting": "openstack-origin"},
+    "cinder": {"workload": "cinder-common", "origin_setting": "openstack-origin"},
+    "keystone": {"workload": "keystone", "origin_setting": "openstack-origin"},
+    "openstack-dashboard": {
+        "workload": "openstack-dashboard",
+        "origin_setting": "openstack-origin",
+    },
+    "ceilometer": {"workload": "ceilometer-common", "origin_setting": "openstack-origin"},
+    "designate": {"workload": "designate-common", "origin_setting": "openstack-origin"},
+    "ovn-central": {"workload": "ovn-common", "origin_setting": "source"},
+    "ceph-mon": {"workload": "ceph-common", "origin_setting": "source"},
+    "placement": {"workload": "placement-common", "origin_setting": "openstack-origin"},
+    "nova-cloud-controller": {"workload": "nova-common", "origin_setting": "openstack-origin"},
 }
 
 
-def get_os_code_info(package, pkg_version) -> str:
+def get_os_code_info(workload_name, workload_version) -> str:
     """Determine OpenStack codename that corresponds to package version.
 
-    :param package: Package name
-    :type package: string
-    :param pkg_version: Package version
-    :type pkg_version: string
-    :returns: Codename for package
+    :param workload_name: Workload name
+    :type workload_name: string
+    :param workload_version: Workload version
+    :type workload_version: string
+    :returns: Codename for workload
     :rtype: string
     """
     # Remove epoch if it exists
-    if ":" in pkg_version:
-        pkg_version = pkg_version.split(":")[1:][0]
-    if "swift" in package:
+    if ":" in workload_version:
+        workload_version = workload_version.split(":")[1:][0]
+    if "swift" in workload_name:
         # Fully x.y.z match for swift versions
-        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", pkg_version)
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", workload_version)
     else:
         # x.y match only for 20XX.X
         # and ignore patch level for other packages
-        match = re.match(r"^(\d+)\.(\d+)", pkg_version)
+        match = re.match(r"^(\d+)\.(\d+)", workload_version)
 
     if match:
         vers = match.group(0)
     # Generate a major version number for newer semantic
     # versions of openstack projects
     major_vers = vers.split(".")[0]
-    if package in PACKAGE_CODENAMES and major_vers in PACKAGE_CODENAMES[package]:
-        return PACKAGE_CODENAMES[package][major_vers]
+    if workload_name in WORKLOAD_CODENAMES and major_vers in WORKLOAD_CODENAMES[workload_name]:
+        return WORKLOAD_CODENAMES[workload_name][major_vers]
     else:
         # < Liberty co-ordinated project versions
-        if "swift" in package:
+        if "swift" in workload_name:
             return get_swift_codename(vers)
-        elif "ovn" in package:
+        elif "ovn" in workload_name:
             return get_ovn_codename(vers)
         else:
             return OPENSTACK_CODENAMES[vers]

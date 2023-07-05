@@ -19,7 +19,8 @@ import os
 from typing import Optional
 
 import cou.utils.juju_utils as utils
-from cou.utils.upgrade_utils import extract_charm_name_from_url, get_upgrade_candidates
+from cou.utils.juju_utils import extract_charm_name_from_url
+from cou.utils.upgrade_utils import get_upgrade_candidates
 
 
 async def backup() -> str:

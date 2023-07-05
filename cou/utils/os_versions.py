@@ -189,7 +189,7 @@ OVN_CODENAMES = OrderedDict(
 )
 
 # >= Liberty version->codename mapping
-PACKAGE_CODENAMES = {
+WORKLOAD_CODENAMES = {
     "nova-common": OrderedDict(
         [
             ("12", "liberty"),
@@ -203,6 +203,9 @@ PACKAGE_CODENAMES = {
             ("20", "train"),
             ("21", "ussuri"),
             ("22", "victoria"),
+            ("23", "wallaby"),
+            ("24", "xena"),
+            ("25", "yoga"),
         ]
     ),
     "neutron-common": OrderedDict(
@@ -218,6 +221,9 @@ PACKAGE_CODENAMES = {
             ("15", "train"),
             ("16", "ussuri"),
             ("17", "victoria"),
+            ("18", "wallaby"),
+            ("19", "xena"),
+            ("20", "yoga"),
         ]
     ),
     "cinder-common": OrderedDict(
@@ -233,6 +239,9 @@ PACKAGE_CODENAMES = {
             ("15", "train"),
             ("16", "ussuri"),
             ("17", "victoria"),
+            ("18", "wallaby"),
+            ("19", "xena"),
+            ("20", "yoga"),
         ]
     ),
     "keystone": OrderedDict(
@@ -248,6 +257,9 @@ PACKAGE_CODENAMES = {
             ("16", "train"),
             ("17", "ussuri"),
             ("18", "victoria"),
+            ("19", "wallaby"),
+            ("20", "xena"),
+            ("21", "yoga"),
         ]
     ),
     "horizon-common": OrderedDict(
@@ -278,6 +290,9 @@ PACKAGE_CODENAMES = {
             ("13", "train"),
             ("14", "ussuri"),
             ("15", "victoria"),
+            ("16", "wallaby"),
+            ("17", "xena"),
+            ("18", "yoga"),
         ]
     ),
     "heat-common": OrderedDict(
@@ -293,6 +308,9 @@ PACKAGE_CODENAMES = {
             ("13", "train"),
             ("14", "ussuri"),
             ("15", "victoria"),
+            ("16", "wallaby"),
+            ("17", "xena"),
+            ("18", "yoga"),
         ]
     ),
     "glance-common": OrderedDict(
@@ -308,6 +326,9 @@ PACKAGE_CODENAMES = {
             ("19", "train"),
             ("20", "ussuri"),
             ("21", "victoria"),
+            ("22", "wallaby"),
+            ("23", "xena"),
+            ("24", "yoga"),
         ]
     ),
     "openstack-dashboard": OrderedDict(
@@ -338,6 +359,9 @@ PACKAGE_CODENAMES = {
             ("9", "train"),
             ("10", "ussuri"),
             ("11", "victoria"),
+            ("12", "wallaby"),
+            ("13", "xena"),
+            ("14", "yoga"),
         ]
     ),
     "ceph-common": OrderedDict(
@@ -356,6 +380,9 @@ PACKAGE_CODENAMES = {
             ("2", "train"),
             ("3", "ussuri"),
             ("4", "victoria"),
+            ("5", "wallaby"),
+            ("6", "xena"),
+            ("7", "yoga"),
         ]
     ),
 }

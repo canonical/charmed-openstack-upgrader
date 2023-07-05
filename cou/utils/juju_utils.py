@@ -17,6 +17,7 @@ import asyncio
 import collections
 import logging
 import os
+import re
 import time
 from typing import Any, Dict
 
@@ -33,6 +34,20 @@ MODEL_ALIASES: Dict[Any, Any] = {}
 # A collection of model name -> libjuju models associations; use to either
 # instantiate or handout a model, or start a new one.
 ModelRefs: Dict[Any, Any] = {}
+
+
+def extract_charm_name_from_url(charm_url):
+    """Extract the charm name from the charm url.
+
+    E.g. Extract 'heat' from local:bionic/heat-12
+
+    :param charm_url: Name of model to query.
+    :type charm_url: str
+    :returns: Charm name
+    :rtype: str
+    """
+    charm_name = re.sub(r"-[0-9]+$", "", charm_url.split("/")[-1])
+    return charm_name.split(":")[-1]
 
 
 async def async_get_juju_model():

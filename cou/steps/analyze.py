@@ -16,23 +16,21 @@
 """Functions for analyzing an OpenStack cloud before an upgrade."""
 from __future__ import annotations
 
-import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, Union
+from typing import Any, Iterable
 
-import yaml
 from juju.client._definitions import ApplicationStatus
+from ruamel.yaml import YAML
+from ruamel.yaml.compat import StringIO
 
-from cou.exceptions import CommandRunFailed
 from cou.utils.juju_utils import (
     async_get_application_config,
     async_get_full_juju_status,
-    async_run_on_unit,
+    extract_charm_name_from_url,
 )
 from cou.utils.openstack import CHARM_TYPES, get_os_code_info
-from cou.utils.upgrade_utils import extract_charm_name_from_url
 
 
 @dataclass
@@ -54,25 +52,16 @@ class Analysis:
         """Generate the applications model."""
         juju_status = await async_get_full_juju_status()
         model_name = juju_status.model.name
-        app_list = [
+        apps = {
             Application(
                 name=app,
                 status=app_status,
                 config=await async_get_application_config(app),
                 model_name=model_name,
-            ).fill()
+            )
             for app, app_status in juju_status.applications.items()
-        ]
-        apps = set(await asyncio.gather(*app_list))
-        # NOTE(gabrielcocenza) Not all OpenStack charms are mapped in the zaza lookup.
-        openstack_apps = {app for app in apps if app.charm in CHARM_TYPES}
-        not_supported_apps = apps - openstack_apps
-        not_supported_apps_names = sorted([app.name for app in not_supported_apps])
-        logging.warning(
-            "App(s): %s are not supported in the analyze process",
-            ", ".join(not_supported_apps_names),
-        )
-        return openstack_apps
+        }
+        return apps
 
     def __str__(self) -> str:
         """Dump as string."""
@@ -93,26 +82,19 @@ class Application:
     charm_origin: str = ""
     os_origin: str = ""
     channel: str = ""
-    pkg_name: str = ""
-    # E.g of units: {"keystone/0": {'os_version': 'victoria', 'pkg_version': '2:18.1'}}
-    units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
-    #  E.g of os_release_units: {"ussuri":{"keystone/0"}, "victoria": {"keystone/1"}}
-    os_release_units: defaultdict[str, set] = field(default_factory=lambda: defaultdict(set))
-    #  E.g of pkg_version_units: {"2:17.0": {"keystone/0"}, "2:18.0": {"keystone/1"}}
-    pkg_version_units: defaultdict[str, set] = field(default_factory=lambda: defaultdict(set))
 
-    async def fill(self) -> Application:
+    # e.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
+    units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
+
+    def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
         self.charm = extract_charm_name_from_url(self.status.charm)
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
-        self.pkg_name = self._get_pkg_name()
         self.os_origin = self._get_os_origin()
         for unit in self.status.units.keys():
-            os_version = await self._get_current_os_versions(unit)
+            os_version = self._get_current_os_versions(unit)
             self.units[unit]["os_version"] = os_version
-            self.os_release_units[os_version].add(unit)
-        return self
 
     def __hash__(self) -> int:
         """Hash magic method for Application."""
@@ -122,60 +104,49 @@ class Application:
         """Equal magic method for Application."""
         return other.name == self.name and other.charm == self.charm
 
-    def to_dict(self) -> Dict:
-        """Return a string in yaml format.
-
-        Passing the Application class directly to dump contain some fields that are big,
-        e.g: config and status. This output contains just the important fields for
-        the operator.
-        """
-        return {
+    def __str__(self) -> str:
+        """Dump as string."""
+        summary = {
             self.name: {
                 "model_name": self.model_name,
                 "charm": self.charm,
                 "charm_origin": self.charm_origin,
                 "os_origin": self.os_origin,
                 "channel": self.channel,
-                "pkg_name": self.pkg_name,
                 "units": {
                     unit: {
-                        "pkg_version": details.get("pkg_version", ""),
+                        "workload_version": details.get("workload_version", ""),
                         "os_version": details.get("os_version", ""),
                     }
                     for unit, details in self.units.items()
                 },
             }
         }
+        yaml = YAML()
+        stream = StringIO()
+        yaml.dump(summary, stream)
+        output_str = stream.getvalue()
+        stream.close()
+        return output_str
 
-    def __str__(self) -> str:
-        """Dump as string."""
-        return yaml.dump(self.to_dict())
-
-    def _get_pkg_name(self) -> str:
-        """Get the package name depending on the name of the charm."""
+    def _get_workload_name(self) -> str:
+        """Get the workload name depending on the name of the charm."""
         try:
-            pkg_name = CHARM_TYPES[self.charm]["pkg"]
+            workload = CHARM_TYPES[self.charm]["workload"]
         except KeyError:
-            logging.warning("package not found for application: %s", self.name)
-            pkg_name = ""
-        return pkg_name
+            logging.warning("workload not found for application: %s", self.name)
+            workload = ""
+        return workload
 
-    # NOTE (gabrielcocenza) Ideally, the application should provide the openstack version
-    # and packages versions by a charm action. This might be possible with Sunbeam.
-    async def _get_current_os_versions(self, unit: str) -> str:
+    def _get_current_os_versions(self, unit: str) -> str:
         """Get the openstack version of a unit."""
         version = ""
-        pkg_version = self._get_pkg_version(unit)
-        self.units[unit]["pkg_version"] = pkg_version
-        self.pkg_version_units[pkg_version].add(unit)
+        workload_name = self._get_workload_name()
+        workload_version = self._get_charm_workload_version(unit)
+        self.units[unit]["workload_version"] = workload_version
 
-        # for openstack releases >= wallaby
-        codename = await self._get_openstack_release(unit, model_name=self.model_name)
-        if codename:
-            version = codename
-        # for openstack releases < wallaby
-        elif self.pkg_name and pkg_version:
-            version = get_os_code_info(self.pkg_name, pkg_version)
+        if workload_name and workload_version:
+            version = get_os_code_info(workload_name, workload_version)
         return version
 
     def _get_os_origin(self) -> str:
@@ -187,22 +158,10 @@ class Application:
         logging.warning("Failed to get origin for %s, no origin config found", self.name)
         return ""
 
-    async def _get_openstack_release(
-        self, unit: str, model_name: Union[str, None] = None
-    ) -> Union[str, None]:
-        """Return the openstack release codename based on /etc/openstack-release."""
-        cmd = "grep -Po '(?<=OPENSTACK_CODENAME=).*' /etc/openstack-release"
-        try:
-            out = await async_run_on_unit(unit, cmd, model_name=model_name, timeout=20)
-        except CommandRunFailed:
-            logging.warning("Fall back to version check for OpenStack codename")
-            return None
-        return out["Stdout"].strip()
-
-    def _get_pkg_version(self, unit: str) -> str:
-        """Get the openstack package version in a unit."""
+    def _get_charm_workload_version(self, unit: str) -> str:
+        """Get the payload version of a charm."""
         try:
             return self.status.units[unit].workload_version
         except AttributeError:
-            logging.warning("Failed to get pkg version for '%s'", self.name)
+            logging.warning("Failed to get workload version for '%s'", self.name)
             return ""

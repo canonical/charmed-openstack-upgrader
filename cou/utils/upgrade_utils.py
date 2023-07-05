@@ -17,24 +17,13 @@
 
 import itertools
 import logging
-import re
 
 from cou.utils import os_versions
-from cou.utils.juju_utils import async_get_application_config, async_get_status
-
-
-def extract_charm_name_from_url(charm_url):
-    """Extract the charm name from the charm url.
-
-    E.g. Extract 'heat' from local:bionic/heat-12
-
-    :param charm_url: Name of model to query.
-    :type charm_url: str
-    :returns: Charm name
-    :rtype: str
-    """
-    charm_name = re.sub(r"-[0-9]+$", "", charm_url.split("/")[-1])
-    return charm_name.split(":")[-1]
+from cou.utils.juju_utils import (
+    async_get_application_config,
+    async_get_status,
+    extract_charm_name_from_url,
+)
 
 
 async def _filter_non_openstack_services(app, app_config, model_name=None):
