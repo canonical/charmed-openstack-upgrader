@@ -189,7 +189,7 @@ OVN_CODENAMES = OrderedDict(
 )
 
 # >= Liberty version->codename mapping
-WORKLOAD_CODENAMES = {
+PACKAGE_CODENAMES = {
     "nova-common": OrderedDict(
         [
             ("12", "liberty"),

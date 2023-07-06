@@ -129,22 +129,24 @@ class Application:
             yaml.dump(summary, stream)
             return stream.getvalue()
 
-    def _get_workload_name(self) -> str:
-        """Get the workload name depending on the name of the charm."""
+    def _get_representative_workload_pkg(self) -> str:
+        """Get the representative package name of a charm workload."""
         try:
-            workload = CHARM_TYPES[self.charm]["workload"]
+            package = CHARM_TYPES[self.charm]["representative_workload_pkg"]
         except KeyError:
-            logging.warning("workload not found for application: %s", self.name)
-            workload = ""
-        return workload
+            logging.warning(
+                "Representative workload package not found for application: %s", self.name
+            )
+            package = ""
+        return package
 
     def _get_current_os_version(self, workload_version: str) -> str:
         """Get the openstack version of a unit."""
         version = ""
-        workload_name = self._get_workload_name()
+        package = self._get_representative_workload_pkg()
 
-        if workload_name and workload_version:
-            version = get_os_code_info(workload_name, workload_version)
+        if package and workload_version:
+            version = get_os_code_info(package, workload_version)
         return version
 
     def _get_os_origin(self) -> str:
@@ -157,7 +159,11 @@ class Application:
         return ""
 
     def _get_charm_workload_version(self, unit: str) -> str:
-        """Get the payload version of a charm."""
+        """Get the payload version of a charm.
+
+        The workload version of a charm is normally set by a representative debian
+        package. E.g: charm keystone uses keystone package version to represent it.
+        """
         try:
             return self.status.units[unit].workload_version
         except AttributeError:
