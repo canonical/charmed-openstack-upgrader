@@ -45,7 +45,6 @@ async def test_entrypoint_with_exception():
 
 @pytest.mark.asyncio
 async def test_entrypoint_dry_run():
-    expected = "Top level plan\n\tbackup mysql databases\n"
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
 
@@ -60,7 +59,7 @@ async def test_entrypoint_dry_run():
         mock_generate_plan.return_value = plan
 
         result = await entrypoint()
-        mock_print.assert_called_with(expected)
+        mock_print.assert_called_with(plan)
 
         assert result == 0
 

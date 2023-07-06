@@ -19,11 +19,11 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
+from io import StringIO
 from typing import Any, Iterable
 
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
-from ruamel.yaml.compat import StringIO
 
 from cou.utils.juju_utils import (
     async_get_application_config,
@@ -93,7 +93,9 @@ class Application:
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
         for unit in self.status.units.keys():
-            os_version = self._get_current_os_versions(unit)
+            workload_version = self._get_charm_workload_version(unit)
+            self.units[unit]["workload_version"] = workload_version
+            os_version = self._get_current_os_version(workload_version)
             self.units[unit]["os_version"] = os_version
 
     def __hash__(self) -> int:
@@ -123,11 +125,9 @@ class Application:
             }
         }
         yaml = YAML()
-        stream = StringIO()
-        yaml.dump(summary, stream)
-        output_str = stream.getvalue()
-        stream.close()
-        return output_str
+        with StringIO() as stream:
+            yaml.dump(summary, stream)
+            return stream.getvalue()
 
     def _get_workload_name(self) -> str:
         """Get the workload name depending on the name of the charm."""
@@ -138,12 +138,10 @@ class Application:
             workload = ""
         return workload
 
-    def _get_current_os_versions(self, unit: str) -> str:
+    def _get_current_os_version(self, workload_version: str) -> str:
         """Get the openstack version of a unit."""
         version = ""
         workload_name = self._get_workload_name()
-        workload_version = self._get_charm_workload_version(unit)
-        self.units[unit]["workload_version"] = workload_version
 
         if workload_name and workload_version:
             version = get_os_code_info(workload_name, workload_version)
