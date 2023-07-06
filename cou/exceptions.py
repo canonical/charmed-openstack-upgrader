@@ -1,4 +1,3 @@
-# mypy: disable-error-code="no-untyped-def"
 # Copyright 2018 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module of exceptions that charmed-openstack-upgrader may raise."""
+from typing import Dict, Optional
+
+from juju.action import Action
 
 
 class CommandRunFailed(Exception):
     """Command failed to run."""
 
-    def __init__(self, cmd, result):
+    def __init__(self, cmd: str, result: Dict):
         """Create Command run failed exception.
 
         :param cmd: Command that was run
@@ -45,7 +47,7 @@ class ActionFailed(Exception):
     # pylint: disable=consider-using-f-string
     """Exception raised when action fails."""
 
-    def __init__(self, action, output=None):
+    def __init__(self, action: Action, output: Optional[str] = None):
         """Set information about action failure in message and raise."""
         # Bug: #314  -- unfortunately, libjuju goes bang even if getattr(x,y,
         # default) is used, which means we physically have to check for
