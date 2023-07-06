@@ -37,9 +37,10 @@ async def test_entrypoint_with_exception():
     ) as mock_generate_plan, patch("cou.cli.apply_plan"), patch("cou.cli.Analysis.create"):
         mock_generate_plan.side_effect = Exception("An error occurred")
 
-        result = await entrypoint()
-
-        assert result == 1
+        with pytest.raises(SystemExit) as exitcode:
+            result = await entrypoint()
+            assert exitcode.value == 1
+            assert not result
         mock_generate_plan.assert_called_once()
 
 
