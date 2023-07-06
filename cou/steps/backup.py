@@ -19,8 +19,6 @@ import os
 from typing import Optional
 
 import cou.utils.juju_utils as utils
-from cou.utils.juju_utils import extract_charm_name_from_url
-from cou.utils.upgrade_utils import get_upgrade_candidates
 
 
 async def backup() -> str:
@@ -78,9 +76,9 @@ async def get_database_app(model_name: Optional[str] = None) -> Optional[str]:
     :returns: Name of the mysql-innodb-cluster application name
     :rtype: str
     """
-    candidates = await get_upgrade_candidates(model_name=model_name)
-    for app, app_config in candidates.items():
-        charm_name = extract_charm_name_from_url(app_config["charm"])
+    status = await utils.async_get_status(model_name=model_name, refresh=False)
+    for app, app_config in status.applications.items():
+        charm_name = utils.extract_charm_name_from_url(app_config["charm"])
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
             return app
 

@@ -22,18 +22,103 @@ async def test_backup():
 
 @pytest.mark.asyncio
 async def test_get_database_app():
-    with patch("cou.steps.backup.get_upgrade_candidates") as upgrade_candidates:
-        upgrade_candidates.return_value = {
+    with patch("cou.steps.backup.utils.async_get_status") as async_get_status:
+        retval = AsyncMock()
+        retval.applications = {
+            "keystone": {
+                "charm": "keystone",
+                "series": "focal",
+                "os": "ubuntu",
+                "charm-origin": "charmhub",
+                "charm-name": "keystone",
+                "charm-rev": 652,
+                "charm-channel": "ussuri/stable",
+                "exposed": False,
+                "application-status": {
+                    "current": "active",
+                    "message": "Application Ready",
+                    "since": "04 Jul 2023 18:00:52+03:00",
+                },
+                "relations": {
+                    "cluster": ["keystone"],
+                    "identity-service": [
+                        "cinder",
+                        "glance",
+                        "neutron-api",
+                        "nova-cloud-controller",
+                        "placement",
+                    ],
+                    "shared-db": ["keystone-mysql-router"],
+                },
+                "units": {
+                    "keystone/0": {
+                        "workload-status": {
+                            "current": "active",
+                            "message": "Unit is ready",
+                            "since": "04 Jul 2023 18:05:37+03:00",
+                        },
+                        "juju-status": {
+                            "current": "idle",
+                            "since": "06 Jul 2023 15:05:06+03:00",
+                            "version": "2.9.42",
+                        },
+                        "leader": True,
+                        "machine": "11",
+                        "open-ports": ["5000/tcp"],
+                        "public-address": "10.5.0.122",
+                        "subordinates": {
+                            "keystone-mysql-router/0": {
+                                "workload-status": {
+                                    "current": "active",
+                                    "message": "Unit is ready",
+                                    "since": "04 Jul 2023 17:53:54+03:00",
+                                },
+                                "juju-status": {
+                                    "current": "idle",
+                                    "since": "04 Jul 2023 17:53:54+03:00",
+                                    "version": "2.9.42",
+                                },
+                                "leader": True,
+                                "public-address": "10.5.0.122",
+                            }
+                        },
+                    }
+                },
+                "version": "17.0.1",
+                "endpoint-bindings": {
+                    "": "alpha",
+                    "admin": "alpha",
+                    "certificates": "alpha",
+                    "cluster": "alpha",
+                    "domain-backend": "alpha",
+                    "ha": "alpha",
+                    "identity-admin": "alpha",
+                    "identity-credentials": "alpha",
+                    "identity-notifications": "alpha",
+                    "identity-service": "alpha",
+                    "internal": "alpha",
+                    "keystone-fid-service-provider": "alpha",
+                    "keystone-middleware": "alpha",
+                    "nrpe-external-master": "alpha",
+                    "public": "alpha",
+                    "shared-db": "alpha",
+                    "websso-trusted-dashboard": "alpha",
+                },
+            },
             "mysql": {
                 "charm": "mysql-innodb-cluster",
                 "series": "focal",
                 "os": "ubuntu",
                 "charm-origin": "charmhub",
                 "charm-name": "mysql-innodb-cluster",
-                "charm-rev": 43,
+                "charm-rev": 56,
                 "charm-channel": "8.0/stable",
-                "charm-version": "13004be",
-                "can-upgrade-to": "ch:amd64/focal/mysql-innodb-cluster-56",
+                "charm-version": "ca6837b",
+                "exposed": False,
+                "application-status": {
+                    "current": "active",
+                    "since": "04 Jul 2023 17:52:37+03:00",
+                },
                 "relations": {
                     "cluster": ["mysql"],
                     "coordinator": ["mysql"],
@@ -43,31 +128,181 @@ async def test_get_database_app():
                         "keystone-mysql-router",
                         "neutron-api-mysql-router",
                         "nova-cloud-controller-mysql-router",
-                        "openstack-dashboard-mysql-router",
                         "placement-mysql-router",
                     ],
                 },
-            }
+                "units": {
+                    "mysql/0": {
+                        "workload-status": {
+                            "current": "active",
+                            "since": "04 Jul 2023 17:52:37+03:00",
+                        },
+                        "juju-status": {
+                            "current": "idle",
+                            "since": "05 Jul 2023 18:54:10+03:00",
+                            "version": "2.9.42",
+                        },
+                        "leader": True,
+                        "machine": "0",
+                        "public-address": "10.5.0.111",
+                    }
+                },
+                "version": "8.0.33",
+                "endpoint-bindings": {
+                    "": "alpha",
+                    "certificates": "alpha",
+                    "cluster": "alpha",
+                    "coordinator": "alpha",
+                    "db-monitor": "alpha",
+                    "db-router": "alpha",
+                    "shared-db": "alpha",
+                },
+            },
         }
+        async_get_status.return_value = retval
         app = await get_database_app()
         assert app == "mysql"
 
 
 @pytest.mark.asyncio
 async def test_get_database_app_negative():
-    with patch("cou.steps.backup.get_upgrade_candidates") as upgrade_candidates:
-        upgrade_candidates.return_value = {
-            "mysql": {
-                "charm": "percona",
+    with patch("cou.steps.backup.utils.async_get_status") as async_get_status:
+        retval = AsyncMock()
+        retval.applications = {
+            "keystone": {
+                "charm": "keystone",
+                "series": "focal",
+                "os": "ubuntu",
+                "charm-origin": "charmhub",
+                "charm-name": "keystone",
+                "charm-rev": 652,
+                "charm-channel": "ussuri/stable",
+                "exposed": False,
+                "application-status": {
+                    "current": "active",
+                    "message": "Application Ready",
+                    "since": "04 Jul 2023 18:00:52+03:00",
+                },
                 "relations": {
-                    "cluster": ["percona"],
-                    "coordinator": ["percona"],
+                    "cluster": ["keystone"],
+                    "identity-service": [
+                        "cinder",
+                        "glance",
+                        "neutron-api",
+                        "nova-cloud-controller",
+                        "placement",
+                    ],
+                    "shared-db": ["keystone-mysql-router"],
+                },
+                "units": {
+                    "keystone/0": {
+                        "workload-status": {
+                            "current": "active",
+                            "message": "Unit is ready",
+                            "since": "04 Jul 2023 18:05:37+03:00",
+                        },
+                        "juju-status": {
+                            "current": "idle",
+                            "since": "06 Jul 2023 15:05:06+03:00",
+                            "version": "2.9.42",
+                        },
+                        "leader": True,
+                        "machine": "11",
+                        "open-ports": ["5000/tcp"],
+                        "public-address": "10.5.0.122",
+                        "subordinates": {
+                            "keystone-mysql-router/0": {
+                                "workload-status": {
+                                    "current": "active",
+                                    "message": "Unit is ready",
+                                    "since": "04 Jul 2023 17:53:54+03:00",
+                                },
+                                "juju-status": {
+                                    "current": "idle",
+                                    "since": "04 Jul 2023 17:53:54+03:00",
+                                    "version": "2.9.42",
+                                },
+                                "leader": True,
+                                "public-address": "10.5.0.122",
+                            }
+                        },
+                    }
+                },
+                "version": "17.0.1",
+                "endpoint-bindings": {
+                    "": "alpha",
+                    "admin": "alpha",
+                    "certificates": "alpha",
+                    "cluster": "alpha",
+                    "domain-backend": "alpha",
+                    "ha": "alpha",
+                    "identity-admin": "alpha",
+                    "identity-credentials": "alpha",
+                    "identity-notifications": "alpha",
+                    "identity-service": "alpha",
+                    "internal": "alpha",
+                    "keystone-fid-service-provider": "alpha",
+                    "keystone-middleware": "alpha",
+                    "nrpe-external-master": "alpha",
+                    "public": "alpha",
+                    "shared-db": "alpha",
+                    "websso-trusted-dashboard": "alpha",
+                },
+            },
+            "mysql": {
+                "charm": "mysql-innodb-cluster",
+                "series": "focal",
+                "os": "ubuntu",
+                "charm-origin": "charmhub",
+                "charm-name": "mysql-innodb-cluster",
+                "charm-rev": 56,
+                "charm-channel": "8.0/stable",
+                "charm-version": "ca6837b",
+                "exposed": False,
+                "application-status": {
+                    "current": "active",
+                    "since": "04 Jul 2023 17:52:37+03:00",
+                },
+                "relations": {
+                    "cluster": ["mysql"],
+                    "coordinator": ["mysql"],
                     "db-router": [
+                        "cinder-mysql-router",
+                        "glance-mysql-router",
+                        "neutron-api-mysql-router",
+                        "nova-cloud-controller-mysql-router",
                         "placement-mysql-router",
                     ],
                 },
-            }
+                "units": {
+                    "mysql/0": {
+                        "workload-status": {
+                            "current": "active",
+                            "since": "04 Jul 2023 17:52:37+03:00",
+                        },
+                        "juju-status": {
+                            "current": "idle",
+                            "since": "05 Jul 2023 18:54:10+03:00",
+                            "version": "2.9.42",
+                        },
+                        "leader": True,
+                        "machine": "0",
+                        "public-address": "10.5.0.111",
+                    }
+                },
+                "version": "8.0.33",
+                "endpoint-bindings": {
+                    "": "alpha",
+                    "certificates": "alpha",
+                    "cluster": "alpha",
+                    "coordinator": "alpha",
+                    "db-monitor": "alpha",
+                    "db-router": "alpha",
+                    "shared-db": "alpha",
+                },
+            },
         }
+        async_get_status.return_value = retval
         app = await get_database_app()
         assert app is None
 
