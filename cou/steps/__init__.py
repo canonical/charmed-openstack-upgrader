@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Callable, List, Optional
 
 
@@ -57,7 +58,7 @@ class UpgradeStep:
         steps_to_visit = [(self, 0)]
         while steps_to_visit:
             step, indent = steps_to_visit.pop()
-            result += f"{tab * indent}{step.description}\n"
+            result += f"{tab * indent}{step.description}{os.linesep}"
             steps_to_visit.extend([(s, indent + 1) for s in step.sub_steps])
 
         return result

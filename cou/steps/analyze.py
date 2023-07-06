@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
@@ -65,7 +66,7 @@ class Analysis:
 
     def __str__(self) -> str:
         """Dump as string."""
-        return "\n".join([str(app) for app in self.apps])
+        return os.linesep.join([str(app) for app in self.apps])
 
 
 @dataclass
