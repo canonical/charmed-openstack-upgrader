@@ -5,7 +5,7 @@ from cou.exceptions import ActionFailed, CommandRunFailed, JujuError, UnitNotFou
 
 def test_command_run_failed():
     with pytest.raises(CommandRunFailed):
-        raise CommandRunFailed("cmd", {"Code": "1", "Stdout": "nok", "Stderr": "err"})
+        raise CommandRunFailed(cmd="cmd", code="1", output="nok", err="err")
 
 
 def test_unit_not_found():

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module of exceptions that charmed-openstack-upgrader may raise."""
-from typing import Dict, Optional
+from typing import Optional
 
 from juju.action import Action
 
@@ -20,7 +20,7 @@ from juju.action import Action
 class CommandRunFailed(Exception):
     """Command failed to run."""
 
-    def __init__(self, cmd: str, result: Dict):
+    def __init__(self, cmd: str, code: str, output: str, err: str):
         """Create Command run failed exception.
 
         :param cmd: Command that was run
@@ -28,9 +28,6 @@ class CommandRunFailed(Exception):
         :param result: Dict containing the output of the command
         :type result: dict - {'Code': '0', 'Stdout': '', 'Stderr':''}
         """
-        code = result.get("Code")
-        output = result.get("Stdout")
-        err = result.get("Stderr")
         msg = f"Command {cmd} failed with code {code}, output {output} and error {err}"
         super().__init__(msg)
 
