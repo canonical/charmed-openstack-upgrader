@@ -70,22 +70,14 @@ def test___str__():
     expected = "Top level plan\n\tbackup mysql databases\n"
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
-    str(plan) == expected
+    assert str(plan) == expected
 
 
 def test___str__substep_has_substeps():
-    expected = (
-        "Top level plan\n\tbackup mysql databases\n\t\tsub_step of sub_step\n\t\tanother "
-        "sub_step of sub_step"
-    )
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
-    substep = plan.add_step(
-        UpgradeStep(description="backup mysql databases", parallel=False, function=None)
-    )
-    substep.add_step(
-        UpgradeStep(description="sub_step of sub_step", parallel=False, function=None)
-    )
-    substep.add_step(
-        UpgradeStep(description="another sub_step of sub_step", parallel=False, function=None)
-    )
-    str(plan) == expected
+    expected = "a\n\ta.a\n\t\ta.a.a\n\t\ta.a.b\n\ta.b\n"
+    plan = UpgradeStep(description="a", parallel=False, function=None)
+    aa = plan.add_step(UpgradeStep(description="a.a", parallel=False, function=None))
+    plan.add_step(UpgradeStep(description="a.b", parallel=False, function=None))
+    aa.add_step(UpgradeStep(description="a.a.a", parallel=False, function=None))
+    aa.add_step(UpgradeStep(description="a.a.b", parallel=False, function=None))
+    assert str(plan) == expected

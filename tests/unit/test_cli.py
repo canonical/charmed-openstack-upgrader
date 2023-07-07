@@ -62,7 +62,7 @@ async def test_entrypoint_dry_run():
         result = await entrypoint()
         mock_print.assert_called_with(plan)
 
-        assert result == 0
+        assert not result
 
 
 @pytest.mark.asyncio
@@ -75,7 +75,7 @@ async def test_entrypoint_real_run():
 
         result = await entrypoint()
 
-        assert result == 0
+        assert not result
         mock_apply_plan.assert_called_once()
 
 

@@ -46,9 +46,6 @@ class ActionFailed(Exception):
 
     def __init__(self, action: Action, output: Optional[str] = None):
         """Set information about action failure in message and raise."""
-        # Bug: #314  -- unfortunately, libjuju goes bang even if getattr(x,y,
-        # default) is used, which means we physically have to check for
-        # KeyError.
         params = {"output": output}
         for key in [
             "name",
@@ -64,6 +61,9 @@ class ActionFailed(Exception):
             try:
                 params[key] = getattr(action, key, "<not-set>")
             except KeyError:
+                # Bug: #314  -- unfortunately, libjuju goes bang even if getattr(x,y,
+                # default) is used, which means we physically have to check for
+                # KeyError.
                 # code around libjuju in its getattr code.
                 params[key] = "<not-set>"
 

@@ -41,7 +41,7 @@ class UpgradeStep:
     def add_step(self, step: UpgradeStep) -> UpgradeStep:
         """Add a single step."""
         self.sub_steps.append(step)
-        return self
+        return step
 
     async def run(self) -> Any:
         """Run the function."""
@@ -59,6 +59,6 @@ class UpgradeStep:
         while steps_to_visit:
             step, indent = steps_to_visit.pop()
             result += f"{tab * indent}{step.description}{os.linesep}"
-            steps_to_visit.extend([(s, indent + 1) for s in step.sub_steps])
+            steps_to_visit.extend([(s, indent + 1) for s in reversed(step.sub_steps)])
 
         return result

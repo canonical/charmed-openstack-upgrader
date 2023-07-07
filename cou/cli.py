@@ -128,7 +128,7 @@ async def apply_plan(upgrade_plan: UpgradeStep) -> None:
                 logging.info("No valid input provided!")
 
 
-async def entrypoint() -> int:
+async def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
@@ -142,7 +142,6 @@ async def entrypoint() -> int:
         else:
             await apply_plan(upgrade_plan)
 
-        return 0
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logging.exception(exc)
         sys.exit(1)
