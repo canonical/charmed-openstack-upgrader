@@ -32,9 +32,16 @@ def test_upgrade_step():
 
 def test_upgrade_step_add():
     u = UpgradeStep(description="test", function=None, parallel=False)
-    substep = UpgradeStep(description="substep", function=None, parallel=False)
-    u.add_step(substep)
+    substep = u.add_step(UpgradeStep(description="substep", function=None, parallel=False))
+    substep_of_substep1 = substep.add_step(
+        UpgradeStep(description="substep_of_substep1", function=None, parallel=False)
+    )
+    substep_of_substep2 = substep.add_step(
+        UpgradeStep(description="substep_of_substep2", function=None, parallel=False)
+    )
     assert u.sub_steps[0] is substep
+    assert substep.sub_steps[0] is substep_of_substep1
+    assert substep.sub_steps[1] is substep_of_substep2
 
 
 @pytest.mark.asyncio
