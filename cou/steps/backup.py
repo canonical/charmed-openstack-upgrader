@@ -22,7 +22,11 @@ import cou.utils.juju_utils as utils
 
 
 async def backup() -> str:
-    """Backup mysql database of openstack."""
+    """Backup mysql database of openstack.
+
+    :return: Path of the local file from the backup.
+    :rtype: str
+    """
     logging.info("Backing up mysql database")
 
     mysql_app = await get_database_app()

@@ -20,12 +20,22 @@ from cou.utils.juju_utils import async_upgrade_charm
 
 
 async def charm_upgrade(application_name: str) -> None:
-    """Upgrade a charm to the latest revision in the current channel."""
+    """Upgrade a charm to the latest revision in the current channel.
+
+    :param application_name: Name of the Application. E.g: "keystone".
+    :type application_name: str
+    """
     logging.info("Upgrading %s to the latest revision in the current channel", application_name)
     await async_upgrade_charm(application_name)
 
 
 async def charm_channel_refresh(application_name: str, channel: str) -> None:
-    """Refresh a charm to track a target channel."""
+    """Refresh a charm to track a target channel.
+
+    :param application_name:  Name of the Application. E.g: keystone.
+    :type application_name: str
+    :param channel: Channel that the application tracks. E.g: "ussuri/stable"
+    :type channel: str
+    """
     logging.info("Refresh %s to the %s channel", application_name, channel)
     await async_upgrade_charm(application_name, channel=channel)

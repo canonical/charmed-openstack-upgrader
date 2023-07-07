@@ -45,7 +45,13 @@ class ActionFailed(Exception):
     """Exception raised when action fails."""
 
     def __init__(self, action: Action, output: Optional[str] = None):
-        """Set information about action failure in message and raise."""
+        """Set information about action failure in message and raise.
+
+        :param action: Action that failed.
+        :type action: Action
+        :param output: Description of the failed action, defaults to None
+        :type output: Optional[str], optional
+        """
         params = {"output": output}
         for key in [
             "name",

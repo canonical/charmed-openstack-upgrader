@@ -34,7 +34,13 @@ AVAILABLE_OPTIONS = "cas"
 
 
 def parse_args(args: Any) -> argparse.Namespace:
-    """Parse cli arguments."""
+    """Parse cli arguments.
+
+    :param args: Arguments to be parsed.
+    :type args: Any
+    :return: Arguments parsed to the cli execution.
+    :rtype: argparse.Namespace
+    """
     parser = argparse.ArgumentParser(
         description="description",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -90,7 +96,13 @@ def setup_logging(log_level: str = "INFO") -> None:
 
 
 def prompt(parameter: str) -> str:
-    """Generate eye-catching prompt."""
+    """Generate eye-catching prompt.
+
+    :param parameter: String to show at the prompt with the user options.
+    :type parameter: str
+    :return: Colored prompt string with the user options.
+    :rtype: str
+    """
 
     def bold(text: str) -> str:
         return Style.RESET_ALL + Fore.RED + Style.BRIGHT + text + Style.RESET_ALL
@@ -110,7 +122,11 @@ def prompt(parameter: str) -> str:
 
 
 async def apply_plan(upgrade_plan: UpgradeStep) -> None:
-    """Apply the plan for upgrade."""
+    """Apply the plan for upgrade.
+
+    :param upgrade_plan: Plan to be executed on steps.
+    :type upgrade_plan: UpgradeStep
+    """
     result = "X"
     while result.casefold() not in AVAILABLE_OPTIONS:
         result = input(prompt(upgrade_plan.description)).casefold()
@@ -129,7 +145,8 @@ async def apply_plan(upgrade_plan: UpgradeStep) -> None:
 
 
 async def entrypoint() -> None:
-    """Execute 'charmed-openstack-upgrade' command."""
+    """Execute 'charmed-openstack-upgrade' command.
+    """
     try:
         args = parse_args(sys.argv[1:])
         setup_logging(log_level=args.loglevel)

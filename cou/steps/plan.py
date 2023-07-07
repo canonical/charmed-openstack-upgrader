@@ -23,7 +23,13 @@ from cou.steps.backup import backup
 
 
 def generate_plan(args: Analysis) -> UpgradeStep:
-    """Generate plan for upgrade."""
+    """Generate plan for upgrade.
+
+    :param args: Analysis result.
+    :type args: Analysis
+    :return: Plan with all upgrade steps necessary based on the Analysis.
+    :rtype: UpgradeStep
+    """
     logging.info(args)  # for placeholder
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(

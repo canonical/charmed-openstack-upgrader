@@ -42,7 +42,11 @@ class Analysis:
 
     @classmethod
     async def create(cls) -> Analysis:
-        """Analyze the deployment before planning."""
+        """Analyze the deployment before planning.
+
+        :return: Analysis object populated with the model applications.
+        :rtype: Analysis
+        """
         logging.info("Analyzing the OpenStack deployment...")
         apps = await Analysis._populate()
 
@@ -50,7 +54,11 @@ class Analysis:
 
     @classmethod
     async def _populate(cls) -> set[Application]:
-        """Generate the applications model."""
+        """Generate the applications model.
+
+        :return: Application objects with their respective information.
+        :rtype: set[Application]
+        """
         juju_status = await async_get_full_juju_status()
         model_name = juju_status.model.name
         apps = {
@@ -65,13 +73,38 @@ class Analysis:
         return apps
 
     def __str__(self) -> str:
-        """Dump as string."""
+        """Dump as string.
+
+        :return: String representation of Application objects.
+        :rtype: str
+        """
         return os.linesep.join([str(app) for app in self.apps])
 
 
 @dataclass
 class Application:
-    """Representation of an application in the deployment."""
+    """Representation of an application in the deployment.
+
+    :param name: name of the application
+    :type name: str
+    :param status: Status of the application.
+    :type status: ApplicationStatus
+    :param config: Configuration of the application.
+    :type config: dict
+    :param model_name: Model name.
+    :type model_name: str
+    :param charm: Name of the charm.
+    :type charm: str
+    :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
+    :type charm_origin: str, optional
+    :param os_origin: Openstack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
+    :type os_origin: str, optional
+    :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
+    :type channel: str, optional
+    :param units: Units representation of an application.
+        E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
+    :type units: defaultdict[str, dict]
+    """
 
     # pylint: disable=too-many-instance-attributes
 
@@ -83,8 +116,6 @@ class Application:
     charm_origin: str = ""
     os_origin: str = ""
     channel: str = ""
-
-    # e.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
 
     def __post_init__(self) -> None:
@@ -100,15 +131,29 @@ class Application:
             self.units[unit]["os_version"] = os_version
 
     def __hash__(self) -> int:
-        """Hash magic method for Application."""
+        """Hash magic method for Application.
+
+        :return: Unique hash identifier for Application object.
+        :rtype: int
+        """
         return hash(f"{self.name}{self.charm}")
 
-    def __eq__(self, other: Any) -> Any:
-        """Equal magic method for Application."""
+    def __eq__(self, other: Any) -> bool:
+        """Equal magic method for Application.
+
+        :param other: Application object to compare.
+        :type other: Any
+        :return: True if equal False if different.
+        :rtype: bool
+        """
         return other.name == self.name and other.charm == self.charm
 
     def __str__(self) -> str:
-        """Dump as string."""
+        """Dump as string.
+
+        :return: Summary representation of an Application.
+        :rtype: str
+        """
         summary = {
             self.name: {
                 "model_name": self.model_name,
@@ -131,7 +176,11 @@ class Application:
             return stream.getvalue()
 
     def _get_representative_workload_pkg(self) -> str:
-        """Get the representative package name of a charm workload."""
+        """Get the representative package name of a charm workload.
+
+        :return: Package name that represents the charm workload. E.g: cinder-common
+        :rtype: str
+        """
         try:
             package = CHARM_TYPES[self.charm]["representative_workload_pkg"]
         except KeyError:
@@ -142,7 +191,14 @@ class Application:
         return package
 
     def _get_current_os_version(self, workload_version: str) -> str:
-        """Get the openstack version of a unit."""
+        """Get the openstack version of a unit.
+
+        :param workload_version: Version of the workload of a charm. E.g: 10.2.6
+        :type workload_version: str
+        :return: OpenStack version detected. If not detected return an empty string.
+            E.g: ussuri.
+        :rtype: str
+        """
         version = ""
         package = self._get_representative_workload_pkg()
 
@@ -151,7 +207,11 @@ class Application:
         return version
 
     def _get_os_origin(self) -> str:
-        """Get application configuration for openstack-origin or source."""
+        """Get application configuration for openstack-origin or source.
+
+        :return: Configuration parameter of the charm to set OpenStack origin. E.g: cloud:focal-wallaby
+        :rtype: str
+        """
         for origin in ("openstack-origin", "source"):
             if self.config.get(origin):
                 return self.config[origin].get("value", "")
@@ -164,6 +224,11 @@ class Application:
 
         The workload version of a charm is normally set by a representative debian
         package. E.g: charm keystone uses keystone package version to represent it.
+
+        :param unit: Unit to detect workload version. E.g: keystone/0
+        :type unit: str
+        :return: Workload version. E.g: 10.1.6
+        :rtype: str
         """
         try:
             return self.status.units[unit].workload_version
