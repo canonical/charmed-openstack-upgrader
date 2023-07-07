@@ -351,7 +351,7 @@ async def async_upgrade_charm(
         channel=channel,
         force_series=force_series,
         force_units=force_units,
-        path=path,
+        local_charm_path=path,
         resources=resources,
         revision=revision,
         switch=switch,

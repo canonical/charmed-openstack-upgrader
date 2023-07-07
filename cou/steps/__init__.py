@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 from typing import Any, Callable, List, Optional
+from cou.utils.juju_utils import async_block_until_all_units_idle
 
 
 class UpgradeStep:
