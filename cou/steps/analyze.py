@@ -209,7 +209,8 @@ class Application:
     def _get_os_origin(self) -> str:
         """Get application configuration for openstack-origin or source.
 
-        :return: Configuration parameter of the charm to set OpenStack origin. E.g: cloud:focal-wallaby
+        :return: Configuration parameter of the charm to set OpenStack origin.
+            E.g: cloud:focal-wallaby
         :rtype: str
         """
         for origin in ("openstack-origin", "source"):

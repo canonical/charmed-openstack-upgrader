@@ -145,8 +145,7 @@ async def apply_plan(upgrade_plan: UpgradeStep) -> None:
 
 
 async def entrypoint() -> None:
-    """Execute 'charmed-openstack-upgrade' command.
-    """
+    """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
         setup_logging(log_level=args.loglevel)
