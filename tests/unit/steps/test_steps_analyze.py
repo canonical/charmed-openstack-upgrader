@@ -12,8 +12,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from collections import OrderedDict
-
 import pytest
 
 from cou.steps import analyze
@@ -141,16 +139,6 @@ def test_application_no_openstack_origin(status):
     app_config = {}
     app = analyze.Application("keystone", app_status, app_config, "my_model")
     assert app._get_os_origin() == ""
-
-
-@pytest.mark.asyncio
-async def test_application_no_workload_version(mocker, status, config):
-    app_status = status["keystone_wallaby"]
-    app_config = config["openstack_wallaby"]
-    mock_unit_keystone = mocker.Mock(spec=[])
-    app_status.units = OrderedDict([("keystone/0", mock_unit_keystone)])
-    app = analyze.Application("keystone", app_status, app_config, "my_model")
-    assert app._get_charm_workload_version("keystone/0") == ""
 
 
 @pytest.mark.asyncio
