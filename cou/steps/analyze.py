@@ -125,7 +125,7 @@ class Application:
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
         for unit in self.status.units.keys():
-            workload_version = self._get_charm_workload_version(unit)
+            workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
             os_version = self._get_current_os_version(workload_version)
             self.units[unit]["os_version"] = os_version
@@ -219,20 +219,3 @@ class Application:
 
         logging.warning("Failed to get origin for %s, no origin config found", self.name)
         return ""
-
-    def _get_charm_workload_version(self, unit: str) -> str:
-        """Get the payload version of a charm.
-
-        The workload version of a charm is normally set by a representative debian
-        package. E.g: charm keystone uses keystone package version to represent it.
-
-        :param unit: Unit to detect workload version. E.g: keystone/0
-        :type unit: str
-        :return: Workload version. E.g: 10.1.6
-        :rtype: str
-        """
-        try:
-            return self.status.units[unit].workload_version
-        except AttributeError:
-            logging.warning("Failed to get workload version for '%s'", self.name)
-            return ""
