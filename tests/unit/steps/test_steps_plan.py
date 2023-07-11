@@ -17,13 +17,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import cou.utils.juju_utils as model
 from cou.steps.backup import backup
 from cou.steps.plan import generate_plan
 
 
 @pytest.mark.asyncio
-async def test_generate_plan():
+async def test_generate_plan(mocker):
     args = MagicMock()
+    mocker.patch.object(model, "async_get_current_model_name", return_value="my_model")
     plan = await generate_plan(args)
 
     assert plan.description == "Top level plan"
@@ -35,3 +37,4 @@ async def test_generate_plan():
     assert sub_step.description == "backup mysql databases"
     assert not sub_step.parallel
     assert sub_step.function == backup
+    assert sub_step.params == {"model_name": "my_model"}
