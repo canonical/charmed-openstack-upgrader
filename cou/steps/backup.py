@@ -18,7 +18,10 @@ import logging
 import os
 from typing import Optional
 
+from juju.client._definitions import ApplicationStatus
+
 import cou.utils.juju_utils as utils
+from cou.exceptions import UnitNotFound
 
 
 async def backup() -> str:
@@ -28,26 +31,25 @@ async def backup() -> str:
     :rtype: str
     """
     logging.info("Backing up mysql database")
-
-    mysql_app = await get_database_app()
-    mysql_leader = await utils.async_get_unit_from_name(
-        await utils.async_get_lead_unit_name(mysql_app)
-    )
+    mysql_app_config = await get_database_app()
+    if not mysql_app_config:
+        raise UnitNotFound()
+    unit_name = list(mysql_app_config.units.keys())[0]
 
     logging.info("mysqldump mysql-innodb-cluster DBs ...")
-    action = await utils.async_run_action_on_leader(mysql_app, "mysqldump")
+    action = await utils.async_run_action(unit_name, "mysqldump")
     remote_file = action.data["results"]["mysqldump-file"]
     basedir = action.data["parameters"]["basedir"]
 
     logging.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
-    await utils.async_run_on_leader(mysql_app, f"chmod o+rx {basedir}")
+    await utils.async_run_on_unit(unit_name, f"chmod o+rx {basedir}")
 
     local_file = os.path.abspath(os.path.basename(remote_file))
     logging.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
-    await utils.async_scp_from_unit(mysql_leader.name, remote_file, local_file)
+    await utils.async_scp_from_unit(unit_name, remote_file, local_file)
 
     logging.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
-    await utils.async_run_on_leader(mysql_app, f"chmod o-rx {basedir}")
+    await utils.async_run_on_unit(unit_name, f"chmod o-rx {basedir}")
     return local_file
 
 
@@ -69,7 +71,7 @@ def _check_db_relations(app_config: dict) -> bool:
     return False
 
 
-async def get_database_app(model_name: Optional[str] = None) -> Optional[str]:
+async def get_database_app(model_name: Optional[str] = None) -> Optional[ApplicationStatus]:
     """Get mysql-innodb-cluster application name.
 
     Gets the openstack database mysql-innodb-cluster application if there are more than one
@@ -78,12 +80,12 @@ async def get_database_app(model_name: Optional[str] = None) -> Optional[str]:
     :param model_name: Name of model to query.
     :type model_name: str
     :returns: Name of the mysql-innodb-cluster application name
-    :rtype: str
+    :rtype: ApplicationStatus
     """
     status = await utils.async_get_status(model_name)
-    for app, app_config in status.applications.items():
+    for _, app_config in status.applications.items():
         charm_name = utils.extract_charm_name_from_url(app_config["charm"])
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
-            return app
+            return app_config
 
     return None

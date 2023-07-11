@@ -18,9 +18,10 @@ import os
 import re
 from typing import Optional
 
+from juju.client._definitions import FullStatus
 from juju.model import Model
 
-from cou.exceptions import ActionFailed, JujuError, UnitNotFound
+from cou.exceptions import ActionFailed, UnitNotFound
 
 JUJU_MAX_FRAME_SIZE = 2**30
 
@@ -43,7 +44,7 @@ def extract_charm_name_from_url(charm_url):
     return charm_name.split(":")[-1]
 
 
-async def async_get_juju_model():
+async def async_get_current_model_name():
     """Retrieve current model.
 
     First check the environment for JUJU_MODEL. If this is not set, get the
@@ -63,11 +64,11 @@ async def async_get_juju_model():
             CURRENT_MODEL_NAME = os.environ["MODEL_NAME"]
         except KeyError:
             # If unset connect get the current active model
-            CURRENT_MODEL_NAME = await async_get_current_model()
+            CURRENT_MODEL_NAME = await _async_get_current_model_name_from_juju()
     return CURRENT_MODEL_NAME
 
 
-async def get_model(model_name=None) -> Model:
+async def _async_get_model(model_name=None) -> Model:
     """Get (or create) the current model for :param:`model_name`.
 
     If None is passed, or there is no model_name param, then the current model
@@ -115,7 +116,7 @@ def _is_model_disconnected(model):
     return not (model.is_connected() and model.connection().is_open)
 
 
-async def async_get_current_model():
+async def _async_get_current_model_name_from_juju():
     """Return the current active model name.
 
     Connect to the current active model and return its name.
@@ -133,7 +134,7 @@ async def async_get_current_model():
     return model_name
 
 
-async def async_get_status(model_name=None):
+async def async_get_status(model_name=None) -> FullStatus:
     """Return the full juju status output.
 
     :param model_name: Name of model to query.
@@ -141,7 +142,7 @@ async def async_get_status(model_name=None):
     :returns: Full juju status output
     :rtype: dict
     """
-    model = await get_model(model_name)
+    model = await _async_get_model(model_name)
     return await model.get_status()
 
 
@@ -203,7 +204,7 @@ async def async_run_on_unit(unit_name, command, model_name=None, timeout=None):
     :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
     :rtype: dict
     """
-    model = await get_model(model_name)
+    model = await _async_get_model(model_name)
     unit = await async_get_unit_from_name(unit_name, model)
     action = await unit.run(command, timeout=timeout)
     results = action.data.get("results")
@@ -227,7 +228,7 @@ async def async_get_unit_from_name(unit_name, model=None, model_name=None):
     unit = None
     try:
         if model is None:
-            model = await get_model(model_name)
+            model = await _async_get_model(model_name)
         units = model.applications[app].units
     except KeyError:
         msg = "Application: {} does not exist in current model".format(app)
@@ -252,40 +253,8 @@ async def async_get_application_config(application_name, model_name=None):
     :returns: Dictionary of configuration
     :rtype: dict
     """
-    model = await get_model(model_name)
+    model = await _async_get_model(model_name)
     return await model.applications[application_name].get_config()
-
-
-async def async_get_lead_unit_name(application_name, model_name=None):
-    """Return name of unit with leader status for given application.
-
-    :param model_name: Name of model to query.
-    :type model_name: str
-    :param application_name: Name of application
-    :type application_name: str
-    :returns: Name of unit with leader status
-    :rtype: str
-    :raises: zaza.utilities.exceptions.JujuError
-    """
-    return (await async_get_lead_unit(application_name, model_name)).entity_id
-
-
-async def async_get_lead_unit(application_name, model_name=None):
-    """Return the leader unit for a given application.
-
-    :param model_name: Name of model to query.
-    :type model_name: str
-    :param application_name: Name of application
-    :type application_name: str
-    :returns: Name of unit with leader status
-    :raises: zaza.utilities.exceptions.JujuError
-    """
-    model = await get_model(model_name)
-    for unit in model.applications[application_name].units:
-        is_leader = await unit.is_leader_from_status()
-        if is_leader:
-            return unit
-    raise JujuError("No leader found for application {}".format(application_name))
 
 
 async def async_run_action(
@@ -310,42 +279,11 @@ async def async_run_action(
     if action_params is None:
         action_params = {}
 
-    model = await get_model(model_name)
+    model = await _async_get_model(model_name)
     unit = await async_get_unit_from_name(unit_name, model)
     action_obj = await unit.run_action(action_name, **action_params)
     await _check_action_error(action_obj, model, raise_on_failure)
     return action_obj
-
-
-async def async_run_action_on_leader(
-    application_name, action_name, model_name=None, action_params=None, raise_on_failure=False
-):
-    """Run action on lead unit of the given application.
-
-    :param model_name: Name of model to query.
-    :type model_name: str
-    :param application_name: Name of application
-    :type application_name: str
-    :param action_name: Name of action to run
-    :type action_name: str
-    :param action_params: Dictionary of config options for action
-    :type action_params: dict
-    :param raise_on_failure: Raise ActionFailed exception on failure
-    :type raise_on_failure: bool
-    :returns: Action object
-    :rtype: juju.action.Action
-    :raises: ActionFailed
-    """
-    if action_params is None:
-        action_params = {}
-
-    model = await get_model(model_name)
-    for unit in model.applications[application_name].units:
-        is_leader = await unit.is_leader_from_status()
-        if is_leader:
-            action_obj = await unit.run_action(action_name, **action_params)
-            await _check_action_error(action_obj, model, raise_on_failure)
-            return action_obj
 
 
 async def async_scp_from_unit(
@@ -368,32 +306,9 @@ async def async_scp_from_unit(
     :param scp_opts: Additional options to the scp command
     :type scp_opts: str
     """
-    model = await get_model(model_name)
+    model = await _async_get_model(model_name)
     unit = await async_get_unit_from_name(unit_name, model)
     await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
-
-
-async def async_run_on_leader(application_name, command, model_name=None, timeout=None):
-    """Juju run on leader unit.
-
-    :param application_name: Application to match
-    :type application_name: str
-    :param command: Command to execute
-    :type command: str
-    :param model_name: Name of model unit is in
-    :type model_name: str
-    :param timeout: How long in seconds to wait for command to complete
-    :type timeout: int
-    :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
-    :rtype: dict
-    """
-    model = await get_model(model_name)
-    for unit in model.applications[application_name].units:
-        is_leader = await unit.is_leader_from_status()
-        if is_leader:
-            action = await unit.run(command, timeout=timeout)
-            results = action.data.get("results")
-            return _normalise_action_results(results)
 
 
 async def async_upgrade_charm(
@@ -431,7 +346,7 @@ async def async_upgrade_charm(
     :param model_name: Name of model to operate on
     :type model_name: str
     """
-    model = await get_model(model_name)
+    model = await _async_get_model(model_name)
     app = model.applications[application_name]
     await app.upgrade_charm(
         channel=channel,

@@ -2,6 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cou.exceptions import UnitNotFound
 from cou.steps.backup import _check_db_relations, backup, get_database_app
 
 
@@ -9,15 +10,32 @@ from cou.steps.backup import _check_db_relations, backup, get_database_app
 async def test_backup():
     with patch("cou.steps.backup.logging.info") as log, patch(
         "cou.steps.backup.utils"
-    ) as utils, patch("cou.steps.backup.get_database_app"):
-        utils.async_run_action_on_leader = AsyncMock()
-        utils.async_run_on_leader = AsyncMock()
+    ) as utils, patch("cou.steps.backup.get_database_app") as database_app:
+        app_config = AsyncMock()
+        app_config.units = {"test": "test"}
+        database_app.return_value = app_config
+        utils.async_run_action = AsyncMock()
+        utils.async_run_on_unit = AsyncMock()
         utils.async_scp_from_unit = AsyncMock()
-        utils.async_get_lead_unit_name = AsyncMock()
         utils.async_get_unit_from_name = AsyncMock()
 
         await backup()
         assert log.call_count == 5
+
+
+@pytest.mark.asyncio
+async def test_backup_unit_not_found():
+    with patch("cou.steps.backup.logging.info"), patch("cou.steps.backup.utils") as utils, patch(
+        "cou.steps.backup.get_database_app"
+    ) as database_app:
+        database_app.return_value = None
+        utils.async_run_action = AsyncMock()
+        utils.async_run_on_unit = AsyncMock()
+        utils.async_scp_from_unit = AsyncMock()
+        utils.async_get_unit_from_name = AsyncMock()
+
+        with pytest.raises(UnitNotFound):
+            await backup()
 
 
 @pytest.mark.asyncio
@@ -161,7 +179,7 @@ async def test_get_database_app():
         }
         get_status.return_value = retval
         app = await get_database_app()
-        assert app == "mysql"
+        assert app == retval.applications["mysql"]
 
 
 @pytest.mark.asyncio
