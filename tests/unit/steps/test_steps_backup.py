@@ -22,7 +22,7 @@ async def test_backup():
 
 @pytest.mark.asyncio
 async def test_get_database_app():
-    with patch("cou.steps.backup.utils.async_get_status") as async_get_status:
+    with patch("cou.steps.backup.utils.async_get_status") as get_status:
         retval = AsyncMock()
         retval.applications = {
             "keystone": {
@@ -159,14 +159,14 @@ async def test_get_database_app():
                 },
             },
         }
-        async_get_status.return_value = retval
+        get_status.return_value = retval
         app = await get_database_app()
         assert app == "mysql"
 
 
 @pytest.mark.asyncio
 async def test_get_database_app_negative():
-    with patch("cou.steps.backup.utils.async_get_status") as async_get_status:
+    with patch("cou.steps.backup.utils.async_get_status") as get_status:
         retval = AsyncMock()
         retval.applications = {
             "keystone": {
@@ -302,7 +302,7 @@ async def test_get_database_app_negative():
                 },
             },
         }
-        async_get_status.return_value = retval
+        get_status.return_value = retval
         app = await get_database_app()
         assert app is None
 

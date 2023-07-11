@@ -155,7 +155,7 @@ async def test_application_no_workload_version(mocker, status, config):
 
 @pytest.mark.asyncio
 async def test_generate_model(mocker, full_status, config):
-    mocker.patch.object(analyze, "async_get_full_juju_status", return_value=full_status)
+    mocker.patch.object(analyze, "async_get_status", return_value=full_status)
     mocker.patch.object(
         analyze, "async_get_application_config", return_value=config["openstack_ussuri"]
     )

@@ -13,13 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
-import collections
 import logging
 import os
 import re
-import time
-from typing import Any, Dict
+from typing import Optional
 
 from juju.model import Model
 
@@ -27,15 +24,11 @@ from cou.exceptions import ActionFailed, JujuError, UnitNotFound
 
 JUJU_MAX_FRAME_SIZE = 2**30
 
-APPS_LEFT_INTERVAL = 600
-
-CURRENT_MODEL = None
-MODEL_ALIASES: Dict[Any, Any] = {}
-# A collection of model name -> libjuju models associations; use to either
-# instantiate or handout a model, or start a new one.
-ModelRefs: Dict[Any, Any] = {}
+CURRENT_MODEL_NAME: Optional[str] = None
+CURRENT_MODEL: Optional[Model] = None
 
 
+# remove when fixed: https://github.com/juju/python-libjuju/issues/888
 def extract_charm_name_from_url(charm_url):
     """Extract the charm name from the charm url.
 
@@ -59,26 +52,22 @@ async def async_get_juju_model():
     :returns: In focus model name
     :rtype: str
     """
-    global CURRENT_MODEL
-    if CURRENT_MODEL:
-        return CURRENT_MODEL
-    # LY: I think we should remove the KeyError handling. I don't think we
-    #     should ever fall back to the model in focus because it will lead
-    #     to functions being added which do not explicitly set a model and
-    #     zaza will loose the ability to do concurrent runs.
+    global CURRENT_MODEL_NAME
+    if CURRENT_MODEL_NAME:
+        return CURRENT_MODEL_NAME
     try:
         # Check the environment
-        CURRENT_MODEL = os.environ["JUJU_MODEL"]
+        CURRENT_MODEL_NAME = os.environ["JUJU_MODEL"]
     except KeyError:
         try:
-            CURRENT_MODEL = os.environ["MODEL_NAME"]
+            CURRENT_MODEL_NAME = os.environ["MODEL_NAME"]
         except KeyError:
             # If unset connect get the current active model
-            CURRENT_MODEL = await async_get_current_model()
-    return CURRENT_MODEL
+            CURRENT_MODEL_NAME = await async_get_current_model()
+    return CURRENT_MODEL_NAME
 
 
-async def get_model(model_name=None):
+async def get_model(model_name=None) -> Model:
     """Get (or create) the current model for :param:`model_name`.
 
     If None is passed, or there is no model_name param, then the current model
@@ -88,45 +77,34 @@ async def get_model(model_name=None):
     :type model_name: Optional[str]
     :returns: juju.model.Model
     """
-    if not model_name:
-        model_name = await async_get_juju_model()
-    return await get_model_memo(model_name)
+    global CURRENT_MODEL
+    global CURRENT_MODEL_NAME
 
+    if model_name is not None and model_name != CURRENT_MODEL_NAME:
+        await _disconnect(CURRENT_MODEL_NAME)
+        CURRENT_MODEL_NAME = model_name
 
-async def get_model_memo(model_name):
-    """Get the libjuju Model object for a name.
-
-    This is memoed as the model is maintained as running in a separate
-    background thread.  Thus, essentially this is a singleton for each of
-    the model names.
-
-    :param model_name: the model name to get a Model for.
-    :type model_name: str
-    :returns: juju.model.Model
-    """
-    global ModelRefs
-    model = None
-    if model_name in ModelRefs:
-        model = ModelRefs[model_name]
-        if is_model_disconnected(model):
-            try:
-                await model.disconnect()
-            except Exception:
-                pass
+    model = CURRENT_MODEL
+    if model is not None:
+        if _is_model_disconnected(model):
+            await _disconnect(model)
             model = None
-            del ModelRefs[model_name]
-    if model is None:
-        # NOTE(tinwood): Due to
-        # https://github.com/juju/python-libjuju/issues/458 set the max frame
-        # size to something big to stop "RPC: Connection closed, reconnecting"
-        # messages and then failures.
+    if CURRENT_MODEL is None:
         model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
         await model.connect(model_name)
-        ModelRefs[model_name] = model
+        CURRENT_MODEL = model
     return model
 
 
-def is_model_disconnected(model):
+async def _disconnect(model: Model):
+    if model is not None:
+        try:
+            await model.disconnect()
+        except Exception:
+            pass
+
+
+def _is_model_disconnected(model):
     """Return True if the model is disconnected.
 
     :param model: the model to check
@@ -155,7 +133,7 @@ async def async_get_current_model():
     return model_name
 
 
-async def async_get_full_juju_status(model_name=None):
+async def async_get_status(model_name=None):
     """Return the full juju status output.
 
     :param model_name: Name of model to query.
@@ -163,71 +141,8 @@ async def async_get_full_juju_status(model_name=None):
     :returns: Full juju status output
     :rtype: dict
     """
-    status = await async_get_status(model_name=model_name)
-    return status
-
-
-# A map of model names <-> last time get_status was called, and the result of
-# that call.
-_GET_STATUS_TIMES = {}
-StatusResult = collections.namedtuple("StatusResult", ["time", "result"])
-
-
-async def async_get_status(model_name=None, interval=4.0, refresh=True):
-    """Return the full status, but share calls between different asyncs.
-
-    Return the full status for the model_name (current model is None), but no
-    faster than interval time, which is a default of 4 seconds.  If refresh is
-    True, then this function waits until the interval is exceeded, and then
-    returns the refreshed status.  This is the default.  If refresh is False,
-    then the function immediately returns with the cached information.
-
-    This is to enable multiple co-routines to access the status information
-    without making multiple calls to Juju which all essentially will return
-    identical information.
-
-    Note that this is NOT thread-safe, but is async safe.  i.e. multiple
-    different co-operating async futures can call this (in the same thread) and
-    all access the same status.
-
-    :param model_name: Name of model to query.
-    :type model_name: str
-    :param interval: The minimum time between calls to get_status
-    :type interval: float
-    :param refresh: Force a refresh; do not used cached results
-    :type refresh: bool
-    :returns: dictionary of juju status
-    :rtype: dict
-    """
-    key = str(model_name)
-    model = None
-
-    async def _update_status_result(key):
-        nonlocal model
-        if model is None:
-            model = await get_model(model_name)
-        status = StatusResult(time.time(), await model.get_status())
-        _GET_STATUS_TIMES[key] = status
-        return status.result
-
-    try:
-        last = _GET_STATUS_TIMES[key]
-    except KeyError:
-        return await _update_status_result(key)
-    now = time.time()
-    if last.time + interval <= now:
-        # we need to refresh the status time, so let's do that.
-        return await _update_status_result(key)
-    # otherwise, if we need a refreshed version, then we have to wait;
-    if refresh:
-        # wait until the min interval is exceeded, and then grab a copy.
-        await asyncio.sleep((last.time + interval) - now)
-        # now get the status.
-        # By passing refresh=False, this WILL return a cached status if another
-        # co-routine has already refreshed it.
-        return await async_get_status(model_name, interval, refresh=False)
-    # Not refreshing, so return the cached version
-    return last.result
+    model = await get_model(model_name)
+    return await model.get_status()
 
 
 def _normalise_action_results(results):
@@ -262,6 +177,16 @@ def _normalise_action_results(results):
         return results
     else:
         return {}
+
+
+async def _check_action_error(action_obj, model, raise_on_failure):
+    await action_obj.wait()
+    if raise_on_failure and action_obj.status != "completed":
+        try:
+            output = await model.get_action_output(action_obj.id)
+        except KeyError:
+            output = None
+        raise ActionFailed(action_obj, output=output)
 
 
 async def async_run_on_unit(unit_name, command, model_name=None, timeout=None):
@@ -388,13 +313,7 @@ async def async_run_action(
     model = await get_model(model_name)
     unit = await async_get_unit_from_name(unit_name, model)
     action_obj = await unit.run_action(action_name, **action_params)
-    await action_obj.wait()
-    if raise_on_failure and action_obj.status != "completed":
-        try:
-            output = await model.get_action_output(action_obj.id)
-        except KeyError:
-            output = None
-        raise ActionFailed(action_obj, output=output)
+    await _check_action_error(action_obj, model, raise_on_failure)
     return action_obj
 
 
@@ -425,13 +344,7 @@ async def async_run_action_on_leader(
         is_leader = await unit.is_leader_from_status()
         if is_leader:
             action_obj = await unit.run_action(action_name, **action_params)
-            await action_obj.wait()
-            if raise_on_failure and action_obj.status != "completed":
-                try:
-                    output = await model.get_action_output(action_obj.id)
-                except KeyError:
-                    output = None
-                raise ActionFailed(action_obj, output=output)
+            await _check_action_error(action_obj, model, raise_on_failure)
             return action_obj
 
 

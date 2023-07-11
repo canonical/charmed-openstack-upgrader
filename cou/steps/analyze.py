@@ -28,7 +28,7 @@ from ruamel.yaml import YAML
 
 from cou.utils.juju_utils import (
     async_get_application_config,
-    async_get_full_juju_status,
+    async_get_status,
     extract_charm_name_from_url,
 )
 from cou.utils.openstack import CHARM_TYPES, get_os_code_info
@@ -59,7 +59,7 @@ class Analysis:
         :return: Application objects with their respective information.
         :rtype: set[Application]
         """
-        juju_status = await async_get_full_juju_status()
+        juju_status = await async_get_status()
         model_name = juju_status.model.name
         apps = {
             Application(
