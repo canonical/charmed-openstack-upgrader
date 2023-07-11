@@ -152,7 +152,7 @@ async def entrypoint() -> None:
 
         analysis_result = await Analysis.create()
         print(analysis_result)
-        upgrade_plan = generate_plan(analysis_result)
+        upgrade_plan = await generate_plan(analysis_result)
         if args.dry_run:
             print(upgrade_plan)
         else:

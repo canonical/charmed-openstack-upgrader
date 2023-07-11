@@ -15,13 +15,16 @@
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from cou.steps.backup import backup
 from cou.steps.plan import generate_plan
 
 
-def test_generate_plan():
+@pytest.mark.asyncio
+async def test_generate_plan():
     args = MagicMock()
-    plan = generate_plan(args)
+    plan = await generate_plan(args)
 
     assert plan.description == "Top level plan"
     assert not plan.parallel

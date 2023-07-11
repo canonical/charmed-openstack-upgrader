@@ -24,32 +24,35 @@ import cou.utils.juju_utils as utils
 from cou.exceptions import UnitNotFound
 
 
-async def backup() -> str:
+async def backup(model_name: str) -> str:
     """Backup mysql database of openstack.
 
     :return: Path of the local file from the backup.
     :rtype: str
     """
+    if not model_name:
+        model_name = utils.async_get_current_model_name()
+
     logging.info("Backing up mysql database")
-    mysql_app_config = await get_database_app()
+    mysql_app_config = await get_database_app(model_name)
     if not mysql_app_config:
         raise UnitNotFound()
     unit_name = list(mysql_app_config.units.keys())[0]
 
     logging.info("mysqldump mysql-innodb-cluster DBs ...")
-    action = await utils.async_run_action(unit_name, "mysqldump")
+    action = await utils.async_run_action(unit_name, "mysqldump", model_name=model_name)
     remote_file = action.data["results"]["mysqldump-file"]
     basedir = action.data["parameters"]["basedir"]
 
     logging.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
-    await utils.async_run_on_unit(unit_name, f"chmod o+rx {basedir}")
+    await utils.async_run_on_unit(unit_name, f"chmod o+rx {basedir}", model_name=model_name)
 
     local_file = os.path.abspath(os.path.basename(remote_file))
     logging.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
-    await utils.async_scp_from_unit(unit_name, remote_file, local_file)
+    await utils.async_scp_from_unit(unit_name, remote_file, local_file, model_name=model_name)
 
     logging.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
-    await utils.async_run_on_unit(unit_name, f"chmod o-rx {basedir}")
+    await utils.async_run_on_unit(unit_name, f"chmod o-rx {basedir}", model_name=model_name)
     return local_file
 
 

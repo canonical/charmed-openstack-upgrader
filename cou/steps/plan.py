@@ -17,12 +17,13 @@
 
 import logging
 
+import cou.utils.juju_utils as utils
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 
 
-def generate_plan(args: Analysis) -> UpgradeStep:
+async def generate_plan(args: Analysis) -> UpgradeStep:
     """Generate plan for upgrade.
 
     :param args: Analysis result.
@@ -33,6 +34,11 @@ def generate_plan(args: Analysis) -> UpgradeStep:
     logging.info(args)  # for placeholder
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
-        UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
+        UpgradeStep(
+            description="backup mysql databases",
+            parallel=False,
+            function=backup,
+            model_name=await utils.async_get_current_model_name(),
+        )
     )
     return plan

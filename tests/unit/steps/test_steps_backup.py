@@ -18,8 +18,9 @@ async def test_backup():
         utils.async_run_on_unit = AsyncMock()
         utils.async_scp_from_unit = AsyncMock()
         utils.async_get_unit_from_name = AsyncMock()
+        utils.async_get_current_model_name = AsyncMock()
 
-        await backup()
+        await backup(None)
         assert log.call_count == 5
 
 
@@ -33,9 +34,10 @@ async def test_backup_unit_not_found():
         utils.async_run_on_unit = AsyncMock()
         utils.async_scp_from_unit = AsyncMock()
         utils.async_get_unit_from_name = AsyncMock()
+        utils.async_get_current_model_name = AsyncMock()
 
         with pytest.raises(UnitNotFound):
-            await backup()
+            await backup("test")
 
 
 @pytest.mark.asyncio
