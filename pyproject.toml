@@ -71,7 +71,7 @@ exclude = [
 relative_files = true
 concurrency = ["gevent"]
 source = ["."]
-omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py", "cou/utils/**"]
+omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py"]
 
 [tool.coverage.report]
 fail_under = 100

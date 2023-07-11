@@ -17,9 +17,11 @@ from unittest.mock import MagicMock, patch
 
 import aiounittest
 import mock
+import pytest
 from mock.mock import AsyncMock
 
 import cou.utils.juju_utils as model
+from cou.exceptions import JujuError
 
 FAKE_STATUS = {
     "can-upgrade-to": "",
@@ -304,6 +306,11 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
             model_name = await model.async_get_juju_model()
             assert model_name == "juju_model"
 
+    async def test_async_get_juju_model_ge(self):
+        with mock.patch("cou.utils.juju_utils.CURRENT_MODEL") as juju_model:
+            model_name = await model.async_get_juju_model()
+            assert model_name is juju_model
+
     async def test_async_get_juju_model_name(self):
         model.CURRENT_MODEL = None
         os.environ["JUJU_MODEL"] = "model_name"
@@ -326,7 +333,16 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
             disconnected.return_value = False
 
             mymodel = await model.get_model_memo("modelname")
-            self.assertEqual(mymodel, self.mymodel)
+            self.assertEquals(mymodel, self.mymodel)
+
+    async def test_get_model_memo_112(self):
+        with mock.patch(
+            "cou.utils.juju_utils.ModelRefs", new={"modelname": self.mymodel}
+        ), mock.patch("cou.utils.juju_utils.is_model_disconnected") as disconnected:
+            disconnected.return_value = True
+
+            mymodel = await model.get_model_memo("modelname")
+            self.assertNotEquals(mymodel, self.mymodel)
 
     def test_is_model_disconnected(self):
         disconnected = model.is_model_disconnected(self.mymodel)
@@ -500,6 +516,61 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.Model.return_value = self.Model_mock
         # unit2 is the leader
         self.assertEqual(await model.async_get_lead_unit("app", "model"), self.unit2)
+
+    async def test_get_lead_unit_error(self):
+        self.patch_object(model, "async_get_juju_model", return_value="mname")
+        self.patch_object(model, "Model")
+        self.Model.return_value = self.Model_mock
+
+        def _is_leader(leader):
+            async def _inner_is_leader():
+                return leader
+
+            return _inner_is_leader
+
+        self.unit2.is_leader_from_status.side_effect = _is_leader(False)
+        with pytest.raises(JujuError):
+            await model.async_get_lead_unit("app", "model")
+        self.unit2.is_leader_from_status.side_effect = _is_leader(True)
+
+    async def test_async_run_action_empty(self):
+        self.patch_object(model, "async_get_juju_model", return_value="mname")
+        self.patch_object(model, "Model")
+
+        async def _fake_get_action_output(_):
+            return {"fake": "output"}
+
+        self.Model_mock.get_action_output = _fake_get_action_output
+        self.Model.return_value = self.Model_mock
+        await model.async_run_action_on_leader(
+            "app", "backup", action_params={"backup_dir": "/dev/null"}
+        )
+        self.assertFalse(self.unit1.called)
+        self.unit2.run_action.assert_called_once_with("backup", backup_dir="/dev/null")
+        self.run_action.status = "failed"
+        self.run_action.message = "aMessage"
+        self.run_action.id = "aId"
+        self.run_action.enqueued = "aEnqueued"
+        self.run_action.started = "aStarted"
+        self.run_action.completed = "aCompleted"
+        self.run_action.name = "backup2"
+        self.run_action.parameters = None
+        self.run_action.receiver = "app/2"
+        with self.assertRaises(model.ActionFailed) as e:
+            await model.async_run_action(
+                self.run_action.receiver,
+                self.run_action.name,
+                action_params=self.run_action.parameters,
+                raise_on_failure=True,
+            )
+        self.assertEqual(
+            str(e.exception),
+            (
+                'Run of action "backup2" with parameters "None" on "app/2" failed with '
+                '"aMessage" (id=aId status=failed enqueued=aEnqueued started=aStarted '
+                "completed=aCompleted output={'fake': 'output'})"
+            ),
+        )
 
     async def test_async_run_action_on_leader(self):
         self.patch_object(model, "async_get_juju_model", return_value="mname")
