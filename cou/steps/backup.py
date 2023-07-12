@@ -24,7 +24,7 @@ import cou.utils.juju_utils as utils
 from cou.exceptions import UnitNotFound
 
 
-async def backup(model_name: str) -> str:
+async def backup(model_name: Optional[str] = None) -> str:
     """Backup mysql database of openstack.
 
     :return: Path of the local file from the backup.
