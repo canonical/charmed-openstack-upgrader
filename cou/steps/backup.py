@@ -31,7 +31,7 @@ async def backup(model_name: Optional[str] = None) -> str:
     :rtype: str
     """
     if not model_name:
-        model_name = utils.async_get_current_model_name()
+        model_name = await utils.async_get_current_model_name()
 
     logging.info("Backing up mysql database")
     mysql_app_config = await get_database_app(model_name)
