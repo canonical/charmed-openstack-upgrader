@@ -40,7 +40,7 @@ def extract_charm_name_from_url(charm_url):
     :returns: Charm name
     :rtype: str
     """
-    charm_name = re.sub(r"-[0-9]+$", "", charm_url.split("/")[-1])
+    charm_name = re.sub(r"-\d+$", "", charm_url.split("/")[-1])
     return charm_name.split(":")[-1]
 
 
