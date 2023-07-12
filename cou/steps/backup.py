@@ -27,12 +27,11 @@ from cou.exceptions import UnitNotFound
 async def backup(model_name: Optional[str] = None) -> str:
     """Backup mysql database of openstack.
 
+    :param model_name: Optional model name.
+    :type args: Optional[str]
     :return: Path of the local file from the backup.
     :rtype: str
     """
-    if not model_name:
-        model_name = await utils.async_get_current_model_name()
-
     logging.info("Backing up mysql database")
     mysql_app_config = await get_database_app(model_name)
     if not mysql_app_config:
