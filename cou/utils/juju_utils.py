@@ -86,10 +86,9 @@ async def _async_get_model(model_name=None) -> Model:
         CURRENT_MODEL_NAME = model_name
 
     model = CURRENT_MODEL
-    if model is not None:
-        if _is_model_disconnected(model):
-            await _disconnect(model)
-            model = None
+    if model is not None and _is_model_disconnected(model):
+        await _disconnect(model)
+        model = None
     if CURRENT_MODEL is None:
         model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
         await model.connect(model_name)
