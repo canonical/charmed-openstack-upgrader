@@ -22,8 +22,6 @@ def test_action_failed():
     with pytest.raises(ActionFailed):
 
         class TestClass:
-            def __getattr__(self, name):
-                if name == "name":
-                    raise KeyError()
+            pass
 
         raise ActionFailed(action=TestClass(), output="output")

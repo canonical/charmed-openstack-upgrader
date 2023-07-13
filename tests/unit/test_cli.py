@@ -8,7 +8,7 @@ from cou.steps import UpgradeStep
 
 
 def test_parse_args():
-    args = ["--dry-run", "--log-level", "DEBUG", "--interactive"]
+    args = ["--dry-run", "--log-level", "DEBUG", "--interactive", "true"]
     parsed_args = parse_args(args)
     assert parsed_args.dry_run
     assert parsed_args.loglevel == "DEBUG"

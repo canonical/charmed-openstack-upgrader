@@ -18,7 +18,7 @@ import logging
 import os
 from typing import Optional
 
-from juju.client._definitions import ApplicationStatus
+from juju.application import Application
 
 import cou.utils.juju_utils as utils
 from cou.exceptions import UnitNotFound
@@ -34,8 +34,6 @@ async def backup(model_name: Optional[str] = None) -> str:
     """
     logging.info("Backing up mysql database")
     mysql_app_config = await get_database_app(model_name)
-    if not mysql_app_config:
-        raise UnitNotFound()
     unit_name = list(mysql_app_config.units.keys())[0]
 
     logging.info("mysqldump mysql-innodb-cluster DBs ...")
@@ -73,7 +71,7 @@ def _check_db_relations(app_config: dict) -> bool:
     return False
 
 
-async def get_database_app(model_name: Optional[str] = None) -> Optional[ApplicationStatus]:
+async def get_database_app(model_name: Optional[str] = None) -> Application:
     """Get mysql-innodb-cluster application name.
 
     Gets the openstack database mysql-innodb-cluster application if there are more than one
@@ -90,4 +88,4 @@ async def get_database_app(model_name: Optional[str] = None) -> Optional[Applica
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
             return app_config
 
-    return None
+    raise UnitNotFound()

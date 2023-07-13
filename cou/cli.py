@@ -28,6 +28,7 @@ from colorama import Fore, Style
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.plan import generate_plan
+from cou.utils import juju_utils as utils
 
 COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
 AVAILABLE_OPTIONS = "cas"
@@ -60,8 +61,12 @@ def parse_args(args: Any) -> argparse.Namespace:
         help="Set the logging level",
     )
     parser.add_argument(
-        "--interactive", default=True, help="Sets the interactive prompts", action="store_true"
+        "--model",
+        default=None,
+        dest="model_name",
+        help="Set the model to operate on.",
     )
+    parser.add_argument("--interactive", default=True, help="Sets the interactive prompts")
 
     return parser.parse_args(args)
 
@@ -148,6 +153,10 @@ async def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
+
+        model_name = await utils.async_set_current_model_name(args.model_name)
+        logging.info("Setting current model name: %s", model_name)
+
         setup_logging(log_level=args.loglevel)
 
         analysis_result = await Analysis.create()

@@ -35,7 +35,7 @@ def extract_charm_name_from_url(charm_url):
 
     E.g. Extract 'heat' from local:bionic/heat-12
 
-    :param charm_url: Name of model to query.
+    :param charm_url: Charm url string
     :type charm_url: str
     :returns: Charm name
     :rtype: str
@@ -44,8 +44,11 @@ def extract_charm_name_from_url(charm_url):
     return charm_name.split(":")[-1]
 
 
-async def async_get_current_model_name():
-    """Retrieve current model.
+async def async_set_current_model_name(model_name: Optional[str] = None):
+    """Set the current model.
+
+    :param model_name: Name of model to query.
+    :type model_name: str
 
     First check the environment for JUJU_MODEL. If this is not set, get the
     current active model.
@@ -54,8 +57,10 @@ async def async_get_current_model_name():
     :rtype: str
     """
     global CURRENT_MODEL_NAME
-    if CURRENT_MODEL_NAME:
-        return CURRENT_MODEL_NAME
+    if model_name:
+        CURRENT_MODEL_NAME = model_name
+        return model_name
+
     try:
         # Check the environment
         CURRENT_MODEL_NAME = os.environ["JUJU_MODEL"]
@@ -80,10 +85,6 @@ async def _async_get_model(model_name=None) -> Model:
     """
     global CURRENT_MODEL
     global CURRENT_MODEL_NAME
-
-    if model_name is not None and model_name != CURRENT_MODEL_NAME:
-        await _disconnect(CURRENT_MODEL_NAME)
-        CURRENT_MODEL_NAME = model_name
 
     model = CURRENT_MODEL
     if model is not None and _is_model_disconnected(model):

@@ -64,14 +64,7 @@ class ActionFailed(Exception):
             "started",
             "completed",
         ]:
-            try:
-                params[key] = getattr(action, key, "<not-set>")
-            except KeyError:
-                # Bug: #314  -- unfortunately, libjuju goes bang even if getattr(x,y,
-                # default) is used, which means we physically have to check for
-                # KeyError.
-                # code around libjuju in its getattr code.
-                params[key] = "<not-set>"
+            params[key] = getattr(action, key, "<not-set>")
 
         message = (
             'Run of action "{name}" with parameters "{parameters}" on '

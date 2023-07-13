@@ -25,22 +25,6 @@ async def test_backup():
 
 
 @pytest.mark.asyncio
-async def test_backup_unit_not_found():
-    with patch("cou.steps.backup.logging.info"), patch("cou.steps.backup.utils") as utils, patch(
-        "cou.steps.backup.get_database_app"
-    ) as database_app:
-        database_app.return_value = None
-        utils.async_run_action = AsyncMock()
-        utils.async_run_on_unit = AsyncMock()
-        utils.async_scp_from_unit = AsyncMock()
-        utils.async_get_unit_from_name = AsyncMock()
-        utils.async_get_current_model_name = AsyncMock()
-
-        with pytest.raises(UnitNotFound):
-            await backup("test")
-
-
-@pytest.mark.asyncio
 async def test_get_database_app():
     with patch("cou.steps.backup.utils.async_get_status") as get_status:
         retval = AsyncMock()
@@ -323,8 +307,8 @@ async def test_get_database_app_negative():
             },
         }
         get_status.return_value = retval
-        app = await get_database_app()
-        assert app is None
+        with pytest.raises(UnitNotFound):
+            await get_database_app()
 
 
 def test_check_db_relations():
