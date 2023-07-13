@@ -59,7 +59,7 @@ def parse_args(args: Any) -> argparse.Namespace:
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level",
     )
-    parser.add_argument("--interactive", help="Sets the interactive prompts", action="store_true")
+    parser.add_argument("--interactive", help="Sets the interactive prompts", default=False)
 
     return parser.parse_args(args)
 
