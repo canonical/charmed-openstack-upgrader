@@ -2,30 +2,33 @@ import logging
 import re
 
 from cou.steps.application.app import Application
+from cou.utils.openstack import get_os_code_info
 
 
+@Application.register_subclass("openstack-dashboard")
 class OpenStack_Dashboard(Application):
     """OpenStack Dashboard application."""
 
     openstack_map = {"18.3": "ussuri", "18.6": "victoria", "19.4": "wallaby"}
 
-    async def _get_current_os_versions(self, unit: str) -> str:
-        """Get the openstack version of a unit."""
-        version = ""
-        pkg_version = self._get_pkg_version(unit)
-        self.units[unit]["pkg_version"] = pkg_version
-        self.pkg_version_units[pkg_version].add(unit)
+    def _get_current_os_version(self, workload_version: str) -> str:
+        """Get the openstack version of a unit.
 
-        # for openstack releases >= wallaby
-        codename = await self._get_openstack_release(unit, model_name=self.model_name)
-        if codename:
-            version = codename
-        # for openstack releases < wallaby
-        elif self.pkg_name and pkg_version:
-            version = self.get_os_code_info_dashboard(pkg_version)
+        :param workload_version: Version of the workload of a charm. E.g: 10.2.6
+        :type workload_version: str
+        :return: OpenStack version detected. If not detected return an empty string.
+            E.g: ussuri.
+        :rtype: str
+        """
+        version = ""
+        package = self._get_representative_workload_pkg()
+
+        if package and workload_version:
+            version = self.get_os_code_info_dashboard(workload_version)
         return version
 
-    def get_os_code_info_dashboard(self, pkg_version):
+    def get_os_code_info_dashboard(self, workload_version):
+        # NOTE(gabrielcocenza) use packaging instead of regex
         try:
             # Remove epoch if it exists
             if ":" in pkg_version:

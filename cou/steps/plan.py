@@ -16,18 +16,18 @@
 """Upgrade planning utilities."""
 
 import logging
+from collections import defaultdict
+from typing import List, Tuple
 
 import cou.utils.juju_utils as utils
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis, Application
 from cou.steps.backup import backup
-from cou.steps.openstack_checks import openstack_version_check_apps
-from cou.steps.upgrade.basic import BasicCharmUpgradePlan
-from cou.steps.upgrade.ceph import CephUpgradePlan
-from cou.utils.juju_utils import async_block_until_all_units_idle
+from cou.utils.os_versions import CompareOpenStack
+from cou.utils.upgrade_utils import UPGRADE_ORDER, determine_next_openstack_release
 
 
-async def generate_plan(args: Analysis) -> UpgradeStep:
+async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     """Generate plan for upgrade.
 
     :param args: Analysis result.
@@ -35,7 +35,9 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
-    logging.info(args)  # for placeholder
+    current_os_release, next_os_release, apps_to_upgrade = determine_apps_to_upgrade(
+        analysis_result
+    )
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
         UpgradeStep(
@@ -60,20 +62,15 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
         description="Payload upgrade", parallel=False, function=None
     )
 
-    for app in apps:
-        app_upgrade_plan = PLAN_HANDLER.get(app.charm, BasicCharmUpgradePlan)(
-            app, current_os_release, next_release
-        )
-        plan_refresh_current_channel = app_upgrade_plan.add_plan_refresh_current_channel(
+    for app in apps_to_upgrade:
+        plan_refresh_current_channel = app.add_plan_refresh_current_channel(
             plan_refresh_current_channel
         )
-        plan_refresh_next_channel = app_upgrade_plan.add_plan_refresh_next_channel(
-            plan_refresh_next_channel
-        )
-        plan_disable_action_managed = app_upgrade_plan.add_plan_disable_action_managed(
+        plan_refresh_next_channel = app.add_plan_refresh_next_channel(plan_refresh_next_channel)
+        plan_disable_action_managed = app.add_plan_disable_action_managed(
             plan_disable_action_managed
         )
-        plan_payload_upgrade = app_upgrade_plan.add_plan_payload_upgrade(plan_payload_upgrade)
+        plan_payload_upgrade = app.add_plan_payload_upgrade(plan_payload_upgrade)
 
     sub_plans = [
         plan_refresh_current_channel,
@@ -86,68 +83,43 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
             plan.add_step(sub_plan)
 
     return plan
-<<<<<<< HEAD
-=======
 
 
-def prompt(parameter: str) -> str:
-    """Generate eye-catching prompt."""
+def determine_apps_to_upgrade(analysis_result: Analysis) -> Tuple[str, str, List[Application]]:
+    """Determine applications to upgrade.
 
-    def bold(text: str) -> str:
-        return Style.RESET_ALL + Fore.RED + Style.BRIGHT + text + Style.RESET_ALL
+    This function find the oldest OpenStack version in the deployment and
+    select the applications to upgrade for the next version (N + 1).
 
-    def normal(text: str) -> str:
-        return Style.RESET_ALL + Fore.RED + text + Style.RESET_ALL
+    :param analysis_result: Analysis result containing all applications in the model.
+    :type analysis_result: Analysis
+    :return: Tuple containing the current and next OpenStack release and a  list
+        of applications to be upgraded.
+    :rtype: Tuple[str, str, List[Application]]
+    """
+    # E.g: {"ussuri": {"keystone"}, "victoria": {"cinder"}}
+    os_versions: defaultdict[str, set] = defaultdict(set)
 
-    return (
-        normal(parameter + " (")
-        + bold("c")
-        + normal(")ontinue/(")
-        + bold("a")
-        + normal(")bort/(")
-        + bold("s")
-        + normal(")kip:")
-    )
+    for app in analysis_result.apps:
+        if app.current_os_release:
+            os_versions[app.current_os_release].add(app)
 
+    os_sequence = sorted(os_versions.keys(), key=CompareOpenStack)
+    current_os_release = os_sequence[0]
+    _, next_os_release = determine_next_openstack_release(current_os_release)
 
-async def apply_plan(upgrade_plan: UpgradeStep, interactive: bool) -> None:
-    """Apply the plan for upgrade."""
-    if interactive:
-        result = "X"
-        while result.casefold() not in AVAILABLE_OPTIONS:
-            result = input(prompt(upgrade_plan.description)).casefold()
-            match result:
-                case "c":
-                    await run_plan(upgrade_plan, interactive)
-                    return None
-                case "a":
-                    logging.info("Aborting plan")
-                    sys.exit(1)
-                case "s":
-                    logging.info("Skipped")
-                    return None
-                case _:
-                    logging.info("No valid input provided!")
-    await run_plan(upgrade_plan, interactive)
+    if len(os_versions) > 1:
+        logging.warning("Charms are not in the same openstack version")
 
-
-async def run_plan(upgrade_plan, interactive):
-    "Run the plan and sub steps."
-    logging.info("Running: %s", upgrade_plan.description)
-    await upgrade_plan.run()
-    if not upgrade_plan.parallel:
-        for sub_step in upgrade_plan.sub_steps:
-            await apply_plan(sub_step, interactive)
-
-
-def dump_plan(upgrade_plan: UpgradeStep, ident: int = 0) -> None:
-    """Dump the plan for upgrade."""
-    tab = "\t"
-    logging.info(f"{tab * ident}{upgrade_plan.description}")  # pylint: disable=W1203
-    for sub_step in upgrade_plan.sub_steps:
-        dump_plan(sub_step, ident + 1)
-
-
-# NOTE(gabrielcocenza) Every app can have it's own plan.
-PLAN_HANDLER = {"ceph-mon": CephUpgradePlan}
->>>>>>> b785e70 (- parallel execution with upgrade steps for refresh channels and)
+    else:
+        logging.info(
+            (
+                "All supported charms are in the same openstack version "
+                "and can be upgrade from: %s to: %s"
+            ),
+            current_os_release,
+            next_os_release,
+        )
+    apps_to_upgrade = list(os_versions[current_os_release])
+    apps_to_upgrade.sort(key=lambda app: UPGRADE_ORDER.index(app.charm))
+    return current_os_release, next_os_release, apps_to_upgrade

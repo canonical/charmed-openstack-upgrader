@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import logging
 import os
 import re
@@ -21,7 +22,7 @@ from typing import Optional
 from juju.client._definitions import FullStatus
 from juju.model import Model
 
-from cou.exceptions import ActionFailed, UnitNotFound
+from cou.exceptions import ActionFailed, UnitError, UnitNotFound
 
 JUJU_MAX_FRAME_SIZE = 2**30
 
@@ -351,7 +352,7 @@ async def async_upgrade_charm(
         channel=channel,
         force_series=force_series,
         force_units=force_units,
-        local_charm_path=path,
+        path=path,
         resources=resources,
         revision=revision,
         switch=switch,
@@ -361,10 +362,6 @@ async def async_upgrade_charm(
 async def async_set_application_config(application_name, configuration, model_name=None):
     """Set application configuration.
 
-    NOTE: At the time of this writing python-libjuju requires all values passed
-    to `set_config` to be `str`.
-    https://github.com/juju/python-libjuju/issues/388
-
     :param model_name: Name of model to query.
     :type model_name: str
     :param application_name: Name of application
@@ -372,7 +369,7 @@ async def async_set_application_config(application_name, configuration, model_na
     :param configuration: Dictionary of configuration setting(s)
     :type configuration: Dict[str,str]
     """
-    model = await get_model(model_name)
+    model = await _async_get_model(model_name)
     return await model.applications[application_name].set_config(configuration)
 
 
@@ -435,7 +432,7 @@ async def block_until_auto_reconnect_model(
         # fashioned way.
         for c in aconditions:
             evaluated.append(await c())
-            if is_model_disconnected(model):
+            if _is_model_disconnected(model):
                 return False
         return all(evaluated)
 
@@ -446,7 +443,7 @@ async def block_until_auto_reconnect_model(
             await ensure_model_connected(model)
             result = _done()
             aresult = await _adone()
-            if all((not is_model_disconnected(model), result, aresult)):
+            if all((not _is_model_disconnected(model), result, aresult)):
                 return
             else:
                 await asyncio.sleep(wait_period)
@@ -463,7 +460,7 @@ async def ensure_model_connected(model):
     :param model: the model to check
     :type model: :class:'juju.Model'
     """
-    if is_model_disconnected(model):
+    if _is_model_disconnected(model):
         model_name = model.info.name
         logging.warning(
             "model: %s has disconnected, forcing full disconnection " "and then reconnecting ...",
@@ -499,7 +496,7 @@ async def async_block_until_all_units_idle(
                                      error state.
     :type ignore_hard_deploy_error: Boolean
     """
-    model = await get_model(model_name)
+    model = await _async_get_model(model_name)
     await block_until_auto_reconnect_model(
         lambda: units_with_wl_status_state(model, "error") or model.all_units_idle(),
         model=model,

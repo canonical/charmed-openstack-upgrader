@@ -1,34 +1,51 @@
 import logging
 
 from cou.steps.application.app import Application
+from cou.utils.openstack import get_os_code_info
 
 
+@Application.register_subclass("ceph-mon")
 class Ceph(Application):
-    """Ceph Application."""
+    workload_map = {"15": ["ussuri", "victoria"], "16": ["wallaby", "xena"], "17": ["yoga"]}
+    # NOTE (gabrielcocenza)
+    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+    openstack_map = {
+        "ussuri": "octopus",
+        "victoria": "octopus",
+        "wallaby": "pacific",
+        "xena": "pacific",
+        "yoga": "quincy",
+    }
 
-    openstack_map = {"15": {"ussuri", "victoria"}, "16": {"wallaby", "xena"}, "17": {"yoga"}}
+    @property
+    def current_channel(self):
+        return f"{self.openstack_map[self.current_os_release]}/stable"
 
-    async def _get_current_os_versions(self, unit: str) -> str:
-        """Get the openstack version of a unit."""
+    @property
+    def next_channel(self):
+        return f"{self.openstack_map[self.next_os_release]}/stable"
+
+    def _get_current_os_version(self, workload_version: str) -> str:
+        """Get the openstack version of a unit.
+
+        :param workload_version: Version of the workload of a charm. E.g: 10.2.6
+        :type workload_version: str
+        :return: OpenStack version detected. If not detected return an empty string.
+            E.g: ussuri.
+        :rtype: str
+        """
         version = ""
-        pkg_version = self._get_pkg_version(unit)
-        self.units[unit]["pkg_version"] = pkg_version
-        self.pkg_version_units[pkg_version].add(unit)
+        package = self._get_representative_workload_pkg()
 
-        # for openstack releases >= wallaby
-        codename = await self._get_openstack_release(unit, model_name=self.model_name)
-        if codename:
-            version = codename
-        # for openstack releases < wallaby
-        elif self.pkg_name and pkg_version:
-            version = self.get_os_code_info_ceph(pkg_version)
+        if package and workload_version:
+            version = self.get_os_code_info_ceph(workload_version)
         return version
 
-    def get_os_code_info_ceph(self, pkg_version):
+    def get_os_code_info_ceph(self, workload_version):
         try:
             os_release = ""
-            major_version = pkg_version.split(".")[0]
-            possible_os_releases = self.openstack_map[major_version]
+            major_version = workload_version.split(".")[0]
+            possible_os_releases = self.workload_map[major_version]
             for possible_os_release in possible_os_releases:
                 if possible_os_release in self.os_origin:
                     os_release = possible_os_release

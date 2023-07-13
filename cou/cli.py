@@ -119,27 +119,37 @@ def prompt(parameter: str) -> str:
     )
 
 
-async def apply_plan(upgrade_plan: UpgradeStep) -> None:
+async def apply_plan(upgrade_plan: UpgradeStep, interactive: bool) -> None:
     """Apply the plan for upgrade.
 
     :param upgrade_plan: Plan to be executed on steps.
     :type upgrade_plan: UpgradeStep
     """
-    result = "X"
-    while result.casefold() not in AVAILABLE_OPTIONS:
-        result = input(prompt(upgrade_plan.description)).casefold()
-        match result:
-            case "c":
-                await upgrade_plan.run()
-                for sub_step in upgrade_plan.sub_steps:
-                    await apply_plan(sub_step)
-            case "a":
-                logging.info("Aborting plan")
-                sys.exit(1)
-            case "s":
-                logging.info("Skipped")
-            case _:
-                logging.info("No valid input provided!")
+    if interactive:
+        result = "X"
+        while result.casefold() not in AVAILABLE_OPTIONS:
+            result = input(prompt(upgrade_plan.description)).casefold()
+            match result:
+                case "c":
+                    return await run_plan(upgrade_plan, interactive)
+                case "a":
+                    logging.info("Aborting plan")
+                    sys.exit(1)
+                case "s":
+                    logging.info("Skipped")
+                    return None
+                case _:
+                    logging.info("No valid input provided!")
+    await run_plan(upgrade_plan, interactive)
+
+
+async def run_plan(upgrade_plan, interactive):
+    "Run the plan and sub steps."
+    logging.info("Running: %s", upgrade_plan.description)
+    await upgrade_plan.run()
+    if not upgrade_plan.parallel:
+        for sub_step in upgrade_plan.sub_steps:
+            await apply_plan(sub_step, interactive)
 
 
 async def entrypoint() -> None:

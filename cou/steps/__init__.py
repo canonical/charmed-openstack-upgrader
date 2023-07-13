@@ -17,8 +17,11 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import os
 from typing import Any, Callable, List, Optional
+
 from cou.utils.juju_utils import async_block_until_all_units_idle
 
 
@@ -63,16 +66,23 @@ class UpgradeStep:
         return step
 
     async def run(self) -> Any:
-        """Run the function.
-
-        :return: Result of the function.
-        :rtype: Any
-        """
-        if self.function is not None:
-            if self.params:
-                return await self.function(**self.params)
-            return await self.function()
-        return None
+        """Run the function."""
+        if self.parallel:
+            await self.wait_until_all_units_idle()
+            logging.info(
+                "Running: %s", ", ".join(sub_step.description for sub_step in self.sub_steps)
+            )
+            parallel_exec = [sub_step.function(**sub_step.params) for sub_step in self.sub_steps]
+            await asyncio.gather(*parallel_exec)
+            await self.wait_until_all_units_idle()
+        else:
+            if self.function is not None:
+                await self.wait_until_all_units_idle()
+                if self.params:
+                    await self.function(**self.params)
+                else:
+                    await self.function()
+            await self.wait_until_all_units_idle()
 
     def __str__(self) -> str:
         """Dump the plan for upgrade.
@@ -89,3 +99,7 @@ class UpgradeStep:
             steps_to_visit.extend([(s, indent + 1) for s in reversed(step.sub_steps)])
 
         return result
+
+    async def wait_until_all_units_idle(self):
+        logging.info("Wait until all units idle")
+        await async_block_until_all_units_idle()
