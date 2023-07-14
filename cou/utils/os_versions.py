@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-untyped-def"
 # Copyright 2018 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Module containing data about OpenStack versions."""
 from collections import OrderedDict
+from typing import List, Optional
 
 SERVICE_GROUPS = (
     ("Database Services", ["mysql-innodb-cluster"]),
@@ -167,17 +170,21 @@ SWIFT_CODENAMES = OrderedDict(
         ("rocky", ["2.18.0", "2.19.0"]),
         ("stein", ["2.20.0", "2.21.0"]),
         ("train", ["2.22.0"]),
-        ("ussuri", ["2.24.0", "2.25.0"]),
-        ("victoria", ["2.25.0"]),
+        ("ussuri", ["2.25.2", "2.25.3"]),
+        ("victoria", ["2.26.0"]),
     ]
 )
 
+# NOTE (gabrielcocenza) see the docs at
+# https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 OVN_CODENAMES = OrderedDict(
     [
-        ("train", ["2.12"]),
-        ("ussuri", ["20.03"]),
-        ("victoria", ["20.06"]),
-        ("wallaby", ["20.12"]),
+        ("train", ["22.03"]),
+        ("ussuri", ["22.03"]),
+        ("victoria", ["22.03"]),
+        ("wallaby", ["22.03"]),
+        ("xena", ["22.03"]),
+        ("yoga", ["22.03"]),
     ]
 )
 
@@ -196,6 +203,9 @@ PACKAGE_CODENAMES = {
             ("20", "train"),
             ("21", "ussuri"),
             ("22", "victoria"),
+            ("23", "wallaby"),
+            ("24", "xena"),
+            ("25", "yoga"),
         ]
     ),
     "neutron-common": OrderedDict(
@@ -211,6 +221,9 @@ PACKAGE_CODENAMES = {
             ("15", "train"),
             ("16", "ussuri"),
             ("17", "victoria"),
+            ("18", "wallaby"),
+            ("19", "xena"),
+            ("20", "yoga"),
         ]
     ),
     "cinder-common": OrderedDict(
@@ -226,6 +239,9 @@ PACKAGE_CODENAMES = {
             ("15", "train"),
             ("16", "ussuri"),
             ("17", "victoria"),
+            ("18", "wallaby"),
+            ("19", "xena"),
+            ("20", "yoga"),
         ]
     ),
     "keystone": OrderedDict(
@@ -241,6 +257,9 @@ PACKAGE_CODENAMES = {
             ("16", "train"),
             ("17", "ussuri"),
             ("18", "victoria"),
+            ("19", "wallaby"),
+            ("20", "xena"),
+            ("21", "yoga"),
         ]
     ),
     "horizon-common": OrderedDict(
@@ -271,6 +290,9 @@ PACKAGE_CODENAMES = {
             ("13", "train"),
             ("14", "ussuri"),
             ("15", "victoria"),
+            ("16", "wallaby"),
+            ("17", "xena"),
+            ("18", "yoga"),
         ]
     ),
     "heat-common": OrderedDict(
@@ -286,6 +308,9 @@ PACKAGE_CODENAMES = {
             ("13", "train"),
             ("14", "ussuri"),
             ("15", "victoria"),
+            ("16", "wallaby"),
+            ("17", "xena"),
+            ("18", "yoga"),
         ]
     ),
     "glance-common": OrderedDict(
@@ -301,6 +326,9 @@ PACKAGE_CODENAMES = {
             ("19", "train"),
             ("20", "ussuri"),
             ("21", "victoria"),
+            ("22", "wallaby"),
+            ("23", "xena"),
+            ("24", "yoga"),
         ]
     ),
     "openstack-dashboard": OrderedDict(
@@ -331,6 +359,9 @@ PACKAGE_CODENAMES = {
             ("9", "train"),
             ("10", "ussuri"),
             ("11", "victoria"),
+            ("12", "wallaby"),
+            ("13", "xena"),
+            ("14", "yoga"),
         ]
     ),
     "ceph-common": OrderedDict(
@@ -349,12 +380,15 @@ PACKAGE_CODENAMES = {
             ("2", "train"),
             ("3", "ussuri"),
             ("4", "victoria"),
+            ("5", "wallaby"),
+            ("6", "xena"),
+            ("7", "yoga"),
         ]
     ),
 }
 
 
-UBUNTU_RELEASES = (
+UBUNTU_RELEASES = [
     "lucid",
     "maverick",
     "natty",
@@ -382,7 +416,7 @@ UBUNTU_RELEASES = (
     "jammy",
     "kinetic",
     "lunar",
-)
+]
 
 
 class BasicStringComparator(object):
@@ -393,7 +427,7 @@ class BasicStringComparator(object):
     z-wrap.
     """
 
-    _list = None
+    _list: Optional[List[str]] = None
 
     def __init__(self, item):
         """Do init."""

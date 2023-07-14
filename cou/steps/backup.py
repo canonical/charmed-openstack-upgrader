@@ -18,34 +18,35 @@ import logging
 import os
 from typing import Optional
 
-from cou.zaza_utils import model
-from cou.zaza_utils.upgrade_utils import (
-    extract_charm_name_from_url,
-    get_upgrade_candidates,
-)
+import cou.utils.juju_utils as utils
+from cou.exceptions import UnitNotFound
 
 
-def backup() -> str:
-    """Backup mysql database of openstack."""
+async def backup(model_name: Optional[str] = None) -> str:
+    """Backup mysql database of openstack.
+
+    :param model_name: Optional model name.
+    :type args: Optional[str]
+    :return: Path of the local file from the backup.
+    :rtype: str
+    """
     logging.info("Backing up mysql database")
-
-    mysql_app = get_database_app()
-    mysql_leader = model.get_unit_from_name(model.get_lead_unit_name(mysql_app))
+    unit_name = await get_database_app_unit_name(model_name)
 
     logging.info("mysqldump mysql-innodb-cluster DBs ...")
-    action = model.run_action_on_leader(mysql_app, "mysqldump")
+    action = await utils.async_run_action(unit_name, "mysqldump", model_name=model_name)
     remote_file = action.data["results"]["mysqldump-file"]
     basedir = action.data["parameters"]["basedir"]
 
     logging.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
-    model.run_on_leader(mysql_app, f"chmod o+rx {basedir}")
+    await utils.async_run_on_unit(unit_name, f"chmod o+rx {basedir}", model_name=model_name)
 
     local_file = os.path.abspath(os.path.basename(remote_file))
     logging.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
-    model.scp_from_unit(mysql_leader.name, remote_file, local_file)
+    await utils.async_scp_from_unit(unit_name, remote_file, local_file, model_name=model_name)
 
     logging.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
-    model.run_on_leader(mysql_app, f"chmod o-rx {basedir}")
+    await utils.async_run_on_unit(unit_name, f"chmod o-rx {basedir}", model_name=model_name)
     return local_file
 
 
@@ -67,8 +68,8 @@ def _check_db_relations(app_config: dict) -> bool:
     return False
 
 
-def get_database_app(model_name: Optional[str] = None) -> Optional[str]:
-    """Get mysql-innodb-cluster application name.
+async def get_database_app_unit_name(model_name: Optional[str] = None) -> str:
+    """Get mysql-innodb-cluster application's first unit's name.
 
     Gets the openstack database mysql-innodb-cluster application if there are more than one
     application the one with the keystone relation is selected.
@@ -76,12 +77,12 @@ def get_database_app(model_name: Optional[str] = None) -> Optional[str]:
     :param model_name: Name of model to query.
     :type model_name: str
     :returns: Name of the mysql-innodb-cluster application name
-    :rtype: str
+    :rtype: ApplicationStatus
     """
-    candidates = get_upgrade_candidates(model_name=model_name)
-    for app, app_config in candidates.items():
-        charm_name = extract_charm_name_from_url(app_config["charm"])
+    status = await utils.async_get_status(model_name)
+    for _, app_config in status.applications.items():
+        charm_name = utils.extract_charm_name_from_url(app_config["charm"])
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
-            return app
+            return list(app_config.units.keys())[0]
 
-    return None
+    raise UnitNotFound()

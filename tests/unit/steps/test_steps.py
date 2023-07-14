@@ -14,46 +14,77 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Test steps package."""
+import pytest
+
 from cou.steps import UpgradeStep
-from tests.unit.utils import BaseTestCase
 
 
-class TestSteps(BaseTestCase):
-    def test_upgrade_step(self):
-        def sample_function():
-            return 1
+def test_upgrade_step():
+    def sample_function():
+        return 1
 
-        u = UpgradeStep(description="test", function=sample_function, parallel=False)
-        assert u.description == "test"
-        assert u.function is sample_function
-        assert not u.parallel
-        assert u.params == {}
+    u = UpgradeStep(description="test", function=sample_function, parallel=False)
+    assert u.description == "test"
+    assert u.function is sample_function
+    assert not u.parallel
+    assert u.params == {}
 
-    def test_upgrade_step_add(self):
-        u = UpgradeStep(description="test", function=None, parallel=False)
-        substep = UpgradeStep(description="substep", function=None, parallel=False)
-        u.add_step(substep)
-        assert u.sub_steps[0] is substep
 
-    def test_upgrade_step_run(self):
-        def sample_function(**kwargs):
-            return kwargs["x"]
+def test_upgrade_step_add():
+    u = UpgradeStep(description="test", function=None, parallel=False)
+    substep = u.add_step(UpgradeStep(description="substep", function=None, parallel=False))
+    substep_of_substep1 = substep.add_step(
+        UpgradeStep(description="substep_of_substep1", function=None, parallel=False)
+    )
+    substep_of_substep2 = substep.add_step(
+        UpgradeStep(description="substep_of_substep2", function=None, parallel=False)
+    )
+    assert u.sub_steps[0] is substep
+    assert substep.sub_steps[0] is substep_of_substep1
+    assert substep.sub_steps[1] is substep_of_substep2
 
-        u = UpgradeStep(description="test", function=sample_function, parallel=False, **{"x": 10})
 
-        result = u.run()
-        assert result == 10
+@pytest.mark.asyncio
+async def test_upgrade_step_run():
+    async def sample_function(**kwargs):
+        return kwargs["x"]
 
-    def test_upgrade_step_run_empty(self):
-        def sample_function(**kwargs):
-            return 5
+    u = UpgradeStep(description="test", function=sample_function, parallel=False, **{"x": 10})
 
-        u = UpgradeStep(description="test", function=sample_function, parallel=False)
+    result = await u.run()
+    assert result == 10
 
-        result = u.run()
-        assert result == 5
 
-    def test_upgrade_step_run_none(self):
-        u = UpgradeStep(description="test", function=None, parallel=False)
-        result = u.run()
-        assert result is None
+@pytest.mark.asyncio
+async def test_upgrade_step_run_empty():
+    async def sample_function(**kwargs):
+        return 5
+
+    u = UpgradeStep(description="test", function=sample_function, parallel=False)
+
+    result = await u.run()
+    assert result == 5
+
+
+@pytest.mark.asyncio
+async def test_upgrade_step_run_none():
+    u = UpgradeStep(description="test", function=None, parallel=False)
+    result = await u.run()
+    assert result is None
+
+
+def test___str__():
+    expected = "Top level plan\n\tbackup mysql databases\n"
+    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    assert str(plan) == expected
+
+
+def test___str__substep_has_substeps():
+    expected = "a\n\ta.a\n\t\ta.a.a\n\t\ta.a.b\n\ta.b\n"
+    plan = UpgradeStep(description="a", parallel=False, function=None)
+    aa = plan.add_step(UpgradeStep(description="a.a", parallel=False, function=None))
+    plan.add_step(UpgradeStep(description="a.b", parallel=False, function=None))
+    aa.add_step(UpgradeStep(description="a.a.a", parallel=False, function=None))
+    aa.add_step(UpgradeStep(description="a.a.b", parallel=False, function=None))
+    assert str(plan) == expected

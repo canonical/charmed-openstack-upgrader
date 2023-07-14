@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Main entry point."""
+import asyncio
 
 from cou import cli
 
-cli.entrypoint()
+asyncio.run(cli.entrypoint())

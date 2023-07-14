@@ -1,68 +1,55 @@
-from unittest.mock import MagicMock, patch
+import os
+from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
-from cou.steps.backup import _check_db_relations, backup, get_database_app
+import pytest
+from juju.client._definitions import FullStatus
+
+from cou.exceptions import UnitNotFound
+from cou.steps.backup import _check_db_relations, backup, get_database_app_unit_name
 
 
-def test_backup():
+@pytest.mark.asyncio
+async def test_backup():
     with patch("cou.steps.backup.logging.info") as log, patch(
-        "cou.steps.backup.model"
-    ) as model, patch("cou.steps.backup.get_database_app"):
-        model.run_action_on_leader = MagicMock()
-        model.scp_from_unit = MagicMock()
-        model.get_unit_from_name = MagicMock()
+        "cou.steps.backup.utils"
+    ) as utils, patch("cou.steps.backup.get_database_app_unit_name") as database_app_name:
+        database_app_name.return_value = "test"
+        utils.async_run_action = AsyncMock()
+        utils.async_run_on_unit = AsyncMock()
+        utils.async_scp_from_unit = AsyncMock()
+        utils.async_get_unit_from_name = AsyncMock()
+        utils.async_get_current_model_name = AsyncMock()
 
-        backup()
+        await backup(None)
         assert log.call_count == 5
 
 
-def test_get_database_app():
-    with patch("cou.steps.backup.get_upgrade_candidates") as upgrade_candidates:
-        upgrade_candidates.return_value = {
-            "mysql": {
-                "charm": "mysql-innodb-cluster",
-                "series": "focal",
-                "os": "ubuntu",
-                "charm-origin": "charmhub",
-                "charm-name": "mysql-innodb-cluster",
-                "charm-rev": 43,
-                "charm-channel": "8.0/stable",
-                "charm-version": "13004be",
-                "can-upgrade-to": "ch:amd64/focal/mysql-innodb-cluster-56",
-                "relations": {
-                    "cluster": ["mysql"],
-                    "coordinator": ["mysql"],
-                    "db-router": [
-                        "cinder-mysql-router",
-                        "glance-mysql-router",
-                        "keystone-mysql-router",
-                        "neutron-api-mysql-router",
-                        "nova-cloud-controller-mysql-router",
-                        "openstack-dashboard-mysql-router",
-                        "placement-mysql-router",
-                    ],
-                },
-            }
-        }
-        app = get_database_app()
-        assert app == "mysql"
+@pytest.mark.asyncio
+async def test_get_database_app_name_negative():
+    with patch("cou.steps.backup.utils.async_get_status") as get_status:
+        current_path = Path(os.path.dirname(os.path.realpath(__file__)))
+        with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
+            data = file.read().rstrip()
+
+        status = FullStatus.from_json(data)
+        status.applications["mysql"].relations = {}
+        get_status.return_value = status
+        with pytest.raises(UnitNotFound):
+            await get_database_app_unit_name()
 
 
-def test_get_database_app_negative():
-    with patch("cou.steps.backup.get_upgrade_candidates") as upgrade_candidates:
-        upgrade_candidates.return_value = {
-            "mysql": {
-                "charm": "percona",
-                "relations": {
-                    "cluster": ["percona"],
-                    "coordinator": ["percona"],
-                    "db-router": [
-                        "placement-mysql-router",
-                    ],
-                },
-            }
-        }
-        app = get_database_app()
-        assert app is None
+@pytest.mark.asyncio
+async def test_get_database_app_name():
+    with patch("cou.steps.backup.utils.async_get_status") as get_status:
+        current_path = Path(os.path.dirname(os.path.realpath(__file__)))
+        with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
+            data = file.read().rstrip()
+
+        status = FullStatus.from_json(data)
+        get_status.return_value = status
+
+        assert "mysql/0" == await get_database_app_unit_name()
 
 
 def test_check_db_relations():
