@@ -59,8 +59,8 @@ def parse_args(args: Any) -> argparse.Namespace:
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level",
     )
-    parser.add_argument("--interactive", help="Sets the interactive prompts", default=False)
-
+    parser.add_argument("--interactive", help="Sets the interactive prompts", default=False,
+                        dest="interactive", action=argparse.BooleanOptionalAction)
     return parser.parse_args(args)
 
 
@@ -109,13 +109,13 @@ def prompt(parameter: str) -> str:
         return Style.RESET_ALL + Fore.RED + text + Style.RESET_ALL
 
     return (
-        normal(parameter + " (")
-        + bold("c")
-        + normal(")ontinue/(")
-        + bold("a")
-        + normal(")bort/(")
-        + bold("s")
-        + normal(")kip:")
+            normal(parameter + " (")
+            + bold("c")
+            + normal(")ontinue/(")
+            + bold("a")
+            + normal(")bort/(")
+            + bold("s")
+            + normal(")kip:")
     )
 
 
