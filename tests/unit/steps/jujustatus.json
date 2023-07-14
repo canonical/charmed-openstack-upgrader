@@ -1,0 +1,1750 @@
+{
+  "model": {
+    "name": "zaza-0228b5aec1cf",
+    "type": "iaas",
+    "controller": "serverstack-serverstack",
+    "cloud": "serverstack",
+    "region": "serverstack",
+    "version": "2.9.42",
+    "model-status": {
+      "current": "available",
+      "since": "12 Jul 2023 12:36:01+03:00"
+    },
+    "sla": "unsupported"
+  },
+  "machines": {
+    "0": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:15+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-0",
+      "dns-name": "10.5.0.61",
+      "ip-addresses": [
+        "10.5.0.61",
+        "252.61.0.1"
+      ],
+      "instance-id": "03e7d6e2-eb4a-4a09-8fb2-4698d0b5d71b",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:52+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:37:57+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.61"
+          ],
+          "mac-address": "fa:16:3e:5f:43:1b",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.61.0.1"
+          ],
+          "mac-address": "0e:4c:ff:ef:c4:cd",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=4096M",
+      "hardware": "arch=amd64 cores=2 mem=4096M root-disk=40960M availability-zone=nova"
+    },
+    "1": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:16+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-1",
+      "dns-name": "10.5.0.119",
+      "ip-addresses": [
+        "10.5.0.119",
+        "252.119.0.1"
+      ],
+      "instance-id": "35c00523-2803-4554-a963-b3c609d93308",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:52+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:37:58+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.119"
+          ],
+          "mac-address": "fa:16:3e:da:98:3f",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.119.0.1"
+          ],
+          "mac-address": "96:ea:26:b1:e0:34",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=4096M",
+      "hardware": "arch=amd64 cores=2 mem=4096M root-disk=40960M availability-zone=nova"
+    },
+    "10": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:43+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-10",
+      "dns-name": "10.5.0.38",
+      "ip-addresses": [
+        "10.5.0.38",
+        "252.38.0.1"
+      ],
+      "instance-id": "855e53b6-ffa2-47ec-9c77-264cf76f04e9",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:58+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:38:00+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.38"
+          ],
+          "mac-address": "fa:16:3e:5c:36:f2",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.38.0.1"
+          ],
+          "mac-address": "c6:fa:16:b0:c5:b2",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=1024M",
+      "hardware": "arch=amd64 cores=1 mem=2048M root-disk=20480M availability-zone=nova"
+    },
+    "11": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:26+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-11",
+      "dns-name": "10.5.0.6",
+      "ip-addresses": [
+        "10.5.0.6",
+        "252.6.0.1"
+      ],
+      "instance-id": "68bc1d80-0c9b-4699-a8c5-80d2e53c5961",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:58+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:38:01+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.6"
+          ],
+          "mac-address": "fa:16:3e:29:d9:e1",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.6.0.1"
+          ],
+          "mac-address": "a2:9c:31:60:f7:4c",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=1024M",
+      "hardware": "arch=amd64 cores=1 mem=2048M root-disk=20480M availability-zone=nova"
+    },
+    "2": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:32+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-2",
+      "dns-name": "10.5.0.72",
+      "ip-addresses": [
+        "10.5.0.72",
+        "252.72.0.1"
+      ],
+      "instance-id": "63de6c52-809c-4c82-a4f9-0e72f5b0f791",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:52+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:37:58+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.72"
+          ],
+          "mac-address": "fa:16:3e:f7:71:5b",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.72.0.1"
+          ],
+          "mac-address": "36:65:23:6a:b0:c9",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=4096M",
+      "hardware": "arch=amd64 cores=2 mem=4096M root-disk=40960M availability-zone=nova"
+    },
+    "3": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:38:58+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-3",
+      "dns-name": "10.5.0.40",
+      "ip-addresses": [
+        "10.5.0.40",
+        "252.40.0.1"
+      ],
+      "instance-id": "f8e7c796-abce-440a-bf10-b0d6ab83a1f0",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:23+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:37:58+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.40"
+          ],
+          "mac-address": "fa:16:3e:5a:76:2f",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.40.0.1"
+          ],
+          "mac-address": "a2:9e:7b:70:fa:b2",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=4096M",
+      "hardware": "arch=amd64 cores=2 mem=4096M root-disk=40960M availability-zone=nova"
+    },
+    "4": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:10+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-4",
+      "dns-name": "10.5.0.139",
+      "ip-addresses": [
+        "10.5.0.139",
+        "252.139.0.1"
+      ],
+      "instance-id": "9ad440c6-551b-42ae-8294-e11b0c281cb7",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:52+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:37:58+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.139"
+          ],
+          "mac-address": "fa:16:3e:fd:4b:37",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.139.0.1"
+          ],
+          "mac-address": "32:f4:bb:4b:a0:bd",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=2048M",
+      "hardware": "arch=amd64 cores=1 mem=2048M root-disk=20480M availability-zone=nova"
+    },
+    "5": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:38:59+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-5",
+      "dns-name": "10.5.0.157",
+      "ip-addresses": [
+        "10.5.0.157",
+        "252.157.0.1"
+      ],
+      "instance-id": "fdeb8ae2-eab6-4c8d-9028-cfb50047e121",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:52+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:37:59+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.157"
+          ],
+          "mac-address": "fa:16:3e:88:a9:f5",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.157.0.1"
+          ],
+          "mac-address": "ce:e5:8f:50:93:d1",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=4096M",
+      "hardware": "arch=amd64 cores=2 mem=4096M root-disk=40960M availability-zone=nova"
+    },
+    "6": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:21+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-6",
+      "dns-name": "10.5.0.112",
+      "ip-addresses": [
+        "10.5.0.112",
+        "252.112.0.1"
+      ],
+      "instance-id": "58cd351c-0669-4cc2-a50c-56f4c40f15de",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:52+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:37:59+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.112"
+          ],
+          "mac-address": "fa:16:3e:ef:e5:0d",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.112.0.1"
+          ],
+          "mac-address": "3a:34:94:f1:e2:3d",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=2048M",
+      "hardware": "arch=amd64 cores=1 mem=2048M root-disk=20480M availability-zone=nova"
+    },
+    "7": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:23+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-7",
+      "dns-name": "10.5.0.198",
+      "ip-addresses": [
+        "10.5.0.198",
+        "252.198.0.1"
+      ],
+      "instance-id": "b32cd7af-1c19-4d53-99a0-c9770668fae2",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:53+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:37:59+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.198"
+          ],
+          "mac-address": "fa:16:3e:61:36:4f",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.198.0.1"
+          ],
+          "mac-address": "36:5f:16:a0:65:69",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=2048M",
+      "hardware": "arch=amd64 cores=1 mem=2048M root-disk=20480M availability-zone=nova"
+    },
+    "8": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:25+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-8",
+      "dns-name": "10.5.0.131",
+      "ip-addresses": [
+        "10.5.0.131",
+        "252.131.0.1"
+      ],
+      "instance-id": "cde7c9d7-8e4d-42a7-b4d1-30bf844ecd81",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:58+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:38:00+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.131"
+          ],
+          "mac-address": "fa:16:3e:d4:9d:c0",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.131.0.1"
+          ],
+          "mac-address": "d2:e3:0b:b1:c1:61",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=1024M",
+      "hardware": "arch=amd64 cores=1 mem=2048M root-disk=20480M availability-zone=nova"
+    },
+    "9": {
+      "juju-status": {
+        "current": "started",
+        "since": "12 Jul 2023 12:39:25+03:00",
+        "version": "2.9.42"
+      },
+      "hostname": "juju-75b9b3-zaza-0228b5aec1cf-9",
+      "dns-name": "10.5.0.151",
+      "ip-addresses": [
+        "10.5.0.151",
+        "252.151.0.1"
+      ],
+      "instance-id": "e10f4232-2ab5-4248-884f-b85754132c3d",
+      "machine-status": {
+        "current": "running",
+        "message": "ACTIVE",
+        "since": "12 Jul 2023 12:38:58+03:00"
+      },
+      "modification-status": {
+        "current": "idle",
+        "since": "12 Jul 2023 12:38:00+03:00"
+      },
+      "series": "focal",
+      "network-interfaces": {
+        "ens3": {
+          "ip-addresses": [
+            "10.5.0.151"
+          ],
+          "mac-address": "fa:16:3e:ea:91:14",
+          "gateway": "10.5.0.1",
+          "space": "alpha",
+          "is-up": true
+        },
+        "fan-252": {
+          "ip-addresses": [
+            "252.151.0.1"
+          ],
+          "mac-address": "0e:49:7e:49:4f:5a",
+          "space": "alpha",
+          "is-up": true
+        }
+      },
+      "constraints": "arch=amd64 mem=1024M",
+      "hardware": "arch=amd64 cores=1 mem=2048M root-disk=20480M availability-zone=nova"
+    }
+  },
+  "applications": {
+    "cinder": {
+      "charm": "cinder",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "cinder",
+      "charm-rev": 633,
+      "charm-channel": "ussuri/stable",
+      "can-upgrade-to": "ch:amd64/focal/cinder-643",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 13:01:02+03:00"
+      },
+      "relations": {
+        "amqp": [
+          "rabbitmq-server"
+        ],
+        "cinder-volume-service": [
+          "nova-cloud-controller"
+        ],
+        "cluster": [
+          "cinder"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "image-service": [
+          "glance"
+        ],
+        "shared-db": [
+          "cinder-mysql-router"
+        ]
+      },
+      "units": {
+        "cinder/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 13:01:02+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 13:01:04+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "7",
+          "open-ports": [
+            "8776/tcp"
+          ],
+          "public-address": "10.5.0.198",
+          "subordinates": {
+            "cinder-mysql-router/0": {
+              "workload-status": {
+                "current": "active",
+                "message": "Unit is ready",
+                "since": "12 Jul 2023 12:58:17+03:00"
+              },
+              "juju-status": {
+                "current": "idle",
+                "since": "12 Jul 2023 12:58:25+03:00",
+                "version": "2.9.42"
+              },
+              "leader": true,
+              "public-address": "10.5.0.198"
+            }
+          }
+        }
+      },
+      "version": "16.4.2",
+      "endpoint-bindings": {
+        "": "alpha",
+        "admin": "alpha",
+        "amqp": "alpha",
+        "backup-backend": "alpha",
+        "ceph": "alpha",
+        "certificates": "alpha",
+        "cinder-volume-service": "alpha",
+        "cluster": "alpha",
+        "ha": "alpha",
+        "identity-credentials": "alpha",
+        "identity-service": "alpha",
+        "image-service": "alpha",
+        "internal": "alpha",
+        "nrpe-external-master": "alpha",
+        "public": "alpha",
+        "shared-db": "alpha",
+        "storage-backend": "alpha"
+      }
+    },
+    "cinder-mysql-router": {
+      "charm": "mysql-router",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "mysql-router",
+      "charm-rev": 90,
+      "charm-channel": "8.0/stable",
+      "charm-version": "80f2113",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:58:17+03:00"
+      },
+      "relations": {
+        "db-router": [
+          "mysql"
+        ],
+        "shared-db": [
+          "cinder"
+        ]
+      },
+      "subordinate-to": [
+        "cinder"
+      ],
+      "version": "8.0.33",
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "db-router": "alpha",
+        "juju-info": "alpha",
+        "shared-db": "alpha"
+      }
+    },
+    "glance": {
+      "charm": "glance",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "glance",
+      "charm-rev": 567,
+      "charm-channel": "ussuri/stable",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:59:17+03:00"
+      },
+      "relations": {
+        "amqp": [
+          "rabbitmq-server"
+        ],
+        "cluster": [
+          "glance"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "image-service": [
+          "cinder",
+          "nova-cloud-controller",
+          "nova-compute"
+        ],
+        "shared-db": [
+          "glance-mysql-router"
+        ]
+      },
+      "units": {
+        "glance/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 12:59:17+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 12:59:18+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "10",
+          "open-ports": [
+            "9292/tcp"
+          ],
+          "public-address": "10.5.0.38",
+          "subordinates": {
+            "glance-mysql-router/0": {
+              "workload-status": {
+                "current": "active",
+                "message": "Unit is ready",
+                "since": "12 Jul 2023 12:51:13+03:00"
+              },
+              "juju-status": {
+                "current": "idle",
+                "since": "12 Jul 2023 12:51:14+03:00",
+                "version": "2.9.42"
+              },
+              "leader": true,
+              "public-address": "10.5.0.38"
+            }
+          }
+        }
+      },
+      "version": "20.2.0",
+      "endpoint-bindings": {
+        "": "alpha",
+        "admin": "alpha",
+        "amqp": "alpha",
+        "ceph": "alpha",
+        "certificates": "alpha",
+        "cinder-volume-service": "alpha",
+        "cluster": "alpha",
+        "ha": "alpha",
+        "identity-service": "alpha",
+        "image-service": "alpha",
+        "internal": "alpha",
+        "nrpe-external-master": "alpha",
+        "object-store": "alpha",
+        "public": "alpha",
+        "shared-db": "alpha",
+        "storage-backend": "alpha"
+      }
+    },
+    "glance-mysql-router": {
+      "charm": "mysql-router",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "mysql-router",
+      "charm-rev": 90,
+      "charm-channel": "8.0/stable",
+      "charm-version": "80f2113",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:51:13+03:00"
+      },
+      "relations": {
+        "db-router": [
+          "mysql"
+        ],
+        "shared-db": [
+          "glance"
+        ]
+      },
+      "subordinate-to": [
+        "glance"
+      ],
+      "version": "8.0.33",
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "db-router": "alpha",
+        "juju-info": "alpha",
+        "shared-db": "alpha"
+      }
+    },
+    "keystone": {
+      "charm": "keystone",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "keystone",
+      "charm-rev": 652,
+      "charm-channel": "ussuri/stable",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Application Ready",
+        "since": "12 Jul 2023 12:59:03+03:00"
+      },
+      "relations": {
+        "cluster": [
+          "keystone"
+        ],
+        "identity-service": [
+          "cinder",
+          "glance",
+          "neutron-api",
+          "nova-cloud-controller",
+          "placement"
+        ],
+        "shared-db": [
+          "keystone-mysql-router"
+        ]
+      },
+      "units": {
+        "keystone/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 13:01:13+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "14 Jul 2023 07:25:03+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "11",
+          "open-ports": [
+            "5000/tcp"
+          ],
+          "public-address": "10.5.0.6",
+          "subordinates": {
+            "keystone-mysql-router/0": {
+              "workload-status": {
+                "current": "active",
+                "message": "Unit is ready",
+                "since": "12 Jul 2023 12:51:02+03:00"
+              },
+              "juju-status": {
+                "current": "idle",
+                "since": "12 Jul 2023 12:51:03+03:00",
+                "version": "2.9.42"
+              },
+              "leader": true,
+              "public-address": "10.5.0.6"
+            }
+          }
+        }
+      },
+      "version": "17.0.1",
+      "endpoint-bindings": {
+        "": "alpha",
+        "admin": "alpha",
+        "certificates": "alpha",
+        "cluster": "alpha",
+        "domain-backend": "alpha",
+        "ha": "alpha",
+        "identity-admin": "alpha",
+        "identity-credentials": "alpha",
+        "identity-notifications": "alpha",
+        "identity-service": "alpha",
+        "internal": "alpha",
+        "keystone-fid-service-provider": "alpha",
+        "keystone-middleware": "alpha",
+        "nrpe-external-master": "alpha",
+        "public": "alpha",
+        "shared-db": "alpha",
+        "websso-trusted-dashboard": "alpha"
+      }
+    },
+    "keystone-mysql-router": {
+      "charm": "mysql-router",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "mysql-router",
+      "charm-rev": 90,
+      "charm-channel": "8.0/stable",
+      "charm-version": "80f2113",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:51:02+03:00"
+      },
+      "relations": {
+        "db-router": [
+          "mysql"
+        ],
+        "shared-db": [
+          "keystone"
+        ]
+      },
+      "subordinate-to": [
+        "keystone"
+      ],
+      "version": "8.0.33",
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "db-router": "alpha",
+        "juju-info": "alpha",
+        "shared-db": "alpha"
+      }
+    },
+    "mysql": {
+      "charm": "mysql-innodb-cluster",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "mysql-innodb-cluster",
+      "charm-rev": 56,
+      "charm-channel": "8.0/stable",
+      "charm-version": "ca6837b",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready: Mode: R/W, Cluster is ONLINE and can tolerate up to ONE failure.",
+        "since": "12 Jul 2023 12:50:33+03:00"
+      },
+      "relations": {
+        "cluster": [
+          "mysql"
+        ],
+        "coordinator": [
+          "mysql"
+        ],
+        "db-router": [
+          "cinder-mysql-router",
+          "glance-mysql-router",
+          "keystone-mysql-router",
+          "neutron-api-mysql-router",
+          "nova-cloud-controller-mysql-router",
+          "placement-mysql-router"
+        ]
+      },
+      "units": {
+        "mysql/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready: Mode: R/W, Cluster is ONLINE and can tolerate up to ONE failure.",
+            "since": "12 Jul 2023 12:50:33+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 12:55:31+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "0",
+          "public-address": "10.5.0.61"
+        },
+        "mysql/1": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready: Mode: R/O, Cluster is ONLINE and can tolerate up to ONE failure.",
+            "since": "12 Jul 2023 12:50:29+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 12:55:31+03:00",
+            "version": "2.9.42"
+          },
+          "machine": "1",
+          "public-address": "10.5.0.119"
+        },
+        "mysql/2": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready: Mode: R/O, Cluster is ONLINE and can tolerate up to ONE failure.",
+            "since": "12 Jul 2023 12:50:30+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 12:55:52+03:00",
+            "version": "2.9.42"
+          },
+          "machine": "2",
+          "public-address": "10.5.0.72"
+        }
+      },
+      "version": "8.0.33",
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "cluster": "alpha",
+        "coordinator": "alpha",
+        "db-monitor": "alpha",
+        "db-router": "alpha",
+        "shared-db": "alpha"
+      }
+    },
+    "neutron-api": {
+      "charm": "neutron-api",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "neutron-api",
+      "charm-rev": 541,
+      "charm-channel": "ussuri/stable",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:59:36+03:00"
+      },
+      "relations": {
+        "amqp": [
+          "rabbitmq-server"
+        ],
+        "cluster": [
+          "neutron-api"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "neutron-api": [
+          "nova-cloud-controller"
+        ],
+        "neutron-plugin-api": [
+          "neutron-gateway",
+          "neutron-openvswitch"
+        ],
+        "shared-db": [
+          "neutron-api-mysql-router"
+        ]
+      },
+      "units": {
+        "neutron-api/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 12:59:36+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 12:59:45+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "4",
+          "open-ports": [
+            "9696/tcp"
+          ],
+          "public-address": "10.5.0.139",
+          "subordinates": {
+            "neutron-api-mysql-router/0": {
+              "workload-status": {
+                "current": "active",
+                "message": "Unit is ready",
+                "since": "12 Jul 2023 12:54:16+03:00"
+              },
+              "juju-status": {
+                "current": "idle",
+                "since": "12 Jul 2023 12:54:17+03:00",
+                "version": "2.9.42"
+              },
+              "leader": true,
+              "public-address": "10.5.0.139"
+            }
+          }
+        }
+      },
+      "version": "16.4.2",
+      "endpoint-bindings": {
+        "": "alpha",
+        "admin": "alpha",
+        "amqp": "alpha",
+        "certificates": "alpha",
+        "cluster": "alpha",
+        "etcd-proxy": "alpha",
+        "external-dns": "alpha",
+        "ha": "alpha",
+        "identity-service": "alpha",
+        "infoblox-neutron": "alpha",
+        "internal": "alpha",
+        "midonet": "alpha",
+        "neutron-api": "alpha",
+        "neutron-load-balancer": "alpha",
+        "neutron-plugin-api": "alpha",
+        "neutron-plugin-api-subordinate": "alpha",
+        "nrpe-external-master": "alpha",
+        "public": "alpha",
+        "shared-db": "alpha",
+        "vsd-rest-api": "alpha"
+      }
+    },
+    "neutron-api-mysql-router": {
+      "charm": "mysql-router",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "mysql-router",
+      "charm-rev": 90,
+      "charm-channel": "8.0/stable",
+      "charm-version": "80f2113",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:54:16+03:00"
+      },
+      "relations": {
+        "db-router": [
+          "mysql"
+        ],
+        "shared-db": [
+          "neutron-api"
+        ]
+      },
+      "subordinate-to": [
+        "neutron-api"
+      ],
+      "version": "8.0.33",
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "db-router": "alpha",
+        "juju-info": "alpha",
+        "shared-db": "alpha"
+      }
+    },
+    "neutron-gateway": {
+      "charm": "neutron-gateway",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "neutron-gateway",
+      "charm-rev": 522,
+      "charm-channel": "ussuri/stable",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:42:27+03:00"
+      },
+      "relations": {
+        "amqp": [
+          "rabbitmq-server"
+        ],
+        "cluster": [
+          "neutron-gateway"
+        ],
+        "neutron-plugin-api": [
+          "neutron-api"
+        ],
+        "quantum-network-service": [
+          "nova-cloud-controller"
+        ]
+      },
+      "units": {
+        "neutron-gateway/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 12:42:27+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 13:03:57+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "3",
+          "public-address": "10.5.0.40"
+        }
+      },
+      "version": "16.4.2",
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "amqp-nova": "alpha",
+        "cluster": "alpha",
+        "data": "alpha",
+        "ha": "alpha",
+        "neutron-plugin-api": "alpha",
+        "nrpe-external-master": "alpha",
+        "quantum-network-service": "alpha"
+      }
+    },
+    "neutron-openvswitch": {
+      "charm": "neutron-openvswitch",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "neutron-openvswitch",
+      "charm-rev": 526,
+      "charm-channel": "ussuri/stable",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 13:00:06+03:00"
+      },
+      "relations": {
+        "amqp": [
+          "rabbitmq-server"
+        ],
+        "neutron-plugin": [
+          "nova-compute"
+        ],
+        "neutron-plugin-api": [
+          "neutron-api"
+        ]
+      },
+      "subordinate-to": [
+        "nova-compute"
+      ],
+      "version": "16.4.2",
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "data": "alpha",
+        "juju-info": "alpha",
+        "neutron-control": "alpha",
+        "neutron-plugin": "alpha",
+        "neutron-plugin-api": "alpha"
+      }
+    },
+    "nova-cloud-controller": {
+      "charm": "nova-cloud-controller",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "nova-cloud-controller",
+      "charm-rev": 672,
+      "charm-channel": "ussuri/stable",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 13:03:50+03:00"
+      },
+      "relations": {
+        "amqp": [
+          "rabbitmq-server"
+        ],
+        "cinder-volume-service": [
+          "cinder"
+        ],
+        "cloud-compute": [
+          "nova-compute"
+        ],
+        "cluster": [
+          "nova-cloud-controller"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "image-service": [
+          "glance"
+        ],
+        "neutron-api": [
+          "neutron-api"
+        ],
+        "placement": [
+          "placement"
+        ],
+        "quantum-network-service": [
+          "neutron-gateway"
+        ],
+        "shared-db": [
+          "nova-cloud-controller-mysql-router"
+        ]
+      },
+      "units": {
+        "nova-cloud-controller/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 13:03:50+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 13:04:53+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "6",
+          "open-ports": [
+            "8774/tcp",
+            "8775/tcp"
+          ],
+          "public-address": "10.5.0.112",
+          "subordinates": {
+            "nova-cloud-controller-mysql-router/0": {
+              "workload-status": {
+                "current": "active",
+                "message": "Unit is ready",
+                "since": "12 Jul 2023 12:52:07+03:00"
+              },
+              "juju-status": {
+                "current": "idle",
+                "since": "12 Jul 2023 12:52:07+03:00",
+                "version": "2.9.42"
+              },
+              "leader": true,
+              "public-address": "10.5.0.112"
+            }
+          }
+        }
+      },
+      "version": "21.2.4",
+      "endpoint-bindings": {
+        "": "alpha",
+        "admin": "alpha",
+        "amqp": "alpha",
+        "amqp-cell": "alpha",
+        "certificates": "alpha",
+        "cinder-volume-service": "alpha",
+        "cloud-compute": "alpha",
+        "cloud-controller": "alpha",
+        "cluster": "alpha",
+        "ha": "alpha",
+        "identity-service": "alpha",
+        "image-service": "alpha",
+        "internal": "alpha",
+        "memcache": "alpha",
+        "neutron-api": "alpha",
+        "nova-cell-api": "alpha",
+        "nova-vmware": "alpha",
+        "nrpe-external-master": "alpha",
+        "placement": "alpha",
+        "public": "alpha",
+        "quantum-network-service": "alpha",
+        "shared-db": "alpha",
+        "shared-db-cell": "alpha"
+      }
+    },
+    "nova-cloud-controller-mysql-router": {
+      "charm": "mysql-router",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "mysql-router",
+      "charm-rev": 90,
+      "charm-channel": "8.0/stable",
+      "charm-version": "80f2113",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:52:07+03:00"
+      },
+      "relations": {
+        "db-router": [
+          "mysql"
+        ],
+        "shared-db": [
+          "nova-cloud-controller"
+        ]
+      },
+      "subordinate-to": [
+        "nova-cloud-controller"
+      ],
+      "version": "8.0.33",
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "db-router": "alpha",
+        "juju-info": "alpha",
+        "shared-db": "alpha"
+      }
+    },
+    "nova-compute": {
+      "charm": "nova-compute",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "nova-compute",
+      "charm-rev": 669,
+      "charm-channel": "ussuri/stable",
+      "can-upgrade-to": "ch:amd64/focal/nova-compute-671",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:46:38+03:00"
+      },
+      "relations": {
+        "amqp": [
+          "rabbitmq-server"
+        ],
+        "cloud-compute": [
+          "nova-cloud-controller"
+        ],
+        "compute-peer": [
+          "nova-compute"
+        ],
+        "image-service": [
+          "glance"
+        ],
+        "neutron-plugin": [
+          "neutron-openvswitch"
+        ]
+      },
+      "units": {
+        "nova-compute/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 12:46:38+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 13:04:07+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "5",
+          "public-address": "10.5.0.157",
+          "subordinates": {
+            "neutron-openvswitch/0": {
+              "workload-status": {
+                "current": "active",
+                "message": "Unit is ready",
+                "since": "12 Jul 2023 13:00:06+03:00"
+              },
+              "juju-status": {
+                "current": "idle",
+                "since": "12 Jul 2023 13:00:07+03:00",
+                "version": "2.9.42"
+              },
+              "leader": true,
+              "public-address": "10.5.0.157"
+            }
+          }
+        }
+      },
+      "version": "21.2.4",
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "ceph": "alpha",
+        "ceph-access": "alpha",
+        "cloud-compute": "alpha",
+        "cloud-credentials": "alpha",
+        "compute-peer": "alpha",
+        "ephemeral-backend": "alpha",
+        "image-service": "alpha",
+        "internal": "alpha",
+        "ironic-api": "alpha",
+        "lxd": "alpha",
+        "migration": "alpha",
+        "neutron-plugin": "alpha",
+        "nova-ceilometer": "alpha",
+        "nrpe-external-master": "alpha",
+        "secrets-storage": "alpha"
+      }
+    },
+    "placement": {
+      "charm": "placement",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "placement",
+      "charm-rev": 81,
+      "charm-channel": "ussuri/stable",
+      "charm-version": "e0d56e6",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:59:25+03:00"
+      },
+      "relations": {
+        "cluster": [
+          "placement"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "placement": [
+          "nova-cloud-controller"
+        ],
+        "shared-db": [
+          "placement-mysql-router"
+        ]
+      },
+      "units": {
+        "placement/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 12:59:25+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 12:59:25+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "8",
+          "open-ports": [
+            "8778/tcp"
+          ],
+          "public-address": "10.5.0.131",
+          "subordinates": {
+            "placement-mysql-router/0": {
+              "workload-status": {
+                "current": "active",
+                "message": "Unit is ready",
+                "since": "12 Jul 2023 12:51:24+03:00"
+              },
+              "juju-status": {
+                "current": "idle",
+                "since": "12 Jul 2023 12:51:24+03:00",
+                "version": "2.9.42"
+              },
+              "leader": true,
+              "public-address": "10.5.0.131"
+            }
+          }
+        }
+      },
+      "version": "3.0.1",
+      "endpoint-bindings": {
+        "": "alpha",
+        "admin": "alpha",
+        "amqp": "alpha",
+        "certificates": "alpha",
+        "cluster": "alpha",
+        "ha": "alpha",
+        "identity-service": "alpha",
+        "internal": "alpha",
+        "placement": "alpha",
+        "public": "alpha",
+        "shared-db": "alpha"
+      }
+    },
+    "placement-mysql-router": {
+      "charm": "mysql-router",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "mysql-router",
+      "charm-rev": 90,
+      "charm-channel": "8.0/stable",
+      "charm-version": "80f2113",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:51:24+03:00"
+      },
+      "relations": {
+        "db-router": [
+          "mysql"
+        ],
+        "shared-db": [
+          "placement"
+        ]
+      },
+      "subordinate-to": [
+        "placement"
+      ],
+      "version": "8.0.33",
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "db-router": "alpha",
+        "juju-info": "alpha",
+        "shared-db": "alpha"
+      }
+    },
+    "rabbitmq-server": {
+      "charm": "rabbitmq-server",
+      "series": "focal",
+      "os": "ubuntu",
+      "charm-origin": "charmhub",
+      "charm-name": "rabbitmq-server",
+      "charm-rev": 176,
+      "charm-channel": "3.8/stable",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "message": "Unit is ready",
+        "since": "12 Jul 2023 12:41:20+03:00"
+      },
+      "relations": {
+        "amqp": [
+          "cinder",
+          "glance",
+          "neutron-api",
+          "neutron-gateway",
+          "neutron-openvswitch",
+          "nova-cloud-controller",
+          "nova-compute"
+        ],
+        "cluster": [
+          "rabbitmq-server"
+        ]
+      },
+      "units": {
+        "rabbitmq-server/0": {
+          "workload-status": {
+            "current": "active",
+            "message": "Unit is ready",
+            "since": "12 Jul 2023 12:41:20+03:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "12 Jul 2023 12:54:31+03:00",
+            "version": "2.9.42"
+          },
+          "leader": true,
+          "machine": "9",
+          "open-ports": [
+            "5672/tcp"
+          ],
+          "public-address": "10.5.0.151"
+        }
+      },
+      "version": "3.8.2",
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "certificates": "alpha",
+        "cluster": "alpha",
+        "ha": "alpha",
+        "nrpe-external-master": "alpha"
+      }
+    }
+  },
+  "storage": {
+    "storage": {
+      "block-devices/0": {
+        "kind": "block",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "12 Jul 2023 12:39:23+03:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "cinder/0": {
+              "machine": "7",
+              "location": "/dev/loop3",
+              "life": "alive"
+            }
+          }
+        }
+      },
+      "ephemeral-device/1": {
+        "kind": "block",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "12 Jul 2023 12:39:01+03:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "nova-compute/0": {
+              "machine": "5",
+              "location": "/dev/disk/by-uuid/1f5578a3-0f07-458d-9a65-356289adf618",
+              "life": "alive"
+            }
+          }
+        }
+      }
+    },
+    "volumes": {
+      "5/1": {
+        "provider-id": "volume-5-1",
+        "storage": "ephemeral-device/1",
+        "attachments": {
+          "machines": {
+            "5": {
+              "device": "loop3",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "nova-compute/0": {
+              "machine": "5",
+              "location": "/dev/disk/by-uuid/1f5578a3-0f07-458d-9a65-356289adf618",
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "loop",
+        "size": 10240,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "12 Jul 2023 12:39:01+03:00"
+        }
+      },
+      "7/0": {
+        "provider-id": "volume-7-0",
+        "storage": "block-devices/0",
+        "attachments": {
+          "machines": {
+            "7": {
+              "device": "loop3",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "cinder/0": {
+              "machine": "7",
+              "location": "/dev/loop3",
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "loop",
+        "size": 10240,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "12 Jul 2023 12:39:23+03:00"
+        }
+      }
+    }
+  },
+  "controller": {
+    "timestamp": "07:25:20+03:00"
+  }
+}

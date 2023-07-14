@@ -18,8 +18,6 @@ import logging
 import os
 from typing import Optional
 
-from juju.application import Application
-
 import cou.utils.juju_utils as utils
 from cou.exceptions import UnitNotFound
 
@@ -33,8 +31,7 @@ async def backup(model_name: Optional[str] = None) -> str:
     :rtype: str
     """
     logging.info("Backing up mysql database")
-    mysql_app_config = await get_database_app(model_name)
-    unit_name = list(mysql_app_config.units.keys())[0]
+    unit_name = await get_database_app_unit_name(model_name)
 
     logging.info("mysqldump mysql-innodb-cluster DBs ...")
     action = await utils.async_run_action(unit_name, "mysqldump", model_name=model_name)
@@ -71,8 +68,8 @@ def _check_db_relations(app_config: dict) -> bool:
     return False
 
 
-async def get_database_app(model_name: Optional[str] = None) -> Application:
-    """Get mysql-innodb-cluster application name.
+async def get_database_app_unit_name(model_name: Optional[str] = None) -> str:
+    """Get mysql-innodb-cluster application's first unit's name.
 
     Gets the openstack database mysql-innodb-cluster application if there are more than one
     application the one with the keystone relation is selected.
@@ -86,6 +83,6 @@ async def get_database_app(model_name: Optional[str] = None) -> Application:
     for _, app_config in status.applications.items():
         charm_name = utils.extract_charm_name_from_url(app_config["charm"])
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
-            return app_config
+            return list(app_config.units.keys())[0]
 
     raise UnitNotFound()
