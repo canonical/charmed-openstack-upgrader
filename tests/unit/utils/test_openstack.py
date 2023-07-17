@@ -13,18 +13,33 @@
 # limitations under the License.
 import pytest
 
-from cou.utils.openstack import get_os_code_info
+from cou.utils.openstack import get_latest_compatible_openstack_codename
 
 
 @pytest.mark.parametrize(
-    "package, pkg_version, result",
+    "charm, workload_versions, results",
     [
-        ("swift", "1.4.3", "diablo"),
-        ("cinder-common", "2:11.12.3", "pike"),
-        ("ovn-common", "22.03", "train"),
-        ("common-something", "2020.1", "ussuri"),
+        (
+            "keystone",
+            ["17.1.0", "18.3.1", "19.4.5", "20.6.7", "21.8.9"],
+            ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+        ),  # major
+        (
+            "ceph-mon",
+            ["15.2.13", "16.2.12", "17.2.1"],
+            ["victoria", "xena", "yoga"],
+        ),  # version 15 (octopus) can be ussuri or victoria, we return the latest (victoria)
+        # version 16 (pacific) can be wallaby or xena, we return the latest (xena)
+        ("gnocchi", ["4.3.4", "4.4.0", "4.4.1"], ["ussuri", "wallaby", "yoga"]),  # micro
+        (
+            "openstack-dashboard",
+            ["18.3.5", "18.6.3", "19.3.0", "20.1.4", "20.2.0"],
+            ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+        ),  # minor
+        ("my_charm", ["13.1.2"], [None]),  # non-existent
     ],
 )
-def test_get_os_code_info(package, pkg_version, result):
-    actual = get_os_code_info(package, pkg_version)
-    assert result == actual
+def test_get_os_code_info(charm, workload_versions, results):
+    for index in range(len(workload_versions)):
+        actual = get_latest_compatible_openstack_codename(charm, workload_versions[index])
+        assert results[index] == actual
