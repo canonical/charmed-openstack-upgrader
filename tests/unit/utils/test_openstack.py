@@ -11,10 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pytest
-from packaging.version import Version
+import csv
 
-from cou.utils.openstack import generate_openstack_lookup, openstack_lookup
+import pytest
+
+from cou.utils.openstack import OpenStackCodenameLookup, VersionRange
 
 
 @pytest.mark.parametrize(
@@ -41,21 +42,42 @@ from cou.utils.openstack import generate_openstack_lookup, openstack_lookup
             ["18.3.5", "18.6.3", "19.3.0", "20.1.4", "20.2.0"],
             [["ussuri"], ["victoria"], ["wallaby"], ["xena"], ["yoga"]],
         ),
+        (
+            "rabbitmq-server",
+            ["3.8", "3.9"],
+            [["ussuri", "victoria", "wallaby", "xena", "yoga"], []],
+        ),
         ("my_charm", ["13.1.2"], [[]]),  # unknown charm
         ("keystone", ["63.5.7"], [[]]),  # out-of-bounds of a known charm
     ],
 )
 def test_get_compatible_openstack_codenames(charm, workload_versions, results):
     for version, result in zip(workload_versions, results):
-        actual = openstack_lookup.get_compatible_openstack_codenames(charm, version)
+        actual = OpenStackCodenameLookup.lookup(charm, version)
         assert result == actual
 
 
 @pytest.mark.parametrize("service", ["aodh", "barbican"])
-def test_generate_openstack_lookup(service):
-    openstack_lookup = generate_openstack_lookup()
+def test_default_generate_openstack_lookup(service):
+    openstack_lookup = OpenStackCodenameLookup.initialize_lookup()
     os_releases = ["ussuri", "victoria", "wallaby", "xena", "yoga"]
     versions = ["10", "11", "12", "13", "14"]
     for os_release, version in zip(os_releases, versions):
-        assert openstack_lookup[service][os_release].lower == Version(version)
-        assert openstack_lookup[service][os_release].upper == Version(str(int(version) + 1))
+        assert openstack_lookup[service][os_release] == VersionRange(
+            version + ".0.0", str(int(version) + 1) + ".0.0"
+        )
+
+
+def test_custom_initialize_lookup(tmp_path):
+    custom_csv = tmp_path / "my_csv.csv"
+    with open(custom_csv, "w", newline="") as csvfile:
+        fieldnames = ["service", "zed-lower_version", "zed-upper_version"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerow(
+            {"service": "my_service", "zed-lower_version": "1", "zed-upper_version": "2"}
+        )
+    openstack_lookup = OpenStackCodenameLookup.initialize_lookup(str(custom_csv))
+    expected_content = {"zed": VersionRange("1", "2")}
+    assert len(openstack_lookup) == 1
+    assert openstack_lookup["my_service"] == expected_content
