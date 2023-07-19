@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-
-from cou.utils.openstack import openstack_lookup, generate_openstack_lookup
 from packaging.version import Version
+
+from cou.utils.openstack import generate_openstack_lookup, openstack_lookup
 
 
 @pytest.mark.parametrize(
@@ -49,6 +49,7 @@ def test_get_compatible_openstack_codenames(charm, workload_versions, results):
     for version, result in zip(workload_versions, results):
         actual = openstack_lookup.get_compatible_openstack_codenames(charm, version)
         assert result == actual
+
 
 @pytest.mark.parametrize("service", ["aodh", "barbican"])
 def test_generate_openstack_lookup(service):

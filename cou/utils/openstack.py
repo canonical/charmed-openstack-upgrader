@@ -42,18 +42,18 @@ class VersionRange:
     lower: Version
     upper: Version
 
-    def __contains__(self, version:str) -> bool:
+    def __contains__(self, version: str) -> bool:
         """Magic method to check if a version is between the range.
 
         :param version: version of a service.
-        :type version: _type_
-        :return: _description_
-        :rtype: _type_
+        :type version: str
+        :return: True if version is in the range.
+        :rtype: bool
         """
-        version = Version(version)
+        service_version = Version(version)
         if self.lower == self.upper:
-            return version >= self.lower and version <= self.upper
-        return version >= self.lower and version < self.upper
+            return service_version >= self.lower and service_version <= self.upper
+        return service_version >= self.lower and service_version < self.upper
 
 
 def generate_openstack_lookup() -> OrderedDict:
