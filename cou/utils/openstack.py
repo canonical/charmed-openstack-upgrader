@@ -13,125 +13,129 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Lookup utils to have the latest compatible Openstack codename based on workload version."""
+"""Lookup utils to have the latest compatible OpenStack codename based on workload version."""
 
 import csv
 import logging
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Any, List, Optional
 
 from packaging.version import Version
 
+CSV_FILE = "cou/utils/openstack_lookup.csv"
+SERVICE_COLUMN_INDEX = 0
+VERSION_START_COLUMN_INDEX = 1
+CHARM_TYPES = {
+    "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"],
+    "swift": ["swift-proxy", "swift-storage"],
+    "nova": ["nova-cloud-controller", "nova-compute"],
+    "ovn": ["ovn-dedicated-chassis", "ovn-central"],
+    "neutron": ["neutron-api", "neutron-gateway"],
+    "manila": ["manila-ganesha"],
+    "horizon": ["openstack-dashboard"],
+}
+
 
 @dataclass(frozen=True)
-class Versions:
-    min_version: Version
-    max_version: Version
-    minor: bool = False
-    micro: bool = False
+class VersionRange:
+    lower: Version
+    upper: Version
+
+    def __contains__(self, version:str) -> bool:
+        """Magic method to check if a version is between the range.
+
+        :param version: version of a service.
+        :type version: _type_
+        :return: _description_
+        :rtype: _type_
+        """
+        version = Version(version)
+        if self.lower == self.upper:
+            return version >= self.lower and version <= self.upper
+        return version >= self.lower and version < self.upper
 
 
 def generate_openstack_lookup() -> OrderedDict:
     """Generate an OpenStack lookup dictionary based on the version of the components.
 
-    The dictionary is generated thru an static csv file that should be update regularly
-    to include new Openstack releases and update the min and max versions of the services.
+    The dictionary is generated from a static csv file that should be update regularly
+    to include new OpenStack releases and updates to the lower and upper versions of the services.
     The csv table is made from the release page [0] charm delivery [1], cmadison and rmadison.
+    The lower version is the lowest version of a certain release (N) while the upper is the lowest
+    version of the next release (N+1). This way, new patches won't affect the comparison.
 
-    In the csv file it's possible to see that there are two columns named "minor" and "micro".
-    Set to true if the service does not get major version updates between OpenStack releases.
-    E.g:
-    ussuri: 10.1.3 focal 11.2.3. In this case the identifier is the "major" (10 and 11).
-    ussuri: 17.1.6 focal: 17.2.3. In this case the identifier is the "minor" (17.1 and 17.2).
-    ussuri: 13.1.0 focal 13.1.1. In this case the identifier is the "micro" (13.1.0 and 13.1.1).
-
-    charm designate-bind workload_version tracks the version of the deb package bind9.
+    Charm designate-bind workload_version tracks the version of the deb package bind9 (rmadison).
+    For charm gnocchi it was used cmadison.
 
     [0] https://releases.openstack.org/
     [1] https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 
-    :return: Ordered dictionary containing the version and the possible Openstack release.
+    :return: Ordered dictionary containing the version and the possible OpenStack release.
     :rtype: OrderedDict
     """
-    charms_types = {
-        "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"],
-        "swift": ["swift-proxy", "swift-storage"],
-        "nova": ["nova-cloud-controller", "nova-compute"],
-        "ovn": ["ovn-dedicated-chassis", "ovn-central"],
-        "neutron": ["neutron-api", "neutron-gateway"],
-        "manila": ["manila-ganesha"],
-        "horizon": ["openstack-dashboard"],
-    }
-    with open("cou/utils/openstack_lookup.csv") as csv_file:
+    with open(CSV_FILE) as csv_file:
         openstack_lookup = OrderedDict()
-        service_column_index = 0
-        minor_column_index = 1
-        micro_column_index = 2
-        version_start_column_index = 3
         csv_reader = csv.reader(csv_file, delimiter=",")
         header = next(csv_reader)
         for row in csv_reader:
             service_dict: defaultdict[str, Any] = defaultdict(OrderedDict)
-            service = row[service_column_index]
-            minor = row[minor_column_index]
-            micro = row[micro_column_index]
-            for column_index in range(version_start_column_index, len(row), 2):
+            service = row[SERVICE_COLUMN_INDEX]
+            for column_index in range(VERSION_START_COLUMN_INDEX, len(row), 2):
                 os_version, _ = header[column_index].split("-")
                 min_version = row[column_index]
                 max_version = row[column_index + 1]
-                service_dict[os_version] = Versions(
+                service_dict[os_version] = VersionRange(
                     Version(min_version),
                     Version(max_version),
-                    True if minor == "TRUE" else False,
-                    True if micro == "TRUE" else False,
                 )
             openstack_lookup[service] = service_dict
-    for charm_type, charms in charms_types.items():
+    for charm_type, charms in CHARM_TYPES.items():
         for charm in charms:
             openstack_lookup[charm] = openstack_lookup[charm_type]
     return openstack_lookup
 
 
-OPENSTACK_LOOKUP = generate_openstack_lookup()
+class OpenStackLookup(object):
+    _OPENSTACK_LOOKUP: OrderedDict = OrderedDict()
+
+    def __new__(cls):
+        """Magic method for create the OpenStackLookup object.
+
+        :return: OpenStackLookup object
+        :rtype: OpenStackLookup
+        """
+        if not cls._OPENSTACK_LOOKUP:
+            cls._OPENSTACK_LOOKUP = generate_openstack_lookup()
+        return super().__new__(cls)
+
+    def get_compatible_openstack_codenames(
+        self, component: str, version: str
+    ) -> List[Optional[str]]:
+        """Get the possible OpenStack codenames based on the component and version.
+
+        :param component: Name of the component. E.g: "keystone"
+        :type component: str
+        :param version: Version of the component. E.g: "17.0.2"
+        :type version: str
+        :return: Return a list with the compatible OpenStack codenames.
+        :rtype: List[Optional[str]]
+        """
+        possible_os_releases: List[Optional[str]] = []
+        if not self._OPENSTACK_LOOKUP.get(component):
+            logging.warning(
+                (
+                    "Not possible to find a compatible OpenStack codename for "
+                    "charm: %s with workload_version: %s"
+                ),
+                component,
+                version,
+            )
+            return possible_os_releases
+        for openstack_release, version_range in self._OPENSTACK_LOOKUP[component].items():
+            if version in version_range:
+                possible_os_releases.append(openstack_release)
+        return possible_os_releases
 
 
-def get_latest_compatible_openstack_codename(
-    charm: str, workload_version: str
-) -> Union[str, None]:
-    """Get the latest Openstack codename based on the charm name and workload version.
-
-    :param charm: Charm name.
-    :type charm: str
-    :param workload_version: Workload version of a charm.
-    :type workload_version: str
-    :return: Return the latest compatible Openstack codename or None if not found.
-    :rtype: Union[str, None]
-    """
-    wl_version = Version(workload_version)
-    possible_os_releases = []
-    if not OPENSTACK_LOOKUP.get(charm):
-        logging.warning(
-            (
-                "Not possible to find a compatible Openstack codename for "
-                "charm: %s with workload_version: %s"
-            ),
-            charm,
-            workload_version,
-        )
-        return None
-    for openstack_release, versions in OPENSTACK_LOOKUP[charm].items():
-        if versions.minor and not versions.micro:
-            wl_version = Version(f"{wl_version.major}.{wl_version.minor}")
-            if wl_version >= versions.min_version and wl_version <= versions.max_version:
-                possible_os_releases.append(openstack_release)
-        elif versions.micro:
-            wl_version = Version(wl_version.public)
-            if wl_version >= versions.min_version and wl_version <= versions.max_version:
-                possible_os_releases.append(openstack_release)
-        else:
-            if wl_version.major == versions.max_version.major:
-                possible_os_releases.append(openstack_release)
-    if possible_os_releases:
-        return possible_os_releases[-1]
-    return None
+openstack_lookup = OpenStackLookup()

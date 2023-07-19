@@ -31,7 +31,7 @@ from cou.utils.juju_utils import (
     async_get_status,
     extract_charm_name_from_url,
 )
-from cou.utils.openstack import get_latest_compatible_openstack_codename
+from cou.utils.openstack import openstack_lookup
 
 
 @dataclass
@@ -97,7 +97,7 @@ class Application:
     :type charm: str
     :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
     :type charm_origin: str, optional
-    :param os_origin: Openstack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
+    :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
     :type os_origin: str, optional
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
     :type channel: str, optional
@@ -127,8 +127,15 @@ class Application:
         for unit in self.status.units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
-            os_version = get_latest_compatible_openstack_codename(self.charm, workload_version)
-            self.units[unit]["os_version"] = os_version
+            possible_os_versions = openstack_lookup.get_compatible_openstack_codenames(
+                self.charm, workload_version
+            )
+            if len(possible_os_versions) == 1:
+                self.units[unit]["os_version"] = possible_os_versions[0]
+            elif len(possible_os_versions) > 1:
+                self.units[unit]["os_version"] = possible_os_versions[-1]
+            else:
+                self.units[unit]["os_version"] = ""
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
