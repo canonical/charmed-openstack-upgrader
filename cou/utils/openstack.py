@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Lookup utils to have the latest compatible OpenStack codename based on workload version."""
+"""Lookup utils to determine compatible OpenStack codenames for a given component."""
 
 import csv
 import logging
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any, List
 
 from packaging.version import Version
 
@@ -42,7 +42,7 @@ class VersionRange:
     upper: str
 
     def __contains__(self, version: str) -> bool:
-        """Magic method to check if a version is between the range.
+        """Magic method to check if a version is within the range.
 
         :param version: version of a service.
         :type version: str
@@ -60,7 +60,7 @@ class OpenStackCodenameLookup(object):
     _DEFAULT_CSV_FILE = "cou/utils/openstack_lookup.csv"
 
     @classmethod
-    def initialize_lookup(cls, resource: Optional[str] = None) -> OrderedDict:
+    def initialize_lookup(cls) -> OrderedDict:
         """Generate an OpenStack lookup dictionary based on the version of the components.
 
         If not passed a path for a custom csv file, the function will use the default one.
@@ -71,7 +71,7 @@ class OpenStackCodenameLookup(object):
         to include new OpenStack releases and updates to the lower and upper versions of
         the services. The csv table is made from the release page [0] charm delivery [1],
         cmadison and rmadison. The lower version is the lowest version of a certain release (N)
-        while the upper is the lowest version of the next release (N+1). This way, new patches
+        while the upper is the first incompatible version. This way, new patches
         won't affect the comparison.
 
         Charm designate-bind workload_version tracks the version of the deb package bind9.
@@ -80,15 +80,10 @@ class OpenStackCodenameLookup(object):
         [0] https://releases.openstack.org/
         [1] https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 
-        :param resource: Path to the csv file, defaults to None
-        :type resource: Optional[str], optional
-        :return: Ordered dictionary containing the version and the possible OpenStack release.
+        :return: Ordered dictionary containing the version and the compatible OpenStack release.
         :rtype: OrderedDict
         """
-        file_to_import = resource
-        if not file_to_import:
-            file_to_import = cls._DEFAULT_CSV_FILE
-        cls._OPENSTACK_LOOKUP = cls._generate_lookup(file_to_import)
+        cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
         return cls._OPENSTACK_LOOKUP
 
     @classmethod
@@ -97,7 +92,7 @@ class OpenStackCodenameLookup(object):
 
         :param resource: Path to the csv file
         :type resource: str
-        :return: Ordered dictionary containing the version and the possible OpenStack release.
+        :return: Ordered dictionary containing the version and the compatible OpenStack release.
         :rtype: OrderedDict
         """
         with open(resource) as csv_file:
@@ -113,38 +108,33 @@ class OpenStackCodenameLookup(object):
                     upper = row[column_index + 1]
                     service_dict[os_version] = VersionRange(lower, upper)
                 openstack_lookup[service] = service_dict
-        # add the openstack charms if the csv is the default.
-        if resource == cls._DEFAULT_CSV_FILE:
-            for charm_type, charms in CHARM_TYPES.items():
-                for charm in charms:
-                    openstack_lookup[charm] = openstack_lookup[charm_type]
+        # add openstack charms
+        for charm_type, charms in CHARM_TYPES.items():
+            for charm in charms:
+                openstack_lookup[charm] = openstack_lookup[charm_type]
         return openstack_lookup
 
     @classmethod
     def lookup(cls, component: str, version: str) -> List[str]:
-        """Get the possible OpenStack codenames based on the component and version.
+        """Get the compatible OpenStack codenames based on the component and version.
 
         :param component: Name of the component. E.g: "keystone"
         :type component: str
         :param version: Version of the component. E.g: "17.0.2"
         :type version: str
-        :return: Return a list with the compatible OpenStack codenames on sequence.
+        :return: Return a sorted list of compatible OpenStack codenames.
         :rtype: List[str]
         """
         if not cls._OPENSTACK_LOOKUP:
             cls.initialize_lookup()
-        possible_os_releases: List[str] = []
+        compatible_os_releases: List[str] = []
         if not cls._OPENSTACK_LOOKUP.get(component):
             logging.warning(
-                (
-                    "Not possible to find a compatible OpenStack codename for "
-                    "charm: %s with workload_version: %s"
-                ),
+                "Not possible to find the component %s in the lookup",
                 component,
-                version,
             )
-            return possible_os_releases
+            return compatible_os_releases
         for openstack_release, version_range in cls._OPENSTACK_LOOKUP[component].items():
             if version in version_range:
-                possible_os_releases.append(openstack_release)
-        return possible_os_releases
+                compatible_os_releases.append(openstack_release)
+        return compatible_os_releases

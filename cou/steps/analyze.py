@@ -129,7 +129,7 @@ class Application:
             self.units[unit]["workload_version"] = workload_version
             possible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
             # NOTE(gabrielcocenza) get the latest possible OpenStack version.
-            if len(possible_os_versions) >= 1:
+            if possible_os_versions:
                 self.units[unit]["os_version"] = possible_os_versions[-1]
             else:
                 self.units[unit]["os_version"] = ""

@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import csv
-
 import pytest
 
 from cou.utils.openstack import OpenStackCodenameLookup, VersionRange
@@ -43,9 +41,19 @@ from cou.utils.openstack import OpenStackCodenameLookup, VersionRange
             [["ussuri"], ["victoria"], ["wallaby"], ["xena"], ["yoga"]],
         ),
         (
-            "rabbitmq-server",
-            ["3.8", "3.9"],
-            [["ussuri", "victoria", "wallaby", "xena", "yoga"], []],
+            "rabbitmq-server",  # yoga can be 3.8 or 3.9
+            ["3.8", "3.9", "3.10"],
+            [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
+        ),
+        (
+            "hacluster",  # yoga can be 2.0.3 to 2.4
+            ["2.0.3", "2.4", "2.5"],
+            [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
+        ),
+        (
+            "vault",  # yoga can be 1.7 to 1.8
+            ["1.7", "1.8", "1.9"],
+            [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
         ),
         ("my_charm", ["13.1.2"], [[]]),  # unknown charm
         ("keystone", ["63.5.7"], [[]]),  # out-of-bounds of a known charm
@@ -66,18 +74,3 @@ def test_default_generate_openstack_lookup(service):
         assert openstack_lookup[service][os_release] == VersionRange(
             version + ".0.0", str(int(version) + 1) + ".0.0"
         )
-
-
-def test_custom_initialize_lookup(tmp_path):
-    custom_csv = tmp_path / "my_csv.csv"
-    with open(custom_csv, "w", newline="") as csvfile:
-        fieldnames = ["service", "zed-lower_version", "zed-upper_version"]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerow(
-            {"service": "my_service", "zed-lower_version": "1", "zed-upper_version": "2"}
-        )
-    openstack_lookup = OpenStackCodenameLookup.initialize_lookup(str(custom_csv))
-    expected_content = {"zed": VersionRange("1", "2")}
-    assert len(openstack_lookup) == 1
-    assert openstack_lookup["my_service"] == expected_content
