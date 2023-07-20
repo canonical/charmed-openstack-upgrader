@@ -60,12 +60,8 @@ class OpenStackCodenameLookup(object):
     _DEFAULT_CSV_FILE = "cou/utils/openstack_lookup.csv"
 
     @classmethod
-    def initialize_lookup(cls) -> OrderedDict:
+    def _generate_lookup(cls, resource: str) -> OrderedDict:
         """Generate an OpenStack lookup dictionary based on the version of the components.
-
-        If not passed a path for a custom csv file, the function will use the default one.
-        Be sure to have the same format as found at "cou/utils/openstack_lookup.csv" if you want to
-        have your custom lookup dictionary.
 
         The dictionary is generated from a static csv file that should be updated regularly
         to include new OpenStack releases and updates to the lower and upper versions of
@@ -79,16 +75,6 @@ class OpenStackCodenameLookup(object):
 
         [0] https://releases.openstack.org/
         [1] https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
-
-        :return: Ordered dictionary containing the version and the compatible OpenStack release.
-        :rtype: OrderedDict
-        """
-        cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
-        return cls._OPENSTACK_LOOKUP
-
-    @classmethod
-    def _generate_lookup(cls, resource: str) -> OrderedDict:
-        """Generate an OpenStack lookup dictionary based on the version of the components.
 
         :param resource: Path to the csv file
         :type resource: str
@@ -126,7 +112,7 @@ class OpenStackCodenameLookup(object):
         :rtype: List[str]
         """
         if not cls._OPENSTACK_LOOKUP:
-            cls.initialize_lookup()
+            cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
         compatible_os_releases: List[str] = []
         if not cls._OPENSTACK_LOOKUP.get(component):
             logging.warning(

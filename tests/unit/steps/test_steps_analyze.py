@@ -95,7 +95,7 @@ async def test_application(condition, status, config, mocker, units):
     "condition",
     ["rabbitmq_server", "unknown_rabbitmq_server"],
 )
-def test_app_more_than_one_possible_os_release(condition, status, config):
+def test_app_more_than_one_compatible_os_release(condition, status, config):
     expected_units = defaultdict(dict)
     # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
     if condition == "rabbitmq_server":

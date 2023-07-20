@@ -127,10 +127,10 @@ class Application:
         for unit in self.status.units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
-            possible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
-            # NOTE(gabrielcocenza) get the latest possible OpenStack version.
-            if possible_os_versions:
-                self.units[unit]["os_version"] = possible_os_versions[-1]
+            compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
+            # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
+            if compatible_os_versions:
+                self.units[unit]["os_version"] = compatible_os_versions[-1]
             else:
                 self.units[unit]["os_version"] = ""
 

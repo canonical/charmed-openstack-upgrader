@@ -66,8 +66,10 @@ def test_get_compatible_openstack_codenames(charm, workload_versions, results):
 
 
 @pytest.mark.parametrize("service", ["aodh", "barbican"])
-def test_default_generate_openstack_lookup(service):
-    openstack_lookup = OpenStackCodenameLookup.initialize_lookup()
+def test_generate_lookup(service):
+    openstack_lookup = OpenStackCodenameLookup._generate_lookup(
+        OpenStackCodenameLookup._DEFAULT_CSV_FILE
+    )
     os_releases = ["ussuri", "victoria", "wallaby", "xena", "yoga"]
     versions = ["10", "11", "12", "13", "14"]
     for os_release, version in zip(os_releases, versions):
