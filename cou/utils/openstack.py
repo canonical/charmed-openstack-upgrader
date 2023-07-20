@@ -13,118 +13,114 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
+"""Lookup utils to determine compatible OpenStack codenames for a given component."""
 
-import six
+import csv
+import logging
+from collections import OrderedDict, defaultdict
+from dataclasses import dataclass
+from typing import Any, List
 
-from cou.utils.os_versions import (
-    OPENSTACK_CODENAMES,
-    OVN_CODENAMES,
-    PACKAGE_CODENAMES,
-    SWIFT_CODENAMES,
-)
+from packaging.version import Version
 
+SERVICE_COLUMN_INDEX = 0
+VERSION_START_COLUMN_INDEX = 1
 CHARM_TYPES = {
-    "neutron": {
-        "representative_workload_pkg": "neutron-common",
-        "origin_setting": "openstack-origin",
-    },
-    "nova": {"representative_workload_pkg": "nova-common", "origin_setting": "openstack-origin"},
-    "glance": {
-        "representative_workload_pkg": "glance-common",
-        "origin_setting": "openstack-origin",
-    },
-    "cinder": {
-        "representative_workload_pkg": "cinder-common",
-        "origin_setting": "openstack-origin",
-    },
-    "keystone": {"representative_workload_pkg": "keystone", "origin_setting": "openstack-origin"},
-    "openstack-dashboard": {
-        "representative_workload_pkg": "openstack-dashboard",
-        "origin_setting": "openstack-origin",
-    },
-    "ceilometer": {
-        "representative_workload_pkg": "ceilometer-common",
-        "origin_setting": "openstack-origin",
-    },
-    "designate": {
-        "representative_workload_pkg": "designate-common",
-        "origin_setting": "openstack-origin",
-    },
-    "ovn-central": {"representative_workload_pkg": "ovn-common", "origin_setting": "source"},
-    "ceph-mon": {"representative_workload_pkg": "ceph-common", "origin_setting": "source"},
-    "placement": {
-        "representative_workload_pkg": "placement-common",
-        "origin_setting": "openstack-origin",
-    },
-    "nova-cloud-controller": {
-        "representative_workload_pkg": "nova-common",
-        "origin_setting": "openstack-origin",
-    },
+    "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"],
+    "swift": ["swift-proxy", "swift-storage"],
+    "nova": ["nova-cloud-controller", "nova-compute"],
+    "ovn": ["ovn-dedicated-chassis", "ovn-central"],
+    "neutron": ["neutron-api", "neutron-gateway"],
+    "manila": ["manila-ganesha"],
+    "horizon": ["openstack-dashboard"],
 }
 
 
-def get_os_code_info(package, pkg_version) -> str:
-    """Determine OpenStack codename that corresponds to package version.
+@dataclass(frozen=True)
+class VersionRange:
+    lower: str
+    upper: str
 
-    :param package: Package name
-    :type package: string
-    :param pkg_version: Package version
-    :type pkg_version: string
-    :returns: Codename for package
-    :rtype: string
-    """
-    # Remove epoch if it exists
-    if ":" in pkg_version:
-        pkg_version = pkg_version.split(":")[1:][0]
-    if "swift" in package:
-        # Fully x.y.z match for swift versions
-        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", pkg_version)
-    else:
-        # x.y match only for 20XX.X
-        # and ignore patch level for other packages
-        match = re.match(r"^(\d+)\.(\d+)", pkg_version)
+    def __contains__(self, version: str) -> bool:
+        """Magic method to check if a version is within the range.
 
-    if match:
-        vers = match.group(0)
-    # Generate a major version number for newer semantic
-    # versions of openstack projects
-    major_vers = vers.split(".")[0]
-    if package in PACKAGE_CODENAMES and major_vers in PACKAGE_CODENAMES[package]:
-        return PACKAGE_CODENAMES[package][major_vers]
-    else:
-        # < Liberty co-ordinated project versions
-        if "swift" in package:
-            return get_swift_codename(vers)
-        elif "ovn" in package:
-            return get_ovn_codename(vers)
-        else:
-            return OPENSTACK_CODENAMES[vers]
+        :param version: version of a service.
+        :type version: str
+        :return: True if version is in the range.
+        :rtype: bool
+        """
+        lower_v = Version(self.lower)
+        upper_v = Version(self.upper)
+        service_version = Version(version)
+        return service_version >= lower_v and service_version < upper_v
 
 
-# Codename and package versions
-def get_swift_codename(version):
-    """Determine OpenStack codename that corresponds to swift version.
+class OpenStackCodenameLookup(object):
+    _OPENSTACK_LOOKUP: OrderedDict = OrderedDict()
+    _DEFAULT_CSV_FILE = "cou/utils/openstack_lookup.csv"
 
-    :param version: Version of Swift
-    :type version: string
-    :returns: Codename for swift
-    :rtype: string
-    """
-    return _get_special_codename(version, SWIFT_CODENAMES)
+    @classmethod
+    def _generate_lookup(cls, resource: str) -> OrderedDict:
+        """Generate an OpenStack lookup dictionary based on the version of the components.
 
+        The dictionary is generated from a static csv file that should be updated regularly
+        to include new OpenStack releases and updates to the lower and upper versions of
+        the services. The csv table is made from the release page [0] charm delivery [1],
+        cmadison and rmadison. The lower version is the lowest version of a certain release (N)
+        while the upper is the first incompatible version. This way, new patches
+        won't affect the comparison.
 
-def get_ovn_codename(version):
-    """Determine OpenStack codename that corresponds to OVN version.
+        Charm designate-bind workload_version tracks the version of the deb package bind9.
+        For charm gnocchi it was used cmadison.
 
-    :param version: Version of OVN
-    :type version: string
-    :returns: Codename for OVN
-    :rtype: string
-    """
-    return _get_special_codename(version, OVN_CODENAMES)
+        [0] https://releases.openstack.org/
+        [1] https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 
+        :param resource: Path to the csv file
+        :type resource: str
+        :return: Ordered dictionary containing the version and the compatible OpenStack release.
+        :rtype: OrderedDict
+        """
+        with open(resource) as csv_file:
+            openstack_lookup = OrderedDict()
+            csv_reader = csv.reader(csv_file, delimiter=",")
+            header = next(csv_reader)
+            for row in csv_reader:
+                service_dict: defaultdict[str, Any] = defaultdict(OrderedDict)
+                service = row[SERVICE_COLUMN_INDEX]
+                for column_index in range(VERSION_START_COLUMN_INDEX, len(row), 2):
+                    os_version, _ = header[column_index].split("-")
+                    lower = row[column_index]
+                    upper = row[column_index + 1]
+                    service_dict[os_version] = VersionRange(lower, upper)
+                openstack_lookup[service] = service_dict
+        # add openstack charms
+        for charm_type, charms in CHARM_TYPES.items():
+            for charm in charms:
+                openstack_lookup[charm] = openstack_lookup[charm_type]
+        return openstack_lookup
 
-def _get_special_codename(version, codenames):
-    found = [k for k, v in six.iteritems(codenames) if version in v]
-    return found[0]
+    @classmethod
+    def lookup(cls, component: str, version: str) -> List[str]:
+        """Get the compatible OpenStack codenames based on the component and version.
+
+        :param component: Name of the component. E.g: "keystone"
+        :type component: str
+        :param version: Version of the component. E.g: "17.0.2"
+        :type version: str
+        :return: Return a sorted list of compatible OpenStack codenames.
+        :rtype: List[str]
+        """
+        if not cls._OPENSTACK_LOOKUP:
+            cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
+        compatible_os_releases: List[str] = []
+        if not cls._OPENSTACK_LOOKUP.get(component):
+            logging.warning(
+                "Not possible to find the component %s in the lookup",
+                component,
+            )
+            return compatible_os_releases
+        for openstack_release, version_range in cls._OPENSTACK_LOOKUP[component].items():
+            if version in version_range:
+                compatible_os_releases.append(openstack_release)
+        return compatible_os_releases

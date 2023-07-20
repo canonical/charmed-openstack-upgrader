@@ -12,6 +12,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import defaultdict
+
 import pytest
 
 from cou.steps import analyze
@@ -87,6 +89,27 @@ async def test_application(condition, status, config, mocker, units):
     assert app.os_origin == expected_os_origin
     assert app.units == expected_units
     assert app.channel == app_status.charm_channel
+
+
+@pytest.mark.parametrize(
+    "condition",
+    ["rabbitmq_server", "unknown_rabbitmq_server"],
+)
+def test_app_more_than_one_compatible_os_release(condition, status, config):
+    expected_units = defaultdict(dict)
+    # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
+    if condition == "rabbitmq_server":
+        expected_units["rabbitmq-server/0"]["os_version"] = "yoga"
+        expected_units["rabbitmq-server/0"]["workload_version"] = "3.8"
+    # unknown version of rabbitmq
+    elif condition == "unknown_rabbitmq_server":
+        expected_units["rabbitmq-server/0"]["os_version"] = ""
+        expected_units["rabbitmq-server/0"]["workload_version"] = "80.5"
+
+    app = analyze.Application(
+        "rabbitmq-server", status[condition], config["openstack_ussuri"], "my_model"
+    )
+    assert app.units == expected_units
 
 
 @pytest.mark.asyncio

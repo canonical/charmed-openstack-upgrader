@@ -31,7 +31,7 @@ from cou.utils.juju_utils import (
     async_get_status,
     extract_charm_name_from_url,
 )
-from cou.utils.openstack import CHARM_TYPES, get_os_code_info
+from cou.utils.openstack import OpenStackCodenameLookup
 
 
 @dataclass
@@ -97,7 +97,7 @@ class Application:
     :type charm: str
     :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
     :type charm_origin: str, optional
-    :param os_origin: Openstack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
+    :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
     :type os_origin: str, optional
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
     :type channel: str, optional
@@ -127,8 +127,12 @@ class Application:
         for unit in self.status.units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
-            os_version = self._get_current_os_version(workload_version)
-            self.units[unit]["os_version"] = os_version
+            compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
+            # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
+            if compatible_os_versions:
+                self.units[unit]["os_version"] = compatible_os_versions[-1]
+            else:
+                self.units[unit]["os_version"] = ""
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -174,37 +178,6 @@ class Application:
         with StringIO() as stream:
             yaml.dump(summary, stream)
             return stream.getvalue()
-
-    def _get_representative_workload_pkg(self) -> str:
-        """Get the representative package name of a charm workload.
-
-        :return: Package name that represents the charm workload. E.g: cinder-common
-        :rtype: str
-        """
-        try:
-            package = CHARM_TYPES[self.charm]["representative_workload_pkg"]
-        except KeyError:
-            logging.warning(
-                "Representative workload package not found for application: %s", self.name
-            )
-            package = ""
-        return package
-
-    def _get_current_os_version(self, workload_version: str) -> str:
-        """Get the openstack version of a unit.
-
-        :param workload_version: Version of the workload of a charm. E.g: 10.2.6
-        :type workload_version: str
-        :return: OpenStack version detected. If not detected return an empty string.
-            E.g: ussuri.
-        :rtype: str
-        """
-        version = ""
-        package = self._get_representative_workload_pkg()
-
-        if package and workload_version:
-            version = get_os_code_info(package, workload_version)
-        return version
 
     def _get_os_origin(self) -> str:
         """Get application configuration for openstack-origin or source.
