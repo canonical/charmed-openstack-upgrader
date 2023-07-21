@@ -33,6 +33,9 @@ from cou.utils import juju_utils as utils
 COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
 AVAILABLE_OPTIONS = "cas"
 
+# NOTE(gabrielcocenza) top-level module to reference the same logger object across modules.
+logger = logging.getLogger("cou")
+
 
 def parse_args(args: Any) -> argparse.Namespace:
     """Parse cli arguments.
@@ -58,6 +61,7 @@ def parse_args(args: Any) -> argparse.Namespace:
         default="INFO",
         dest="loglevel",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        type=str.upper,
         help="Set the logging level",
     )
     parser.add_argument(
@@ -80,14 +84,14 @@ def setup_logging(log_level: str = "INFO") -> None:
     log_formatter = logging.Formatter(
         fmt="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
-    root_logger = logging.getLogger()
-    root_logger.setLevel("DEBUG")
+    logger.setLevel("DEBUG")
 
     # handler for the log file. Log level is DEBUG
     time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
     pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
     log_file_handler = logging.FileHandler(file_name)
+    log_file_handler.setLevel("DEBUG")
     log_file_handler.setFormatter(log_formatter)
 
     # handler for the console. Log level comes from the CLI
@@ -95,9 +99,9 @@ def setup_logging(log_level: str = "INFO") -> None:
     console_handler.setLevel(log_level)
     console_handler.setFormatter(log_formatter)
 
-    root_logger.addHandler(log_file_handler)
-    root_logger.addHandler(console_handler)
-    logging.info("Logs of this execution can be found at %s", file_name)
+    logger.addHandler(log_file_handler)
+    logger.addHandler(console_handler)
+    logger.info("Logs of this execution can be found at %s", file_name)
 
 
 def prompt(parameter: str) -> str:
@@ -141,12 +145,12 @@ async def apply_plan(upgrade_plan: UpgradeStep) -> None:
                 for sub_step in upgrade_plan.sub_steps:
                     await apply_plan(sub_step)
             case "a":
-                logging.info("Aborting plan")
+                logger.info("Aborting plan")
                 sys.exit(1)
             case "s":
-                logging.info("Skipped")
+                logger.info("Skipped")
             case _:
-                logging.info("No valid input provided!")
+                logger.info("No valid input provided!")
 
 
 async def entrypoint() -> None:
@@ -154,10 +158,10 @@ async def entrypoint() -> None:
     try:
         args = parse_args(sys.argv[1:])
 
-        model_name = await utils.async_set_current_model_name(args.model_name)
-        logging.info("Setting current model name: %s", model_name)
-
         setup_logging(log_level=args.loglevel)
+
+        model_name = await utils.async_set_current_model_name(args.model_name)
+        logger.info("Setting current model name: %s", model_name)
 
         analysis_result = await Analysis.create()
         print(analysis_result)
@@ -168,5 +172,5 @@ async def entrypoint() -> None:
             await apply_plan(upgrade_plan)
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        logging.exception(exc)
+        logger.exception(exc)
         sys.exit(1)

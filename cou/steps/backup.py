@@ -21,6 +21,8 @@ from typing import Optional
 import cou.utils.juju_utils as utils
 from cou.exceptions import UnitNotFound
 
+logger = logging.getLogger(__name__)
+
 
 async def backup(model_name: Optional[str] = None) -> str:
     """Backup mysql database of openstack.
@@ -30,22 +32,22 @@ async def backup(model_name: Optional[str] = None) -> str:
     :return: Path of the local file from the backup.
     :rtype: str
     """
-    logging.info("Backing up mysql database")
+    logger.info("Backing up mysql database")
     unit_name = await get_database_app_unit_name(model_name)
 
-    logging.info("mysqldump mysql-innodb-cluster DBs ...")
+    logger.info("mysqldump mysql-innodb-cluster DBs ...")
     action = await utils.async_run_action(unit_name, "mysqldump", model_name=model_name)
     remote_file = action.data["results"]["mysqldump-file"]
     basedir = action.data["parameters"]["basedir"]
 
-    logging.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
+    logger.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
     await utils.async_run_on_unit(unit_name, f"chmod o+rx {basedir}", model_name=model_name)
 
     local_file = os.path.abspath(os.path.basename(remote_file))
-    logging.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
+    logger.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
     await utils.async_scp_from_unit(unit_name, remote_file, local_file, model_name=model_name)
 
-    logging.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
+    logger.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
     await utils.async_run_on_unit(unit_name, f"chmod o-rx {basedir}", model_name=model_name)
     return local_file
 

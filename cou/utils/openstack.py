@@ -23,6 +23,8 @@ from typing import Any, List
 
 from packaging.version import Version
 
+logger = logging.getLogger(__name__)
+
 SERVICE_COLUMN_INDEX = 0
 VERSION_START_COLUMN_INDEX = 1
 CHARM_TYPES = {
@@ -115,7 +117,7 @@ class OpenStackCodenameLookup(object):
             cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
         compatible_os_releases: List[str] = []
         if not cls._OPENSTACK_LOOKUP.get(component):
-            logging.warning(
+            logger.warning(
                 "Not possible to find the component %s in the lookup",
                 component,
             )
