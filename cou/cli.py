@@ -100,7 +100,6 @@ def setup_logging(log_level: str = "INFO") -> None:
     console_handler.setFormatter(log_formatter)
     console_handler.addFilter(logging.Filter(__package__))
 
-
     root_logger.addHandler(log_file_handler)
     root_logger.addHandler(console_handler)
     logger.info("Logs of this execution can be found at %s", file_name)
