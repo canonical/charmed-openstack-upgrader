@@ -33,8 +33,7 @@ from cou.utils import juju_utils as utils
 COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
 AVAILABLE_OPTIONS = "cas"
 
-# NOTE(gabrielcocenza) top-level module to reference the same logger object across modules.
-logger = logging.getLogger(__package__)
+logger = logging.getLogger(__name__)
 
 
 def parse_args(args: Any) -> argparse.Namespace:
@@ -98,6 +97,7 @@ def setup_logging(log_level: str = "INFO") -> None:
     console_handler = logging.StreamHandler()
     console_handler.setLevel(log_level)
     console_handler.setFormatter(log_formatter)
+    # just cou logs on console
     console_handler.addFilter(logging.Filter(__package__))
 
     root_logger.addHandler(log_file_handler)
