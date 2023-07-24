@@ -34,7 +34,7 @@ COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
 AVAILABLE_OPTIONS = "cas"
 
 # NOTE(gabrielcocenza) top-level module to reference the same logger object across modules.
-logger = logging.getLogger("cou")
+logger = logging.getLogger(__package__)
 
 
 def parse_args(args: Any) -> argparse.Namespace:
@@ -82,25 +82,27 @@ def setup_logging(log_level: str = "INFO") -> None:
     :rtype: None
     """
     log_formatter = logging.Formatter(
-        fmt="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
-    logger.setLevel("DEBUG")
+    root_logger = logging.getLogger()
+    root_logger.setLevel("DEBUG")
 
     # handler for the log file. Log level is DEBUG
     time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
     pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
     log_file_handler = logging.FileHandler(file_name)
-    log_file_handler.setLevel("DEBUG")
     log_file_handler.setFormatter(log_formatter)
 
     # handler for the console. Log level comes from the CLI
     console_handler = logging.StreamHandler()
     console_handler.setLevel(log_level)
     console_handler.setFormatter(log_formatter)
+    console_handler.addFilter(logging.Filter(__package__))
 
-    logger.addHandler(log_file_handler)
-    logger.addHandler(console_handler)
+
+    root_logger.addHandler(log_file_handler)
+    root_logger.addHandler(console_handler)
     logger.info("Logs of this execution can be found at %s", file_name)
 
 
