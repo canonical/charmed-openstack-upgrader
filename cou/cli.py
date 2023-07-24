@@ -80,8 +80,11 @@ def setup_logging(log_level: str = "INFO") -> None:
     :returns: Nothing: This function is executed for its side effect
     :rtype: None
     """
-    log_formatter = logging.Formatter(
+    log_formatter_file = logging.Formatter(
         fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    log_formatter_console = logging.Formatter(
+        fmt="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
     root_logger = logging.getLogger()
     root_logger.setLevel("DEBUG")
@@ -91,12 +94,12 @@ def setup_logging(log_level: str = "INFO") -> None:
     file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
     pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
     log_file_handler = logging.FileHandler(file_name)
-    log_file_handler.setFormatter(log_formatter)
+    log_file_handler.setFormatter(log_formatter_file)
 
     # handler for the console. Log level comes from the CLI
     console_handler = logging.StreamHandler()
     console_handler.setLevel(log_level)
-    console_handler.setFormatter(log_formatter)
+    console_handler.setFormatter(log_formatter_console)
     # just cou logs on console
     console_handler.addFilter(logging.Filter(__package__))
 
