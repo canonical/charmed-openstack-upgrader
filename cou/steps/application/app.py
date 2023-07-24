@@ -20,25 +20,27 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any, Optional
+from typing import Any
 
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
 
-from cou.utils.juju_utils import extract_charm_name_from_url
-from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease
 from cou.steps import UpgradeStep
 from cou.utils.juju_utils import (
     async_set_application_config,
     async_upgrade_charm,
     extract_charm_name_from_url,
 )
+from cou.utils.openstack import (
+    OpenStackCodenameLookup,
+    determine_next_openstack_release,
+)
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class Application:
+class StandardApplication:
     """Representation of an application in the deployment.
 
     :param name: name of the application
@@ -52,11 +54,11 @@ class Application:
     :param charm: Name of the charm.
     :type charm: str
     :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
-    :type charm_origin: str, defaults to ""
+    :type charm_origin: str, optional
     :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
-    :type os_origin: str, defaults to ""
+    :type os_origin: str, optional
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
-    :type channel: str, defaults to ""
+    :type channel: str, optional
     :param units: Units representation of an application.
         E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
     :type units: defaultdict[str, dict]
@@ -82,16 +84,21 @@ class Application:
         self.os_origin = self._get_os_origin()
         self.current_os_release = None
         self.next_os_release = None
+        os_versions = set()
         for unit in self.status.units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
             compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
             # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
             if compatible_os_versions:
-                unit_os_version = max(compatible_os_versions)
+                unit_os_version = compatible_os_versions[-1]
                 self.units[unit]["os_version"] = unit_os_version
+                os_versions.add(unit_os_version)
             else:
                 self.units[unit]["os_version"] = ""
+            if len(os_versions) == 1:
+                self.current_os_release = list(os_versions)[0]
+                _, self.next_os_release = determine_next_openstack_release(self.current_os_release)
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -127,7 +134,7 @@ class Application:
                 "units": {
                     unit: {
                         "workload_version": details.get("workload_version", ""),
-                        "os_version": str(details.get("os_version", "")),
+                        "os_version": details.get("os_version", ""),
                     }
                     for unit, details in self.units.items()
                 },
@@ -148,16 +155,19 @@ class Application:
         return self.status.series
 
     @property
-    def current_os_release(self) -> Optional[OpenStackRelease]:
-        """Current OpenStack Release of the application.
+    def current_channel(self) -> str:
+        return f"{self.current_os_release}/stable"
 
-        :return: OpenStackRelease object
-        :rtype: OpenStackRelease
-        """
-        os_versions = {unit_values.get("os_version") for unit_values in self.units.values()}
-        if len(os_versions) == 1:
-            return list(os_versions)[0]
-        return None
+    @property
+    def next_channel(self) -> str:
+        return f"{self.next_os_release}/stable"
+
+    @property
+    def new_origin(self) -> str:
+        # LTS should be "distro"
+        if self.series in ["ussuri", "yoga"]:
+            return "distro"
+        return f"cloud:{self.series}-{self.next_os_release}"
 
     def _get_os_origin(self) -> str:
         """Get application configuration for openstack-origin or source.

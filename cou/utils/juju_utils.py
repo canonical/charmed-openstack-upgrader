@@ -398,6 +398,18 @@ async def async_upgrade_charm(
         switch=switch,
     )
 
+async def async_set_application_config(application_name, configuration, model_name=None):
+    """Set application configuration.
+
+    :param application_name: Name of application
+    :type application_name: str
+    :param configuration: Dictionary of configuration setting(s)
+    :type configuration: Dict[str,str]
+    :param model_name: Name of model to query.
+    :type model_name: str
+    """
+    model = await _async_get_model(model_name)
+    return await model.applications[application_name].set_config(configuration)
 
 # pylint: disable=too-few-public-methods
 class JujuWaiter:
