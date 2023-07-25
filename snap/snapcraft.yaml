@@ -18,7 +18,7 @@ apps:
       - network
       - network-bind
       - dot-local-share-juju
-      - local_cou
+      - local-cou
 
 parts:
   cou-wrapper:
@@ -36,13 +36,14 @@ parts:
     source: .
     stage-packages:
       - git
+      - openssh-client
 
 plugs:
   dot-local-share-juju:
     interface: personal-files
     write:
       - $HOME/.local/share/juju
-  local_cou:
+  local-cou:
     interface: personal-files
     write:
-      - $HOME/.local/share/cou/
+      - $HOME/.local/share/cou

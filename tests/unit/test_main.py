@@ -1,8 +1,10 @@
+import importlib
+
 import mock
 
 
 @mock.patch("cou.cli.entrypoint")
 def test_init(cli):
-    from cou import __main__  # noqa: F401
-
-    assert cli.call_count == 1
+    loader = importlib.machinery.SourceFileLoader("__main__", "cou/__main__.py")
+    loader.load_module()
+    cli.assert_called_once_with()

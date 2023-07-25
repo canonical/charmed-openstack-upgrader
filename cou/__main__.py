@@ -19,4 +19,11 @@ import asyncio
 
 from cou import cli
 
-asyncio.run(cli.entrypoint())
+
+def main() -> None:
+    """Enter the application."""
+    asyncio.run(cli.entrypoint())
+
+
+if __name__ == "__main__":
+    main()

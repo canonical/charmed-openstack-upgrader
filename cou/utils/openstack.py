@@ -16,10 +16,12 @@
 """Lookup utils to determine compatible OpenStack codenames for a given component."""
 
 import csv
+import encodings
 import logging
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
-from typing import Any, List
+from pathlib import Path
+from typing import Any, List, Tuple
 
 from packaging.version import Version
 
@@ -40,6 +42,8 @@ CHARM_TYPES = {
 
 @dataclass(frozen=True)
 class VersionRange:
+    """Structure for holding version."""
+
     lower: str
     upper: str
 
@@ -54,15 +58,18 @@ class VersionRange:
         lower_v = Version(self.lower)
         upper_v = Version(self.upper)
         service_version = Version(version)
-        return service_version >= lower_v and service_version < upper_v
+        return lower_v <= service_version < upper_v
 
 
-class OpenStackCodenameLookup(object):
+# pylint: disable=too-few-public-methods
+class OpenStackCodenameLookup:
+    """Class to determine compatible OpenStack codenames for a given component."""
+
     _OPENSTACK_LOOKUP: OrderedDict = OrderedDict()
-    _DEFAULT_CSV_FILE = "cou/utils/openstack_lookup.csv"
+    _DEFAULT_CSV_FILE = Path(__file__).parent / "openstack_lookup.csv"
 
     @classmethod
-    def _generate_lookup(cls, resource: str) -> OrderedDict:
+    def _generate_lookup(cls, resource: Path) -> OrderedDict:
         """Generate an OpenStack lookup dictionary based on the version of the components.
 
         The dictionary is generated from a static csv file that should be updated regularly
@@ -79,28 +86,42 @@ class OpenStackCodenameLookup(object):
         [1] https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 
         :param resource: Path to the csv file
-        :type resource: str
+        :type resource: Path
         :return: Ordered dictionary containing the version and the compatible OpenStack release.
         :rtype: OrderedDict
         """
-        with open(resource) as csv_file:
+        with open(resource, encoding=encodings.utf_8.getregentry().name) as csv_file:
             openstack_lookup = OrderedDict()
             csv_reader = csv.reader(csv_file, delimiter=",")
             header = next(csv_reader)
             for row in csv_reader:
-                service_dict: defaultdict[str, Any] = defaultdict(OrderedDict)
-                service = row[SERVICE_COLUMN_INDEX]
-                for column_index in range(VERSION_START_COLUMN_INDEX, len(row), 2):
-                    os_version, _ = header[column_index].split("-")
-                    lower = row[column_index]
-                    upper = row[column_index + 1]
-                    service_dict[os_version] = VersionRange(lower, upper)
+                service, service_dict = cls._parse_row(header, row)
                 openstack_lookup[service] = service_dict
         # add openstack charms
         for charm_type, charms in CHARM_TYPES.items():
             for charm in charms:
                 openstack_lookup[charm] = openstack_lookup[charm_type]
         return openstack_lookup
+
+    @classmethod
+    def _parse_row(cls, header: List[str], row: List[str]) -> Tuple[str, defaultdict[str, Any]]:
+        """Parse single row.
+
+        :param header: header list
+        :type header: list[str]
+        :param row: row list
+        :type row: list[str]
+        :return: service and service dictionary
+        :rtype: tuple
+        """
+        service_dict: defaultdict[str, Any] = defaultdict(OrderedDict)
+        service = row[SERVICE_COLUMN_INDEX]
+        for column_index in range(VERSION_START_COLUMN_INDEX, len(row), 2):
+            os_version, _ = header[column_index].split("-")
+            lower = row[column_index]
+            upper = row[column_index + 1]
+            service_dict[os_version] = VersionRange(lower, upper)
+        return service, service_dict
 
     @classmethod
     def lookup(cls, component: str, version: str) -> List[str]:
