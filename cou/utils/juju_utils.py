@@ -12,14 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Juju utilities for charmed-openstack-upgrader."""
 
 import logging
 import os
 import re
-from typing import Optional
+from typing import Dict, Optional
 
+from juju.action import Action
+from juju.application import Application
 from juju.client._definitions import FullStatus
 from juju.model import Model
+from juju.unit import Unit
 
 from cou.exceptions import ActionFailed, UnitNotFound
 
@@ -32,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 # remove when fixed: https://github.com/juju/python-libjuju/issues/888
-def extract_charm_name_from_url(charm_url):
+def extract_charm_name_from_url(charm_url: str) -> str:
     """Extract the charm name from the charm url.
 
     E.g. Extract 'heat' from local:bionic/heat-12
@@ -46,7 +50,8 @@ def extract_charm_name_from_url(charm_url):
     return charm_name.split(":")[-1]
 
 
-async def async_set_current_model_name(model_name: Optional[str] = None):
+# pylint: disable=global-statement
+async def async_set_current_model_name(model_name: Optional[str] = None) -> Optional[str]:
     """Set the current model.
 
     :param model_name: Name of model to query.
@@ -56,7 +61,7 @@ async def async_set_current_model_name(model_name: Optional[str] = None):
     current active model.
 
     :returns: In focus model name
-    :rtype: str
+    :rtype: Optional[str]
     """
     global CURRENT_MODEL_NAME
     if model_name:
@@ -75,7 +80,8 @@ async def async_set_current_model_name(model_name: Optional[str] = None):
     return CURRENT_MODEL_NAME
 
 
-async def _async_get_model(model_name=None) -> Model:
+# pylint: disable=global-statement, global-variable-not-assigned
+async def _async_get_model(model_name: Optional[str] = None) -> Model:
     """Get (or create) the current model for :param:`model_name`.
 
     If None is passed, or there is no model_name param, then the current model
@@ -99,7 +105,8 @@ async def _async_get_model(model_name=None) -> Model:
     return model
 
 
-async def _disconnect(model: Model):
+# pylint: disable=broad-exception-caught
+async def _disconnect(model: Model) -> None:
     if model is not None:
         try:
             await model.disconnect()
@@ -107,7 +114,7 @@ async def _disconnect(model: Model):
             pass
 
 
-def _is_model_disconnected(model):
+def _is_model_disconnected(model: Model) -> bool:
     """Return True if the model is disconnected.
 
     :param model: the model to check
@@ -118,7 +125,7 @@ def _is_model_disconnected(model):
     return not (model.is_connected() and model.connection().is_open)
 
 
-async def _async_get_current_model_name_from_juju():
+async def _async_get_current_model_name_from_juju() -> str:
     """Return the current active model name.
 
     Connect to the current active model and return its name.
@@ -136,7 +143,7 @@ async def _async_get_current_model_name_from_juju():
     return model_name
 
 
-async def async_get_status(model_name=None) -> FullStatus:
+async def async_get_status(model_name: Optional[str] = None) -> FullStatus:
     """Return the full juju status output.
 
     :param model_name: Name of model to query.
@@ -148,7 +155,7 @@ async def async_get_status(model_name=None) -> FullStatus:
     return await model.get_status()
 
 
-def _normalise_action_results(results):
+def _normalise_action_results(results: Dict[str, str]) -> Dict[str, str]:
     """Put action results in a consistent format.
 
     :param results: Results dictionary to process.
@@ -178,11 +185,10 @@ def _normalise_action_results(results):
             elif results.get(old_key) and not results.get(key):
                 results[key] = results[old_key]
         return results
-    else:
-        return {}
+    return {}
 
 
-async def _check_action_error(action_obj, model, raise_on_failure):
+async def _check_action_error(action_obj: Action, model: Model, raise_on_failure: bool) -> None:
     await action_obj.wait()
     if raise_on_failure and action_obj.status != "completed":
         try:
@@ -192,7 +198,9 @@ async def _check_action_error(action_obj, model, raise_on_failure):
         raise ActionFailed(action_obj, output=output)
 
 
-async def async_run_on_unit(unit_name, command, model_name=None, timeout=None):
+async def async_run_on_unit(
+    unit_name: str, command: str, model_name: Optional[str] = None, timeout: Optional[int] = None
+) -> Dict[str, str]:
     """Juju run on unit.
 
     :param model_name: Name of model unit is in
@@ -213,7 +221,9 @@ async def async_run_on_unit(unit_name, command, model_name=None, timeout=None):
     return _normalise_action_results(results)
 
 
-async def async_get_unit_from_name(unit_name, model=None, model_name=None):
+async def async_get_unit_from_name(
+    unit_name: str, model: Optional[Model] = None, model_name: Optional[str] = None
+) -> Unit:
     """Return the units that corresponds to the name in the given model.
 
     :param unit_name: Name of unit to match
@@ -232,20 +242,22 @@ async def async_get_unit_from_name(unit_name, model=None, model_name=None):
         if model is None:
             model = await _async_get_model(model_name)
         units = model.applications[app].units
-    except KeyError:
-        msg = "Application: {} does not exist in current model".format(app)
+    except KeyError as exc:
+        msg = f"Application: {app} does not exist in current model"
         logger.error(msg)
-        raise UnitNotFound(unit_name)
-    for u in units:
-        if u.entity_id == unit_name:
-            unit = u
+        raise UnitNotFound(unit_name) from exc
+    for single_unit in units:
+        if single_unit.entity_id == unit_name:
+            unit = single_unit
             break
     else:
         raise UnitNotFound(unit_name)
     return unit
 
 
-async def async_get_application_config(application_name, model_name=None):
+async def async_get_application_config(
+    application_name: str, model_name: Optional[str] = None
+) -> Application:
     """Return application configuration.
 
     :param model_name: Name of model to query.
@@ -260,8 +272,12 @@ async def async_get_application_config(application_name, model_name=None):
 
 
 async def async_run_action(
-    unit_name, action_name, model_name=None, action_params=None, raise_on_failure=False
-):
+    unit_name: str,
+    action_name: str,
+    model_name: Optional[str] = None,
+    action_params: Optional[Dict] = None,
+    raise_on_failure: bool = False,
+) -> Action:
     """Run action on given unit.
 
     :param unit_name: Name of unit to run action on
@@ -288,9 +304,16 @@ async def async_run_action(
     return action_obj
 
 
+# pylint: disable=too-many-arguments
 async def async_scp_from_unit(
-    unit_name, source, destination, model_name=None, user="ubuntu", proxy=False, scp_opts=""
-):
+    unit_name: str,
+    source: str,
+    destination: str,
+    model_name: Optional[str] = None,
+    user: str = "ubuntu",
+    proxy: bool = False,
+    scp_opts: str = "",
+) -> None:
     """Transfer files from unit_name in model_name.
 
     :param model_name: Name of model unit is in
@@ -313,17 +336,18 @@ async def async_scp_from_unit(
     await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
 
 
+# pylint: disable=too-many-arguments
 async def async_upgrade_charm(
-    application_name,
-    channel=None,
-    force_series=False,
-    force_units=False,
-    path=None,
-    resources=None,
-    revision=None,
-    switch=None,
-    model_name=None,
-):
+    application_name: str,
+    channel: Optional[str] = None,
+    force_series: bool = False,
+    force_units: bool = False,
+    path: Optional[str] = None,
+    resources: Optional[Dict] = None,
+    revision: Optional[int] = None,
+    switch: Optional[str] = None,
+    model_name: Optional[str] = None,
+) -> None:
     """
     Upgrade the given charm.
 

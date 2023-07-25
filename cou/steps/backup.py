@@ -16,6 +16,7 @@
 """Functions for backing up openstack database."""
 import logging
 import os
+import pathlib
 from typing import Optional
 
 import cou.utils.juju_utils as utils
@@ -43,7 +44,7 @@ async def backup(model_name: Optional[str] = None) -> str:
     logger.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
     await utils.async_run_on_unit(unit_name, f"chmod o+rx {basedir}", model_name=model_name)
 
-    local_file = os.path.abspath(os.path.basename(remote_file))
+    local_file = str(pathlib.Path(os.getenv("COU_DATA", ""), os.path.basename(remote_file)))
     logger.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
     await utils.async_scp_from_unit(unit_name, remote_file, local_file, model_name=model_name)
 

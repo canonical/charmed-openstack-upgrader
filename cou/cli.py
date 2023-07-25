@@ -30,7 +30,7 @@ from cou.steps.analyze import Analysis
 from cou.steps.plan import generate_plan
 from cou.utils import juju_utils as utils
 
-COU_DIR_LOG = pathlib.Path(os.getenv("HOME", ""), ".local/share/cou/log")
+COU_DIR_LOG = pathlib.Path(os.getenv("COU_DATA", ""), "log")
 AVAILABLE_OPTIONS = "cas"
 
 logger = logging.getLogger(__name__)
