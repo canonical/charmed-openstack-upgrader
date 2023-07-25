@@ -20,7 +20,6 @@ import re
 from typing import Dict, Optional
 
 from juju.action import Action
-from juju.application import Application
 from juju.client._definitions import FullStatus
 from juju.model import Model
 from juju.unit import Unit
@@ -106,6 +105,11 @@ async def _async_get_model(model_name: Optional[str] = None) -> Model:
 
 # pylint: disable=broad-exception-caught
 async def _disconnect(model: Model) -> None:
+    """Disconnect the model.
+
+    :param model: the juju.model.Model object.
+    :type model: Model
+    """
     if model is not None:
         try:
             await model.disconnect()
@@ -129,7 +133,7 @@ async def _async_get_current_model_name_from_juju() -> str:
 
     Connect to the current active model and return its name.
 
-    :returns: String curenet model name
+    :returns: String current model name
     :rtype: str
     """
     # NOTE(tinwood): Due to https://github.com/juju/python-libjuju/issues/458
@@ -146,9 +150,9 @@ async def async_get_status(model_name: Optional[str] = None) -> FullStatus:
     """Return the full juju status output.
 
     :param model_name: Name of model to query.
-    :type model_name: str
+    :type model_name: Optional[str]
     :returns: Full juju status output
-    :rtype: dict
+    :rtype: FullStatus
     """
     model = await _async_get_model(model_name)
     return await model.get_status()
@@ -188,6 +192,16 @@ def _normalise_action_results(results: Dict[str, str]) -> Dict[str, str]:
 
 
 async def _check_action_error(action_obj: Action, model: Model, raise_on_failure: bool) -> None:
+    """Check if the run action resulted in error.
+
+    :param action_obj: Action object.
+    :type action_obj: Action
+    :param model: the juju.model.Model object.
+    :type model: Model
+    :param raise_on_failure: Boolean flag to raise on failure.
+    :type raise_on_failure: bool
+    :raises ActionFailed: Exception raised when action fails.
+    """
     await action_obj.wait()
     if raise_on_failure and action_obj.status != "completed":
         try:
@@ -202,16 +216,16 @@ async def async_run_on_unit(
 ) -> Dict[str, str]:
     """Juju run on unit.
 
-    :param model_name: Name of model unit is in
-    :type model_name: str
     :param unit_name: Name of unit to match
     :type unit: str
     :param command: Command to execute
     :type command: str
+    :param model_name: Name of model unit is in
+    :type model_name: Optional[str]
     :param timeout: How long in seconds to wait for command to complete
-    :type timeout: int
+    :type timeout: Optional[int]
     :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
-    :rtype: dict
+    :rtype: Dict[str, str]
     """
     model = await _async_get_model(model_name)
     unit = await async_get_unit_from_name(unit_name, model)
@@ -256,11 +270,11 @@ async def async_get_unit_from_name(
 
 async def async_get_application_config(
     application_name: str, model_name: Optional[str] = None
-) -> Application:
+) -> Dict:
     """Return application configuration.
 
     :param model_name: Name of model to query.
-    :type model_name: str
+    :type model_name: Optional[str]
     :param application_name: Name of application
     :type application_name: str
     :returns: Dictionary of configuration
@@ -284,10 +298,10 @@ async def async_run_action(
     :param action_name: Name of action to run
     :type action_name: str
     :param model_name: Name of model to query.
-    :type model_name: str
+    :type model_name: Optional[str]
     :param action_params: Dictionary of config options for action
-    :type action_params: dict
-    :param raise_on_failure: Raise ActionFailed exception on failure
+    :type action_params: Optional[Dict]
+    :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
     :type raise_on_failure: bool
     :returns: Action object
     :rtype: juju.action.Action
@@ -316,18 +330,18 @@ async def async_scp_from_unit(
     """Transfer files from unit_name in model_name.
 
     :param model_name: Name of model unit is in
-    :type model_name: str
+    :type model_name:  Optional[str]
     :param unit_name: Name of unit to scp from
     :type unit_name: str
     :param source: Remote path of file(s) to transfer
     :type source: str
     :param destination: Local destination of transferred files
     :type source: str
-    :param user: Remote username
+    :param user: Remote username, defaults to ubuntu
     :type source: str
-    :param proxy: Proxy through the Juju API server
+    :param proxy: Proxy through the Juju API server, defaults to False
     :type proxy: bool
-    :param scp_opts: Additional options to the scp command
+    :param scp_opts: Additional options to the scp command, defaults to ""
     :type scp_opts: str
     """
     model = await _async_get_model(model_name)

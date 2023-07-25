@@ -31,7 +31,7 @@ async def backup(model_name: Optional[str] = None) -> Path:
     :param model_name: Optional model name.
     :type args: Optional[str]
     :return: Path of the local file from the backup.
-    :rtype: str
+    :rtype: Path
     """
     logger.info("Backing up mysql database")
     unit_name = await get_database_app_unit_name(model_name)

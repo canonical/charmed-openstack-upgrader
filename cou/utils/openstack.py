@@ -86,7 +86,7 @@ class OpenStackCodenameLookup:
         [1] https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 
         :param resource: Path to the csv file
-        :type resource: str
+        :type resource: Path
         :return: Ordered dictionary containing the version and the compatible OpenStack release.
         :rtype: OrderedDict
         """
