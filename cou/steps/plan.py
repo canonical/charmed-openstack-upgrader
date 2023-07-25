@@ -16,15 +16,24 @@
 """Upgrade planning utilities."""
 
 import logging
+from collections import defaultdict
+from typing import List
 
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
+from cou.steps.application.app import StandardApplication
 from cou.steps.backup import backup
+from cou.utils.openstack import (
+    SPECIAL_CHARMS,
+    UPGRADE_ORDER,
+    CompareOpenStack,
+    determine_next_openstack_release,
+)
 
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(args: Analysis) -> UpgradeStep:
+async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     """Generate plan for upgrade.
 
     :param args: Analysis result.
@@ -32,9 +41,69 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
-    logger.info(args)  # for placeholder
+    apps_to_upgrade = determine_apps_to_upgrade(analysis_result)
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
     )
+    for app in apps_to_upgrade:
+        plan.add_step(app.generate_upgrade_plan())
     return plan
+
+
+def determine_apps_to_upgrade(analysis_result: Analysis) -> List[StandardApplication]:
+    """Determine applications to upgrade.
+
+    This function find the oldest OpenStack version in the deployment and
+    select the applications to upgrade for the next version (N + 1).
+
+    :param analysis_result: Analysis result containing all applications in the model.
+    :type analysis_result: Analysis
+    :return: Tuple containing the current and next OpenStack release and a  list
+        of applications to be upgraded.
+    :rtype: Tuple[str, str, List[Application]]
+    """
+    # E.g: {"ussuri": {"keystone"}, "victoria": {"cinder"}}
+    os_versions: defaultdict[str, set] = defaultdict(set)
+
+    for app in analysis_result.apps:
+        # don't consider charms that can have multiple OpenStack releases to determine the oldest
+        # version of the cloud.
+        if app.current_os_release and app.charm not in SPECIAL_CHARMS:
+            os_versions[app.current_os_release].add(app)
+
+    os_sequence = sorted(os_versions.keys(), key=CompareOpenStack)
+    current_cloud_os_release = os_sequence[0]
+    _, next_cloud_os_release = determine_next_openstack_release(current_cloud_os_release)
+
+    if len(os_versions) > 1:
+        logging.warning("Charms are not in the same openstack version")
+
+    else:
+        logging.info(
+            (
+                "All supported charms are in the same openstack version "
+                "and can be upgrade from: %s to: %s"
+            ),
+            current_cloud_os_release,
+            next_cloud_os_release,
+        )
+    apps_to_upgrade = list(os_versions[current_cloud_os_release])
+    special_charms_to_upgrade = add_special_charms_to_upgrade(
+        analysis_result.apps, next_cloud_os_release
+    )
+    apps_to_upgrade = apps_to_upgrade + special_charms_to_upgrade
+    apps_to_upgrade.sort(key=lambda app: UPGRADE_ORDER.index(app.charm))
+    return apps_to_upgrade
+
+
+def add_special_charms_to_upgrade(apps, next_cloud_os_release):
+    special_charms_to_upgrade = []
+    for app in apps:
+        if app.charm in SPECIAL_CHARMS and app.os_origin:
+            os_origin = app.os_origin.split("-")[-1]
+            if CompareOpenStack(app.current_os_release) < next_cloud_os_release or (
+                os_origin != "distro" and CompareOpenStack(os_origin) < next_cloud_os_release
+            ):
+                special_charms_to_upgrade.append(app)
+    return special_charms_to_upgrade

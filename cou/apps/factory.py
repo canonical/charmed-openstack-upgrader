@@ -13,13 +13,10 @@ class AppFactory:
         return cls.subclasses[app_type](params)
 
     @classmethod
-    def register_application(cls, app_types: List, series: Optional[str] = None):
+    def register_application(cls, app_types: List):
         def decorator(application):
             for app_type in app_types:
-                key = app_type
-                if series:
-                    key = f"{app_type}-{series}"
-                cls.apps_type[key] = application
+                cls.apps_type[app_type] = application
                 return application
 
         return decorator

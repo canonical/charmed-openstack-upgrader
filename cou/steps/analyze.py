@@ -24,6 +24,11 @@ from typing import Iterable, List, Optional
 from cou.apps.app import Application
 from cou.utils.juju_utils import async_get_application_config, async_get_status
 from cou.utils.openstack import UPGRADE_ORDER, OpenStackRelease
+from cou.utils.juju_utils import (
+    async_get_application_config,
+    async_get_status,
+    extract_charm_name_from_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +65,13 @@ class Analysis:
         juju_status = await async_get_status()
         model_name = juju_status.model.name
         apps = {
-            Application(
+            AppFactory.create(
+                app_type=extract_charm_name_from_url(app_status.charm),
                 name=app,
                 status=app_status,
                 config=await async_get_application_config(app),
                 model_name=model_name,
+                charm=extract_charm_name_from_url(app_status.charm),
             )
             for app, app_status in juju_status.applications.items()
         }

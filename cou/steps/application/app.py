@@ -20,7 +20,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any
+from typing import Any, Optional
 
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
@@ -70,7 +70,7 @@ class StandardApplication:
     status: ApplicationStatus
     config: dict
     model_name: str
-    charm: str = ""
+    charm: str
     charm_origin: str = ""
     os_origin: str = ""
     channel: str = ""
@@ -78,7 +78,7 @@ class StandardApplication:
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.charm = extract_charm_name_from_url(self.status.charm)
+        self.origin_setting = None
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
@@ -165,7 +165,7 @@ class StandardApplication:
     @property
     def new_origin(self) -> str:
         # LTS should be "distro"
-        if self.series in ["ussuri", "yoga"]:
+        if self.next_os_release in ["ussuri", "yoga"]:
             return "distro"
         return f"cloud:{self.series}-{self.next_os_release}"
 
@@ -178,48 +178,47 @@ class StandardApplication:
         """
         for origin in ("openstack-origin", "source"):
             if self.config.get(origin):
+                self.origin_setting = origin
                 return self.config[origin].get("value", "")
 
         logger.warning("Failed to get origin for %s, no origin config found", self.name)
         return ""
 
-    def _can_generate_plan(self):
+    def can_generate_upgrade_plan(self):
         if self.current_os_release is None:
-            logger.warning("Not possible to determine OpenStack release for '%s'", self.name)
+            logger.warning("Not possible to determine OpenStack release for '%s'.", self.name)
             return False
         return True
 
-    def generate_upgrade_plan(self):
-        upgrade_plan = UpgradeStep(
-            description=f"Upgrade plan for '{self.name}'",
-            parallel=False,
-            function=None,
-        )
+    def generate_upgrade_plan(self) -> Optional[UpgradeStep]:
+        if self.can_generate_upgrade_plan():
+            upgrade_plan = UpgradeStep(
+                description=f"Upgrade plan for '{self.name}'",
+                parallel=False,
+                function=None,
+            )
 
-        upgrade_plan_sub_steps = [
-            self.add_plan_refresh_current_channel,
-            self.add_plan_refresh_next_channel,
-            self.add_plan_disable_action_managed,
-            self.add_plan_workload_upgrade,
-        ]
+            upgrade_plan_sub_steps = [
+                self.add_plan_refresh_current_channel,
+                self.add_plan_refresh_next_channel,
+                self.add_plan_disable_action_managed,
+                self.add_plan_workload_upgrade,
+            ]
 
-        for sub_step_func in upgrade_plan_sub_steps:
-            upgrade_plan = sub_step_func(upgrade_plan)
+            for sub_step_func in upgrade_plan_sub_steps:
+                sub_step_func(upgrade_plan)
 
-        return upgrade_plan
+            return upgrade_plan
+        logger.warning("Aborting upgrade plan for '%s'", self.name)
 
-    def add_plan_refresh_current_channel(self, plan: UpgradeStep) -> UpgradeStep:
-        if self._can_generate_plan():
-            if self.charm_origin == "cs":
-                plan = self._add_plan_charmhub_migration(plan)
-                return plan
-            plan = self._add_plan_change_current_channel(plan)
-            plan = self._add_plan_update_current_channel(plan)
-            return plan
-        logger.warning("Canceling refresh current channel plan for '%s'", self.name)
-        return plan
+    def add_plan_refresh_current_channel(self, plan: UpgradeStep) -> None:
+        if self.charm_origin == "cs":
+            plan = self._add_plan_charmhub_migration(plan)
+            return
+        self._add_plan_change_current_channel(plan)
+        self._add_plan_update_current_channel(plan)
 
-    def _add_plan_charmhub_migration(self, plan: UpgradeStep, parallel=False) -> UpgradeStep:
+    def _add_plan_charmhub_migration(self, plan: UpgradeStep, parallel=False) -> None:
         plan.add_step(
             UpgradeStep(
                 description=f"App: {self.name} -> Migration from charmstore to charmhub",
@@ -231,9 +230,8 @@ class StandardApplication:
                 switch=f"ch:{self.charm}",
             )
         )
-        return plan
 
-    def _add_plan_change_current_channel(self, plan: UpgradeStep, parallel=False) -> UpgradeStep:
+    def _add_plan_change_current_channel(self, plan: UpgradeStep, parallel=False) -> None:
         if self.channel != self.current_channel and self.channel != self.next_channel:
             plan.add_step(
                 UpgradeStep(
@@ -244,9 +242,8 @@ class StandardApplication:
                     channel=self.current_channel,
                 )
             )
-        return plan
 
-    def _add_plan_update_current_channel(self, plan: UpgradeStep, parallel=False) -> UpgradeStep:
+    def _add_plan_update_current_channel(self, plan: UpgradeStep, parallel=False) -> None:
         if self.channel == self.next_channel:
             logger.warning(
                 "App: %s already has the channel set for the next OpenStack version %s",
@@ -262,61 +259,48 @@ class StandardApplication:
                     application_name=self.name,
                 )
             )
-        return plan
 
-    def add_plan_refresh_next_channel(self, plan: UpgradeStep, parallel=False):
-        if self._can_generate_plan():
-            if self.channel != self.next_channel:
-                plan.add_step(
-                    UpgradeStep(
-                        description=f"Refresh {self.name} to the new channel: '{self.next_channel}'",
-                        parallel=parallel,
-                        function=async_upgrade_charm,
-                        application_name=self.name,
-                        channel=self.next_channel,
-                        model_name=self.model_name,
-                    )
+    def add_plan_refresh_next_channel(self, plan: UpgradeStep, parallel=False) -> None:
+        if self.channel != self.next_channel:
+            plan.add_step(
+                UpgradeStep(
+                    description=f"Refresh {self.name} to the new channel: '{self.next_channel}'",
+                    parallel=parallel,
+                    function=async_upgrade_charm,
+                    application_name=self.name,
+                    channel=self.next_channel,
+                    model_name=self.model_name,
                 )
-            return plan
-        logger.warning("Canceling refresh next channel plan for '%s'", self.name)
-        return plan
+            )
 
-    def add_plan_disable_action_managed(self, plan: UpgradeStep, parallel=False) -> UpgradeStep:
-        if self._can_generate_plan():
-            if self.config.get("action-managed-upgrade"):
-                if self.config["action-managed-upgrade"].get("value", False):
-                    plan.add_step(
-                        UpgradeStep(
-                            description=f"App: '{self.name}' -> Set action-managed-upgrade to False.",
-                            parallel=parallel,
-                            function=async_set_application_config,
-                            application_name=self.name,
-                            configuration={"action-managed-upgrade": False},
-                        )
-                    )
-            return plan
-        logger.warning("Canceling disable action managed plan for '%s'", self.name)
-        return plan
-
-    def add_plan_workload_upgrade(self, plan: UpgradeStep, parallel=False):
-        if self._can_generate_plan():
-            if self.os_origin != self.new_origin:
+    def add_plan_disable_action_managed(self, plan: UpgradeStep, parallel=False) -> None:
+        if self.config.get("action-managed-upgrade"):
+            if self.config["action-managed-upgrade"].get("value", False):
                 plan.add_step(
                     UpgradeStep(
-                        description=f"App: '{self.name}' -> Change charm config '{self.origin_setting}' to '{self.new_origin}'",
+                        description=f"App: '{self.name}' -> Set action-managed-upgrade to False.",
                         parallel=parallel,
                         function=async_set_application_config,
                         application_name=self.name,
-                        configuration={self.origin_setting: self.new_origin},
+                        configuration={"action-managed-upgrade": False},
                     )
                 )
-            else:
-                logger.warning(
-                    "App: %s already have %s set to %s",
-                    self.name,
-                    self.origin_setting,
-                    self.new_origin,
+
+    def add_plan_workload_upgrade(self, plan: UpgradeStep, parallel=False) -> None:
+        if self.os_origin != self.new_origin:
+            plan.add_step(
+                UpgradeStep(
+                    description=f"App: '{self.name}' -> Change charm config '{self.origin_setting}' to '{self.new_origin}'",
+                    parallel=parallel,
+                    function=async_set_application_config,
+                    application_name=self.name,
+                    configuration={self.origin_setting: self.new_origin},
                 )
-            return plan
-        logger.warning("Canceling workload upgrade plan for '%s'", self.name)
-        return plan
+            )
+        else:
+            logger.warning(
+                "App: %s already have %s set to %s",
+                self.name,
+                self.origin_setting,
+                self.new_origin,
+            )
