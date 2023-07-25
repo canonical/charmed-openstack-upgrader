@@ -11,9 +11,9 @@ from cou.steps.backup import _check_db_relations, backup, get_database_app_unit_
 
 @pytest.mark.asyncio
 async def test_backup():
-    with patch("cou.steps.backup.logging.info") as log, patch(
-        "cou.steps.backup.utils"
-    ) as utils, patch("cou.steps.backup.get_database_app_unit_name") as database_app_name:
+    with patch("cou.steps.backup.logger") as log, patch("cou.steps.backup.utils") as utils, patch(
+        "cou.steps.backup.get_database_app_unit_name"
+    ) as database_app_name:
         database_app_name.return_value = "test"
         utils.async_run_action = AsyncMock()
         utils.async_run_on_unit = AsyncMock()
@@ -22,7 +22,7 @@ async def test_backup():
         utils.async_get_current_model_name = AsyncMock()
 
         await backup(None)
-        assert log.call_count == 5
+        assert log.info.call_count == 5
 
 
 @pytest.mark.asyncio

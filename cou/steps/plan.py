@@ -21,6 +21,8 @@ from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 
+logger = logging.getLogger(__name__)
+
 
 async def generate_plan(args: Analysis) -> UpgradeStep:
     """Generate plan for upgrade.
@@ -30,7 +32,7 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
-    logging.info(args)  # for placeholder
+    logger.info(args)  # for placeholder
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)

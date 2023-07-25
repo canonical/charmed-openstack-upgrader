@@ -33,6 +33,8 @@ from cou.utils.juju_utils import (
 )
 from cou.utils.openstack import OpenStackCodenameLookup
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class Analysis:
@@ -47,7 +49,7 @@ class Analysis:
         :return: Analysis object populated with the model applications.
         :rtype: Analysis
         """
-        logging.info("Analyzing the OpenStack deployment...")
+        logger.info("Analyzing the OpenStack deployment...")
         apps = await Analysis._populate()
 
         return Analysis(apps=apps)
@@ -190,5 +192,5 @@ class Application:
             if self.config.get(origin):
                 return self.config[origin].get("value", "")
 
-        logging.warning("Failed to get origin for %s, no origin config found", self.name)
+        logger.warning("Failed to get origin for %s, no origin config found", self.name)
         return ""

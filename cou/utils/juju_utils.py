@@ -28,6 +28,8 @@ JUJU_MAX_FRAME_SIZE = 2**30
 CURRENT_MODEL_NAME: Optional[str] = None
 CURRENT_MODEL: Optional[Model] = None
 
+logger = logging.getLogger(__name__)
+
 
 # remove when fixed: https://github.com/juju/python-libjuju/issues/888
 def extract_charm_name_from_url(charm_url):
@@ -232,7 +234,7 @@ async def async_get_unit_from_name(unit_name, model=None, model_name=None):
         units = model.applications[app].units
     except KeyError:
         msg = "Application: {} does not exist in current model".format(app)
-        logging.error(msg)
+        logger.error(msg)
         raise UnitNotFound(unit_name)
     for u in units:
         if u.entity_id == unit_name:
