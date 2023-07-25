@@ -80,7 +80,7 @@ async def async_set_current_model_name(model_name: Optional[str] = None) -> Opti
     return CURRENT_MODEL_NAME
 
 
-# pylint: disable=global-statement, global-variable-not-assigned
+# pylint: disable=global-statement
 async def _async_get_model(model_name: Optional[str] = None) -> Model:
     """Get (or create) the current model for :param:`model_name`.
 
@@ -92,7 +92,6 @@ async def _async_get_model(model_name: Optional[str] = None) -> Model:
     :returns: juju.model.Model
     """
     global CURRENT_MODEL
-    global CURRENT_MODEL_NAME
 
     model = CURRENT_MODEL
     if model is not None and _is_model_disconnected(model):

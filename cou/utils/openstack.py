@@ -21,6 +21,7 @@ import logging
 import os
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, List, Tuple
 
 from packaging.version import Version
@@ -66,7 +67,7 @@ class OpenStackCodenameLookup:
     """Class to determine compatible OpenStack codenames for a given component."""
 
     _OPENSTACK_LOOKUP: OrderedDict = OrderedDict()
-    _DEFAULT_CSV_FILE = os.path.join(os.path.dirname(__file__), "openstack_lookup.csv")
+    _DEFAULT_CSV_FILE = os.path.join(Path(__file__).parent, "openstack_lookup.csv")
 
     @classmethod
     def _generate_lookup(cls, resource: str) -> OrderedDict:
