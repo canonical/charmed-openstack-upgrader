@@ -236,15 +236,15 @@ async def async_run_on_unit(
 
 async def async_get_unit_from_name(
     unit_name: str, model: Optional[Model] = None, model_name: Optional[str] = None
-) -> Optional[Unit]:
+) -> Unit:
     """Return the units that corresponds to the name in the given model.
 
     :param unit_name: Name of unit to match
     :type unit_name: str
     :param model: Model to perform lookup in
-    :type model: model.Model()
+    :type model: Optional[Model]
     :param model_name: Name of the model to perform lookup in
-    :type model_name: string
+    :type model_name: Optional[str]
     :returns: Unit matching given name
     :rtype: juju.unit.Unit or None
     :raises: UnitNotFound
