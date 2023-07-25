@@ -236,7 +236,7 @@ async def async_run_on_unit(
 
 async def async_get_unit_from_name(
     unit_name: str, model: Optional[Model] = None, model_name: Optional[str] = None
-) -> Unit:
+) -> Optional[Unit]:
     """Return the units that corresponds to the name in the given model.
 
     :param unit_name: Name of unit to match
