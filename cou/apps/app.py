@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Functions for analyzing an OpenStack cloud before an upgrade."""
+"""Application class."""
 from __future__ import annotations
 
 import logging
@@ -68,6 +68,7 @@ class Application:
     status: ApplicationStatus
     config: dict
     model_name: str
+    charm: str
     charm: str = ""
     charm_origin: str = ""
     os_origin: str = ""
@@ -76,7 +77,6 @@ class Application:
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.charm = extract_charm_name_from_url(self.status.charm)
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
@@ -168,6 +168,7 @@ class Application:
         """
         for origin in ("openstack-origin", "source"):
             if self.config.get(origin):
+                self.origin_setting = origin
                 return self.config[origin].get("value", "")
 
         logger.warning("Failed to get origin for %s, no origin config found", self.name)

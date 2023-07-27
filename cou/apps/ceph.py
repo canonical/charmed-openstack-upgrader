@@ -1,12 +1,12 @@
 import logging
 
-from cou.steps.application.app import StandardApplication
-from cou.steps.application.factory import AppFactory
+from cou.apps.app import Application
+from cou.apps.factory import AppFactory
 from cou.utils.openstack import CHARM_TYPES
 
 
 @AppFactory.register_application(CHARM_TYPES["ceph"])
-class Ceph(StandardApplication):
+class Ceph(Application):
     # NOTE (gabrielcocenza)
     # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
     openstack_map = {

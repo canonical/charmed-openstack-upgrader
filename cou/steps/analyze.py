@@ -29,6 +29,7 @@ from cou.utils.juju_utils import (
     async_get_status,
     extract_charm_name_from_url,
 )
+from cou.apps.factory import AppFactory
 
 logger = logging.getLogger(__name__)
 

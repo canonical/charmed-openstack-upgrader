@@ -21,7 +21,7 @@ from typing import List
 
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
-from cou.steps.application.app import StandardApplication
+from cou.apps.app import Application
 from cou.steps.backup import backup
 from cou.utils.openstack import (
     SPECIAL_CHARMS,
@@ -51,7 +51,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     return plan
 
 
-def determine_apps_to_upgrade(analysis_result: Analysis) -> List[StandardApplication]:
+def determine_apps_to_upgrade(analysis_result: Analysis) -> List[Application]:
     """Determine applications to upgrade.
 
     This function find the oldest OpenStack version in the deployment and
@@ -67,9 +67,7 @@ def determine_apps_to_upgrade(analysis_result: Analysis) -> List[StandardApplica
     os_versions: defaultdict[str, set] = defaultdict(set)
 
     for app in analysis_result.apps:
-        # don't consider charms that can have multiple OpenStack releases to determine the oldest
-        # version of the cloud.
-        if app.current_os_release and app.charm not in SPECIAL_CHARMS:
+        if app.current_os_release:
             os_versions[app.current_os_release].add(app)
 
     os_sequence = sorted(os_versions.keys(), key=CompareOpenStack)
