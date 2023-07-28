@@ -146,6 +146,7 @@ async def apply_plan(upgrade_plan: UpgradeStep, non_interactive: bool) -> None:
         result = "c" if non_interactive else input(prompt(upgrade_plan.description)).casefold()
         match result:
             case "c":
+                logger.info("Running: %s", upgrade_plan.description)
                 await upgrade_plan.run()
                 for sub_step in upgrade_plan.sub_steps:
                     await apply_plan(sub_step, non_interactive)

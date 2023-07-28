@@ -8,25 +8,26 @@ from cou.steps import UpgradeStep
 
 
 @pytest.mark.parametrize(
-    "args, expected_results",
+    "args, expected_run, expected_loglevel, expected_non_interactive",
     [
-        (["--run", "--log-level", "DEBUG", "--non-interactive"], [True, "DEBUG", True]),
-        (["--run", "--log-level", "warning"], [True, "WARNING", False]),
-        (["--log-level", "debug"], [False, "DEBUG", False]),
+        (["--run", "--log-level", "DEBUG", "--non-interactive"], True, "DEBUG", True),
+        (["--run", "--log-level", "warning"], True, "WARNING", False),
+        (["--log-level", "debug"], False, "DEBUG", False),
     ],
 )
-def test_parse_args(args, expected_results):
+def test_parse_args(args, expected_run, expected_loglevel, expected_non_interactive):
     parsed_args = parse_args(args)
-    expected_run = expected_results[0]
-    expected_loglevel = expected_results[1]
-    expected_non_interactive = expected_results[2]
-
     assert parsed_args.run == expected_run
     assert parsed_args.loglevel == expected_loglevel
     assert parsed_args.non_interactive == expected_non_interactive
 
-    with pytest.raises(ArgumentError):
-        args = parse_args(["--log-level=DDD"])
+
+@pytest.mark.parametrize(
+    "args, exception", [(["--log-level=DDD"], ArgumentError), (["--foo"], SystemExit)]
+)
+def test_parse_args_raise_exception(args, exception):
+    with pytest.raises(exception):
+        parse_args(args)
 
 
 def test_setup_logging():
@@ -56,27 +57,23 @@ async def test_entrypoint_with_exception():
 
 
 @pytest.mark.asyncio
-async def test_entrypoint_dry_run():
+async def test_entrypoint_dry_run(mocker):
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
 
-    with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
-        "cou.cli.generate_plan"
-    ) as mock_generate_plan, patch("cou.cli.apply_plan"), patch("cou.cli.Analysis.create"), patch(
-        "builtins.print"
-    ) as mock_print, patch(
-        "cou.cli.apply_plan"
-    ) as mock_apply_plan:
-        mock_parse_args.return_value = MagicMock()
-        mock_parse_args.return_value.run = False
+    mock_parse_args = mocker.patch("cou.cli.parse_args")
+    mock_parse_args.return_value.run = False
+    mocker.patch("cou.cli.setup_logging")
+    mocker.patch("cou.cli.generate_plan", return_value=plan)
+    mock_apply_plan = mocker.patch("cou.cli.apply_plan")
+    mocker.patch("cou.cli.Analysis.create")
+    mock_print = mocker.patch("builtins.print")
 
-        mock_generate_plan.return_value = plan
+    result = await entrypoint()
+    mock_print.assert_called_with(plan)
+    mock_apply_plan.assert_not_called()
 
-        result = await entrypoint()
-        mock_print.assert_called_with(plan)
-        mock_apply_plan.assert_not_called()
-
-        assert not result
+    assert not result
 
 
 @pytest.mark.asyncio
@@ -94,18 +91,24 @@ async def test_entrypoint_real_run():
 
 
 @pytest.mark.asyncio
-async def test_apply_plan_non_interactive():
+async def test_apply_plan_non_interactive(mocker):
     upgrade_plan = AsyncMock()
-    upgrade_plan.description = "Test Plan"
-    upgrade_plan.run = AsyncMock()
+    upgrade_plan.description = "A"
     sub_step = AsyncMock()
-    sub_step.description = "Test Plan"
+    sub_step.description = "B is Sub step from A"
+    sub_sub_step = AsyncMock()
+    sub_sub_step.description = "C is Sub step from B"
+
     upgrade_plan.sub_steps = [sub_step]
-    with patch("cou.cli.input") as mock_input:
-        await apply_plan(upgrade_plan, True)
-        assert upgrade_plan.run.call_count == 1
-        assert sub_step.run.call_count == 1
-        mock_input.assert_not_called()
+    sub_step.sub_steps = [sub_sub_step]
+    mock_input = mocker.patch("cou.cli.input")
+    mock_logger = mocker.patch("cou.cli.logger")
+    await apply_plan(upgrade_plan, True)
+    assert upgrade_plan.run.call_count == 1
+    assert sub_step.run.call_count == 1
+    assert sub_sub_step.run.call_count == 1
+    assert mock_logger.info.call_count == 3
+    mock_input.assert_not_called()
 
 
 @pytest.mark.asyncio
