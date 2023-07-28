@@ -21,7 +21,7 @@ import os
 from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
-from cou.apps.app import Application
+from cou.apps.app import AppFactory, Application
 from cou.utils.juju_utils import async_get_application_config, async_get_status
 from cou.utils.openstack import UPGRADE_ORDER, OpenStackRelease
 from cou.utils.juju_utils import (
@@ -29,7 +29,6 @@ from cou.utils.juju_utils import (
     async_get_status,
     extract_charm_name_from_url,
 )
-from cou.apps.factory import AppFactory
 
 logger = logging.getLogger(__name__)
 

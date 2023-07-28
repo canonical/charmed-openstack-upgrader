@@ -19,9 +19,9 @@ import logging
 from collections import defaultdict
 from typing import List
 
+from cou.apps.app import Application
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
-from cou.apps.app import Application
 from cou.steps.backup import backup
 from cou.utils.openstack import (
     SPECIAL_CHARMS,
@@ -86,22 +86,21 @@ def determine_apps_to_upgrade(analysis_result: Analysis) -> List[Application]:
             current_cloud_os_release,
             next_cloud_os_release,
         )
-    apps_to_upgrade = list(os_versions[current_cloud_os_release])
+    apps_to_upgrade = os_versions[current_cloud_os_release]
     special_charms_to_upgrade = add_special_charms_to_upgrade(
         analysis_result.apps, next_cloud_os_release
     )
-    apps_to_upgrade = apps_to_upgrade + special_charms_to_upgrade
-    apps_to_upgrade.sort(key=lambda app: UPGRADE_ORDER.index(app.charm))
-    return apps_to_upgrade
+    apps_to_upgrade.update(special_charms_to_upgrade)
+    return sorted(apps_to_upgrade, key=lambda app: UPGRADE_ORDER.index(app.charm))
 
 
 def add_special_charms_to_upgrade(apps, next_cloud_os_release):
-    special_charms_to_upgrade = []
+    special_charms_to_upgrade = set()
     for app in apps:
         if app.charm in SPECIAL_CHARMS and app.os_origin:
             os_origin = app.os_origin.split("-")[-1]
             if CompareOpenStack(app.current_os_release) < next_cloud_os_release or (
                 os_origin != "distro" and CompareOpenStack(os_origin) < next_cloud_os_release
             ):
-                special_charms_to_upgrade.append(app)
+                special_charms_to_upgrade.add(app)
     return special_charms_to_upgrade
