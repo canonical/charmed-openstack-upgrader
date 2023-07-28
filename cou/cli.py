@@ -141,14 +141,9 @@ async def apply_plan(upgrade_plan: UpgradeStep, non_interactive: bool) -> None:
     :param upgrade_plan: Plan to be executed on steps.
     :type upgrade_plan: UpgradeStep
     """
-    if non_interactive:
-        await upgrade_plan.run()
-        for sub_step in upgrade_plan.sub_steps:
-            await sub_step.run()
-        return
     result = "X"
     while result.casefold() not in AVAILABLE_OPTIONS:
-        result = input(prompt(upgrade_plan.description)).casefold()
+        result = "c" if non_interactive else input(prompt(upgrade_plan.description)).casefold()
         match result:
             case "c":
                 await upgrade_plan.run()
