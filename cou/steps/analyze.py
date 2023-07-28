@@ -21,7 +21,7 @@ import os
 from dataclasses import dataclass
 from typing import Iterable
 
-from cou.steps.application.app import Application
+from cou.apps.app import Application
 from cou.utils.juju_utils import async_get_application_config, async_get_status
 
 logger = logging.getLogger(__name__)
