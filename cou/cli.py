@@ -53,6 +53,7 @@ def parse_args(args: Any) -> argparse.Namespace:
         "--run",
         help="Use this flag to run the upgrade, otherwise just print out the upgrade steps.",
         action="store_true",
+        default=False,
     )
     parser.add_argument(
         "--log-level",
@@ -69,7 +70,7 @@ def parse_args(args: Any) -> argparse.Namespace:
         help="Set the model to operate on.",
     )
     parser.add_argument(
-        "--non-interactive", help="Run upgrade without prompt.", action="store_true"
+        "--non-interactive", help="Run upgrade without prompt.", action="store_true", default=False
     )
 
     return parser.parse_args(args)
