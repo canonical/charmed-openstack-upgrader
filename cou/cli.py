@@ -50,10 +50,10 @@ def parse_args(args: Any) -> argparse.Namespace:
         exit_on_error=False,
     )
     parser.add_argument(
-        "--dry-run",
-        default=False,
-        help="Do not run the upgrade just print out the steps.",
+        "--run",
+        help="Use this flag to run the upgrade, otherwise just print out the upgrade steps.",
         action="store_true",
+        default=False,
     )
     parser.add_argument(
         "--log-level",
@@ -69,7 +69,9 @@ def parse_args(args: Any) -> argparse.Namespace:
         dest="model_name",
         help="Set the model to operate on.",
     )
-    parser.add_argument("--interactive", default=True, help="Sets the interactive prompts")
+    parser.add_argument(
+        "--non-interactive", help="Run upgrade without prompt.", action="store_true", default=False
+    )
 
     return parser.parse_args(args)
 
@@ -134,7 +136,7 @@ def prompt(parameter: str) -> str:
     )
 
 
-async def apply_plan(upgrade_plan: UpgradeStep) -> None:
+async def apply_plan(upgrade_plan: UpgradeStep, non_interactive: bool) -> None:
     """Apply the plan for upgrade.
 
     :param upgrade_plan: Plan to be executed on steps.
@@ -142,12 +144,13 @@ async def apply_plan(upgrade_plan: UpgradeStep) -> None:
     """
     result = "X"
     while result.casefold() not in AVAILABLE_OPTIONS:
-        result = input(prompt(upgrade_plan.description)).casefold()
+        result = "c" if non_interactive else input(prompt(upgrade_plan.description)).casefold()
         match result:
             case "c":
+                logger.info("Running: %s", upgrade_plan.description)
                 await upgrade_plan.run()
                 for sub_step in upgrade_plan.sub_steps:
-                    await apply_plan(sub_step)
+                    await apply_plan(sub_step, non_interactive)
             case "a":
                 logger.info("Aborting plan")
                 sys.exit(1)
@@ -170,10 +173,10 @@ async def entrypoint() -> None:
         analysis_result = await Analysis.create()
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
-        if args.dry_run:
-            print(upgrade_plan)
+        if args.run:
+            await apply_plan(upgrade_plan, args.non_interactive)
         else:
-            await apply_plan(upgrade_plan)
+            print(upgrade_plan)
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.exception(exc)
