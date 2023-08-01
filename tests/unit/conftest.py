@@ -24,6 +24,7 @@ from cou.apps.app import Application
 @pytest.fixture
 def status():
     mock_keystone_ussuri = mock.MagicMock()
+    mock_keystone_ussuri.series = "focal"
     mock_keystone_ussuri.charm_channel = "ussuri/stable"
     mock_keystone_ussuri.charm = "ch:amd64/focal/keystone-638"
     mock_units_keystone_ussuri = mock.MagicMock()
@@ -37,6 +38,7 @@ def status():
     )
 
     mock_cinder_ussuri = mock.MagicMock()
+    mock_cinder_ussuri.series = "focal"
     mock_cinder_ussuri.charm_channel = "ussuri/stable"
     mock_cinder_ussuri.charm = "ch:amd64/focal/cinder-633"
     mock_units_cinder_ussuri = mock.MagicMock()
@@ -50,6 +52,7 @@ def status():
     )
 
     mock_keystone_ussuri_cs = mock.MagicMock()
+    mock_keystone_ussuri_cs.series = "focal"
     mock_keystone_ussuri_cs.charm_channel = "ussuri/stable"
     mock_keystone_ussuri_cs.charm = "cs:amd64/focal/keystone-638"
     mock_keystone_ussuri_cs.units = OrderedDict(
@@ -61,6 +64,7 @@ def status():
     )
 
     mock_keystone_wallaby = mock.MagicMock()
+    mock_keystone_wallaby.series = "focal"
     mock_keystone_wallaby.charm_channel = "wallaby/stable"
     mock_keystone_wallaby.charm = "ch:amd64/focal/keystone-638"
     mock_units_keystone_wallaby = mock.MagicMock()
@@ -74,6 +78,7 @@ def status():
     )
 
     mock_rmq = mock.MagicMock()
+    mock_rmq.series = "focal"
     mock_units_rmq = mock.MagicMock()
     mock_rmq.charm_channel = "3.8/stable"
     mock_units_rmq.workload_version = "3.8"
@@ -126,13 +131,25 @@ def units():
 
 @pytest.fixture
 def apps(status, config):
-    keystone_status = status["keystone_ussuri"]
-    cinder_status = status["cinder_ussuri"]
-    app_config = config["openstack_ussuri"]
-    app_keystone = Application("keystone", keystone_status, app_config, "my_model")
-    app_cinder = Application("cinder", cinder_status, app_config, "my_model")
+    keystone_ussuri_status = status["keystone_ussuri"]
+    cinder_ussuri_status = status["cinder_ussuri"]
+    rmq_status = status["rabbitmq_server"]
 
-    return [app_keystone, app_cinder]
+    keystone_ussuri = Application(
+        "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model"
+    )
+    cinder_ussuri = Application(
+        "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model"
+    )
+    rmq_ussuri = Application("rabbitmq-server", rmq_status, config["rmq_ussuri"], "my_model")
+    rmq_wallaby = Application("rabbitmq-server", rmq_status, config["rmq_wallaby"], "my_model")
+
+    return {
+        "keystone_ussuri": keystone_ussuri,
+        "cinder_ussuri": cinder_ussuri,
+        "rmq_ussuri": rmq_ussuri,
+        "rmq_wallaby": rmq_wallaby,
+    }
 
 
 @pytest.fixture
@@ -142,4 +159,6 @@ def config():
             "openstack-origin": {"value": "distro"},
         },
         "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
+        "rmq_ussuri": {"source": {"value": "distro"}},
+        "rmq_wallaby": {"source": {"value": "cloud:focal-wallaby"}},
     }

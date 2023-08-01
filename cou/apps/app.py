@@ -26,7 +26,10 @@ from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
 
 from cou.utils.juju_utils import extract_charm_name_from_url
-from cou.utils.openstack import OpenStackCodenameLookup
+from cou.utils.openstack import (
+    OpenStackCodenameLookup,
+    determine_next_openstack_release,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +49,19 @@ class Application:
     :param charm: Name of the charm.
     :type charm: str
     :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
-    :type charm_origin: str, optional
+    :type charm_origin: str, defaults to ""
     :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
-    :type os_origin: str, optional
+    :type os_origin: str, defaults to ""
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
-    :type channel: str, optional
+    :type channel: str, defaults to ""
     :param units: Units representation of an application.
         E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
     :type units: defaultdict[str, dict]
+    :param current_os_release: Current OpenStack release codename of the application
+    :type current_os_release: str, defaults to ""
+    :param next_os_release: Next OpenStack release codename of the application
+    :param os_versions: OpenStack releases codename encountered on the application
+    :type os_versions: set
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -67,6 +75,9 @@ class Application:
     os_origin: str = ""
     channel: str = ""
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
+    current_os_release: str = ""
+    next_os_release: str = ""
+    os_versions: set = field(default_factory=set)
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -80,9 +91,15 @@ class Application:
             compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
             # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
             if compatible_os_versions:
-                self.units[unit]["os_version"] = compatible_os_versions[-1]
+                unit_os_version = compatible_os_versions[-1]
+                self.units[unit]["os_version"] = unit_os_version
+                self.os_versions.add(unit_os_version)
             else:
                 self.units[unit]["os_version"] = ""
+
+        if len(self.os_versions) == 1:
+            self.current_os_release = list(self.os_versions)[0]
+            _, self.next_os_release = determine_next_openstack_release(self.current_os_release)
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -128,6 +145,15 @@ class Application:
         with StringIO() as stream:
             yaml.dump(summary, stream)
             return stream.getvalue()
+
+    @property
+    def series(self) -> str:
+        """Ubuntu series of the application.
+
+        :return: Ubuntu series of application. E.g: focal
+        :rtype: str
+        """
+        return self.status.series
 
     def _get_os_origin(self) -> str:
         """Get application configuration for openstack-origin or source.

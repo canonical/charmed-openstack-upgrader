@@ -34,6 +34,7 @@ def test_application_eq(status, config):
 def assert_application(
     app,
     exp_name,
+    exp_series,
     exp_status,
     exp_config,
     exp_model,
@@ -42,8 +43,12 @@ def assert_application(
     exp_os_origin,
     exp_units,
     exp_channel,
+    exp_current_os_release,
+    exp_next_os_release,
+    exp_os_versions,
 ):
     assert app.name == exp_name
+    assert app.series == exp_series
     assert app.status == exp_status
     assert app.config == exp_config
     assert app.model_name == exp_model
@@ -52,6 +57,9 @@ def assert_application(
     assert app.os_origin == exp_os_origin
     assert app.units == exp_units
     assert app.channel == exp_channel
+    assert app.current_os_release == exp_current_os_release
+    assert app.next_os_release == exp_next_os_release
+    assert app.os_versions == exp_os_versions
 
 
 def test_application_ussuri(status, config, units):
@@ -61,11 +69,16 @@ def test_application_ussuri(status, config, units):
     exp_os_origin = "distro"
     exp_units = units["units_ussuri"]
     exp_channel = app_status.charm_channel
+    exp_series = app_status.series
+    exp_current_os_release = "ussuri"
+    exp_next_os_release = "victoria"
+    exp_os_versions = {"ussuri"}
 
     app = Application("my_keystone", app_status, app_config, "my_model")
     assert_application(
         app,
         "my_keystone",
+        exp_series,
         app_status,
         app_config,
         "my_model",
@@ -74,6 +87,9 @@ def test_application_ussuri(status, config, units):
         exp_os_origin,
         exp_units,
         exp_channel,
+        exp_current_os_release,
+        exp_next_os_release,
+        exp_os_versions,
     )
 
 
@@ -85,6 +101,10 @@ def test_application_different_wl(status, config, units, mocker):
     exp_os_origin = "distro"
     exp_units = units["units_ussuri"]
     exp_channel = app_status.charm_channel
+    exp_series = app_status.series
+    exp_current_os_release = ""
+    exp_next_os_release = ""
+    exp_os_versions = {"ussuri", "victoria"}
 
     mock_unit_2 = mocker.MagicMock()
     mock_unit_2.workload_version = "18.1.0"
@@ -96,6 +116,7 @@ def test_application_different_wl(status, config, units, mocker):
     assert_application(
         app,
         "my_keystone",
+        exp_series,
         app_status,
         app_config,
         "my_model",
@@ -104,6 +125,9 @@ def test_application_different_wl(status, config, units, mocker):
         exp_os_origin,
         exp_units,
         exp_channel,
+        exp_current_os_release,
+        exp_next_os_release,
+        exp_os_versions,
     )
 
 
@@ -115,11 +139,16 @@ def test_application_cs(status, config, units):
     exp_units = units["units_ussuri"]
     exp_channel = app_status.charm_channel
     exp_charm_origin = "cs"
+    exp_series = app_status.series
+    exp_current_os_release = "ussuri"
+    exp_next_os_release = "victoria"
+    exp_os_versions = {"ussuri"}
 
     app = Application("my_keystone", app_status, app_config, "my_model")
     assert_application(
         app,
         "my_keystone",
+        exp_series,
         app_status,
         app_config,
         "my_model",
@@ -128,6 +157,9 @@ def test_application_cs(status, config, units):
         exp_os_origin,
         exp_units,
         exp_channel,
+        exp_current_os_release,
+        exp_next_os_release,
+        exp_os_versions,
     )
 
 
@@ -138,11 +170,16 @@ def test_application_wallaby(status, config, units):
     app_status = status["keystone_wallaby"]
     exp_os_origin = "cloud:focal-wallaby"
     exp_channel = app_status.charm_channel
+    exp_series = app_status.series
+    exp_current_os_release = "wallaby"
+    exp_next_os_release = "xena"
+    exp_os_versions = {"wallaby"}
 
     app = Application("my_keystone", app_status, app_config, "my_model")
     assert_application(
         app,
         "my_keystone",
+        exp_series,
         app_status,
         app_config,
         "my_model",
@@ -151,6 +188,9 @@ def test_application_wallaby(status, config, units):
         exp_os_origin,
         exp_units,
         exp_channel,
+        exp_current_os_release,
+        exp_next_os_release,
+        exp_os_versions,
     )
 
 

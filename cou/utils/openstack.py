@@ -21,7 +21,7 @@ import logging
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from packaging.version import Version
 
@@ -37,6 +37,88 @@ CHARM_TYPES = {
     "neutron": ["neutron-api", "neutron-gateway"],
     "manila": ["manila-ganesha"],
     "horizon": ["openstack-dashboard"],
+}
+
+# list of charms that the workload version can match more than one OpenStack release
+SPECIAL_CHARMS = [
+    "ceph-mon",
+    "ceph-fs",
+    "ceph-radosgw",
+    "ceph-osd",
+    "ovn-dedicated-chassis",
+    "ovn-central",
+    "mysql",
+    "hacluster",
+    "rabbitmq-server",
+    "vault",
+    "designate-bind",
+]
+
+# https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
+UPGRADE_ORDER = [
+    "rabbitmq-server",
+    "ceph-mon",
+    "keystone",
+    "aodh",
+    "barbican",
+    "ceilometer",
+    "ceph-fs",
+    "ceph-radosgw",
+    "cinder",
+    "designate",
+    "designate-bind",
+    "glance",
+    "gnocchi",
+    "heat",
+    "manila",
+    "manila-ganesha",
+    "neutron-api",
+    "neutron-gateway",
+    "ovn-central",
+    "ovn-dedicated-chassis",
+    "placement",
+    "nova-cloud-controller",
+    "nova-compute",
+    "openstack-dashboard",
+    "ceph-osd",
+    "swift-proxy",
+    "swift-storage",
+    "octavia",
+]
+
+OPENSTACK_CODENAMES = OrderedDict(
+    [
+        ("2011.2", "diablo"),
+        ("2012.1", "essex"),
+        ("2012.2", "folsom"),
+        ("2013.1", "grizzly"),
+        ("2013.2", "havana"),
+        ("2014.1", "icehouse"),
+        ("2014.2", "juno"),
+        ("2015.1", "kilo"),
+        ("2015.2", "liberty"),
+        ("2016.1", "mitaka"),
+        ("2016.2", "newton"),
+        ("2017.1", "ocata"),
+        ("2017.2", "pike"),
+        ("2018.1", "queens"),
+        ("2018.2", "rocky"),
+        ("2019.1", "stein"),
+        ("2019.2", "train"),
+        ("2020.1", "ussuri"),
+        ("2020.2", "victoria"),
+        ("2021.1", "wallaby"),
+        ("2021.2", "xena"),
+        ("2022.1", "yoga"),
+        ("2022.2", "zed"),
+        ("2023.1", "antelope"),
+    ]
+)
+
+LTS_SERIES = {
+    "bionic": "queens",
+    "focal": "ussuri",
+    "jammy": "yoga",
 }
 
 
@@ -147,3 +229,98 @@ class OpenStackCodenameLookup:
             if version in version_range:
                 compatible_os_releases.append(openstack_release)
         return compatible_os_releases
+
+
+def determine_next_openstack_release(release: str) -> Tuple[str, str]:
+    """Determine the next release after the one passed as a str.
+
+    The returned value is a tuple of the form: ('2020.1', 'ussuri')
+
+    :param release: the release to use as the base
+    :type release: str
+    :returns: the release tuple immediately after the current one.
+    :rtype: Tuple[str, str]
+    :raises: ValueError if the current release doesn't actually exist
+    """
+    old_index = list(OPENSTACK_CODENAMES.values()).index(release)
+    new_index = old_index + 1
+    return list(OPENSTACK_CODENAMES.items())[new_index]
+
+
+class BasicStringComparator:
+    """Provides a class that will compare strings from an iterator type object.
+
+    Used to provide > and < comparisons on strings that may not necessarily be
+    alphanumerically ordered.  e.g. OpenStack or Ubuntu releases AFTER the
+    z-wrap.
+    """
+
+    _list: Optional[List] = None
+
+    def __init__(self, item):
+        """Do init."""
+        if self._list is None:
+            raise ValueError("Must define the _list in the class definition!")
+        try:
+            self.index = self._list.index(item)
+        except ValueError as exc:
+            raise ValueError(f"Item '{item}' is not in list '{self._list}'") from exc
+
+    def __eq__(self, other):
+        """Do equals."""
+        assert isinstance(other, (str, self.__class__))
+        return self.index == self._list.index(other)
+
+    def __ne__(self, other):
+        """Do not equals."""
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        """Do less than."""
+        assert isinstance(other, (str, self.__class__))
+        return self.index < self._list.index(other)
+
+    def __ge__(self, other):
+        """Do greater than or equal."""
+        return not self.__lt__(other)
+
+    def __gt__(self, other):
+        """Do greater than."""
+        assert isinstance(other, (str, self.__class__))
+        return self.index > self._list.index(other)
+
+    def __le__(self, other):
+        """Do less than or equals."""
+        return not self.__gt__(other)
+
+    def __repr__(self):
+        """Return the representation of CompareOpenStack."""
+        # pylint: disable=unsubscriptable-object
+        return f"{self.__class__.__name__}<{self._list[self.index]}>"
+
+    def __str__(self):
+        """Give back the item at the index.
+
+        This is so it can be used in comparisons like:
+
+        s_mitaka = CompareOpenStack('mitaka')
+        s_newton = CompareOpenstack('newton')
+
+        assert s_newton > s_mitaka
+
+        :returns: <string>
+        """
+        # pylint: disable=unsubscriptable-object
+        return self._list[self.index]
+
+
+class CompareOpenStack(BasicStringComparator):
+    """Provide comparisons of OpenStack releases.
+
+    Use in the form of
+
+    if CompareOpenStack(release) > 'yoga':
+        # do something
+    """
+
+    _list = list(OPENSTACK_CODENAMES.values())
