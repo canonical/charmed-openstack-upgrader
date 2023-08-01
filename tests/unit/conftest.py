@@ -18,7 +18,7 @@ from collections import OrderedDict, defaultdict
 import mock
 import pytest
 
-from cou.steps import analyze
+from cou.apps.app import Application
 
 
 @pytest.fixture
@@ -129,8 +129,8 @@ def apps(status, config):
     keystone_status = status["keystone_ussuri"]
     cinder_status = status["cinder_ussuri"]
     app_config = config["openstack_ussuri"]
-    app_keystone = analyze.Application("keystone", keystone_status, app_config, "my_model")
-    app_cinder = analyze.Application("cinder", cinder_status, app_config, "my_model")
+    app_keystone = Application("keystone", keystone_status, app_config, "my_model")
+    app_cinder = Application("cinder", cinder_status, app_config, "my_model")
 
     return [app_keystone, app_cinder]
 
