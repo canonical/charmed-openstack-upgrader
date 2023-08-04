@@ -408,8 +408,8 @@ class JujuWaiter:
     """
 
     DEFAULT_TIMEOUT: int = 3600
-    MODEL_IDLE_PERIOD: int = 15
-    JUJU_IDLE_CHECK_PERIOD: int = 20
+    MODEL_IDLE_PERIOD: int = 30
+    JUJU_IDLE_CHECK_PERIOD: int = 40
 
     class TimeoutException(Exception):
         """Own timeout exception."""
@@ -470,6 +470,9 @@ class JujuWaiter:
                 )
                 raise ex
             except Exception as ex:
+                # We do not care exceptions other than Juju(Machine|Agent|Unit|App)Error because
+                # when juju connection is dropped you can have wide range of exceptions depending
+                # on the case
                 self.log.debug("Unknown error while waiting to stabilize", exc_info=ex)
 
             self._check_time()
