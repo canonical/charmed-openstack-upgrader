@@ -486,9 +486,9 @@ class JujuWaiter:
                 await self.model.connect_model(self.model_name)
             except JujuWaiter.TimeoutException:
                 raise
-            except Exception as ex:
+            except Exception:
                 self.log.debug(
-                    "Model has unexpected exception while connecting, retrying", exc_info=ex
+                    "Model has unexpected exception while connecting, retrying", exc_info=True
                 )
 
     def _check_time(self):
