@@ -29,7 +29,7 @@ from cou.utils.juju_utils import extract_charm_name_from_url
 from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease
 from cou.steps import UpgradeStep
 from cou.utils.juju_utils import (
-    async_get_application_config,
+    async_get_status,
     async_set_application_config,
     async_upgrade_charm,
 )
@@ -97,8 +97,6 @@ class Application:
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
-        self.current_os_release = None
-        self.next_os_release = None
         for unit in self.status.units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
@@ -187,53 +185,58 @@ class Application:
         return ""
 
     async def check_upgrade(self):
-        status = await async_get_application_config(self.name)
+        status = await async_get_status()
+        app_status = status.applications.get(self.name)
         units_not_upgraded = []
-        for unit in status.units.keys():
-            workload_version = self.status.units[unit].workload_version
+        for unit in app_status.units.keys():
+            workload_version = app_status.units[unit].workload_version
             compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
             if self.next_os_release not in compatible_os_versions:
                 units_not_upgraded.append(unit)
         if units_not_upgraded:
-            logging.error(
-                "App: '%s' has units: '%s' with workload version %s didn't upgrade to %s",
+            logger.error(
+                "App: '%s' has units: '%s' didn't upgrade to %s",
                 self.name,
                 ", ".join(units_not_upgraded),
                 self.next_os_release,
             )
 
-    def can_generate_upgrade_plan(self):
-        if self.current_os_release is None:
+    def can_generate_upgrade_plan(self) -> bool:
+        """Check if application can generate an upgrade plan.
+
+        Applications where it's not possible to identify the current OpenStack release,
+        should not generate upgrade plan.
+        :return: True if can generate a plan, else False.
+        :rtype: bool
+        """
+        if not self.current_os_release:
             logger.warning("Not possible to determine OpenStack release for '%s'.", self.name)
             return False
         return True
 
-    def generate_upgrade_plan(self) -> Optional[UpgradeStep]:
+    def pre_upgrade_plan(self, plan: UpgradeStep) -> None:
+        self.add_plan_refresh_current_channel(plan)
+
+    def upgrade_plan(self, plan: UpgradeStep) -> None:
+        self.add_plan_disable_action_managed(plan)
+        self.add_plan_refresh_next_channel(plan)
+        self.add_plan_workload_upgrade(plan)
+
+    def post_upgrade_plan(self, plan: UpgradeStep) -> None:
+        self.add_plan_reached_expected_target(plan)
+
+    def generate_full_upgrade_plan(self) -> Optional[UpgradeStep]:
         if self.can_generate_upgrade_plan():
             upgrade_plan = UpgradeStep(
                 description=f"Upgrade plan for '{self.name}'",
                 parallel=False,
                 function=None,
             )
-
-            upgrade_plan_sub_steps = [
-                self.add_plan_pre_upgrade,
-                self.add_plan_refresh_current_channel,
-                self.add_plan_disable_action_managed,
-                self.add_plan_refresh_next_channel,
-                self.add_plan_workload_upgrade,
-                self.add_plan_reached_expected_target,
-                self.add_plan_post_upgrade,
-            ]
-
-            for sub_step_func in upgrade_plan_sub_steps:
-                sub_step_func(upgrade_plan)
-
+            self.pre_upgrade_plan(upgrade_plan)
+            self.upgrade_plan(upgrade_plan)
+            self.post_upgrade_plan(upgrade_plan)
             return upgrade_plan
         logger.warning("Aborting upgrade plan for '%s'", self.name)
-
-    def add_plan_pre_upgrade(self, plan: UpgradeStep, parallel=False) -> None:
-        return
 
     def add_plan_refresh_current_channel(self, plan: UpgradeStep) -> None:
         if self.charm_origin == "cs":
@@ -338,9 +341,6 @@ class Application:
             )
         )
 
-    def add_plan_post_upgrade(self, plan: UpgradeStep, parallel=False) -> None:
-        return
-
 
 @AppFactory.register_application(CHARM_TYPES["ceph"])
 class Ceph(Application):
@@ -352,6 +352,7 @@ class Ceph(Application):
         "wallaby": "pacific",
         "xena": "pacific",
         "yoga": "quincy",
+        "zed": "quincy",
     }
 
     @property

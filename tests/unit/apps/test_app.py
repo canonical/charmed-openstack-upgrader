@@ -11,6 +11,11 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from collections import OrderedDict
+
+import pytest
+
+from cou.apps import app as app_module
 from cou.apps.app import Application
 
 
@@ -20,9 +25,15 @@ def test_application_eq(status, config):
     config_keystone_1 = config["openstack_ussuri"]
     status_keystone_2 = status["keystone_wallaby"]
     config_keystone_2 = config["openstack_wallaby"]
-    keystone_1 = Application("keystone", status_keystone_1, config_keystone_1, "my_model")
-    keystone_2 = Application("keystone", status_keystone_2, config_keystone_2, "my_model")
-    keystone_3 = Application("keystone_foo", status_keystone_1, config_keystone_1, "my_model")
+    keystone_1 = Application(
+        "keystone", status_keystone_1, config_keystone_1, "my_model", "keystone"
+    )
+    keystone_2 = Application(
+        "keystone", status_keystone_2, config_keystone_2, "my_model", "keystone"
+    )
+    keystone_3 = Application(
+        "keystone_foo", status_keystone_1, config_keystone_1, "my_model", "keystone"
+    )
 
     # keystone_1 is equal to keystone_2 because they have the same name
     # even if they have different status and config.
@@ -72,7 +83,7 @@ def test_application_ussuri(status, config, units):
     exp_current_os_release = "ussuri"
     exp_next_os_release = "victoria"
 
-    app = Application("my_keystone", app_status, app_config, "my_model")
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -88,6 +99,7 @@ def test_application_ussuri(status, config, units):
         exp_current_os_release,
         exp_next_os_release,
     )
+    assert app.can_generate_upgrade_plan()
 
 
 def test_application_different_wl(status, config, units, mocker):
@@ -108,7 +120,7 @@ def test_application_different_wl(status, config, units, mocker):
     exp_units["keystone/2"]["os_version"] = "victoria"
     exp_units["keystone/2"]["workload_version"] = "18.1.0"
 
-    app = Application("my_keystone", app_status, app_config, "my_model")
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -124,6 +136,7 @@ def test_application_different_wl(status, config, units, mocker):
         exp_current_os_release,
         exp_next_os_release,
     )
+    assert app.can_generate_upgrade_plan() is False
 
 
 def test_application_cs(status, config, units):
@@ -138,7 +151,7 @@ def test_application_cs(status, config, units):
     exp_current_os_release = "ussuri"
     exp_next_os_release = "victoria"
 
-    app = Application("my_keystone", app_status, app_config, "my_model")
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -154,6 +167,7 @@ def test_application_cs(status, config, units):
         exp_current_os_release,
         exp_next_os_release,
     )
+    assert app.can_generate_upgrade_plan()
 
 
 def test_application_wallaby(status, config, units):
@@ -167,7 +181,7 @@ def test_application_wallaby(status, config, units):
     exp_current_os_release = "wallaby"
     exp_next_os_release = "xena"
 
-    app = Application("my_keystone", app_status, app_config, "my_model")
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -183,13 +197,18 @@ def test_application_wallaby(status, config, units):
         exp_current_os_release,
         exp_next_os_release,
     )
+    assert app.can_generate_upgrade_plan()
 
 
 def test_special_app_more_than_one_compatible_os_release(status, config):
     # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
     expected_units = {"rabbitmq-server/0": {"os_version": "yoga", "workload_version": "3.8"}}
     app = Application(
-        "rabbitmq-server", status["rabbitmq_server"], config["openstack_ussuri"], "my_model"
+        "rabbitmq-server",
+        status["rabbitmq_server"],
+        config["openstack_ussuri"],
+        "my_model",
+        "rabbitmq-server",
     )
     assert app.units == expected_units
 
@@ -201,6 +220,7 @@ def test_special_app_unknown_version(status, config):
         status["unknown_rabbitmq_server"],
         config["openstack_ussuri"],
         "my_model",
+        "rabbitmq-server",
     )
     assert app.units == expected_units
 
@@ -209,5 +229,84 @@ def test_application_no_openstack_origin(status):
     """Test when application doesn't have openstack-origin or source config."""
     app_status = status["keystone_wallaby"]
     app_config = {}
-    app = Application("my_app", app_status, app_config, "my_model")
+    app = Application("my_app", app_status, app_config, "my_model", "my_charm")
     assert app._get_os_origin() == ""
+
+
+@pytest.mark.asyncio
+async def test_application_check_upgrade(status, config, mocker):
+    mock_logger = mocker.patch("cou.apps.app.logger")
+    app_status = status["keystone_ussuri"]
+    app_config = config["openstack_ussuri"]
+
+    # workload version changed from ussuri to victoria
+    mock_status = mocker.MagicMock()
+    mock_status.applications = {"my_keystone": status["keystone_victoria"]}
+
+    mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    await app.check_upgrade()
+    mock_logger.error.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_application_check_upgrade_fail(status, config, mocker):
+    mock_logger = mocker.patch("cou.apps.app.logger")
+    app_status = status["keystone_ussuri"]
+    app_config = config["openstack_ussuri"]
+
+    # workload version didn't change from ussuri to victoria
+    mock_status = mocker.MagicMock()
+    mock_status.applications = {"my_keystone": status["keystone_ussuri"]}
+
+    mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    await app.check_upgrade()
+    mock_logger.error.assert_called_once_with(
+        "App: '%s' has units: '%s' didn't upgrade to %s",
+        "my_keystone",
+        "keystone/0, keystone/1, keystone/2",
+        "victoria",
+    )
+
+
+@pytest.mark.parametrize(
+    "ceph_version, ceph_codename, next_ceph_codename, expected_os_version",
+    [
+        ("15.2.0", "octopus", "pacific", "victoria"),
+        ("16.2.0", "pacific", "quincy", "xena"),
+        ("17.2.0", "quincy", "quincy", "yoga"),
+    ],
+)
+def test_ceph_application(
+    mocker, ceph_version, ceph_codename, next_ceph_codename, expected_os_version
+):
+    mock_ceph = mocker.MagicMock()
+    mock_ceph.series = "focal"
+    mock_ceph.charm = "ch:amd64/focal/ceph-mon-777"
+    mock_units_ceph = mocker.MagicMock()
+    mock_units_ceph.workload_version = ceph_version
+    mock_ceph.units = OrderedDict(
+        [
+            ("ceph-mon/0", mock_units_ceph),
+            ("ceph-mon/1", mock_units_ceph),
+            ("ceph-mon/2", mock_units_ceph),
+        ]
+    )
+    ceph_config = {"source": {"value": f"cloud:focal-{expected_os_version}"}}
+    ceph_mon = app_module.AppFactory.create(
+        app_type="ceph-mon",
+        name="ceph-mon",
+        status=mock_ceph,
+        config=ceph_config,
+        model_name="my_model",
+        charm="ceph",
+    )
+    assert ceph_mon.current_os_release == expected_os_version
+    assert ceph_mon.current_channel == f"{ceph_codename}/stable"
+    assert ceph_mon.next_channel == f"{next_ceph_codename}/stable"
+
+def test_app_factory_registered_ceph_charms():
+    ceph_charms = app_module.CHARM_TYPES["ceph"]
+    for ceph_charm in ceph_charms:
+        assert ceph_charm in app_module.AppFactory.apps_type.keys()

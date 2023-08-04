@@ -63,6 +63,20 @@ def status():
         ]
     )
 
+    mock_keystone_victoria = mock.MagicMock()
+    mock_keystone_victoria.series = "focal"
+    mock_keystone_victoria.charm_channel = "wallaby/stable"
+    mock_keystone_victoria.charm = "ch:amd64/focal/keystone-638"
+    mock_units_keystone_victoria = mock.MagicMock()
+    mock_units_keystone_victoria.workload_version = "18.1.0"
+    mock_keystone_victoria.units = OrderedDict(
+        [
+            ("keystone/0", mock_units_keystone_victoria),
+            ("keystone/1", mock_units_keystone_victoria),
+            ("keystone/2", mock_units_keystone_victoria),
+        ]
+    )
+
     mock_keystone_wallaby = mock.MagicMock()
     mock_keystone_wallaby.series = "focal"
     mock_keystone_wallaby.charm_channel = "wallaby/stable"
@@ -101,11 +115,12 @@ def status():
 
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
+        "keystone_victoria": mock_keystone_victoria,
+        "keystone_wallaby": mock_keystone_wallaby,
         "cinder_ussuri": mock_cinder_ussuri,
         "rabbitmq_server": mock_rmq,
         "unknown_rabbitmq_server": mock_rmq_unknown,
         "keystone_ussuri_cs": mock_keystone_ussuri_cs,
-        "keystone_wallaby": mock_keystone_wallaby,
         "unknown_app": mock_unknown_app,
     }
     return status
@@ -145,13 +160,17 @@ def apps(status, config):
     rmq_status = status["rabbitmq_server"]
 
     keystone_ussuri = Application(
-        "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model"
+        "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model", "keystone"
     )
     cinder_ussuri = Application(
-        "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model"
+        "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model", "cinder"
     )
-    rmq_ussuri = Application("rabbitmq-server", rmq_status, config["rmq_ussuri"], "my_model")
-    rmq_wallaby = Application("rabbitmq-server", rmq_status, config["rmq_wallaby"], "my_model")
+    rmq_ussuri = Application(
+        "rabbitmq-server", rmq_status, config["rmq_ussuri"], "my_model", "rabbitmq-server"
+    )
+    rmq_wallaby = Application(
+        "rabbitmq-server", rmq_status, config["rmq_wallaby"], "my_model", "rabbitmq-server"
+    )
 
     return {
         "keystone_ussuri": keystone_ussuri,
