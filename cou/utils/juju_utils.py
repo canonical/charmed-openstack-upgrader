@@ -426,7 +426,7 @@ class JujuWaiter:
         self.start_time = datetime.now()
         self.log = logging.getLogger(self.__class__.__name__)
 
-    async def wait(self, timeout_seconds: Optional[int] = None) -> None:
+    async def wait(self, timeout_seconds: int = DEFAULT_TIMEOUT) -> None:
         """Wait model to stabilize.
 
         :param timeout_seconds: wait model till timeout_seconds. If passed raise TimeoutException
@@ -463,12 +463,6 @@ class JujuWaiter:
                 JujuAppError,
             ):
                 raise
-            except JujuWaiter.TimeoutException:
-                self.log.debug(
-                    "Unable to stabilize in %s seconds",
-                    datetime.now() - self.start_time,
-                )
-                raise
             except Exception as ex:
                 # We do not care exceptions other than Juju(Machine|Agent|Unit|App)Error because
                 # when juju connection is dropped you can have wide range of exceptions depending
@@ -477,8 +471,11 @@ class JujuWaiter:
 
             self._check_time()
 
-    async def _ensure_model_connected(self):
-        """Ensure that the model is connected."""
+    async def _ensure_model_connected(self) -> None:
+        """Ensure that the model is connected.
+
+        :raises JujuWaiter.TimeoutException: if timeout occurs
+        """
         while _is_model_disconnected(self.model):
             await _disconnect(self.model)
             try:
@@ -491,7 +488,11 @@ class JujuWaiter:
                     "Model has unexpected exception while connecting, retrying", exc_info=True
                 )
 
-    def _check_time(self):
+    def _check_time(self) -> None:
+        """Check time.
+
+        :raises JujuWaiter.TimeoutException: if timeout occurs
+        """
         if datetime.now() - self.start_time > self.timeout:
             self.log.debug("MODEL IS NOT IDLE in: %d seconds", self.timeout)
             raise JujuWaiter.TimeoutException()
