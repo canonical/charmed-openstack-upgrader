@@ -17,6 +17,7 @@ from unittest.mock import MagicMock
 
 import aiounittest
 import mock
+from juju.errors import JujuUnitError
 from mock.mock import AsyncMock
 
 import cou.utils.juju_utils as model
@@ -577,3 +578,83 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         mymodel = MagicMock()
         mymodel.disconnect.return_value = "ok"
         await model._disconnect(mymodel)
+
+
+class JujuWaiterTests(aiounittest.AsyncTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.model_connected = AsyncMock()
+        self.model_connected.info.name = "test"
+        self.model_connected.is_connected = MagicMock()
+        self.model_connected.is_connected.return_value = True
+        self.model_connected.connection = MagicMock()
+        self.model_connected.wait_for_idle = AsyncMock()
+        connection = MagicMock()
+        connection.is_open = True
+        self.model_connected.connection.return_value = connection
+
+        self.model_juju_exception = AsyncMock()
+        self.model_juju_exception.info.name = "test"
+        self.model_juju_exception.is_connected = MagicMock()
+        self.model_juju_exception.is_connected.return_value = True
+        self.model_juju_exception.connection = MagicMock()
+        connection = MagicMock()
+        connection.is_open = True
+        self.model_juju_exception.connection.return_value = connection
+
+    async def raise_juju_unit_exception(**kwargs):
+        raise JujuUnitError()
+
+    async def raise_timeout_exception(**kwargs):
+        raise model.JujuWaiter.TimeoutException()
+
+    async def raise_exception(**kwargs):
+        raise Exception()
+
+    def raise_timeout_exception_sync(*args):
+        raise model.JujuWaiter.TimeoutException()
+
+    def raise_exception_sync(*args):
+        raise Exception()
+
+    async def test_normal(self):
+        waiter = model.JujuWaiter(self.model_connected)
+        await waiter.wait(10)
+
+    async def test_exception(self):
+        self.model_juju_exception.wait_for_idle = JujuWaiterTests.raise_juju_unit_exception
+        waiter = model.JujuWaiter(self.model_juju_exception)
+        with self.assertRaises(expected_exception=JujuUnitError):
+            await waiter.wait(10)
+
+        self.model_juju_exception.wait_for_idle = JujuWaiterTests.raise_timeout_exception
+        waiter = model.JujuWaiter(self.model_juju_exception)
+        with self.assertRaises(expected_exception=model.JujuWaiter.TimeoutException):
+            await waiter.wait(10)
+
+        self.model_juju_exception.wait_for_idle = JujuWaiterTests.raise_exception
+        waiter = model.JujuWaiter(self.model_juju_exception)
+        with self.assertRaises(expected_exception=Exception):
+            await waiter.wait(10)
+
+    async def test_ensure_model_connected(self):
+        model_disconnected = AsyncMock()
+        model_disconnected.info.name = "test"
+        model_disconnected.is_connected = MagicMock()
+        model_disconnected.is_connected.side_effect = [False, True, False, True, False, True, True]
+        model_disconnected.connection = MagicMock()
+        connection = MagicMock()
+        connection.is_open = [False, True, False, True, False, True, True]
+        model_disconnected.connection.return_value = connection
+
+        waiter = model.JujuWaiter(model_disconnected)
+        await waiter._ensure_model_connected()
+
+        waiter._check_time = JujuWaiterTests.raise_timeout_exception_sync
+        with self.assertRaises(expected_exception=model.JujuWaiter.TimeoutException):
+            await waiter._ensure_model_connected()
+
+        waiter._check_time = JujuWaiterTests.raise_exception_sync
+        await waiter._ensure_model_connected()
+        await waiter._ensure_model_connected()
