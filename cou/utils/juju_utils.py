@@ -407,8 +407,13 @@ class JujuWaiter:
         JujuWaiter(model).wait(120)
     """
 
+    # Total wait timeout. After this timeout JujuWaiter.TimeoutException is raised
     DEFAULT_TIMEOUT: int = 3600
+
+    # Model should be idle for MODEL_IDLE_PERIOD consecutive seconds to be counted as idle.
     MODEL_IDLE_PERIOD: int = 30
+
+    # At each iteration juju will wait JUJU_IDLE_TIMEOUT seconds
     JUJU_IDLE_TIMEOUT: int = 40
 
     class TimeoutException(Exception):
