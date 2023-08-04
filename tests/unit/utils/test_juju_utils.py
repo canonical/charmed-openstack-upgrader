@@ -603,37 +603,22 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         connection.is_open = True
         self.model_juju_exception.connection.return_value = connection
 
-    async def raise_juju_unit_exception(**kwargs):
-        raise JujuUnitError()
-
-    async def raise_timeout_exception(**kwargs):
-        raise model.JujuWaiter.TimeoutException()
-
-    async def raise_exception(**kwargs):
-        raise Exception()
-
-    def raise_timeout_exception_sync(*args):
-        raise model.JujuWaiter.TimeoutException()
-
-    def raise_exception_sync(*args):
-        raise Exception()
-
     async def test_normal(self):
         waiter = model.JujuWaiter(self.model_connected)
         await waiter.wait(10)
 
     async def test_exception(self):
-        self.model_juju_exception.wait_for_idle = JujuWaiterTests.raise_juju_unit_exception
+        self.model_juju_exception.wait_for_idle.side_effect = JujuUnitError()
         waiter = model.JujuWaiter(self.model_juju_exception)
         with self.assertRaises(expected_exception=JujuUnitError):
             await waiter.wait(10)
 
-        self.model_juju_exception.wait_for_idle = JujuWaiterTests.raise_timeout_exception
+        self.model_juju_exception.wait_for_idle.side_effect = model.JujuWaiter.TimeoutException()
         waiter = model.JujuWaiter(self.model_juju_exception)
         with self.assertRaises(expected_exception=model.JujuWaiter.TimeoutException):
             await waiter.wait(10)
 
-        self.model_juju_exception.wait_for_idle = JujuWaiterTests.raise_exception
+        self.model_juju_exception.wait_for_idle.side_effect = Exception()
         waiter = model.JujuWaiter(self.model_juju_exception)
         with self.assertRaises(expected_exception=Exception):
             await waiter.wait(10)
@@ -651,10 +636,11 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         waiter = model.JujuWaiter(model_disconnected)
         await waiter._ensure_model_connected()
 
-        waiter._check_time = JujuWaiterTests.raise_timeout_exception_sync
+        waiter._check_time = MagicMock()
+        waiter._check_time.side_effect = model.JujuWaiter.TimeoutException()
         with self.assertRaises(expected_exception=model.JujuWaiter.TimeoutException):
             await waiter._ensure_model_connected()
 
-        waiter._check_time = JujuWaiterTests.raise_exception_sync
+        waiter._check_time.side_effect = Exception()
         await waiter._ensure_model_connected()
         await waiter._ensure_model_connected()

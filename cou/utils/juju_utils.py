@@ -409,7 +409,7 @@ class JujuWaiter:
 
     DEFAULT_TIMEOUT: int = 3600
     MODEL_IDLE_PERIOD: int = 30
-    JUJU_IDLE_CHECK_PERIOD: int = 40
+    JUJU_IDLE_TIMEOUT: int = 40
 
     class TimeoutException(Exception):
         """Own timeout exception."""
@@ -448,7 +448,7 @@ class JujuWaiter:
             try:
                 await self.model.wait_for_idle(
                     idle_period=JujuWaiter.MODEL_IDLE_PERIOD,
-                    timeout=JujuWaiter.JUJU_IDLE_CHECK_PERIOD,
+                    timeout=JujuWaiter.JUJU_IDLE_TIMEOUT,
                 )
                 self.log.debug(
                     "Model %s is idle for %s seconds.",
@@ -461,14 +461,14 @@ class JujuWaiter:
                 JujuAgentError,
                 JujuUnitError,
                 JujuAppError,
-            ) as ex:
-                raise ex
-            except JujuWaiter.TimeoutException as ex:
+            ):
+                raise
+            except JujuWaiter.TimeoutException:
                 self.log.debug(
                     "Unable to stabilize in %s seconds",
                     datetime.now() - self.start_time,
                 )
-                raise ex
+                raise
             except Exception as ex:
                 # We do not care exceptions other than Juju(Machine|Agent|Unit|App)Error because
                 # when juju connection is dropped you can have wide range of exceptions depending
@@ -484,8 +484,8 @@ class JujuWaiter:
             try:
                 self._check_time()
                 await self.model.connect_model(self.model_name)
-            except JujuWaiter.TimeoutException as ex:
-                raise ex
+            except JujuWaiter.TimeoutException:
+                raise
             except Exception as ex:
                 self.log.debug(
                     "Model has unexpected exception while connecting, retrying", exc_info=ex
