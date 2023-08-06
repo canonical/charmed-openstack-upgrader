@@ -468,11 +468,11 @@ class JujuWaiter:
                 JujuAppError,
             ):
                 raise
-            except Exception as ex:
+            except Exception:
                 # We do not care exceptions other than Juju(Machine|Agent|Unit|App)Error because
                 # when juju connection is dropped you can have wide range of exceptions depending
                 # on the case
-                self.log.debug("Unknown error while waiting to stabilize", exc_info=ex)
+                self.log.debug("Unknown error while waiting to stabilize", exc_info=True)
 
             self._check_time()
 
