@@ -435,7 +435,7 @@ class JujuWaiter:
         """Wait model to stabilize.
 
         :param timeout_seconds: wait model till timeout_seconds. If passed raise TimeoutException
-        :type timeout_seconds: Optional[int]
+        :type timeout_seconds: int
         :return: None
         :raises TimeoutException: if timeout_seconds passed.
         :raises JujuMachineError: if it has a machine exception
