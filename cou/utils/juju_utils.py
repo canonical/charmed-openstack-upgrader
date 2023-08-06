@@ -432,7 +432,7 @@ class JujuWaiter:
         self.log = logging.getLogger(self.__class__.__name__)
 
     async def wait(self, timeout_seconds: int = DEFAULT_TIMEOUT) -> None:
-        """Wait model to stabilize.
+        """Wait for model to stabilize.
 
         :param timeout_seconds: wait model till timeout_seconds. If passed raise TimeoutException
         :type timeout_seconds: int
