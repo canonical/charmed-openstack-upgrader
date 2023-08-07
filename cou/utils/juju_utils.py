@@ -13,14 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Juju utilities for charmed-openstack-upgrader."""
-
 import logging
 import os
 import re
+from datetime import datetime, timedelta
 from typing import Dict, Optional
 
 from juju.action import Action
 from juju.client._definitions import FullStatus
+from juju.errors import JujuAgentError, JujuAppError, JujuMachineError, JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
 
@@ -396,3 +397,107 @@ async def async_upgrade_charm(
         revision=revision,
         switch=switch,
     )
+
+
+# pylint: disable=too-few-public-methods
+class JujuWaiter:
+    """Enhanced version of wait_for_idle.
+
+    Usage:
+        JujuWaiter(model).wait(120)
+    """
+
+    # Total wait timeout. After this timeout JujuWaiter.TimeoutException is raised
+    DEFAULT_TIMEOUT: int = 3600
+
+    # Model should be idle for MODEL_IDLE_PERIOD consecutive seconds to be counted as idle.
+    MODEL_IDLE_PERIOD: int = 30
+
+    # At each iteration juju will wait JUJU_IDLE_TIMEOUT seconds
+    JUJU_IDLE_TIMEOUT: int = 40
+
+    class TimeoutException(Exception):
+        """Own timeout exception."""
+
+    def __init__(self, model: Model):
+        """Initialize.
+
+        :param model: model to wait
+        :type model: Model
+        """
+        self.model = model
+        self.model_name = self.model.info.name
+        self.timeout = timedelta(seconds=JujuWaiter.DEFAULT_TIMEOUT)
+        self.start_time = datetime.now()
+        self.log = logging.getLogger(self.__class__.__name__)
+
+    async def wait(self, timeout_seconds: int = DEFAULT_TIMEOUT) -> None:
+        """Wait for model to stabilize.
+
+        :param timeout_seconds: wait model till timeout_seconds. If passed raise TimeoutException
+        :type timeout_seconds: int
+        :return: None
+        :raises TimeoutException: if timeout_seconds passed.
+        :raises JujuMachineError: if it has a machine exception
+        :raises JujuAgentError: if it has an agent exception
+        :raises JujuUnitError: if it has unit exception
+        :raises JujuAppError: if it has application exception
+        """
+        self.start_time = datetime.now()
+        if timeout_seconds:
+            self.timeout = timedelta(seconds=timeout_seconds)
+        self.log.debug("Waiting to stabilize in %s seconds", self.timeout)
+
+        while True:
+            await self._ensure_model_connected()
+            try:
+                await self.model.wait_for_idle(
+                    idle_period=JujuWaiter.MODEL_IDLE_PERIOD,
+                    timeout=JujuWaiter.JUJU_IDLE_TIMEOUT,
+                )
+                self.log.debug(
+                    "Model %s is idle for %s seconds.",
+                    self.model.info.name,
+                    JujuWaiter.MODEL_IDLE_PERIOD,
+                )
+                return
+            except (
+                JujuMachineError,
+                JujuAgentError,
+                JujuUnitError,
+                JujuAppError,
+            ):
+                raise
+            except Exception:
+                # We do not care exceptions other than Juju(Machine|Agent|Unit|App)Error because
+                # when juju connection is dropped you can have wide range of exceptions depending
+                # on the case
+                self.log.debug("Unknown error while waiting to stabilize", exc_info=True)
+
+            self._check_time()
+
+    async def _ensure_model_connected(self) -> None:
+        """Ensure that the model is connected.
+
+        :raises JujuWaiter.TimeoutException: if timeout occurs
+        """
+        while _is_model_disconnected(self.model):
+            await _disconnect(self.model)
+            try:
+                self._check_time()
+                await self.model.connect_model(self.model_name)
+            except JujuWaiter.TimeoutException:
+                raise
+            except Exception:
+                self.log.debug(
+                    "Model has unexpected exception while connecting, retrying", exc_info=True
+                )
+
+    def _check_time(self) -> None:
+        """Check time.
+
+        :raises JujuWaiter.TimeoutException: if timeout occurs
+        """
+        if datetime.now() - self.start_time > self.timeout:
+            self.log.debug("MODEL IS NOT IDLE in: %d seconds", self.timeout)
+            raise JujuWaiter.TimeoutException()
