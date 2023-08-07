@@ -579,6 +579,18 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         mymodel.disconnect.return_value = "ok"
         await model._disconnect(mymodel)
 
+    async def test_async_set_application_config(self):
+        test_model = AsyncMock()
+        test_app = AsyncMock()
+        test_app.set_config = AsyncMock()
+        test_model.applications = {"app": test_app}
+        config = {"openstack-origin": "cloud:focal-victoria"}
+
+        with mock.patch("cou.utils.juju_utils._async_get_model") as juju_model:
+            juju_model.return_value = test_model
+            await model.async_set_application_config("app", config)
+            test_app.set_config.assert_called_once_with(config)
+
 
 class JujuWaiterTests(aiounittest.AsyncTestCase):
     def setUp(self):

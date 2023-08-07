@@ -77,6 +77,18 @@ def status():
         ]
     )
 
+    mock_keystone_ussuri_victoria = mock.MagicMock()
+    mock_keystone_ussuri_victoria.series = "focal"
+    mock_keystone_ussuri_victoria.charm_channel = "victoria/stable"
+    mock_keystone_ussuri_victoria.charm = "ch:amd64/focal/keystone-638"
+    mock_keystone_ussuri_victoria.units = OrderedDict(
+        [
+            ("keystone/0", mock_units_keystone_ussuri),
+            ("keystone/1", mock_units_keystone_ussuri),
+            ("keystone/2", mock_units_keystone_victoria),
+        ]
+    )
+
     mock_keystone_wallaby = mock.MagicMock()
     mock_keystone_wallaby.series = "focal"
     mock_keystone_wallaby.charm_channel = "wallaby/stable"
@@ -117,6 +129,7 @@ def status():
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
         "keystone_wallaby": mock_keystone_wallaby,
+        "keystone_ussuri_victoria": mock_keystone_ussuri_victoria,
         "cinder_ussuri": mock_cinder_ussuri,
         "rabbitmq_server": mock_rmq,
         "unknown_rabbitmq_server": mock_rmq_unknown,
@@ -185,8 +198,12 @@ def config():
     return {
         "openstack_ussuri": {
             "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
         },
-        "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
+        "openstack_wallaby": {
+            "openstack-origin": {"value": "cloud:focal-wallaby"},
+            "action-managed-upgrade": {"value": True},
+        },
         "rmq_ussuri": {"source": {"value": "distro"}},
         "rmq_wallaby": {"source": {"value": "cloud:focal-wallaby"}},
     }

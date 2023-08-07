@@ -55,7 +55,10 @@ def assert_application(
     exp_units,
     exp_channel,
     exp_current_os_release,
-    exp_next_os_release=None,
+    exp_next_os_release,
+    exp_current_channel,
+    exp_next_channel,
+    exp_new_origin,
 ):
     assert app.name == exp_name
     assert app.series == exp_series
@@ -70,6 +73,10 @@ def assert_application(
     assert app.current_os_release == exp_current_os_release
     if exp_next_os_release:
         assert app.current_os_release.next_release == exp_next_os_release
+    assert app.next_os_release == exp_next_os_release
+    assert app.current_channel == exp_current_channel
+    assert app.next_channel == exp_next_channel
+    assert app.new_origin == exp_new_origin
 
 
 def test_application_ussuri(status, config, units):
@@ -82,6 +89,9 @@ def test_application_ussuri(status, config, units):
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
     exp_next_os_release = "victoria"
+    exp_current_channel = "ussuri/stable"
+    exp_next_channel = "victoria/stable"
+    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -98,13 +108,16 @@ def test_application_ussuri(status, config, units):
         exp_channel,
         exp_current_os_release,
         exp_next_os_release,
+        exp_current_channel,
+        exp_next_channel,
+        exp_new_origin,
     )
     assert app.can_generate_upgrade_plan()
 
 
-def test_application_different_wl(status, config, units, mocker):
+def test_application_different_wl(status, config, units):
     """Different OpenStack Version on units if workload version is different."""
-    app_status = status["keystone_ussuri"]
+    app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
     exp_charm_origin = "ch"
     exp_os_origin = "distro"
@@ -113,10 +126,10 @@ def test_application_different_wl(status, config, units, mocker):
     exp_series = app_status.series
     exp_current_os_release = None
     exp_next_os_release = None
+    exp_current_channel = None
+    exp_next_channel = None
+    exp_new_origin = None
 
-    mock_unit_2 = mocker.MagicMock()
-    mock_unit_2.workload_version = "18.1.0"
-    app_status.units["keystone/2"] = mock_unit_2
     exp_units["keystone/2"]["os_version"] = "victoria"
     exp_units["keystone/2"]["workload_version"] = "18.1.0"
 
@@ -135,6 +148,9 @@ def test_application_different_wl(status, config, units, mocker):
         exp_channel,
         exp_current_os_release,
         exp_next_os_release,
+        exp_current_channel,
+        exp_next_channel,
+        exp_new_origin,
     )
     assert app.can_generate_upgrade_plan() is False
 
@@ -150,6 +166,9 @@ def test_application_cs(status, config, units):
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
     exp_next_os_release = "victoria"
+    exp_current_channel = "ussuri/stable"
+    exp_next_channel = "victoria/stable"
+    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -166,6 +185,9 @@ def test_application_cs(status, config, units):
         exp_channel,
         exp_current_os_release,
         exp_next_os_release,
+        exp_current_channel,
+        exp_next_channel,
+        exp_new_origin,
     )
     assert app.can_generate_upgrade_plan()
 
@@ -180,6 +202,9 @@ def test_application_wallaby(status, config, units):
     exp_series = app_status.series
     exp_current_os_release = "wallaby"
     exp_next_os_release = "xena"
+    exp_current_channel = "wallaby/stable"
+    exp_next_channel = "xena/stable"
+    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -196,6 +221,9 @@ def test_application_wallaby(status, config, units):
         exp_channel,
         exp_current_os_release,
         exp_next_os_release,
+        exp_current_channel,
+        exp_next_channel,
+        exp_new_origin,
     )
     assert app.can_generate_upgrade_plan()
 
@@ -306,7 +334,127 @@ def test_ceph_application(
     assert ceph_mon.current_channel == f"{ceph_codename}/stable"
     assert ceph_mon.next_channel == f"{next_ceph_codename}/stable"
 
+
 def test_app_factory_registered_ceph_charms():
     ceph_charms = app_module.CHARM_TYPES["ceph"]
     for ceph_charm in ceph_charms:
         assert ceph_charm in app_module.AppFactory.apps_type.keys()
+
+
+def assert_plan_description(upgrade_plan, steps_description):
+    assert len(upgrade_plan.sub_steps) == len(steps_description)
+    sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
+    for sub_step, description in sub_steps_check:
+        assert sub_step.description == description
+
+
+def test_upgrade_plan_ussuri_to_victoria(status, config):
+    app_status = status["keystone_ussuri"]
+    app_config = config["openstack_ussuri"]
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    upgrade_plan = app.generate_full_upgrade_plan()
+    steps_description = [
+        "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
+        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
+        "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
+        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
+        "Check if workload of 'my_keystone' has upgraded",
+    ]
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert_plan_description(upgrade_plan, steps_description)
+
+
+def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
+    app_status = status["keystone_ussuri_cs"]
+    app_config = config["openstack_ussuri"]
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    upgrade_plan = app.generate_full_upgrade_plan()
+    steps_description = [
+        "Migration of 'my_keystone' from charmstore to charmhub",
+        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
+        "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
+        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
+        "Check if workload of 'my_keystone' has upgraded",
+    ]
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert_plan_description(upgrade_plan, steps_description)
+
+
+def test_cant_generate_upgrade_plan(status, config, mocker):
+    mock_logger = mocker.patch("cou.apps.app.logger")
+    app_status = status["keystone_ussuri_victoria"]
+    app_config = config["openstack_ussuri"]
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    upgrade_plan = app.generate_full_upgrade_plan()
+    assert upgrade_plan is None
+    assert mock_logger.warning.call_count == 3
+
+
+def test_upgrade_plan_change_current_channel(status, config):
+    app_status = status["keystone_ussuri"]
+    app_config = config["openstack_ussuri"]
+    # channel it's neither the expected as current channel as ussuri/stable or
+    # next_channel victoria/stable
+    app_status.charm_channel = "foo/stable"
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    upgrade_plan = app.generate_full_upgrade_plan()
+
+    steps_description = [
+        "Changing 'my_keystone' channel from: 'foo/stable' to: 'ussuri/stable'",
+        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
+        "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
+        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
+        "Check if workload of 'my_keystone' has upgraded",
+    ]
+
+    assert_plan_description(upgrade_plan, steps_description)
+
+
+def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
+    mock_logger = mocker.patch("cou.apps.app.logger")
+    app_status = status["keystone_ussuri"]
+    app_config = config["openstack_ussuri"]
+    # channel it's already on next OpenStack release
+    app_status.charm_channel = "victoria/stable"
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    upgrade_plan = app.generate_full_upgrade_plan()
+
+    # no sub-step for refresh current channel or next channel
+    steps_description = [
+        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
+        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
+        "Check if workload of 'my_keystone' has upgraded",
+    ]
+
+    assert_plan_description(upgrade_plan, steps_description)
+    mock_logger.warning.assert_called_once_with(
+        "App: %s already has the channel set for the next OpenStack version %s",
+        "my_keystone",
+        "victoria",
+    )
+
+
+def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, mocker):
+    mock_logger = mocker.patch("cou.apps.app.logger")
+    app_status = status["keystone_ussuri"]
+    app_config = config["openstack_ussuri"]
+    # openstack-origin already configured for next OpenStack release
+    app_config["openstack-origin"]["value"] = "cloud:focal-victoria"
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    upgrade_plan = app.generate_full_upgrade_plan()
+    steps_description = [
+        "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
+        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
+        "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
+        "Check if workload of 'my_keystone' has upgraded",
+    ]
+    assert len(upgrade_plan.sub_steps) == len(steps_description)
+    sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
+    for sub_step, description in sub_steps_check:
+        assert sub_step.description == description
+    mock_logger.warning.assert_called_once_with(
+        "App: %s already have %s set to %s",
+        "my_keystone",
+        "openstack-origin",
+        "cloud:focal-victoria",
+    )

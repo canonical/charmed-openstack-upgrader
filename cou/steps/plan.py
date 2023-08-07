@@ -16,7 +16,6 @@
 """Upgrade planning utilities."""
 
 import logging
-from typing import List
 
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -39,5 +38,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
     )
     for app in apps_to_upgrade:
-        plan.add_step(app.generate_full_upgrade_plan())
+        app_upgrade_plan = app.generate_full_upgrade_plan()
+        if app_upgrade_plan:
+            plan.add_step(app_upgrade_plan)
     return plan
