@@ -250,16 +250,12 @@ class OpenStackRelease:
         :raises ValueError: Raises ValueError if OpenStack codename is unknown.
         """
         self.os_release = os_release
-        try:
-            self.index = self.openstack_codenames.index(os_release)
-        except ValueError as exc:
-            raise ValueError(
-                f"OpenStack '{os_release}' is not in '{self.openstack_codenames}'"
-            ) from exc
+        self.index = self.openstack_codenames.index(os_release)
 
     def __eq__(self, other):
         """Do equals."""
-        assert isinstance(other, (str, self.__class__))
+        if not isinstance(other, (str, OpenStackRelease)):
+            return NotImplemented
         return self.index == self.openstack_codenames.index(other)
 
     def __ne__(self, other):
@@ -268,7 +264,8 @@ class OpenStackRelease:
 
     def __lt__(self, other):
         """Do less than."""
-        assert isinstance(other, (str, self.__class__))
+        if not isinstance(other, (str, OpenStackRelease)):
+            return NotImplemented
         return self.index < self.openstack_codenames.index(other)
 
     def __ge__(self, other):
@@ -277,7 +274,8 @@ class OpenStackRelease:
 
     def __gt__(self, other):
         """Do greater than."""
-        assert isinstance(other, (str, self.__class__))
+        if not isinstance(other, (str, OpenStackRelease)):
+            return NotImplemented
         return self.index > self.openstack_codenames.index(other)
 
     def __le__(self, other):
@@ -286,7 +284,28 @@ class OpenStackRelease:
 
     def __repr__(self):
         """Return the representation of CompareOpenStack."""
-        return f"{self.__class__.__name__}<{self.openstack_codenames[self.index]}>"
+        return f"{self.__class__.__name__}<{self.os_release}>"
+
+    @property
+    def os_release(self) -> str:
+        """Return the next OpenStack release codename.
+
+        :return: OpenStack release codename.
+        :rtype: str
+        """
+        return self._os_release
+
+    @os_release.setter
+    def os_release(self, value: str):
+        """Setter of OpenStack release codename.
+
+        :param value: OpenStack release codename.
+        :type value: str
+        :raises ValueError: Raise ValueError if codename is unknown.
+        """
+        if value not in self.openstack_codenames:
+            raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
+        self._os_release = value
 
     @property
     def next_release(self) -> str:
@@ -298,7 +317,7 @@ class OpenStackRelease:
         try:
             os_release = self.openstack_codenames[self.index + 1]
         except IndexError:
-            logger.warning("There are no OpenStack release after %s", self.os_release)
+            logger.warning("There is no OpenStack release after %s", self.os_release)
             os_release = self.openstack_codenames[self.index]
         return os_release
 
