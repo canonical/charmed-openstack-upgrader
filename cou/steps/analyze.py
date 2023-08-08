@@ -27,8 +27,7 @@ from cou.utils.openstack import (
     LTS_SERIES,
     SPECIAL_CHARMS,
     UPGRADE_ORDER,
-    CompareOpenStack,
-    determine_next_openstack_release,
+    OpenStackRelease,
 )
 
 logger = logging.getLogger(__name__)
@@ -104,7 +103,7 @@ class Analysis:
         :return: OpenStack release codename
         :rtype: str
         """
-        os_sequence = sorted(self.os_versions.keys(), key=CompareOpenStack)
+        os_sequence = sorted(self.os_versions.keys(), key=OpenStackRelease)
         return os_sequence[0]
 
     @property
@@ -114,8 +113,7 @@ class Analysis:
         :return: OpenStack release codename
         :rtype: str
         """
-        _, next_cloud_os_release = determine_next_openstack_release(self.current_cloud_os_release)
-        return next_cloud_os_release
+        return OpenStackRelease(self.current_cloud_os_release).next_release
 
     def determine_apps_to_upgrade(self) -> List[Application]:
         """Determine applications to upgrade.
@@ -148,8 +146,8 @@ class Analysis:
                 if os_origin == "distro":
                     os_origin = LTS_SERIES[app.series]
                 if (
-                    CompareOpenStack(app.current_os_release) < self.next_cloud_os_release
-                    or CompareOpenStack(os_origin) < self.next_cloud_os_release
+                    OpenStackRelease(app.current_os_release) < self.next_cloud_os_release
+                    or OpenStackRelease(os_origin) < self.next_cloud_os_release
                 ):
                     special_charms_to_upgrade.add(app)
         return special_charms_to_upgrade
