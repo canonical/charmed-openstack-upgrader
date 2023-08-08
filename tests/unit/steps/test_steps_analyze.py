@@ -86,7 +86,8 @@ async def test_generate_model(mocker, full_status, config):
     assert len(full_status.applications) == 3
     apps = await Analysis._populate()
     assert len(apps) == 3
-    assert {app.charm for app in apps} == {"keystone", "cinder", "rabbitmq-server"}
+    # apps are on the UPGRADE_ORDER sequence
+    assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder"]
 
 
 @pytest.mark.asyncio
@@ -95,9 +96,9 @@ async def test_analysis_add_special_charm(mocker, apps):
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_rmq = apps["rmq_ussuri"]
-    expected_result = analyze.Analysis(apps=[app_keystone, app_cinder, app_rmq])
+    expected_result = analyze.Analysis(apps=[app_rmq, app_keystone, app_cinder])
     mocker.patch.object(
-        analyze.Analysis, "_populate", return_value=[app_keystone, app_cinder, app_rmq]
+        analyze.Analysis, "_populate", return_value=[app_rmq, app_keystone, app_cinder]
     )
 
     result = await Analysis.create()
@@ -105,32 +106,10 @@ async def test_analysis_add_special_charm(mocker, apps):
     assert result.current_cloud_os_release == "ussuri"
     assert result.next_cloud_os_release == "victoria"
     # NOTE(gabrielcocenza) Although special charms, like rabbitmq, can have multiple OpenStack
-    # releases to a workload version, it's necessary to set the right source on the charm
-    # configuration. Rabbitmq with workload version 3.8, will always indicate that the application
-    # is on yoga. However, we should configure the source accordingly with the OpenStack version of
-    # the cloud. In this case, even that rabbitmq is theoretically on yoga, we should change the
-    # source to cloud:focal-victoria and that is why it's added on apps to upgrade.
-    assert result.os_versions == {"ussuri": {app_keystone, app_cinder}, "yoga": {app_rmq}}
+    # releases with workload version 3.8, the most recent version is considered and in this
+    # case is yoga.
+    assert result.os_versions == {
+        "ussuri": {app_keystone.charm, app_cinder.charm},
+        "yoga": {app_rmq.charm},
+    }
     # rabbitmq is included because source is configured as "distro" for ussuri.
-    assert result.apps_to_upgrade == [app_rmq, app_keystone, app_cinder]
-
-
-@pytest.mark.asyncio
-async def test_analysis_not_add_special_charms(mocker, apps):
-    """Test analysis object when special charms are configured for a higher OpenStack version."""
-    app_keystone = apps["keystone_ussuri"]
-    app_cinder = apps["cinder_ussuri"]
-    app_rmq = apps["rmq_wallaby"]
-    expected_result = analyze.Analysis(apps=[app_keystone, app_cinder, app_rmq])
-    mocker.patch.object(
-        analyze.Analysis, "_populate", return_value=[app_keystone, app_cinder, app_rmq]
-    )
-
-    result = await Analysis.create()
-    assert result == expected_result
-    assert result.current_cloud_os_release == "ussuri"
-    assert result.next_cloud_os_release == "victoria"
-    assert result.os_versions == {"ussuri": {app_keystone, app_cinder}, "yoga": {app_rmq}}
-    # rabbitmq is not included because source is configured for wallaby that is bigger than
-    # the cloud OpenStack Version that is on ussuri.
-    assert result.apps_to_upgrade == [app_keystone, app_cinder]

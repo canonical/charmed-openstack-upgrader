@@ -39,21 +39,6 @@ CHARM_TYPES = {
     "horizon": ["openstack-dashboard"],
 }
 
-# list of charms that the workload version can match more than one OpenStack release
-SPECIAL_CHARMS = [
-    "ceph-mon",
-    "ceph-fs",
-    "ceph-radosgw",
-    "ceph-osd",
-    "ovn-dedicated-chassis",
-    "ovn-central",
-    "mysql",
-    "hacluster",
-    "rabbitmq-server",
-    "vault",
-    "designate-bind",
-]
-
 # https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
 UPGRADE_ORDER = [
     "rabbitmq-server",
@@ -115,12 +100,6 @@ OPENSTACK_CODENAMES = OrderedDict(
         ("bobcat", "2023.2"),
     ]
 )
-
-LTS_SERIES = {
-    "bionic": "queens",
-    "focal": "ussuri",
-    "jammy": "yoga",
-}
 
 
 @dataclass(frozen=True)

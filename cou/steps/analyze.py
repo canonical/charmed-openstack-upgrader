@@ -20,16 +20,11 @@ import logging
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional
+from typing import Iterable, List
 
 from cou.apps.app import Application
 from cou.utils.juju_utils import async_get_application_config, async_get_status
-from cou.utils.openstack import (
-    LTS_SERIES,
-    SPECIAL_CHARMS,
-    UPGRADE_ORDER,
-    OpenStackRelease,
-)
+from cou.utils.openstack import UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -40,22 +35,18 @@ class Analysis:
 
     :param apps: Applications in the model
     :type apps:  Iterable[Application]
-    :param apps_to_upgrade: Applications to upgrade in the model
-    :type apps_to_upgrade: Optional[List[Application]]
     :param os_versions: Dictionary containing OpenStack codenames and set of Applications
     :type os_versions:  defaultdict[str, set]
     """
 
     apps: Iterable[Application]
-    apps_to_upgrade: Optional[List[Application]] = None
     os_versions: defaultdict[str, set] = field(default_factory=lambda: defaultdict(set))
 
     def __post_init__(self) -> None:
         """Initialize the Analysis dataclass."""
         for app in self.apps:
             if app.current_os_release:
-                self.os_versions[app.current_os_release].add(app)
-        self.apps_to_upgrade = self.determine_apps_to_upgrade()
+                self.os_versions[app.current_os_release].add(app.charm)
 
     @classmethod
     async def create(cls) -> Analysis:
@@ -70,11 +61,11 @@ class Analysis:
         return Analysis(apps=apps)
 
     @classmethod
-    async def _populate(cls) -> set[Application]:
+    async def _populate(cls) -> List[Application]:
         """Generate the applications model.
 
         :return: Application objects with their respective information.
-        :rtype: set[Application]
+        :rtype: List[Application]
         """
         juju_status = await async_get_status()
         model_name = juju_status.model.name
@@ -87,7 +78,7 @@ class Analysis:
             )
             for app, app_status in juju_status.applications.items()
         }
-        return apps
+        return sorted(apps, key=lambda app: UPGRADE_ORDER.index(app.charm))
 
     def __str__(self) -> str:
         """Dump as string.
@@ -115,40 +106,3 @@ class Analysis:
         :rtype: str
         """
         return OpenStackRelease(self.current_cloud_os_release).next_release
-
-    def determine_apps_to_upgrade(self) -> List[Application]:
-        """Determine applications to upgrade.
-
-        This function find the oldest OpenStack version in the deployment and
-        select the applications to upgrade for the next version (N + 1).
-
-        :return: List of applications to be upgraded.
-        :rtype: List[Application]
-        """
-        apps_to_upgrade = self.os_versions[self.current_cloud_os_release].copy()
-        special_charms_to_upgrade = self._add_special_charms_to_upgrade()
-        apps_to_upgrade.update(special_charms_to_upgrade)
-
-        return sorted(apps_to_upgrade, key=lambda app: UPGRADE_ORDER.index(app.charm))
-
-    def _add_special_charms_to_upgrade(self) -> set:
-        """Add special charms to upgrade if openstack-origin is set to a lower OpenStack version.
-
-        Special charms are those that can have multiple OpenStack releases for a workload version.
-        When source is configured to "distro", we should check the ubuntu series that matches with
-        this configuration.
-        :return: Set of Applications to upgrade
-        :rtype: set
-        """
-        special_charms_to_upgrade = set()
-        for app in self.apps:
-            if app.charm in SPECIAL_CHARMS and app.os_origin:
-                os_origin = app.os_origin.split("-")[-1]
-                if os_origin == "distro":
-                    os_origin = LTS_SERIES[app.series]
-                if (
-                    OpenStackRelease(app.current_os_release) < self.next_cloud_os_release
-                    or OpenStackRelease(os_origin) < self.next_cloud_os_release
-                ):
-                    special_charms_to_upgrade.add(app)
-        return special_charms_to_upgrade
