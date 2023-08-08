@@ -13,13 +13,7 @@
 # limitations under the License.
 import pytest
 
-from cou.utils.openstack import (
-    BasicStringComparator,
-    CompareOpenStack,
-    OpenStackCodenameLookup,
-    VersionRange,
-    determine_next_openstack_release,
-)
+from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, VersionRange
 
 
 @pytest.mark.parametrize(
@@ -104,59 +98,53 @@ def test_generate_lookup(service):
 )
 def test_compare_openstack(release_1, release_2, comparison, expected_result):
     if comparison == "eq":
-        result = CompareOpenStack(release_1) == release_2
-        result_alternative = CompareOpenStack(release_1) == CompareOpenStack(release_2)
+        result = OpenStackRelease(release_1) == release_2
+        result_alternative = OpenStackRelease(release_1) == OpenStackRelease(release_2)
     elif comparison == "neq":
-        result = CompareOpenStack(release_1) != release_2
-        result_alternative = CompareOpenStack(release_1) != CompareOpenStack(release_2)
+        result = OpenStackRelease(release_1) != release_2
+        result_alternative = OpenStackRelease(release_1) != OpenStackRelease(release_2)
     elif comparison == "lt":
-        result = CompareOpenStack(release_1) < release_2
-        result_alternative = CompareOpenStack(release_1) < CompareOpenStack(release_2)
+        result = OpenStackRelease(release_1) < release_2
+        result_alternative = OpenStackRelease(release_1) < OpenStackRelease(release_2)
     elif comparison == "le":
-        result = CompareOpenStack(release_1) <= release_2
-        result_alternative = CompareOpenStack(release_1) <= CompareOpenStack(release_2)
+        result = OpenStackRelease(release_1) <= release_2
+        result_alternative = OpenStackRelease(release_1) <= OpenStackRelease(release_2)
     elif comparison == "ge":
-        result = CompareOpenStack(release_1) >= release_2
-        result_alternative = CompareOpenStack(release_1) >= CompareOpenStack(release_2)
+        result = OpenStackRelease(release_1) >= release_2
+        result_alternative = OpenStackRelease(release_1) >= OpenStackRelease(release_2)
     elif comparison == "gt":
-        result = CompareOpenStack(release_1) > release_2
-        result_alternative = CompareOpenStack(release_1) > CompareOpenStack(release_2)
+        result = OpenStackRelease(release_1) > release_2
+        result_alternative = OpenStackRelease(release_1) > OpenStackRelease(release_2)
     assert result == expected_result
     assert result_alternative == expected_result
 
 
 @pytest.mark.parametrize("os_release", ["victoria", "wallaby"])
 def test_compare_openstack_repr_str(os_release):
-    os_compare = CompareOpenStack(os_release)
+    os_compare = OpenStackRelease(os_release)
     expected_str = os_release
-    expected_repr = f"CompareOpenStack<{os_release}>"
+    expected_repr = f"OpenStackRelease<{os_release}>"
     assert repr(os_compare) == expected_repr
     assert str(os_compare) == expected_str
 
 
 def test_compare_openstack_raises_error():
     with pytest.raises(ValueError) as err:
-        CompareOpenStack("foo-release")
+        OpenStackRelease("foo-release")
         assert "Item foo-release is not in list" in str(err.value)
-    with pytest.raises(ValueError) as err:
-        BasicStringComparator("foo-release")
-        assert "Must define the _list in the class definition!" in str(err.value)
 
 
 @pytest.mark.parametrize(
-    "os_release, next_os_release",
+    "os_release, release_year, next_os_release",
     [
-        ("ussuri", ("2020.2", "victoria")),
-        ("victoria", ("2021.1", "wallaby")),
-        ("wallaby", ("2021.2", "xena")),
-        ("xena", ("2022.1", "yoga")),
+        ("ussuri", "2020.1", "victoria"),
+        ("victoria", "2020.2", "wallaby"),
+        ("wallaby", "2021.1", "xena"),
+        ("xena", "2021.2", "yoga"),
+        ("bobcat", "2023.2", "bobcat"),  # repeat when there is no next release
     ],
 )
-def test_determine_next_openstack_release(os_release, next_os_release):
-    result = determine_next_openstack_release(os_release)
-    assert result == next_os_release
-
-
-def test_determine_next_openstack_release_raises():
-    with pytest.raises(ValueError):
-        determine_next_openstack_release("foo-release")
+def test_determine_next_openstack_release(os_release, release_year, next_os_release):
+    release = OpenStackRelease(os_release)
+    assert release.next_release == next_os_release
+    assert release.release_year == release_year

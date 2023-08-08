@@ -26,10 +26,7 @@ from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
 
 from cou.utils.juju_utils import extract_charm_name_from_url
-from cou.utils.openstack import (
-    OpenStackCodenameLookup,
-    determine_next_openstack_release,
-)
+from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +96,7 @@ class Application:
 
         if len(self.os_versions) == 1:
             self.current_os_release = list(self.os_versions)[0]
-            _, self.next_os_release = determine_next_openstack_release(self.current_os_release)
+            self.next_os_release = OpenStackRelease(self.current_os_release).next_release
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
