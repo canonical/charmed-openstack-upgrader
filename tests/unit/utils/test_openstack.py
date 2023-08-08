@@ -79,44 +79,105 @@ def test_generate_lookup(service):
 
 
 @pytest.mark.parametrize(
-    "release_1, release_2, comparison, expected_result",
+    "release_1, release_2, exp_result",
     [
-        ("victoria", "wallaby", "eq", False),
-        ("victoria", "victoria", "eq", True),
-        ("victoria", "wallaby", "neq", True),
-        ("wallaby", "wallaby", "neq", False),
-        ("victoria", "wallaby", "lt", True),
-        ("wallaby", "victoria", "lt", False),
-        ("victoria", "wallaby", "le", True),
-        ("wallaby", "victoria", "le", False),
-        ("wallaby", "wallaby", "le", True),
-        ("victoria", "wallaby", "ge", False),
-        ("wallaby", "victoria", "ge", True),
-        ("victoria", "wallaby", "gt", False),
-        ("wallaby", "victoria", "gt", True),
+        ("victoria", "victoria", True),
+        ("victoria", "wallaby", False),
+        ("wallaby", "victoria", False),
     ],
 )
-def test_compare_openstack(release_1, release_2, comparison, expected_result):
-    if comparison == "eq":
-        result = OpenStackRelease(release_1) == release_2
-        result_alternative = OpenStackRelease(release_1) == OpenStackRelease(release_2)
-    elif comparison == "neq":
-        result = OpenStackRelease(release_1) != release_2
-        result_alternative = OpenStackRelease(release_1) != OpenStackRelease(release_2)
-    elif comparison == "lt":
-        result = OpenStackRelease(release_1) < release_2
-        result_alternative = OpenStackRelease(release_1) < OpenStackRelease(release_2)
-    elif comparison == "le":
-        result = OpenStackRelease(release_1) <= release_2
-        result_alternative = OpenStackRelease(release_1) <= OpenStackRelease(release_2)
-    elif comparison == "ge":
-        result = OpenStackRelease(release_1) >= release_2
-        result_alternative = OpenStackRelease(release_1) >= OpenStackRelease(release_2)
-    elif comparison == "gt":
-        result = OpenStackRelease(release_1) > release_2
-        result_alternative = OpenStackRelease(release_1) > OpenStackRelease(release_2)
-    assert result == expected_result
-    assert result_alternative == expected_result
+def test_compare_openstack_release_eq(release_1, release_2, exp_result):
+    result_1 = OpenStackRelease(release_1) == release_2
+    result_2 = OpenStackRelease(release_1) == OpenStackRelease(release_2)
+    assert result_1 == exp_result
+    assert result_2 == exp_result
+
+
+def test_compare_openstack_release_eq_not_implemented():
+    assert OpenStackRelease("ussuri").__eq__(1) == NotImplemented
+
+
+@pytest.mark.parametrize(
+    "release_1, release_2, exp_result",
+    [
+        ("victoria", "victoria", False),
+        ("victoria", "wallaby", True),
+        ("wallaby", "victoria", True),
+    ],
+)
+def test_compare_openstack_release_neq(release_1, release_2, exp_result):
+    result_1 = OpenStackRelease(release_1) != release_2
+    result_2 = OpenStackRelease(release_1) != OpenStackRelease(release_2)
+    assert result_1 == exp_result
+    assert result_2 == exp_result
+
+
+@pytest.mark.parametrize(
+    "release_1, release_2, exp_result",
+    [
+        ("victoria", "victoria", False),
+        ("victoria", "wallaby", True),
+        ("wallaby", "victoria", False),
+    ],
+)
+def test_compare_openstack_release_lt(release_1, release_2, exp_result):
+    result_1 = OpenStackRelease(release_1) < release_2
+    result_2 = OpenStackRelease(release_1) < OpenStackRelease(release_2)
+    assert result_1 == exp_result
+    assert result_2 == exp_result
+
+
+def test_compare_openstack_release_lt_not_implemented():
+    assert OpenStackRelease("ussuri").__lt__(1) == NotImplemented
+
+
+@pytest.mark.parametrize(
+    "release_1, release_2, exp_result",
+    [
+        ("victoria", "victoria", True),
+        ("victoria", "wallaby", False),
+        ("wallaby", "victoria", True),
+    ],
+)
+def test_compare_openstack_release_ge(release_1, release_2, exp_result):
+    result_1 = OpenStackRelease(release_1) >= release_2
+    result_2 = OpenStackRelease(release_1) >= OpenStackRelease(release_2)
+    assert result_1 == exp_result
+    assert result_2 == exp_result
+
+
+@pytest.mark.parametrize(
+    "release_1, release_2, exp_result",
+    [
+        ("victoria", "victoria", False),
+        ("victoria", "wallaby", False),
+        ("wallaby", "victoria", True),
+    ],
+)
+def test_compare_openstack_release_gt(release_1, release_2, exp_result):
+    result_1 = OpenStackRelease(release_1) > release_2
+    result_2 = OpenStackRelease(release_1) > OpenStackRelease(release_2)
+    assert result_1 == exp_result
+    assert result_2 == exp_result
+
+
+def test_compare_openstack_gt_release_not_implemented():
+    assert OpenStackRelease("ussuri").__gt__(1) == NotImplemented
+
+
+@pytest.mark.parametrize(
+    "release_1, release_2, exp_result",
+    [
+        ("victoria", "victoria", True),
+        ("victoria", "wallaby", True),
+        ("wallaby", "victoria", False),
+    ],
+)
+def test_compare_openstack_release_le(release_1, release_2, exp_result):
+    result_1 = OpenStackRelease(release_1) <= release_2
+    result_2 = OpenStackRelease(release_1) <= OpenStackRelease(release_2)
+    assert result_1 == exp_result
+    assert result_2 == exp_result
 
 
 @pytest.mark.parametrize("os_release", ["victoria", "wallaby"])
