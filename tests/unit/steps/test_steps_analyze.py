@@ -110,7 +110,6 @@ async def test_analysis_add_special_charm(mocker, apps):
     # releases with workload version 3.8, the most recent version is considered and in this
     # case is yoga.
     assert result.os_versions == {
-        "ussuri": {app_keystone.charm, app_cinder.charm},
-        "yoga": {app_rmq.charm},
+        "ussuri": {app_keystone.name, app_cinder.name},
+        "yoga": {app_rmq.name},
     }
-    # rabbitmq is included because source is configured as "distro" for ussuri.
