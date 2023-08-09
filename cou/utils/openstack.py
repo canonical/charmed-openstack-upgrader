@@ -230,7 +230,6 @@ class OpenStackRelease:
         :raises ValueError: Raises ValueError if OpenStack codename is unknown.
         """
         self.os_release = os_release
-        self.index = self.openstack_codenames.index(os_release)
 
     def __eq__(self, other):
         """Do equals."""
@@ -286,6 +285,7 @@ class OpenStackRelease:
         if value not in self.openstack_codenames:
             raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
         self._os_release = value
+        self.index = self.openstack_codenames.index(value)
 
     @property
     def next_release(self) -> str:
