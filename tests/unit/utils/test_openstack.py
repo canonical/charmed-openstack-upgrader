@@ -180,6 +180,14 @@ def test_compare_openstack_release_le(release_1, release_2, exp_result):
     assert result_2 == exp_result
 
 
+def test_openstack_release_setter():
+    openstack_release = OpenStackRelease("wallaby")
+    assert openstack_release.next_release == "xena"
+    # change OpenStack release
+    openstack_release.os_release = "xena"
+    assert openstack_release.next_release == "yoga"
+
+
 @pytest.mark.parametrize("os_release", ["victoria", "wallaby"])
 def test_compare_openstack_repr_str(os_release):
     os_compare = OpenStackRelease(os_release)
