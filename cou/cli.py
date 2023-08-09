@@ -45,9 +45,7 @@ def parse_args(args: Any) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         description="Charmed OpenStack Upgrader(cou) is an application to upgrade Charmed "
-        "OpenStack. Application supports:\n  - Focal/Ussuri -> Focal/Victoria "
-        "\n  - Focal/Victoria -> Focal/Xena\n  - Focal/Xena -> Focal/Wallaby\n  - Focal/Wallaby "
-        "-> Focal/Yoga \nupgrades.",
+        "OpenStack. Application supports N+1 upgrades.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         exit_on_error=False,
         add_help=False,
