@@ -19,7 +19,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any
+from typing import Any, Optional
 
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
@@ -53,11 +53,6 @@ class Application:
     :param units: Units representation of an application.
         E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
     :type units: defaultdict[str, dict]
-    :param current_os_release: Current OpenStack release codename of the application
-    :type current_os_release: str, defaults to ""
-    :param next_os_release: Next OpenStack release codename of the application
-    :param os_versions: OpenStack releases codename encountered on the application
-    :type os_versions: set
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -71,9 +66,6 @@ class Application:
     os_origin: str = ""
     channel: str = ""
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
-    current_os_release: str = ""
-    next_os_release: str = ""
-    os_versions: set = field(default_factory=set)
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -87,15 +79,10 @@ class Application:
             compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
             # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
             if compatible_os_versions:
-                unit_os_version = compatible_os_versions[-1]
+                unit_os_version = max(compatible_os_versions)
                 self.units[unit]["os_version"] = unit_os_version
-                self.os_versions.add(unit_os_version)
             else:
                 self.units[unit]["os_version"] = ""
-
-        if len(self.os_versions) == 1:
-            self.current_os_release = list(self.os_versions)[0]
-            self.next_os_release = OpenStackRelease(self.current_os_release).next_release
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -131,7 +118,7 @@ class Application:
                 "units": {
                     unit: {
                         "workload_version": details.get("workload_version", ""),
-                        "os_version": details.get("os_version", ""),
+                        "os_version": str(details.get("os_version", "")),
                     }
                     for unit, details in self.units.items()
                 },
@@ -150,6 +137,18 @@ class Application:
         :rtype: str
         """
         return self.status.series
+
+    @property
+    def current_os_release(self) -> Optional[OpenStackRelease]:
+        """Current OpenStack Release of the application.
+
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        os_versions = {unit_values.get("os_version") for unit_values in self.units.values()}
+        if len(os_versions) == 1:
+            return list(os_versions)[0]
+        return None
 
     def _get_os_origin(self) -> str:
         """Get application configuration for openstack-origin or source.

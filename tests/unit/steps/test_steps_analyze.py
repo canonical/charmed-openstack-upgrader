@@ -92,8 +92,8 @@ async def test_generate_model(mocker, full_status, config):
 
 
 @pytest.mark.asyncio
-async def test_analysis_add_special_charm(mocker, apps):
-    """Test analysis object that adds special charm."""
+async def test_analysis(mocker, apps):
+    """Test analysis object."""
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_rmq = apps["rmq_ussuri"]
@@ -105,11 +105,4 @@ async def test_analysis_add_special_charm(mocker, apps):
     result = await Analysis.create()
     assert result == expected_result
     assert result.current_cloud_os_release == "ussuri"
-    assert result.next_cloud_os_release == "victoria"
-    # NOTE(gabrielcocenza) Although special charms, like rabbitmq, can have multiple OpenStack
-    # releases with workload version 3.8, the most recent version is considered and in this
-    # case is yoga.
-    assert result.os_versions == {
-        "ussuri": {app_keystone.name, app_cinder.name},
-        "yoga": {app_rmq.name},
-    }
+    assert result.current_cloud_os_release.next_release == "victoria"

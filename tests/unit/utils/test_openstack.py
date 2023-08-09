@@ -180,6 +180,22 @@ def test_compare_openstack_release_le(release_1, release_2, exp_result):
     assert result_2 == exp_result
 
 
+def test_compare_openstack_release_order():
+    ussuri = OpenStackRelease("ussuri")
+    wallaby = OpenStackRelease("wallaby")
+    antelope = OpenStackRelease("antelope")
+    bobcat = OpenStackRelease("bobcat")
+    os_releases = {
+        wallaby,
+        ussuri,
+        bobcat,
+        antelope,
+    }
+    assert min(os_releases) == ussuri
+    assert max(os_releases) == bobcat
+    assert sorted(os_releases) == [ussuri, wallaby, antelope, bobcat]
+
+
 def test_openstack_release_setter():
     openstack_release = OpenStackRelease("wallaby")
     assert openstack_release.next_release == "xena"
