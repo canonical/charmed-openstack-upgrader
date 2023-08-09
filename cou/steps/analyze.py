@@ -35,7 +35,7 @@ class Analysis:
 
     :param apps: Applications in the model
     :type apps:  Iterable[Application]
-    :param os_versions: Dictionary containing OpenStack codenames and set of Applications
+    :param os_versions: Dictionary containing OpenStack codenames and set of Applications name.
     :type os_versions:  defaultdict[str, set]
     """
 
@@ -46,7 +46,7 @@ class Analysis:
         """Initialize the Analysis dataclass."""
         for app in self.apps:
             if app.current_os_release:
-                self.os_versions[app.current_os_release].add(app.charm)
+                self.os_versions[app.current_os_release].add(app.name)
 
     @classmethod
     async def create(cls) -> Analysis:
