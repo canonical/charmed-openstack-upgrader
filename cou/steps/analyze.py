@@ -18,9 +18,8 @@ from __future__ import annotations
 
 import logging
 import os
-from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import Iterable, List
+from dataclasses import dataclass
+from typing import Iterable, List, Optional
 
 from cou.apps.app import Application
 from cou.utils.juju_utils import async_get_application_config, async_get_status
@@ -35,18 +34,9 @@ class Analysis:
 
     :param apps: Applications in the model
     :type apps:  Iterable[Application]
-    :param os_versions: Dictionary containing OpenStack codenames and set of Applications name.
-    :type os_versions:  defaultdict[str, set]
     """
 
     apps: Iterable[Application]
-    os_versions: defaultdict[str, set] = field(default_factory=lambda: defaultdict(set))
-
-    def __post_init__(self) -> None:
-        """Initialize the Analysis dataclass."""
-        for app in self.apps:
-            if app.current_os_release:
-                self.os_versions[app.current_os_release].add(app.name)
 
     @classmethod
     async def create(cls) -> Analysis:
@@ -89,20 +79,14 @@ class Analysis:
         return os.linesep.join([str(app) for app in self.apps])
 
     @property
-    def current_cloud_os_release(self) -> str:
+    def current_cloud_os_release(self) -> Optional[OpenStackRelease]:
         """Shows the current OpenStack release codename.
 
         :return: OpenStack release codename
-        :rtype: str
+        :rtype: OpenStackRelease
         """
-        os_sequence = sorted(self.os_versions.keys(), key=OpenStackRelease)
-        return os_sequence[0]
-
-    @property
-    def next_cloud_os_release(self) -> str:
-        """Shows the next OpenStack release codename.
-
-        :return: OpenStack release codename
-        :rtype: str
-        """
-        return OpenStackRelease(self.current_cloud_os_release).next_release
+        os_versions = set()
+        for app in self.apps:
+            if app.current_os_release:
+                os_versions.add(app.current_os_release)
+        return min(os_versions) if os_versions else None
