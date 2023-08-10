@@ -91,6 +91,13 @@ def status():
     mock_rmq_unknown.charm = "ch:amd64/focal/rabbitmq-server-638"
     mock_rmq_unknown.units = OrderedDict([("rabbitmq-server/0", mock_units_unknown_rmq)])
 
+    mock_unknown_app = mock.MagicMock()
+    mock_units_unknown_app = mock.MagicMock()
+    mock_unknown_app.charm_channel = "12.5/stable"
+    mock_units_unknown_app.workload_version = "12.5"
+    mock_unknown_app.charm = "ch:amd64/focal/my-app-638"
+    mock_unknown_app.units = OrderedDict([("my-app/0", mock_units_unknown_app)])
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "cinder_ussuri": mock_cinder_ussuri,
@@ -98,6 +105,7 @@ def status():
         "unknown_rabbitmq_server": mock_rmq_unknown,
         "keystone_ussuri_cs": mock_keystone_ussuri_cs,
         "keystone_wallaby": mock_keystone_wallaby,
+        "unknown_app": mock_unknown_app,
     }
     return status
 
@@ -111,6 +119,7 @@ def full_status(status):
             ("keystone", status["keystone_ussuri"]),
             ("cinder", status["cinder_ussuri"]),
             ("rabbitmq_server", status["rabbitmq_server"]),
+            ("my_app", status["unknown_app"]),
         ]
     )
     return mock_full_status

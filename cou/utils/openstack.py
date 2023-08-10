@@ -20,7 +20,7 @@ import logging
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from packaging.version import Version
 
@@ -110,16 +110,16 @@ class OpenStackRelease:
     """
 
     openstack_codenames = list(OPENSTACK_CODENAMES.keys())
-    openstack_release_year = list(OPENSTACK_CODENAMES.values())
+    openstack_release_date = list(OPENSTACK_CODENAMES.values())
 
-    def __init__(self, os_release: str):
+    def __init__(self, codename: str):
         """Initialize the OpenStackRelease object.
 
-        :param os_release: OpenStack release codename.
-        :type os_release: str
+        :param codename: OpenStack release codename.
+        :type codename: str
         :raises ValueError: Raises ValueError if OpenStack codename is unknown.
         """
-        self.os_release = os_release
+        self.codename = codename
 
     def __hash__(self) -> int:
         """Hash magic method for OpenStackRelease.
@@ -127,7 +127,7 @@ class OpenStackRelease:
         :return: Unique hash identifier for OpenStackRelease object.
         :rtype: int
         """
-        return hash(f"{self.os_release}{self.release_year}")
+        return hash(f"{self.codename}{self.date}")
 
     def __eq__(self, other):
         """Do equals."""
@@ -161,7 +161,7 @@ class OpenStackRelease:
 
     def __repr__(self):
         """Return the representation of CompareOpenStack."""
-        return f"{self.__class__.__name__}<{self.os_release}>"
+        return f"{self.__class__.__name__}<{self.codename}>"
 
     @property
     def codename(self) -> str:
@@ -170,10 +170,10 @@ class OpenStackRelease:
         :return: OpenStack release codename.
         :rtype: str
         """
-        return self._os_release
+        return self._codename
 
-    @os_release.setter
-    def os_release(self, value: str):
+    @codename.setter
+    def codename(self, value: str):
         """Setter of OpenStack release codename.
 
         :param value: OpenStack release codename.
@@ -182,31 +182,30 @@ class OpenStackRelease:
         """
         if value not in self.openstack_codenames:
             raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
-        self._os_release = value
+        self._codename = value
         self.index = self.openstack_codenames.index(value)
 
     @property
-    def next_release(self) -> str:
+    def next_release(self) -> Optional[str]:
         """Return the next OpenStack release codename.
 
         :return: OpenStack release codename.
         :rtype: str
         """
         try:
-            os_release = self.openstack_codenames[self.index + 1]
+            return self.openstack_codenames[self.index + 1]
         except IndexError:
-            logger.warning("There is no OpenStack release after %s", self.os_release)
-            os_release = self.openstack_codenames[self.index]
-        return os_release
+            logger.warning("There is no OpenStack release after %s", self.codename)
+            return None
 
     @property
     def date(self) -> str:
-        """Release year of the OpenStack release.
+        """Release date of the OpenStack release.
 
-        :return: Release year.
+        :return: Release date.
         :rtype: str
         """
-        return self.openstack_release_year[self.index]
+        return self.openstack_release_date[self.index]
 
     def __str__(self) -> str:
         """Give back the item at the index.
@@ -220,7 +219,7 @@ class OpenStackRelease:
 
         :returns: <string>
         """
-        return self.os_release
+        return self.codename
 
 
 @dataclass(frozen=True)

@@ -51,7 +51,7 @@ class Analysis:
 
     @classmethod
     async def _populate(cls) -> List[Application]:
-        """Generate the applications model.
+        """Analyze the applications in the model.
 
         :return: Application objects with their respective information.
         :rtype: List[Application]
@@ -67,7 +67,12 @@ class Analysis:
             )
             for app, app_status in juju_status.applications.items()
         }
-        return sorted(apps, key=lambda app: UPGRADE_ORDER.index(app.charm))
+        upgradeable_apps = {app for app in apps if app.charm in UPGRADE_ORDER}
+        unknown_apps = apps - upgradeable_apps
+        upgradeable_apps_sorted = sorted(
+            upgradeable_apps, key=lambda app: UPGRADE_ORDER.index(app.charm)
+        )
+        return upgradeable_apps_sorted + list(unknown_apps)
 
     def __str__(self) -> str:
         """Dump as string.
