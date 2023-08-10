@@ -77,17 +77,18 @@ async def test_analysis_dump(mocker, apps):
 
 
 @pytest.mark.asyncio
-async def test_generate_model(mocker, full_status, config):
+async def test_populate_model(mocker, full_status, config):
     mocker.patch.object(analyze, "async_get_status", return_value=full_status)
     mocker.patch.object(
         analyze, "async_get_application_config", return_value=config["openstack_ussuri"]
     )
-    # Initially, 3 applications are in the status (keystone, cinder and rabbitmq-server)
-    assert len(full_status.applications) == 3
+    # Initially, 4 applications are in the status: keystone, cinder, rabbitmq-server and my-app
+    # my-app is a unknown application in the model.
+    assert len(full_status.applications) == 4
     apps = await Analysis._populate()
-    assert len(apps) == 3
-    # apps are on the UPGRADE_ORDER sequence
-    assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder"]
+    assert len(apps) == 4
+    # apps are on the UPGRADE_ORDER sequence and unknown in the end of the list
+    assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder", "my-app"]
 
 
 @pytest.mark.asyncio

@@ -200,7 +200,7 @@ def test_openstack_release_setter():
     openstack_release = OpenStackRelease("wallaby")
     assert openstack_release.next_release == "xena"
     # change OpenStack release
-    openstack_release.os_release = "xena"
+    openstack_release.codename = "xena"
     assert openstack_release.next_release == "yoga"
 
 
@@ -226,10 +226,13 @@ def test_compare_openstack_raises_error():
         ("victoria", "2020.2", "wallaby"),
         ("wallaby", "2021.1", "xena"),
         ("xena", "2021.2", "yoga"),
-        ("bobcat", "2023.2", "bobcat"),  # repeat when there is no next release
+        ("bobcat", "2023.2", None),  # None when there is no next release
     ],
 )
 def test_determine_next_openstack_release(os_release, release_year, next_os_release):
     release = OpenStackRelease(os_release)
-    assert release.next_release == next_os_release
-    assert release.release_year == release_year
+    if next_os_release is None:
+        assert release.next_release is next_os_release
+    else:
+        assert release.next_release == next_os_release
+    assert release.date == release_year
