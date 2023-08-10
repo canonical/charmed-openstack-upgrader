@@ -165,8 +165,8 @@ class OpenStackRelease:
         return f"{self.__class__.__name__}<{self.os_release}>"
 
     @property
-    def os_release(self) -> str:
-        """Return the next OpenStack release codename.
+    def codename(self) -> str:
+        """Return the OpenStack release codename.
 
         :return: OpenStack release codename.
         :rtype: str
@@ -201,7 +201,7 @@ class OpenStackRelease:
         return os_release
 
     @property
-    def release_year(self) -> str:
+    def date(self) -> str:
         """Release year of the OpenStack release.
 
         :return: Release year.
