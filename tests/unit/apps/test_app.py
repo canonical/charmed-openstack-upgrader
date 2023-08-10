@@ -74,7 +74,7 @@ def assert_application(
     if exp_next_os_release:
         assert app.current_os_release.next_release == exp_next_os_release
     assert app.next_os_release == exp_next_os_release
-    assert app.current_channel == exp_current_channel
+    assert app.expected_current_channel == exp_current_channel
     assert app.next_channel == exp_next_channel
     assert app.new_origin == exp_new_origin
 
@@ -242,7 +242,7 @@ def test_special_app_more_than_one_compatible_os_release(status, config):
 
 
 def test_special_app_unknown_version(status, config):
-    expected_units = {"rabbitmq-server/0": {"os_version": "", "workload_version": "80.5"}}
+    expected_units = {"rabbitmq-server/0": {"os_version": None, "workload_version": "80.5"}}
     app = Application(
         "rabbitmq-server",
         status["unknown_rabbitmq_server"],
@@ -331,8 +331,35 @@ def test_ceph_application(
         charm="ceph",
     )
     assert ceph_mon.current_os_release == expected_os_version
-    assert ceph_mon.current_channel == f"{ceph_codename}/stable"
+    assert ceph_mon.expected_current_channel == f"{ceph_codename}/stable"
     assert ceph_mon.next_channel == f"{next_ceph_codename}/stable"
+
+
+def test_ceph_application_unknown_os_release(mocker):
+    mock_ceph = mocker.MagicMock()
+    mock_ceph.series = "focal"
+    mock_ceph.charm = "ch:amd64/focal/ceph-mon-777"
+    mock_units_ceph = mocker.MagicMock()
+    mock_units_ceph.workload_version = "36.2.0"
+    mock_ceph.units = OrderedDict(
+        [
+            ("ceph-mon/0", mock_units_ceph),
+            ("ceph-mon/1", mock_units_ceph),
+            ("ceph-mon/2", mock_units_ceph),
+        ]
+    )
+    ceph_config = {"source": {"value": "cloud:focal-ussuri"}}
+    ceph_mon = app_module.AppFactory.create(
+        app_type="ceph-mon",
+        name="ceph-mon",
+        status=mock_ceph,
+        config=ceph_config,
+        model_name="my_model",
+        charm="ceph",
+    )
+    assert ceph_mon.current_os_release is None
+    assert ceph_mon.expected_current_channel is None
+    assert ceph_mon.next_channel is None
 
 
 def test_app_factory_registered_ceph_charms():

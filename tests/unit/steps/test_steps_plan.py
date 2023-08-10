@@ -59,7 +59,7 @@ async def test_generate_plan(mocker, apps):
 
 def generate_expected_upgrade_plan_description(charm):
     return [
-        f"Refresh '{charm.name}' to the latest revision of '{charm.current_channel}'",
+        f"Refresh '{charm.name}' to the latest revision of '{charm.expected_current_channel}'",
         f"Change charm config of '{charm.name}' 'action-managed-upgrade' to False.",
         f"Refresh '{charm.name}' to the new channel: '{charm.next_channel}'",
         f"Change charm config of '{charm.name}' '{charm.origin_setting}' to '{charm.new_origin}'",

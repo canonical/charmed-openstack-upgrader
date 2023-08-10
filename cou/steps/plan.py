@@ -32,7 +32,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
-    apps_to_upgrade = analysis_result.apps_to_upgrade
+    apps_to_upgrade = analysis_result.apps
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)

@@ -25,14 +25,13 @@ from typing import Any, Callable, Dict, List, Optional, Type
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
 
-from cou.utils.juju_utils import extract_charm_name_from_url
-from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease
 from cou.steps import UpgradeStep
 from cou.utils.juju_utils import (
     async_get_status,
     async_set_application_config,
     async_upgrade_charm,
 )
+from cou.utils.openstack import CHARM_TYPES, OpenStackCodenameLookup, OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +125,7 @@ class Application:
                 unit_os_version = max(compatible_os_versions)
                 self.units[unit]["os_version"] = unit_os_version
             else:
-                self.units[unit]["os_version"] = ""
+                self.units[unit]["os_version"] = None
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -174,7 +173,7 @@ class Application:
             return stream.getvalue()
 
     @property
-    def current_channel(self) -> Optional[str]:
+    def expected_current_channel(self) -> Optional[str]:
         """Return the expected current channel based on the current OpenStack release.
 
         Note that this is not necessary equal to the "channel" property if the application
@@ -195,7 +194,7 @@ class Application:
         :return: The next channel for the application.
         :rtype: Optional[str]
         """
-        if self.next_os_release:
+        if self.current_os_release:
             return f"{self.next_os_release}/stable"
         return None
 
@@ -213,11 +212,22 @@ class Application:
         """Current OpenStack Release of the application.
 
         :return: OpenStackRelease object
-        :rtype: OpenStackRelease
+        :rtype: Optional[OpenStackRelease]
         """
         os_versions = {unit_values.get("os_version") for unit_values in self.units.values()}
         if len(os_versions) == 1:
             return list(os_versions)[0]
+        return None
+
+    @property
+    def next_os_release(self) -> Optional[str]:
+        """Next OpenStack release codename of the application.
+
+        :return: Next OpenStack release codename.
+        :rtype: Optional[str]
+        """
+        if self.current_os_release:
+            return self.current_os_release.next_release
         return None
 
     @property
@@ -227,7 +237,7 @@ class Application:
         :return: Repository from which to install.
         :rtype: Optional[str]
         """
-        if not self.next_os_release:
+        if not self.current_os_release:
             return None
         return f"cloud:{self.series}-{self.next_os_release}"
 
@@ -337,7 +347,9 @@ class Application:
         :type parallel: bool
         """
         switch = None
-        description = f"Refresh '{self.name}' to the latest revision of '{self.current_channel}'"
+        description = (
+            f"Refresh '{self.name}' to the latest revision of '{self.expected_current_channel}'"
+        )
 
         if self.channel == self.next_channel:
             logger.warning(
@@ -351,10 +363,10 @@ class Application:
             description = f"Migration of '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
 
-        elif self.channel not in (self.current_channel, self.next_channel):
+        elif self.channel not in (self.expected_current_channel, self.next_channel):
             description = (
                 f"Changing '{self.name}' channel from: '{self.channel}' "
-                f"to: '{self.current_channel}'"
+                f"to: '{self.expected_current_channel}'"
             )
 
         plan.add_step(
@@ -363,7 +375,7 @@ class Application:
                 parallel=parallel,
                 function=async_upgrade_charm,
                 application_name=self.name,
-                channel=self.current_channel,
+                channel=self.expected_current_channel,
                 model_name=self.model_name,
                 switch=switch,
             )
@@ -474,9 +486,29 @@ class Ceph(Application):
     }
 
     @property
-    def current_channel(self) -> str:
-        return f"{self.openstack_map[self.current_os_release]}/stable"
+    def expected_current_channel(self) -> Optional[str]:
+        """Return the expected current channel based on the current OpenStack release.
+
+        Note that this is not necessary equal to the "channel" property if the application
+        has wrong configuration for it. If it's not possible to determine the current
+        OpenStack release, the value is None.
+
+        :return: The expected current channel for the application.
+        :rtype: Optional[str]
+        """
+        if self.current_os_release:
+            return f"{self.openstack_map[self.current_os_release.codename]}/stable"
+        return None
 
     @property
-    def next_channel(self) -> str:
-        return f"{self.openstack_map[self.next_os_release]}/stable"
+    def next_channel(self) -> Optional[str]:
+        """Return the next channel based on the next OpenStack release.
+
+        If it's not possible to determine the next OpenStack release, the value is None.
+        :return: The next channel for the application.
+        :rtype: Optional[str]
+        """
+        if self.current_os_release:
+            if self.next_os_release:
+                return f"{self.openstack_map[self.next_os_release]}/stable"
+        return None
