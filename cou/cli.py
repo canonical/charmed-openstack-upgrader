@@ -45,7 +45,8 @@ def parse_args(args: Any) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         description="Charmed OpenStack Upgrader(cou) is an application to upgrade Charmed "
-        "OpenStack. Application identify the lowest OpenStack version on the components and upgrade to the next version.",
+        "OpenStack. Application identifies the lowest OpenStack version on the components and "
+        "upgrade to the next version.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         exit_on_error=False,
         add_help=False,
