@@ -1,5 +1,4 @@
-# mypy: disable-error-code="no-untyped-def"
-# Copyright 2018 Canonical Ltd.
+# Copyright 2023 Canonical Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -401,7 +400,7 @@ async def async_upgrade_charm(
 
 async def async_set_application_config(
     application_name: str, configuration: Dict[str, str], model_name: Optional[str] = None
-):
+) -> None:
     """Set application configuration.
 
     :param application_name: Name of application

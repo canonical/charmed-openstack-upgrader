@@ -2,6 +2,7 @@ name: charmed-openstack-upgrader
 base: core22
 version: '0.1'
 summary: Charmed Openstack Upgrader
+license: Apache-2.0
 description: |
   Snap for automatically upgrading Charmed Openstack and related
   components.
@@ -12,7 +13,7 @@ confinement: strict
 apps:
   cou:
     command: bin/cou.wrapper
-    aliases: [cou]
+    aliases: [ cou ]
     plugs:
       - juju-client-observe
       - network
