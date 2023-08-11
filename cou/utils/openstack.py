@@ -129,37 +129,37 @@ class OpenStackRelease:
         """
         return hash(f"{self.codename}{self.date}")
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """Do equals."""
         if not isinstance(other, (str, OpenStackRelease)):
             return NotImplemented
-        return self.index == self.openstack_codenames.index(other)
+        return self.index == self.openstack_codenames.index(str(other))
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         """Do not equals."""
         return not self.__eq__(other)
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
         """Do less than."""
         if not isinstance(other, (str, OpenStackRelease)):
             return NotImplemented
-        return self.index < self.openstack_codenames.index(other)
+        return self.index < self.openstack_codenames.index(str(other))
 
-    def __ge__(self, other):
+    def __ge__(self, other: Any) -> bool:
         """Do greater than or equal."""
         return not self.__lt__(other)
 
-    def __gt__(self, other):
+    def __gt__(self, other: Any) -> bool:
         """Do greater than."""
         if not isinstance(other, (str, OpenStackRelease)):
             return NotImplemented
-        return self.index > self.openstack_codenames.index(other)
+        return self.index > self.openstack_codenames.index(str(other))
 
-    def __le__(self, other):
+    def __le__(self, other: Any) -> bool:
         """Do less than or equals."""
         return not self.__gt__(other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return the representation of CompareOpenStack."""
         return f"{self.__class__.__name__}<{self.codename}>"
 
@@ -173,7 +173,7 @@ class OpenStackRelease:
         return self._codename
 
     @codename.setter
-    def codename(self, value: str):
+    def codename(self, value: str) -> None:
         """Setter of OpenStack release codename.
 
         :param value: OpenStack release codename.
