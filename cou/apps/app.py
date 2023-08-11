@@ -294,7 +294,7 @@ class Application:
         :param plan: Plan that will add pre upgrade as sub steps.
         :type plan: UpgradeStep
         """
-        self.add_plan_refresh_current_channel(plan)
+        self.refresh_current_channel(plan)
 
     def upgrade_plan(self, plan: UpgradeStep) -> None:
         """Upgrade planning.
@@ -302,9 +302,9 @@ class Application:
         :param plan: Plan that will add upgrade as sub steps.
         :type plan: UpgradeStep
         """
-        self.add_plan_disable_action_managed(plan)
-        self.add_plan_refresh_next_channel(plan)
-        self.add_plan_workload_upgrade(plan)
+        self.disable_action_managed(plan)
+        self.refresh_next_channel(plan)
+        self.workload_upgrade(plan)
 
     def post_upgrade_plan(self, plan: UpgradeStep) -> None:
         """Post Upgrade planning.
@@ -312,16 +312,28 @@ class Application:
         :param plan: Plan that will add post upgrade as sub steps.
         :type plan: UpgradeStep
         """
-        self.add_plan_reached_expected_target(plan)
+        self.reached_expected_target(plan)
 
-    def generate_full_upgrade_plan(self) -> Optional[UpgradeStep]:
+    def generate_upgrade_plan(self, target: Optional[str]) -> Optional[UpgradeStep]:
         """Generate full upgrade plan for an Application.
 
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: Optional[UpgradeStep]
         """
+        if not target:
+            logger.warning("There is no target to upgrade.")
+            return None
+        target_version = OpenStackRelease(target)
+
         if not self.can_generate_upgrade_plan():
             logger.warning("Aborting upgrade plan for '%s'", self.name)
+            return None
+        if self.current_os_release >= target_version:
+            logger.warning(
+                "Application: '%s' already on a newer version than %s. Aborting upgrade.",
+                self.name,
+                target,
+            )
             return None
         upgrade_plan = UpgradeStep(
             description=(
@@ -336,7 +348,7 @@ class Application:
         self.post_upgrade_plan(upgrade_plan)
         return upgrade_plan
 
-    def add_plan_refresh_current_channel(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def refresh_current_channel(self, plan: UpgradeStep, parallel: bool = False) -> None:
         """Add Plan for refresh current channel.
 
         This function also identify if charm comes from charmstore and in that case,
@@ -381,7 +393,7 @@ class Application:
             )
         )
 
-    def add_plan_refresh_next_channel(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def refresh_next_channel(self, plan: UpgradeStep, parallel: bool = False) -> None:
         """Add plan for refresh to next channel.
 
         :param plan: Plan to add refresh next channel as sub step.
@@ -401,7 +413,7 @@ class Application:
                 )
             )
 
-    def add_plan_disable_action_managed(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def disable_action_managed(self, plan: UpgradeStep, parallel: bool = False) -> None:
         """Disable action-managed-upgrade to upgrade as "all-in-one" strategy.
 
         :param plan: Plan to disable action managed upgrade as sub step.
@@ -424,7 +436,7 @@ class Application:
                     )
                 )
 
-    def add_plan_workload_upgrade(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def workload_upgrade(self, plan: UpgradeStep, parallel: bool = False) -> None:
         """Change openstack-origin or source to the repository from which to install.
 
         :param plan: Plan to add workload upgrade as sub step.
@@ -453,7 +465,7 @@ class Application:
                 self.new_origin,
             )
 
-    def add_plan_reached_expected_target(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def reached_expected_target(self, plan: UpgradeStep, parallel: bool = False) -> None:
         """Add plan to check if application workload has upgraded.
 
         :param plan: Plan to add check of workload upgrade as sub step.

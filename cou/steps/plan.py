@@ -32,13 +32,17 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
-    apps_to_upgrade = analysis_result.apps
+    target = (
+        analysis_result.current_cloud_os_release.next_release
+        if analysis_result.current_cloud_os_release
+        else None
+    )
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
     )
-    for app in apps_to_upgrade:
-        app_upgrade_plan = app.generate_full_upgrade_plan()
+    for app in analysis_result.apps:
+        app_upgrade_plan = app.generate_upgrade_plan(target)
         if app_upgrade_plan:
             plan.add_step(app_upgrade_plan)
     return plan

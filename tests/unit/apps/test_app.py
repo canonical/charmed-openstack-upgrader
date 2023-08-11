@@ -379,7 +379,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    upgrade_plan = app.generate_full_upgrade_plan()
+    upgrade_plan = app.generate_upgrade_plan(app.next_os_release)
     steps_description = [
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
@@ -395,7 +395,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    upgrade_plan = app.generate_full_upgrade_plan()
+    upgrade_plan = app.generate_upgrade_plan(app.next_os_release)
     steps_description = [
         "Migration of 'my_keystone' from charmstore to charmhub",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
@@ -412,7 +412,7 @@ def test_cant_generate_upgrade_plan(status, config, mocker):
     app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    upgrade_plan = app.generate_full_upgrade_plan()
+    upgrade_plan = app.generate_upgrade_plan("victoria")
     assert upgrade_plan is None
     assert mock_logger.warning.call_count == 3
 
@@ -424,7 +424,7 @@ def test_upgrade_plan_change_current_channel(status, config):
     # next_channel victoria/stable
     app_status.charm_channel = "foo/stable"
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    upgrade_plan = app.generate_full_upgrade_plan()
+    upgrade_plan = app.generate_upgrade_plan(app.next_os_release)
 
     steps_description = [
         "Changing 'my_keystone' channel from: 'foo/stable' to: 'ussuri/stable'",
@@ -444,7 +444,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
     # channel it's already on next OpenStack release
     app_status.charm_channel = "victoria/stable"
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    upgrade_plan = app.generate_full_upgrade_plan()
+    upgrade_plan = app.generate_upgrade_plan(app.next_os_release)
 
     # no sub-step for refresh current channel or next channel
     steps_description = [
@@ -468,7 +468,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     # openstack-origin already configured for next OpenStack release
     app_config["openstack-origin"]["value"] = "cloud:focal-victoria"
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    upgrade_plan = app.generate_full_upgrade_plan()
+    upgrade_plan = app.generate_upgrade_plan(app.next_os_release)
     steps_description = [
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
@@ -485,3 +485,30 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
         "openstack-origin",
         "cloud:focal-victoria",
     )
+
+
+def test_upgrade_plan_application_already_upgraded(status, config, mocker):
+    min_cloud_os_version = "victoria"
+    mock_logger = mocker.patch("cou.apps.app.logger")
+    app_status = status["keystone_wallaby"]
+    app_config = config["openstack_wallaby"]
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    # victoria is lesser than wallaby, so application should not generate a plan.
+    upgrade_plan = app.generate_upgrade_plan(min_cloud_os_version)
+    mock_logger.warning.assert_called_once_with(
+        "Application: '%s' already on a newer version than %s. Aborting upgrade.",
+        "my_keystone",
+        min_cloud_os_version,
+    )
+    assert upgrade_plan is None
+
+
+def test_upgrade_plan_application_no_target(status, config, mocker):
+    min_cloud_os_version = None
+    mock_logger = mocker.patch("cou.apps.app.logger")
+    app_status = status["keystone_wallaby"]
+    app_config = config["openstack_wallaby"]
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    upgrade_plan = app.generate_upgrade_plan(min_cloud_os_version)
+    mock_logger.warning.assert_called_once_with("There is no target to upgrade.")
+    assert upgrade_plan is None
