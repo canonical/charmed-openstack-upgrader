@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
@@ -30,7 +31,12 @@ from cou.utils.juju_utils import (
     async_set_application_config,
     async_upgrade_charm,
 )
-from cou.utils.openstack import CHARM_TYPES, OpenStackCodenameLookup, OpenStackRelease
+from cou.utils.openstack import (
+    CHARM_TYPES,
+    LTS_SERIES,
+    OpenStackCodenameLookup,
+    OpenStackRelease,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +62,9 @@ class AppFactory:
         return cls.apps_type[app_type](**params)
 
     @classmethod
-    def register_application(cls, app_types: List[str]) -> Callable[[type[Application]], None]:
+    def register_application(
+        cls, app_types: List[str]
+    ) -> Callable[[type[Application]], type[Application]]:
         """Register Application subclasses.
 
         Use this method as decorator to register Applications that
@@ -66,9 +74,10 @@ class AppFactory:
         :type app_types: List[str]
         """
 
-        def decorator(application: Type[Application]) -> None:
+        def decorator(application: Type[Application]) -> Type[Application]:
             for app_type in app_types:
                 cls.apps_type[app_type] = application
+            return application
 
         return decorator
 
@@ -229,15 +238,32 @@ class Application:
             return self.current_os_release.next_release
         return None
 
-    @property
-    def new_origin(self) -> Optional[str]:
+    def os_origin_release(self, target: str) -> OpenStackRelease:
+        """_summary_.
+
+        :return: _description_
+        :rtype: _type_
+        """
+        os_origin = self.os_origin.rsplit("-", maxsplit=1)[-1]
+        match os_origin:
+            case "distro":
+                os_origin = LTS_SERIES[self.series]
+            case "":
+                os_origin = target
+        return OpenStackRelease(os_origin)
+
+    def new_origin(self, target: Optional[str] = None) -> Optional[str]:
         """Return the new openstack-origin or source configuration.
 
+        :param target: Target to upgrade. This is used by special charms when, defaults to None
+        :type target: Optional[str], optional
         :return: Repository from which to install.
         :rtype: Optional[str]
         """
         if not self.current_os_release:
             return None
+        if target and self.os_origin_release(target) <= target:
+            return f"cloud:{self.series}-{target}"
         return f"cloud:{self.series}-{self.next_os_release}"
 
     def _get_os_origin(self) -> str:
@@ -295,12 +321,13 @@ class Application:
         """
         self.refresh_current_channel(plan)
 
-    def upgrade_plan(self, plan: UpgradeStep) -> None:
+    def upgrade_plan(self, plan: UpgradeStep, target: str) -> None:
         """Upgrade planning.
 
         :param plan: Plan that will add upgrade as sub steps.
         :type plan: UpgradeStep
         """
+        logger.debug("Running upgrade plan to %s", target)
         self.disable_action_managed(plan)
         self.refresh_next_channel(plan)
         self.workload_upgrade(plan)
@@ -313,7 +340,7 @@ class Application:
         """
         self.reached_expected_target(plan)
 
-    def generate_upgrade_plan(self, target: Optional[str]) -> Optional[UpgradeStep]:
+    def generate_upgrade_plan(self, target: str) -> Optional[UpgradeStep]:
         """Generate full upgrade plan for an Application.
 
         :return: Full upgrade plan if the Application is able to generate it.
@@ -343,7 +370,7 @@ class Application:
             function=None,
         )
         self.pre_upgrade_plan(upgrade_plan)
-        self.upgrade_plan(upgrade_plan)
+        self.upgrade_plan(upgrade_plan, target)
         self.post_upgrade_plan(upgrade_plan)
         return upgrade_plan
 
@@ -435,7 +462,9 @@ class Application:
                     )
                 )
 
-    def workload_upgrade(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def workload_upgrade(
+        self, plan: UpgradeStep, target: Optional[str] = None, parallel: bool = False
+    ) -> None:
         """Change openstack-origin or source to the repository from which to install.
 
         :param plan: Plan to add workload upgrade as sub step.
@@ -443,17 +472,17 @@ class Application:
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         """
-        if self.os_origin != self.new_origin:
+        if self.os_origin != self.new_origin(target):
             plan.add_step(
                 UpgradeStep(
                     description=(
                         f"Change charm config of '{self.name}' "
-                        f"'{self.origin_setting}' to '{self.new_origin}'"
+                        f"'{self.origin_setting}' to '{self.new_origin(target)}'"
                     ),
                     parallel=parallel,
                     function=async_set_application_config,
                     application_name=self.name,
-                    configuration={self.origin_setting: self.new_origin},
+                    configuration={self.origin_setting: self.new_origin(target)},
                 )
             )
         else:
@@ -461,7 +490,7 @@ class Application:
                 "App: %s already have %s set to %s",
                 self.name,
                 self.origin_setting,
-                self.new_origin,
+                self.new_origin(target),
             )
 
     def reached_expected_target(self, plan: UpgradeStep, parallel: bool = False) -> None:
@@ -481,20 +510,17 @@ class Application:
         )
 
 
-@AppFactory.register_application(CHARM_TYPES["ceph"])
-class Ceph(Application):
-    """Ceph charms Application."""
+class SpecialApplications(ABC, Application):
+    """Application for charms that can have multiple OpenStack releases for a workload."""
 
-    # NOTE (gabrielcocenza)
-    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
-    openstack_map = {
-        "ussuri": "octopus",
-        "victoria": "octopus",
-        "wallaby": "pacific",
-        "xena": "pacific",
-        "yoga": "quincy",
-        "zed": "quincy",
-    }
+    @property
+    @abstractmethod
+    def openstack_map(self) -> Dict:
+        """Abstract property of openstack_map.
+
+        :return: Dictionary containing OpenStackRelease codename and the expected channel.
+        :rtype: Dict
+        """
 
     @property
     def expected_current_channel(self) -> Optional[str]:
@@ -523,3 +549,85 @@ class Ceph(Application):
             if self.next_os_release:
                 return f"{self.openstack_map[self.next_os_release]}/stable"
         return None
+
+    def generate_upgrade_plan(self, target: str) -> Optional[UpgradeStep]:
+        """Generate full upgrade plan for special Applications.
+
+        :return: Full upgrade plan if the Application is able to generate it.
+        :rtype: Optional[UpgradeStep]
+        """
+        if not target:
+            logger.warning("There is no target to upgrade.")
+            return None
+
+        if not self.can_generate_upgrade_plan():
+            logger.warning("Aborting upgrade plan for '%s'", self.name)
+            return None
+        if (
+            self.current_os_release
+            and self.current_os_release >= target
+            and self.os_origin_release(target) >= target
+        ):
+            logger.warning(
+                "Application: '%s' already on a newer version than %s. Aborting upgrade.",
+                self.name,
+                target,
+            )
+            return None
+        upgrade_plan = UpgradeStep(
+            description=f"Upgrade plan for '{self.name}' to: {target}",
+            parallel=False,
+            function=None,
+        )
+        self.pre_upgrade_plan(upgrade_plan)
+        self.upgrade_plan(upgrade_plan, target)
+        self.post_upgrade_plan(upgrade_plan)
+        return upgrade_plan
+
+    def upgrade_plan(self, plan: UpgradeStep, target: str) -> None:
+        """Upgrade planning.
+
+        :param plan: Plan that will add upgrade as sub steps.
+        :type plan: UpgradeStep
+        """
+        self.disable_action_managed(plan)
+        if self.current_os_release and self.current_os_release < self.os_origin_release(target):
+            self.refresh_next_channel(plan)
+        self.workload_upgrade(plan, target)
+
+
+@AppFactory.register_application(["rabbitmq-server"])
+class RabbitMQServer(SpecialApplications):
+    """RabbitMQ server Application."""
+
+    # NOTE (gabrielcocenza)
+    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+
+    @property
+    def openstack_map(self) -> Dict:
+        return {
+            "ussuri": "3.8",
+            "victoria": "3.8",
+            "wallaby": "3.8",
+            "xena": "3.8",
+            "yoga": "3.8",
+            "zed": "3.9",
+        }
+
+
+@AppFactory.register_application(CHARM_TYPES["ceph"])
+class Ceph(SpecialApplications):
+    """Ceph charms Application."""
+
+    # NOTE (gabrielcocenza)
+    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+    @property
+    def openstack_map(self) -> Dict:
+        return {
+            "ussuri": "octopus",
+            "victoria": "octopus",
+            "wallaby": "pacific",
+            "xena": "pacific",
+            "yoga": "quincy",
+            "zed": "quincy",
+        }

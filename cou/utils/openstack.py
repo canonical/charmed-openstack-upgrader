@@ -37,6 +37,11 @@ CHARM_TYPES = {
     "manila": ["manila-ganesha"],
     "horizon": ["openstack-dashboard"],
 }
+LTS_SERIES = {
+    "bionic": "queens",
+    "focal": "ussuri",
+    "jammy": "yoga",
+}
 
 # https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
 UPGRADE_ORDER = [
