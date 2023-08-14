@@ -231,8 +231,5 @@ def test_compare_openstack_raises_error():
 )
 def test_determine_next_openstack_release(os_release, release_year, next_os_release):
     release = OpenStackRelease(os_release)
-    if next_os_release is None:
-        assert release.next_release is next_os_release
-    else:
-        assert release.next_release == next_os_release
+    assert release.next_release == next_os_release
     assert release.date == release_year

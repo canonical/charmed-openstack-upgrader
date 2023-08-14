@@ -148,6 +148,11 @@ class Application:
         os_versions = {unit_values.get("os_version") for unit_values in self.units.values()}
         if len(os_versions) == 1:
             return list(os_versions)[0]
+        logger.warning(
+            "%s has more than one OpenStack version: %s. Setting current release to None.",
+            self.name,
+            os_versions,
+        )
         return None
 
     def _get_os_origin(self) -> str:
