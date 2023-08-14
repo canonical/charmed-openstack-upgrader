@@ -322,13 +322,12 @@ def test_ceph_application(
         ]
     )
     ceph_config = {"source": {"value": f"cloud:focal-{expected_os_version}"}}
-    ceph_mon = app_module.AppFactory.create(
-        app_type="ceph-mon",
+    ceph_mon = app_module.Ceph(
         name="ceph-mon",
         status=mock_ceph,
         config=ceph_config,
         model_name="my_model",
-        charm="ceph",
+        charm="ceph-mon",
     )
     assert ceph_mon.current_os_release == expected_os_version
     assert ceph_mon.expected_current_channel == f"{ceph_codename}/stable"
@@ -349,13 +348,12 @@ def test_ceph_application_unknown_os_release(mocker):
         ]
     )
     ceph_config = {"source": {"value": "cloud:focal-ussuri"}}
-    ceph_mon = app_module.AppFactory.create(
-        app_type="ceph-mon",
+    ceph_mon = app_module.Ceph(
         name="ceph-mon",
         status=mock_ceph,
         config=ceph_config,
         model_name="my_model",
-        charm="ceph",
+        charm="ceph-mon",
     )
     assert ceph_mon.current_os_release is None
     assert ceph_mon.expected_current_channel is None
@@ -512,3 +510,30 @@ def test_upgrade_plan_application_no_target(status, config, mocker):
     upgrade_plan = app.generate_upgrade_plan(min_cloud_os_version)
     mock_logger.warning.assert_called_once_with("There is no target to upgrade.")
     assert upgrade_plan is None
+
+
+@pytest.mark.parametrize(
+    "app_name, expected_class",
+    [("my_unknown_app", app_module.Application), ("ceph-mon", app_module.Ceph)],
+)
+def test_app_factory_create(mocker, app_name, expected_class):
+    # unknown app will result into Application class
+    unknown_app = app_module.AppFactory.create(
+        app_name,
+        name=app_name,
+        status=mocker.MagicMock(),
+        config=mocker.MagicMock(),
+        model_name="my_model",
+        charm=app_name,
+    )
+    assert isinstance(unknown_app, expected_class)
+
+
+def test_app_factory_register(mocker):
+    @app_module.AppFactory.register_application(["my_app"])
+    class MyApp:
+        pass
+
+    assert "my_app" in app_module.AppFactory.apps_type
+    my_app = app_module.AppFactory.create("my_app")
+    assert isinstance(my_app, MyApp)

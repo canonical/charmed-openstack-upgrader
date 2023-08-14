@@ -17,9 +17,10 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Optional
 
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
@@ -38,7 +39,7 @@ logger = logging.getLogger(__name__)
 class AppFactory:
     """Factory class for Application objects."""
 
-    apps_type: Dict[str, Type[Application]] = {}
+    apps_type: dict[str, type[Application]] = {}
 
     @classmethod
     def create(cls, app_type: str, **params: Any) -> Application:
@@ -56,19 +57,22 @@ class AppFactory:
         return cls.apps_type[app_type](**params)
 
     @classmethod
-    def register_application(cls, app_types: List[str]) -> Callable[[type[Application]], None]:
+    def register_application(
+        cls, app_types: list[str]
+    ) -> Callable[[type[Application]], type[Application]]:
         """Register Application subclasses.
 
         Use this method as decorator to register Applications that
         have special needs.
 
         :param app_types: List of charms to register the Application sub class.
-        :type app_types: List[str]
+        :type app_types: list[str]
         """
 
-        def decorator(application: Type[Application]) -> None:
+        def decorator(application: type[Application]) -> type[Application]:
             for app_type in app_types:
                 cls.apps_type[app_type] = application
+            return application
 
         return decorator
 
