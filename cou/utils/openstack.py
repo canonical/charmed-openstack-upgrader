@@ -204,6 +204,18 @@ class OpenStackRelease:
             return None
 
     @property
+    def previous_release(self) -> Optional[str]:
+        """Return the previous OpenStack release codename.
+
+        :return: OpenStack release codename.
+        :rtype: str
+        """
+        if self.index == 0:
+            logger.warning("There is no OpenStack release before %s", self.codename)
+            return None
+        return self.openstack_codenames[self.index - 1]
+
+    @property
     def date(self) -> str:
         """Release date of the OpenStack release.
 

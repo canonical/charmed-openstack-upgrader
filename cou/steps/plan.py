@@ -15,6 +15,7 @@
 """Upgrade planning utilities."""
 
 import logging
+from typing import Optional
 
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -23,7 +24,7 @@ from cou.steps.backup import backup
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
+async def generate_plan(analysis_result: Analysis) -> Optional[UpgradeStep]:
     """Generate plan for upgrade.
 
     :param args: Analysis result.
@@ -36,6 +37,9 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         if analysis_result.current_cloud_os_release
         else None
     )
+    if not target:
+        logger.warning("There is no target for upgrading")
+        return None
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)

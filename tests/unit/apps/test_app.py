@@ -43,7 +43,7 @@ def test_application_eq(status, config):
 
 
 def assert_application(
-    app,
+    app: Application,
     exp_name,
     exp_series,
     exp_status,
@@ -59,6 +59,8 @@ def assert_application(
     exp_current_channel,
     exp_next_channel,
     exp_new_origin,
+    expected_os_origin_release,
+    target,
 ):
     assert app.name == exp_name
     assert app.series == exp_series
@@ -76,10 +78,12 @@ def assert_application(
     assert app.next_os_release == exp_next_os_release
     assert app.expected_current_channel == exp_current_channel
     assert app.next_channel == exp_next_channel
-    assert app.new_origin == exp_new_origin
+    assert app.new_origin(target) == exp_new_origin
+    assert app.os_origin_release(target) == expected_os_origin_release
 
 
 def test_application_ussuri(status, config, units):
+    target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     exp_charm_origin = "ch"
@@ -92,6 +96,7 @@ def test_application_ussuri(status, config, units):
     exp_current_channel = "ussuri/stable"
     exp_next_channel = "victoria/stable"
     exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
+    expected_os_origin_release = "ussuri"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -111,12 +116,15 @@ def test_application_ussuri(status, config, units):
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
+        expected_os_origin_release,
+        target,
     )
     assert app.can_generate_upgrade_plan()
 
 
 def test_application_different_wl(status, config, units):
     """Different OpenStack Version on units if workload version is different."""
+    target = "victoria"
     app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
     exp_charm_origin = "ch"
@@ -129,6 +137,7 @@ def test_application_different_wl(status, config, units):
     exp_current_channel = None
     exp_next_channel = None
     exp_new_origin = None
+    expected_os_origin_release = "ussuri"
 
     exp_units["keystone/2"]["os_version"] = "victoria"
     exp_units["keystone/2"]["workload_version"] = "18.1.0"
@@ -151,12 +160,15 @@ def test_application_different_wl(status, config, units):
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
+        expected_os_origin_release,
+        target,
     )
     assert app.can_generate_upgrade_plan() is False
 
 
 def test_application_cs(status, config, units):
     """Test when application is from charm store."""
+    target = "victoria"
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
     exp_os_origin = "distro"
@@ -169,6 +181,7 @@ def test_application_cs(status, config, units):
     exp_current_channel = "ussuri/stable"
     exp_next_channel = "victoria/stable"
     exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
+    expected_os_origin_release = "ussuri"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -188,11 +201,14 @@ def test_application_cs(status, config, units):
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
+        expected_os_origin_release,
+        target,
     )
     assert app.can_generate_upgrade_plan()
 
 
 def test_application_wallaby(status, config, units):
+    target = "xena"
     exp_units = units["units_wallaby"]
     exp_charm_origin = "ch"
     app_config = config["openstack_wallaby"]
@@ -205,6 +221,7 @@ def test_application_wallaby(status, config, units):
     exp_current_channel = "wallaby/stable"
     exp_next_channel = "xena/stable"
     exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
+    expected_os_origin_release = "wallaby"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -224,17 +241,19 @@ def test_application_wallaby(status, config, units):
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
+        expected_os_origin_release,
+        target,
     )
     assert app.can_generate_upgrade_plan()
 
 
-def test_special_app_more_than_one_compatible_os_release(status, config):
+def test_special_app_ussuri(status, config):
     # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
     expected_units = {"rabbitmq-server/0": {"os_version": "yoga", "workload_version": "3.8"}}
-    app = Application(
+    app = app_module.RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
-        config["openstack_ussuri"],
+        config["rmq_ussuri"],
         "my_model",
         "rabbitmq-server",
     )
@@ -243,10 +262,10 @@ def test_special_app_more_than_one_compatible_os_release(status, config):
 
 def test_special_app_unknown_version(status, config):
     expected_units = {"rabbitmq-server/0": {"os_version": None, "workload_version": "80.5"}}
-    app = Application(
+    app = app_module.RabbitMQServer(
         "rabbitmq-server",
         status["unknown_rabbitmq_server"],
-        config["openstack_ussuri"],
+        config["rmq_ussuri"],
         "my_model",
         "rabbitmq-server",
     )
@@ -258,7 +277,8 @@ def test_application_no_openstack_origin(status):
     app_status = status["keystone_wallaby"]
     app_config = {}
     app = Application("my_app", app_status, app_config, "my_model", "my_charm")
-    assert app._get_os_origin() == ""
+    assert app._get_os_origin() is None
+    assert app.os_origin_release("xena") is None
 
 
 @pytest.mark.asyncio
@@ -488,27 +508,53 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
 
 
 def test_upgrade_plan_application_already_upgraded(status, config, mocker):
-    min_cloud_os_version = "victoria"
+    target = "victoria"
     mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     # victoria is lesser than wallaby, so application should not generate a plan.
-    upgrade_plan = app.generate_upgrade_plan(min_cloud_os_version)
+    upgrade_plan = app.generate_upgrade_plan(target)
     mock_logger.warning.assert_called_once_with(
         "Application: '%s' already on a newer version than %s. Aborting upgrade.",
         "my_keystone",
-        min_cloud_os_version,
+        target,
     )
     assert upgrade_plan is None
 
 
-def test_upgrade_plan_application_no_target(status, config, mocker):
-    min_cloud_os_version = None
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    app_status = status["keystone_wallaby"]
-    app_config = config["openstack_wallaby"]
-    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    upgrade_plan = app.generate_upgrade_plan(min_cloud_os_version)
-    mock_logger.warning.assert_called_once_with("There is no target to upgrade.")
-    assert upgrade_plan is None
+def test_upgrade_plan_special_no_new_channel(status):
+    target = "victoria"
+    app_status = status["rabbitmq_server"]
+    # os_origin_release will be considered as the previous OpenStack version from target
+    app_config = {"source": {"value": ""}}
+    app = app_module.RabbitMQServer(
+        "rabbitmq-server", app_status, app_config, "my_model", "rabbitmq-server"
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+    # no refresh to next channel
+    steps_description = [
+        "Refresh 'rabbitmq-server' to the latest revision of '3.8/stable'",
+        "Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'",
+        "Check if workload of 'rabbitmq-server' has upgraded",
+    ]
+    assert app.os_origin_release(target) == "ussuri"
+    assert upgrade_plan.description == "Upgrade plan for 'rabbitmq-server' to: victoria"
+    assert_plan_description(upgrade_plan, steps_description)
+
+
+def test_upgrade_plan_special_new_channel(status):
+    target = "wallaby"
+    app_status = status["ceph_mon_victoria"]
+    app_config = {"source": {"value": "cloud:focal-victoria"}}
+    app = app_module.Ceph("ceph-mon", app_status, app_config, "my_model", "ceph-mon")
+    upgrade_plan = app.generate_upgrade_plan(target)
+    # refresh to next channel
+    steps_description = [
+        "Refresh 'ceph-mon' to the latest revision of 'octopus/stable'",
+        "Refresh 'ceph-mon' to the new channel: 'pacific/stable'",
+        "Change charm config of 'ceph-mon' 'source' to 'cloud:focal-wallaby'",
+        "Check if workload of 'ceph-mon' has upgraded",
+    ]
+    assert upgrade_plan.description == "Upgrade plan for 'ceph-mon' to: wallaby"
+    assert_plan_description(upgrade_plan, steps_description)

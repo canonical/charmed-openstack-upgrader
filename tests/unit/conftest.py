@@ -124,6 +124,20 @@ def status():
     mock_unknown_app.charm = "ch:amd64/focal/my-app-638"
     mock_unknown_app.units = OrderedDict([("my-app/0", mock_units_unknown_app)])
 
+    mock_ceph_victoria = mock.MagicMock()
+    mock_ceph_victoria.series = "focal"
+    mock_ceph_victoria.charm_channel = "octopus/stable"
+    mock_ceph_victoria.charm = "ch:amd64/focal/ceph-mon-638"
+    mock_units_ceph_victoria = mock.MagicMock()
+    mock_units_ceph_victoria.workload_version = "15.2.0"
+    mock_ceph_victoria.units = OrderedDict(
+        [
+            ("ceph-mon/0", mock_units_ceph_victoria),
+            ("ceph-mon/1", mock_units_ceph_victoria),
+            ("ceph-mon/2", mock_units_ceph_victoria),
+        ]
+    )
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -134,6 +148,7 @@ def status():
         "unknown_rabbitmq_server": mock_rmq_unknown,
         "keystone_ussuri_cs": mock_keystone_ussuri_cs,
         "unknown_app": mock_unknown_app,
+        "ceph_mon_victoria": mock_ceph_victoria,
     }
     return status
 

@@ -187,9 +187,9 @@ async def entrypoint() -> None:
         analysis_result = await Analysis.create()
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
-        if args.run:
+        if args.run and upgrade_plan:
             await apply_plan(upgrade_plan, args.non_interactive)
-        else:
+        elif upgrade_plan:
             print(upgrade_plan)
 
     except Exception as exc:  # pylint: disable=broad-exception-caught

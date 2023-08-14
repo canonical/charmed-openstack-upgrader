@@ -115,7 +115,7 @@ class Application:
     model_name: str
     charm: str
     charm_origin: str = ""
-    os_origin: str = ""
+    os_origin: Optional[str] = None
     channel: str = ""
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
 
@@ -238,35 +238,39 @@ class Application:
             return self.current_os_release.next_release
         return None
 
-    def os_origin_release(self, target: str) -> OpenStackRelease:
-        """_summary_.
+    def os_origin_release(self, target: str) -> Optional[OpenStackRelease]:
+        """Identify the OpenStack release set on openstack-origin or source config.
 
-        :return: _description_
-        :rtype: _type_
+        :return: OpenStackRelease object or None if the app doesn't have os_origin config.
+        :rtype: Optional[OpenStackRelease]
         """
-        os_origin = self.os_origin.rsplit("-", maxsplit=1)[-1]
-        match os_origin:
-            case "distro":
-                os_origin = LTS_SERIES[self.series]
-            case "":
-                os_origin = target
-        return OpenStackRelease(os_origin)
+        os_origin_release = None
+        if self.os_origin is not None:
+            os_origin_release = self.os_origin.rsplit("-", maxsplit=1)[-1]
+            match os_origin_release:
+                case "distro":
+                    os_origin_release = LTS_SERIES[self.series]
+                case "":
+                    os_origin_release = OpenStackRelease(target).previous_release
+        return OpenStackRelease(os_origin_release) if os_origin_release else None
 
-    def new_origin(self, target: Optional[str] = None) -> Optional[str]:
+    def new_origin(self, target: str) -> Optional[str]:
         """Return the new openstack-origin or source configuration.
 
-        :param target: Target to upgrade. This is used by special charms when, defaults to None
-        :type target: Optional[str], optional
+        :param target: Target to upgrade.
+        :type target: str
         :return: Repository from which to install.
         :rtype: Optional[str]
         """
-        if not self.current_os_release:
+        if self.current_os_release is None:
             return None
-        if target and self.os_origin_release(target) <= target:
-            return f"cloud:{self.series}-{target}"
-        return f"cloud:{self.series}-{self.next_os_release}"
+        os_origin_release = self.os_origin_release(target)
+        if os_origin_release:
+            if os_origin_release <= target:
+                return f"cloud:{self.series}-{target}"
+        return None
 
-    def _get_os_origin(self) -> str:
+    def _get_os_origin(self) -> Optional[str]:
         """Get application configuration for openstack-origin or source.
 
         :return: Configuration parameter of the charm to set OpenStack origin.
@@ -279,7 +283,7 @@ class Application:
                 return self.config[origin].get("value", "")
 
         logger.warning("Failed to get origin for %s, no origin config found", self.name)
-        return ""
+        return None
 
     async def check_upgrade(self) -> None:
         """Check if an application has upgraded its workload version."""
@@ -330,7 +334,7 @@ class Application:
         logger.debug("Running upgrade plan to %s", target)
         self.disable_action_managed(plan)
         self.refresh_next_channel(plan)
-        self.workload_upgrade(plan)
+        self.workload_upgrade(plan, target)
 
     def post_upgrade_plan(self, plan: UpgradeStep) -> None:
         """Post Upgrade planning.
@@ -346,9 +350,6 @@ class Application:
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: Optional[UpgradeStep]
         """
-        if not target:
-            logger.warning("There is no target to upgrade.")
-            return None
         target_version = OpenStackRelease(target)
 
         if not self.can_generate_upgrade_plan():
@@ -462,9 +463,7 @@ class Application:
                     )
                 )
 
-    def workload_upgrade(
-        self, plan: UpgradeStep, target: Optional[str] = None, parallel: bool = False
-    ) -> None:
+    def workload_upgrade(self, plan: UpgradeStep, target: str, parallel: bool = False) -> None:
         """Change openstack-origin or source to the repository from which to install.
 
         :param plan: Plan to add workload upgrade as sub step.
@@ -556,17 +555,15 @@ class SpecialApplications(ABC, Application):
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: Optional[UpgradeStep]
         """
-        if not target:
-            logger.warning("There is no target to upgrade.")
-            return None
-
         if not self.can_generate_upgrade_plan():
             logger.warning("Aborting upgrade plan for '%s'", self.name)
             return None
+        os_origin_release = self.os_origin_release(target)
         if (
             self.current_os_release
             and self.current_os_release >= target
-            and self.os_origin_release(target) >= target
+            and os_origin_release
+            and os_origin_release > target
         ):
             logger.warning(
                 "Application: '%s' already on a newer version than %s. Aborting upgrade.",
@@ -591,7 +588,7 @@ class SpecialApplications(ABC, Application):
         :type plan: UpgradeStep
         """
         self.disable_action_managed(plan)
-        if self.current_os_release and self.current_os_release < self.os_origin_release(target):
+        if self.current_os_release and self.current_os_release <= self.os_origin_release(target):
             self.refresh_next_channel(plan)
         self.workload_upgrade(plan, target)
 
