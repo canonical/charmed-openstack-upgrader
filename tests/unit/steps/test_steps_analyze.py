@@ -98,12 +98,30 @@ async def test_analysis(mocker, apps):
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_rmq = apps["rmq_ussuri"]
-    expected_result = analyze.Analysis(apps=[app_rmq, app_keystone, app_cinder])
-    mocker.patch.object(
-        analyze.Analysis, "_populate", return_value=[app_rmq, app_keystone, app_cinder]
+    app_mysql_router = apps["mysql_router_ussuri"]
+    no_openstack = apps["no_openstack"]
+    expected_result = analyze.Analysis(
+        apps=[app_rmq, app_keystone, app_cinder, app_mysql_router, no_openstack]
     )
+    mocker.patch.object(
+        analyze.Analysis,
+        "_populate",
+        return_value=[app_rmq, app_keystone, app_cinder, app_mysql_router, no_openstack],
+    )
+    mock_logger = mocker.patch("cou.steps.analyze.logger")
 
     result = await Analysis.create()
     assert result == expected_result
     assert result.current_cloud_os_release == "ussuri"
+    # no OpenStack charms doesn't show on logs.
+    mock_logger.warning.assert_called_once_with(
+        "Disconsidering %s to determine the minimum version of the cloud.", app_mysql_router.name
+    )
+    mock_logger.debug.assert_called_once_with(
+        (
+            "Disconsidering %s to determine the min version of the cloud "
+            "because isn't an OpenStack charm."
+        ),
+        no_openstack.name,
+    )
     assert result.current_cloud_os_release.next_release == "victoria"

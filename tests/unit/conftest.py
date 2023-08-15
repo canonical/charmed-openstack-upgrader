@@ -98,6 +98,12 @@ def status():
     mock_unknown_app.charm = "ch:amd64/focal/my-app-638"
     mock_unknown_app.units = OrderedDict([("my-app/0", mock_units_unknown_app)])
 
+    # subordinate application
+    mock_mysql_router = mock.MagicMock()
+    mock_mysql_router.charm_channel = "8.0/stable"
+    mock_mysql_router.charm = "ch:amd64/focal/mysql-router-437"
+    mock_mysql_router.units = {}
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "cinder_ussuri": mock_cinder_ussuri,
@@ -106,6 +112,7 @@ def status():
         "keystone_ussuri_cs": mock_keystone_ussuri_cs,
         "keystone_wallaby": mock_keystone_wallaby,
         "unknown_app": mock_unknown_app,
+        "mysql_router": mock_mysql_router,
     }
     return status
 
@@ -142,6 +149,8 @@ def apps(status, config):
     keystone_ussuri_status = status["keystone_ussuri"]
     cinder_ussuri_status = status["cinder_ussuri"]
     rmq_status = status["rabbitmq_server"]
+    mysql_router_status = status["mysql_router"]
+    no_openstack_status = status["unknown_app"]
 
     keystone_ussuri = Application(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model"
@@ -151,12 +160,18 @@ def apps(status, config):
     )
     rmq_ussuri = Application("rabbitmq-server", rmq_status, config["rmq_ussuri"], "my_model")
     rmq_wallaby = Application("rabbitmq-server", rmq_status, config["rmq_wallaby"], "my_model")
+    mysql_router_ussuri = Application(
+        "keystone-mysql-router", mysql_router_status, config["rmq_ussuri"], "my_model"
+    )
+    no_openstack = Application("my-app", no_openstack_status, {}, "my_model")
 
     return {
         "keystone_ussuri": keystone_ussuri,
         "cinder_ussuri": cinder_ussuri,
         "rmq_ussuri": rmq_ussuri,
         "rmq_wallaby": rmq_wallaby,
+        "mysql_router_ussuri": mysql_router_ussuri,
+        "no_openstack": no_openstack,
     }
 
 
