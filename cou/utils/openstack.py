@@ -36,6 +36,7 @@ CHARM_TYPES = {
     "neutron": ["neutron-api", "neutron-gateway"],
     "manila": ["manila-ganesha"],
     "horizon": ["openstack-dashboard"],
+    "mysql": ["mysql-innodb-cluster", "mysql-router"],
 }
 
 
