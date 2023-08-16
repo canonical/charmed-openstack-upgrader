@@ -16,8 +16,8 @@
 
 import logging
 import sys
-from abc import ABC, abstractmethod
 
+from aioconsole import ainput
 from colorama import Fore, Style
 
 from cou.steps import UpgradeStep
@@ -53,72 +53,38 @@ def prompt(parameter: str) -> str:
     )
 
 
-# pylint: disable=too-few-public-methods
-class BaseExecutor(ABC):
-    """Abstract base class for executor."""
+async def _apply_plan(plan: UpgradeStep, interactive: bool) -> None:
+    """Apply the plan for upgrade.
 
-    def __init__(self, plan: UpgradeStep, interactive: bool):
-        """
-        Initialize Executor.
-
-        :param plan: generated plan to execute
-        :type plan: UpgradeStep
-        :param interactive: if plan should be executed interactive
-        :type interactive: bool
-        """
-        self.plan = plan
-        self.interactive = interactive
-
-    @abstractmethod
-    async def execute(self) -> None:
-        """Execute upgrade steps."""
-
-
-# pylint: disable=too-few-public-methods
-class ExecutorFactory:
-    """Factory to create executor."""
-
-    @classmethod
-    def create_executor(cls, plan: UpgradeStep, interactive: bool) -> BaseExecutor:
-        """Create executor.
-
-        :param plan: Plan to be executed on steps.
-        :type plan: UpgradeStep
-        :param interactive:
-        :type interactive: bool
-        :returns: BaseExecutor
-        """
-        return SerialExecutor(plan, interactive=interactive)
+    :param plan: Plan to be executed on steps.
+    :type plan: UpgradeStep
+    :param interactive:
+    :type interactive: bool
+    """
+    result = "X"
+    while result.casefold() not in AVAILABLE_OPTIONS:
+        result = (await ainput(prompt(plan.description))).casefold() if interactive else "c"
+        match result:
+            case "c":
+                logger.info("Running: %s", plan.description)
+                await plan.run()
+                for sub_step in plan.sub_steps:
+                    await _apply_plan(sub_step, interactive)
+            case "a":
+                logger.info("Aborting plan")
+                sys.exit(1)
+            case "s":
+                logger.info("Skipped")
+            case _:
+                logger.info("No valid input provided!")
 
 
-# pylint: disable=too-few-public-methods
-class SerialExecutor(BaseExecutor):
-    """Executes steps in serial manner."""
+async def execute(plan: UpgradeStep, interactive: bool) -> None:
+    """Execute the plan for upgrade.
 
-    async def execute(self) -> None:
-        await self._apply_plan(self.plan, self.interactive)
-
-    async def _apply_plan(self, plan: UpgradeStep, interactive: bool) -> None:
-        """Apply the plan for upgrade.
-
-        :param plan: Plan to be executed on steps.
-        :type plan: UpgradeStep
-        :param interactive:
-        :type interactive: bool
-        """
-        result = "X"
-        while result.casefold() not in AVAILABLE_OPTIONS:
-            result = input(prompt(plan.description)).casefold() if interactive else "c"
-            match result:
-                case "c":
-                    logger.info("Running: %s", plan.description)
-                    await plan.run()
-                    for sub_step in plan.sub_steps:
-                        await self._apply_plan(sub_step, interactive)
-                case "a":
-                    logger.info("Aborting plan")
-                    sys.exit(1)
-                case "s":
-                    logger.info("Skipped")
-                case _:
-                    logger.info("No valid input provided!")
+    :param plan: Plan to be executed on steps.
+    :type plan: UpgradeStep
+    :param interactive:
+    :type interactive: bool
+    """
+    await _apply_plan(plan, interactive)

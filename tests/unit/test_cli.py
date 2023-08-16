@@ -60,9 +60,7 @@ def test_setup_logging():
 async def test_entrypoint_with_exception():
     with patch("cou.cli.parse_args"), patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
-    ) as mock_generate_plan, patch("cou.steps.execute.SerialExecutor.execute"), patch(
-        "cou.cli.Analysis.create"
-    ):
+    ) as mock_generate_plan, patch("cou.cli.execute"), patch("cou.cli.Analysis.create"):
         mock_generate_plan.side_effect = Exception("An error occurred")
 
         with pytest.raises(SystemExit) as exitcode:
@@ -81,7 +79,7 @@ async def test_entrypoint_dry_run(mocker):
     mock_parse_args.return_value.run = False
     mocker.patch("cou.cli.setup_logging")
     mocker.patch("cou.cli.generate_plan", return_value=plan)
-    mock_apply_plan = mocker.patch("cou.steps.execute.SerialExecutor.execute")
+    mock_apply_plan = mocker.patch("cou.cli.execute")
     mocker.patch("cou.cli.Analysis.create")
     mock_print = mocker.patch("builtins.print")
 
@@ -96,9 +94,7 @@ async def test_entrypoint_dry_run(mocker):
 async def test_entrypoint_real_run():
     with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
-    ), patch("cou.steps.execute.SerialExecutor.execute") as mock_apply_plan, patch(
-        "cou.cli.Analysis.create"
-    ):
+    ), patch("cou.cli.execute") as mock_apply_plan, patch("cou.cli.Analysis.create"):
         mock_parse_args.return_value = MagicMock()
         mock_parse_args.return_value.run = True
 

@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cou.steps.execute import BaseExecutor, SerialExecutor, prompt
+from cou.steps.execute import execute, prompt
 
 
 @pytest.mark.asyncio
@@ -24,10 +24,10 @@ async def test_apply_plan_abort():
     upgrade_plan = AsyncMock()
     upgrade_plan.description = "Test Plan"
 
-    with patch("cou.steps.execute.input") as mock_input:
+    with patch("cou.steps.execute.ainput") as mock_input:
         mock_input.return_value = "a"
         with pytest.raises(SystemExit):
-            await SerialExecutor(upgrade_plan, True).execute()
+            await execute(upgrade_plan, True)
 
         mock_input.assert_called_once_with(prompt("Test Plan"))
         upgrade_plan.function.assert_not_called()
@@ -46,7 +46,7 @@ async def test_apply_plan_non_interactive(mocker):
     sub_step.sub_steps = [sub_sub_step]
     mock_input = mocker.patch("cou.steps.execute.input")
     mock_logger = mocker.patch("cou.steps.execute.logger")
-    await SerialExecutor(upgrade_plan, False).execute()
+    await execute(upgrade_plan, False)
     assert upgrade_plan.run.call_count == 1
     assert sub_step.run.call_count == 1
     assert sub_sub_step.run.call_count == 1
@@ -63,11 +63,11 @@ async def test_apply_plan_continue():
     sub_step.description = "Test Plan"
     upgrade_plan.sub_steps = [sub_step]
 
-    with patch("cou.steps.execute.input") as mock_input, patch(
+    with patch("cou.steps.execute.ainput") as mock_input, patch(
         "cou.steps.execute.sys"
     ) as mock_sys:
         mock_input.return_value = "C"
-        await SerialExecutor(upgrade_plan, True).execute()
+        await execute(upgrade_plan, True)
 
         mock_input.assert_called_with(prompt("Test Plan"))
         assert upgrade_plan.run.call_count == 1
@@ -81,11 +81,11 @@ async def test_apply_plan_nonsense():
     upgrade_plan.description = "Test Plan"
 
     with pytest.raises(SystemExit):
-        with patch("cou.steps.execute.input") as mock_input, patch(
+        with patch("cou.steps.execute.ainput") as mock_input, patch(
             "cou.steps.execute.logger.info"
         ) as log:
             mock_input.side_effect = ["x", "a"]
-            await SerialExecutor(upgrade_plan, True).execute()
+            await execute(upgrade_plan, True)
 
             log.assert_called_once_with("No valid input provided!")
             mock_input.assert_called_once_with(prompt("Test Plan"))
@@ -100,23 +100,11 @@ async def test_apply_plan_skip():
     sub_step.description = sub_step
     upgrade_plan.sub_steps = [sub_step]
 
-    with patch("cou.steps.execute.input") as mock_input, patch(
+    with patch("cou.steps.execute.ainput") as mock_input, patch(
         "cou.steps.execute.sys"
     ) as mock_sys:
         mock_input.return_value = "s"
-        await SerialExecutor(upgrade_plan, True).execute()
+        await execute(upgrade_plan, True)
 
         upgrade_plan.function.assert_not_called()
         mock_sys.exit.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_base_executor():
-    class CustomExecutor(BaseExecutor):
-        def execute(self) -> None:
-            super().execute()
-
-    executor = CustomExecutor(plan="X", interactive=False)
-    assert executor.plan == "X"
-    assert not executor.interactive
-    executor.execute()
