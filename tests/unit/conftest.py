@@ -147,6 +147,7 @@ def units():
 @pytest.fixture
 def apps(status, config):
     keystone_ussuri_status = status["keystone_ussuri"]
+    keystone_wallaby_status = status["keystone_wallaby"]
     cinder_ussuri_status = status["cinder_ussuri"]
     rmq_status = status["rabbitmq_server"]
     mysql_router_status = status["mysql_router"]
@@ -154,6 +155,9 @@ def apps(status, config):
 
     keystone_ussuri = Application(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model"
+    )
+    keystone_wallaby = Application(
+        "keystone", keystone_wallaby_status, config["openstack_wallaby"], "my_model"
     )
     cinder_ussuri = Application(
         "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model"
@@ -167,6 +171,7 @@ def apps(status, config):
 
     return {
         "keystone_ussuri": keystone_ussuri,
+        "keystone_wallaby": keystone_wallaby,
         "cinder_ussuri": cinder_ussuri,
         "rmq_ussuri": rmq_ussuri,
         "rmq_wallaby": rmq_wallaby,

@@ -47,7 +47,6 @@ def assert_application(
     exp_units,
     exp_channel,
     exp_current_os_release,
-    exp_next_os_release=None,
 ):
     assert app.name == exp_name
     assert app.series == exp_series
@@ -60,8 +59,6 @@ def assert_application(
     assert app.units == exp_units
     assert app.channel == exp_channel
     assert app.current_os_release == exp_current_os_release
-    if exp_next_os_release:
-        assert app.current_os_release.next_release == exp_next_os_release
 
 
 def test_application_ussuri(status, config, units):
@@ -73,7 +70,6 @@ def test_application_ussuri(status, config, units):
     exp_channel = app_status.charm_channel
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
-    exp_next_os_release = "victoria"
 
     app = Application("my_keystone", app_status, app_config, "my_model")
     assert_application(
@@ -89,7 +85,6 @@ def test_application_ussuri(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
-        exp_next_os_release,
     )
 
 
@@ -120,7 +115,6 @@ def test_application_cs(status, config, units):
     exp_charm_origin = "cs"
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
-    exp_next_os_release = "victoria"
 
     app = Application("my_keystone", app_status, app_config, "my_model")
     assert_application(
@@ -136,7 +130,6 @@ def test_application_cs(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
-        exp_next_os_release,
     )
 
 
@@ -149,7 +142,6 @@ def test_application_wallaby(status, config, units):
     exp_channel = app_status.charm_channel
     exp_series = app_status.series
     exp_current_os_release = "wallaby"
-    exp_next_os_release = "xena"
 
     app = Application("my_keystone", app_status, app_config, "my_model")
     assert_application(
@@ -165,7 +157,6 @@ def test_application_wallaby(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
-        exp_next_os_release,
     )
 
 

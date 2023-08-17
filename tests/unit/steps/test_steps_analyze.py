@@ -93,7 +93,7 @@ async def test_populate_model(mocker, full_status, config):
 
 
 @pytest.mark.asyncio
-async def test_analysis(mocker, apps):
+async def test_analysis_create(mocker, apps):
     """Test analysis object."""
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
@@ -108,20 +108,61 @@ async def test_analysis(mocker, apps):
         "_populate",
         return_value=[app_rmq, app_keystone, app_cinder, app_mysql_router, no_openstack],
     )
-    mock_logger = mocker.patch("cou.steps.analyze.logger")
 
     result = await Analysis.create()
     assert result == expected_result
-    assert result.current_cloud_os_release == "ussuri"
-    # no OpenStack charms doesn't show on logs.
-    mock_logger.warning.assert_called_once_with(
-        "Disconsidering %s to determine the minimum version of the cloud.", app_mysql_router.name
+
+
+@pytest.mark.asyncio
+async def test_analysis_detect_current_cloud_os_release_different_releases(apps):
+    keystone_wallaby = apps["keystone_wallaby"]
+    cinder_ussuri = apps["cinder_ussuri"]
+    rmq_ussuri = apps["rmq_ussuri"]
+    app_mysql_router = apps["mysql_router_ussuri"]
+    no_openstack = apps["no_openstack"]
+    result = analyze.Analysis(
+        apps=[rmq_ussuri, keystone_wallaby, cinder_ussuri, app_mysql_router, no_openstack]
     )
+
+    # current_cloud_os_release takes the minimum OpenStack version
+    assert result.current_cloud_os_release == "ussuri"
+
+
+@pytest.mark.asyncio
+async def test_analysis_detect_current_cloud_os_release_same_release(apps):
+    keystone_wallaby = apps["keystone_ussuri"]
+    cinder_ussuri = apps["cinder_ussuri"]
+    result = analyze.Analysis(apps=[keystone_wallaby, cinder_ussuri])
+
+    # current_cloud_os_release takes the minimum OpenStack version
+    assert result.current_cloud_os_release == "ussuri"
+
+
+@pytest.mark.asyncio
+async def test_analysis_subordinate_charm(mocker, apps):
+    """Test analysis object."""
+    app_mysql_router = apps["mysql_router_ussuri"]
+    result = analyze.Analysis(apps=[app_mysql_router])
+    mock_logger = mocker.patch("cou.steps.analyze.logger")
+
+    assert result.current_cloud_os_release is None
+    mock_logger.warning.assert_called_once_with(
+        "Ignoring %s when determining the minimum version of the cloud.", app_mysql_router.name
+    )
+
+
+@pytest.mark.asyncio
+async def test_analysis_no_openstack_charm(mocker, apps):
+    """Test analysis object."""
+    no_openstack = apps["no_openstack"]
+    result = analyze.Analysis(apps=[no_openstack])
+    mock_logger = mocker.patch("cou.steps.analyze.logger")
+
+    assert result.current_cloud_os_release is None
     mock_logger.debug.assert_called_once_with(
         (
-            "Disconsidering %s to determine the min version of the cloud "
-            "because isn't an OpenStack charm."
+            "Ignoring %s when determining the minimum version of the cloud: "
+            "not an OpenStack charm."
         ),
         no_openstack.name,
     )
-    assert result.current_cloud_os_release.next_release == "victoria"
