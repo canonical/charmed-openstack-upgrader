@@ -40,6 +40,10 @@ class JujuError(Exception):
     """Exception when libjuju does something unexpected."""
 
 
+class MismatchedOpenStackVersions(Exception):
+    """Exception when more than one OpenStack version are found in the Application."""
+
+
 class ActionFailed(Exception):
     # pylint: disable=consider-using-f-string
     """Exception raised when action fails."""

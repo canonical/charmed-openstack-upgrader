@@ -19,13 +19,14 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any
+from typing import Any, Optional
 
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
 
+from cou.exceptions import MismatchedOpenStackVersions
 from cou.utils.juju_utils import extract_charm_name_from_url
-from cou.utils.openstack import OpenStackCodenameLookup
+from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,11 @@ class Application:
     :param charm: Name of the charm.
     :type charm: str
     :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
-    :type charm_origin: str, optional
+    :type charm_origin: str, defaults to ""
     :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
-    :type os_origin: str, optional
+    :type os_origin: str, defaults to ""
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
-    :type channel: str, optional
+    :type channel: str, defaults to ""
     :param units: Units representation of an application.
         E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
     :type units: defaultdict[str, dict]
@@ -79,9 +80,15 @@ class Application:
             compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
             # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
             if compatible_os_versions:
-                self.units[unit]["os_version"] = compatible_os_versions[-1]
+                unit_os_version = max(compatible_os_versions)
+                self.units[unit]["os_version"] = unit_os_version
             else:
-                self.units[unit]["os_version"] = ""
+                self.units[unit]["os_version"] = None
+                logger.warning(
+                    "No compatible OpenStack versions were found to %s with workload version %s",
+                    self.name,
+                    workload_version,
+                )
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -117,7 +124,7 @@ class Application:
                 "units": {
                     unit: {
                         "workload_version": details.get("workload_version", ""),
-                        "os_version": details.get("os_version", ""),
+                        "os_version": str(details.get("os_version")),
                     }
                     for unit, details in self.units.items()
                 },
@@ -127,6 +134,44 @@ class Application:
         with StringIO() as stream:
             yaml.dump(summary, stream)
             return stream.getvalue()
+
+    @property
+    def series(self) -> str:
+        """Ubuntu series of the application.
+
+        :return: Ubuntu series of application. E.g: focal
+        :rtype: str
+        """
+        return self.status.series
+
+    @property
+    def current_os_release(self) -> Optional[OpenStackRelease]:
+        """Current OpenStack Release of the application.
+
+        :raises MismatchedOpenStackVersions: Raise MismatchedOpenStackVersions if units of
+            an application are running mismatched OpenStack versions.
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        os_versions = {unit_values.get("os_version") for unit_values in self.units.values()}
+        if not os_versions:
+            # TODO(gabrielcocenza) subordinate charms doesn't have units on ApplicationStatus and
+            # return an empty set. This should be handled by a future implementation of
+            # subordinate applications class.
+            return None
+        if len(os_versions) == 1:
+            return os_versions.pop()
+        # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
+        # upgrade methods, more than one version can be found.
+        logger.error(
+            (
+                "Units of application %s are running mismatched OpenStack versions: %s. "
+                "This is not currently handled."
+            ),
+            self.name,
+            os_versions,
+        )
+        raise MismatchedOpenStackVersions()
 
     def _get_os_origin(self) -> str:
         """Get application configuration for openstack-origin or source.
