@@ -150,6 +150,7 @@ class Application:
 
         :raises MismatchedOpenStackVersions: Raise MismatchedOpenStackVersions if units of
             an application are running mismatched OpenStack versions.
+        :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
         os_versions = {unit_values.get("os_version") for unit_values in self.units.values()}
