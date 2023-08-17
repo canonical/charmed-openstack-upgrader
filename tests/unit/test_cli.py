@@ -22,18 +22,18 @@ from cou.steps import UpgradeStep
 
 
 @pytest.mark.parametrize(
-    "args, expected_run, expected_loglevel, expected_non_interactive",
+    "args, expected_run, expected_loglevel, expected_interactive",
     [
-        (["--run", "--log-level", "DEBUG", "--non-interactive"], True, "DEBUG", True),
-        (["--run", "--log-level", "warning"], True, "WARNING", False),
-        (["--log-level", "debug"], False, "DEBUG", False),
+        (["--run", "--log-level", "DEBUG", "--no-interactive"], True, "DEBUG", False),
+        (["--run", "--log-level", "warning"], True, "WARNING", True),
+        (["--log-level", "debug"], False, "DEBUG", True),
     ],
 )
-def test_parse_args(args, expected_run, expected_loglevel, expected_non_interactive):
+def test_parse_args(args, expected_run, expected_loglevel, expected_interactive):
     parsed_args = parse_args(args)
     assert parsed_args.run == expected_run
     assert parsed_args.loglevel == expected_loglevel
-    assert parsed_args.non_interactive == expected_non_interactive
+    assert parsed_args.interactive == expected_interactive
 
 
 @pytest.mark.parametrize(

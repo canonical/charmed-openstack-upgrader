@@ -75,7 +75,10 @@ def parse_args(args: Any) -> argparse.Namespace:
         "  3 - Current active juju model",
     )
     parser.add_argument(
-        "--non-interactive", help="Run upgrade without prompt.", action="store_true", default=False
+        "--interactive",
+        help="Run upgrade with prompt.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
     )
     parser.add_argument(
         "-h",
@@ -136,7 +139,7 @@ async def entrypoint() -> None:
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
         if args.run:
-            await execute(upgrade_plan, not args.non_interactive)
+            await execute(upgrade_plan, args.interactive)
         else:
             print(upgrade_plan)
 
