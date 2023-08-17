@@ -101,14 +101,14 @@ class Analysis:
                     os_versions.add(app.current_os_release)
                 else:
                     logger.warning(
-                        "Disconsidering %s to determine the minimum version of the cloud.",
+                        "Ignoring %s when determining the minimum version of the cloud.",
                         app.name,
                     )
             else:
                 logger.debug(
                     (
-                        "Disconsidering %s to determine the min version of the cloud "
-                        "because isn't an OpenStack charm."
+                        "Ignoring %s when determining the minimum version of the cloud: "
+                        "not an OpenStack charm."
                     ),
                     app.name,
                 )

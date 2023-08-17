@@ -164,7 +164,7 @@ class Application:
         logger.error(
             (
                 "Units of application %s are running mismatched OpenStack versions: %s. "
-                "Setting current release to None."
+                "This is not currently handled."
             ),
             self.name,
             os_versions,
