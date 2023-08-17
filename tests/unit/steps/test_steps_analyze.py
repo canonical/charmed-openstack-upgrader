@@ -84,7 +84,7 @@ async def test_populate_model(mocker, full_status, config):
         analyze, "async_get_application_config", return_value=config["openstack_ussuri"]
     )
     # Initially, 4 applications are in the status: keystone, cinder, rabbitmq-server and my-app
-    # my-app is a unknown application in the model.
+    # my-app is an unknown application in the model.
     assert len(full_status.applications) == 4
     apps = await Analysis._populate()
     assert len(apps) == 4

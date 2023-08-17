@@ -148,7 +148,8 @@ class Application:
     def current_os_release(self) -> Optional[OpenStackRelease]:
         """Current OpenStack Release of the application.
 
-        :return: OpenStackRelease object
+        :raises MismatchedOpenStackVersions: Raise MismatchedOpenStackVersions if units of
+            an application are running mismatched OpenStack versions.
         :rtype: OpenStackRelease
         """
         os_versions = {unit_values.get("os_version") for unit_values in self.units.values()}
