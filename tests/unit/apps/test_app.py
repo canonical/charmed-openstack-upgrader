@@ -342,8 +342,7 @@ def test_ceph_application(
         ]
     )
     ceph_config = {"source": {"value": f"cloud:focal-{expected_os_version}"}}
-    ceph_mon = app_module.AppFactory.create(
-        app_type="ceph-mon",
+    ceph_mon = app_module.Ceph(
         name="ceph-mon",
         status=mock_ceph,
         config=ceph_config,
@@ -369,17 +368,19 @@ def test_ceph_application_unknown_os_release(mocker):
         ]
     )
     ceph_config = {"source": {"value": "cloud:focal-ussuri"}}
-    ceph_mon = app_module.AppFactory.create(
-        app_type="ceph-mon",
+    ceph_mon = app_module.Ceph(
         name="ceph-mon",
         status=mock_ceph,
         config=ceph_config,
         model_name="my_model",
         charm="ceph",
     )
+    upgrade_plan = ceph_mon.generate_upgrade_plan("victoria")
     assert ceph_mon.current_os_release is None
     assert ceph_mon.expected_current_channel is None
     assert ceph_mon.next_channel is None
+    assert ceph_mon.can_generate_upgrade_plan() is False
+    assert upgrade_plan is None
 
 
 def test_app_factory_registered_ceph_charms():
@@ -558,3 +559,20 @@ def test_upgrade_plan_special_new_channel(status):
     ]
     assert upgrade_plan.description == "Upgrade plan for 'ceph-mon' to: wallaby"
     assert_plan_description(upgrade_plan, steps_description)
+
+def test_upgrade_plan_special_application_already_upgraded(status, mocker):
+    target = "victoria"
+    mock_logger = mocker.patch("cou.apps.app.logger")
+    app_status = status["rabbitmq_server"]
+    # os_origin_release bigger than target
+    app_config = {"source": {"value": "cloud:focal-wallaby"}}
+    app = app_module.RabbitMQServer(
+        "rabbitmq-server", app_status, app_config, "my_model", "rabbitmq-server"
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+    mock_logger.warning.assert_called_once_with(
+        "Application: '%s' already on a newer version than %s. Aborting upgrade.",
+        app.name,
+        target,
+    )
+    assert upgrade_plan is None

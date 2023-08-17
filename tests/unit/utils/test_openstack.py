@@ -230,7 +230,7 @@ def test_compare_openstack_raises_error():
         ("diablo", "2011.2", "essex", None),  # None when there is no previous release
     ],
 )
-def test_determine_next_openstack_release(
+def test_determine_next_and_previous_openstack_release(
     os_release, release_year, next_os_release, previous_os_release
 ):
     release = OpenStackRelease(os_release)
