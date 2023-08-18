@@ -22,10 +22,8 @@ import sys
 from datetime import datetime
 from typing import Any
 
-from colorama import Fore, Style
-
-from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
+from cou.steps.execute import execute
 from cou.steps.plan import generate_plan
 from cou.utils import juju_utils as utils
 
@@ -77,7 +75,10 @@ def parse_args(args: Any) -> argparse.Namespace:
         "  3 - Current active juju model",
     )
     parser.add_argument(
-        "--non-interactive", help="Run upgrade without prompt.", action="store_true", default=False
+        "--interactive",
+        help="Run upgrade with prompt.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
     )
     parser.add_argument(
         "-h",
@@ -124,56 +125,6 @@ def setup_logging(log_level: str = "INFO") -> None:
     logger.info("Logs of this execution can be found at %s", file_name)
 
 
-def prompt(parameter: str) -> str:
-    """Generate eye-catching prompt.
-
-    :param parameter: String to show at the prompt with the user options.
-    :type parameter: str
-    :return: Colored prompt string with the user options.
-    :rtype: str
-    """
-
-    def bold(text: str) -> str:
-        return Style.RESET_ALL + Fore.RED + Style.BRIGHT + text + Style.RESET_ALL
-
-    def normal(text: str) -> str:
-        return Style.RESET_ALL + Fore.RED + text + Style.RESET_ALL
-
-    return (
-        normal(parameter + " (")
-        + bold("c")
-        + normal(")ontinue/(")
-        + bold("a")
-        + normal(")bort/(")
-        + bold("s")
-        + normal(")kip:")
-    )
-
-
-async def apply_plan(upgrade_plan: UpgradeStep, non_interactive: bool) -> None:
-    """Apply the plan for upgrade.
-
-    :param upgrade_plan: Plan to be executed on steps.
-    :type upgrade_plan: UpgradeStep
-    """
-    result = "X"
-    while result.casefold() not in AVAILABLE_OPTIONS:
-        result = "c" if non_interactive else input(prompt(upgrade_plan.description)).casefold()
-        match result:
-            case "c":
-                logger.info("Running: %s", upgrade_plan.description)
-                await upgrade_plan.run()
-                for sub_step in upgrade_plan.sub_steps:
-                    await apply_plan(sub_step, non_interactive)
-            case "a":
-                logger.info("Aborting plan")
-                sys.exit(1)
-            case "s":
-                logger.info("Skipped")
-            case _:
-                logger.info("No valid input provided!")
-
-
 async def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
@@ -187,9 +138,9 @@ async def entrypoint() -> None:
         analysis_result = await Analysis.create()
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
-        if args.run and upgrade_plan:
-            await apply_plan(upgrade_plan, args.non_interactive)
-        elif upgrade_plan:
+        if args.run:
+            await execute(upgrade_plan, args.interactive)
+        else:
             print(upgrade_plan)
 
     except Exception as exc:  # pylint: disable=broad-exception-caught

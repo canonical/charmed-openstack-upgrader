@@ -228,7 +228,7 @@ def test_application_subordinate(status):
     assert app.expected_current_channel is None
     assert app.next_channel is None
     assert app.next_os_release is None
-    assert app.new_origin is None
+    assert app.new_origin("victoria") is None
 
 
 def test_special_app_more_than_one_compatible_os_release(status, config):

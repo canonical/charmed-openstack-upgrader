@@ -25,27 +25,26 @@ exclude = '''
 [tool.isort]
 profile = "black"
 skip_glob = [
-  ".eggs",
-  ".git",
-  ".tox",
-  ".venv",
-  ".build",
-  "build",
-  "report"
+    ".eggs",
+    ".git",
+    ".tox",
+    ".venv",
+    ".build",
+    "build",
+    "report"
 ]
 
 [tool.pylint]
 max-line-length = 99
 ignore-paths = [
-  ".eggs",
-  ".git",
-  ".tox",
-  ".venv",
-  ".build",
-  "build",
-  "report",
-  "tests",
-  "cou/zaza_utils"
+    ".eggs",
+    ".git",
+    ".tox",
+    ".venv",
+    ".build",
+    "build",
+    "report",
+    "tests"
 ]
 
 [tool.mypy]
@@ -55,16 +54,15 @@ warn_unreachable = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
 exclude = [
-  ".eggs",
-  ".git",
-  ".tox",
-  ".venv",
-  ".build",
-  "build",
-  "lib",
-  "report",
-  "tests",
-  "cou/zaza_utils"
+    ".eggs",
+    ".git",
+    ".tox",
+    ".venv",
+    ".build",
+    "build",
+    "lib",
+    "report",
+    "tests"
 ]
 
 [tool.coverage.run]

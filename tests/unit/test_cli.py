@@ -13,27 +13,27 @@
 # limitations under the License.
 
 from argparse import ArgumentError
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cou.cli import apply_plan, entrypoint, parse_args, prompt, setup_logging
+from cou.cli import entrypoint, parse_args, setup_logging
 from cou.steps import UpgradeStep
 
 
 @pytest.mark.parametrize(
-    "args, expected_run, expected_loglevel, expected_non_interactive",
+    "args, expected_run, expected_loglevel, expected_interactive",
     [
-        (["--run", "--log-level", "DEBUG", "--non-interactive"], True, "DEBUG", True),
-        (["--run", "--log-level", "warning"], True, "WARNING", False),
-        (["--log-level", "debug"], False, "DEBUG", False),
+        (["--run", "--log-level", "DEBUG", "--no-interactive"], True, "DEBUG", False),
+        (["--run", "--log-level", "warning"], True, "WARNING", True),
+        (["--log-level", "debug"], False, "DEBUG", True),
     ],
 )
-def test_parse_args(args, expected_run, expected_loglevel, expected_non_interactive):
+def test_parse_args(args, expected_run, expected_loglevel, expected_interactive):
     parsed_args = parse_args(args)
     assert parsed_args.run == expected_run
     assert parsed_args.loglevel == expected_loglevel
-    assert parsed_args.non_interactive == expected_non_interactive
+    assert parsed_args.interactive == expected_interactive
 
 
 @pytest.mark.parametrize(
@@ -60,7 +60,7 @@ def test_setup_logging():
 async def test_entrypoint_with_exception():
     with patch("cou.cli.parse_args"), patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
-    ) as mock_generate_plan, patch("cou.cli.apply_plan"), patch("cou.cli.Analysis.create"):
+    ) as mock_generate_plan, patch("cou.cli.execute"), patch("cou.cli.Analysis.create"):
         mock_generate_plan.side_effect = Exception("An error occurred")
 
         with pytest.raises(SystemExit) as exitcode:
@@ -79,7 +79,7 @@ async def test_entrypoint_dry_run(mocker):
     mock_parse_args.return_value.run = False
     mocker.patch("cou.cli.setup_logging")
     mocker.patch("cou.cli.generate_plan", return_value=plan)
-    mock_apply_plan = mocker.patch("cou.cli.apply_plan")
+    mock_apply_plan = mocker.patch("cou.cli.execute")
     mocker.patch("cou.cli.Analysis.create")
     mock_print = mocker.patch("builtins.print")
 
@@ -94,7 +94,7 @@ async def test_entrypoint_dry_run(mocker):
 async def test_entrypoint_real_run():
     with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
         "cou.cli.generate_plan"
-    ), patch("cou.cli.apply_plan") as mock_apply_plan, patch("cou.cli.Analysis.create"):
+    ), patch("cou.cli.execute") as mock_apply_plan, patch("cou.cli.Analysis.create"):
         mock_parse_args.return_value = MagicMock()
         mock_parse_args.return_value.run = True
 
@@ -102,88 +102,3 @@ async def test_entrypoint_real_run():
 
         assert not result
         mock_apply_plan.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_apply_plan_non_interactive(mocker):
-    upgrade_plan = AsyncMock()
-    upgrade_plan.description = "A"
-    sub_step = AsyncMock()
-    sub_step.description = "B is Sub step from A"
-    sub_sub_step = AsyncMock()
-    sub_sub_step.description = "C is Sub step from B"
-
-    upgrade_plan.sub_steps = [sub_step]
-    sub_step.sub_steps = [sub_sub_step]
-    mock_input = mocker.patch("cou.cli.input")
-    mock_logger = mocker.patch("cou.cli.logger")
-    await apply_plan(upgrade_plan, True)
-    assert upgrade_plan.run.call_count == 1
-    assert sub_step.run.call_count == 1
-    assert sub_sub_step.run.call_count == 1
-    assert mock_logger.info.call_count == 3
-    mock_input.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_apply_plan_continue():
-    upgrade_plan = AsyncMock()
-    upgrade_plan.description = "Test Plan"
-    upgrade_plan.run = AsyncMock()
-    sub_step = AsyncMock()
-    sub_step.description = "Test Plan"
-    upgrade_plan.sub_steps = [sub_step]
-
-    with patch("cou.cli.input") as mock_input, patch("cou.cli.sys") as mock_sys:
-        mock_input.return_value = "C"
-        await apply_plan(upgrade_plan, False)
-
-        mock_input.assert_called_with(prompt("Test Plan"))
-        assert upgrade_plan.run.call_count == 1
-        assert sub_step.run.call_count == 1
-        mock_sys.exit.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_apply_plan_abort():
-    upgrade_plan = AsyncMock()
-    upgrade_plan.description = "Test Plan"
-
-    with patch("cou.cli.input") as mock_input:
-        mock_input.return_value = "a"
-        with pytest.raises(SystemExit):
-            await apply_plan(upgrade_plan, False)
-
-        mock_input.assert_called_once_with(prompt("Test Plan"))
-        upgrade_plan.function.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_apply_plan_nonsense():
-    upgrade_plan = MagicMock()
-    upgrade_plan.description = "Test Plan"
-
-    with pytest.raises(SystemExit):
-        with patch("cou.cli.input") as mock_input, patch("cou.cli.logging.info") as log:
-            mock_input.side_effect = ["x", "a"]
-            await apply_plan(upgrade_plan, False)
-
-            log.assert_called_once_with("No valid input provided!")
-            mock_input.assert_called_once_with(prompt("Test Plan"))
-            upgrade_plan.function.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_apply_plan_skip():
-    upgrade_plan = MagicMock()
-    upgrade_plan.description = "Test Plan"
-    sub_step = MagicMock()
-    sub_step.description = sub_step
-    upgrade_plan.sub_steps = [sub_step]
-
-    with patch("cou.cli.input") as mock_input, patch("cou.cli.sys") as mock_sys:
-        mock_input.return_value = "s"
-        await apply_plan(upgrade_plan, False)
-
-        upgrade_plan.function.assert_not_called()
-        mock_sys.exit.assert_not_called()
