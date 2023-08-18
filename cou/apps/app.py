@@ -18,13 +18,15 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Optional
 
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
 
+from cou.exceptions import MismatchedOpenStackVersions
 from cou.steps import UpgradeStep
 from cou.utils.juju_utils import (
     async_get_status,
@@ -44,7 +46,7 @@ logger = logging.getLogger(__name__)
 class AppFactory:
     """Factory class for Application objects."""
 
-    apps_type: Dict[str, Type[Application]] = {}
+    apps_type: dict[str, type[Application]] = {}
 
     @classmethod
     def create(cls, app_type: str, **params: Any) -> Application:
@@ -63,7 +65,7 @@ class AppFactory:
 
     @classmethod
     def register_application(
-        cls, app_types: List[str]
+        cls, app_types: list[str]
     ) -> Callable[[type[Application]], type[Application]]:
         """Register Application subclasses.
 
@@ -71,10 +73,10 @@ class AppFactory:
         have special needs.
 
         :param app_types: List of charms to register the Application sub class.
-        :type app_types: List[str]
+        :type app_types: list[str]
         """
 
-        def decorator(application: Type[Application]) -> Type[Application]:
+        def decorator(application: type[Application]) -> type[Application]:
             for app_type in app_types:
                 cls.apps_type[app_type] = application
             return application
@@ -134,6 +136,11 @@ class Application:
                 self.units[unit]["os_version"] = unit_os_version
             else:
                 self.units[unit]["os_version"] = None
+                logger.warning(
+                    "No compatible OpenStack versions were found to %s with workload version %s",
+                    self.name,
+                    workload_version,
+                )
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -169,7 +176,7 @@ class Application:
                 "units": {
                     unit: {
                         "workload_version": details.get("workload_version", ""),
-                        "os_version": str(details.get("os_version", "")),
+                        "os_version": str(details.get("os_version")),
                     }
                     for unit, details in self.units.items()
                 },
@@ -219,13 +226,30 @@ class Application:
     def current_os_release(self) -> Optional[OpenStackRelease]:
         """Current OpenStack Release of the application.
 
+        :raises MismatchedOpenStackVersions: Raise MismatchedOpenStackVersions if units of
+            an application are running mismatched OpenStack versions.
         :return: OpenStackRelease object
-        :rtype: Optional[OpenStackRelease]
+        :rtype: OpenStackRelease
         """
         os_versions = {unit_values.get("os_version") for unit_values in self.units.values()}
+        if not os_versions:
+            # TODO(gabrielcocenza) subordinate charms doesn't have units on ApplicationStatus and
+            # return an empty set. This should be handled by a future implementation of
+            # subordinate applications class.
+            return None
         if len(os_versions) == 1:
-            return list(os_versions)[0]
-        return None
+            return os_versions.pop()
+        # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
+        # upgrade methods, more than one version can be found.
+        logger.error(
+            (
+                "Units of application %s are running mismatched OpenStack versions: %s. "
+                "This is not currently handled."
+            ),
+            self.name,
+            os_versions,
+        )
+        raise MismatchedOpenStackVersions()
 
     @property
     def next_os_release(self) -> Optional[str]:
@@ -347,6 +371,8 @@ class Application:
     def generate_upgrade_plan(self, target: str) -> Optional[UpgradeStep]:
         """Generate full upgrade plan for an Application.
 
+        :param target: OpenStack codename to upgrade.
+        :type target: Optional[str]
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: Optional[UpgradeStep]
         """
@@ -514,7 +540,7 @@ class SpecialApplications(ABC, Application):
 
     @property
     @abstractmethod
-    def openstack_map(self) -> Dict:
+    def openstack_map(self) -> dict:
         """Abstract property of openstack_map.
 
         :return: Dictionary containing OpenStackRelease codename and the expected channel.
@@ -601,7 +627,7 @@ class RabbitMQServer(SpecialApplications):
     # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 
     @property
-    def openstack_map(self) -> Dict:
+    def openstack_map(self) -> dict:
         return {
             "ussuri": "3.8",
             "victoria": "3.8",
@@ -619,7 +645,7 @@ class Ceph(SpecialApplications):
     # NOTE (gabrielcocenza)
     # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
     @property
-    def openstack_map(self) -> Dict:
+    def openstack_map(self) -> dict:
         return {
             "ussuri": "octopus",
             "victoria": "octopus",

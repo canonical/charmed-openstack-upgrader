@@ -226,8 +226,8 @@ def test_compare_openstack_raises_error():
         ("victoria", "2020.2", "wallaby", "ussuri"),
         ("wallaby", "2021.1", "xena", "victoria"),
         ("xena", "2021.2", "yoga", "wallaby"),
-        ("bobcat", "2023.2", None, "antelope"),  # None when there is no next release
-        ("diablo", "2011.2", "essex", None),  # None when there is no previous release
+        ("caracal", "2023.2", None, "bobcat"),  # None when there is no next release
+        ("diablo", "2024.1", "essex", None),  # None when there is no previous release
     ],
 )
 def test_determine_next_and_previous_openstack_release(

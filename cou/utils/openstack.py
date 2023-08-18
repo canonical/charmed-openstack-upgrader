@@ -36,6 +36,7 @@ CHARM_TYPES = {
     "neutron": ["neutron-api", "neutron-gateway"],
     "manila": ["manila-ganesha"],
     "horizon": ["openstack-dashboard"],
+    "mysql": ["mysql-innodb-cluster", "mysql-router"],
 }
 LTS_SERIES = {
     "bionic": "queens",
@@ -63,8 +64,8 @@ UPGRADE_ORDER = [
     "manila-ganesha",
     "neutron-api",
     "neutron-gateway",
-    "ovn-central",
     "ovn-dedicated-chassis",
+    "ovn-central",
     "placement",
     "nova-cloud-controller",
     "nova-compute",
@@ -102,16 +103,16 @@ OPENSTACK_CODENAMES = OrderedDict(
         ("zed", "2022.2"),
         ("antelope", "2023.1"),
         ("bobcat", "2023.2"),
+        ("caracal", "2024.1"),
     ]
 )
 
 
 class OpenStackRelease:
-    """Provides a class that will compare strings from an iterator type object.
+    """Provides a class that will compare OpenStack releases by the codename.
 
     Used to provide > and < comparisons on strings that may not necessarily be
-    alphanumerically ordered.  e.g. OpenStack or Ubuntu releases AFTER the
-    z-wrap.
+    alphanumerically ordered.  e.g. OpenStack releases AFTER the z-wrap.
     """
 
     openstack_codenames = list(OPENSTACK_CODENAMES.keys())

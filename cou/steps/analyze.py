@@ -92,11 +92,30 @@ class Analysis:
     def current_cloud_os_release(self) -> Optional[OpenStackRelease]:
         """Shows the current OpenStack release codename.
 
+        This property just consider OpenStack charms as those that have
+        openstack-origin or source on the charm configuration (app.os_origin).
         :return: OpenStack release codename
         :rtype: OpenStackRelease
         """
         os_versions = set()
         for app in self.apps:
-            if app.current_os_release:
-                os_versions.add(app.current_os_release)
+            if app.os_origin:
+                # NOTE (gabrielcocenza) this is temporarily skipping subordinate charms
+                # until there is a specific class able to get the OpenStack release.
+                # It's also skipping applications with no identified OpenStack release.
+                if app.current_os_release:
+                    os_versions.add(app.current_os_release)
+                else:
+                    logger.warning(
+                        "Ignoring %s when determining the minimum version of the cloud.",
+                        app.name,
+                    )
+            else:
+                logger.debug(
+                    (
+                        "Ignoring %s when determining the minimum version of the cloud: "
+                        "not an OpenStack charm."
+                    ),
+                    app.name,
+                )
         return min(os_versions) if os_versions else None
