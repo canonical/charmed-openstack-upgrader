@@ -21,7 +21,7 @@ from colorama import Fore, Style
 
 from cou.steps import UpgradeStep
 
-AVAILABLE_OPTIONS = "cas"
+AVAILABLE_OPTIONS = ["c", "a", "s"]
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ async def _apply_plan(plan: UpgradeStep, interactive: bool) -> None:
     :type interactive: bool
     """
     result = ""
-    while result == "" or result.casefold() not in AVAILABLE_OPTIONS:
+    while result.casefold() not in AVAILABLE_OPTIONS:
         result = (await ainput(prompt(plan.description))).casefold() if interactive else "c"
         match result:
             case "c":
