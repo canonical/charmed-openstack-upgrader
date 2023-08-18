@@ -343,6 +343,8 @@ class Application:
     def generate_upgrade_plan(self, target: Optional[str]) -> Optional[UpgradeStep]:
         """Generate full upgrade plan for an Application.
 
+        :param target: OpenStack codename to upgrade.
+        :type target: Optional[str]
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: Optional[UpgradeStep]
         """

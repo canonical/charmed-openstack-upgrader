@@ -56,6 +56,7 @@ def assert_application(
     exp_units,
     exp_channel,
     exp_current_os_release,
+    exp_next_os_release,
     exp_current_channel,
     exp_next_channel,
     exp_new_origin,
@@ -71,6 +72,7 @@ def assert_application(
     assert app.units == exp_units
     assert app.channel == exp_channel
     assert app.current_os_release == exp_current_os_release
+    assert app.next_os_release == exp_next_os_release
     assert app.expected_current_channel == exp_current_channel
     assert app.next_channel == exp_next_channel
     assert app.new_origin == exp_new_origin
@@ -85,9 +87,10 @@ def test_application_ussuri(status, config, units):
     exp_channel = app_status.charm_channel
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
+    exp_next_os_release = "victoria"
     exp_current_channel = "ussuri/stable"
     exp_next_channel = "victoria/stable"
-    exp_new_origin = f"cloud:{exp_series}-victoria"
+    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -103,6 +106,7 @@ def test_application_ussuri(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
+        exp_next_os_release,
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
@@ -133,9 +137,10 @@ def test_application_cs(status, config, units):
     exp_charm_origin = "cs"
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
+    exp_next_os_release = "victoria"
     exp_current_channel = "ussuri/stable"
     exp_next_channel = "victoria/stable"
-    exp_new_origin = f"cloud:{exp_series}-victoria"
+    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -151,6 +156,7 @@ def test_application_cs(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
+        exp_next_os_release,
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
@@ -167,9 +173,10 @@ def test_application_wallaby(status, config, units):
     exp_channel = app_status.charm_channel
     exp_series = app_status.series
     exp_current_os_release = "wallaby"
+    exp_next_os_release = "xena"
     exp_current_channel = "wallaby/stable"
     exp_next_channel = "xena/stable"
-    exp_new_origin = f"cloud:{exp_series}-xena"
+    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -185,6 +192,7 @@ def test_application_wallaby(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
+        exp_next_os_release,
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
@@ -512,7 +520,7 @@ def test_app_factory_create(mocker, app_name, expected_class):
     assert isinstance(unknown_app, expected_class)
 
 
-def test_app_factory_register(mocker):
+def test_app_factory_register():
     @app_module.AppFactory.register_application(["my_app"])
     class MyApp:
         pass
