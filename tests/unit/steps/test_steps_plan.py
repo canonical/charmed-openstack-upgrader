@@ -58,6 +58,16 @@ async def test_generate_plan(mocker, apps):
     assert_plan_description(sub_step_upgrade_cinder, expected_description_upgrade_cinder)
 
 
+@pytest.mark.asyncio
+async def test_generate_plan_no_target(mocker, apps):
+    mock_logger = mocker.patch("cou.steps.plan.logger")
+    my_app = apps["no_openstack"]
+    analysis_result = Analysis(apps=[my_app])
+    plan = await generate_plan(analysis_result)
+    mock_logger.warning.assert_called_once_with("There is no target for upgrading")
+    assert plan is None
+
+
 def generate_expected_upgrade_plan_description(charm, target):
     return [
         f"Refresh '{charm.name}' to the latest revision of '{charm.expected_current_channel}'",

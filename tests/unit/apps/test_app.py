@@ -373,6 +373,100 @@ def test_ceph_application_unknown_os_release(mocker):
     assert upgrade_plan is None
 
 
+@pytest.mark.parametrize(
+    "ovn_version, expected_os_version, next_ovn",
+    [
+        ("22.03", "yoga", "22.09"),
+    ],
+)
+def test_ovn_application(mocker, ovn_version, expected_os_version, next_ovn):
+    mock_ovn = mocker.MagicMock()
+    mock_ovn.series = "focal"
+    mock_ovn.charm = "ch:amd64/focal/ovn-central-777"
+    mock_units_ovn = mocker.MagicMock()
+    mock_units_ovn.workload_version = ovn_version
+    mock_ovn.units = OrderedDict(
+        [
+            ("ovn-centra/0", mock_units_ovn),
+            ("ovn-centra/1", mock_units_ovn),
+            ("ovn-centra/2", mock_units_ovn),
+        ]
+    )
+    ovn_config = {"source": {"value": f"cloud:focal-{expected_os_version}"}}
+    ovn_central = app_module.Ovn(
+        name="ovn-central",
+        status=mock_ovn,
+        config=ovn_config,
+        model_name="my_model",
+        charm="ovn-central",
+    )
+    assert ovn_central.current_os_release == expected_os_version
+    assert ovn_central.expected_current_channel == f"{ovn_version}/stable"
+    assert ovn_central.next_channel == f"{next_ovn}/stable"
+
+
+@pytest.mark.parametrize(
+    "mysql_version, expected_os_version, next_mysql",
+    [
+        ("8.0", "yoga", "8.0"),
+    ],
+)
+def test_mysql_application(mocker, mysql_version, expected_os_version, next_mysql):
+    mock_mysql = mocker.MagicMock()
+    mock_mysql.series = "focal"
+    mock_mysql.charm = "ch:amd64/focal/mysql-innodb-cluster-777"
+    mock_units_mysql = mocker.MagicMock()
+    mock_units_mysql.workload_version = mysql_version
+    mock_mysql.units = OrderedDict(
+        [
+            ("mysql-innodb-cluster/0", mock_units_mysql),
+            ("mysql-innodb-cluster/1", mock_units_mysql),
+            ("mysql-innodb-cluster/2", mock_units_mysql),
+        ]
+    )
+    mysql_config = {"source": {"value": f"cloud:focal-{expected_os_version}"}}
+    mysql = app_module.MySQL(
+        name="mysql-innodb-cluster",
+        status=mock_mysql,
+        config=mysql_config,
+        model_name="my_model",
+        charm="mysql-innodb-cluster",
+    )
+    assert mysql.current_os_release == expected_os_version
+    assert mysql.expected_current_channel == f"{mysql_version}/stable"
+    assert mysql.next_channel == f"{next_mysql}/stable"
+
+
+@pytest.mark.parametrize(
+    "vault_version, expected_os_version, next_vault",
+    [("1.7", "yoga", "1.8")],
+)
+def test_vault_application(mocker, vault_version, expected_os_version, next_vault):
+    mock_vault = mocker.MagicMock()
+    mock_vault.series = "focal"
+    mock_vault.charm = "ch:amd64/focal/vault-777"
+    mock_units_vault = mocker.MagicMock()
+    mock_units_vault.workload_version = vault_version
+    mock_vault.units = OrderedDict(
+        [
+            ("vault/0", mock_units_vault),
+            ("vault/1", mock_units_vault),
+            ("vault/2", mock_units_vault),
+        ]
+    )
+    vault_config = {"source": {"value": f"cloud:focal-{expected_os_version}"}}
+    vault = app_module.Vault(
+        name="vault",
+        status=mock_vault,
+        config=vault_config,
+        model_name="my_model",
+        charm="vault",
+    )
+    assert vault.current_os_release == expected_os_version
+    assert vault.expected_current_channel == f"{vault_version}/stable"
+    assert vault.next_channel == f"{next_vault}/stable"
+
+
 def test_app_factory_registered_ceph_charms():
     ceph_charms = app_module.CHARM_TYPES["ceph"]
     for ceph_charm in ceph_charms:
@@ -513,6 +607,19 @@ def test_upgrade_plan_application_already_upgraded(status, config, mocker):
         target,
     )
     assert upgrade_plan is None
+
+
+def test_application_two_or_more_versions_ahead(status, config):
+    target = "victoria"
+    # target is victoria, but this application is already on wallaby that is N+2 from other apps.
+    app_status = status["keystone_wallaby"]
+    app_config = config["openstack_wallaby"]
+    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    upgrade_plan = app.generate_upgrade_plan(target)
+    assert upgrade_plan is None
+    assert app.new_origin(target) is None
+    assert app.os_origin_release(target) == "wallaby"
+    assert app.next_os_release == "xena"
 
 
 def test_upgrade_plan_special_no_new_channel(status):

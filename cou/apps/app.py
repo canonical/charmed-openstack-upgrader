@@ -654,3 +654,57 @@ class Ceph(SpecialApplications):
             "yoga": "quincy",
             "zed": "quincy",
         }
+
+
+@AppFactory.register_application(CHARM_TYPES["ovn"])
+class Ovn(SpecialApplications):
+    """OVN charms Application."""
+
+    # NOTE (gabrielcocenza)
+    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+    @property
+    def openstack_map(self) -> dict:
+        return {
+            "ussuri": "22.03",
+            "victoria": "22.03",
+            "wallaby": "22.03",
+            "xena": "22.03",
+            "yoga": "22.03",
+            "zed": "22.09",
+        }
+
+
+@AppFactory.register_application(CHARM_TYPES["mysql"])
+class MySQL(SpecialApplications):
+    """MySQL charms Application."""
+
+    # NOTE (gabrielcocenza)
+    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+    @property
+    def openstack_map(self) -> dict:
+        return {
+            "ussuri": "8.0",
+            "victoria": "8.0",
+            "wallaby": "8.0",
+            "xena": "8.0",
+            "yoga": "8.0",
+            "zed": "8.0",
+        }
+
+
+@AppFactory.register_application(["vault"])
+class Vault(SpecialApplications):
+    """Vault charms Application."""
+
+    # NOTE (gabrielcocenza)
+    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+    @property
+    def openstack_map(self) -> dict:
+        return {
+            "ussuri": "1.7",
+            "victoria": "1.7",
+            "wallaby": "1.7",
+            "xena": "1.7",
+            "yoga": "1.7",
+            "zed": "1.8",
+        }

@@ -138,7 +138,7 @@ async def entrypoint() -> None:
         analysis_result = await Analysis.create()
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
-        if args.run:
+        if args.run and upgrade_plan:
             await execute(upgrade_plan, args.interactive)
         else:
             print(upgrade_plan)
