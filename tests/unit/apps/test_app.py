@@ -17,6 +17,7 @@ import pytest
 
 from cou.apps import app as app_module
 from cou.apps.app import Application
+from cou.exceptions import MismatchedOpenStackVersions
 
 
 def test_application_eq(status, config):
@@ -55,7 +56,6 @@ def assert_application(
     exp_units,
     exp_channel,
     exp_current_os_release,
-    exp_next_os_release,
     exp_current_channel,
     exp_next_channel,
     exp_new_origin,
@@ -71,9 +71,6 @@ def assert_application(
     assert app.units == exp_units
     assert app.channel == exp_channel
     assert app.current_os_release == exp_current_os_release
-    if exp_next_os_release:
-        assert app.current_os_release.next_release == exp_next_os_release
-    assert app.next_os_release == exp_next_os_release
     assert app.expected_current_channel == exp_current_channel
     assert app.next_channel == exp_next_channel
     assert app.new_origin == exp_new_origin
@@ -88,10 +85,9 @@ def test_application_ussuri(status, config, units):
     exp_channel = app_status.charm_channel
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
-    exp_next_os_release = "victoria"
     exp_current_channel = "ussuri/stable"
     exp_next_channel = "victoria/stable"
-    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
+    exp_new_origin = f"cloud:{exp_series}-victoria"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -107,7 +103,6 @@ def test_application_ussuri(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
-        exp_next_os_release,
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
@@ -115,44 +110,17 @@ def test_application_ussuri(status, config, units):
     assert app.can_generate_upgrade_plan()
 
 
-def test_application_different_wl(status, config, units):
+def test_application_different_wl(status, config, mocker):
     """Different OpenStack Version on units if workload version is different."""
     app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
-    exp_charm_origin = "ch"
-    exp_os_origin = "distro"
-    exp_units = units["units_ussuri"]
-    exp_channel = app_status.charm_channel
-    exp_series = app_status.series
-    exp_current_os_release = None
-    exp_next_os_release = None
-    exp_current_channel = None
-    exp_next_channel = None
-    exp_new_origin = None
 
-    exp_units["keystone/2"]["os_version"] = "victoria"
-    exp_units["keystone/2"]["workload_version"] = "18.1.0"
+    mock_logger = mocker.patch("cou.apps.app.logger")
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    assert_application(
-        app,
-        "my_keystone",
-        exp_series,
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-        exp_charm_origin,
-        exp_os_origin,
-        exp_units,
-        exp_channel,
-        exp_current_os_release,
-        exp_next_os_release,
-        exp_current_channel,
-        exp_next_channel,
-        exp_new_origin,
-    )
-    assert app.can_generate_upgrade_plan() is False
+    with pytest.raises(MismatchedOpenStackVersions):
+        app.current_os_release
+        mock_logger.error.assert_called_once
 
 
 def test_application_cs(status, config, units):
@@ -165,10 +133,9 @@ def test_application_cs(status, config, units):
     exp_charm_origin = "cs"
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
-    exp_next_os_release = "victoria"
     exp_current_channel = "ussuri/stable"
     exp_next_channel = "victoria/stable"
-    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
+    exp_new_origin = f"cloud:{exp_series}-victoria"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -184,7 +151,6 @@ def test_application_cs(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
-        exp_next_os_release,
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
@@ -201,10 +167,9 @@ def test_application_wallaby(status, config, units):
     exp_channel = app_status.charm_channel
     exp_series = app_status.series
     exp_current_os_release = "wallaby"
-    exp_next_os_release = "xena"
     exp_current_channel = "wallaby/stable"
     exp_next_channel = "xena/stable"
-    exp_new_origin = f"cloud:{exp_series}-{exp_next_os_release}"
+    exp_new_origin = f"cloud:{exp_series}-xena"
 
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -220,12 +185,23 @@ def test_application_wallaby(status, config, units):
         exp_units,
         exp_channel,
         exp_current_os_release,
-        exp_next_os_release,
         exp_current_channel,
         exp_next_channel,
         exp_new_origin,
     )
     assert app.can_generate_upgrade_plan()
+
+
+def test_application_subordinate(status):
+    app_status = status["mysql_router"]
+    app_config = {"source": {"value": "distro"}}
+    app = Application("mysql-router", app_status, app_config, "my_model", "mysql-router")
+    assert app.current_os_release is None
+    assert app.units == {}
+    assert app.expected_current_channel is None
+    assert app.next_channel is None
+    assert app.next_os_release is None
+    assert app.new_origin is None
 
 
 def test_special_app_more_than_one_compatible_os_release(status, config):
@@ -241,8 +217,9 @@ def test_special_app_more_than_one_compatible_os_release(status, config):
     assert app.units == expected_units
 
 
-def test_special_app_unknown_version(status, config):
+def test_special_app_unknown_version(status, config, mocker):
     expected_units = {"rabbitmq-server/0": {"os_version": None, "workload_version": "80.5"}}
+    mock_logger = mocker.patch("cou.apps.app.logger")
     app = Application(
         "rabbitmq-server",
         status["unknown_rabbitmq_server"],
@@ -251,6 +228,11 @@ def test_special_app_unknown_version(status, config):
         "rabbitmq-server",
     )
     assert app.units == expected_units
+    mock_logger.warning.assert_called_once_with(
+        "No compatible OpenStack versions were found to %s with workload version %s",
+        "rabbitmq-server",
+        "80.5",
+    )
 
 
 def test_application_no_openstack_origin(status):
@@ -407,12 +389,13 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
 
 def test_cant_generate_upgrade_plan(status, config, mocker):
     mock_logger = mocker.patch("cou.apps.app.logger")
-    app_status = status["keystone_ussuri_victoria"]
+    app_status = status["mysql_router"]
     app_config = config["openstack_ussuri"]
-    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = Application("mysql-router", app_status, app_config, "my_model", "mysql-router")
     upgrade_plan = app.generate_upgrade_plan("victoria")
     assert upgrade_plan is None
     assert mock_logger.warning.call_count == 3
+    assert app.can_generate_upgrade_plan() is False
 
 
 def test_upgrade_plan_change_current_channel(status, config):

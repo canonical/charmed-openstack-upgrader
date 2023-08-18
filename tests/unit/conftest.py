@@ -124,6 +124,12 @@ def status():
     mock_unknown_app.charm = "ch:amd64/focal/my-app-638"
     mock_unknown_app.units = OrderedDict([("my-app/0", mock_units_unknown_app)])
 
+    # subordinate application
+    mock_mysql_router = mock.MagicMock()
+    mock_mysql_router.charm_channel = "8.0/stable"
+    mock_mysql_router.charm = "ch:amd64/focal/mysql-router-437"
+    mock_mysql_router.units = {}
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -133,7 +139,9 @@ def status():
         "rabbitmq_server": mock_rmq,
         "unknown_rabbitmq_server": mock_rmq_unknown,
         "keystone_ussuri_cs": mock_keystone_ussuri_cs,
+        "keystone_wallaby": mock_keystone_wallaby,
         "unknown_app": mock_unknown_app,
+        "mysql_router": mock_mysql_router,
     }
     return status
 
@@ -168,11 +176,17 @@ def units():
 @pytest.fixture
 def apps(status, config):
     keystone_ussuri_status = status["keystone_ussuri"]
+    keystone_wallaby_status = status["keystone_wallaby"]
     cinder_ussuri_status = status["cinder_ussuri"]
     rmq_status = status["rabbitmq_server"]
+    mysql_router_status = status["mysql_router"]
+    no_openstack_status = status["unknown_app"]
 
     keystone_ussuri = Application(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model", "keystone"
+    )
+    keystone_wallaby = Application(
+        "keystone", keystone_wallaby_status, config["openstack_wallaby"], "my_model", "keystone"
     )
     cinder_ussuri = Application(
         "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model", "cinder"
@@ -183,12 +197,23 @@ def apps(status, config):
     rmq_wallaby = Application(
         "rabbitmq-server", rmq_status, config["rmq_wallaby"], "my_model", "rabbitmq-server"
     )
+    mysql_router_ussuri = Application(
+        "keystone-mysql-router",
+        mysql_router_status,
+        config["rmq_ussuri"],
+        "my_model",
+        "mysql-router",
+    )
+    no_openstack = Application("my-app", no_openstack_status, {}, "my_model", "my-app")
 
     return {
         "keystone_ussuri": keystone_ussuri,
+        "keystone_wallaby": keystone_wallaby,
         "cinder_ussuri": cinder_ussuri,
         "rmq_ussuri": rmq_ussuri,
         "rmq_wallaby": rmq_wallaby,
+        "mysql_router_ussuri": mysql_router_ussuri,
+        "no_openstack": no_openstack,
     }
 
 
@@ -199,10 +224,7 @@ def config():
             "openstack-origin": {"value": "distro"},
             "action-managed-upgrade": {"value": True},
         },
-        "openstack_wallaby": {
-            "openstack-origin": {"value": "cloud:focal-wallaby"},
-            "action-managed-upgrade": {"value": True},
-        },
+        "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
         "rmq_ussuri": {"source": {"value": "distro"}},
         "rmq_wallaby": {"source": {"value": "cloud:focal-wallaby"}},
     }
