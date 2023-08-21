@@ -24,7 +24,7 @@ from cou.apps.app import AppFactory, Application
 from cou.utils.juju_utils import (
     async_get_application_config,
     async_get_status,
-    extract_charm_name_from_url,
+    extract_charm_name,
 )
 from cou.utils.openstack import UPGRADE_ORDER, OpenStackRelease
 
@@ -64,12 +64,12 @@ class Analysis:
         model_name = juju_status.model.name
         apps = {
             AppFactory.create(
-                app_type=extract_charm_name_from_url(app_status.charm),
+                app_type=await extract_charm_name(app),
                 name=app,
                 status=app_status,
                 config=await async_get_application_config(app),
                 model_name=model_name,
-                charm=extract_charm_name_from_url(app_status.charm),
+                charm=await extract_charm_name(app),
             )
             for app, app_status in juju_status.applications.items()
         }

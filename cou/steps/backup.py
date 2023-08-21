@@ -82,8 +82,8 @@ async def get_database_app_unit_name(model_name: Optional[str] = None) -> str:
     :rtype: ApplicationStatus
     """
     status = await utils.async_get_status(model_name)
-    for _, app_config in status.applications.items():
-        charm_name = utils.extract_charm_name_from_url(app_config["charm"])
+    for app_name, app_config in status.applications.items():
+        charm_name = await utils.extract_charm_name(app_name)
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
             return list(app_config.units.keys())[0]
 

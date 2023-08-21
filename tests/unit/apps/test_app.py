@@ -263,7 +263,7 @@ async def test_application_check_upgrade(status, config, mocker):
 
     mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    await app.check_upgrade()
+    await app._check_upgrade()
     mock_logger.error.assert_not_called()
 
 
@@ -279,7 +279,7 @@ async def test_application_check_upgrade_fail(status, config, mocker):
 
     mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    await app.check_upgrade()
+    await app._check_upgrade()
     mock_logger.error.assert_called_once_with(
         "App: '%s' has units: '%s' didn't upgrade to %s",
         "my_keystone",
@@ -485,21 +485,10 @@ def test_upgrade_plan_application_already_upgraded(status, config, mocker):
     # victoria is lesser than wallaby, so application should not generate a plan.
     upgrade_plan = app.generate_upgrade_plan(min_cloud_os_version)
     mock_logger.warning.assert_called_once_with(
-        "Application: '%s' already on a newer version than %s. Aborting upgrade.",
+        "Application: '%s' already on a newer version than %s. Ignoring.",
         "my_keystone",
         min_cloud_os_version,
     )
-    assert upgrade_plan is None
-
-
-def test_upgrade_plan_application_no_target(status, config, mocker):
-    min_cloud_os_version = None
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    app_status = status["keystone_wallaby"]
-    app_config = config["openstack_wallaby"]
-    app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
-    upgrade_plan = app.generate_upgrade_plan(min_cloud_os_version)
-    mock_logger.warning.assert_called_once_with("There is no target to upgrade.")
     assert upgrade_plan is None
 
 
@@ -521,10 +510,10 @@ def test_app_factory_create(mocker, app_name, expected_class):
 
 
 def test_app_factory_register():
-    @app_module.AppFactory.register_application(["my_app"])
-    class MyApp:
+    @app_module.AppFactory.register_application(["foo_app"])
+    class FooApp:
         pass
 
-    assert "my_app" in app_module.AppFactory.apps_type
-    my_app = app_module.AppFactory.create("my_app")
-    assert isinstance(my_app, MyApp)
+    assert "foo_app" in app_module.AppFactory.apps_type
+    my_app = app_module.AppFactory.create("foo_app")
+    assert isinstance(my_app, FooApp)

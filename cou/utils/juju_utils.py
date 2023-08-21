@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Juju utilities for charmed-openstack-upgrader."""
 import logging
 import os
-import re
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
@@ -34,19 +34,19 @@ CURRENT_MODEL: Optional[Model] = None
 logger = logging.getLogger(__name__)
 
 
-# remove when fixed: https://github.com/juju/python-libjuju/issues/888
-def extract_charm_name_from_url(charm_url: str) -> str:
-    """Extract the charm name from the charm url.
+async def extract_charm_name(application_name: str, model_name: Optional[str] = None) -> str:
+    """Extract the charm name from the application.
 
-    E.g. Extract 'heat' from local:bionic/heat-12
-
-    :param charm_url: Charm url string
-    :type charm_url: str
-    :returns: Charm name
+    :param application_name: Name of application
+    :type application_name: str
+    :param model_name: Name of model to query, defaults to None
+    :type model_name: Optional[str], optional
+    :return: Charm name
     :rtype: str
     """
-    charm_name = re.sub(r"-\d+$", "", charm_url.split("/")[-1])
-    return charm_name.split(":")[-1]
+    model = await _async_get_model(model_name)
+    # import pdb; pdb.set_trace()
+    return model.applications[application_name].charm_name
 
 
 # pylint: disable=global-statement

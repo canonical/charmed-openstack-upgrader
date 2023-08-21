@@ -16,6 +16,7 @@
 
 import logging
 
+from cou.exceptions import NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
@@ -36,6 +37,10 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         if analysis_result.current_cloud_os_release
         else None
     )
+    if not target:
+        logger.error("No target found to upgrade.")
+        raise NoTargetError()
+
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)

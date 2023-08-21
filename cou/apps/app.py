@@ -47,15 +47,14 @@ class AppFactory:
         """Create the standard Application or registered subclasses.
 
         Applications Subclasses registered with the "register_application"
-        decorator can be instantiate and used with their customized methods.
+        decorator can be instantiated and used with their customized methods.
         :param app_type: App type to be accessed on apps_type dictionary.
         :type app_type: str
         :return: Standard Application class or registered sub-classes.
         :rtype: Application
         """
-        if app_type not in cls.apps_type:
-            return Application(**params)
-        return cls.apps_type[app_type](**params)
+        app_class = cls.apps_type.get(app_type, Application)
+        return app_class(**params)
 
     @classmethod
     def register_application(
@@ -66,7 +65,7 @@ class AppFactory:
         Use this method as decorator to register Applications that
         have special needs.
 
-        :param app_types: List of charms to register the Application sub class.
+        :param app_types: List of charm names the Application sub class should handle.
         :type app_types: list[str]
         """
 
@@ -191,9 +190,7 @@ class Application:
         :return: The expected current channel for the application.
         :rtype: Optional[str]
         """
-        if self.current_os_release:
-            return f"{self.current_os_release}/stable"
-        return None
+        return f"{self.current_os_release}/stable" if self.current_os_release else None
 
     @property
     def next_channel(self) -> Optional[str]:
@@ -203,9 +200,7 @@ class Application:
         :return: The next channel for the application.
         :rtype: Optional[str]
         """
-        if self.current_os_release:
-            return f"{self.next_os_release}/stable"
-        return None
+        return f"{self.next_os_release}/stable" if self.next_os_release else None
 
     @property
     def series(self) -> str:
@@ -252,9 +247,7 @@ class Application:
         :return: Next OpenStack release codename.
         :rtype: Optional[str]
         """
-        if self.current_os_release:
-            return self.current_os_release.next_release
-        return None
+        return self.current_os_release.next_release if self.current_os_release else None
 
     @property
     def new_origin(self) -> Optional[str]:
@@ -263,9 +256,7 @@ class Application:
         :return: Repository from which to install.
         :rtype: Optional[str]
         """
-        if not self.current_os_release:
-            return None
-        return f"cloud:{self.series}-{self.next_os_release}"
+        return f"cloud:{self.series}-{self.next_os_release}" if self.next_os_release else None
 
     def _get_os_origin(self) -> str:
         """Get application configuration for openstack-origin or source.
@@ -282,7 +273,7 @@ class Application:
         logger.warning("Failed to get origin for %s, no origin config found", self.name)
         return ""
 
-    async def check_upgrade(self) -> None:
+    async def _check_upgrade(self) -> None:
         """Check if an application has upgraded its workload version."""
         status = await async_get_status()
         app_status = status.applications.get(self.name)
@@ -303,54 +294,53 @@ class Application:
     def can_generate_upgrade_plan(self) -> bool:
         """Check if application can generate an upgrade plan.
 
-        Applications where it's not possible to identify the current OpenStack release,
+        Applications where it's not possible to identify the next OpenStack release,
         should not generate upgrade plan.
         :return: True if can generate a plan, else False.
         :rtype: bool
         """
-        if not self.current_os_release:
+        if not self.next_os_release:
             logger.warning("Not possible to generate upgrade plan for '%s'.", self.name)
             logger.warning("'%s' might need manual intervention to upgrade.", self.name)
             return False
         return True
 
-    def pre_upgrade_plan(self, plan: UpgradeStep) -> None:
+    def pre_upgrade_plan(self) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
 
         :param plan: Plan that will add pre upgrade as sub steps.
         :type plan: UpgradeStep
         """
-        self.refresh_current_channel(plan)
+        return [self._get_refresh_current_channel_plan()]
 
-    def upgrade_plan(self, plan: UpgradeStep) -> None:
+    def upgrade_plan(self) -> list[Optional[UpgradeStep]]:
         """Upgrade planning.
 
         :param plan: Plan that will add upgrade as sub steps.
         :type plan: UpgradeStep
         """
-        self.disable_action_managed(plan)
-        self.refresh_next_channel(plan)
-        self.workload_upgrade(plan)
+        return [
+            self._get_disable_action_managed_plan(),
+            self._get_refresh_next_channel_plan(),
+            self._get_workload_upgrade_plan(),
+        ]
 
-    def post_upgrade_plan(self, plan: UpgradeStep) -> None:
+    def post_upgrade_plan(self) -> list[UpgradeStep]:
         """Post Upgrade planning.
 
         :param plan: Plan that will add post upgrade as sub steps.
         :type plan: UpgradeStep
         """
-        self.reached_expected_target(plan)
+        return [self._get_reached_expected_target_plan()]
 
-    def generate_upgrade_plan(self, target: Optional[str]) -> Optional[UpgradeStep]:
+    def generate_upgrade_plan(self, target: str) -> Optional[UpgradeStep]:
         """Generate full upgrade plan for an Application.
 
         :param target: OpenStack codename to upgrade.
-        :type target: Optional[str]
+        :type target: str
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: Optional[UpgradeStep]
         """
-        if not target:
-            logger.warning("There is no target to upgrade.")
-            return None
         target_version = OpenStackRelease(target)
 
         if not self.can_generate_upgrade_plan():
@@ -358,7 +348,7 @@ class Application:
             return None
         if self.current_os_release >= target_version:
             logger.warning(
-                "Application: '%s' already on a newer version than %s. Aborting upgrade.",
+                "Application: '%s' already on a newer version than %s. Ignoring.",
                 self.name,
                 target,
             )
@@ -371,13 +361,14 @@ class Application:
             parallel=False,
             function=None,
         )
-        self.pre_upgrade_plan(upgrade_plan)
-        self.upgrade_plan(upgrade_plan)
-        self.post_upgrade_plan(upgrade_plan)
+        all_steps = self.pre_upgrade_plan() + self.upgrade_plan() + self.post_upgrade_plan()
+        for step in all_steps:
+            if step:
+                upgrade_plan.add_step(step)
         return upgrade_plan
 
-    def refresh_current_channel(self, plan: UpgradeStep, parallel: bool = False) -> None:
-        """Add Plan for refresh current channel.
+    def _get_refresh_current_channel_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
+        """Add Plan for refreshing the current channel.
 
         This function also identify if charm comes from charmstore and in that case,
         makes the migration.
@@ -397,7 +388,7 @@ class Application:
                 self.name,
                 self.next_os_release,
             )
-            return
+            return None
 
         if self.charm_origin == "cs":
             description = f"Migration of '{self.name}' from charmstore to charmhub"
@@ -409,19 +400,17 @@ class Application:
                 f"to: '{self.expected_current_channel}'"
             )
 
-        plan.add_step(
-            UpgradeStep(
-                description=description,
-                parallel=parallel,
-                function=async_upgrade_charm,
-                application_name=self.name,
-                channel=self.expected_current_channel,
-                model_name=self.model_name,
-                switch=switch,
-            )
+        return UpgradeStep(
+            description=description,
+            parallel=parallel,
+            function=async_upgrade_charm,
+            application_name=self.name,
+            channel=self.expected_current_channel,
+            model_name=self.model_name,
+            switch=switch,
         )
 
-    def refresh_next_channel(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def _get_refresh_next_channel_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
         """Add plan for refresh to next channel.
 
         :param plan: Plan to add refresh next channel as sub step.
@@ -430,18 +419,17 @@ class Application:
         :type parallel: bool
         """
         if self.channel != self.next_channel:
-            plan.add_step(
-                UpgradeStep(
-                    description=f"Refresh '{self.name}' to the new channel: '{self.next_channel}'",
-                    parallel=parallel,
-                    function=async_upgrade_charm,
-                    application_name=self.name,
-                    channel=self.next_channel,
-                    model_name=self.model_name,
-                )
+            return UpgradeStep(
+                description=f"Refresh '{self.name}' to the new channel: '{self.next_channel}'",
+                parallel=parallel,
+                function=async_upgrade_charm,
+                application_name=self.name,
+                channel=self.next_channel,
+                model_name=self.model_name,
             )
+        return None
 
-    def disable_action_managed(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def _get_disable_action_managed_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
         """Disable action-managed-upgrade to upgrade as "all-in-one" strategy.
 
         :param plan: Plan to disable action managed upgrade as sub step.
@@ -449,22 +437,19 @@ class Application:
         :param parallel: Parallel running, defaults to False
         :type parallel: bool
         """
-        if self.config.get("action-managed-upgrade"):
-            if self.config["action-managed-upgrade"].get("value", False):
-                plan.add_step(
-                    UpgradeStep(
-                        description=(
-                            f"Change charm config of '{self.name}' "
-                            "'action-managed-upgrade' to False."
-                        ),
-                        parallel=parallel,
-                        function=async_set_application_config,
-                        application_name=self.name,
-                        configuration={"action-managed-upgrade": False},
-                    )
-                )
+        if self.config.get("action-managed-upgrade", {}).get("value", False):
+            return UpgradeStep(
+                description=(
+                    f"Change charm config of '{self.name}' " "'action-managed-upgrade' to False."
+                ),
+                parallel=parallel,
+                function=async_set_application_config,
+                application_name=self.name,
+                configuration={"action-managed-upgrade": False},
+            )
+        return None
 
-    def workload_upgrade(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def _get_workload_upgrade_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
         """Change openstack-origin or source to the repository from which to install.
 
         :param plan: Plan to add workload upgrade as sub step.
@@ -473,27 +458,25 @@ class Application:
         :type parallel: bool, optional
         """
         if self.os_origin != self.new_origin:
-            plan.add_step(
-                UpgradeStep(
-                    description=(
-                        f"Change charm config of '{self.name}' "
-                        f"'{self.origin_setting}' to '{self.new_origin}'"
-                    ),
-                    parallel=parallel,
-                    function=async_set_application_config,
-                    application_name=self.name,
-                    configuration={self.origin_setting: self.new_origin},
-                )
+            return UpgradeStep(
+                description=(
+                    f"Change charm config of '{self.name}' "
+                    f"'{self.origin_setting}' to '{self.new_origin}'"
+                ),
+                parallel=parallel,
+                function=async_set_application_config,
+                application_name=self.name,
+                configuration={self.origin_setting: self.new_origin},
             )
-        else:
-            logger.warning(
-                "App: %s already have %s set to %s",
-                self.name,
-                self.origin_setting,
-                self.new_origin,
-            )
+        logger.warning(
+            "App: %s already have %s set to %s",
+            self.name,
+            self.origin_setting,
+            self.new_origin,
+        )
+        return None
 
-    def reached_expected_target(self, plan: UpgradeStep, parallel: bool = False) -> None:
+    def _get_reached_expected_target_plan(self, parallel: bool = False) -> UpgradeStep:
         """Add plan to check if application workload has upgraded.
 
         :param plan: Plan to add check of workload upgrade as sub step.
@@ -501,12 +484,10 @@ class Application:
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         """
-        plan.add_step(
-            UpgradeStep(
-                description=f"Check if workload of '{self.name}' has upgraded",
-                parallel=parallel,
-                function=self.check_upgrade,
-            )
+        return UpgradeStep(
+            description=f"Check if workload of '{self.name}' has upgraded",
+            parallel=parallel,
+            function=self._check_upgrade,
         )
 
 
@@ -536,9 +517,11 @@ class Ceph(Application):
         :return: The expected current channel for the application.
         :rtype: Optional[str]
         """
-        if self.current_os_release:
-            return f"{self.openstack_map[self.current_os_release.codename]}/stable"
-        return None
+        return (
+            f"{self.openstack_map[self.current_os_release.codename]}/stable"
+            if self.current_os_release
+            else None
+        )
 
     @property
     def next_channel(self) -> Optional[str]:
@@ -548,7 +531,6 @@ class Ceph(Application):
         :return: The next channel for the application.
         :rtype: Optional[str]
         """
-        if self.current_os_release:
-            if self.next_os_release:
-                return f"{self.openstack_map[self.next_os_release]}/stable"
-        return None
+        return (
+            f"{self.openstack_map[self.next_os_release]}/stable" if self.next_os_release else None
+        )

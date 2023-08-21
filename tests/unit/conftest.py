@@ -154,7 +154,7 @@ def full_status(status):
         [
             ("keystone", status["keystone_ussuri"]),
             ("cinder", status["cinder_ussuri"]),
-            ("rabbitmq_server", status["rabbitmq_server"]),
+            ("rabbitmq-server", status["rabbitmq_server"]),
             ("my_app", status["unknown_app"]),
         ]
     )

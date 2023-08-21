@@ -79,6 +79,17 @@ async def test_analysis_dump(mocker, apps):
 
 @pytest.mark.asyncio
 async def test_populate_model(mocker, full_status, config):
+    apps_name = ["rabbitmq-server", "keystone", "cinder", "my_app"]
+
+    def generate_app(value):
+        app = mocker.MagicMock()
+        app.charm_name = value
+        return app
+
+    test_model = mocker.AsyncMock()
+    test_model.applications = {app_name: generate_app(app_name) for app_name in apps_name}
+    juju_model = mocker.patch("cou.utils.juju_utils._async_get_model")
+    juju_model.return_value = test_model
     mocker.patch.object(analyze, "async_get_status", return_value=full_status)
     mocker.patch.object(
         analyze, "async_get_application_config", return_value=config["openstack_ussuri"]
@@ -89,7 +100,7 @@ async def test_populate_model(mocker, full_status, config):
     apps = await Analysis._populate()
     assert len(apps) == 4
     # apps are on the UPGRADE_ORDER sequence and unknown in the end of the list
-    assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder", "my-app"]
+    assert [app.charm for app in apps] == apps_name
 
 
 @pytest.mark.asyncio
