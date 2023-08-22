@@ -16,7 +16,7 @@
 
 import logging
 
-from cou.exceptions import NoTargetError
+from cou.exceptions import NoTargetError, PlanError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
@@ -45,8 +45,18 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     plan.add_step(
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
     )
+
+    upgrade_plan = UpgradeStep(
+        description="Application(s) upgrade plan", parallel=False, function=None
+    )
     for app in analysis_result.apps:
-        app_upgrade_plan = app.generate_upgrade_plan(target)
+        try:
+            app_upgrade_plan = app.generate_upgrade_plan(target)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("It was not possible to generate upgrade plan for '%s'.", app.name)
+            raise PlanError() from exc
         if app_upgrade_plan:
-            plan.add_step(app_upgrade_plan)
+            upgrade_plan.add_step(app_upgrade_plan)
+
+    plan.add_step(upgrade_plan)
     return plan

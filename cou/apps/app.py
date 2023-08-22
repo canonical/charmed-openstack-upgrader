@@ -308,28 +308,28 @@ class Application:
     def pre_upgrade_plan(self) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
 
-        :param plan: Plan that will add pre upgrade as sub steps.
-        :type plan: UpgradeStep
+        :return: Plan that will add pre upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
         """
-        return [self._get_refresh_current_channel_plan()]
+        return [self._get_refresh_charm_plan()]
 
     def upgrade_plan(self) -> list[Optional[UpgradeStep]]:
         """Upgrade planning.
 
-        :param plan: Plan that will add upgrade as sub steps.
-        :type plan: UpgradeStep
+        :return: Plan that will add upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
         """
         return [
             self._get_disable_action_managed_plan(),
-            self._get_refresh_next_channel_plan(),
+            self._get_upgrade_charm_plan(),
             self._get_workload_upgrade_plan(),
         ]
 
     def post_upgrade_plan(self) -> list[UpgradeStep]:
         """Post Upgrade planning.
 
-        :param plan: Plan that will add post upgrade as sub steps.
-        :type plan: UpgradeStep
+        :return: Plan that will add post upgrade as sub steps.
+        :rtype: list[UpgradeStep]
         """
         return [self._get_reached_expected_target_plan()]
 
@@ -367,15 +367,13 @@ class Application:
                 upgrade_plan.add_step(step)
         return upgrade_plan
 
-    def _get_refresh_current_channel_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
-        """Add Plan for refreshing the current channel.
+    def _get_refresh_charm_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
+        """Get plan for refreshing the current channel.
 
-        This function also identify if charm comes from charmstore and in that case,
-        makes the migration.
-        :param plan: Plan to add refresh current channel as sub step.
-        :type plan: UpgradeStep
         :param parallel: Parallel running, defaults to False
-        :type parallel: bool
+        :type parallel: bool, optional
+        :return: Plan for refreshing the current channel.
+        :rtype: Optional[UpgradeStep]
         """
         switch = None
         description = (
@@ -410,13 +408,13 @@ class Application:
             switch=switch,
         )
 
-    def _get_refresh_next_channel_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
-        """Add plan for refresh to next channel.
+    def _get_upgrade_charm_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
+        """Get plan for upgrading the charm.
 
-        :param plan: Plan to add refresh next channel as sub step.
-        :type plan: UpgradeStep
         :param parallel: Parallel running, defaults to False
-        :type parallel: bool
+        :type parallel: bool, optional
+        :return: Plan for upgrading the charm.
+        :rtype: Optional[UpgradeStep]
         """
         if self.channel != self.next_channel:
             return UpgradeStep(
@@ -430,12 +428,14 @@ class Application:
         return None
 
     def _get_disable_action_managed_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
-        """Disable action-managed-upgrade to upgrade as "all-in-one" strategy.
+        """Get plan to disable action-managed-upgrade.
 
-        :param plan: Plan to disable action managed upgrade as sub step.
-        :type plan: UpgradeStep
+        This is used to upgrade as "all-in-one" strategy.
+
         :param parallel: Parallel running, defaults to False
-        :type parallel: bool
+        :type parallel: bool, optional
+        :return: Plan to disable action-managed-upgrade
+        :rtype: Optional[UpgradeStep]
         """
         if self.config.get("action-managed-upgrade", {}).get("value", False):
             return UpgradeStep(
@@ -450,12 +450,12 @@ class Application:
         return None
 
     def _get_workload_upgrade_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
-        """Change openstack-origin or source to the repository from which to install.
+        """Get workload upgrade plan by changing openstack-origin or source.
 
-        :param plan: Plan to add workload upgrade as sub step.
-        :type plan: UpgradeStep
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
+        :return: Workload upgrade plan
+        :rtype: Optional[UpgradeStep]
         """
         if self.os_origin != self.new_origin:
             return UpgradeStep(
@@ -477,15 +477,15 @@ class Application:
         return None
 
     def _get_reached_expected_target_plan(self, parallel: bool = False) -> UpgradeStep:
-        """Add plan to check if application workload has upgraded.
+        """Get plan to check if application workload has upgraded.
 
-        :param plan: Plan to add check of workload upgrade as sub step.
-        :type plan: UpgradeStep
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
+        :return: Plan to check if application workload has upgraded
+        :rtype: UpgradeStep
         """
         return UpgradeStep(
-            description=f"Check if workload of '{self.name}' has upgraded",
+            description=f"Check if the workload of '{self.name}' has been upgraded",
             parallel=parallel,
             function=self._check_upgrade,
         )

@@ -48,6 +48,10 @@ class NoTargetError(Exception):
     """Exception when there is no target to upgrade."""
 
 
+class PlanError(Exception):
+    """Exception when there is no target to upgrade."""
+
+
 class ActionFailed(Exception):
     # pylint: disable=consider-using-f-string
     """Exception raised when action fails."""

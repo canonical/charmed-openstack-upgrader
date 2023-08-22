@@ -45,7 +45,6 @@ async def extract_charm_name(application_name: str, model_name: Optional[str] = 
     :rtype: str
     """
     model = await _async_get_model(model_name)
-    # import pdb; pdb.set_trace()
     return model.applications[application_name].charm_name
 
 

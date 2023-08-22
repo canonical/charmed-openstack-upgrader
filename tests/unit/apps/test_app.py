@@ -373,7 +373,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
-        "Check if workload of 'my_keystone' has upgraded",
+        "Check if the workload of 'my_keystone' has been upgraded",
     ]
     assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
     assert_plan_description(upgrade_plan, steps_description)
@@ -389,7 +389,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
-        "Check if workload of 'my_keystone' has upgraded",
+        "Check if the workload of 'my_keystone' has been upgraded",
     ]
     assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
     assert_plan_description(upgrade_plan, steps_description)
@@ -420,7 +420,7 @@ def test_upgrade_plan_change_current_channel(status, config):
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
-        "Check if workload of 'my_keystone' has upgraded",
+        "Check if the workload of 'my_keystone' has been upgraded",
     ]
 
     assert_plan_description(upgrade_plan, steps_description)
@@ -439,7 +439,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
     steps_description = [
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
-        "Check if workload of 'my_keystone' has upgraded",
+        "Check if the workload of 'my_keystone' has been upgraded",
     ]
 
     assert_plan_description(upgrade_plan, steps_description)
@@ -462,7 +462,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
-        "Check if workload of 'my_keystone' has upgraded",
+        "Check if the workload of 'my_keystone' has been upgraded",
     ]
     assert len(upgrade_plan.sub_steps) == len(steps_description)
     sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
@@ -477,19 +477,42 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
 
 
 def test_upgrade_plan_application_already_upgraded(status, config, mocker):
-    min_cloud_os_version = "victoria"
+    target = "victoria"
     mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
     app = Application("my_keystone", app_status, app_config, "my_model", "keystone")
     # victoria is lesser than wallaby, so application should not generate a plan.
-    upgrade_plan = app.generate_upgrade_plan(min_cloud_os_version)
+    upgrade_plan = app.generate_upgrade_plan(target)
     mock_logger.warning.assert_called_once_with(
         "Application: '%s' already on a newer version than %s. Ignoring.",
         "my_keystone",
-        min_cloud_os_version,
+        target,
     )
     assert upgrade_plan is None
+
+
+def test_upgrade_plan_application_already_disable_action_managed(status, config):
+    target = "victoria"
+    app_status = status["keystone_ussuri"]
+    app_config = config["openstack_ussuri"]
+    app_config["action-managed-upgrade"]["value"] = False
+    app = Application(
+        "my_keystone",
+        app_status,
+        app_config,
+        "my_model",
+        "keystone",
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+    steps_description = [
+        "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
+        "Refresh 'my_keystone' to the new channel: 'victoria/stable'",
+        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
+        "Check if the workload of 'my_keystone' has been upgraded",
+    ]
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert_plan_description(upgrade_plan, steps_description)
 
 
 @pytest.mark.parametrize(

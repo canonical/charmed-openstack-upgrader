@@ -15,6 +15,7 @@
 import pytest
 
 import cou.utils.juju_utils as model
+from cou.exceptions import NoTargetError, PlanError
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.plan import generate_plan
@@ -31,14 +32,17 @@ async def test_generate_plan(mocker, apps):
     assert plan.description == "Top level plan"
     assert not plan.parallel
     assert not plan.function
-    assert len(plan.sub_steps) == 3
+    assert len(plan.sub_steps) == 2
 
     sub_step_back_up = plan.sub_steps[0]
     assert sub_step_back_up.description == "backup mysql databases"
     assert not sub_step_back_up.parallel
     assert sub_step_back_up.function == backup
 
-    sub_step_upgrade_keystone = plan.sub_steps[1]
+    sub_step_upgrade_plan = plan.sub_steps[1]
+    assert sub_step_upgrade_plan.description == "Application(s) upgrade plan"
+
+    sub_step_upgrade_keystone = sub_step_upgrade_plan.sub_steps[0]
     assert (
         sub_step_upgrade_keystone.description
         == "Upgrade plan for 'keystone' from: ussuri to victoria"
@@ -48,12 +52,31 @@ async def test_generate_plan(mocker, apps):
     )
     assert_plan_description(sub_step_upgrade_keystone, expected_description_upgrade_keystone)
 
-    sub_step_upgrade_cinder = plan.sub_steps[2]
+    sub_step_upgrade_cinder = sub_step_upgrade_plan.sub_steps[1]
     assert (
         sub_step_upgrade_cinder.description == "Upgrade plan for 'cinder' from: ussuri to victoria"
     )
     expected_description_upgrade_cinder = generate_expected_upgrade_plan_description(app_cinder)
     assert_plan_description(sub_step_upgrade_cinder, expected_description_upgrade_cinder)
+
+
+@pytest.mark.asyncio
+async def test_generate_plan_raise_NoTargetError(apps):
+    no_openstack = apps["no_openstack"]
+    # not possible to determine target
+    analysis_result = Analysis(apps=[no_openstack])
+    with pytest.raises(NoTargetError):
+        await generate_plan(analysis_result)
+
+
+@pytest.mark.asyncio
+async def test_generate_plan_raise_PlanError(apps, mocker):
+    app = mocker.MagicMock()
+    app.generate_upgrade_plan.side_effect = Exception("An error occurred")
+    # Generate an exception during the upgrade plan
+    analysis_result = Analysis(apps=[app])
+    with pytest.raises(PlanError):
+        await generate_plan(analysis_result)
 
 
 def generate_expected_upgrade_plan_description(charm):
@@ -62,7 +85,7 @@ def generate_expected_upgrade_plan_description(charm):
         f"Change charm config of '{charm.name}' 'action-managed-upgrade' to False.",
         f"Refresh '{charm.name}' to the new channel: '{charm.next_channel}'",
         f"Change charm config of '{charm.name}' '{charm.origin_setting}' to '{charm.new_origin}'",
-        f"Check if workload of '{charm.name}' has upgraded",
+        f"Check if the workload of '{charm.name}' has been upgraded",
     ]
 
 
