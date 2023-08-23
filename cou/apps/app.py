@@ -370,6 +370,8 @@ class Application:
     def _get_refresh_charm_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
         """Get plan for refreshing the current channel.
 
+        This function also identifies if charm comes from charmstore and in that case,
+        makes the migration.
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         :return: Plan for refreshing the current channel.
@@ -418,7 +420,7 @@ class Application:
         """
         if self.channel != self.next_channel:
             return UpgradeStep(
-                description=f"Refresh '{self.name}' to the new channel: '{self.next_channel}'",
+                description=f"Upgrade '{self.name}' to the new channel: '{self.next_channel}'",
                 parallel=parallel,
                 function=async_upgrade_charm,
                 application_name=self.name,
