@@ -17,10 +17,11 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List, Optional
+from typing import Optional
 
-from cou.apps.app import AppFactory, Application
+from cou.apps.app import AppFactory, OpenStackApplication
 from cou.utils.juju_utils import (
     async_get_application_config,
     async_get_status,
@@ -36,10 +37,10 @@ class Analysis:
     """Analyze result.
 
     :param apps: Applications in the model
-    :type apps:  Iterable[Application]
+    :type apps:  Iterable[OpenStackApplication]
     """
 
-    apps: Iterable[Application]
+    apps: Iterable[OpenStackApplication]
 
     @classmethod
     async def create(cls) -> Analysis:
@@ -54,17 +55,16 @@ class Analysis:
         return Analysis(apps=apps)
 
     @classmethod
-    async def _populate(cls) -> List[Application]:
+    async def _populate(cls) -> list[OpenStackApplication]:
         """Analyze the applications in the model.
 
         :return: Application objects with their respective information.
-        :rtype: List[Application]
+        :rtype: List[OpenStackApplication]
         """
         juju_status = await async_get_status()
         model_name = juju_status.model.name
         apps = {
             AppFactory.create(
-                app_type=await extract_charm_name(app),
                 name=app,
                 status=app_status,
                 config=await async_get_application_config(app),
@@ -73,12 +73,15 @@ class Analysis:
             )
             for app, app_status in juju_status.applications.items()
         }
-        upgradeable_apps = {app for app in apps if app.charm in UPGRADE_ORDER}
+        # remove non-supported charms that return None on AppFactory.create
+        apps.remove(None)
+        upgradeable_apps = {app for app in apps if app and app.charm in UPGRADE_ORDER}
         unknown_apps = apps - upgradeable_apps
         upgradeable_apps_sorted = sorted(
             upgradeable_apps, key=lambda app: UPGRADE_ORDER.index(app.charm)
         )
-        return upgradeable_apps_sorted + list(unknown_apps)
+        # mypy complains that unknow_apps can have None, but we already removed None from apps
+        return upgradeable_apps_sorted + list(unknown_apps)  # type: ignore
 
     def __str__(self) -> str:
         """Dump as string.
@@ -99,23 +102,5 @@ class Analysis:
         """
         os_versions = set()
         for app in self.apps:
-            if app.os_origin:
-                # NOTE (gabrielcocenza) this is temporarily skipping subordinate charms
-                # until there is a specific class able to get the OpenStack release.
-                # It's also skipping applications with no identified OpenStack release.
-                if app.current_os_release:
-                    os_versions.add(app.current_os_release)
-                else:
-                    logger.warning(
-                        "Ignoring %s when determining the minimum version of the cloud.",
-                        app.name,
-                    )
-            else:
-                logger.debug(
-                    (
-                        "Ignoring %s when determining the minimum version of the cloud: "
-                        "not an OpenStack charm."
-                    ),
-                    app.name,
-                )
+            os_versions.add(app.current_os_release)
         return min(os_versions) if os_versions else None

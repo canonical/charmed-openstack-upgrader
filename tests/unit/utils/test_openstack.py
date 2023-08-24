@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections import OrderedDict
+
 import pytest
 
 from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, VersionRange
@@ -76,6 +78,14 @@ def test_generate_lookup(service):
         assert openstack_lookup[service][os_release] == VersionRange(
             version + ".0.0", str(int(version) + 1) + ".0.0"
         )
+
+
+@pytest.mark.parametrize("component, exp_result", [("keystone", True), ("my-app", False)])
+def test_charm_support(component, exp_result):
+    # force generating _OPENSTACK_LOOKUP again
+    OpenStackCodenameLookup._OPENSTACK_LOOKUP = OrderedDict()
+    is_supported = OpenStackCodenameLookup.charm_supported(component)
+    assert is_supported is exp_result
 
 
 @pytest.mark.parametrize(

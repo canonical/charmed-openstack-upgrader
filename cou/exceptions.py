@@ -48,8 +48,12 @@ class NoTargetError(Exception):
     """Exception when there is no target to upgrade."""
 
 
-class PlanError(Exception):
-    """Exception when there is no target to upgrade."""
+class HaltUpgradePlanGeneration(Exception):
+    """Exception to halt the application upgrade at any moment."""
+
+
+class ApplicationError(Exception):
+    """Exception when Application does something unexpected."""
 
 
 class ActionFailed(Exception):

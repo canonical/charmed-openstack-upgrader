@@ -330,3 +330,18 @@ class OpenStackCodenameLookup:
             if version in version_range:
                 compatible_os_releases.append(OpenStackRelease(openstack_release))
         return compatible_os_releases
+
+    @classmethod
+    def charm_supported(cls, component: str) -> bool:
+        """Check if a component is supported to give OpenStack codename based on the version.
+
+        :param component: Name of the component. E.g: "keystone"
+        :type component: str
+        :return: True if supported, else False
+        :rtype: bool
+        """
+        if not cls._OPENSTACK_LOOKUP:
+            cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
+        if cls._OPENSTACK_LOOKUP.get(component):
+            return True
+        return False

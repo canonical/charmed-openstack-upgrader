@@ -16,7 +16,7 @@
 
 import logging
 
-from cou.exceptions import NoTargetError, PlanError
+from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
@@ -32,11 +32,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
-    target = (
-        analysis_result.current_cloud_os_release.next_release
-        if analysis_result.current_cloud_os_release
-        else None
-    )
+    target = getattr(analysis_result.current_cloud_os_release, "next_release", None)
     if not target:
         logger.error("No target found to upgrade.")
         raise NoTargetError()
@@ -52,9 +48,15 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     for app in analysis_result.apps:
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
+        except HaltUpgradePlanGeneration:
+            # we do not care if application halt the upgrade plan generation for some known reason.
+            logger.debug("'%s' halted the upgrade planning generation.", app.name)
+            app_upgrade_plan = None
         except Exception as exc:  # pylint: disable=broad-exception-caught
-            logger.error("It was not possible to generate upgrade plan for '%s'.", app.name)
-            raise PlanError() from exc
+            logger.error(
+                "It was not possible to generate upgrade plan for '%s': %s", app.name, exc
+            )
+            raise
         if app_upgrade_plan:
             upgrade_plan.add_step(app_upgrade_plan)
 
