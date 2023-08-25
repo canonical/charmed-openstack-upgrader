@@ -307,41 +307,23 @@ class OpenStackCodenameLookup:
         return service, service_dict
 
     @classmethod
-    def lookup(cls, component: str, version: str) -> List[OpenStackRelease]:
+    def lookup(cls, component: str, version: Optional[str] = None) -> list[OpenStackRelease]:
         """Get the compatible OpenStack codenames based on the component and version.
 
         :param component: Name of the component. E.g: "keystone"
         :type component: str
-        :param version: Version of the component. E.g: "17.0.2"
-        :type version: str
-        :return: Return a sorted list of compatible OpenStack codenames.
-        :rtype: List[str]
+        :param version: Version of the component. E.g: "17.0.2".
+        :type version: Optional[str]
+        :return: Return a sorted list of compatible OpenStack codenames. If version is not
+            provided, return an empty list if the component exists in the lookup, otherwise
+            raise KeyError.
+        :rtype: list[str]
+        :raises KeyError: When the component it's not in the lookup
         """
         if not cls._OPENSTACK_LOOKUP:
             cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
-        compatible_os_releases: List[OpenStackRelease] = []
-        if not cls._OPENSTACK_LOOKUP.get(component):
-            logger.warning(
-                "Not possible to find the component %s in the lookup",
-                component,
-            )
-            return compatible_os_releases
+        compatible_os_releases: list[OpenStackRelease] = []
         for openstack_release, version_range in cls._OPENSTACK_LOOKUP[component].items():
-            if version in version_range:
+            if version and version in version_range:
                 compatible_os_releases.append(OpenStackRelease(openstack_release))
         return compatible_os_releases
-
-    @classmethod
-    def charm_supported(cls, component: str) -> bool:
-        """Check if a component is supported to give OpenStack codename based on the version.
-
-        :param component: Name of the component. E.g: "keystone"
-        :type component: str
-        :return: True if supported, else False
-        :rtype: bool
-        """
-        if not cls._OPENSTACK_LOOKUP:
-            cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
-        if cls._OPENSTACK_LOOKUP.get(component):
-            return True
-        return False

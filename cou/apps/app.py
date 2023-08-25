@@ -73,25 +73,28 @@ class AppFactory:
         :rtype: Optional[OpenStackApplication]
         """
         # pylint: disable=too-many-arguments
-        if OpenStackCodenameLookup.charm_supported(charm):
-            app_class = cls.apps_type.get(name, OpenStackApplication)
-            if status.subordinate_to:
-                logger.warning(
-                    (
-                        "'%s' is a subordinate application and it's not currently "
-                        "supported for upgrading"
-                    ),
-                    name,
-                )
-                return None
-            return app_class(
-                name=name, status=status, config=config, model_name=model_name, charm=charm
+        try:
+            OpenStackCodenameLookup.lookup(charm)
+        except KeyError:
+            logger.debug(
+                "'%s' is not a supported OpenStack related application and will be ignored.",
+                name,
             )
-        logger.warning(
-            "'%s' is not a supported OpenStack related application and will be ignored.",
-            name,
+            return None
+
+        app_class = cls.apps_type.get(name, OpenStackApplication)
+        if status.subordinate_to:
+            logger.warning(
+                (
+                    "'%s' is a subordinate application and it's not currently "
+                    "supported for upgrading"
+                ),
+                name,
+            )
+            return None
+        return app_class(
+            name=name, status=status, config=config, model_name=model_name, charm=charm
         )
-        return None
 
     @classmethod
     def register_application(
@@ -103,7 +106,9 @@ class AppFactory:
         have special needs.
 
         Example:
-        @AppFactory.register_application(CHARM_TYPES["ceph"])
+        ceph_types = ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"]
+
+        @AppFactory.register_application(ceph_types)
         class Ceph(OpenStackApplication):
             pass
         This is registering "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd" to the Ceph class.
@@ -242,8 +247,8 @@ class OpenStackApplication:
         """
         return f"{self.current_os_release}/stable"
 
-    def next_channel(self, target: OpenStackRelease) -> str:
-        """Return the next channel based on the target passed.
+    def target_channel(self, target: OpenStackRelease) -> str:
+        """Return the channel based on the target passed.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
@@ -328,10 +333,10 @@ class OpenStackApplication:
         if units_not_upgraded:
             logger.error(
                 "Units '%s' failed to upgrade to %s",
-                self.name,
                 ", ".join(units_not_upgraded),
                 str(target),
             )
+            raise ApplicationError()
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
@@ -353,9 +358,13 @@ class OpenStackApplication:
         :rtype: list[Optional[UpgradeStep]]
         """
         if self.current_os_release >= target:
-            logger.warning(
-                "Application: '%s' already on a newer version than %s. Ignoring.",
+            logger.info(
+                (
+                    "Application: '%s' already running %s that is equal or bigger "
+                    "version than %s. Ignoring."
+                ),
                 self.name,
+                str(self.current_os_release),
                 target,
             )
             raise HaltUpgradePlanGeneration()
@@ -384,7 +393,7 @@ class OpenStackApplication:
         :rtype: UpgradeStep
         """
         target_version = OpenStackRelease(target)
-        upgrade_plan = UpgradeStep(
+        upgrade_steps = UpgradeStep(
             description=(
                 f"Upgrade plan for '{self.name}' from: {self.current_os_release} " f"to {target}"
             ),
@@ -398,8 +407,8 @@ class OpenStackApplication:
         )
         for step in all_steps:
             if step:
-                upgrade_plan.add_step(step)
-        return upgrade_plan
+                upgrade_steps.add_step(step)
+        return upgrade_steps
 
     def _get_refresh_charm_plan(
         self, target: OpenStackRelease, parallel: bool = False
@@ -437,12 +446,13 @@ class OpenStackApplication:
                 f"'{self.expected_current_channel}'"
             )
         elif os_track_release_channel >= target:
-            logger.warning(
+            logger.info(
                 (
                     "Skipping charm refresh for %s, its channel is already set to %s."
                     "release than target %s"
                 ),
                 self.name,
+                self.channel,
                 str(target),
             )
             return None
@@ -469,15 +479,15 @@ class OpenStackApplication:
         :return: Plan for upgrading the charm.
         :rtype: Optional[UpgradeStep]
         """
-        if self.channel != self.next_channel(target):
+        if self.channel != self.target_channel(target):
             return UpgradeStep(
                 description=(
-                    f"Upgrade '{self.name}' to the new channel: '{self.next_channel(target)}'"
+                    f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
                 ),
                 parallel=parallel,
                 function=async_upgrade_charm,
                 application_name=self.name,
-                channel=self.next_channel(target),
+                channel=self.target_channel(target),
                 model_name=self.model_name,
             )
         return None

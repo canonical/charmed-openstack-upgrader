@@ -93,7 +93,7 @@ async def test_generate_plan_raise_Exception(mocker):
     analysis_result = Analysis(apps=[app])
     with pytest.raises(Exception):
         await generate_plan(analysis_result)
-        mock_logger.error.assert_called_once()
+    mock_logger.error.assert_called_once()
 
 
 def generate_expected_upgrade_plan_description(charm, target):
@@ -101,7 +101,7 @@ def generate_expected_upgrade_plan_description(charm, target):
     return [
         f"Refresh '{charm.name}' to the latest revision of '{charm.expected_current_channel}'",
         f"Change charm config of '{charm.name}' 'action-managed-upgrade' to False.",
-        f"Upgrade '{charm.name}' to the new channel: '{charm.next_channel(target_version)}'",
+        f"Upgrade '{charm.name}' to the new channel: '{charm.target_channel(target_version)}'",
         (
             f"Change charm config of '{charm.name}' "
             f"'{charm.origin_setting}' to '{charm.new_origin(target_version)}'"

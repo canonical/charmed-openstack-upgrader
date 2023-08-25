@@ -75,13 +75,19 @@ class Analysis:
         }
         # remove non-supported charms that return None on AppFactory.create
         apps.discard(None)
-        upgradeable_apps = {app for app in apps if app and app.charm in UPGRADE_ORDER}
-        unknown_apps = apps - upgradeable_apps
-        upgradeable_apps_sorted = sorted(
-            upgradeable_apps, key=lambda app: UPGRADE_ORDER.index(app.charm)
+        apps_to_upgrade_in_order = {app for app in apps if app and app.charm in UPGRADE_ORDER}
+        disordered_upgrade_apps = apps - apps_to_upgrade_in_order
+        sorted_apps_to_upgrade_in_order = sorted(
+            apps_to_upgrade_in_order, key=lambda app: UPGRADE_ORDER.index(app.charm)
+        )
+        disordered_upgrade_apps_sorted_by_name = sorted(
+            disordered_upgrade_apps, key=lambda app: app.charm  # type: ignore
         )
         # mypy complains that unknown_apps can have None, but we already removed None from apps
-        return upgradeable_apps_sorted + list(unknown_apps)  # type: ignore
+        return (
+            sorted_apps_to_upgrade_in_order
+            + disordered_upgrade_apps_sorted_by_name  # type: ignore
+        )
 
     def __str__(self) -> str:
         """Dump as string.

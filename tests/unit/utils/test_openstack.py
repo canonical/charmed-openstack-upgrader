@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections import OrderedDict
-
 import pytest
 
 from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, VersionRange
@@ -57,14 +55,22 @@ from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, Versi
             ["1.7", "1.8", "1.9"],
             [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
         ),
-        ("my_charm", ["13.1.2"], [[]]),  # unknown charm
         ("keystone", ["63.5.7"], [[]]),  # out-of-bounds of a known charm
+        ("keystone", [], [[]]),  # no version results into empty list
+        ("keystone", [None], [[]]),  # no version results into empty list
     ],
 )
 def test_get_compatible_openstack_codenames(charm, workload_versions, results):
     for version, result in zip(workload_versions, results):
         actual = OpenStackCodenameLookup.lookup(charm, version)
         assert result == actual
+
+
+def test_lookup_raises_keyerror_unknown_component():
+    with pytest.raises(KeyError):
+        OpenStackCodenameLookup.lookup("my_charm", "13.1.2")
+    with pytest.raises(KeyError):
+        OpenStackCodenameLookup.lookup("my_charm")
 
 
 @pytest.mark.parametrize("service", ["aodh", "barbican"])
@@ -78,14 +84,6 @@ def test_generate_lookup(service):
         assert openstack_lookup[service][os_release] == VersionRange(
             version + ".0.0", str(int(version) + 1) + ".0.0"
         )
-
-
-@pytest.mark.parametrize("component, exp_result", [("keystone", True), ("my-app", False)])
-def test_charm_support(component, exp_result):
-    # force generating _OPENSTACK_LOOKUP again
-    OpenStackCodenameLookup._OPENSTACK_LOOKUP = OrderedDict()
-    is_supported = OpenStackCodenameLookup.charm_supported(component)
-    assert is_supported is exp_result
 
 
 @pytest.mark.parametrize(

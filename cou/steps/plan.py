@@ -49,7 +49,8 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
         except HaltUpgradePlanGeneration:
-            # we do not care if applications halt the upgrade plan generation for some known reason.
+            # we do not care if applications halt the upgrade plan generation
+            # for some known reason.
             logger.debug("'%s' halted the upgrade planning generation.", app.name)
             app_upgrade_plan = None
         except Exception as exc:  # pylint: disable=broad-exception-caught
