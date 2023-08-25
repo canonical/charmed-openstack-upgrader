@@ -29,10 +29,12 @@ from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
     MismatchedOpenStackVersions,
+    PackageUpgradeError,
 )
 from cou.steps import UpgradeStep
 from cou.utils.juju_utils import (
     async_get_status,
+    async_run_on_unit,
     async_set_application_config,
     async_upgrade_charm,
 )
@@ -152,6 +154,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation
+    :raises PackageUpgradeError: When the upgrade command execution resulted in error.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -342,6 +345,44 @@ class OpenStackApplication:
             )
             raise ApplicationError()
 
+    async def _run_package_upgrade_command(self, unit: str, command: str) -> None:
+        """Run package upgrade command and raise Exception if fails.
+
+        :param unit: The name of the unit where the command runs on.
+        :type str
+        :param command: The upgrade command to run.
+        :type str
+        :raises PackageUpgradeError: When the upgrade command execution resulted in error.
+        """
+        logger.info("Running '%s' on %s", command, unit)
+        result = await async_run_on_unit(
+            unit_name=unit, command=command, model_name=self.model_name
+        )
+        if str(result["Code"]) == "0":
+            logger.debug(result["Stdout"])
+        else:
+            logger.error(
+                "Error upgrading package on %s: %s",
+                unit,
+                result["Stderr"],
+            )
+            raise PackageUpgradeError()
+
+    async def _upgrade_packages(self) -> None:
+        """Run package updates and upgrades on each unit of an Application."""
+        status = await async_get_status()
+        app_status = status.applications.get(self.name)
+        for unit in app_status.units.keys():
+            update_command = "sudo apt update"
+            await self._run_package_upgrade_command(unit=unit, command=update_command)
+
+            dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+            upgrade_command = f"sudo apt full-upgrade {dpkg_opts} -y"
+            await self._run_package_upgrade_command(unit=unit, command=upgrade_command)
+
+            autoremove_command = "sudo apt autoremove"
+            await self._run_package_upgrade_command(unit=unit, command=autoremove_command)
+
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
 
@@ -350,7 +391,10 @@ class OpenStackApplication:
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        return [self._get_refresh_charm_plan(target)]
+        return [
+            self._get_upgrade_current_release_packages_plan(),
+            self._get_refresh_charm_plan(target),
+        ]
 
     def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Upgrade planning.
@@ -413,6 +457,23 @@ class OpenStackApplication:
             if step:
                 upgrade_steps.add_step(step)
         return upgrade_steps
+
+    def _get_upgrade_current_release_packages_plan(self, parallel: bool = False) -> UpgradeStep:
+        """Get Plan for upgrading software packages to the latest of the current release.
+
+        :param parallel: Parallel running, defaults to False
+        :type parallel: bool, optional
+        :return plan: Plan for upgrading software packages to the latest of the current release.
+        :type plan: UpgradeStep
+        """
+        return UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{self.name}' to the latest "
+                f"in '{self.current_os_release}' release"
+            ),
+            parallel=parallel,
+            function=self._upgrade_packages,
+        )
 
     def _get_refresh_charm_plan(
         self, target: OpenStackRelease, parallel: bool = False

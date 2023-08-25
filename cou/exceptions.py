@@ -56,6 +56,10 @@ class ApplicationError(Exception):
     """Exception when Application does something unexpected."""
 
 
+class PackageUpgradeError(Exception):
+    """Exception when pacakge upgrade fails."""
+
+
 class ActionFailed(Exception):
     # pylint: disable=consider-using-f-string
     """Exception raised when action fails."""
