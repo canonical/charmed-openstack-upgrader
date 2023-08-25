@@ -88,7 +88,7 @@ class AppFactory:
                 name=name, status=status, config=config, model_name=model_name, charm=charm
             )
         logger.warning(
-            "'%s' it's not supported as an OpenStack related application and will be ignored.",
+            "'%s' is not a supported OpenStack related application and will be ignored.",
             name,
         )
         return None
@@ -145,9 +145,9 @@ class OpenStackApplication:
     :type units: defaultdict[str, dict]
     :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version
-    :raises MismatchedOpenStackVersions: When an application are running mismatched
+    :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
-    :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation
+    :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -327,7 +327,7 @@ class OpenStackApplication:
                 units_not_upgraded.append(unit)
         if units_not_upgraded:
             logger.error(
-                "App: '%s' has units: '%s' didn't upgrade to %s",
+                "Units '%s' failed to upgrade to %s",
                 self.name,
                 ", ".join(units_not_upgraded),
                 str(target),
@@ -425,7 +425,7 @@ class OpenStackApplication:
             # get the OpenStack release from the channel track of the application.
             os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
         except ValueError:
-            logger.debug("Current channel it's inexistent or it's not on expected format")
+            logger.debug("The current channel does not exist or is unexpectedly formatted")
             os_track_release_channel = self.current_os_release
 
         if self.charm_origin == "cs":
@@ -439,7 +439,7 @@ class OpenStackApplication:
         elif os_track_release_channel >= target:
             logger.warning(
                 (
-                    "App: %s already has the channel set for a bigger or equal OpenStack "
+                    "Skipping charm refresh for %s, its channel is already set to %s."
                     "release than target %s"
                 ),
                 self.name,
@@ -528,7 +528,7 @@ class OpenStackApplication:
                 configuration={self.origin_setting: self.new_origin(target)},
             )
         logger.warning(
-            "App: %s already have %s set to %s",
+            "Not triggering the workload upgrade of app %s: %s already set to %s",
             self.name,
             self.origin_setting,
             self.new_origin(target),

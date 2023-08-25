@@ -74,13 +74,13 @@ class Analysis:
             for app, app_status in juju_status.applications.items()
         }
         # remove non-supported charms that return None on AppFactory.create
-        apps.remove(None)
+        apps.discard(None)
         upgradeable_apps = {app for app in apps if app and app.charm in UPGRADE_ORDER}
         unknown_apps = apps - upgradeable_apps
         upgradeable_apps_sorted = sorted(
             upgradeable_apps, key=lambda app: UPGRADE_ORDER.index(app.charm)
         )
-        # mypy complains that unknow_apps can have None, but we already removed None from apps
+        # mypy complains that unknown_apps can have None, but we already removed None from apps
         return upgradeable_apps_sorted + list(unknown_apps)  # type: ignore
 
     def __str__(self) -> str:
