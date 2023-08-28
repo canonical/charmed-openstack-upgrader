@@ -73,28 +73,25 @@ class AppFactory:
         :rtype: Optional[OpenStackApplication]
         """
         # pylint: disable=too-many-arguments
-        try:
-            OpenStackCodenameLookup.lookup(charm)
-        except KeyError:
-            logger.debug(
-                "'%s' is not a supported OpenStack related application and will be ignored.",
-                name,
+        if OpenStackCodenameLookup.is_charm_supported(charm):
+            if status.subordinate_to:
+                logger.warning(
+                    (
+                        "'%s' is a subordinate application and it's not currently "
+                        "supported for upgrading"
+                    ),
+                    name,
+                )
+                return None
+            app_class = cls.apps_type.get(name, OpenStackApplication)
+            return app_class(
+                name=name, status=status, config=config, model_name=model_name, charm=charm
             )
-            return None
-
-        app_class = cls.apps_type.get(name, OpenStackApplication)
-        if status.subordinate_to:
-            logger.warning(
-                (
-                    "'%s' is a subordinate application and it's not currently "
-                    "supported for upgrading"
-                ),
-                name,
-            )
-            return None
-        return app_class(
-            name=name, status=status, config=config, model_name=model_name, charm=charm
+        logger.debug(
+            "'%s' is not a supported OpenStack related application and will be ignored.",
+            name,
         )
+        return None
 
     @classmethod
     def register_application(
@@ -103,7 +100,7 @@ class AppFactory:
         """Register Application subclasses.
 
         Use this method as decorator to register Applications that
-        have special needs.
+        cannot be described appropriately by the OpenStackApplication class.
 
         Example:
         ceph_types = ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"]
@@ -115,6 +112,8 @@ class AppFactory:
 
         :param app_types: List of charm names the Application sub class should handle.
         :type app_types: list[str]
+        :return: The decorated class. E.g: the Ceph class in the example above.
+        :rtype: Callable[[type[OpenStackApplication]], type[OpenStackApplication]]
         """
 
         def decorator(application: type[OpenStackApplication]) -> type[OpenStackApplication]:
@@ -175,7 +174,9 @@ class OpenStackApplication:
         for unit in self.status.units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
-            compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
+            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+                self.charm, workload_version
+            )
             # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
             if compatible_os_versions:
                 unit_os_version = max(compatible_os_versions)
@@ -245,7 +246,7 @@ class OpenStackApplication:
         :return: The expected current channel for the application. E.g: ussuri/stable
         :rtype: str
         """
-        return f"{self.current_os_release}/stable"
+        return f"{self.current_os_release.codename}/stable"
 
     def target_channel(self, target: OpenStackRelease) -> str:
         """Return the channel based on the target passed.
@@ -321,14 +322,17 @@ class OpenStackApplication:
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :raises ApplicationError: When the workload version of the charm doesn't upgrade.
         """
         status = await async_get_status()
         app_status = status.applications.get(self.name)
         units_not_upgraded = []
         for unit in app_status.units.keys():
             workload_version = app_status.units[unit].workload_version
-            compatible_os_versions = OpenStackCodenameLookup.lookup(self.charm, workload_version)
-            if target not in compatible_os_versions:
+            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+                self.charm, workload_version
+            )
+            if compatible_os_versions and target not in compatible_os_versions:
                 units_not_upgraded.append(unit)
         if units_not_upgraded:
             logger.error(
@@ -360,7 +364,7 @@ class OpenStackApplication:
         if self.current_os_release >= target:
             logger.info(
                 (
-                    "Application: '%s' already running %s that is equal or bigger "
+                    "Application: '%s' already running %s that is equal or greater "
                     "version than %s. Ignoring."
                 ),
                 self.name,
@@ -548,13 +552,13 @@ class OpenStackApplication:
     def _get_reached_expected_target_plan(
         self, target: OpenStackRelease, parallel: bool = False
     ) -> UpgradeStep:
-        """Get plan to check if application workload has upgraded.
+        """Get plan to check if application workload has been upgraded.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
-        :return: Plan to check if application workload has upgraded
+        :return: Plan to check if application workload has been upgraded
         :rtype: UpgradeStep
         """
         return UpgradeStep(

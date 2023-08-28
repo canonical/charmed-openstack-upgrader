@@ -55,22 +55,14 @@ from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, Versi
             ["1.7", "1.8", "1.9"],
             [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
         ),
+        ("my_charm", ["13.1.2"], [None]),  # unknown charm return None
         ("keystone", ["63.5.7"], [[]]),  # out-of-bounds of a known charm
-        ("keystone", [], [[]]),  # no version results into empty list
-        ("keystone", [None], [[]]),  # no version results into empty list
     ],
 )
 def test_get_compatible_openstack_codenames(charm, workload_versions, results):
     for version, result in zip(workload_versions, results):
-        actual = OpenStackCodenameLookup.lookup(charm, version)
+        actual = OpenStackCodenameLookup.find_compatible_versions(charm, version)
         assert result == actual
-
-
-def test_lookup_raises_keyerror_unknown_component():
-    with pytest.raises(KeyError):
-        OpenStackCodenameLookup.lookup("my_charm", "13.1.2")
-    with pytest.raises(KeyError):
-        OpenStackCodenameLookup.lookup("my_charm")
 
 
 @pytest.mark.parametrize("service", ["aodh", "barbican"])

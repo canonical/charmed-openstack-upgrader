@@ -307,23 +307,40 @@ class OpenStackCodenameLookup:
         return service, service_dict
 
     @classmethod
-    def lookup(cls, component: str, version: Optional[str] = None) -> list[OpenStackRelease]:
-        """Get the compatible OpenStack codenames based on the component and version.
+    def find_compatible_versions(
+        cls, charm: str, version: str
+    ) -> Optional[list[OpenStackRelease]]:
+        """Get the compatible OpenStackRelease(s) based on the charm and version.
 
-        :param component: Name of the component. E.g: "keystone"
-        :type component: str
-        :param version: Version of the component. E.g: "17.0.2".
-        :type version: Optional[str]
-        :return: Return a sorted list of compatible OpenStack codenames. If version is not
-            provided, return an empty list if the component exists in the lookup, otherwise
-            raise KeyError.
-        :rtype: list[str]
-        :raises KeyError: When the component it's not in the lookup
+        :param charm: Name of the charm. E.g: "keystone"
+        :type charm: str
+        :param version: Version of the charm. E.g: "17.0.2"
+        :type version: str
+        :return: Return a sorted list of compatible OpenStackRelease(s).
+        :rtype: Optional[list[str]]
+        """
+        compatible_os_releases: list[OpenStackRelease] = []
+        if cls.is_charm_supported(charm):
+            for openstack_release, version_range in cls._OPENSTACK_LOOKUP[charm].items():
+                if version in version_range:
+                    compatible_os_releases.append(OpenStackRelease(openstack_release))
+            return compatible_os_releases
+        logger.warning(
+            "Not possible to find the charm %s in the lookup",
+            charm,
+        )
+        return None
+
+    @classmethod
+    def is_charm_supported(cls, charm: str) -> bool:
+        """Check if a charm is supported or not in the OpenStackCodenameLookup.
+
+        This function also generate the lookup if _OPENSTACK_LOOKUP is empty.
+        :param charm: name of the charm
+        :type charm: str
+        :return: If supported return True, else False
+        :rtype: bool
         """
         if not cls._OPENSTACK_LOOKUP:
             cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
-        compatible_os_releases: list[OpenStackRelease] = []
-        for openstack_release, version_range in cls._OPENSTACK_LOOKUP[component].items():
-            if version and version in version_range:
-                compatible_os_releases.append(OpenStackRelease(openstack_release))
-        return compatible_os_releases
+        return cls._OPENSTACK_LOOKUP.get(charm, False)

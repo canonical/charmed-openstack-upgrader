@@ -407,7 +407,7 @@ def test_upgrade_plan_application_already_upgraded(status, config, mocker):
     with pytest.raises(HaltUpgradePlanGeneration):
         app.generate_upgrade_plan(target)
     mock_logger.info.assert_called_once_with(
-        "Application: '%s' already running %s that is equal or bigger version than %s. Ignoring.",
+        "Application: '%s' already running %s that is equal or greater version than %s. Ignoring.",
         app.name,
         str(app.current_os_release),
         target,
