@@ -332,7 +332,7 @@ class OpenStackApplication:
             compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
                 self.charm, workload_version
             )
-            if compatible_os_versions and target not in compatible_os_versions:
+            if target not in compatible_os_versions:
                 units_not_upgraded.append(unit)
         if units_not_upgraded:
             logger.error(

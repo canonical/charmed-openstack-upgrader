@@ -307,9 +307,7 @@ class OpenStackCodenameLookup:
         return service, service_dict
 
     @classmethod
-    def find_compatible_versions(
-        cls, charm: str, version: str
-    ) -> Optional[list[OpenStackRelease]]:
+    def find_compatible_versions(cls, charm: str, version: str) -> list[OpenStackRelease]:
         """Get the compatible OpenStackRelease(s) based on the charm and version.
 
         :param charm: Name of the charm. E.g: "keystone"
@@ -317,7 +315,7 @@ class OpenStackCodenameLookup:
         :param version: Version of the charm. E.g: "17.0.2"
         :type version: str
         :return: Return a sorted list of compatible OpenStackRelease(s).
-        :rtype: Optional[list[str]]
+        :rtype: list[str]
         """
         compatible_os_releases: list[OpenStackRelease] = []
         if cls.is_charm_supported(charm):
@@ -329,7 +327,7 @@ class OpenStackCodenameLookup:
             "Not possible to find the charm %s in the lookup",
             charm,
         )
-        return None
+        return []
 
     @classmethod
     def is_charm_supported(cls, charm: str) -> bool:

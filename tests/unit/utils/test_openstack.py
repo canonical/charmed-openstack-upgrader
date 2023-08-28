@@ -55,7 +55,7 @@ from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, Versi
             ["1.7", "1.8", "1.9"],
             [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
         ),
-        ("my_charm", ["13.1.2"], [None]),  # unknown charm return None
+        ("my_charm", ["13.1.2"], [[]]),  # unknown charm
         ("keystone", ["63.5.7"], [[]]),  # out-of-bounds of a known charm
     ],
 )
