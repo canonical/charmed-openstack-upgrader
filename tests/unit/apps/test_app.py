@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from unittest.mock import call
-
 import pytest
 
 from cou.apps import app as app_module
@@ -22,7 +20,6 @@ from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
     MismatchedOpenStackVersions,
-    PackageUpgradeError,
 )
 from cou.utils.openstack import OpenStackRelease
 
@@ -274,89 +271,6 @@ async def test_application_check_upgrade_fail(status, config, mocker):
         "Units '%s' failed to upgrade to %s",
         "keystone/0, keystone/1, keystone/2",
         "victoria",
-    )
-
-
-@pytest.mark.asyncio
-async def test_application_upgrade_packages(status, config, mocker):
-    app_status = status["keystone_ussuri"]
-    app_config = config["openstack_ussuri"]
-    mocker.patch("cou.apps.app.logger")
-
-    mock_status = mocker.MagicMock()
-    mock_status.applications = {"my_keystone": status["keystone_ussuri"]}
-
-    mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
-    mock_run_package_upgrade_command = mocker.patch.object(
-        OpenStackApplication, "_run_package_upgrade_command"
-    )
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
-    await app._upgrade_packages()
-
-    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-    expected_calls = [
-        call(unit="keystone/0", command="sudo apt update"),
-        call(
-            unit="keystone/0",
-            command=f"sudo apt full-upgrade {dpkg_opts} -y",
-        ),
-        call(unit="keystone/0", command="sudo apt autoremove"),
-        call(unit="keystone/1", command="sudo apt update"),
-        call(
-            unit="keystone/1",
-            command=f"sudo apt full-upgrade {dpkg_opts} -y",
-        ),
-        call(unit="keystone/1", command="sudo apt autoremove"),
-        call(unit="keystone/2", command="sudo apt update"),
-        call(
-            unit="keystone/2",
-            command=f"sudo apt full-upgrade {dpkg_opts} -y",
-        ),
-        call(unit="keystone/2", command="sudo apt autoremove"),
-    ]
-    mock_run_package_upgrade_command.assert_has_calls(expected_calls, any_order=True)
-
-
-@pytest.mark.asyncio
-async def test_run_package_upgrade_command(mocker):
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    mock_status = mocker.MagicMock()
-    mock_config = mocker.MagicMock()
-
-    app = OpenStackApplication("my_keystone", mock_status, mock_config, "my_model", "keystone")
-    success_result = {"Code": "0", "Stdout": "Success"}
-    mock_async_run_on_unit = mocker.patch.object(
-        app_module, "async_run_on_unit", return_value=success_result
-    )
-    await app._run_package_upgrade_command(unit="keystone/0", command="sudo apt update")
-    mock_logger.info.assert_called_once_with("Running '%s' on %s", "sudo apt update", "keystone/0")
-    mock_async_run_on_unit.assert_called_once_with(
-        unit_name="keystone/0", command="sudo apt update", model_name="my_model"
-    )
-    mock_logger.debug.assert_called_once_with("Success")
-
-
-@pytest.mark.asyncio
-async def test_run_package_upgrade_command_failed(mocker):
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    mock_status = mocker.MagicMock()
-    mock_config = mocker.MagicMock()
-
-    app = OpenStackApplication("my_keystone", mock_status, mock_config, "my_model", "keystone")
-    failed_result = {"Code": "non-zero", "Stderr": "unexpected error"}
-    mock_async_run_on_unit = mocker.patch.object(
-        app_module, "async_run_on_unit", return_value=failed_result
-    )
-
-    with pytest.raises(PackageUpgradeError):
-        await app._run_package_upgrade_command(unit="keystone/0", command="sudo apt update")
-
-    mock_logger.info.assert_called_once_with("Running '%s' on %s", "sudo apt update", "keystone/0")
-    mock_async_run_on_unit.assert_called_once_with(
-        unit_name="keystone/0", command="sudo apt update", model_name="my_model"
-    )
-    mock_logger.error.assert_called_once_with(
-        "Error upgrading package on %s: %s", "keystone/0", "unexpected error"
     )
 
 
