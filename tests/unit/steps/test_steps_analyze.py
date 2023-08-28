@@ -79,17 +79,28 @@ async def test_analysis_dump(mocker, apps):
 
 @pytest.mark.asyncio
 async def test_populate_model(mocker, full_status, config):
+    apps_name = ["rabbitmq-server", "keystone", "cinder", "my_app"]
+
+    def generate_app(value):
+        app = mocker.MagicMock()
+        app.charm_name = value
+        return app
+
+    test_model = mocker.AsyncMock()
+    test_model.applications = {app_name: generate_app(app_name) for app_name in apps_name}
+    juju_model = mocker.patch("cou.utils.juju_utils._async_get_model")
+    juju_model.return_value = test_model
     mocker.patch.object(analyze, "async_get_status", return_value=full_status)
     mocker.patch.object(
         analyze, "async_get_application_config", return_value=config["openstack_ussuri"]
     )
     # Initially, 4 applications are in the status: keystone, cinder, rabbitmq-server and my-app
-    # my-app is an unknown application in the model.
+    # my-app it's not on the lookup and won't be instantiated.
     assert len(full_status.applications) == 4
     apps = await Analysis._populate()
-    assert len(apps) == 4
-    # apps are on the UPGRADE_ORDER sequence and unknown in the end of the list
-    assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder", "my-app"]
+    assert len(apps) == 3
+    # apps are on the UPGRADE_ORDER sequence
+    assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder"]
 
 
 @pytest.mark.asyncio
@@ -98,15 +109,11 @@ async def test_analysis_create(mocker, apps):
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_rmq = apps["rmq_ussuri"]
-    app_mysql_router = apps["mysql_router_ussuri"]
-    no_openstack = apps["no_openstack"]
-    expected_result = analyze.Analysis(
-        apps=[app_rmq, app_keystone, app_cinder, app_mysql_router, no_openstack]
-    )
+    expected_result = analyze.Analysis(apps=[app_rmq, app_keystone, app_cinder])
     mocker.patch.object(
         analyze.Analysis,
         "_populate",
-        return_value=[app_rmq, app_keystone, app_cinder, app_mysql_router, no_openstack],
+        return_value=[app_rmq, app_keystone, app_cinder],
     )
 
     result = await Analysis.create()
@@ -118,11 +125,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(apps)
     keystone_wallaby = apps["keystone_wallaby"]
     cinder_ussuri = apps["cinder_ussuri"]
     rmq_ussuri = apps["rmq_ussuri"]
-    app_mysql_router = apps["mysql_router_ussuri"]
-    no_openstack = apps["no_openstack"]
-    result = analyze.Analysis(
-        apps=[rmq_ussuri, keystone_wallaby, cinder_ussuri, app_mysql_router, no_openstack]
-    )
+    result = analyze.Analysis(apps=[rmq_ussuri, keystone_wallaby, cinder_ussuri])
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
@@ -136,33 +139,3 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps):
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
-
-
-@pytest.mark.asyncio
-async def test_analysis_subordinate_charm(mocker, apps):
-    """Test analysis object."""
-    app_mysql_router = apps["mysql_router_ussuri"]
-    result = analyze.Analysis(apps=[app_mysql_router])
-    mock_logger = mocker.patch("cou.steps.analyze.logger")
-
-    assert result.current_cloud_os_release is None
-    mock_logger.warning.assert_called_once_with(
-        "Ignoring %s when determining the minimum version of the cloud.", app_mysql_router.name
-    )
-
-
-@pytest.mark.asyncio
-async def test_analysis_no_openstack_charm(mocker, apps):
-    """Test analysis object."""
-    no_openstack = apps["no_openstack"]
-    result = analyze.Analysis(apps=[no_openstack])
-    mock_logger = mocker.patch("cou.steps.analyze.logger")
-
-    assert result.current_cloud_os_release is None
-    mock_logger.debug.assert_called_once_with(
-        (
-            "Ignoring %s when determining the minimum version of the cloud: "
-            "not an OpenStack charm."
-        ),
-        no_openstack.name,
-    )

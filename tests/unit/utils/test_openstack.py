@@ -61,7 +61,7 @@ from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, Versi
 )
 def test_get_compatible_openstack_codenames(charm, workload_versions, results):
     for version, result in zip(workload_versions, results):
-        actual = OpenStackCodenameLookup.lookup(charm, version)
+        actual = OpenStackCodenameLookup.find_compatible_versions(charm, version)
         assert result == actual
 
 

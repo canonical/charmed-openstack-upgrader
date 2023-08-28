@@ -16,6 +16,7 @@
 
 import logging
 
+from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
@@ -23,7 +24,7 @@ from cou.steps.backup import backup
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(args: Analysis) -> UpgradeStep:
+async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     """Generate plan for upgrade.
 
     :param args: Analysis result.
@@ -31,9 +32,34 @@ async def generate_plan(args: Analysis) -> UpgradeStep:
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
-    logger.info(args)  # for placeholder
+    target = getattr(analysis_result.current_cloud_os_release, "next_release", None)
+    if not target:
+        logger.error("No target found to upgrade.")
+        raise NoTargetError()
+
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
     )
+
+    upgrade_plan = UpgradeStep(
+        description="Application(s) upgrade plan", parallel=False, function=None
+    )
+    for app in analysis_result.apps:
+        try:
+            app_upgrade_plan = app.generate_upgrade_plan(target)
+        except HaltUpgradePlanGeneration:
+            # we do not care if applications halt the upgrade plan generation
+            # for some known reason.
+            logger.debug("'%s' halted the upgrade planning generation.", app.name)
+            app_upgrade_plan = None
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "It was not possible to generate upgrade plan for '%s': %s", app.name, exc
+            )
+            raise
+        if app_upgrade_plan:
+            upgrade_plan.add_step(app_upgrade_plan)
+
+    plan.add_step(upgrade_plan)
     return plan

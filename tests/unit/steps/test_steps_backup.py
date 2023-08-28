@@ -40,7 +40,8 @@ async def test_backup():
 
 
 @pytest.mark.asyncio
-async def test_get_database_app_name_negative():
+async def test_get_database_app_name_negative(mocker):
+    mocker.patch("cou.utils.juju_utils._async_get_model")
     with patch("cou.steps.backup.utils.async_get_status") as get_status:
         current_path = Path(os.path.dirname(os.path.realpath(__file__)))
         with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
@@ -54,7 +55,9 @@ async def test_get_database_app_name_negative():
 
 
 @pytest.mark.asyncio
-async def test_get_database_app_name():
+async def test_get_database_app_name(mocker):
+    charm_name = mocker.patch("cou.utils.juju_utils.extract_charm_name")
+    charm_name.return_value = "mysql-innodb-cluster"
     with patch("cou.steps.backup.utils.async_get_status") as get_status:
         current_path = Path(os.path.dirname(os.path.realpath(__file__)))
         with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
