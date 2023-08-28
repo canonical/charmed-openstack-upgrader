@@ -34,16 +34,16 @@ async def test_application_upgrade_packages(mocker):
     expected_calls = [
         call(
             unit_name="keystone/0",
-            command="sudo apt-get update && "
-            f"sudo apt-get dist-upgrade {dpkg_opts} -y && "
-            "sudo apt-get autoremove -y",
+            command="apt-get update && "
+            f"apt-get dist-upgrade {dpkg_opts} -y && "
+            "apt-get autoremove -y",
             model_name="my_model",
         ),
         call(
             unit_name="keystone/1",
-            command="sudo apt-get update && "
-            f"sudo apt-get dist-upgrade {dpkg_opts} -y && "
-            "sudo apt-get autoremove -y",
+            command="apt-get update && "
+            f"apt-get dist-upgrade {dpkg_opts} -y && "
+            "apt-get autoremove -y",
             model_name="my_model",
         ),
     ]
@@ -69,9 +69,9 @@ async def test_application_upgrade_packages_failed(mocker):
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     mock_async_run_on_unit.assert_called_once_with(
         unit_name="keystone/0",
-        command="sudo apt-get update && "
-        f"sudo apt-get dist-upgrade {dpkg_opts} -y && "
-        "sudo apt-get autoremove -y",
+        command="apt-get update && "
+        f"apt-get dist-upgrade {dpkg_opts} -y && "
+        "apt-get autoremove -y",
         model_name="my_model",
     )
     mock_logger.error.assert_called_once_with(

@@ -430,7 +430,7 @@ class OpenStackApplication:
         return UpgradeStep(
             description=(
                 f"Upgrade software packages of '{self.name}' to the latest "
-                f"in '{self.current_os_release}' release"
+                f"'{self.current_os_release}' release"
             ),
             parallel=parallel,
             function=upgrade_packages,

@@ -27,18 +27,14 @@ async def upgrade_packages(units: Iterable[str], model_name: str) -> None:
 
     :param units: The list of unit names where the package upgrade runs on.
     :type Iterable[str]
-    :param model_name: The name of the model that the applcation belongs to.
+    :param model_name: The name of the model that the application belongs to.
     :type str
     :raises PackageUpgradeError: When the upgrade command execution resulted in error.
     """
-    for unit in units:
-        dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-        command = (
-            "sudo apt-get update && "
-            f"sudo apt-get dist-upgrade {dpkg_opts} -y && "
-            "sudo apt-get autoremove -y"
-        )
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
 
+    for unit in units:
         logger.info("Running '%s' on '%s'", command, unit)
         result = await async_run_on_unit(unit_name=unit, command=command, model_name=model_name)
         if str(result["Code"]) == "0":
