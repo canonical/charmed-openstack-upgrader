@@ -79,7 +79,7 @@ async def test_application_upgrade_packages_unsuccessful(mocker):
         timeout=600,
     )
     mock_logger.error.assert_called_once_with(
-        "Error upgrading package on %s: %s", "keystone/0", "unexpected error"
+        "Error upgrading packages on %s: %s", "keystone/0", "unexpected error"
     )
 
 
@@ -105,5 +105,5 @@ async def test_application_upgrade_packages_error(mocker):
         timeout=600,
     )
     mock_logger.error.assert_called_once_with(
-        "Failed running package upgrade on %s: %s", "keystone/0", side_effect
+        "Failed running package upgrades on %s: %s", "keystone/0", side_effect
     )
