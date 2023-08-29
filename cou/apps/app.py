@@ -31,6 +31,7 @@ from cou.exceptions import (
     MismatchedOpenStackVersions,
 )
 from cou.steps import UpgradeStep
+from cou.utils.app_utils import upgrade_packages
 from cou.utils.juju_utils import (
     async_get_status,
     async_set_application_config,
@@ -153,6 +154,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation
+    :raises PackageUpgradeError: When the package upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -351,7 +353,10 @@ class OpenStackApplication:
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        return [self._get_refresh_charm_plan(target)]
+        return [
+            self._get_upgrade_current_release_packages_plan(),
+            self._get_refresh_charm_plan(target),
+        ]
 
     def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Upgrade planning.
@@ -414,6 +419,25 @@ class OpenStackApplication:
             if step:
                 upgrade_steps.add_step(step)
         return upgrade_steps
+
+    def _get_upgrade_current_release_packages_plan(self, parallel: bool = False) -> UpgradeStep:
+        """Get Plan for upgrading software packages to the latest of the current release.
+
+        :param parallel: Parallel running, defaults to False
+        :type parallel: bool, optional
+        :return plan: Plan for upgrading software packages to the latest of the current release.
+        :type plan: UpgradeStep
+        """
+        return UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{self.name}' to the latest "
+                f"'{self.current_os_release}' release"
+            ),
+            parallel=parallel,
+            function=upgrade_packages,
+            units=self.status.units.keys(),
+            model_name=self.model_name,
+        )
 
     def _get_refresh_charm_plan(
         self, target: OpenStackRelease, parallel: bool = False

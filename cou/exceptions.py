@@ -18,7 +18,7 @@ from juju.action import Action
 
 
 class CommandRunFailed(Exception):
-    """Command failed to run."""
+    """Exception raised when a command fails to run."""
 
     def __init__(self, cmd: str, code: str, output: str, err: str):
         """Create Command run failed exception.
@@ -33,19 +33,15 @@ class CommandRunFailed(Exception):
 
 
 class UnitNotFound(Exception):
-    """Unit not found in actual dict."""
-
-
-class JujuError(Exception):
-    """Exception when libjuju does something unexpected."""
+    """Exception raised when a unit is not found in the model."""
 
 
 class MismatchedOpenStackVersions(Exception):
-    """Exception when more than one OpenStack version are found in the Application."""
+    """Exception raised when more than one OpenStack version is found in the Application."""
 
 
 class NoTargetError(Exception):
-    """Exception when there is no target to upgrade."""
+    """Exception raised when there is no target to upgrade."""
 
 
 class HaltUpgradePlanGeneration(Exception):
@@ -53,7 +49,11 @@ class HaltUpgradePlanGeneration(Exception):
 
 
 class ApplicationError(Exception):
-    """Exception when Application does something unexpected."""
+    """Exception raised when Application does something unexpected."""
+
+
+class PackageUpgradeError(Exception):
+    """Exception raised when a package upgrade fails."""
 
 
 class ActionFailed(Exception):

@@ -13,7 +13,7 @@
 # limitations under the License.
 import pytest
 
-from cou.exceptions import ActionFailed, CommandRunFailed, JujuError, UnitNotFound
+from cou.exceptions import ActionFailed, CommandRunFailed, UnitNotFound
 
 
 def test_command_run_failed():
@@ -24,11 +24,6 @@ def test_command_run_failed():
 def test_unit_not_found():
     with pytest.raises(UnitNotFound):
         raise UnitNotFound()
-
-
-def test_juju_error():
-    with pytest.raises(JujuError):
-        raise JujuError()
 
 
 def test_action_failed():

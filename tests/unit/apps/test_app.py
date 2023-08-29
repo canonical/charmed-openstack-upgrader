@@ -288,6 +288,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
+        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
@@ -305,6 +306,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
+        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
         "Migration of 'my_keystone' from charmstore to charmhub",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
@@ -327,6 +329,7 @@ def test_upgrade_plan_change_current_channel(mocker, status, config):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     steps_description = [
+        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
         "Changing 'my_keystone' channel from: 'foo/stable' to: 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
@@ -353,6 +356,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
 
     # no sub-step for refresh current channel or next channel
     steps_description = [
+        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
         "Check if the workload of 'my_keystone' has been upgraded",
@@ -380,6 +384,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
+        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
@@ -428,6 +433,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
     )
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
+        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
