@@ -46,8 +46,8 @@ async def upgrade_packages(units: Iterable[str], model_name: str) -> None:
             if str(result["Code"]) == "0":
                 logger.debug(result["Stdout"])
             else:
-                logger.error("Error upgrading package on %s: %s", unit, result["Stderr"])
+                logger.error("Error upgrading packages on %s: %s", unit, result["Stderr"])
                 raise PackageUpgradeError()
         except JujuError as exc:
-            logger.error("Failed running package upgrade on %s: %s", unit, exc)
+            logger.error("Failed running package upgrades on %s: %s", unit, exc)
             raise PackageUpgradeError() from exc
