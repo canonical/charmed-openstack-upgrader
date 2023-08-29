@@ -83,7 +83,7 @@ class AppFactory:
                     name,
                 )
                 return None
-            app_class = cls.apps_type.get(name, OpenStackApplication)
+            app_class = cls.apps_type.get(charm, OpenStackApplication)
             return app_class(
                 name=name, status=status, config=config, model_name=model_name, charm=charm
             )
@@ -108,7 +108,8 @@ class AppFactory:
         @AppFactory.register_application(ceph_types)
         class Ceph(OpenStackApplication):
             pass
-        This is registering "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd" to the Ceph class.
+        This is registering the charms "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"
+        to the Ceph class.
 
         :param app_types: List of charm names the Application sub class should handle.
         :type app_types: list[str]

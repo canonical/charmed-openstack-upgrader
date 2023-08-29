@@ -477,5 +477,5 @@ def test_app_factory_register(status):
             pass
 
     assert "vault" in app_module.AppFactory.apps_type
-    vault = app_module.AppFactory.create("vault", status["vault"], {}, "my_model", "vault")
+    vault = app_module.AppFactory.create("my-vault", status["vault"], {}, "my_model", "vault")
     assert isinstance(vault, Vault)
