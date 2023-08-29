@@ -37,7 +37,12 @@ from cou.utils.juju_utils import (
     async_set_application_config,
     async_upgrade_charm,
 )
-from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease
+from cou.utils.openstack import (
+    SUBORDINATES,
+    OpenStackCodenameLookup,
+    OpenStackRelease,
+    is_charm_supported,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +79,8 @@ class AppFactory:
         :rtype: Optional[OpenStackApplication]
         """
         # pylint: disable=too-many-arguments
-        if OpenStackCodenameLookup.is_charm_supported(charm):
-            if status.subordinate_to:
+        if is_charm_supported(charm):
+            if status.subordinate_to and charm not in SUBORDINATES:
                 logger.warning(
                     (
                         "'%s' is a subordinate application and it's not currently "

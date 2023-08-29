@@ -71,6 +71,28 @@ UPGRADE_ORDER = [
     "octavia",
 ]
 
+SUBORDINATES = [
+    "barbican-vault",
+    "ceilometer-agent",
+    "cinder-backup-swift-proxy",
+    "cinder-ceph",
+    "cinder-lvm",
+    "cinder-netapp",
+    "cinder-purestorage",
+    "keystone-kerberos",
+    "keystone-ldap",
+    "keystone-saml-mellon",
+    "magnum-dashboard",
+    "manila-dashboard",
+    "manila-generic",
+    "masakari-monitors",
+    "neutron-api-plugin-ironic",
+    "neutron-api-plugin-ovn",
+    "neutron-openvswitch",
+    "octavia-dashboard",
+    "octavia-diskimage-retrofit",
+]
+
 OPENSTACK_CODENAMES = OrderedDict(
     [
         ("diablo", "2011.2"),
@@ -318,7 +340,7 @@ class OpenStackCodenameLookup:
         :rtype: list[str]
         """
         compatible_os_releases: list[OpenStackRelease] = []
-        if cls.is_charm_supported(charm):
+        if cls.is_primary_charm_supported(charm):
             for openstack_release, version_range in cls._OPENSTACK_LOOKUP[charm].items():
                 if version in version_range:
                     compatible_os_releases.append(OpenStackRelease(openstack_release))
@@ -330,8 +352,8 @@ class OpenStackCodenameLookup:
         return []
 
     @classmethod
-    def is_charm_supported(cls, charm: str) -> bool:
-        """Check if a charm is supported or not in the OpenStackCodenameLookup.
+    def is_primary_charm_supported(cls, charm: str) -> bool:
+        """Check if a primary charm is supported or not in the OpenStackCodenameLookup.
 
         This function also generate the lookup if _OPENSTACK_LOOKUP is empty.
         :param charm: name of the charm
@@ -342,3 +364,14 @@ class OpenStackCodenameLookup:
         if not cls._OPENSTACK_LOOKUP:
             cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
         return cls._OPENSTACK_LOOKUP.get(charm, False)
+
+
+def is_charm_supported(charm: str) -> bool:
+    """Check if a charm upgrade is supported.
+
+    :param charm: Name of the charm.
+    :type charm: str
+    :return: True if supported, else False
+    :rtype: bool
+    """
+    return OpenStackCodenameLookup.is_primary_charm_supported(charm) or charm in SUBORDINATES
