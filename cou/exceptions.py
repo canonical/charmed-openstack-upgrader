@@ -36,10 +36,6 @@ class UnitNotFound(Exception):
     """Exception raised when a unit is not found in the model."""
 
 
-class JujuError(Exception):
-    """Exception raised when libjuju does something unexpected."""
-
-
 class MismatchedOpenStackVersions(Exception):
     """Exception raised when more than one OpenStack version is found in the Application."""
 

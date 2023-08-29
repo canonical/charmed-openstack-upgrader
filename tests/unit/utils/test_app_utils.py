@@ -15,6 +15,7 @@
 from unittest.mock import call
 
 import pytest
+from juju.errors import JujuError
 
 from cou.exceptions import PackageUpgradeError
 from cou.utils import app_utils
@@ -38,6 +39,7 @@ async def test_application_upgrade_packages(mocker):
             f"apt-get dist-upgrade {dpkg_opts} -y && "
             "apt-get autoremove -y",
             model_name="my_model",
+            timeout=600,
         ),
         call(
             unit_name="keystone/1",
@@ -45,6 +47,7 @@ async def test_application_upgrade_packages(mocker):
             f"apt-get dist-upgrade {dpkg_opts} -y && "
             "apt-get autoremove -y",
             model_name="my_model",
+            timeout=600,
         ),
     ]
 
@@ -55,7 +58,7 @@ async def test_application_upgrade_packages(mocker):
 
 
 @pytest.mark.asyncio
-async def test_application_upgrade_packages_failed(mocker):
+async def test_application_upgrade_packages_unsuccessful(mocker):
     mock_logger = mocker.patch("cou.utils.app_utils.logger")
 
     failed_result = {"Code": "non-zero", "Stderr": "unexpected error"}
@@ -73,7 +76,34 @@ async def test_application_upgrade_packages_failed(mocker):
         f"apt-get dist-upgrade {dpkg_opts} -y && "
         "apt-get autoremove -y",
         model_name="my_model",
+        timeout=600,
     )
     mock_logger.error.assert_called_once_with(
         "Error upgrading package on %s: %s", "keystone/0", "unexpected error"
+    )
+
+
+@pytest.mark.asyncio
+async def test_application_upgrade_packages_error(mocker):
+    mock_logger = mocker.patch("cou.utils.app_utils.logger")
+
+    side_effect = JujuError("error")
+    mock_async_run_on_unit = mocker.patch.object(
+        app_utils, "async_run_on_unit", side_effect=side_effect
+    )
+
+    with pytest.raises(PackageUpgradeError):
+        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
+
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+    mock_async_run_on_unit.assert_called_once_with(
+        unit_name="keystone/0",
+        command="apt-get update && "
+        f"apt-get dist-upgrade {dpkg_opts} -y && "
+        "apt-get autoremove -y",
+        model_name="my_model",
+        timeout=600,
+    )
+    mock_logger.error.assert_called_once_with(
+        "Failed running package upgrade on %s: %s", "keystone/0", side_effect
     )

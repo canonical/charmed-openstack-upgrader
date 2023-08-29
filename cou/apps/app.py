@@ -153,7 +153,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation
-    :raises PackageUpgradeError: When the upgrade command execution resulted in error.
+    :raises PackageUpgradeError: When the package upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
