@@ -16,6 +16,7 @@
 
 import logging
 
+from cou.apps.auxiliary import AuxiliaryOpenStackApplication
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -47,6 +48,8 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     )
     for app in analysis_result.apps:
         try:
+            if isinstance(app, AuxiliaryOpenStackApplication):
+                logger.debug("'%s' is an auxiliary charm", app.name)
             app_upgrade_plan = app.generate_upgrade_plan(target)
         except HaltUpgradePlanGeneration:
             # we do not care if applications halt the upgrade plan generation

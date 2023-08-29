@@ -31,6 +31,7 @@ from cou.exceptions import (
     MismatchedOpenStackVersions,
 )
 from cou.steps import UpgradeStep
+from cou.utils.app_utils import upgrade_packages
 from cou.utils.juju_utils import (
     async_get_status,
     async_set_application_config,
@@ -83,7 +84,7 @@ class AppFactory:
                     name,
                 )
                 return None
-            app_class = cls.apps_type.get(name, OpenStackApplication)
+            app_class = cls.apps_type.get(charm, OpenStackApplication)
             return app_class(
                 name=name, status=status, config=config, model_name=model_name, charm=charm
             )
@@ -108,7 +109,8 @@ class AppFactory:
         @AppFactory.register_application(ceph_types)
         class Ceph(OpenStackApplication):
             pass
-        This is registering "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd" to the Ceph class.
+        This is registering the charms "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"
+        to the Ceph class.
 
         :param app_types: List of charm names the Application sub class should handle.
         :type app_types: list[str]
@@ -152,6 +154,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation
+    :raises PackageUpgradeError: When the package upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -350,7 +353,10 @@ class OpenStackApplication:
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        return [self._get_refresh_charm_plan(target)]
+        return [
+            self._get_upgrade_current_release_packages_plan(),
+            self._get_refresh_charm_plan(target),
+        ]
 
     def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Upgrade planning.
@@ -388,6 +394,18 @@ class OpenStackApplication:
         """
         return [self._get_reached_expected_target_plan(target)]
 
+    def upgrade_description(self, target: OpenStackRelease) -> str:
+        """Top description for upgrading the application.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Description of the update.
+        :rtype: str
+        """
+        return (
+            f"Upgrade plan for '{self.name}' from: {self.current_os_release} to {target.codename}"
+        )
+
     def generate_upgrade_plan(self, target: str) -> UpgradeStep:
         """Generate full upgrade plan for an Application.
 
@@ -398,9 +416,7 @@ class OpenStackApplication:
         """
         target_version = OpenStackRelease(target)
         upgrade_steps = UpgradeStep(
-            description=(
-                f"Upgrade plan for '{self.name}' from: {self.current_os_release} " f"to {target}"
-            ),
+            description=self.upgrade_description(target_version),
             parallel=False,
             function=None,
         )
@@ -413,6 +429,24 @@ class OpenStackApplication:
             if step:
                 upgrade_steps.add_step(step)
         return upgrade_steps
+
+    def _get_upgrade_current_release_packages_plan(self, parallel: bool = False) -> UpgradeStep:
+        """Get Plan for upgrading software packages to the latest of the current release.
+
+        :param parallel: Parallel running, defaults to False
+        :type parallel: bool, optional
+        :return plan: Plan for upgrading software packages to the latest of the current release.
+        :type plan: UpgradeStep
+        """
+        return UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{self.name}' from the current APT repositories"
+            ),
+            parallel=parallel,
+            function=upgrade_packages,
+            units=self.status.units.keys(),
+            model_name=self.model_name,
+        )
 
     def _get_refresh_charm_plan(
         self, target: OpenStackRelease, parallel: bool = False
@@ -438,7 +472,10 @@ class OpenStackApplication:
             # get the OpenStack release from the channel track of the application.
             os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
         except ValueError:
-            logger.debug("The current channel does not exist or is unexpectedly formatted")
+            logger.debug(
+                "The current channel from '%s' does not exist or is unexpectedly formatted",
+                self.name,
+            )
             os_track_release_channel = self.current_os_release
 
         if self.charm_origin == "cs":
@@ -451,13 +488,9 @@ class OpenStackApplication:
             )
         elif os_track_release_channel >= target:
             logger.info(
-                (
-                    "Skipping charm refresh for %s, its channel is already set to %s."
-                    "release than target %s"
-                ),
+                "Skipping charm refresh for %s, its channel is already set to %s.",
                 self.name,
                 self.channel,
-                str(target),
             )
             return None
 

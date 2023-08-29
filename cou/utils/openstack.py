@@ -102,6 +102,12 @@ OPENSTACK_CODENAMES = OrderedDict(
     ]
 )
 
+LTS_SERIES = {
+    "bionic": "queens",
+    "focal": "ussuri",
+    "jammy": "yoga",
+}
+
 
 class OpenStackRelease:
     """Provides a class that will compare OpenStack releases by the codename.
@@ -198,6 +204,18 @@ class OpenStackRelease:
         except IndexError:
             logger.warning("There is no OpenStack release after %s", self.codename)
             return None
+
+    @property
+    def previous_release(self) -> Optional[str]:
+        """Return the previous OpenStack release codename.
+
+        :return: OpenStack release codename.
+        :rtype: str
+        """
+        if self.index == 0:
+            logger.warning("There is no OpenStack release before %s", self.codename)
+            return None
+        return self.openstack_codenames[self.index - 1]
 
     @property
     def date(self) -> str:
@@ -342,3 +360,72 @@ class OpenStackCodenameLookup:
         if not cls._OPENSTACK_LOOKUP:
             cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
         return cls._OPENSTACK_LOOKUP.get(charm, False)
+
+
+class AuxiliaryTrackMapping:
+    """Tracks for the Auxiliary OpenStack Charms projects."""
+
+    # NOTE (gabrielcocenza) map based on the following tables:
+    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+
+    def _generate_map(self) -> defaultdict:
+        """Generate a map that helps to track the right channels for auxiliary charms.
+
+        :return: Dictionary containing the auxiliary services by Ubuntu series and
+            Openstack releases. E.g:
+            {
+                "focal":{
+                    "ceph":{
+                        "ussuri":"octopus",
+                        "victoria":"octopus",
+                        "wallaby":"pacific",
+                        "xena":"pacific",
+                        "yoga":"quincy"
+                    },
+                },
+                "jammy":{
+                    "ceph":{
+                        "yoga":"quincy",
+                        "zed":"quincy",
+                        "2023.1":"quincy"
+                    },
+                },
+            }
+        :rtype: defaultdict
+        """
+        ubuntu_series = ["focal", "jammy"]
+        track_to_openstack_mapping: defaultdict[Any, Any] = defaultdict(lambda: defaultdict(str))
+        for series in ubuntu_series:
+            with open(
+                Path(__file__).parent / f"auxiliary_{series}.csv",
+                encoding=encodings.utf_8.getregentry().name,
+            ) as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=",")
+                header = next(csv_reader)
+                for row in csv_reader:
+                    service = row[SERVICE_COLUMN_INDEX]
+                    track_to_openstack_mapping[series][service] = self._parse_row(header, row)
+                for charm_type, charms in CHARM_TYPES.items():
+                    for charm in charms:
+                        if charm_type in track_to_openstack_mapping[series].keys():
+                            track_to_openstack_mapping[series][charm] = track_to_openstack_mapping[
+                                series
+                            ][charm_type]
+        return track_to_openstack_mapping
+
+    def _parse_row(self, header: list[str], row: list[str]) -> defaultdict[str, str]:
+        """Parse single row.
+
+        :param header: header list
+        :type header: list[str]
+        :param row: row list
+        :type row: list[str]
+        :return: dictionary containing the tracks per OpenStack release of a certain service
+        :rtype:  defaultdict[str, str]
+        """
+        os_release_track = defaultdict(str)
+        for column_index in range(VERSION_START_COLUMN_INDEX, len(row)):
+            os_version = header[column_index]
+            track = row[column_index]
+            os_release_track[os_version] = track
+        return os_release_track
