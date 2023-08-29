@@ -33,7 +33,7 @@ class CommandRunFailed(Exception):
 
 
 class UnitNotFound(Exception):
-    """Exception raised when unit not found in the actual dict."""
+    """Exception raised when a unit is not found in the model."""
 
 
 class JujuError(Exception):
@@ -41,7 +41,7 @@ class JujuError(Exception):
 
 
 class MismatchedOpenStackVersions(Exception):
-    """Exception raised when more than one OpenStack version are found in the Application."""
+    """Exception raised when more than one OpenStack version is found in the Application."""
 
 
 class NoTargetError(Exception):
@@ -57,7 +57,7 @@ class ApplicationError(Exception):
 
 
 class PackageUpgradeError(Exception):
-    """Exception raised when a pacakge upgrade fails."""
+    """Exception raised when a package upgrade fails."""
 
 
 class ActionFailed(Exception):
