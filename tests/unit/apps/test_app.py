@@ -364,13 +364,9 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
 
     assert_plan_description(upgrade_plan, steps_description)
     mock_logger.info.assert_called_once_with(
-        (
-            "Skipping charm refresh for %s, its channel is already set "
-            "to %s.release than target %s"
-        ),
+        "Skipping charm refresh for %s, its channel is already set to %s.",
         app.name,
         app.channel,
-        target,
     )
 
 

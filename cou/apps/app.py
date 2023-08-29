@@ -476,13 +476,9 @@ class OpenStackApplication:
             )
         elif os_track_release_channel >= target:
             logger.info(
-                (
-                    "Skipping charm refresh for %s, its channel is already set to %s."
-                    "release than target %s"
-                ),
+                "Skipping charm refresh for %s, its channel is already set to %s.",
                 self.name,
                 self.channel,
-                str(target),
             )
             return None
 
