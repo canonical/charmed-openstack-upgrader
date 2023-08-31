@@ -18,7 +18,7 @@ from collections.abc import Iterable
 
 from juju.errors import JujuError
 
-from cou.exceptions import PackageUpgradeError
+from cou.exceptions import CommandRunFailed, PackageUpgradeError
 from cou.utils.juju_utils import async_run_on_unit
 
 logger = logging.getLogger(__name__)
@@ -47,8 +47,8 @@ async def upgrade_packages(units: Iterable[str], model_name: str) -> None:
                 logger.debug(result["Stdout"])
             else:
                 raise PackageUpgradeError(
-                    f"Error upgrading packages on {unit}: {result['Stderr']}"
-                )
+                    f"Cannot upgrade packages on {unit}."
+                ) from CommandRunFailed(cmd=command, result=result)
 
         except JujuError as exc:
-            raise PackageUpgradeError(f"Failed running package upgrades {unit}: {exc}") from exc
+            raise PackageUpgradeError(f"Cannot upgrade packages on {unit}.") from exc

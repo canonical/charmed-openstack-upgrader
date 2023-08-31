@@ -21,6 +21,24 @@ class COUException(Exception):
     """Default COU exception."""
 
 
+class CommandRunFailed(COUException):
+    """Exception raised when a command fails to run."""
+
+    def __init__(self, cmd: str, result: dict):
+        """Create Command run failed exception.
+
+        :param cmd: Command that was run
+        :type cmd: string
+        :param result: Dict returned by juju containing the output of the command
+        :type result: dict - {'Code': '0', 'Stdout': '', 'Stderr':''}
+        """
+        code = result.get("Code")
+        output = result.get("Stdout")
+        err = result.get("Stderr")
+        msg = f"Command {cmd} failed with code {code}, output {output} and error {err}"
+        super().__init__(msg)
+
+
 class UnitNotFound(COUException):
     """Exception raised when a unit is not found in the model."""
 

@@ -119,7 +119,7 @@ def test_application_ussuri(status, config, units):
     )
 
 
-def test_application_different_wl(status, config, mocker):
+def test_application_different_wl(status, config):
     """Different OpenStack Version on units if workload version is different."""
     exp_error_msg = re.compile(
         "Units of application my_keystone are running mismatched OpenStack versions: "
@@ -220,7 +220,7 @@ def test_special_app_more_than_one_compatible_os_release(status, config):
 
 def test_special_app_unknown_version_raise_ApplicationError(status, config, mocker):
     exp_error_msg = (
-        "'rabbitmq-server' with workload version 80.5 has no compatibleOpenStack release in the "
+        "'rabbitmq-server' with workload version 80.5 has no compatible OpenStack release in the "
         "lookup."
     )
     with pytest.raises(ApplicationError, match=exp_error_msg):
@@ -260,7 +260,7 @@ async def test_application_check_upgrade(status, config, mocker):
 
 @pytest.mark.asyncio
 async def test_application_check_upgrade_fail(status, config, mocker):
-    exp_error_msg = "Units 'keystone/0,keystone/1,keystone/2' failed to upgrade to victoria"
+    exp_error_msg = "Cannot upgrade units 'keystone/0, keystone/1, keystone/2' to victoria."
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
@@ -400,13 +400,17 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
 
 
 def test_upgrade_plan_application_already_upgraded(status, config, mocker):
+    exp_error_msg = (
+        "Application 'my_keystone' already running wallaby that is "
+        "equal or greater version than victoria. Ignoring."
+    )
     target = "victoria"
     mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     # victoria is lesser than wallaby, so application should not generate a plan.
-    with pytest.raises(HaltUpgradePlanGeneration):
+    with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app.generate_upgrade_plan(target)
     mock_logger.info.assert_called_once_with(
         "Application: '%s' already running %s that is equal or greater version than %s. Ignoring.",

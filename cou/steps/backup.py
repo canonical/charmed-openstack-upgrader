@@ -87,4 +87,6 @@ async def get_database_app_unit_name(model_name: Optional[str] = None) -> str:
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
             return list(app_config.units.keys())[0]
 
-    raise UnitNotFound("no mysql-innodb-cluster units were found")
+    raise UnitNotFound(
+        f"Cannot find a valid unit for 'mysql-innodb-cluster' in model '{model_name}'."
+    )

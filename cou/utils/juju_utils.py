@@ -257,14 +257,14 @@ async def async_get_unit_from_name(
 
         units = model.applications[app].units
     except KeyError as exc:
-        raise UnitNotFound(f"Application: {app} does not exist in current model") from exc
+        raise UnitNotFound(f"Application {app} not found in model.") from exc
 
     for single_unit in units:
         if single_unit.entity_id == unit_name:
             unit = single_unit
             break
     else:
-        raise UnitNotFound(f"unit {unit_name} was not found")
+        raise UnitNotFound(f"Unit {unit_name} not found in model.")
 
     return unit
 
@@ -485,7 +485,7 @@ class JujuWaiter:
                 # We do not care exceptions other than Juju(Machine|Agent|Unit|App)Error because
                 # when juju connection is dropped you can have wide range of exceptions depending
                 # on the case
-                self.log.debug("Unknown error while waiting to stabilize", exc_info=True)
+                self.log.debug("Unknown error while waiting to stabilize.", exc_info=True)
 
             self._check_time()
 
@@ -514,5 +514,5 @@ class JujuWaiter:
         if datetime.now() - self.start_time > self.timeout:
             self.log.debug("MODEL IS NOT IDLE in: %d seconds", self.timeout)
             raise TimeoutException(
-                f"model {self.model_name} is not stabilized for {self.timeout} seconds"
+                f"Model {self.model_name} is not stabilized for {self.timeout} seconds."
             )

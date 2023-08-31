@@ -59,9 +59,9 @@ async def test_application_upgrade_packages(mocker):
 
 @pytest.mark.asyncio
 async def test_application_upgrade_packages_unsuccessful(mocker):
-    exp_error_msg = "Error upgrading packages on keystone/0: unexpected error"
+    exp_error_msg = "Cannot upgrade packages on keystone/0."
 
-    failed_result = {"Code": "non-zero", "Stderr": "unexpected error"}
+    failed_result = {"Code": "non-zero", "Stderr": "error"}
     mock_async_run_on_unit = mocker.patch.object(
         app_utils, "async_run_on_unit", return_value=failed_result
     )
@@ -83,7 +83,7 @@ async def test_application_upgrade_packages_unsuccessful(mocker):
 @pytest.mark.asyncio
 async def test_application_upgrade_packages_error(mocker):
     side_effect = JujuError("error")
-    exp_error_msg = f"Failed running package upgrades keystone/0: {side_effect}"
+    exp_error_msg = "Cannot upgrade packages on keystone/0."
     mock_async_run_on_unit = mocker.patch.object(
         app_utils, "async_run_on_unit", side_effect=side_effect
     )

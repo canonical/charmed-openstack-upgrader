@@ -148,11 +148,10 @@ class OpenStackApplication:
         E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
     :type units: defaultdict[str, dict]
     :raises ApplicationError: When there are no compatible OpenStack release for the
-        workload version
+        workload version.
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
-    :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation
-    :raises PackageUpgradeError: When the package upgrade fails.
+    :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -184,7 +183,7 @@ class OpenStackApplication:
                 self.units[unit]["os_version"] = unit_os_version
             else:
                 raise ApplicationError(
-                    f"'{self.name}' with workload version {workload_version} has no compatible"
+                    f"'{self.name}' with workload version {workload_version} has no compatible "
                     "OpenStack release in the lookup."
                 )
 
@@ -267,8 +266,8 @@ class OpenStackApplication:
     def current_os_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
-        :raises MismatchedOpenStackVersions: Raise MismatchedOpenStackVersions if units of
-            an application are running mismatched OpenStack versions.
+        :raises MismatchedOpenStackVersions: When units part of this application are
+        running mismatched OpenStack versions.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
@@ -326,9 +325,9 @@ class OpenStackApplication:
             if target not in compatible_os_versions:
                 units_not_upgraded.append(unit)
         if units_not_upgraded:
-            units_not_upgraded_string = ",".join(units_not_upgraded)
+            units_not_upgraded_string = ", ".join(units_not_upgraded)
             raise ApplicationError(
-                f"Units '{units_not_upgraded_string}' failed to upgrade to {target}"
+                f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
             )
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
@@ -349,7 +348,7 @@ class OpenStackApplication:
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: Plan that will add upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
@@ -364,7 +363,7 @@ class OpenStackApplication:
                 target,
             )
             raise HaltUpgradePlanGeneration(
-                f"Application: '{self.name}' already running {self.current_os_release} that is "
+                f"Application '{self.name}' already running {self.current_os_release} that is "
                 f"equal or greater version than {target}. Ignoring."
             )
 
