@@ -623,17 +623,17 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         self.model_juju_exception.wait_for_idle.side_effect = JujuUnitError()
         waiter = model.JujuWaiter(self.model_juju_exception)
         with self.assertRaises(expected_exception=JujuUnitError):
-            await waiter.wait(10)
+            await waiter.wait(1)
 
         self.model_juju_exception.wait_for_idle.side_effect = model.JujuWaiter.TimeoutException()
         waiter = model.JujuWaiter(self.model_juju_exception)
         with self.assertRaises(expected_exception=model.JujuWaiter.TimeoutException):
-            await waiter.wait(10)
+            await waiter.wait(1)
 
         self.model_juju_exception.wait_for_idle.side_effect = Exception()
         waiter = model.JujuWaiter(self.model_juju_exception)
         with self.assertRaises(expected_exception=Exception):
-            await waiter.wait(10)
+            await waiter.wait(1)
 
     async def test_ensure_model_connected(self):
         model_disconnected = AsyncMock()

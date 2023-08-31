@@ -17,21 +17,6 @@ from typing import Optional
 from juju.action import Action
 
 
-class CommandRunFailed(Exception):
-    """Exception raised when a command fails to run."""
-
-    def __init__(self, cmd: str, code: str, output: str, err: str):
-        """Create Command run failed exception.
-
-        :param cmd: Command that was run
-        :type cmd: string
-        :param result: Dict containing the output of the command
-        :type result: dict - {'Code': '0', 'Stdout': '', 'Stderr':''}
-        """
-        msg = f"Command {cmd} failed with code {code}, output {output} and error {err}"
-        super().__init__(msg)
-
-
 class UnitNotFound(Exception):
     """Exception raised when a unit is not found in the model."""
 
@@ -57,9 +42,9 @@ class PackageUpgradeError(Exception):
 
 
 class ActionFailed(Exception):
-    # pylint: disable=consider-using-f-string
     """Exception raised when action fails."""
 
+    # pylint: disable=consider-using-f-string
     def __init__(self, action: Action, output: Optional[str] = None):
         """Set information about action failure in message and raise.
 
