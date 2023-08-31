@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import re
+
 import pytest
 
 from cou.apps import app as app_module
@@ -119,15 +121,17 @@ def test_application_ussuri(status, config, units):
 
 def test_application_different_wl(status, config, mocker):
     """Different OpenStack Version on units if workload version is different."""
+    exp_error_msg = re.compile(
+        "Units of application my_keystone are running mismatched OpenStack versions: "
+        r"{OpenStackRelease(?:<victoria>|<ussuri>), OpenStackRelease(?:<victoria>|<ussuri>)}. "
+        "This is not currently handled."
+    )
     app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
 
-    mock_logger = mocker.patch("cou.apps.app.logger")
-
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
-    with pytest.raises(MismatchedOpenStackVersions):
+    with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
         app.current_os_release
-    mock_logger.error.assert_called_once()
 
 
 def test_application_cs(status, config, units):
@@ -215,8 +219,11 @@ def test_special_app_more_than_one_compatible_os_release(status, config):
 
 
 def test_special_app_unknown_version_raise_ApplicationError(status, config, mocker):
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    with pytest.raises(ApplicationError):
+    exp_error_msg = (
+        "'rabbitmq-server' with workload version 80.5 has no compatibleOpenStack release in the "
+        "lookup."
+    )
+    with pytest.raises(ApplicationError, match=exp_error_msg):
         OpenStackApplication(
             "rabbitmq-server",
             status["unknown_rabbitmq_server"],
@@ -224,7 +231,6 @@ def test_special_app_unknown_version_raise_ApplicationError(status, config, mock
             "my_model",
             "rabbitmq-server",
         )
-    mock_logger.error.assert_called_once()
 
 
 def test_application_no_openstack_origin(status):
@@ -254,8 +260,8 @@ async def test_application_check_upgrade(status, config, mocker):
 
 @pytest.mark.asyncio
 async def test_application_check_upgrade_fail(status, config, mocker):
+    exp_error_msg = "Units 'keystone/0,keystone/1,keystone/2' failed to upgrade to victoria"
     target = "victoria"
-    mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
 
@@ -265,13 +271,8 @@ async def test_application_check_upgrade_fail(status, config, mocker):
 
     mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
-    with pytest.raises(ApplicationError):
-        await app._check_upgrade(target)
-    mock_logger.error.assert_called_once_with(
-        "Units '%s' failed to upgrade to %s",
-        "keystone/0, keystone/1, keystone/2",
-        "victoria",
-    )
+    with pytest.raises(ApplicationError, match=exp_error_msg):
+        await app._check_upgrade(OpenStackRelease(target))
 
 
 def assert_plan_description(upgrade_plan, steps_description):

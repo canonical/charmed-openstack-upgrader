@@ -22,6 +22,7 @@ import sys
 from datetime import datetime
 from typing import Any
 
+from cou.exceptions import COUException
 from cou.steps.analyze import Analysis
 from cou.steps.execute import execute
 from cou.steps.plan import generate_plan
@@ -143,6 +144,10 @@ async def entrypoint() -> None:
         else:
             print(upgrade_plan)
 
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.exception(exc)
+    except COUException as exc:
+        logger.error(exc)
         sys.exit(1)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.error("unexpected error occurred")
+        logger.exception(exc)
+        sys.exit(2)

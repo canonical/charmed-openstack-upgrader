@@ -34,8 +34,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     """
     target = getattr(analysis_result.current_cloud_os_release, "next_release", None)
     if not target:
-        logger.error("No target found to upgrade.")
-        raise NoTargetError()
+        raise NoTargetError("No target found to upgrade.")
 
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(

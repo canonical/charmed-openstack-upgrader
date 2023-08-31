@@ -77,10 +77,8 @@ class AppFactory:
         if OpenStackCodenameLookup.is_charm_supported(charm):
             if status.subordinate_to:
                 logger.warning(
-                    (
-                        "'%s' is a subordinate application and it's not currently "
-                        "supported for upgrading"
-                    ),
+                    "'%s' is a subordinate application and it's not currently supported for "
+                    "upgrading",
                     name,
                 )
                 return None
@@ -185,15 +183,10 @@ class OpenStackApplication:
                 unit_os_version = max(compatible_os_versions)
                 self.units[unit]["os_version"] = unit_os_version
             else:
-                logger.error(
-                    (
-                        "'%s' with workload version %s has no compatible OpenStack "
-                        "release in the lookup."
-                    ),
-                    self.name,
-                    workload_version,
+                raise ApplicationError(
+                    f"'{self.name}' with workload version {workload_version} has no compatible"
+                    "OpenStack release in the lookup."
                 )
-                raise ApplicationError()
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -285,15 +278,10 @@ class OpenStackApplication:
             return os_versions.pop()
         # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
         # upgrade methods, more than one version can be found.
-        logger.error(
-            (
-                "Units of application %s are running mismatched OpenStack versions: %s. "
-                "This is not currently handled."
-            ),
-            self.name,
-            os_versions,
+        raise MismatchedOpenStackVersions(
+            f"Units of application {self.name} are running mismatched OpenStack versions: "
+            f"{os_versions}. This is not currently handled."
         )
-        raise MismatchedOpenStackVersions()
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -338,12 +326,10 @@ class OpenStackApplication:
             if target not in compatible_os_versions:
                 units_not_upgraded.append(unit)
         if units_not_upgraded:
-            logger.error(
-                "Units '%s' failed to upgrade to %s",
-                ", ".join(units_not_upgraded),
-                str(target),
+            units_not_upgraded_string = ",".join(units_not_upgraded)
+            raise ApplicationError(
+                f"Units '{units_not_upgraded_string}' failed to upgrade to {target}"
             )
-            raise ApplicationError()
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
@@ -377,7 +363,11 @@ class OpenStackApplication:
                 str(self.current_os_release),
                 target,
             )
-            raise HaltUpgradePlanGeneration()
+            raise HaltUpgradePlanGeneration(
+                f"Application: '{self.name}' already running {self.current_os_release} that is "
+                f"equal or greater version than {target}. Ignoring."
+            )
+
         return [
             self._get_disable_action_managed_plan(),
             self._get_upgrade_charm_plan(target),

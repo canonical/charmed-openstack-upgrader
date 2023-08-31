@@ -59,14 +59,14 @@ async def test_application_upgrade_packages(mocker):
 
 @pytest.mark.asyncio
 async def test_application_upgrade_packages_unsuccessful(mocker):
-    mock_logger = mocker.patch("cou.utils.app_utils.logger")
+    exp_error_msg = "Error upgrading packages on keystone/0: unexpected error"
 
     failed_result = {"Code": "non-zero", "Stderr": "unexpected error"}
     mock_async_run_on_unit = mocker.patch.object(
         app_utils, "async_run_on_unit", return_value=failed_result
     )
 
-    with pytest.raises(PackageUpgradeError):
+    with pytest.raises(PackageUpgradeError, match=exp_error_msg):
         await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
@@ -77,22 +77,18 @@ async def test_application_upgrade_packages_unsuccessful(mocker):
         "apt-get autoremove -y",
         model_name="my_model",
         timeout=600,
-    )
-    mock_logger.error.assert_called_once_with(
-        "Error upgrading packages on %s: %s", "keystone/0", "unexpected error"
     )
 
 
 @pytest.mark.asyncio
 async def test_application_upgrade_packages_error(mocker):
-    mock_logger = mocker.patch("cou.utils.app_utils.logger")
-
     side_effect = JujuError("error")
+    exp_error_msg = f"Failed running package upgrades keystone/0: {side_effect}"
     mock_async_run_on_unit = mocker.patch.object(
         app_utils, "async_run_on_unit", side_effect=side_effect
     )
 
-    with pytest.raises(PackageUpgradeError):
+    with pytest.raises(PackageUpgradeError, match=exp_error_msg):
         await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
@@ -103,7 +99,4 @@ async def test_application_upgrade_packages_error(mocker):
         "apt-get autoremove -y",
         model_name="my_model",
         timeout=600,
-    )
-    mock_logger.error.assert_called_once_with(
-        "Failed running package upgrades on %s: %s", "keystone/0", side_effect
     )

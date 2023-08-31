@@ -24,7 +24,7 @@ from juju.errors import JujuAgentError, JujuAppError, JujuMachineError, JujuUnit
 from juju.model import Model
 from juju.unit import Unit
 
-from cou.exceptions import ActionFailed, UnitNotFound
+from cou.exceptions import ActionFailed, TimeoutException, UnitNotFound
 
 JUJU_MAX_FRAME_SIZE = 2**30
 
@@ -207,6 +207,7 @@ async def _check_action_error(action_obj: Action, model: Model, raise_on_failure
             output = await model.get_action_output(action_obj.id)
         except KeyError:
             output = None
+
         raise ActionFailed(action_obj, output=output)
 
 
@@ -253,17 +254,18 @@ async def async_get_unit_from_name(
     try:
         if model is None:
             model = await _async_get_model(model_name)
+
         units = model.applications[app].units
     except KeyError as exc:
-        msg = f"Application: {app} does not exist in current model"
-        logger.error(msg)
-        raise UnitNotFound(unit_name) from exc
+        raise UnitNotFound(f"Application: {app} does not exist in current model") from exc
+
     for single_unit in units:
         if single_unit.entity_id == unit_name:
             unit = single_unit
             break
     else:
-        raise UnitNotFound(unit_name)
+        raise UnitNotFound(f"unit {unit_name} was not found")
+
     return unit
 
 
@@ -421,7 +423,7 @@ class JujuWaiter:
         JujuWaiter(model).wait(120)
     """
 
-    # Total wait timeout. After this timeout JujuWaiter.TimeoutException is raised
+    # Total wait timeout. After this timeout TimeoutException is raised
     DEFAULT_TIMEOUT: int = 3600
 
     # Model should be idle for MODEL_IDLE_PERIOD consecutive seconds to be counted as idle.
@@ -429,9 +431,6 @@ class JujuWaiter:
 
     # At each iteration juju will wait JUJU_IDLE_TIMEOUT seconds
     JUJU_IDLE_TIMEOUT: int = 40
-
-    class TimeoutException(Exception):
-        """Own timeout exception."""
 
     def __init__(self, model: Model):
         """Initialize.
@@ -493,14 +492,14 @@ class JujuWaiter:
     async def _ensure_model_connected(self) -> None:
         """Ensure that the model is connected.
 
-        :raises JujuWaiter.TimeoutException: if timeout occurs
+        :raises TimeoutException: if timeout occurs
         """
         while _is_model_disconnected(self.model):
             await _disconnect(self.model)
             try:
                 self._check_time()
                 await self.model.connect_model(self.model_name)
-            except JujuWaiter.TimeoutException:
+            except TimeoutException:
                 raise
             except Exception:
                 self.log.debug(
@@ -510,8 +509,10 @@ class JujuWaiter:
     def _check_time(self) -> None:
         """Check time.
 
-        :raises JujuWaiter.TimeoutException: if timeout occurs
+        :raises TimeoutException: if timeout occurs
         """
         if datetime.now() - self.start_time > self.timeout:
             self.log.debug("MODEL IS NOT IDLE in: %d seconds", self.timeout)
-            raise JujuWaiter.TimeoutException()
+            raise TimeoutException(
+                f"model {self.model_name} is not stabilized for {self.timeout} seconds"
+            )

@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cou.cli import entrypoint, parse_args, setup_logging
+from cou.exceptions import COUException, UnitNotFound
 from cou.steps import UpgradeStep
 
 
@@ -57,17 +58,23 @@ def test_setup_logging():
 
 
 @pytest.mark.asyncio
-async def test_entrypoint_with_exception():
-    with patch("cou.cli.parse_args"), patch("cou.cli.setup_logging"), patch(
-        "cou.cli.generate_plan"
-    ) as mock_generate_plan, patch("cou.cli.execute"), patch("cou.cli.Analysis.create"):
-        mock_generate_plan.side_effect = Exception("An error occurred")
+@pytest.mark.parametrize(
+    "exception, exp_exitcode",
+    [
+        (Exception("An error occurred"), "2"),
+        (COUException("Caught error"), "1"),
+        (UnitNotFound("Unit not found"), "1"),
+    ],
+)
+async def test_entrypoint_with_exception(mocker, exception, exp_exitcode):
+    mocker.patch("cou.cli.generate_plan", side_effect=exception)
+    mocker.patch("cou.cli.parse_args")
+    mocker.patch("cou.cli.setup_logging")
+    mocker.patch("cou.cli.execute")
+    mocker.patch("cou.cli.Analysis.create")
 
-        with pytest.raises(SystemExit) as exitcode:
-            result = await entrypoint()
-            assert exitcode.value == 1
-            assert not result
-        mock_generate_plan.assert_called_once()
+    with pytest.raises(SystemExit, match=exp_exitcode):
+        await entrypoint()
 
 
 @pytest.mark.asyncio

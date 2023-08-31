@@ -625,9 +625,9 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         with self.assertRaises(expected_exception=JujuUnitError):
             await waiter.wait(1)
 
-        self.model_juju_exception.wait_for_idle.side_effect = model.JujuWaiter.TimeoutException()
+        self.model_juju_exception.wait_for_idle.side_effect = model.TimeoutException()
         waiter = model.JujuWaiter(self.model_juju_exception)
-        with self.assertRaises(expected_exception=model.JujuWaiter.TimeoutException):
+        with self.assertRaises(expected_exception=model.TimeoutException):
             await waiter.wait(1)
 
         self.model_juju_exception.wait_for_idle.side_effect = Exception()
@@ -649,8 +649,8 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         await waiter._ensure_model_connected()
 
         waiter._check_time = MagicMock()
-        waiter._check_time.side_effect = model.JujuWaiter.TimeoutException()
-        with self.assertRaises(expected_exception=model.JujuWaiter.TimeoutException):
+        waiter._check_time.side_effect = model.TimeoutException()
+        with self.assertRaises(expected_exception=model.TimeoutException):
             await waiter._ensure_model_connected()
 
         waiter._check_time.side_effect = Exception()
