@@ -340,7 +340,7 @@ class OpenStackCodenameLookup:
         :rtype: list[str]
         """
         compatible_os_releases: list[OpenStackRelease] = []
-        if cls.is_primary_charm_supported(charm):
+        if cls.is_charm_version_supported(charm):
             for openstack_release, version_range in cls._OPENSTACK_LOOKUP[charm].items():
                 if version in version_range:
                     compatible_os_releases.append(OpenStackRelease(openstack_release))
@@ -352,7 +352,7 @@ class OpenStackCodenameLookup:
         return []
 
     @classmethod
-    def is_primary_charm_supported(cls, charm: str) -> bool:
+    def is_charm_version_supported(cls, charm: str) -> bool:
         """Check if a primary charm is supported or not in the OpenStackCodenameLookup.
 
         This function also generate the lookup if _OPENSTACK_LOOKUP is empty.
@@ -374,4 +374,4 @@ def is_charm_supported(charm: str) -> bool:
     :return: True if supported, else False
     :rtype: bool
     """
-    return OpenStackCodenameLookup.is_primary_charm_supported(charm) or charm in SUBORDINATES
+    return OpenStackCodenameLookup.is_charm_version_supported(charm) or charm in SUBORDINATES
