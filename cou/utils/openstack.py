@@ -354,7 +354,7 @@ class OpenStackCodenameLookup:
 
     @classmethod
     def is_charm_version_supported(cls, charm: str) -> bool:
-        """Check if a primary charm is supported or not in the OpenStackCodenameLookup.
+        """Check if a core OpenStack charm is supported or not in the OpenStackCodenameLookup.
 
         This function also generate the lookup if _OPENSTACK_LOOKUP is empty.
         :param charm: name of the charm
