@@ -124,19 +124,28 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         :rtype: Optional[UpgradeStep]
         """
         switch = None
+        channel = self.channel
 
         description = f"Refresh '{self.name}' to the latest revision of " f"'{self.channel}'"
 
         if self.charm_origin == "cs":
             description = f"Migration of '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
+            channel = self.expected_current_channel
+        elif self.channel != self.expected_current_channel:
+            logger.warning(
+                "'%s' has the channel set to: %s that is different from the expected channel: %s",
+                self.name,
+                self.channel,
+                self.expected_current_channel,
+            )
 
         return UpgradeStep(
             description=description,
             parallel=parallel,
             function=async_upgrade_charm,
             application_name=self.name,
-            channel=self.channel,
+            channel=channel,
             model_name=self.model_name,
             switch=switch,
         )
