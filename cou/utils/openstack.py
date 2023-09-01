@@ -368,7 +368,8 @@ class AuxiliaryTrackMapping:
     # NOTE (gabrielcocenza) map based on the following tables:
     # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 
-    def _generate_map(self) -> defaultdict:
+    @classmethod
+    def generate_map(cls) -> defaultdict:
         """Generate a map that helps to track the right channels for auxiliary charms.
 
         :return: Dictionary containing the auxiliary services by Ubuntu series and
@@ -404,7 +405,7 @@ class AuxiliaryTrackMapping:
                 header = next(csv_reader)
                 for row in csv_reader:
                     service = row[SERVICE_COLUMN_INDEX]
-                    track_to_openstack_mapping[series][service] = self._parse_row(header, row)
+                    track_to_openstack_mapping[series][service] = cls._parse_row(header, row)
                 for charm_type, charms in CHARM_TYPES.items():
                     for charm in charms:
                         if charm_type in track_to_openstack_mapping[series].keys():
@@ -413,7 +414,8 @@ class AuxiliaryTrackMapping:
                             ][charm_type]
         return track_to_openstack_mapping
 
-    def _parse_row(self, header: list[str], row: list[str]) -> defaultdict[str, str]:
+    @classmethod
+    def _parse_row(cls, header: list[str], row: list[str]) -> defaultdict[str, str]:
         """Parse single row.
 
         :param header: header list

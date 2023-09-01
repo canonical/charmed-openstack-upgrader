@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Auxiliary application class."""
 import logging
 from typing import Optional
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class AuxiliaryOpenStackApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
-    openstack_to_track_mapping = AuxiliaryTrackMapping()._generate_map()
+    openstack_to_track_mapping = AuxiliaryTrackMapping.generate_map()
 
     def upgrade_description(self, target: OpenStackRelease) -> str:
         """Top description for upgrading the application.

@@ -36,6 +36,7 @@ skip_glob = [
 
 [tool.pylint]
 max-line-length = 99
+min-similarity-lines=10
 ignore-paths = [
     ".eggs",
     ".git",
