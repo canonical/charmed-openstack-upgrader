@@ -34,8 +34,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     """
     target = getattr(analysis_result.current_cloud_os_release, "next_release", None)
     if not target:
-        logger.error("No target found to upgrade.")
-        raise NoTargetError()
+        raise NoTargetError("Cannot find target to upgrade.")
 
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
@@ -48,15 +47,13 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     for app in analysis_result.apps:
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
-        except HaltUpgradePlanGeneration:
+        except HaltUpgradePlanGeneration as exc:
             # we do not care if applications halt the upgrade plan generation
             # for some known reason.
-            logger.debug("'%s' halted the upgrade planning generation.", app.name)
+            logger.debug("'%s' halted the upgrade planning generation: %s", app.name, exc)
             app_upgrade_plan = None
         except Exception as exc:  # pylint: disable=broad-exception-caught
-            logger.error(
-                "It was not possible to generate upgrade plan for '%s': %s", app.name, exc
-            )
+            logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
             raise
         if app_upgrade_plan:
             upgrade_plan.add_step(app_upgrade_plan)

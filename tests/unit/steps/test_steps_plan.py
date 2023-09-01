@@ -66,10 +66,11 @@ async def test_generate_plan(mocker, apps):
 
 @pytest.mark.asyncio
 async def test_generate_plan_raise_NoTargetError(mocker):
+    exp_error_msg = "Cannot find target to upgrade."
     analysis_result = mocker.MagicMock()
     analysis_result.current_cloud_os_release.next_release = None
     # not possible to determine target
-    with pytest.raises(NoTargetError):
+    with pytest.raises(NoTargetError, match=exp_error_msg):
         await generate_plan(analysis_result)
 
 
@@ -88,10 +89,11 @@ async def test_generate_plan_raise_HaltUpgradePlanGeneration(mocker):
 async def test_generate_plan_raise_Exception(mocker):
     mock_logger = mocker.patch("cou.steps.plan.logger")
     app = mocker.MagicMock()
-    app.generate_upgrade_plan.side_effect = Exception("An error occurred")
+    app.generate_upgrade_plan.side_effect = Exception("An error occurred.")
     # Generate an exception during the upgrade plan
     analysis_result = Analysis(apps=[app])
-    with pytest.raises(Exception):
+    exp_error_msg = "An error occurred."
+    with pytest.raises(Exception, match=exp_error_msg):
         await generate_plan(analysis_result)
     mock_logger.error.assert_called_once()
 

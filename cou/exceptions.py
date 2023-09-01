@@ -12,55 +12,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module of exceptions that charmed-openstack-upgrader may raise."""
-from typing import Optional
+from typing import Any
 
 from juju.action import Action
 
 
-class CommandRunFailed(Exception):
+class COUException(Exception):
+    """Default COU exception."""
+
+
+class CommandRunFailed(COUException):
     """Exception raised when a command fails to run."""
 
-    def __init__(self, cmd: str, code: str, output: str, err: str):
+    def __init__(self, cmd: str, result: dict):
         """Create Command run failed exception.
 
         :param cmd: Command that was run
         :type cmd: string
-        :param result: Dict containing the output of the command
+        :param result: Dict returned by juju containing the output of the command
         :type result: dict - {'Code': '0', 'Stdout': '', 'Stderr':''}
         """
+        code = result.get("Code")
+        output = result.get("Stdout")
+        err = result.get("Stderr")
         msg = f"Command {cmd} failed with code {code}, output {output} and error {err}"
         super().__init__(msg)
 
 
-class UnitNotFound(Exception):
+class UnitNotFound(COUException):
     """Exception raised when a unit is not found in the model."""
 
 
-class MismatchedOpenStackVersions(Exception):
+class MismatchedOpenStackVersions(COUException):
     """Exception raised when more than one OpenStack version is found in the Application."""
 
 
-class NoTargetError(Exception):
+class NoTargetError(COUException):
     """Exception raised when there is no target to upgrade."""
 
 
-class HaltUpgradePlanGeneration(Exception):
+class HaltUpgradePlanGeneration(COUException):
     """Exception to halt the application upgrade at any moment."""
 
 
-class ApplicationError(Exception):
+class ApplicationError(COUException):
     """Exception raised when Application does something unexpected."""
 
 
-class PackageUpgradeError(Exception):
+class PackageUpgradeError(COUException):
     """Exception raised when a package upgrade fails."""
 
 
-class ActionFailed(Exception):
-    # pylint: disable=consider-using-f-string
+class ActionFailed(COUException):
     """Exception raised when action fails."""
 
-    def __init__(self, action: Action, output: Optional[str] = None):
+    # pylint: disable=consider-using-f-string
+    def __init__(self, action: Action, output: Any | dict | None = None):
         """Set information about action failure in message and raise.
 
         :param action: Action that failed.
@@ -89,3 +96,7 @@ class ActionFailed(Exception):
             "completed={completed} output={output})".format(**params)
         )
         super().__init__(message)
+
+
+class TimeoutException(COUException):
+    """COU timeout exception."""

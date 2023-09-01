@@ -24,7 +24,7 @@ from juju.errors import JujuAgentError, JujuAppError, JujuMachineError, JujuUnit
 from juju.model import Model
 from juju.unit import Unit
 
-from cou.exceptions import ActionFailed, UnitNotFound
+from cou.exceptions import ActionFailed, TimeoutException, UnitNotFound
 
 JUJU_MAX_FRAME_SIZE = 2**30
 
@@ -207,6 +207,7 @@ async def _check_action_error(action_obj: Action, model: Model, raise_on_failure
             output = await model.get_action_output(action_obj.id)
         except KeyError:
             output = None
+
         raise ActionFailed(action_obj, output=output)
 
 
@@ -250,20 +251,20 @@ async def async_get_unit_from_name(
     """
     app = unit_name.split("/")[0]
     unit = None
+    if model is None:
+        model = await _async_get_model(model_name)
     try:
-        if model is None:
-            model = await _async_get_model(model_name)
         units = model.applications[app].units
     except KeyError as exc:
-        msg = f"Application: {app} does not exist in current model"
-        logger.error(msg)
-        raise UnitNotFound(unit_name) from exc
+        raise UnitNotFound(f"Application {app} not found in model {model.name}.") from exc
+
     for single_unit in units:
         if single_unit.entity_id == unit_name:
             unit = single_unit
             break
     else:
-        raise UnitNotFound(unit_name)
+        raise UnitNotFound(f"Unit {unit_name} not found in model.")
+
     return unit
 
 
@@ -421,7 +422,7 @@ class JujuWaiter:
         JujuWaiter(model).wait(120)
     """
 
-    # Total wait timeout. After this timeout JujuWaiter.TimeoutException is raised
+    # Total wait timeout. After this timeout TimeoutException is raised
     DEFAULT_TIMEOUT: int = 3600
 
     # Model should be idle for MODEL_IDLE_PERIOD consecutive seconds to be counted as idle.
@@ -430,9 +431,6 @@ class JujuWaiter:
     # At each iteration juju will wait JUJU_IDLE_TIMEOUT seconds
     JUJU_IDLE_TIMEOUT: int = 40
 
-    class TimeoutException(Exception):
-        """Own timeout exception."""
-
     def __init__(self, model: Model):
         """Initialize.
 
@@ -440,7 +438,7 @@ class JujuWaiter:
         :type model: Model
         """
         self.model = model
-        self.model_name = self.model.info.name
+        self.model_name = self.model.name
         self.timeout = timedelta(seconds=JujuWaiter.DEFAULT_TIMEOUT)
         self.start_time = datetime.now()
         self.log = logging.getLogger(self.__class__.__name__)
@@ -486,21 +484,21 @@ class JujuWaiter:
                 # We do not care exceptions other than Juju(Machine|Agent|Unit|App)Error because
                 # when juju connection is dropped you can have wide range of exceptions depending
                 # on the case
-                self.log.debug("Unknown error while waiting to stabilize", exc_info=True)
+                self.log.debug("Unknown error while waiting to stabilize.", exc_info=True)
 
             self._check_time()
 
     async def _ensure_model_connected(self) -> None:
         """Ensure that the model is connected.
 
-        :raises JujuWaiter.TimeoutException: if timeout occurs
+        :raises TimeoutException: if timeout occurs
         """
         while _is_model_disconnected(self.model):
             await _disconnect(self.model)
             try:
                 self._check_time()
                 await self.model.connect_model(self.model_name)
-            except JujuWaiter.TimeoutException:
+            except TimeoutException:
                 raise
             except Exception:
                 self.log.debug(
@@ -510,8 +508,10 @@ class JujuWaiter:
     def _check_time(self) -> None:
         """Check time.
 
-        :raises JujuWaiter.TimeoutException: if timeout occurs
+        :raises TimeoutException: if timeout occurs
         """
         if datetime.now() - self.start_time > self.timeout:
-            self.log.debug("MODEL IS NOT IDLE in: %d seconds", self.timeout)
-            raise JujuWaiter.TimeoutException()
+            self.log.debug("Model %s is not idle after %d seconds.", self.model_name, self.timeout)
+            raise TimeoutException(
+                f"Model {self.model_name} has not stabilized after {self.timeout} seconds."
+            )
