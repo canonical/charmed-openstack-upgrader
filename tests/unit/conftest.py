@@ -150,6 +150,13 @@ def status():
     mock_mysql_router.subordinate_to = ["keystone"]
     mock_mysql_router.units = {}
 
+    # subordinate application
+    mock_keystone_ldap = mock.MagicMock()
+    mock_keystone_ldap.charm_channel = "ussuri/stable"
+    mock_keystone_ldap.charm = "ch:amd64/focal/keystone-ldap-437"
+    mock_keystone_ldap.subordinate_to = ["keystone"]
+    mock_keystone_ldap.units = {}
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -163,6 +170,7 @@ def status():
         "unknown_app": mock_unknown_app,
         "mysql_router": mock_mysql_router,
         "vault": mock_vault,
+        "keystone-ldap": mock_keystone_ldap,
     }
     return status
 

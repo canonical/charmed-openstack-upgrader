@@ -34,7 +34,7 @@ async def test_generate_plan(mocker, apps):
     assert plan.description == "Top level plan"
     assert not plan.parallel
     assert not plan.function
-    assert len(plan.sub_steps) == 2
+    assert len(plan.sub_steps) == 3
 
     sub_step_back_up = plan.sub_steps[0]
     assert sub_step_back_up.description == "backup mysql databases"
@@ -42,7 +42,7 @@ async def test_generate_plan(mocker, apps):
     assert sub_step_back_up.function == backup
 
     sub_step_upgrade_plan = plan.sub_steps[1]
-    assert sub_step_upgrade_plan.description == "Application(s) upgrade plan"
+    assert sub_step_upgrade_plan.description == "Principal(s) upgrade plan"
 
     sub_step_upgrade_keystone = sub_step_upgrade_plan.sub_steps[0]
     assert (
