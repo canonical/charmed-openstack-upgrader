@@ -86,6 +86,7 @@ SUBORDINATES = [
     "manila-dashboard",
     "manila-generic",
     "masakari-monitors",
+    "neutron-api-plugin-arista",
     "neutron-api-plugin-ironic",
     "neutron-api-plugin-ovn",
     "neutron-openvswitch",
