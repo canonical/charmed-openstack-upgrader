@@ -28,13 +28,19 @@ class OpenStackSubordinateApplication(OpenStackApplication):
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.channel = self.status.charm_channel
+        self.channel = self._try_getting_channel(self.status.charm_channel)
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
 
     @property
     def current_os_release(self) -> OpenStackRelease:
-        """Assume latest version since principal already upgraded the packages."""
+        """Infer the OS release from subordinate charm's channel.
+
+        We cannot determine the OS release base on workload packages because the principal charm
+        has already upgraded the packages.
+        :return: OpenStackRelease object.
+        :rtype: OpenStackRelease
+        """
         return OpenStackRelease(self.channel.split("/")[0])
 
     def generate_upgrade_plan(self, target: str) -> UpgradeStep:
@@ -46,35 +52,30 @@ class OpenStackSubordinateApplication(OpenStackApplication):
         :rtype: UpgradeStep
         """
         plan = UpgradeStep(description=f"Upgrade {self.name}", parallel=False, function=None)
+        refresh_charm_plan = self._get_refresh_charm_plan(OpenStackRelease(target))
+        if refresh_charm_plan:
+            plan.add_step(refresh_charm_plan)
+
         upgrade_charm_plan = self._get_upgrade_charm_plan(OpenStackRelease(target))
         if upgrade_charm_plan:
             plan.add_step(upgrade_charm_plan)
 
         return plan
 
-    @property
-    def channel(self) -> str:
-        """Get charm channel of the application.
+    def _try_getting_channel(self, charm_channel: str) -> str:
+        """Try getting the channel having a valid OpenStack channel.
 
-        :return: Charm channel. E.g: ussuri/stable
-        :rtype: str
-        """
-        return self._channel
-
-    @channel.setter
-    def channel(self, charm_channel: str) -> None:
-        """Set charm channel of the application.
-
-        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :param charm_channel: Charm channel.
         :type charm_channel: str
+        :return: Charm channel if it is a valid OpenStack channel.
+        :rtype: str
+        :raises ApplicationError: Exception raised when channel is not a valid OpenStack
+            channel.
         """
         try:
             OpenStackRelease(charm_channel.split("/")[0])
-            self._channel = charm_channel
+            return charm_channel
         except ValueError as exc:
-            logger.error(
-                "Unable to determine the OpenStack version from channel: %s, %s",
-                charm_channel,
-                exc,
-            )
-            raise ApplicationError from exc
+            raise ApplicationError(
+                f"Unable to determine the OpenStack version from channel: {charm_channel}, {exc}"
+            ) from exc
