@@ -28,7 +28,7 @@ class OpenStackSubordinateApplication(OpenStackApplication):
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.channel = self._try_getting_channel(self.status.charm_channel)
+        self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
 
@@ -62,19 +62,27 @@ class OpenStackSubordinateApplication(OpenStackApplication):
 
         return plan
 
-    def _try_getting_channel(self, charm_channel: str) -> str:
-        """Try getting the channel having a valid OpenStack channel.
+    @property
+    def channel(self) -> str:
+        """Get charm channel of the application.
 
-        :param charm_channel: Charm channel.
-        :type charm_channel: str
-        :return: Charm channel if it is a valid OpenStack channel.
+        :return: Charm channel. E.g: ussuri/stable
         :rtype: str
+        """
+        return self._channel
+
+    @channel.setter
+    def channel(self, charm_channel: str) -> None:
+        """Set charm channel of the application.
+
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
         :raises ApplicationError: Exception raised when channel is not a valid OpenStack
             channel.
         """
         try:
             OpenStackRelease(charm_channel.split("/")[0])
-            return charm_channel
+            self._channel = charm_channel
         except ValueError as exc:
             raise ApplicationError(
                 f"Unable to determine the OpenStack version from channel: {charm_channel}, {exc}"

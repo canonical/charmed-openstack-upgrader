@@ -65,10 +65,11 @@ def test_try_getting_channel(status):
         "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
     )
 
-    assert app._try_getting_channel("ussuri/stable") == "ussuri/stable"
+    app.channel = "ussuri/stable"
+    assert app.channel == "ussuri/stable"
 
     with pytest.raises(ApplicationError):
-        app._try_getting_channel("focal/stable")
+        app.channel = "focal/stable"
 
     with pytest.raises(ApplicationError):
-        app._try_getting_channel("latest/stable")
+        app.channel = "latest/stable"

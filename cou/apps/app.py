@@ -171,7 +171,6 @@ class OpenStackApplication:
     charm: str
     charm_origin: str = ""
     os_origin: str = ""
-    channel: str = ""
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
 
     def __post_init__(self) -> None:
