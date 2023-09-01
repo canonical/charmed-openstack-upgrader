@@ -251,13 +251,12 @@ async def async_get_unit_from_name(
     """
     app = unit_name.split("/")[0]
     unit = None
+    if model is None:
+        model = await _async_get_model(model_name)
     try:
-        if model is None:
-            model = await _async_get_model(model_name)
-
         units = model.applications[app].units
     except KeyError as exc:
-        raise UnitNotFound(f"Application {app} not found in model.") from exc
+        raise UnitNotFound(f"Application {app} not found in model {model.name}.") from exc
 
     for single_unit in units:
         if single_unit.entity_id == unit_name:
@@ -439,7 +438,7 @@ class JujuWaiter:
         :type model: Model
         """
         self.model = model
-        self.model_name = self.model.info.name
+        self.model_name = self.model.name
         self.timeout = timedelta(seconds=JujuWaiter.DEFAULT_TIMEOUT)
         self.start_time = datetime.now()
         self.log = logging.getLogger(self.__class__.__name__)
@@ -512,7 +511,7 @@ class JujuWaiter:
         :raises TimeoutException: if timeout occurs
         """
         if datetime.now() - self.start_time > self.timeout:
-            self.log.debug("MODEL IS NOT IDLE in: %d seconds", self.timeout)
+            self.log.debug("Model %s is not idle after %d seconds.", self.model_name, self.timeout)
             raise TimeoutException(
-                f"Model {self.model_name} is not stabilized for {self.timeout} seconds."
+                f"Model {self.model_name} has not stabilized after {self.timeout} seconds."
             )

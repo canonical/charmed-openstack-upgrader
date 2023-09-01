@@ -401,8 +401,8 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
 
 def test_upgrade_plan_application_already_upgraded(status, config, mocker):
     exp_error_msg = (
-        "Application 'my_keystone' already running wallaby that is "
-        "equal or greater version than victoria. Ignoring."
+        "Application 'my_keystone' already running wallaby which is "
+        "equal or greater than victoria. Ignoring."
     )
     target = "victoria"
     mock_logger = mocker.patch("cou.apps.app.logger")
@@ -413,7 +413,7 @@ def test_upgrade_plan_application_already_upgraded(status, config, mocker):
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app.generate_upgrade_plan(target)
     mock_logger.info.assert_called_once_with(
-        "Application: '%s' already running %s that is equal or greater version than %s. Ignoring.",
+        "Application: '%s' already running %s which is equal or greater than %s. Ignoring.",
         app.name,
         str(app.current_os_release),
         target,

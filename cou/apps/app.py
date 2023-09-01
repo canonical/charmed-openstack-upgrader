@@ -355,16 +355,16 @@ class OpenStackApplication:
         if self.current_os_release >= target:
             logger.info(
                 (
-                    "Application: '%s' already running %s that is equal or greater "
-                    "version than %s. Ignoring."
+                    "Application: '%s' already running %s which is equal or greater "
+                    "than %s. Ignoring."
                 ),
                 self.name,
                 str(self.current_os_release),
                 target,
             )
             raise HaltUpgradePlanGeneration(
-                f"Application '{self.name}' already running {self.current_os_release} that is "
-                f"equal or greater version than {target}. Ignoring."
+                f"Application '{self.name}' already running {self.current_os_release} which is "
+                f"equal or greater than {target}. Ignoring."
             )
 
         return [
