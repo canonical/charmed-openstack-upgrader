@@ -168,7 +168,9 @@ class OpenStackApplication:
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
-        for unit in self.status.units.keys():
+        # subordinates don't have units
+        units = getattr(self.status, "units", {})
+        for unit in units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
             compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
@@ -398,9 +400,7 @@ class OpenStackApplication:
         """
         target_version = OpenStackRelease(target)
         upgrade_steps = UpgradeStep(
-            description=(
-                f"Upgrade plan for '{self.name}' from: {self.current_os_release} " f"to {target}"
-            ),
+            description=f"Upgrade plan for '{self.name}' to {target}",
             parallel=False,
             function=None,
         )

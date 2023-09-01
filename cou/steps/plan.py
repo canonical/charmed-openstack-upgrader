@@ -45,13 +45,13 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
     )
 
-    principle_upgrade_plan = await create_upgrade_group(
+    principal_upgrade_plan = await create_upgrade_group(
         analysis_result=analysis_result,
         description="Principal(s) upgrade plan",
         target=target,
         filter_function=lambda app: not isinstance(app, OpenStackSubordinateApplication),
     )
-    plan.add_step(principle_upgrade_plan)
+    plan.add_step(principal_upgrade_plan)
 
     subordinate_upgrade_plan = await create_upgrade_group(
         analysis_result=analysis_result,
@@ -84,7 +84,7 @@ async def create_upgrade_group(
     :rtype: UpgradeStep
     """
     group_upgrade_plan = UpgradeStep(description=description, parallel=False, function=None)
-    for app in (app for app in analysis_result.apps if filter_function(app)):
+    for app in filter(filter_function, analysis_result.apps):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
         except HaltUpgradePlanGeneration:

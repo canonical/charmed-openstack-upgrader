@@ -45,19 +45,14 @@ async def test_generate_plan(mocker, apps):
     assert sub_step_upgrade_plan.description == "Principal(s) upgrade plan"
 
     sub_step_upgrade_keystone = sub_step_upgrade_plan.sub_steps[0]
-    assert (
-        sub_step_upgrade_keystone.description
-        == "Upgrade plan for 'keystone' from: ussuri to victoria"
-    )
+    assert sub_step_upgrade_keystone.description == "Upgrade plan for 'keystone' to victoria"
     expected_description_upgrade_keystone = generate_expected_upgrade_plan_description(
         app_keystone, target
     )
     assert_plan_description(sub_step_upgrade_keystone, expected_description_upgrade_keystone)
 
     sub_step_upgrade_cinder = sub_step_upgrade_plan.sub_steps[1]
-    assert (
-        sub_step_upgrade_cinder.description == "Upgrade plan for 'cinder' from: ussuri to victoria"
-    )
+    assert sub_step_upgrade_cinder.description == "Upgrade plan for 'cinder' to victoria"
     expected_description_upgrade_cinder = generate_expected_upgrade_plan_description(
         app_cinder, target
     )

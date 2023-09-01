@@ -296,7 +296,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
         "Check if the workload of 'my_keystone' has been upgraded",
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
 
 
@@ -314,7 +314,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
         "Check if the workload of 'my_keystone' has been upgraded",
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
 
 
@@ -440,7 +440,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
         "Check if the workload of 'my_keystone' has been upgraded",
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
 
 

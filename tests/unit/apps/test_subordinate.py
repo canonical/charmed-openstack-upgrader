@@ -47,7 +47,7 @@ def test_generate_upgrade_plan(status):
         "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
     )
     plan = app.generate_upgrade_plan("victoria")
-    assert plan.description == "Upgrade my_keystone_ldap"
+    assert plan.description == "Upgrade plan for 'my_keystone_ldap' to victoria"
 
     assert (
         plan.sub_steps[0].description

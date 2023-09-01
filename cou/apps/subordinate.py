@@ -26,18 +26,12 @@ logger = logging.getLogger(__name__)
 class OpenStackSubordinateApplication(OpenStackApplication):
     """Subordinate application class."""
 
-    def __post_init__(self) -> None:
-        """Initialize the Application dataclass."""
-        self.channel = self.status.charm_channel
-        self.charm_origin = self.status.charm.split(":")[0]
-        self.os_origin = self._get_os_origin()
-
     @property
     def current_os_release(self) -> OpenStackRelease:
-        """Infer the OS release from subordinate charm's channel.
+        """Infer the OpenStack release from subordinate charm's channel.
 
-        We cannot determine the OS release base on workload packages because the principal charm
-        has already upgraded the packages.
+        We cannot determine the OpenStack release base on workload packages because the principal
+        charm has already upgraded the packages.
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
@@ -51,7 +45,11 @@ class OpenStackSubordinateApplication(OpenStackApplication):
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: UpgradeStep
         """
-        plan = UpgradeStep(description=f"Upgrade {self.name}", parallel=False, function=None)
+        plan = UpgradeStep(
+            description=f"Upgrade plan for '{self.name}' to {target}",
+            parallel=False,
+            function=None,
+        )
         refresh_charm_plan = self._get_refresh_charm_plan(OpenStackRelease(target))
         if refresh_charm_plan:
             plan.add_step(refresh_charm_plan)
