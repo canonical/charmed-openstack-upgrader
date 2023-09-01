@@ -145,11 +145,10 @@ class OpenStackApplication:
         E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
     :type units: defaultdict[str, dict]
     :raises ApplicationError: When there are no compatible OpenStack release for the
-        workload version
+        workload version.
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
-    :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation
-    :raises PackageUpgradeError: When the package upgrade fails.
+    :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -181,15 +180,10 @@ class OpenStackApplication:
                 unit_os_version = max(compatible_os_versions)
                 self.units[unit]["os_version"] = unit_os_version
             else:
-                logger.error(
-                    (
-                        "'%s' with workload version %s has no compatible OpenStack "
-                        "release in the lookup."
-                    ),
-                    self.name,
-                    workload_version,
+                raise ApplicationError(
+                    f"'{self.name}' with workload version {workload_version} has no compatible "
+                    "OpenStack release in the lookup."
                 )
-                raise ApplicationError()
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -270,8 +264,8 @@ class OpenStackApplication:
     def current_os_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
-        :raises MismatchedOpenStackVersions: Raise MismatchedOpenStackVersions if units of
-            an application are running mismatched OpenStack versions.
+        :raises MismatchedOpenStackVersions: When units part of this application are
+        running mismatched OpenStack versions.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
@@ -281,15 +275,10 @@ class OpenStackApplication:
             return os_versions.pop()
         # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
         # upgrade methods, more than one version can be found.
-        logger.error(
-            (
-                "Units of application %s are running mismatched OpenStack versions: %s. "
-                "This is not currently handled."
-            ),
-            self.name,
-            os_versions,
+        raise MismatchedOpenStackVersions(
+            f"Units of application {self.name} are running mismatched OpenStack versions: "
+            f"{os_versions}. This is not currently handled."
         )
-        raise MismatchedOpenStackVersions()
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -334,12 +323,10 @@ class OpenStackApplication:
             if target not in compatible_os_versions:
                 units_not_upgraded.append(unit)
         if units_not_upgraded:
-            logger.error(
-                "Units '%s' failed to upgrade to %s",
-                ", ".join(units_not_upgraded),
-                str(target),
+            units_not_upgraded_string = ", ".join(units_not_upgraded)
+            raise ApplicationError(
+                f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
             )
-            raise ApplicationError()
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
@@ -359,21 +346,25 @@ class OpenStackApplication:
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: Plan that will add upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
         if self.current_os_release >= target:
             logger.info(
                 (
-                    "Application: '%s' already running %s that is equal or greater "
-                    "version than %s. Ignoring."
+                    "Application: '%s' already running %s which is equal or greater "
+                    "than %s. Ignoring."
                 ),
                 self.name,
                 str(self.current_os_release),
                 target,
             )
-            raise HaltUpgradePlanGeneration()
+            raise HaltUpgradePlanGeneration(
+                f"Application '{self.name}' already running {self.current_os_release} which is "
+                f"equal or greater than {target}. Ignoring."
+            )
+
         return [
             self._get_disable_action_managed_plan(),
             self._get_upgrade_charm_plan(target),
@@ -470,13 +461,9 @@ class OpenStackApplication:
             )
         elif os_track_release_channel >= target:
             logger.info(
-                (
-                    "Skipping charm refresh for %s, its channel is already set to %s."
-                    "release than target %s"
-                ),
+                "Skipping charm refresh for %s, its channel is already set to %s.",
                 self.name,
                 self.channel,
-                str(target),
             )
             return None
 
