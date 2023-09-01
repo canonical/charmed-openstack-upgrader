@@ -38,7 +38,6 @@ from cou.utils.juju_utils import (
     async_upgrade_charm,
 )
 from cou.utils.openstack import (
-    SUBORDINATES,
     OpenStackCodenameLookup,
     OpenStackRelease,
     is_charm_supported,
@@ -80,15 +79,6 @@ class AppFactory:
         """
         # pylint: disable=too-many-arguments
         if is_charm_supported(charm):
-            if status.subordinate_to and charm not in SUBORDINATES:
-                logger.warning(
-                    (
-                        "'%s' is a subordinate application and it's not currently "
-                        "supported for upgrading"
-                    ),
-                    name,
-                )
-                return None
             app_class = cls.apps_type.get(charm, OpenStackApplication)
             return app_class(
                 name=name, status=status, config=config, model_name=model_name, charm=charm
