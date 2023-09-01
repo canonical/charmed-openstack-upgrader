@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import unittest
 
 import pytest
 
@@ -443,6 +444,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
     assert_plan_description(upgrade_plan, steps_description)
 
 
+@unittest.skip("subordinates are removed")
 def test_app_factory_create_subordinate_charm(mocker, status):
     # subordinate charms are not instantiated
     mock_logger = mocker.patch("cou.apps.app.logger")

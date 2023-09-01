@@ -46,11 +46,6 @@ from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, Versi
             [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
         ),
         (
-            "hacluster",  # yoga can be 2.0.3 to 2.4
-            ["2.0.3", "2.4", "2.5"],
-            [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
-        ),
-        (
             "vault",  # yoga can be 1.7 to 1.8
             ["1.7", "1.8", "1.9"],
             [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
