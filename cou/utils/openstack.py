@@ -358,7 +358,7 @@ class OpenStackCodenameLookup:
         This function also generate the lookup if _OPENSTACK_LOOKUP is empty.
         :param charm: name of the charm
         :type charm: str
-        :return: If supported return True, else False
+        :return: If supported return the charm, else empty dict
         :rtype: dict
         """
         if not cls._OPENSTACK_LOOKUP:
