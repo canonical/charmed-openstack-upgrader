@@ -22,7 +22,7 @@ from cou.utils.juju_utils import async_upgrade_charm
 from cou.utils.openstack import (
     CHARM_TYPES,
     LTS_SERIES,
-    AuxiliaryTrackMapping,
+    OPENSTACK_TO_TRACK_MAPPING,
     OpenStackRelease,
 )
 
@@ -34,8 +34,6 @@ logger = logging.getLogger(__name__)
 )
 class AuxiliaryOpenStackApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
-
-    openstack_to_track_mapping = AuxiliaryTrackMapping.generate_map()
 
     def upgrade_description(self, target: OpenStackRelease) -> str:
         """Top description for upgrading the application.
@@ -57,7 +55,7 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         :rtype: str
         """
         try:
-            return self.openstack_to_track_mapping[self.series][self.charm][os_release.codename]
+            return OPENSTACK_TO_TRACK_MAPPING[self.series][self.charm][os_release.codename]
         except KeyError as exc:
             raise ApplicationError(
                 f"Not possible to find the track for '{self.charm}' on {os_release.codename}"
@@ -71,20 +69,21 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         :return: OpenStackRelease object or None if the app doesn't have os_origin config.
         :rtype: Optional[OpenStackRelease]
         """
-        os_origin_parsed = None
-        if self.os_origin is not None:
-            # Ex: "cloud:focal-ussuri" will result in "ussuri"
-            os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)[-1]
-            match os_origin_parsed:
-                case "distro":
-                    # find the OpenStack release based on ubuntu series
-                    os_origin_parsed = LTS_SERIES[self.series]
-                case "":
-                    # if it's empty we consider the previous release from the target.
-                    # Ex: rabbitmq-server has empty "source" and receive target "victoria".
-                    # In that case it will be considered as ussuri and with the upgrade,
-                    # "source" config will be changed to "cloud:focal-victoria".
-                    os_origin_parsed = target.previous_release
+        if not self.os_origin:
+            return None
+
+        # Ex: "cloud:focal-ussuri" will result in "ussuri"
+        os_origin_parsed: Optional[str] = self.os_origin.rsplit("-", maxsplit=1)[-1]
+        if os_origin_parsed == "distro":
+            # find the OpenStack release based on ubuntu series
+            os_origin_parsed = LTS_SERIES[self.series]
+        elif os_origin_parsed == "":
+            # if it's empty we consider the previous release from the target.
+            # Ex: rabbitmq-server has empty "source" and receive target "victoria".
+            # In that case it will be considered as ussuri and with the upgrade,
+            # "source" config will be changed to "cloud:focal-victoria".
+            os_origin_parsed = target.previous_release
+
         return OpenStackRelease(os_origin_parsed) if os_origin_parsed else None
 
     @property
@@ -139,7 +138,9 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
                 self.channel,
                 self.expected_current_channel,
             )
+            return None
 
+        # pylint: disable=duplicate-code
         return UpgradeStep(
             description=description,
             parallel=parallel,
@@ -167,7 +168,7 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         :rtype: list[Optional[UpgradeStep]]
         """
         os_origin_config = self.os_origin_config(target)
-        if self.current_os_release >= target and os_origin_config and os_origin_config >= target:
+        if self.current_os_release >= target and os_origin_config >= target:
             logger.info(
                 "Application: '%s' already configured for %s release. Ignoring.",
                 self.name,

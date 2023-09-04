@@ -1,8 +1,0 @@
-OpenStack charms,ussuri,victoria,wallaby,xena,yoga
-ceph,octopus,octopus,pacific,pacific,quincy
-ovn,22.03,22.03,22.03,22.03,22.03
-mysql,8.0,8.0,8.0,8.0,8.0
-hacluster,2.0.3,2.0.3,2.0.3,2.0.3,2.0.3
-pacemaker-remote,focal,focal,focal,focal,focal
-rabbitmq-server,3.8,3.8,3.8,3.8,3.8
-vault,1.7,1.7,1.7,1.7,1.7

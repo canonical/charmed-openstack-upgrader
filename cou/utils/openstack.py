@@ -109,6 +109,90 @@ LTS_SERIES = {
 }
 
 
+def add_charms(mapping: dict) -> dict:
+    """Add charms based on CHARM_TYPES.
+
+    :param mapping: Dictionary containing the services.
+    :type mapping: dict
+    :return:  Dictionary containing the services and charms
+    :rtype: dict
+    """
+    mapping_charms = mapping.copy()
+    ubuntu_series = mapping_charms.keys()
+    for series in ubuntu_series:
+        for charm_type, charms in CHARM_TYPES.items():
+            for charm in charms:
+                if charm_type in mapping_charms[series].keys():
+                    mapping_charms[series][charm] = mapping_charms[series][charm_type]
+    return mapping_charms
+
+
+OPENSTACK_TO_TRACK_MAPPING = add_charms(
+    {
+        "focal": {
+            "ceph": {
+                "ussuri": "octopus",
+                "victoria": "octopus",
+                "wallaby": "pacific",
+                "xena": "pacific",
+                "yoga": "quincy",
+            },
+            "ovn": {
+                "ussuri": "22.03",
+                "victoria": "22.03",
+                "wallaby": "22.03",
+                "xena": "22.03",
+                "yoga": "22.03",
+            },
+            "mysql": {
+                "ussuri": "8.0",
+                "victoria": "8.0",
+                "wallaby": "8.0",
+                "xena": "8.0",
+                "yoga": "8.0",
+            },
+            "hacluster": {
+                "ussuri": "2.0.3",
+                "victoria": "2.0.3",
+                "wallaby": "2.0.3",
+                "xena": "2.0.3",
+                "yoga": "2.0.3",
+            },
+            "pacemaker-remote": {
+                "ussuri": "focal",
+                "victoria": "focal",
+                "wallaby": "focal",
+                "xena": "focal",
+                "yoga": "focal",
+            },
+            "rabbitmq-server": {
+                "ussuri": "3.8",
+                "victoria": "3.8",
+                "wallaby": "3.8",
+                "xena": "3.8",
+                "yoga": "3.8",
+            },
+            "vault": {
+                "ussuri": "1.7",
+                "victoria": "1.7",
+                "wallaby": "1.7",
+                "xena": "1.7",
+                "yoga": "1.7",
+            },
+        },
+        "jammy": {
+            "ceph": {"yoga": "quincy", "zed": "quincy", "2023.1": "quincy"},
+            "ovn": {"yoga": "22.03", "zed": "22.09", "2023.1": "23.03"},
+            "mysql": {"yoga": "8.0", "zed": "8.0", "2023.1": "8.0"},
+            "hacluster": {"yoga": "2.4", "zed": "2.4", "2023.1": "2.4"},
+            "pacemaker-remote": {"yoga": "jammy", "zed": "jammy", "2023.1": "jammy"},
+            "rabbitmq-server": {"yoga": "3.9", "zed": "3.9", "2023.1": "3.9"},
+            "vault": {"yoga": "1.8", "zed": "1.8", "2023.1": "1.8"},
+        },
+    }
+)
+
+
 class OpenStackRelease:
     """Provides a class that will compare OpenStack releases by the codename.
 
@@ -197,7 +281,7 @@ class OpenStackRelease:
         """Return the next OpenStack release codename.
 
         :return: OpenStack release codename.
-        :rtype: str
+        :rtype: Optional[str]
         """
         try:
             return self.openstack_codenames[self.index + 1]
@@ -361,74 +445,3 @@ class OpenStackCodenameLookup:
         if not cls._OPENSTACK_LOOKUP:
             cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
         return cls._OPENSTACK_LOOKUP.get(charm, False)
-
-
-class AuxiliaryTrackMapping:
-    """Tracks for the Auxiliary OpenStack Charms projects."""
-
-    # NOTE (gabrielcocenza) map based on the following tables:
-    # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
-
-    @classmethod
-    def generate_map(cls) -> defaultdict:
-        """Generate a map that helps to track the right channels for auxiliary charms.
-
-        :return: Dictionary containing the auxiliary services by Ubuntu series and
-            Openstack releases. E.g:
-            {
-                "focal":{
-                    "ceph":{
-                        "ussuri":"octopus",
-                        "victoria":"octopus",
-                        "wallaby":"pacific",
-                        "xena":"pacific",
-                        "yoga":"quincy"
-                    },
-                },
-                "jammy":{
-                    "ceph":{
-                        "yoga":"quincy",
-                        "zed":"quincy",
-                        "2023.1":"quincy"
-                    },
-                },
-            }
-        :rtype: defaultdict
-        """
-        ubuntu_series = ["focal", "jammy"]
-        track_to_openstack_mapping: defaultdict[Any, Any] = defaultdict(lambda: defaultdict(str))
-        for series in ubuntu_series:
-            with open(
-                Path(__file__).parent / f"auxiliary_{series}.csv",
-                encoding=encodings.utf_8.getregentry().name,
-            ) as csv_file:
-                csv_reader = csv.reader(csv_file, delimiter=",")
-                header = next(csv_reader)
-                for row in csv_reader:
-                    service = row[SERVICE_COLUMN_INDEX]
-                    track_to_openstack_mapping[series][service] = cls._parse_row(header, row)
-                for charm_type, charms in CHARM_TYPES.items():
-                    for charm in charms:
-                        if charm_type in track_to_openstack_mapping[series].keys():
-                            track_to_openstack_mapping[series][charm] = track_to_openstack_mapping[
-                                series
-                            ][charm_type]
-        return track_to_openstack_mapping
-
-    @classmethod
-    def _parse_row(cls, header: list[str], row: list[str]) -> defaultdict[str, str]:
-        """Parse single row.
-
-        :param header: header list
-        :type header: list[str]
-        :param row: row list
-        :type row: list[str]
-        :return: dictionary containing the tracks per OpenStack release of a certain service
-        :rtype:  defaultdict[str, str]
-        """
-        os_release_track = defaultdict(str)
-        for column_index in range(VERSION_START_COLUMN_INDEX, len(row)):
-            os_version = header[column_index]
-            track = row[column_index]
-            os_release_track[os_version] = track
-        return os_release_track
