@@ -202,7 +202,7 @@ class OpenStackRelease:
         try:
             return self.openstack_codenames[self.index + 1]
         except IndexError:
-            logger.warning("There is no OpenStack release after %s", self.codename)
+            logger.warning("Cannot find an OpenStack release after %s", self.codename)
             return None
 
     @property
@@ -210,11 +210,12 @@ class OpenStackRelease:
         """Return the previous OpenStack release codename.
 
         :return: OpenStack release codename.
-        :rtype: str
+        :rtype: Optional[str]
         """
         if self.index == 0:
-            logger.warning("There is no OpenStack release before %s", self.codename)
+            logger.warning("Cannot find an OpenStack release before %s", self.codename)
             return None
+
         return self.openstack_codenames[self.index - 1]
 
     @property

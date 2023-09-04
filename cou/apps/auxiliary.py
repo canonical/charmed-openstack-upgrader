@@ -95,7 +95,7 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         determined based on the workload version.
 
         :return: The expected current channel for the application.
-        :rtype: Optional[str]
+        :rtype: str
         """
         return f"{self.openstack_to_track(self.current_os_release)}/stable"
 
@@ -126,7 +126,7 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         switch = None
         channel = self.channel
 
-        description = f"Refresh '{self.name}' to the latest revision of " f"'{self.channel}'"
+        description = f"Refresh '{self.name}' to the latest revision of '{self.channel}'"
 
         if self.charm_origin == "cs":
             description = f"Migration of '{self.name}' from charmstore to charmhub"
@@ -134,7 +134,7 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
             channel = self.expected_current_channel
         elif self.channel != self.expected_current_channel:
             logger.warning(
-                "'%s' has the channel set to: %s that is different from the expected channel: %s",
+                "'%s' has the channel set to: %s which is different from the expected channel: %s",
                 self.name,
                 self.channel,
                 self.expected_current_channel,

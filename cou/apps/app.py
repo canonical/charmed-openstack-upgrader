@@ -473,7 +473,7 @@ class OpenStackApplication:
             os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
         except ValueError:
             logger.debug(
-                "The current channel from '%s' does not exist or is unexpectedly formatted",
+                "The current channel of '%s' does not exist or is unexpectedly formatted",
                 self.name,
             )
             os_track_release_channel = self.current_os_release
