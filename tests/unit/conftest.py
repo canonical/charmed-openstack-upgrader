@@ -18,6 +18,7 @@ import mock
 import pytest
 
 from cou.apps.app import OpenStackApplication
+from cou.apps.subordinate import OpenStackSubordinateApplication
 
 
 @pytest.fixture
@@ -150,7 +151,7 @@ def status():
     mock_mysql_router.subordinate_to = ["keystone"]
     mock_mysql_router.units = {}
 
-    # subordinate application
+    # OpenStack subordinate application
     mock_keystone_ldap = mock.MagicMock()
     mock_keystone_ldap.charm_channel = "ussuri/stable"
     mock_keystone_ldap.charm = "ch:amd64/focal/keystone-ldap-437"
@@ -208,6 +209,7 @@ def apps(status, config):
     keystone_wallaby_status = status["keystone_wallaby"]
     cinder_ussuri_status = status["cinder_ussuri"]
     rmq_status = status["rabbitmq_server"]
+    keystone_ldap_status = status["keystone-ldap"]
 
     keystone_ussuri = OpenStackApplication(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model", "keystone"
@@ -224,6 +226,9 @@ def apps(status, config):
     rmq_wallaby = OpenStackApplication(
         "rabbitmq-server", rmq_status, config["rmq_wallaby"], "my_model", "rabbitmq-server"
     )
+    keystone_ldap = OpenStackSubordinateApplication(
+        "keystone-ldap", keystone_ldap_status, {}, "my_model", "keystone-ldap"
+    )
 
     return {
         "keystone_ussuri": keystone_ussuri,
@@ -231,6 +236,7 @@ def apps(status, config):
         "cinder_ussuri": cinder_ussuri,
         "rmq_ussuri": rmq_ussuri,
         "rmq_wallaby": rmq_wallaby,
+        "keystone_ldap": keystone_ldap,
     }
 
 

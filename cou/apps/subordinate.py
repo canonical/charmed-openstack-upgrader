@@ -83,5 +83,5 @@ class OpenStackSubordinateApplication(OpenStackApplication):
             self._channel = charm_channel
         except ValueError as exc:
             raise ApplicationError(
-                f"Cannot determine the OpenStack version from channel: {charm_channel}: {exc}"
+                f"Cannot determine the OpenStack version from channel: {charm_channel}"
             ) from exc

@@ -27,7 +27,8 @@ async def test_generate_plan(mocker, apps):
     target = "victoria"
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
-    analysis_result = Analysis(apps=[app_keystone, app_cinder])
+    app_keystone_ldap = apps["keystone_ldap"]
+    analysis_result = Analysis(apps=[app_keystone, app_cinder, app_keystone_ldap])
     mocker.patch.object(model, "async_set_current_model_name", return_value="my_model")
     plan = await generate_plan(analysis_result)
 
@@ -57,6 +58,12 @@ async def test_generate_plan(mocker, apps):
         app_cinder, target
     )
     assert_plan_description(sub_step_upgrade_cinder, expected_description_upgrade_cinder)
+
+    subordinate_plan = plan.sub_steps[2]
+    assert subordinate_plan.description == "Subordinate(s) upgrade plan"
+    assert (
+        subordinate_plan.sub_steps[0].description == "Upgrade plan for 'keystone-ldap' to victoria"
+    )
 
 
 @pytest.mark.asyncio
