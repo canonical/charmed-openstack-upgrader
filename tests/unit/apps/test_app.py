@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import re
 
 import pytest
@@ -262,7 +261,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
         "Check if the workload of 'my_keystone' has been upgraded",
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
 
 
@@ -280,7 +279,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
         "Check if the workload of 'my_keystone' has been upgraded",
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
 
 
@@ -406,25 +405,8 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
         "Check if the workload of 'my_keystone' has been upgraded",
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' from: ussuri to victoria"
+    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
-
-
-def test_app_factory_create_subordinate_charm(mocker, status):
-    # subordinate charms are not instantiated
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    mysql_router = app_module.AppFactory.create(
-        name="keystone-mysql-router",
-        status=status["mysql_router"],
-        config=mocker.MagicMock(),
-        model_name="my_model",
-        charm="mysql-router",
-    )
-    assert mysql_router is None
-    mock_logger.warning.assert_called_once_with(
-        "'%s' is a subordinate application and it's not currently supported for upgrading",
-        "keystone-mysql-router",
-    )
 
 
 def test_app_factory_not_supported_openstack_charm(mocker):

@@ -15,10 +15,14 @@
 """Upgrade planning utilities."""
 
 import logging
+from typing import Callable
+
+from cou.apps.app import OpenStackApplication
 
 # NOTE we need to import the module to register the charms with the register_application decorator
 # pylint: disable=unused-import
 from cou.apps.auxiliary import AuxiliaryOpenStackApplication  # noqa: F401
+from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -30,8 +34,8 @@ logger = logging.getLogger(__name__)
 async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     """Generate plan for upgrade.
 
-    :param args: Analysis result.
-    :type args: Analysis
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
@@ -44,10 +48,46 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
     )
 
-    upgrade_plan = UpgradeStep(
-        description="Application(s) upgrade plan", parallel=False, function=None
+    principal_upgrade_plan = await create_upgrade_group(
+        analysis_result=analysis_result,
+        description="Principal(s) upgrade plan",
+        target=target,
+        filter_function=lambda app: not isinstance(app, OpenStackSubordinateApplication),
     )
-    for app in analysis_result.apps:
+    plan.add_step(principal_upgrade_plan)
+
+    subordinate_upgrade_plan = await create_upgrade_group(
+        analysis_result=analysis_result,
+        description="Subordinate(s) upgrade plan",
+        target=target,
+        filter_function=lambda app: isinstance(app, OpenStackSubordinateApplication),
+    )
+    plan.add_step(subordinate_upgrade_plan)
+
+    return plan
+
+
+async def create_upgrade_group(
+    analysis_result: Analysis,
+    target: str,
+    description: str,
+    filter_function: Callable[[OpenStackApplication], bool],
+) -> UpgradeStep:
+    """Create upgrade group.
+
+    :param analysis_result: Result of the analysis.
+    :type analysis_result: Analysis
+    :param target: Target OpenStack version.
+    :type target: str
+    :param description: Description of the upgrade step.
+    :type description: str
+    :param filter_function: Function to filter applications.
+    :type filter_function: Callable[[OpenStackApplication], bool]
+    :return: Upgrade group.
+    :rtype: UpgradeStep
+    """
+    group_upgrade_plan = UpgradeStep(description=description, parallel=False, function=None)
+    for app in filter(filter_function, analysis_result.apps):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
         except HaltUpgradePlanGeneration as exc:
@@ -59,7 +99,6 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
             logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
             raise
         if app_upgrade_plan:
-            upgrade_plan.add_step(app_upgrade_plan)
+            group_upgrade_plan.add_step(app_upgrade_plan)
 
-    plan.add_step(upgrade_plan)
-    return plan
+    return group_upgrade_plan

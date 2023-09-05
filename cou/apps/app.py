@@ -37,7 +37,11 @@ from cou.utils.juju_utils import (
     async_set_application_config,
     async_upgrade_charm,
 )
-from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease
+from cou.utils.openstack import (
+    OpenStackCodenameLookup,
+    OpenStackRelease,
+    is_charm_supported,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,14 +78,7 @@ class AppFactory:
         :rtype: Optional[OpenStackApplication]
         """
         # pylint: disable=too-many-arguments
-        if OpenStackCodenameLookup.is_charm_supported(charm):
-            if status.subordinate_to:
-                logger.warning(
-                    "'%s' is a subordinate application and it's not currently supported for "
-                    "upgrading",
-                    name,
-                )
-                return None
+        if is_charm_supported(charm):
             app_class = cls.apps_type.get(charm, OpenStackApplication)
             return app_class(
                 name=name, status=status, config=config, model_name=model_name, charm=charm
@@ -167,7 +164,6 @@ class OpenStackApplication:
     charm_origin: str = ""
     os_origin: str = ""
     origin_setting: Optional[str] = None
-    channel: str = ""
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
 
     def __post_init__(self) -> None:
@@ -175,7 +171,9 @@ class OpenStackApplication:
         self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
-        for unit in self.status.units.keys():
+        # subordinates don't have units
+        units = getattr(self.status, "units", {})
+        for unit in units.keys():
             workload_version = self.status.units[unit].workload_version
             self.units[unit]["workload_version"] = workload_version
             compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
@@ -387,18 +385,6 @@ class OpenStackApplication:
         """
         return [self._get_reached_expected_target_plan(target)]
 
-    def upgrade_description(self, target: OpenStackRelease) -> str:
-        """Top description for upgrading the application.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :return: Description of the update.
-        :rtype: str
-        """
-        return (
-            f"Upgrade plan for '{self.name}' from: {self.current_os_release} to {target.codename}"
-        )
-
     def generate_upgrade_plan(self, target: str) -> UpgradeStep:
         """Generate full upgrade plan for an Application.
 
@@ -409,7 +395,7 @@ class OpenStackApplication:
         """
         target_version = OpenStackRelease(target)
         upgrade_steps = UpgradeStep(
-            description=self.upgrade_description(target_version),
+            description=f"Upgrade plan for '{self.name}' to {target}",
             parallel=False,
             function=None,
         )

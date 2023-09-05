@@ -35,16 +35,6 @@ logger = logging.getLogger(__name__)
 class AuxiliaryOpenStackApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
-    def upgrade_description(self, target: OpenStackRelease) -> str:
-        """Top description for upgrading the application.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :return: Description of the update.
-        :rtype: str
-        """
-        return f"Upgrade plan for '{self.name}' to {target.codename}"
-
     def openstack_to_track(self, os_release: OpenStackRelease) -> str:
         """Find the track of auxiliary charms by Ubuntu release and OpenStack release codename.
 
