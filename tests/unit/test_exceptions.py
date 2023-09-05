@@ -11,25 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pytest
+from unittest import mock
 
-from cou.exceptions import ActionFailed, CommandRunFailed, UnitNotFound
+from juju.action import Action
 
-
-def test_command_run_failed():
-    with pytest.raises(CommandRunFailed):
-        raise CommandRunFailed(cmd="cmd", code="1", output="nok", err="err")
-
-
-def test_unit_not_found():
-    with pytest.raises(UnitNotFound):
-        raise UnitNotFound()
+from cou.exceptions import ActionFailed
 
 
 def test_action_failed():
-    with pytest.raises(ActionFailed):
+    """Test error message composition for ActionFailed."""
+    mocked_action = mock.Mock(spec=Action)
+    action = mocked_action()
+    action.name = "test-action"
+    action.parameters = "test=1"
+    action.receiver = "test-receiver"
+    action.message = "test-message"
+    action.id = "test-id"
+    action.status = "test-status"
+    action.enqueued = "test-enqueued"
+    action.started = "test-started"
+    action.completed = "test-completed"
 
-        class TestClass:
-            pass
-
-        raise ActionFailed(action=TestClass(), output="output")
+    error = ActionFailed(action=action, output="test output")
+    assert str(error) == (
+        'Run of action "test-action" with parameters "test=1" on '
+        '"test-receiver" failed with "test-message" (id=test-id '
+        "status=test-status enqueued=test-enqueued started=test-started "
+        "completed=test-completed output=test output)"
+    )

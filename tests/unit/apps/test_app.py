@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import re
+
 import pytest
 
 from cou.apps import app as app_module
@@ -118,17 +120,19 @@ def test_application_ussuri(status, config, units):
     )
 
 
-def test_application_different_wl(status, config, mocker):
+def test_application_different_wl(status, config):
     """Different OpenStack Version on units if workload version is different."""
+    exp_error_msg = re.compile(
+        "Units of application my_keystone are running mismatched OpenStack versions: "
+        r"{OpenStackRelease(?:<victoria>|<ussuri>), OpenStackRelease(?:<victoria>|<ussuri>)}. "
+        "This is not currently handled."
+    )
     app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
 
-    mock_logger = mocker.patch("cou.apps.app.logger")
-
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
-    with pytest.raises(MismatchedOpenStackVersions):
+    with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
         app.current_os_release
-    mock_logger.error.assert_called_once()
 
 
 def test_application_cs(status, config, units):
@@ -229,8 +233,8 @@ async def test_application_check_upgrade(status, config, mocker):
 
 @pytest.mark.asyncio
 async def test_application_check_upgrade_fail(status, config, mocker):
+    exp_error_msg = "Cannot upgrade units 'keystone/0, keystone/1, keystone/2' to victoria."
     target = "victoria"
-    mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
 
@@ -240,13 +244,8 @@ async def test_application_check_upgrade_fail(status, config, mocker):
 
     mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
-    with pytest.raises(ApplicationError):
-        await app._check_upgrade(target)
-    mock_logger.error.assert_called_once_with(
-        "Units '%s' failed to upgrade to %s",
-        "keystone/0, keystone/1, keystone/2",
-        "victoria",
-    )
+    with pytest.raises(ApplicationError, match=exp_error_msg):
+        await app._check_upgrade(OpenStackRelease(target))
 
 
 def test_upgrade_plan_ussuri_to_victoria(status, config):
@@ -367,16 +366,20 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
 
 
 def test_upgrade_plan_application_already_upgraded(status, config, mocker):
+    exp_error_msg = (
+        "Application 'my_keystone' already running wallaby which is "
+        "equal or greater than victoria. Ignoring."
+    )
     target = "victoria"
     mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     # victoria is lesser than wallaby, so application should not generate a plan.
-    with pytest.raises(HaltUpgradePlanGeneration):
+    with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app.generate_upgrade_plan(target)
     mock_logger.info.assert_called_once_with(
-        "Application: '%s' already running %s that is equal or greater version than %s. Ignoring.",
+        "Application: '%s' already running %s which is equal or greater than %s. Ignoring.",
         app.name,
         str(app.current_os_release),
         target,
