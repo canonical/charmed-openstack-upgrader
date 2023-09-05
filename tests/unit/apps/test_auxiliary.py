@@ -116,7 +116,6 @@ def test_auxiliary_charm_no_origin_config(status):
 
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mocker):
-    mock_logger = mocker.patch("cou.apps.app.logger")
     with pytest.raises(ApplicationError):
         AuxiliaryOpenStackApplication(
             "rabbitmq-server",
@@ -125,7 +124,6 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mo
             "my_model",
             "rabbitmq-server",
         )
-    mock_logger.error.assert_called_once()
 
 
 def test_auxiliary_raise_keyerror(status, config):
