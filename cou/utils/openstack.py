@@ -127,6 +127,7 @@ def add_charms(mapping: dict) -> dict:
     return mapping_charms
 
 
+# https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 OPENSTACK_TO_TRACK_MAPPING = add_charms(
     {
         "focal": {

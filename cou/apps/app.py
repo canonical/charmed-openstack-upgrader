@@ -144,6 +144,9 @@ class OpenStackApplication:
     :type charm_origin: str, defaults to ""
     :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
     :type os_origin: str, defaults to ""
+    :param origin_setting: "source" or "openstack-origin" of the charm configuration.
+        Return None if not present
+    :type origin_setting: Optional[str], defaults to None
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
     :type channel: str, defaults to ""
     :param units: Units representation of an application.
@@ -166,6 +169,7 @@ class OpenStackApplication:
     charm: str
     charm_origin: str = ""
     os_origin: str = ""
+    origin_setting: Optional[str] = None
     channel: str = ""
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
 

@@ -69,7 +69,8 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         :return: OpenStackRelease object or None if the app doesn't have os_origin config.
         :rtype: Optional[OpenStackRelease]
         """
-        if not self.os_origin:
+        # that means that the charm doesn't have source or openstack-origin config.
+        if self.origin_setting is None:
             return None
 
         # Ex: "cloud:focal-ussuri" will result in "ussuri"
@@ -169,12 +170,12 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         """
         os_origin_config = self.os_origin_config(target)
         if self.current_os_release >= target and os_origin_config >= target:
-            logger.info(
-                "Application: '%s' already configured for %s release. Ignoring.",
-                self.name,
-                target,
+            msg = (
+                f"Application: '{self.name}' already configured for release equal or greater "
+                f"version than {target}. Ignoring."
             )
-            raise HaltUpgradePlanGeneration()
+            logger.info(msg)
+            raise HaltUpgradePlanGeneration(msg)
         return [
             self._get_upgrade_charm_plan(target),
             self._get_workload_upgrade_plan(target),

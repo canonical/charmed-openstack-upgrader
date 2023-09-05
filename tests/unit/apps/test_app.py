@@ -22,6 +22,7 @@ from cou.exceptions import (
     MismatchedOpenStackVersions,
 )
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.apps.utils import assert_plan_description
 
 
 def test_application_eq(status, config):
@@ -201,32 +202,6 @@ def test_application_wallaby(status, config, units):
     )
 
 
-def test_special_app_more_than_one_compatible_os_release(status, config):
-    # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
-    expected_units = {"rabbitmq-server/0": {"os_version": "yoga", "workload_version": "3.8"}}
-    app = OpenStackApplication(
-        "rabbitmq-server",
-        status["rabbitmq_server"],
-        config["openstack_ussuri"],
-        "my_model",
-        "rabbitmq-server",
-    )
-    assert app.units == expected_units
-
-
-def test_special_app_unknown_version_raise_ApplicationError(status, config, mocker):
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    with pytest.raises(ApplicationError):
-        OpenStackApplication(
-            "rabbitmq-server",
-            status["unknown_rabbitmq_server"],
-            config["openstack_ussuri"],
-            "my_model",
-            "rabbitmq-server",
-        )
-    mock_logger.error.assert_called_once()
-
-
 def test_application_no_openstack_origin(status):
     """Test when application doesn't have openstack-origin or source config."""
     app_status = status["vault"]
@@ -274,13 +249,6 @@ async def test_application_check_upgrade_fail(status, config, mocker):
     )
 
 
-def assert_plan_description(upgrade_plan, steps_description):
-    assert len(upgrade_plan.sub_steps) == len(steps_description)
-    sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
-    for sub_step, description in sub_steps_check:
-        assert sub_step.description == description
-
-
 def test_upgrade_plan_ussuri_to_victoria(status, config):
     target = "victoria"
     app_status = status["keystone_ussuri"]
@@ -288,7 +256,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
-        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
+        "Upgrade software packages of 'my_keystone' from the current APT repositories",
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
@@ -306,7 +274,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
-        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
+        "Upgrade software packages of 'my_keystone' from the current APT repositories",
         "Migration of 'my_keystone' from charmstore to charmhub",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
@@ -329,7 +297,7 @@ def test_upgrade_plan_change_current_channel(mocker, status, config):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     steps_description = [
-        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
+        "Upgrade software packages of 'my_keystone' from the current APT repositories",
         "Changing 'my_keystone' channel from: 'foo/stable' to: 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
@@ -338,7 +306,7 @@ def test_upgrade_plan_change_current_channel(mocker, status, config):
     ]
 
     mock_logger.debug.assert_called_once_with(
-        "The current channel does not exist or is unexpectedly formatted"
+        "The current channel of '%s' does not exist or is unexpectedly formatted", app.name
     )
 
     assert_plan_description(upgrade_plan, steps_description)
@@ -356,7 +324,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
 
     # no sub-step for refresh current channel or next channel
     steps_description = [
-        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
+        "Upgrade software packages of 'my_keystone' from the current APT repositories",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
         "Check if the workload of 'my_keystone' has been upgraded",
@@ -380,7 +348,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
-        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
+        "Upgrade software packages of 'my_keystone' from the current APT repositories",
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
@@ -429,7 +397,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
     )
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
-        "Upgrade software packages of 'my_keystone' to the latest 'ussuri' release",
+        "Upgrade software packages of 'my_keystone' from the current APT repositories",
         "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
         "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
         "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",

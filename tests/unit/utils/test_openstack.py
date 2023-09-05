@@ -233,3 +233,18 @@ def test_determine_next_openstack_release(os_release, release_year, next_os_rele
     release = OpenStackRelease(os_release)
     assert release.next_release == next_os_release
     assert release.date == release_year
+
+
+@pytest.mark.parametrize(
+    "os_release, previous_os_release",
+    [
+        ("ussuri", "train"),
+        ("victoria", "ussuri"),
+        ("wallaby", "victoria"),
+        ("xena", "wallaby"),
+        ("diablo", None),  # None when there is no next release
+    ],
+)
+def test_determine_previous_openstack_release(os_release, previous_os_release):
+    release = OpenStackRelease(os_release)
+    assert release.previous_release == previous_os_release
