@@ -253,6 +253,11 @@ class VersionRange:
     lower: str
     upper: str
 
+    def __post_init__(self) -> None:
+        """Initialize the VersionRange dataclass and check values."""
+        if Version(self.lower) >= Version(self.upper):
+            raise ValueError("Upper version it is not bigger than lower version.")
+
     def __contains__(self, version: str) -> bool:
         """Magic method to check if a version is within the range.
 
