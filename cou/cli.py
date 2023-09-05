@@ -134,7 +134,7 @@ async def entrypoint() -> None:
         setup_logging(log_level=args.loglevel)
         model_name = args.model_name or await get_current_model_name()
         logger.info("Using model: %s", model_name)
-        analysis_result = await Analysis.create()
+        analysis_result = await Analysis.create(model_name)
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
         if args.run:

@@ -17,11 +17,13 @@ from unittest.mock import MagicMock
 
 import aiounittest
 import mock
+import pytest
 from juju.errors import JujuUnitError
 from juju.model import Model
 from mock.mock import AsyncMock
 
 import cou.utils.juju_utils as utils
+from cou.exceptions import ApplicationNotFound
 
 FAKE_STATUS = {
     "can-upgrade-to": "",
@@ -303,6 +305,14 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
     @mock.patch.dict(os.environ, {"JUJU_MODEL": "model_name"}, clear=True)
     async def test_get_current_model_from_juju_model(self):
+        model_name = await utils.get_current_model_name()
+        assert model_name == "model_name"
+
+    @mock.patch(
+        "cou.utils.juju_utils._get_current_model_name_from_juju",
+        new=mock.AsyncMock(return_value="model_name"),
+    )
+    async def test_get_current_model_from_current_model(self):
         model_name = await utils.get_current_model_name()
         assert model_name == "model_name"
 
@@ -623,3 +633,35 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         waiter._check_time.side_effect = Exception()
         await waiter._ensure_model_connected()
         await waiter._ensure_model_connected()
+
+
+@pytest.mark.asyncio
+@mock.patch("cou.utils.juju_utils._get_model")
+async def test_extract_charm_name(mocked_get_model):
+    """Test extraction charm name from application name."""
+    application_name = "test-app"
+    model_name = "test-model"
+    mocked_get_model.return_value = model = mock.AsyncMock(speck=Model)
+    app = mock.MagicMock()
+    app.charm_name = application_name
+    model.applications = {application_name: app}
+
+    charm_name = await utils.extract_charm_name(application_name, model_name)
+
+    mocked_get_model.assert_called_once_with(model_name)
+    assert application_name == charm_name
+
+
+@pytest.mark.asyncio
+@mock.patch("cou.utils.juju_utils._get_model")
+async def test_extract_charm_name_not_existing_app(mocked_get_model):
+    """Test extraction charm name from application name which does not exists."""
+    application_name = "test-app"
+    model_name = "test-model"
+    mocked_get_model.return_value = model = mock.AsyncMock(speck=Model)
+    model.applications = {}
+
+    with pytest.raises(ApplicationNotFound):
+        await utils.extract_charm_name(application_name, model_name)
+
+    mocked_get_model.assert_called_once_with(model_name)

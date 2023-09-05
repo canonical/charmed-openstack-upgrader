@@ -36,39 +36,44 @@ class Analysis:
     :type apps:  Iterable[OpenStackApplication]
     """
 
+    model_name: str | None
     apps: Iterable[OpenStackApplication]
 
     @classmethod
-    async def create(cls) -> Analysis:
+    async def create(cls, model_name: str | None = None) -> Analysis:
         """Analyze the deployment before planning.
 
+        :param model_name: Name of model to query, if None the current model will be used
+        :type model_name: str | None
         :return: Analysis object populated with the model applications.
         :rtype: Analysis
         """
         logger.info("Analyzing the OpenStack deployment...")
-        apps = await Analysis._populate()
+        apps = await Analysis._populate(model_name)
 
-        return Analysis(apps=apps)
+        return Analysis(model_name=model_name, apps=apps)
 
     @classmethod
-    async def _populate(cls) -> list[OpenStackApplication]:
+    async def _populate(cls, model_name: str | None) -> list[OpenStackApplication]:
         """Analyze the applications in the model.
 
         Applications that must be upgraded in a specific order will be returned first, followed
         by applications that can be upgraded in any order. Applications that are not supported
         will be ignored.
+
+        :param model_name: Name of model to query
+        :type model_name: str | None
         :return: Application objects with their respective information.
         :rtype: List[OpenStackApplication]
         """
-        juju_status = await get_status()
-        model_name = juju_status.model.name
+        juju_status = await get_status(model_name)
         apps = {
             AppFactory.create(
                 name=app,
                 status=app_status,
-                config=await get_application_config(app),
+                config=await get_application_config(app, model_name),
                 model_name=model_name,
-                charm=await extract_charm_name(app),
+                charm=await extract_charm_name(app, model_name),
             )
             for app, app_status in juju_status.applications.items()
         }
@@ -106,7 +111,4 @@ class Analysis:
         :return: OpenStack release codename
         :rtype: OpenStackRelease
         """
-        os_versions = set()
-        for app in self.apps:
-            os_versions.add(app.current_os_release)
-        return min(os_versions) if os_versions else None
+        return min((app.current_os_release for app in self.apps), default=None)

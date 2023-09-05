@@ -49,7 +49,7 @@ class AppFactory:
         name: str,
         status: ApplicationStatus,
         config: dict,
-        model_name: str,
+        model_name: str | None,
         charm: str,
     ) -> Optional[OpenStackApplication]:
         """Create the OpenStackApplication or registered subclasses.
@@ -63,7 +63,7 @@ class AppFactory:
         :param config: Configuration of the application
         :type config: dict
         :param model_name: Model name
-        :type model_name: str
+        :type model_name: str | None
         :param charm: Name of the charm
         :type charm: str
         :return: The OpenStackApplication class or None if not supported.
@@ -155,7 +155,7 @@ class OpenStackApplication:
     name: str
     status: ApplicationStatus
     config: dict
-    model_name: str
+    model_name: str | None
     charm: str
     charm_origin: str = ""
     os_origin: str = ""
@@ -310,7 +310,7 @@ class OpenStackApplication:
         :type target: OpenStackRelease
         :raises ApplicationError: When the workload version of the charm doesn't upgrade.
         """
-        status = await get_status()
+        status = await get_status(self.model_name)
         app_status = status.applications.get(self.name)
         units_not_upgraded = []
         for unit in app_status.units.keys():
@@ -521,6 +521,7 @@ class OpenStackApplication:
                 function=set_application_config,
                 application_name=self.name,
                 configuration={"action-managed-upgrade": False},
+                model_name=self.model_name,
             )
         return None
 
@@ -546,6 +547,7 @@ class OpenStackApplication:
                 function=set_application_config,
                 application_name=self.name,
                 configuration={self.origin_setting: self.new_origin(target)},
+                model_name=self.model_name,
             )
         logger.warning(
             "Not triggering the workload upgrade of app %s: %s already set to %s",
