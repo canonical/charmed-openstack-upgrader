@@ -60,29 +60,40 @@ def test_generate_upgrade_plan(status):
 
 
 @pytest.mark.parametrize(
-    "channel, throws_exception",
+    "channel",
     [
-        ("ussuri/stable", False),
-        ("victoria/stable", False),
-        ("xena/stable", False),
-        ("yoga/stable", False),
-        ("wallaby/stable", False),
-        ("wallaby/edge", False),
-        ("focal/edge", True),
-        ("latest/edge", True),
-        ("latest/stable", True),
-        ("something/stable", True),
+        ("ussuri/stable"),
+        ("victoria/stable"),
+        ("xena/stable"),
+        ("yoga/stable"),
+        ("wallaby/stable"),
+        ("wallaby/edge"),
     ],
 )
-def test_channel_setter(status, channel, throws_exception):
+def test_channel_setter_valid(status, channel):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
     )
 
-    if throws_exception:
-        with pytest.raises(ApplicationError):
-            app.channel = channel
-    else:
+    app.channel = channel
+    assert app.channel == channel
+
+
+@pytest.mark.parametrize(
+    "channel",
+    [
+        ("focal/edge"),
+        ("latest/edge"),
+        ("latest/stable"),
+        ("something/stable"),
+    ],
+)
+def test_channel_setter_invalid(status, channel):
+    app_status = status["keystone-ldap"]
+    app = OpenStackSubordinateApplication(
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+    )
+
+    with pytest.raises(ApplicationError):
         app.channel = channel
-        assert app.channel == channel

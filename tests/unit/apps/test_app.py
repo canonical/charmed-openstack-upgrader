@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
-import unittest
 
 import pytest
 
@@ -442,24 +441,6 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
     ]
     assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
-
-
-@unittest.skip("subordinates are removed")
-def test_app_factory_create_subordinate_charm(mocker, status):
-    # subordinate charms are not instantiated
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    mysql_router = app_module.AppFactory.create(
-        name="keystone-mysql-router",
-        status=status["mysql_router"],
-        config=mocker.MagicMock(),
-        model_name="my_model",
-        charm="mysql-router",
-    )
-    assert mysql_router is None
-    mock_logger.warning.assert_called_once_with(
-        "'%s' is a subordinate application and it's not currently supported for upgrading",
-        "keystone-mysql-router",
-    )
 
 
 def test_app_factory_not_supported_openstack_charm(mocker):
