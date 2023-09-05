@@ -62,12 +62,12 @@ def test_generate_upgrade_plan(status):
 @pytest.mark.parametrize(
     "channel",
     [
-        ("ussuri/stable"),
-        ("victoria/stable"),
-        ("xena/stable"),
-        ("yoga/stable"),
-        ("wallaby/stable"),
-        ("wallaby/edge"),
+        "ussuri/stable",
+        "victoria/stable",
+        "xena/stable",
+        "yoga/stable",
+        "wallaby/stable",
+        "wallaby/edge",
     ],
 )
 def test_channel_setter_valid(status, channel):
@@ -83,10 +83,10 @@ def test_channel_setter_valid(status, channel):
 @pytest.mark.parametrize(
     "channel",
     [
-        ("focal/edge"),
-        ("latest/edge"),
-        ("latest/stable"),
-        ("something/stable"),
+        "focal/edge",
+        "latest/edge",
+        "latest/stable",
+        "something/stable",
     ],
 )
 def test_channel_setter_invalid(status, channel):
