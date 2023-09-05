@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+import mock
 import pytest
 from juju.client._definitions import FullStatus
 
@@ -41,17 +42,22 @@ async def test_backup():
 
 @pytest.mark.asyncio
 async def test_get_database_app_name_negative(mocker):
-    mocker.patch("cou.utils.juju_utils._async_get_model")
-    with patch("cou.steps.backup.utils.async_get_status") as get_status:
-        current_path = Path(os.path.dirname(os.path.realpath(__file__)))
-        with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
-            data = file.read().rstrip()
+    get_model = mocker.patch("cou.utils.juju_utils._get_model")
+    get_model.return_value = model = mock.MagicMock()
+    model.applications.get.return_value = app = mock.MagicMock()
+    app.charm_name.return_value = "mysql"
 
-        status = FullStatus.from_json(data)
-        status.applications["mysql"].relations = {}
-        get_status.return_value = status
-        with pytest.raises(UnitNotFound):
-            await get_database_app_unit_name()
+    get_status = mocker.patch("cou.steps.backup.utils.async_get_status")
+    current_path = Path(os.path.dirname(os.path.realpath(__file__)))
+    with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
+        data = file.read().rstrip()
+
+    status = FullStatus.from_json(data)
+    status.applications["mysql"].relations = {}
+    get_status.return_value = status
+
+    with pytest.raises(UnitNotFound):
+        await get_database_app_unit_name()
 
 
 @pytest.mark.asyncio

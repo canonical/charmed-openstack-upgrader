@@ -43,6 +43,10 @@ class UnitNotFound(COUException):
     """Exception raised when a unit is not found in the model."""
 
 
+class ApplicationNotFound(COUException):
+    """Exception raised when a application is not found in the model."""
+
+
 class MismatchedOpenStackVersions(COUException):
     """Exception raised when more than one OpenStack version is found in the Application."""
 

@@ -24,11 +24,15 @@ from juju.errors import JujuAgentError, JujuAppError, JujuMachineError, JujuUnit
 from juju.model import Model
 from juju.unit import Unit
 
-from cou.exceptions import ActionFailed, TimeoutException, UnitNotFound
+from cou.exceptions import (
+    ActionFailed,
+    ApplicationNotFound,
+    TimeoutException,
+    UnitNotFound,
+)
 
 JUJU_MAX_FRAME_SIZE = 2**30
 
-CURRENT_MODEL_NAME: Optional[str] = None
 CURRENT_MODEL: Optional[Model] = None
 
 logger = logging.getLogger(__name__)
@@ -44,42 +48,34 @@ async def extract_charm_name(application_name: str, model_name: Optional[str] = 
     :return: Charm name
     :rtype: str
     """
-    model = await _async_get_model(model_name)
-    return model.applications[application_name].charm_name
+    model = await _get_model(model_name)
+    app = model.applications.get(application_name)
+    if app is None:
+        raise ApplicationNotFound(
+            f"Application {application_name} was not found in model {model.name}."
+        )
+
+    return app.charm_name
 
 
-# pylint: disable=global-statement
-async def async_set_current_model_name(model_name: Optional[str] = None) -> Optional[str]:
-    """Set the current model.
+async def get_current_model_name() -> str:
+    """Get the current model.
 
-    :param model_name: Name of model to query.
-    :type model_name: str
-
-    First check the environment for JUJU_MODEL. If this is not set, get the
+    First check the environment for JUJU_MODEL or MODEL_NAME. If those are not set, get the
     current active model.
 
-    :returns: In focus model name
-    :rtype: Optional[str]
+    :returns: Name of current model
+    :rtype: str
     """
-    global CURRENT_MODEL_NAME
-    if model_name:
-        CURRENT_MODEL_NAME = model_name
-        return model_name
+    model_name = os.environ.get("JUJU_MODEL") or os.environ.get("MODEL_NAME")
+    if model_name is None:
+        model_name = await _async_get_current_model_name_from_juju()
 
-    try:
-        # Check the environment
-        CURRENT_MODEL_NAME = os.environ["JUJU_MODEL"]
-    except KeyError:
-        try:
-            CURRENT_MODEL_NAME = os.environ["MODEL_NAME"]
-        except KeyError:
-            # If unset connect get the current active model
-            CURRENT_MODEL_NAME = await _async_get_current_model_name_from_juju()
-    return CURRENT_MODEL_NAME
+    return model_name
 
 
 # pylint: disable=global-statement
-async def _async_get_model(model_name: Optional[str] = None) -> Model:
+async def _get_model(model_name: Optional[str] = None) -> Model:
     """Get (or create) the current model for :param:`model_name`.
 
     If None is passed, or there is no model_name param, then the current model
@@ -88,17 +84,19 @@ async def _async_get_model(model_name: Optional[str] = None) -> Model:
     :param model_name: the juju.model.Model object to fetch
     :type model_name: Optional[str]
     :returns: juju.model.Model
+    :rtype: Model
     """
     global CURRENT_MODEL
 
     model = CURRENT_MODEL
     if model is not None and _is_model_disconnected(model):
         await _disconnect(model)
-        model = None
-    if CURRENT_MODEL is None:
+
+    if model is None:
         model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
         await model.connect(model_name)
         CURRENT_MODEL = model
+
     return model
 
 
@@ -109,11 +107,11 @@ async def _disconnect(model: Model) -> None:
     :param model: the juju.model.Model object.
     :type model: Model
     """
-    if model is not None:
-        try:
+    try:
+        if model is not None:
             await model.disconnect()
-        except Exception:
-            pass
+    except Exception:
+        pass
 
 
 def _is_model_disconnected(model: Model) -> bool:
@@ -140,7 +138,7 @@ async def _async_get_current_model_name_from_juju() -> str:
     # "RPC: Connection closed, reconnecting" messages and then failures.
     model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
     await model.connect()
-    model_name = model.info.name
+    model_name = model.name
     await model.disconnect()
     return model_name
 
@@ -153,7 +151,7 @@ async def async_get_status(model_name: Optional[str] = None) -> FullStatus:
     :returns: Full juju status output
     :rtype: FullStatus
     """
-    model = await _async_get_model(model_name)
+    model = await _get_model(model_name)
     return await model.get_status()
 
 
@@ -227,7 +225,7 @@ async def async_run_on_unit(
     :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
     :rtype: Dict[str, str]
     """
-    model = await _async_get_model(model_name)
+    model = await _get_model(model_name)
     unit = await async_get_unit_from_name(unit_name, model)
     action = await unit.run(command, timeout=timeout)
     results = action.data.get("results")
@@ -252,7 +250,7 @@ async def async_get_unit_from_name(
     app = unit_name.split("/")[0]
     unit = None
     if model is None:
-        model = await _async_get_model(model_name)
+        model = await _get_model(model_name)
     try:
         units = model.applications[app].units
     except KeyError as exc:
@@ -280,7 +278,7 @@ async def async_get_application_config(
     :returns: Dictionary of configuration
     :rtype: dict
     """
-    model = await _async_get_model(model_name)
+    model = await _get_model(model_name)
     return await model.applications[application_name].get_config()
 
 
@@ -310,7 +308,7 @@ async def async_run_action(
     if action_params is None:
         action_params = {}
 
-    model = await _async_get_model(model_name)
+    model = await _get_model(model_name)
     unit = await async_get_unit_from_name(unit_name, model)
     action_obj = await unit.run_action(action_name, **action_params)
     await _check_action_error(action_obj, model, raise_on_failure)
@@ -344,7 +342,7 @@ async def async_scp_from_unit(
     :param scp_opts: Additional options to the scp command, defaults to ""
     :type scp_opts: str
     """
-    model = await _async_get_model(model_name)
+    model = await _get_model(model_name)
     unit = await async_get_unit_from_name(unit_name, model)
     await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
 
@@ -385,7 +383,7 @@ async def async_upgrade_charm(
     :param model_name: Name of model to operate on
     :type model_name: str
     """
-    model = await _async_get_model(model_name)
+    model = await _get_model(model_name)
     app = model.applications[application_name]
     await app.upgrade_charm(
         channel=channel,
@@ -410,7 +408,7 @@ async def async_set_application_config(
     :param model_name: Name of model to query.
     :type model_name: Optional[str]
     """
-    model = await _async_get_model(model_name)
+    model = await _get_model(model_name)
     return await model.applications[application_name].set_config(configuration)
 
 

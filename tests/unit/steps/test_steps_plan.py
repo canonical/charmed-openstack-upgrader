@@ -14,7 +14,6 @@
 
 import pytest
 
-import cou.utils.juju_utils as model
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
@@ -28,7 +27,6 @@ async def test_generate_plan(mocker, apps):
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     analysis_result = Analysis(apps=[app_keystone, app_cinder])
-    mocker.patch.object(model, "async_set_current_model_name", return_value="my_model")
     plan = await generate_plan(analysis_result)
 
     assert plan.description == "Top level plan"

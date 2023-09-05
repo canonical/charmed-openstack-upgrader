@@ -88,7 +88,7 @@ async def test_populate_model(mocker, full_status, config):
 
     test_model = mocker.AsyncMock()
     test_model.applications = {app_name: generate_app(app_name) for app_name in apps_name}
-    juju_model = mocker.patch("cou.utils.juju_utils._async_get_model")
+    juju_model = mocker.patch("cou.utils.juju_utils._get_model")
     juju_model.return_value = test_model
     mocker.patch.object(analyze, "async_get_status", return_value=full_status)
     mocker.patch.object(

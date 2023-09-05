@@ -26,7 +26,7 @@ from cou.exceptions import COUException
 from cou.steps.analyze import Analysis
 from cou.steps.execute import execute
 from cou.steps.plan import generate_plan
-from cou.utils import juju_utils as utils
+from cou.utils.juju_utils import get_current_model_name
 
 COU_DIR_LOG = pathlib.Path(os.getenv("COU_DATA", ""), "log")
 AVAILABLE_OPTIONS = "cas"
@@ -132,10 +132,8 @@ async def entrypoint() -> None:
         args = parse_args(sys.argv[1:])
 
         setup_logging(log_level=args.loglevel)
-
-        model_name = await utils.async_set_current_model_name(args.model_name)
-        logger.info("Setting current model name: %s", model_name)
-
+        model_name = args.model_name or await get_current_model_name()
+        logger.info("Using model: %s", model_name)
         analysis_result = await Analysis.create()
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)

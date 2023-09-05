@@ -18,9 +18,10 @@ from unittest.mock import MagicMock
 import aiounittest
 import mock
 from juju.errors import JujuUnitError
+from juju.model import Model
 from mock.mock import AsyncMock
 
-import cou.utils.juju_utils as model
+import cou.utils.juju_utils as utils
 
 FAKE_STATUS = {
     "can-upgrade-to": "",
@@ -292,66 +293,51 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
     def tearDown(self):
         # Clear cached model name
-        model.CURRENT_MODEL = None
+        utils.CURRENT_MODEL = None
         super().tearDown()
 
     @mock.patch.dict(os.environ, {"MODEL_NAME": "model_name"}, clear=True)
-    async def test_async_get_juju_model_juju_model(self):
-        model.CURRENT_MODEL_NAME = None
-        model_name = await model.async_set_current_model_name()
+    async def test_get_current_model_from_mode_name(self):
+        model_name = await utils.get_current_model_name()
         assert model_name == "model_name"
 
     @mock.patch.dict(os.environ, {"JUJU_MODEL": "model_name"}, clear=True)
-    async def test_async_get_juju_model_name(self):
-        model.CURRENT_MODEL_NAME = None
-        model_name = await model.async_set_current_model_name()
+    async def test_get_current_model_from_juju_model(self):
+        model_name = await utils.get_current_model_name()
         assert model_name == "model_name"
-
-    @mock.patch.dict(os.environ, {}, clear=True)
-    async def test_async_get_juju_model_empty(self):
-        with mock.patch(
-            "cou.utils.juju_utils._async_get_current_model_name_from_juju"
-        ) as get_model:
-            get_model.return_value = "model_name"
-            model.CURRENT_MODEL_NAME = None
-            model_name = await model.async_set_current_model_name()
-            assert model_name == "model_name"
-
-    async def test_async_set_juju_model(self):
-        model_name = await model.async_set_current_model_name(model_name="jujumodel")
-        assert model_name == "jujumodel"
 
     async def test_get_model(self):
         with mock.patch("cou.utils.juju_utils.CURRENT_MODEL") as juju_model:
-            current_model = await model._async_get_model()
+            current_model = await utils._get_model()
             assert current_model == juju_model
 
     async def test_get_model_disconnected(self):
         with mock.patch("cou.utils.juju_utils.CURRENT_MODEL"), mock.patch(
             "cou.utils.juju_utils._is_model_disconnected"
         ) as is_disconnected, mock.patch("cou.utils.juju_utils._disconnect") as disconnect:
-            await model._async_get_model()
+            await utils._get_model()
             is_disconnected.assert_called()
             disconnect.assert_called()
 
     def test_is_model_disconnected(self):
-        disconnected = model._is_model_disconnected(self.mymodel)
+        disconnected = utils._is_model_disconnected(self.mymodel)
         assert not disconnected
 
-    async def test_async_get_current_model(self):
-        self.mymodel.name = "test"
-        with mock.patch("cou.utils.juju_utils.Model") as init:
-            init.return_value = self.Model_mock
-            name = await model._async_get_current_model_name_from_juju()
-            assert name == "testmodel"
+    async def test_async_get_current_model_from_juju(self):
+        expected_model = "testmodel"
+        mocked_model = mock.AsyncMock(spec=Model)
+        mocked_model.name = expected_model
+        with mock.patch("cou.utils.juju_utils.Model", return_value=mocked_model):
+            name = await utils._async_get_current_model_name_from_juju()
+            assert name == expected_model
 
     async def test_async_get_full_juju_status(self):
-        with mock.patch("cou.utils.juju_utils._async_get_model") as get_model:
+        with mock.patch("cou.utils.juju_utils._get_model") as get_model:
             mymodel = AsyncMock()
             get_model.return_value = mymodel
             mymodel.get_status = AsyncMock()
             mymodel.get_status.return_value = "test"
-            result = await model.async_get_status()
+            result = await utils.async_get_status()
             get_model.assert_called()
             mymodel.get_status.assert_called()
             assert result == "test"
@@ -361,7 +347,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
         expected = {"Stderr": "error", "Stdout": "output", "stderr": "error", "stdout": "output"}
 
-        normalized_results = model._normalise_action_results(results)
+        normalized_results = utils._normalise_action_results(results)
 
         self.assertEqual(normalized_results, expected)
 
@@ -370,56 +356,49 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
         expected = {}
 
-        normalized_results = model._normalise_action_results(results)
+        normalized_results = utils._normalise_action_results(results)
 
         self.assertEqual(normalized_results, expected)
 
     def test_async_run_on_unit(self):
-        with mock.patch("cou.utils.juju_utils.async_set_current_model_name") as get_model:
-            get_model.return_value = "mname"
-            expected = {
-                "Code": "0",
-                "Stderr": "",
-                "Stdout": "RESULT",
-                "stderr": "",
-                "stdout": "RESULT",
-            }
-            self.cmd = cmd = "somecommand someargument"
-            self.patch_object(model, "Model")
-            self.patch_object(model, "async_get_unit_from_name")
-            self.async_get_unit_from_name.return_value = self.unit1
-            self.Model.return_value = self.Model_mock
-            result = asyncio.run(model.async_run_on_unit("app/2", cmd))
-            self.assertEqual(result, expected)
-            self.unit1.run.assert_called_once_with(cmd, timeout=None)
+        expected = {
+            "Code": "0",
+            "Stderr": "",
+            "Stdout": "RESULT",
+            "stderr": "",
+            "stdout": "RESULT",
+        }
+        self.cmd = cmd = "somecommand someargument"
+        self.patch_object(utils, "Model")
+        self.patch_object(utils, "async_get_unit_from_name")
+        self.async_get_unit_from_name.return_value = self.unit1
+        self.Model.return_value = self.Model_mock
+        result = asyncio.run(utils.async_run_on_unit("app/2", cmd))
+        self.assertEqual(result, expected)
+        self.unit1.run.assert_called_once_with(cmd, timeout=None)
 
     async def test_async_get_unit_from_name(self):
-        with mock.patch("cou.utils.juju_utils.async_set_current_model_name") as get_model:
-            get_model.return_value = "mname"
+        self.patch_object(utils, "Model")
+        self.Model.return_value = self.Model_mock
+        # Normal case
+        self.assertEqual(
+            await utils.async_get_unit_from_name("app/4", model_name="mname"), self.unit2
+        )
 
-            self.patch_object(model, "Model")
-            self.Model.return_value = self.Model_mock
-            # Normal case
-            self.assertEqual(
-                await model.async_get_unit_from_name("app/4", model_name="mname"), self.unit2
-            )
+        # Normal case with Model()
+        self.assertEqual(await utils.async_get_unit_from_name("app/4", self.mymodel), self.unit2)
 
-            # Normal case with Model()
-            self.assertEqual(
-                await model.async_get_unit_from_name("app/4", self.mymodel), self.unit2
-            )
+        # Normal case, using default
+        self.assertEqual(await utils.async_get_unit_from_name("app/4"), self.unit2)
 
-            # Normal case, using default
-            self.assertEqual(await model.async_get_unit_from_name("app/4"), self.unit2)
+        # Unit does not exist
+        with self.assertRaises(utils.UnitNotFound):
+            await utils.async_get_unit_from_name("app/10", model_name="mname")
 
-            # Unit does not exist
-            with self.assertRaises(model.UnitNotFound):
-                await model.async_get_unit_from_name("app/10", model_name="mname")
-
-            # Application does not exist
-            self.patch_object(model.logging, "error")
-            with self.assertRaises(model.UnitNotFound):
-                await model.async_get_unit_from_name("bad_name", model_name="mname")
+        # Application does not exist
+        self.patch_object(utils.logging, "error")
+        with self.assertRaises(utils.UnitNotFound):
+            await utils.async_get_unit_from_name("bad_name", model_name="mname")
 
     async def test_async_get_application_config(self):
         test_model = AsyncMock()
@@ -428,118 +407,110 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         test_app.get_config.return_value = "config"
         test_model.applications = {"app": test_app}
 
-        with mock.patch("cou.utils.juju_utils._async_get_model") as juju_model:
+        with mock.patch("cou.utils.juju_utils._get_model") as juju_model:
             juju_model.return_value = test_model
-            config = await model.async_get_application_config("app")
+            config = await utils.async_get_application_config("app")
             assert config == "config"
 
     async def test_async_run_action_empty(self):
-        with mock.patch("cou.utils.juju_utils.async_set_current_model_name") as get_model:
-            get_model.return_value = "mname"
-            self.patch_object(model, "Model")
+        self.patch_object(utils, "Model")
 
-            async def _fake_get_action_output(_):
-                return {"fake": "output"}
+        async def _fake_get_action_output(_):
+            return {"fake": "output"}
 
-            self.Model_mock.get_action_output = _fake_get_action_output
-            self.Model.return_value = self.Model_mock
-            self.run_action.status = "failed"
-            self.run_action.message = "aMessage"
-            self.run_action.id = "aId"
-            self.run_action.enqueued = "aEnqueued"
-            self.run_action.started = "aStarted"
-            self.run_action.completed = "aCompleted"
-            self.run_action.name = "backup2"
-            self.run_action.parameters = None
-            self.run_action.receiver = "app/2"
-            with self.assertRaises(model.ActionFailed) as e:
-                await model.async_run_action(
-                    self.run_action.receiver,
-                    self.run_action.name,
-                    action_params=self.run_action.parameters,
-                    raise_on_failure=True,
-                )
-            self.assertEqual(
-                str(e.exception),
-                (
-                    'Run of action "backup2" with parameters "None" on "app/2" failed with '
-                    '"aMessage" (id=aId status=failed enqueued=aEnqueued started=aStarted '
-                    "completed=aCompleted output={'fake': 'output'})"
-                ),
-            )
-
-    async def test_async_run_action_with_action_fails(self):
-        with mock.patch("cou.utils.juju_utils.async_set_current_model_name") as get_model:
-            get_model.return_value = "mname"
-            self.patch_object(model, "Model")
-
-            async def _fake_get_action_output(_):
-                raise KeyError
-
-            self.Model_mock.get_action_output = _fake_get_action_output
-            self.Model.return_value = self.Model_mock
-            self.run_action.status = "failed"
-            self.run_action.message = "aMessage"
-            self.run_action.id = "aId"
-            self.run_action.enqueued = "aEnqueued"
-            self.run_action.started = "aStarted"
-            self.run_action.completed = "aCompleted"
-            self.run_action.name = "backup2"
-            self.run_action.parameters = None
-            self.run_action.receiver = "app/2"
-            with self.assertRaises(model.ActionFailed) as e:
-                await model.async_run_action(
-                    self.run_action.receiver,
-                    self.run_action.name,
-                    action_params=self.run_action.parameters,
-                    raise_on_failure=True,
-                )
-            self.assertEqual(
-                str(e.exception),
-                (
-                    'Run of action "backup2" with parameters "None" on "app/2" failed with '
-                    '"aMessage" (id=aId status=failed enqueued=aEnqueued started=aStarted '
-                    "completed=aCompleted output=None)"
-                ),
-            )
-
-    async def test_async_run_action_with_action_not_fails(self):
-        with mock.patch("cou.utils.juju_utils.async_set_current_model_name") as get_model:
-            get_model.return_value = "mname"
-            self.patch_object(model, "Model")
-
-            async def _fake_get_action_output(_):
-                raise KeyError
-
-            self.Model_mock.get_action_output = _fake_get_action_output
-            self.Model.return_value = self.Model_mock
-            self.run_action.status = "failed"
-            self.run_action.message = "aMessage"
-            self.run_action.id = "aId"
-            self.run_action.enqueued = "aEnqueued"
-            self.run_action.started = "aStarted"
-            self.run_action.completed = "aCompleted"
-            self.run_action.name = "backup2"
-            self.run_action.parameters = None
-            self.run_action.receiver = "app/2"
-            await model.async_run_action(
+        self.Model_mock.get_action_output = _fake_get_action_output
+        self.Model.return_value = self.Model_mock
+        self.run_action.status = "failed"
+        self.run_action.message = "aMessage"
+        self.run_action.id = "aId"
+        self.run_action.enqueued = "aEnqueued"
+        self.run_action.started = "aStarted"
+        self.run_action.completed = "aCompleted"
+        self.run_action.name = "backup2"
+        self.run_action.parameters = None
+        self.run_action.receiver = "app/2"
+        with self.assertRaises(utils.ActionFailed) as e:
+            await utils.async_run_action(
                 self.run_action.receiver,
                 self.run_action.name,
                 action_params=self.run_action.parameters,
-                raise_on_failure=False,
+                raise_on_failure=True,
             )
+        self.assertEqual(
+            str(e.exception),
+            (
+                'Run of action "backup2" with parameters "None" on "app/2" failed with '
+                '"aMessage" (id=aId status=failed enqueued=aEnqueued started=aStarted '
+                "completed=aCompleted output={'fake': 'output'})"
+            ),
+        )
+
+    async def test_async_run_action_with_action_fails(self):
+        self.patch_object(utils, "Model")
+
+        async def _fake_get_action_output(_):
+            raise KeyError
+
+        self.Model_mock.get_action_output = _fake_get_action_output
+        self.Model.return_value = self.Model_mock
+        self.run_action.status = "failed"
+        self.run_action.message = "aMessage"
+        self.run_action.id = "aId"
+        self.run_action.enqueued = "aEnqueued"
+        self.run_action.started = "aStarted"
+        self.run_action.completed = "aCompleted"
+        self.run_action.name = "backup2"
+        self.run_action.parameters = None
+        self.run_action.receiver = "app/2"
+        with self.assertRaises(utils.ActionFailed) as e:
+            await utils.async_run_action(
+                self.run_action.receiver,
+                self.run_action.name,
+                action_params=self.run_action.parameters,
+                raise_on_failure=True,
+            )
+        self.assertEqual(
+            str(e.exception),
+            (
+                'Run of action "backup2" with parameters "None" on "app/2" failed with '
+                '"aMessage" (id=aId status=failed enqueued=aEnqueued started=aStarted '
+                "completed=aCompleted output=None)"
+            ),
+        )
+
+    async def test_async_run_action_with_action_not_fails(self):
+        self.patch_object(utils, "Model")
+
+        async def _fake_get_action_output(_):
+            raise KeyError
+
+        self.Model_mock.get_action_output = _fake_get_action_output
+        self.Model.return_value = self.Model_mock
+        self.run_action.status = "failed"
+        self.run_action.message = "aMessage"
+        self.run_action.id = "aId"
+        self.run_action.enqueued = "aEnqueued"
+        self.run_action.started = "aStarted"
+        self.run_action.completed = "aCompleted"
+        self.run_action.name = "backup2"
+        self.run_action.parameters = None
+        self.run_action.receiver = "app/2"
+        await utils.async_run_action(
+            self.run_action.receiver,
+            self.run_action.name,
+            action_params=self.run_action.parameters,
+            raise_on_failure=False,
+        )
 
     async def test_async_scp_from_unit(self):
-        with mock.patch("cou.utils.juju_utils.async_set_current_model_name") as get_model:
-            get_model.return_value = "mname"
-            self.patch_object(model, "Model")
-            self.patch_object(model, "async_get_unit_from_name")
-            self.async_get_unit_from_name.return_value = self.unit1
-            self.Model.return_value = self.Model_mock
-            await model.async_scp_from_unit("app/2", "/tmp/src", "/tmp/dest")
-            self.unit1.scp_from.assert_called_once_with(
-                "/tmp/src", "/tmp/dest", proxy=False, scp_opts="", user="ubuntu"
-            )
+        self.patch_object(utils, "Model")
+        self.patch_object(utils, "async_get_unit_from_name")
+        self.async_get_unit_from_name.return_value = self.unit1
+        self.Model.return_value = self.Model_mock
+        await utils.async_scp_from_unit("app/2", "/tmp/src", "/tmp/dest")
+        self.unit1.scp_from.assert_called_once_with(
+            "/tmp/src", "/tmp/dest", proxy=False, scp_opts="", user="ubuntu"
+        )
 
     async def test_async_upgrade_charm(self):
         async def _upgrade_charm(
@@ -554,30 +525,28 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         ):
             return
 
-        with mock.patch("cou.utils.juju_utils.async_set_current_model_name") as get_model:
-            get_model.return_value = "mname"
-            self.patch_object(model, "Model")
-            self.patch_object(model, "async_get_unit_from_name")
-            self.async_get_unit_from_name.return_value = self.unit1
-            self.Model.return_value = self.Model_mock
-            app_mock = mock.MagicMock()
-            app_mock.upgrade_charm.side_effect = _upgrade_charm
-            self.mymodel.applications["myapp"] = app_mock
-            await model.async_upgrade_charm("myapp", switch="cs:~me/new-charm-45")
-            app_mock.upgrade_charm.assert_called_once_with(
-                channel=None,
-                force_series=False,
-                force_units=False,
-                path=None,
-                resources=None,
-                revision=None,
-                switch="cs:~me/new-charm-45",
-            )
+        self.patch_object(utils, "Model")
+        self.patch_object(utils, "async_get_unit_from_name")
+        self.async_get_unit_from_name.return_value = self.unit1
+        self.Model.return_value = self.Model_mock
+        app_mock = mock.MagicMock()
+        app_mock.upgrade_charm.side_effect = _upgrade_charm
+        self.mymodel.applications["myapp"] = app_mock
+        await utils.async_upgrade_charm("myapp", switch="cs:~me/new-charm-45")
+        app_mock.upgrade_charm.assert_called_once_with(
+            channel=None,
+            force_series=False,
+            force_units=False,
+            path=None,
+            resources=None,
+            revision=None,
+            switch="cs:~me/new-charm-45",
+        )
 
     async def test_disconnect(self):
         mymodel = MagicMock()
         mymodel.disconnect.return_value = "ok"
-        await model._disconnect(mymodel)
+        await utils._disconnect(mymodel)
 
     async def test_async_set_application_config(self):
         test_model = AsyncMock()
@@ -586,9 +555,9 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         test_model.applications = {"app": test_app}
         config = {"openstack-origin": "cloud:focal-victoria"}
 
-        with mock.patch("cou.utils.juju_utils._async_get_model") as juju_model:
+        with mock.patch("cou.utils.juju_utils._get_model") as juju_model:
             juju_model.return_value = test_model
-            await model.async_set_application_config("app", config)
+            await utils.async_set_application_config("app", config)
             test_app.set_config.assert_called_once_with(config)
 
 
@@ -616,22 +585,22 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         self.model_juju_exception.connection.return_value = connection
 
     async def test_normal(self):
-        waiter = model.JujuWaiter(self.model_connected)
+        waiter = utils.JujuWaiter(self.model_connected)
         await waiter.wait(10)
 
     async def test_exception(self):
         self.model_juju_exception.wait_for_idle.side_effect = JujuUnitError()
-        waiter = model.JujuWaiter(self.model_juju_exception)
+        waiter = utils.JujuWaiter(self.model_juju_exception)
         with self.assertRaises(expected_exception=JujuUnitError):
             await waiter.wait(1)
 
-        self.model_juju_exception.wait_for_idle.side_effect = model.TimeoutException()
-        waiter = model.JujuWaiter(self.model_juju_exception)
-        with self.assertRaises(expected_exception=model.TimeoutException):
+        self.model_juju_exception.wait_for_idle.side_effect = utils.TimeoutException()
+        waiter = utils.JujuWaiter(self.model_juju_exception)
+        with self.assertRaises(expected_exception=utils.TimeoutException):
             await waiter.wait(1)
 
         self.model_juju_exception.wait_for_idle.side_effect = Exception()
-        waiter = model.JujuWaiter(self.model_juju_exception)
+        waiter = utils.JujuWaiter(self.model_juju_exception)
         with self.assertRaises(expected_exception=Exception):
             await waiter.wait(1)
 
@@ -645,12 +614,12 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         connection.is_open = [False, True, False, True, False, True, True]
         model_disconnected.connection.return_value = connection
 
-        waiter = model.JujuWaiter(model_disconnected)
+        waiter = utils.JujuWaiter(model_disconnected)
         await waiter._ensure_model_connected()
 
         waiter._check_time = MagicMock()
-        waiter._check_time.side_effect = model.TimeoutException()
-        with self.assertRaises(expected_exception=model.TimeoutException):
+        waiter._check_time.side_effect = utils.TimeoutException()
+        with self.assertRaises(expected_exception=utils.TimeoutException):
             await waiter._ensure_model_connected()
 
         waiter._check_time.side_effect = Exception()
