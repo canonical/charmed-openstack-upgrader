@@ -36,19 +36,19 @@ async def backup(model_name: Optional[str] = None) -> Path:
     unit_name = await get_database_app_unit_name(model_name)
 
     logger.info("mysqldump mysql-innodb-cluster DBs ...")
-    action = await utils.async_run_action(unit_name, "mysqldump", model_name=model_name)
+    action = await utils.run_action(unit_name, "mysqldump", model_name=model_name)
     remote_file = action.data["results"]["mysqldump-file"]
     basedir = action.data["parameters"]["basedir"]
 
     logger.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
-    await utils.async_run_on_unit(unit_name, f"chmod o+rx {basedir}", model_name=model_name)
+    await utils.run_on_unit(unit_name, f"chmod o+rx {basedir}", model_name=model_name)
 
     local_file = Path(os.getenv("COU_DATA", ""), os.path.basename(remote_file))
     logger.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
-    await utils.async_scp_from_unit(unit_name, remote_file, str(local_file), model_name=model_name)
+    await utils.scp_from_unit(unit_name, remote_file, str(local_file), model_name=model_name)
 
     logger.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
-    await utils.async_run_on_unit(unit_name, f"chmod o-rx {basedir}", model_name=model_name)
+    await utils.run_on_unit(unit_name, f"chmod o-rx {basedir}", model_name=model_name)
     return local_file
 
 
@@ -81,7 +81,7 @@ async def get_database_app_unit_name(model_name: Optional[str] = None) -> str:
     :returns: Name of the mysql-innodb-cluster application name
     :rtype: ApplicationStatus
     """
-    status = await utils.async_get_status(model_name)
+    status = await utils.get_status(model_name)
     for app_name, app_config in status.applications.items():
         charm_name = await utils.extract_charm_name(app_name)
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):

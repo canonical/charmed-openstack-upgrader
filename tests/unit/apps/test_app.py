@@ -252,7 +252,7 @@ async def test_application_check_upgrade(status, config, mocker):
     mock_status = mocker.MagicMock()
     mock_status.applications = {"my_keystone": status["keystone_victoria"]}
 
-    mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
+    mocker.patch.object(app_module, "get_status", return_value=mock_status)
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     await app._check_upgrade(target)
     mock_logger.error.assert_not_called()
@@ -269,7 +269,7 @@ async def test_application_check_upgrade_fail(status, config, mocker):
     mock_status = mocker.MagicMock()
     mock_status.applications = {"my_keystone": status["keystone_ussuri"]}
 
-    mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
+    mocker.patch.object(app_module, "get_status", return_value=mock_status)
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     with pytest.raises(ApplicationError, match=exp_error_msg):
         await app._check_upgrade(OpenStackRelease(target))

@@ -323,21 +323,21 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         disconnected = utils._is_model_disconnected(self.mymodel)
         assert not disconnected
 
-    async def test_async_get_current_model_from_juju(self):
+    async def test_get_current_model_from_juju(self):
         expected_model = "testmodel"
         mocked_model = mock.AsyncMock(spec=Model)
         mocked_model.name = expected_model
         with mock.patch("cou.utils.juju_utils.Model", return_value=mocked_model):
-            name = await utils._async_get_current_model_name_from_juju()
+            name = await utils._get_current_model_name_from_juju()
             assert name == expected_model
 
-    async def test_async_get_full_juju_status(self):
+    async def test_get_full_juju_status(self):
         with mock.patch("cou.utils.juju_utils._get_model") as get_model:
             mymodel = AsyncMock()
             get_model.return_value = mymodel
             mymodel.get_status = AsyncMock()
             mymodel.get_status.return_value = "test"
-            result = await utils.async_get_status()
+            result = await utils.get_status()
             get_model.assert_called()
             mymodel.get_status.assert_called()
             assert result == "test"
@@ -360,7 +360,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
         self.assertEqual(normalized_results, expected)
 
-    def test_async_run_on_unit(self):
+    def test_run_on_unit(self):
         expected = {
             "Code": "0",
             "Stderr": "",
@@ -370,37 +370,35 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         }
         self.cmd = cmd = "somecommand someargument"
         self.patch_object(utils, "Model")
-        self.patch_object(utils, "async_get_unit_from_name")
-        self.async_get_unit_from_name.return_value = self.unit1
+        self.patch_object(utils, "get_unit_from_name")
+        self.get_unit_from_name.return_value = self.unit1
         self.Model.return_value = self.Model_mock
-        result = asyncio.run(utils.async_run_on_unit("app/2", cmd))
+        result = asyncio.run(utils.run_on_unit("app/2", cmd))
         self.assertEqual(result, expected)
         self.unit1.run.assert_called_once_with(cmd, timeout=None)
 
-    async def test_async_get_unit_from_name(self):
+    async def test_get_unit_from_name(self):
         self.patch_object(utils, "Model")
         self.Model.return_value = self.Model_mock
         # Normal case
-        self.assertEqual(
-            await utils.async_get_unit_from_name("app/4", model_name="mname"), self.unit2
-        )
+        self.assertEqual(await utils.get_unit_from_name("app/4", model_name="mname"), self.unit2)
 
         # Normal case with Model()
-        self.assertEqual(await utils.async_get_unit_from_name("app/4", self.mymodel), self.unit2)
+        self.assertEqual(await utils.get_unit_from_name("app/4", self.mymodel), self.unit2)
 
         # Normal case, using default
-        self.assertEqual(await utils.async_get_unit_from_name("app/4"), self.unit2)
+        self.assertEqual(await utils.get_unit_from_name("app/4"), self.unit2)
 
         # Unit does not exist
         with self.assertRaises(utils.UnitNotFound):
-            await utils.async_get_unit_from_name("app/10", model_name="mname")
+            await utils.get_unit_from_name("app/10", model_name="mname")
 
         # Application does not exist
         self.patch_object(utils.logging, "error")
         with self.assertRaises(utils.UnitNotFound):
-            await utils.async_get_unit_from_name("bad_name", model_name="mname")
+            await utils.get_unit_from_name("bad_name", model_name="mname")
 
-    async def test_async_get_application_config(self):
+    async def test_get_application_config(self):
         test_model = AsyncMock()
         test_app = AsyncMock()
         test_app.get_config = AsyncMock()
@@ -409,10 +407,10 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
         with mock.patch("cou.utils.juju_utils._get_model") as juju_model:
             juju_model.return_value = test_model
-            config = await utils.async_get_application_config("app")
+            config = await utils.get_application_config("app")
             assert config == "config"
 
-    async def test_async_run_action_empty(self):
+    async def test_run_action_empty(self):
         self.patch_object(utils, "Model")
 
         async def _fake_get_action_output(_):
@@ -430,7 +428,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.run_action.parameters = None
         self.run_action.receiver = "app/2"
         with self.assertRaises(utils.ActionFailed) as e:
-            await utils.async_run_action(
+            await utils.run_action(
                 self.run_action.receiver,
                 self.run_action.name,
                 action_params=self.run_action.parameters,
@@ -445,7 +443,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
             ),
         )
 
-    async def test_async_run_action_with_action_fails(self):
+    async def test_run_action_with_action_fails(self):
         self.patch_object(utils, "Model")
 
         async def _fake_get_action_output(_):
@@ -463,7 +461,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.run_action.parameters = None
         self.run_action.receiver = "app/2"
         with self.assertRaises(utils.ActionFailed) as e:
-            await utils.async_run_action(
+            await utils.run_action(
                 self.run_action.receiver,
                 self.run_action.name,
                 action_params=self.run_action.parameters,
@@ -478,7 +476,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
             ),
         )
 
-    async def test_async_run_action_with_action_not_fails(self):
+    async def test_run_action_with_action_not_fails(self):
         self.patch_object(utils, "Model")
 
         async def _fake_get_action_output(_):
@@ -495,24 +493,24 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.run_action.name = "backup2"
         self.run_action.parameters = None
         self.run_action.receiver = "app/2"
-        await utils.async_run_action(
+        await utils.run_action(
             self.run_action.receiver,
             self.run_action.name,
             action_params=self.run_action.parameters,
             raise_on_failure=False,
         )
 
-    async def test_async_scp_from_unit(self):
+    async def test_scp_from_unit(self):
         self.patch_object(utils, "Model")
-        self.patch_object(utils, "async_get_unit_from_name")
-        self.async_get_unit_from_name.return_value = self.unit1
+        self.patch_object(utils, "get_unit_from_name")
+        self.get_unit_from_name.return_value = self.unit1
         self.Model.return_value = self.Model_mock
-        await utils.async_scp_from_unit("app/2", "/tmp/src", "/tmp/dest")
+        await utils.scp_from_unit("app/2", "/tmp/src", "/tmp/dest")
         self.unit1.scp_from.assert_called_once_with(
             "/tmp/src", "/tmp/dest", proxy=False, scp_opts="", user="ubuntu"
         )
 
-    async def test_async_upgrade_charm(self):
+    async def test_upgrade_charm(self):
         async def _upgrade_charm(
             channel=None,
             force_series=False,
@@ -526,13 +524,13 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
             return
 
         self.patch_object(utils, "Model")
-        self.patch_object(utils, "async_get_unit_from_name")
-        self.async_get_unit_from_name.return_value = self.unit1
+        self.patch_object(utils, "get_unit_from_name")
+        self.get_unit_from_name.return_value = self.unit1
         self.Model.return_value = self.Model_mock
         app_mock = mock.MagicMock()
         app_mock.upgrade_charm.side_effect = _upgrade_charm
         self.mymodel.applications["myapp"] = app_mock
-        await utils.async_upgrade_charm("myapp", switch="cs:~me/new-charm-45")
+        await utils.upgrade_charm("myapp", switch="cs:~me/new-charm-45")
         app_mock.upgrade_charm.assert_called_once_with(
             channel=None,
             force_series=False,
@@ -548,7 +546,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         mymodel.disconnect.return_value = "ok"
         await utils._disconnect(mymodel)
 
-    async def test_async_set_application_config(self):
+    async def test_set_application_config(self):
         test_model = AsyncMock()
         test_app = AsyncMock()
         test_app.set_config = AsyncMock()
@@ -557,7 +555,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
         with mock.patch("cou.utils.juju_utils._get_model") as juju_model:
             juju_model.return_value = test_model
-            await utils.async_set_application_config("app", config)
+            await utils.set_application_config("app", config)
             test_app.set_config.assert_called_once_with(config)
 
 

@@ -69,7 +69,7 @@ async def get_current_model_name() -> str:
     """
     model_name = os.environ.get("JUJU_MODEL") or os.environ.get("MODEL_NAME")
     if model_name is None:
-        model_name = await _async_get_current_model_name_from_juju()
+        model_name = await _get_current_model_name_from_juju()
 
     return model_name
 
@@ -125,7 +125,7 @@ def _is_model_disconnected(model: Model) -> bool:
     return not (model.is_connected() and model.connection().is_open)
 
 
-async def _async_get_current_model_name_from_juju() -> str:
+async def _get_current_model_name_from_juju() -> str:
     """Return the current active model name.
 
     Connect to the current active model and return its name.
@@ -143,7 +143,7 @@ async def _async_get_current_model_name_from_juju() -> str:
     return model_name
 
 
-async def async_get_status(model_name: Optional[str] = None) -> FullStatus:
+async def get_status(model_name: Optional[str] = None) -> FullStatus:
     """Return the full juju status output.
 
     :param model_name: Name of model to query.
@@ -209,7 +209,7 @@ async def _check_action_error(action_obj: Action, model: Model, raise_on_failure
         raise ActionFailed(action_obj, output=output)
 
 
-async def async_run_on_unit(
+async def run_on_unit(
     unit_name: str, command: str, model_name: Optional[str] = None, timeout: Optional[int] = None
 ) -> Dict[str, str]:
     """Juju run on unit.
@@ -226,13 +226,13 @@ async def async_run_on_unit(
     :rtype: Dict[str, str]
     """
     model = await _get_model(model_name)
-    unit = await async_get_unit_from_name(unit_name, model)
+    unit = await get_unit_from_name(unit_name, model)
     action = await unit.run(command, timeout=timeout)
     results = action.data.get("results")
     return _normalise_action_results(results)
 
 
-async def async_get_unit_from_name(
+async def get_unit_from_name(
     unit_name: str, model: Optional[Model] = None, model_name: Optional[str] = None
 ) -> Unit:
     """Return the units that corresponds to the name in the given model.
@@ -266,9 +266,7 @@ async def async_get_unit_from_name(
     return unit
 
 
-async def async_get_application_config(
-    application_name: str, model_name: Optional[str] = None
-) -> Dict:
+async def get_application_config(application_name: str, model_name: Optional[str] = None) -> Dict:
     """Return application configuration.
 
     :param model_name: Name of model to query.
@@ -282,7 +280,7 @@ async def async_get_application_config(
     return await model.applications[application_name].get_config()
 
 
-async def async_run_action(
+async def run_action(
     unit_name: str,
     action_name: str,
     model_name: Optional[str] = None,
@@ -309,14 +307,14 @@ async def async_run_action(
         action_params = {}
 
     model = await _get_model(model_name)
-    unit = await async_get_unit_from_name(unit_name, model)
+    unit = await get_unit_from_name(unit_name, model)
     action_obj = await unit.run_action(action_name, **action_params)
     await _check_action_error(action_obj, model, raise_on_failure)
     return action_obj
 
 
 # pylint: disable=too-many-arguments
-async def async_scp_from_unit(
+async def scp_from_unit(
     unit_name: str,
     source: str,
     destination: str,
@@ -343,12 +341,12 @@ async def async_scp_from_unit(
     :type scp_opts: str
     """
     model = await _get_model(model_name)
-    unit = await async_get_unit_from_name(unit_name, model)
+    unit = await get_unit_from_name(unit_name, model)
     await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
 
 
 # pylint: disable=too-many-arguments
-async def async_upgrade_charm(
+async def upgrade_charm(
     application_name: str,
     channel: Optional[str] = None,
     force_series: bool = False,
@@ -396,7 +394,7 @@ async def async_upgrade_charm(
     )
 
 
-async def async_set_application_config(
+async def set_application_config(
     application_name: str, configuration: Dict[str, str], model_name: Optional[str] = None
 ) -> None:
     """Set application configuration.

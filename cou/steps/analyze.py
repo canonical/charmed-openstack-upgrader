@@ -22,11 +22,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
-from cou.utils.juju_utils import (
-    async_get_application_config,
-    async_get_status,
-    extract_charm_name,
-)
+from cou.utils.juju_utils import extract_charm_name, get_application_config, get_status
 from cou.utils.openstack import UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -64,13 +60,13 @@ class Analysis:
         :return: Application objects with their respective information.
         :rtype: List[OpenStackApplication]
         """
-        juju_status = await async_get_status()
+        juju_status = await get_status()
         model_name = juju_status.model.name
         apps = {
             AppFactory.create(
                 name=app,
                 status=app_status,
-                config=await async_get_application_config(app),
+                config=await get_application_config(app),
                 model_name=model_name,
                 charm=await extract_charm_name(app),
             )

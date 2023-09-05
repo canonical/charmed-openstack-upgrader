@@ -32,11 +32,7 @@ from cou.exceptions import (
 )
 from cou.steps import UpgradeStep
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import (
-    async_get_status,
-    async_set_application_config,
-    async_upgrade_charm,
-)
+from cou.utils.juju_utils import get_status, set_application_config, upgrade_charm
 from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -314,7 +310,7 @@ class OpenStackApplication:
         :type target: OpenStackRelease
         :raises ApplicationError: When the workload version of the charm doesn't upgrade.
         """
-        status = await async_get_status()
+        status = await get_status()
         app_status = status.applications.get(self.name)
         units_not_upgraded = []
         for unit in app_status.units.keys():
@@ -474,7 +470,7 @@ class OpenStackApplication:
         return UpgradeStep(
             description=description,
             parallel=parallel,
-            function=async_upgrade_charm,
+            function=upgrade_charm,
             application_name=self.name,
             channel=self.expected_current_channel,
             model_name=self.model_name,
@@ -499,7 +495,7 @@ class OpenStackApplication:
                     f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
                 ),
                 parallel=parallel,
-                function=async_upgrade_charm,
+                function=upgrade_charm,
                 application_name=self.name,
                 channel=self.target_channel(target),
                 model_name=self.model_name,
@@ -522,7 +518,7 @@ class OpenStackApplication:
                     f"Change charm config of '{self.name}' " "'action-managed-upgrade' to False."
                 ),
                 parallel=parallel,
-                function=async_set_application_config,
+                function=set_application_config,
                 application_name=self.name,
                 configuration={"action-managed-upgrade": False},
             )
@@ -547,7 +543,7 @@ class OpenStackApplication:
                     f"'{self.origin_setting}' to '{self.new_origin(target)}'"
                 ),
                 parallel=parallel,
-                function=async_set_application_config,
+                function=set_application_config,
                 application_name=self.name,
                 configuration={self.origin_setting: self.new_origin(target)},
             )
