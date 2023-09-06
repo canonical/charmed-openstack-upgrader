@@ -20,7 +20,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any, Optional
+from typing import Any, Iterable, Optional
 
 from juju.client._definitions import ApplicationStatus
 from ruamel.yaml import YAML
@@ -59,6 +59,7 @@ class AppFactory:
         config: dict,
         model_name: str,
         charm: str,
+        apps: Iterable[OpenStackApplication],
     ) -> Optional[OpenStackApplication]:
         """Create the OpenStackApplication or registered subclasses.
 
@@ -74,6 +75,8 @@ class AppFactory:
         :type model_name: str
         :param charm: Name of the charm
         :type charm: str
+        :param apps: Previously registered OpenStack applications
+        :type apps: Iterable[OpenStackApplication]
         :return: The OpenStackApplication class or None if not supported.
         :rtype: Optional[OpenStackApplication]
         """
@@ -81,7 +84,12 @@ class AppFactory:
         if is_charm_supported(charm):
             app_class = cls.apps_type.get(charm, OpenStackApplication)
             return app_class(
-                name=name, status=status, config=config, model_name=model_name, charm=charm
+                name=name,
+                status=status,
+                config=config,
+                model_name=model_name,
+                charm=charm,
+                apps=apps,
             )
         logger.debug(
             "'%s' is not a supported OpenStack related application and will be ignored.",
@@ -161,6 +169,7 @@ class OpenStackApplication:
     charm_origin: str = ""
     os_origin: str = ""
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
+    apps: Iterable[OpenStackApplication] = field(default_factory=lambda: [])
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -341,14 +350,12 @@ class OpenStackApplication:
             self._get_refresh_charm_plan(target),
         ]
 
-    def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
-        """Upgrade planning.
+    def _check_target(self, target: OpenStackRelease) -> None:
+        """Check if target is greater than current.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
-        :return: Plan that will add upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
         """
         if self.current_os_release >= target:
             logger.info(
@@ -364,6 +371,17 @@ class OpenStackApplication:
                 f"Application '{self.name}' already running {self.current_os_release} which is "
                 f"equal or greater than {target}. Ignoring."
             )
+
+    def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :return: Plan that will add upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        self._check_target(target)
 
         return [
             self._get_disable_action_managed_plan(),

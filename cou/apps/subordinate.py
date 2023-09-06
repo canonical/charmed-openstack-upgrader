@@ -15,7 +15,6 @@
 import logging
 
 from cou.apps.app import AppFactory, OpenStackApplication
-from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
@@ -45,6 +44,8 @@ class OpenStackSubordinateApplication(OpenStackApplication):
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: UpgradeStep
         """
+        self._check_target(OpenStackRelease(target))
+
         plan = UpgradeStep(
             description=f"Upgrade plan for '{self.name}' to {target}",
             parallel=False,
@@ -81,7 +82,8 @@ class OpenStackSubordinateApplication(OpenStackApplication):
         try:
             OpenStackRelease(charm_channel.split("/")[0])
             self._channel = charm_channel
-        except ValueError as exc:
-            raise ApplicationError(
-                f"Cannot determine the OpenStack version from channel: {charm_channel}"
-            ) from exc
+        except ValueError:
+            logging.debug("Cannot determine the OpenStack version from channel: %s", charm_channel)
+            principal_name = self.status.subordinate_to[0]
+            principal_app = next(app for app in self.apps if app.name == principal_name)
+            self._channel = principal_app.expected_current_channel

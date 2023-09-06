@@ -66,18 +66,36 @@ class Analysis:
         """
         juju_status = await async_get_status()
         model_name = juju_status.model.name
-        apps = {
+        principals = {
             AppFactory.create(
                 name=app,
                 status=app_status,
                 config=await async_get_application_config(app),
                 model_name=model_name,
                 charm=await extract_charm_name(app),
+                apps=[],
             )
             for app, app_status in juju_status.applications.items()
+            if not app_status.subordinate_to
         }
-        # remove non-supported charms that return None on AppFactory.create
-        apps.discard(None)
+        principals.discard(None)
+
+        subordinates = {
+            AppFactory.create(
+                name=app,
+                status=app_status,
+                config=await async_get_application_config(app),
+                model_name=model_name,
+                charm=await extract_charm_name(app),
+                apps=principals,  # type: ignore
+            )
+            for app, app_status in juju_status.applications.items()
+            if app_status.subordinate_to
+        }
+        subordinates.discard(None)
+
+        apps = set.union(principals, subordinates)
+
         # mypy complains that apps can have None, but we already removed.
         apps_to_upgrade_in_order = {
             app for app in apps if app.charm in UPGRADE_ORDER  # type: ignore
