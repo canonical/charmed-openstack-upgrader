@@ -237,7 +237,7 @@ def test_determine_next_openstack_release(os_release, release_year, next_os_rele
         ("victoria", "ussuri"),
         ("wallaby", "victoria"),
         ("xena", "wallaby"),
-        ("diablo", None),  # None when there is no next release
+        ("diablo", None),  # None when there is no previous release
     ],
 )
 def test_determine_previous_openstack_release(os_release, previous_os_release):

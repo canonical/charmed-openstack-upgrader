@@ -48,18 +48,18 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
             return OPENSTACK_TO_TRACK_MAPPING[self.series][self.charm][os_release.codename]
         except KeyError as exc:
             raise ApplicationError(
-                f"Not possible to find the track for '{self.charm}' on {os_release.codename}"
+                f"Cannot find a track of '{self.charm}' for {os_release.codename}"
             ) from exc
 
     def os_origin_config(self, target: OpenStackRelease) -> Optional[OpenStackRelease]:
-        """Identify the OpenStack release set on openstack-origin or source config.
+        """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: OpenStackRelease object or None if the app doesn't have os_origin config.
         :rtype: Optional[OpenStackRelease]
         """
-        # that means that the charm doesn't have source or openstack-origin config.
+        # that means that the charm doesn't have "source" or "openstack-origin" config.
         if self.origin_setting is None:
             return None
 
@@ -149,7 +149,7 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         we check also the OpenStack origin from the "source" or "openstack-origin" to know
         if it's necessary to change it. E.g: rabbitmq-server with workload version 3.8 is
         compatible from ussuri to yoga. Even that is considered as yoga, we need to set the
-        source accordingly with the OpenStack components that might be in a lower version than
+        source accordingly with the OpenStack components that might be in a version lower than
         yoga.
 
         :param target: OpenStack release as target to upgrade.
@@ -162,7 +162,7 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         if self.current_os_release >= target and os_origin_config >= target:
             msg = (
                 f"Application: '{self.name}' already configured for release equal or greater "
-                f"version than {target}. Ignoring."
+                f"than {target}. Ignoring."
             )
             logger.info(msg)
             raise HaltUpgradePlanGeneration(msg)

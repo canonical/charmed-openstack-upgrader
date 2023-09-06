@@ -36,6 +36,17 @@ def test_auxiliary_app(status, config):
     assert app.units == expected_units
     assert app.os_origin_config(OpenStackRelease(target)) == "ussuri"
 
+
+def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config):
+    target = "victoria"
+    app = AuxiliaryOpenStackApplication(
+        "rabbitmq-server",
+        status["rabbitmq_server"],
+        config["auxiliary_ussuri"],
+        "my_model",
+        "rabbitmq-server",
+    )
+
     plan = app.generate_upgrade_plan(target)
 
     steps_description = [
@@ -48,7 +59,7 @@ def test_auxiliary_app(status, config):
     assert_plan_description(plan, steps_description)
 
 
-def test_auxiliary_app_ch_migration(status, config):
+def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
@@ -71,7 +82,8 @@ def test_auxiliary_app_ch_migration(status, config):
     assert_plan_description(plan, steps_description)
 
 
-def test_auxiliary_app_channel_different_expected(status, config):
+def test_auxiliary_upgrade_plan_channel_different_expected(status, config, mocker):
+    mock_logger = mocker.patch("cou.apps.auxiliary.logger")
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm_channel = "3.6/stable"
@@ -92,6 +104,12 @@ def test_auxiliary_app_channel_different_expected(status, config):
     ]
 
     assert_plan_description(plan, steps_description)
+    mock_logger.warning.assert_called_once_with(
+        "'%s' has the channel set to: %s which is different from the expected channel: %s",
+        app.name,
+        app.channel,
+        app.expected_current_channel,
+    )
 
 
 def test_auxiliary_charm_no_origin_config(status):
@@ -105,6 +123,11 @@ def test_auxiliary_charm_no_origin_config(status):
     )
     assert app.os_origin_config(OpenStackRelease(target)) is None
 
+
+@pytest.mark.parametrize(
+    "target, expected_os_origin_config", [("victoria", "ussuri"), ("wallaby", "victoria")]
+)
+def test_auxiliary_charm_empty_origin_config(status, target, expected_os_origin_config):
     app = AuxiliaryOpenStackApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
@@ -112,7 +135,7 @@ def test_auxiliary_charm_no_origin_config(status):
         "my_model",
         "rabbitmq-server",
     )
-    assert app.os_origin_config(OpenStackRelease(target)) == "ussuri"
+    assert app.os_origin_config(OpenStackRelease(target)) == expected_os_origin_config
 
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mocker):
