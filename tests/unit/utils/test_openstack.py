@@ -16,6 +16,13 @@ import pytest
 from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, VersionRange
 
 
+@pytest.mark.parametrize("lower, upper", [("2.0", "2.0"), ("2.0", "1.0")])
+def test_version_range_raises_ValueError(lower, upper):
+    exp_error_msg = "The upper bound version is not higher than the lower bound version."
+    with pytest.raises(ValueError, match=exp_error_msg):
+        VersionRange(lower, upper)
+
+
 @pytest.mark.parametrize(
     "charm, workload_versions, results",
     [
