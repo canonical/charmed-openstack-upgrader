@@ -33,13 +33,13 @@ def test_application_eq(status, config):
     status_keystone_2 = status["keystone_wallaby"]
     config_keystone_2 = config["openstack_wallaby"]
     keystone_1 = OpenStackApplication(
-        "keystone", status_keystone_1, config_keystone_1, "my_model", "keystone"
+        "keystone", status_keystone_1, config_keystone_1, "my_model", "keystone", "keystone"
     )
     keystone_2 = OpenStackApplication(
-        "keystone", status_keystone_2, config_keystone_2, "my_model", "keystone"
+        "keystone", status_keystone_2, config_keystone_2, "my_model", "keystone", "keystone"
     )
     keystone_3 = OpenStackApplication(
-        "keystone_foo", status_keystone_1, config_keystone_1, "my_model", "keystone"
+        "keystone_foo", status_keystone_1, config_keystone_1, "my_model", "keystone", "keystone"
     )
 
     # keystone_1 is equal to keystone_2 because they have the same name
@@ -65,6 +65,7 @@ def assert_application(
     exp_current_channel,
     exp_target_channel,
     exp_new_origin,
+    exp_family,
     target,
 ):
     target_version = OpenStackRelease(target)
@@ -82,6 +83,7 @@ def assert_application(
     assert app.expected_current_channel == exp_current_channel
     assert app.target_channel(target_version) == exp_target_channel
     assert app.new_origin(target_version) == exp_new_origin
+    assert app.family == exp_family
 
 
 def test_application_ussuri(status, config, units):
@@ -97,8 +99,11 @@ def test_application_ussuri(status, config, units):
     exp_current_channel = "ussuri/stable"
     exp_target_channel = f"{target}/stable"
     exp_new_origin = f"cloud:{exp_series}-{target}"
+    exp_family = "keystone"
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     assert_application(
         app,
         "my_keystone",
@@ -115,6 +120,7 @@ def test_application_ussuri(status, config, units):
         exp_current_channel,
         exp_target_channel,
         exp_new_origin,
+        exp_family,
         target,
     )
 
@@ -129,7 +135,9 @@ def test_application_different_wl(status, config):
     app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
         app.current_os_release
 
@@ -148,8 +156,11 @@ def test_application_cs(status, config, units):
     exp_current_channel = "ussuri/stable"
     exp_target_channel = f"{target}/stable"
     exp_new_origin = f"cloud:{exp_series}-{target}"
+    exp_family = "keystone"
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     assert_application(
         app,
         "my_keystone",
@@ -166,6 +177,7 @@ def test_application_cs(status, config, units):
         exp_current_channel,
         exp_target_channel,
         exp_new_origin,
+        exp_family,
         target,
     )
 
@@ -183,8 +195,11 @@ def test_application_wallaby(status, config, units):
     exp_current_channel = "wallaby/stable"
     exp_target_channel = f"{target}/stable"
     exp_new_origin = f"cloud:{exp_series}-{target}"
+    exp_family = "keystone"
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     assert_application(
         app,
         "my_keystone",
@@ -201,16 +216,9 @@ def test_application_wallaby(status, config, units):
         exp_current_channel,
         exp_target_channel,
         exp_new_origin,
+        exp_family,
         target,
     )
-
-
-def test_application_no_openstack_origin(status):
-    """Test when application doesn't have openstack-origin or source config."""
-    app_status = status["vault"]
-    app_config = {}
-    app = OpenStackApplication("vault", app_status, app_config, "my_model", "vault")
-    assert app._get_os_origin() == ""
 
 
 @pytest.mark.asyncio
@@ -225,7 +233,9 @@ async def test_application_check_upgrade(status, config, mocker):
     mock_status.applications = {"my_keystone": status["keystone_victoria"]}
 
     mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     await app._check_upgrade(target)
     mock_logger.error.assert_not_called()
 
@@ -242,7 +252,9 @@ async def test_application_check_upgrade_fail(status, config, mocker):
     mock_status.applications = {"my_keystone": status["keystone_ussuri"]}
 
     mocker.patch.object(app_module, "async_get_status", return_value=mock_status)
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     with pytest.raises(ApplicationError, match=exp_error_msg):
         await app._check_upgrade(OpenStackRelease(target))
 
@@ -251,7 +263,9 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -269,7 +283,9 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     target = "victoria"
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -291,7 +307,9 @@ def test_upgrade_plan_change_current_channel(mocker, status, config):
     # channel it's neither the expected as current channel as ussuri/stable or
     # target_channel victoria/stable
     app_status.charm_channel = "foo/stable"
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     upgrade_plan = app.generate_upgrade_plan(target)
 
     steps_description = [
@@ -317,7 +335,9 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
     app_config = config["openstack_ussuri"]
     # channel it's already on next OpenStack release
     app_status.charm_channel = "victoria/stable"
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     upgrade_plan = app.generate_upgrade_plan(target)
 
     # no sub-step for refresh current channel or next channel
@@ -343,7 +363,9 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     app_config = config["openstack_ussuri"]
     # openstack-origin already configured for next OpenStack release
     app_config["openstack-origin"]["value"] = "cloud:focal-victoria"
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -373,7 +395,9 @@ def test_upgrade_plan_application_already_upgraded(status, config, mocker):
     mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication(
+        "my_keystone", app_status, app_config, "my_model", "keystone", "keystone"
+    )
     # victoria is lesser than wallaby, so application should not generate a plan.
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app.generate_upgrade_plan(target)
@@ -395,6 +419,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
         app_status,
         app_config,
         "my_model",
+        "keystone",
         "keystone",
     )
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -425,12 +450,14 @@ def test_app_factory_not_supported_openstack_charm(mocker):
     )
 
 
-def test_app_factory_register(status):
-    @app_module.AppFactory.register_application(["vault"])
-    class Vault:
-        def __init__(self, name, status, config, model_name, charm):
+def test_app_factory_register(status, mocker):
+    mocker.patch("cou.apps.app.is_charm_supported", return_value=True)
+
+    @app_module.AppFactory.register_application(["foo"])
+    class Foo:
+        def __init__(self, name, status, config, model_name, charm, family):
             pass
 
-    assert "vault" in app_module.AppFactory.apps_type
-    vault = app_module.AppFactory.create("my-vault", status["vault"], {}, "my_model", "vault")
-    assert isinstance(vault, Vault)
+    assert "foo" in app_module.AppFactory.apps_details
+    foo = app_module.AppFactory.create("my-foo", mocker.MagicMock(), {}, "my_model", "foo")
+    assert isinstance(foo, Foo)

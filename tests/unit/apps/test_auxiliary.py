@@ -14,7 +14,7 @@
 """Auxiliary application class."""
 import pytest
 
-from cou.apps.auxiliary import AuxiliaryOpenStackApplication
+from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import assert_plan_description
@@ -24,11 +24,12 @@ def test_auxiliary_app(status, config):
     # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
     target = "victoria"
     expected_units = {"rabbitmq-server/0": {"os_version": "yoga", "workload_version": "3.8"}}
-    app = AuxiliaryOpenStackApplication(
+    app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
         "my_model",
+        "rabbitmq-server",
         "rabbitmq-server",
     )
     assert app.channel == "3.8/stable"
@@ -39,11 +40,12 @@ def test_auxiliary_app(status, config):
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config):
     target = "victoria"
-    app = AuxiliaryOpenStackApplication(
+    app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
         "my_model",
+        "rabbitmq-server",
         "rabbitmq-server",
     )
 
@@ -63,11 +65,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
-    app = AuxiliaryOpenStackApplication(
+    app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
         "my_model",
+        "rabbitmq-server",
         "rabbitmq-server",
     )
     plan = app.generate_upgrade_plan(target)
@@ -87,11 +90,12 @@ def test_auxiliary_upgrade_plan_channel_different_expected(status, config, mocke
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm_channel = "3.6/stable"
-    app = AuxiliaryOpenStackApplication(
+    app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
         "my_model",
+        "rabbitmq-server",
         "rabbitmq-server",
     )
     plan = app.generate_upgrade_plan(target)
@@ -114,13 +118,15 @@ def test_auxiliary_upgrade_plan_channel_different_expected(status, config, mocke
 
 def test_auxiliary_charm_no_origin_config(status):
     target = "victoria"
-    app = AuxiliaryOpenStackApplication(
-        "rabbitmq-server",
-        status["rabbitmq_server"],
+    app = OpenStackAuxiliaryApplication(
+        "vault",
+        status["vault"],
         {},
         "my_model",
-        "rabbitmq-server",
+        "vault",
+        "vault",
     )
+    assert app._get_os_origin() == ""
     assert app.os_origin_config(OpenStackRelease(target)) is None
 
 
@@ -128,11 +134,12 @@ def test_auxiliary_charm_no_origin_config(status):
     "target, expected_os_origin_config", [("victoria", "ussuri"), ("wallaby", "victoria")]
 )
 def test_auxiliary_charm_empty_origin_config(status, target, expected_os_origin_config):
-    app = AuxiliaryOpenStackApplication(
+    app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
         {"source": {"value": ""}},
         "my_model",
+        "rabbitmq-server",
         "rabbitmq-server",
     )
     assert app.os_origin_config(OpenStackRelease(target)) == expected_os_origin_config
@@ -140,11 +147,12 @@ def test_auxiliary_charm_empty_origin_config(status, target, expected_os_origin_
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mocker):
     with pytest.raises(ApplicationError):
-        AuxiliaryOpenStackApplication(
+        OpenStackAuxiliaryApplication(
             "rabbitmq-server",
             status["unknown_rabbitmq_server"],
             config["auxiliary_ussuri"],
             "my_model",
+            "rabbitmq-server",
             "rabbitmq-server",
         )
 
@@ -152,11 +160,12 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mo
 def test_auxiliary_raise_keyerror(status, config):
     app_status = status["rabbitmq_server"]
     app_status.series = "foo"
-    app = AuxiliaryOpenStackApplication(
+    app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         app_status,
         config["auxiliary_ussuri"],
         "my_model",
+        "rabbitmq-server",
         "rabbitmq-server",
     )
     with pytest.raises(ApplicationError):
@@ -166,11 +175,12 @@ def test_auxiliary_raise_keyerror(status, config):
 def test_auxiliary_raise_halt_upgrade(status, config):
     target = "victoria"
     # source is already configured to wallaby, so the plan halt with target victoria
-    app = AuxiliaryOpenStackApplication(
+    app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_wallaby"],
         "my_model",
+        "rabbitmq-server",
         "rabbitmq-server",
     )
     with pytest.raises(HaltUpgradePlanGeneration):

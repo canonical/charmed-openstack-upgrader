@@ -18,7 +18,7 @@ import mock
 import pytest
 
 from cou.apps.app import OpenStackApplication
-from cou.apps.auxiliary import AuxiliaryOpenStackApplication
+from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
 
 
@@ -213,22 +213,42 @@ def apps(status, config):
     keystone_ldap_status = status["keystone-ldap"]
 
     keystone_ussuri = OpenStackApplication(
-        "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model", "keystone"
+        "keystone",
+        keystone_ussuri_status,
+        config["openstack_ussuri"],
+        "my_model",
+        "keystone",
+        "keystone",
     )
     keystone_wallaby = OpenStackApplication(
-        "keystone", keystone_wallaby_status, config["openstack_wallaby"], "my_model", "keystone"
+        "keystone",
+        keystone_wallaby_status,
+        config["openstack_wallaby"],
+        "my_model",
+        "keystone",
+        "keystone",
     )
     cinder_ussuri = OpenStackApplication(
-        "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model", "cinder"
+        "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model", "cinder", "cinder"
     )
-    rmq_ussuri = AuxiliaryOpenStackApplication(
-        "rabbitmq-server", rmq_status, config["auxiliary_ussuri"], "my_model", "rabbitmq-server"
+    rmq_ussuri = OpenStackAuxiliaryApplication(
+        "rabbitmq-server",
+        rmq_status,
+        config["auxiliary_ussuri"],
+        "my_model",
+        "rabbitmq-server",
+        "rabbitmq-server",
     )
-    rmq_wallaby = AuxiliaryOpenStackApplication(
-        "rabbitmq-server", rmq_status, config["auxiliary_wallaby"], "my_model", "rabbitmq-server"
+    rmq_wallaby = OpenStackAuxiliaryApplication(
+        "rabbitmq-server",
+        rmq_status,
+        config["auxiliary_wallaby"],
+        "my_model",
+        "rabbitmq-server",
+        "rabbitmq-server",
     )
     keystone_ldap = OpenStackSubordinateApplication(
-        "keystone-ldap", keystone_ldap_status, {}, "my_model", "keystone-ldap"
+        "keystone-ldap", keystone_ldap_status, {}, "my_model", "keystone-ldap", "keystone-ldap"
     )
 
     return {

@@ -38,6 +38,7 @@ from cou.utils.juju_utils import (
     async_upgrade_charm,
 )
 from cou.utils.openstack import (
+    CHARM_FAMILIES,
     OpenStackCodenameLookup,
     OpenStackRelease,
     is_charm_supported,
@@ -49,7 +50,7 @@ logger = logging.getLogger(__name__)
 class AppFactory:
     """Factory class for Application objects."""
 
-    apps_type: dict[str, type[OpenStackApplication]] = {}
+    apps_details: dict[str, dict[str, Any]] = {}
 
     @classmethod
     def create(
@@ -79,9 +80,17 @@ class AppFactory:
         """
         # pylint: disable=too-many-arguments
         if is_charm_supported(charm):
-            app_class = cls.apps_type.get(charm, OpenStackApplication)
+            app_detail = cls.apps_details.get(
+                charm, {"type": OpenStackApplication, "family": charm}
+            )
+            app_class = app_detail["type"]
             return app_class(
-                name=name, status=status, config=config, model_name=model_name, charm=charm
+                name=name,
+                status=status,
+                config=config,
+                model_name=model_name,
+                charm=charm,
+                family=app_detail["family"],
             )
         logger.debug(
             "'%s' is not a supported OpenStack related application and will be ignored.",
@@ -91,31 +100,31 @@ class AppFactory:
 
     @classmethod
     def register_application(
-        cls, app_types: list[str]
+        cls, families: list[str]
     ) -> Callable[[type[OpenStackApplication]], type[OpenStackApplication]]:
         """Register Application subclasses.
 
         Use this method as decorator to register Applications that
         cannot be described appropriately by the OpenStackApplication class.
 
-        Example:
-        ceph_types = ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"]
-
-        @AppFactory.register_application(ceph_types)
-        class Ceph(OpenStackApplication):
+        @AppFactory.register_application(["ceph", "rabbitmq-server"])
+        class MyClass(OpenStackApplication):
             pass
-        This is registering the charms "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"
-        to the Ceph class.
+        This is registering the ceph family charms (ceph-mon, ceph-fs, ceph-radosgw, ceph-osd)
+        and rabbitmq-server to the MyClass. In case that the family it's not in CHARM_FAMILIES,
+        the name passed as family will be considered as the charm name.
 
-        :param app_types: List of charm names the Application sub class should handle.
-        :type app_types: list[str]
-        :return: The decorated class. E.g: the Ceph class in the example above.
+        :param families: List of charm families.
+        :type families: list[str]
+        :return: The decorated class. E.g: the MyClass class in the example above.
         :rtype: Callable[[type[OpenStackApplication]], type[OpenStackApplication]]
         """
 
         def decorator(application: type[OpenStackApplication]) -> type[OpenStackApplication]:
-            for app_type in app_types:
-                cls.apps_type[app_type] = application
+            for family in families:
+                charms = CHARM_FAMILIES.get(family, [family])
+                for charm in charms:
+                    cls.apps_details[charm] = {"type": application, "family": family}
             return application
 
         return decorator
@@ -135,6 +144,8 @@ class OpenStackApplication:
     :type model_name: str
     :param charm: Name of the charm.
     :type charm: str
+    :param family: charm family.
+    :type family: str
     :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
     :type charm_origin: str, defaults to ""
     :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
@@ -161,6 +172,7 @@ class OpenStackApplication:
     config: dict
     model_name: str
     charm: str
+    family: str
     charm_origin: str = ""
     os_origin: str = ""
     origin_setting: Optional[str] = None

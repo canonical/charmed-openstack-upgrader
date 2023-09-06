@@ -19,20 +19,13 @@ from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import UpgradeStep
 from cou.utils.juju_utils import async_upgrade_charm
-from cou.utils.openstack import (
-    CHARM_TYPES,
-    LTS_SERIES,
-    OPENSTACK_TO_TRACK_MAPPING,
-    OpenStackRelease,
-)
+from cou.utils.openstack import LTS_SERIES, OPENSTACK_TO_TRACK_MAPPING, OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(
-    ["rabbitmq-server", "vault"] + CHARM_TYPES["mysql"] + CHARM_TYPES["ovn"]
-)
-class AuxiliaryOpenStackApplication(OpenStackApplication):
+@AppFactory.register_application(["rabbitmq-server", "vault", "mysql", "ovn"])
+class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
     def openstack_to_track(self, os_release: OpenStackRelease) -> str:
@@ -45,7 +38,7 @@ class AuxiliaryOpenStackApplication(OpenStackApplication):
         :rtype: str
         """
         try:
-            return OPENSTACK_TO_TRACK_MAPPING[self.series][self.charm][os_release.codename]
+            return OPENSTACK_TO_TRACK_MAPPING[self.series][self.family][os_release.codename]
         except KeyError as exc:
             raise ApplicationError(
                 f"Cannot find a track of '{self.charm}' for {os_release.codename}"
