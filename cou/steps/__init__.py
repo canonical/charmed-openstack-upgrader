@@ -70,7 +70,6 @@ class UpgradeStep:
             if self.params:
                 return await self.function(**self.params)
             return await self.function()
-        return None
 
     def __str__(self) -> str:
         """Dump the plan for upgrade.

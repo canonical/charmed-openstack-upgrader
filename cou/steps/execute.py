@@ -13,6 +13,7 @@
 #  limitations under the License.
 """Execution logic."""
 
+import asyncio
 import logging
 import sys
 
@@ -62,9 +63,16 @@ async def _run_step(step: UpgradeStep, interactive: bool) -> None:
     """
     logger.debug("running step %s", step)
     await step.run()
-    for sub_step in step.sub_steps:
-        logger.debug("running sub-step %s of %s step", sub_step, step)
-        await apply_plan(sub_step, interactive)
+
+    if step.parallel:
+        logger.debug("running all sub-steps of %s step in parallel", step)
+        grouped_coroutines = (apply_plan(sub_step, interactive) for sub_step in step.sub_steps)
+        await asyncio.gather(*grouped_coroutines)
+    else:
+        logger.debug("running sequentially all sub-steps of %s step", step)
+        for sub_step in step.sub_steps:
+            logger.debug("running sub-step %s of %s step", sub_step, step)
+            await apply_plan(sub_step, interactive)
 
 
 async def apply_plan(plan: UpgradeStep, interactive: bool) -> None:
