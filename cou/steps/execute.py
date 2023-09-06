@@ -52,7 +52,22 @@ def prompt(parameter: str) -> str:
     )
 
 
-async def _apply_plan(plan: UpgradeStep, interactive: bool) -> None:
+async def _run_step(step: UpgradeStep, interactive: bool) -> None:
+    """Run step and all sub-steps.
+
+    :param plan: Plan to be executed on steps.
+    :type plan: UpgradeStep
+    :param interactive:
+    :type interactive: bool
+    """
+    logger.debug("running step %s", step)
+    await step.run()
+    for sub_step in step.sub_steps:
+        logger.debug("running sub-step %s of %s step", sub_step, step)
+        await apply_plan(sub_step, interactive)
+
+
+async def apply_plan(plan: UpgradeStep, interactive: bool) -> None:
     """Apply the plan for upgrade.
 
     :param plan: Plan to be executed on steps.
@@ -66,9 +81,7 @@ async def _apply_plan(plan: UpgradeStep, interactive: bool) -> None:
         match result:
             case "c":
                 logger.info("Running: %s", plan.description)
-                await plan.run()
-                for sub_step in plan.sub_steps:
-                    await _apply_plan(sub_step, interactive)
+                await _run_step(plan, interactive)
             case "a":
                 logger.info("Aborting plan")
                 sys.exit(1)
@@ -76,14 +89,3 @@ async def _apply_plan(plan: UpgradeStep, interactive: bool) -> None:
                 logger.info("Skipped")
             case _:
                 logger.info("No valid input provided!")
-
-
-async def execute(plan: UpgradeStep, interactive: bool) -> None:
-    """Execute the plan for upgrade.
-
-    :param plan: Plan to be executed on steps.
-    :type plan: UpgradeStep
-    :param interactive:
-    :type interactive: bool
-    """
-    await _apply_plan(plan, interactive)

@@ -24,7 +24,7 @@ from typing import Any
 
 from cou.exceptions import COUException
 from cou.steps.analyze import Analysis
-from cou.steps.execute import execute
+from cou.steps.execute import apply_plan
 from cou.steps.plan import generate_plan
 from cou.utils import juju_utils as utils
 
@@ -140,7 +140,7 @@ async def entrypoint() -> None:
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
         if args.run:
-            await execute(upgrade_plan, args.interactive)
+            await apply_plan(upgrade_plan, args.interactive)
         else:
             print(upgrade_plan)
 

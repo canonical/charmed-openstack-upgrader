@@ -12,99 +12,80 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
-from cou.steps.execute import execute, prompt
+from cou.steps import UpgradeStep
+from cou.steps.execute import apply_plan, prompt
 
 
 @pytest.mark.asyncio
-async def test_apply_plan_abort():
-    upgrade_plan = AsyncMock()
+@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute._run_step")
+async def test_apply_plan_abort(mock_run_step, mock_input):
+    upgrade_plan = AsyncMock(spec=UpgradeStep)
     upgrade_plan.description = "Test Plan"
-
-    with patch("cou.steps.execute.ainput") as mock_input:
-        mock_input.return_value = "a"
-        with pytest.raises(SystemExit):
-            await execute(upgrade_plan, True)
-
-        mock_input.assert_called_once_with(prompt("Test Plan"))
-        upgrade_plan.function.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_apply_plan_non_interactive(mocker):
-    upgrade_plan = AsyncMock()
-    upgrade_plan.description = "A"
-    sub_step = AsyncMock()
-    sub_step.description = "B is Sub step from A"
-    sub_sub_step = AsyncMock()
-    sub_sub_step.description = "C is Sub step from B"
-
-    upgrade_plan.sub_steps = [sub_step]
-    sub_step.sub_steps = [sub_sub_step]
-    mock_input = mocker.patch("cou.steps.execute.input")
-    mock_logger = mocker.patch("cou.steps.execute.logger")
-    await execute(upgrade_plan, False)
-    assert upgrade_plan.run.call_count == 1
-    assert sub_step.run.call_count == 1
-    assert sub_sub_step.run.call_count == 1
-    assert mock_logger.info.call_count == 3
-    mock_input.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_apply_plan_continue():
-    upgrade_plan = AsyncMock()
-    upgrade_plan.description = "Test Plan"
-    upgrade_plan.run = AsyncMock()
-    sub_step = AsyncMock()
-    sub_step.description = "Test Plan"
-    upgrade_plan.sub_steps = [sub_step]
-
-    with patch("cou.steps.execute.ainput") as mock_input, patch(
-        "cou.steps.execute.sys"
-    ) as mock_sys:
-        mock_input.return_value = "C"
-        await execute(upgrade_plan, True)
-
-        mock_input.assert_called_with(prompt("Test Plan"))
-        assert upgrade_plan.run.call_count == 1
-        assert sub_step.run.call_count == 1
-        mock_sys.exit.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_apply_plan_nonsense():
-    upgrade_plan = MagicMock()
-    upgrade_plan.description = "Test Plan"
+    mock_input.return_value = "a"
 
     with pytest.raises(SystemExit):
-        with patch("cou.steps.execute.ainput") as mock_input, patch(
-            "cou.steps.execute.logger.info"
-        ) as log:
-            mock_input.side_effect = ["x", "a"]
-            await execute(upgrade_plan, True)
+        await apply_plan(upgrade_plan, True)
 
-            log.assert_called_once_with("No valid input provided!")
-            mock_input.assert_called_once_with(prompt("Test Plan"))
-            upgrade_plan.function.assert_not_called()
+    mock_input.assert_called_once_with(prompt("Test Plan"))
+    mock_run_step.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_apply_plan_skip():
-    upgrade_plan = MagicMock()
+@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute._run_step")
+async def test_apply_plan_non_interactive(mock_run_step, mock_input):
+    upgrade_plan = AsyncMock(spec=UpgradeStep)
     upgrade_plan.description = "Test Plan"
-    sub_step = MagicMock()
-    sub_step.description = sub_step
-    upgrade_plan.sub_steps = [sub_step]
 
-    with patch("cou.steps.execute.ainput") as mock_input, patch(
-        "cou.steps.execute.sys"
-    ) as mock_sys:
-        mock_input.return_value = "s"
-        await execute(upgrade_plan, True)
+    await apply_plan(upgrade_plan, False)
 
-        upgrade_plan.function.assert_not_called()
-        mock_sys.exit.assert_not_called()
+    mock_input.assert_not_awaited()
+    mock_run_step.assert_awaited_once_with(upgrade_plan, False)
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute._run_step")
+async def test_apply_plan_continue(mock_run_step, mock_input):
+    upgrade_plan = AsyncMock(spec=UpgradeStep)
+    upgrade_plan.description = "Test Plan"
+    mock_input.return_value = "C"
+
+    await apply_plan(upgrade_plan, True)
+
+    mock_input.assert_awaited_once_with(prompt("Test Plan"))
+    mock_run_step.assert_awaited_once_with(upgrade_plan, True)
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute._run_step")
+async def test_apply_plan_nonsense(mock_run_step, mock_input):
+    upgrade_plan = AsyncMock(spec=UpgradeStep)
+    upgrade_plan.description = "Test Plan"
+    mock_input.side_effect = ["x", "a"]
+
+    with pytest.raises(SystemExit, match="1"):
+        await apply_plan(upgrade_plan, True)
+
+    mock_input.assert_has_awaits([call(prompt("Test Plan")), call(prompt("Test Plan"))])
+    mock_run_step.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute._run_step")
+async def test_apply_plan_skip(mock_run_step, mock_input):
+    upgrade_plan = AsyncMock(spec=UpgradeStep)
+    upgrade_plan.description = "Test Plan"
+    mock_input.return_value = "s"
+
+    await apply_plan(upgrade_plan, True)
+
+    mock_input.assert_awaited_once_with(prompt("Test Plan"))
+    mock_run_step.assert_not_awaited()
