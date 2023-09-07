@@ -125,10 +125,18 @@ OPENSTACK_CODENAMES = OrderedDict(
     ]
 )
 
-LTS_SERIES = {
+DISTRO_TO_OPENSTACK_MAPPING = {
     "bionic": "queens",
+    "cosmic": "rocky",
+    "disco": "stein",
+    "eoan": "train",
     "focal": "ussuri",
+    "groovy": "victoria",
+    "hirsute": "wallaby",
+    "impish": "xena",
     "jammy": "yoga",
+    "kinect": "zed",
+    "lunar": "antelope",
 }
 
 
@@ -388,9 +396,9 @@ class OpenStackCodenameLookup:
                 service, service_dict = cls._parse_row(header, row)
                 openstack_lookup[service] = service_dict
         # add openstack charms
-        for charm_type, charms in CHARM_FAMILIES.items():
+        for family, charms in CHARM_FAMILIES.items():
             for charm in charms:
-                openstack_lookup[charm] = openstack_lookup[charm_type]
+                openstack_lookup[charm] = openstack_lookup[family]
         return openstack_lookup
 
     @classmethod
@@ -459,3 +467,23 @@ def is_charm_supported(charm: str) -> bool:
     :rtype: bool
     """
     return bool(OpenStackCodenameLookup.lookup(charm)) or charm in SUBORDINATES
+
+
+def openstack_to_track(
+    series: str, charm_family: str, os_release: OpenStackRelease
+) -> Optional[str]:
+    """Find the track of auxiliary charms by series, family and OpenStack release codename.
+
+    :param series: Ubuntu series
+    :type series: str
+    :param charm_family: Charm family. E.g: ceph, ovn
+    :type charm_family: str
+    :param os_release:  OpenStack release to track.
+    :type os_release: OpenStackRelease
+    :return: The track of the auxiliary charm.
+    :rtype: Optional[str]
+    """
+    try:
+        return OPENSTACK_TO_TRACK_MAPPING[series][charm_family][os_release.codename]
+    except KeyError:
+        return None

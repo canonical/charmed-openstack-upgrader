@@ -35,7 +35,7 @@ def test_auxiliary_app(status, config):
     assert app.channel == "3.8/stable"
     assert app.os_origin == "distro"
     assert app.units == expected_units
-    assert app.os_origin_config(OpenStackRelease(target)) == "ussuri"
+    assert app.os_origin_from_apt_sources(OpenStackRelease(target)) == "ussuri"
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config):
@@ -116,36 +116,7 @@ def test_auxiliary_upgrade_plan_channel_different_expected(status, config, mocke
     )
 
 
-def test_auxiliary_charm_no_origin_config(status):
-    target = "victoria"
-    app = OpenStackAuxiliaryApplication(
-        "vault",
-        status["vault"],
-        {},
-        "my_model",
-        "vault",
-        "vault",
-    )
-    assert app._get_os_origin() == ""
-    assert app.os_origin_config(OpenStackRelease(target)) is None
-
-
-@pytest.mark.parametrize(
-    "target, expected_os_origin_config", [("victoria", "ussuri"), ("wallaby", "victoria")]
-)
-def test_auxiliary_charm_empty_origin_config(status, target, expected_os_origin_config):
-    app = OpenStackAuxiliaryApplication(
-        "rabbitmq-server",
-        status["rabbitmq_server"],
-        {"source": {"value": ""}},
-        "my_model",
-        "rabbitmq-server",
-        "rabbitmq-server",
-    )
-    assert app.os_origin_config(OpenStackRelease(target)) == expected_os_origin_config
-
-
-def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mocker):
+def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config):
     with pytest.raises(ApplicationError):
         OpenStackAuxiliaryApplication(
             "rabbitmq-server",
@@ -157,7 +128,8 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mo
         )
 
 
-def test_auxiliary_raise_keyerror(status, config):
+def test_auxiliary_raise_error_unknown_track(status, config):
+    target = OpenStackRelease("victoria")
     app_status = status["rabbitmq_server"]
     app_status.series = "foo"
     app = OpenStackAuxiliaryApplication(
@@ -170,6 +142,9 @@ def test_auxiliary_raise_keyerror(status, config):
     )
     with pytest.raises(ApplicationError):
         app.expected_current_channel
+
+    with pytest.raises(ApplicationError):
+        app.target_channel(target)
 
 
 def test_auxiliary_raise_halt_upgrade(status, config):

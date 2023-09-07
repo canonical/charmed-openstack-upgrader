@@ -39,6 +39,7 @@ from cou.utils.juju_utils import (
 )
 from cou.utils.openstack import (
     CHARM_FAMILIES,
+    DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
     OpenStackRelease,
     is_charm_supported,
@@ -296,6 +297,49 @@ class OpenStackApplication:
             f"{os_versions}. This is not currently handled."
         )
 
+    def os_origin_from_apt_sources(self, target: OpenStackRelease) -> Optional[OpenStackRelease]:
+        """Identify the OpenStack release set on "openstack-origin" or "source" config.
+
+        :raises ValueError: If os_origin_parsed it's not a valid OpenStack release.
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: OpenStackRelease object or None if the app doesn't have os_origin config.
+        :rtype: Optional[OpenStackRelease]
+        """
+        os_origin_parsed: Optional[str]
+        # that means that the charm doesn't have "source" or "openstack-origin" config.
+        if self.origin_setting is None:
+            return None
+
+        # Ex: "cloud:focal-ussuri" will result in "ussuri"
+        *_, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
+        if os_origin_parsed == "distro":
+            # find the OpenStack release based on ubuntu series
+            os_origin_parsed = DISTRO_TO_OPENSTACK_MAPPING[self.series]
+        elif os_origin_parsed == "":
+            # if it's empty we consider the previous release from the target.
+            # Ex: rabbitmq-server has empty "source" and receive target "victoria".
+            # In that case it will be considered as ussuri and with the upgrade,
+            # "source" config will be changed to "cloud:focal-victoria".
+            os_origin_parsed = target.previous_release
+            logger.warning(
+                (
+                    "OpenStack origin from apt sources of '%s' will be considered "
+                    "as %s because %s was empty."
+                ),
+                self.name,
+                os_origin_parsed,
+                self.origin_setting,
+            )
+
+        try:
+            return OpenStackRelease(os_origin_parsed) if os_origin_parsed else None
+        except ValueError as exc:
+            # probably because user set a ppa or an url
+            raise ApplicationError(
+                f"'{self.name}' has invalid '{self.origin_setting}': {self.os_origin}"
+            ) from exc
+
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
 
@@ -366,20 +410,14 @@ class OpenStackApplication:
         :return: Plan that will add upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        if self.current_os_release >= target:
-            logger.info(
-                (
-                    "Application: '%s' already running %s which is equal or greater "
-                    "than %s. Ignoring."
-                ),
-                self.name,
-                str(self.current_os_release),
-                target,
+        os_origin_apt_sources = self.os_origin_from_apt_sources(target)
+        if self.current_os_release >= target and os_origin_apt_sources >= target:
+            msg = (
+                f"Application '{self.name}' already configured for release equal or greater "
+                f"than {target}. Ignoring."
             )
-            raise HaltUpgradePlanGeneration(
-                f"Application '{self.name}' already running {self.current_os_release} which is "
-                f"equal or greater than {target}. Ignoring."
-            )
+            logger.info(msg)
+            raise HaltUpgradePlanGeneration(msg)
 
         return [
             self._get_disable_action_managed_plan(),
