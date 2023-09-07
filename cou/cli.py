@@ -98,8 +98,9 @@ def parse_args(args: Any) -> argparse.Namespace:
 
     # Configure subcommand and their common flags
     subparsers = parser.add_subparsers(
-        title="Commands:",
+        title="Commands",
         dest="command",
+        help="For more information about a command, run 'cou help <command>'.",
     )
     base_subparser = argparse.ArgumentParser(add_help=False)
     base_subparser.add_argument(
@@ -134,12 +135,13 @@ def parse_args(args: Any) -> argparse.Namespace:
     )
 
     # Arg parser for "cou plan" sub-command
-    subparsers.add_parser(
+    plan_parser = subparsers.add_parser(
         "plan",
         description="Show the steps for upgrading the cloud to the next release.",
         help="Show the steps for upgrading the cloud to the next release.",
-        usage="cou run [options]",
+        usage="cou plan [options]",
         parents=[base_subparser],
+        formatter_class=CapitalisedHelpFormatter,
     )
 
     # Arg parser for "cou run" sub-command
@@ -149,6 +151,7 @@ def parse_args(args: Any) -> argparse.Namespace:
         help="Run the cloud upgrade.",
         usage="cou run [options]",
         parents=[base_subparser],
+        formatter_class=CapitalisedHelpFormatter,
     )
     run_parser.add_argument(
         "--interactive",
@@ -157,13 +160,40 @@ def parse_args(args: Any) -> argparse.Namespace:
         default=True,
     )
 
+    help_parser = subparsers.add_parser(
+        "help",
+        usage="cou help [command]",
+    )
+
+    help_parser.add_argument(
+        "subcommand",
+        nargs="?",
+        choices=["plan", "run", "all"],
+        default="all",
+        type=str,
+        help="A sub-command to get information of.",
+    )
+
     # It no sub-commands or options are given, print help message and exit
-    if len(args) == 0:
+    if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit(0)
 
     try:
-        return parser.parse_args(args)
+        parsed_args = parser.parse_args(args)
+
+        # print help messages for an available sub-command
+        if parsed_args.command == "help":
+            match parsed_args.subcommand:
+                case "run":
+                    run_parser.print_help()
+                case "plan":
+                    plan_parser.print_help()
+                case "all":
+                    parser.print_help()
+            sys.exit(0)
+
+        return parsed_args
     except argparse.ArgumentError as exc:
         print(f"Unrecognized sub-command: {exc}.")
         parser.print_help()
