@@ -12,26 +12,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Entrypoint to the 'charmed-openstack-upgrader'."""
+"""Entrypoint to the 'canonical-openstack-upgrader'."""
 import argparse
 import logging
 import logging.handlers
-import os
-import pathlib
 import sys
-from datetime import datetime
-from typing import Any
+from typing import Any, Iterable, Optional
+
+import pkg_resources
 
 from cou.exceptions import COUException
+from cou.logging import setup_logging
+from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.execute import execute
 from cou.steps.plan import generate_plan
 from cou.utils import juju_utils as utils
 
-COU_DIR_LOG = pathlib.Path(os.getenv("COU_DATA", ""), "log")
 AVAILABLE_OPTIONS = "cas"
+VERBOSITY_LEVEL = {0: "ERROR", 1: "WARNING", 2: "INFO", 3: "DEBUG", 4: "NOTSET"}
 
 logger = logging.getLogger(__name__)
+
+
+class CapitalisedHelpFormatter(argparse.HelpFormatter):
+    """Capitalize usage prefix."""
+
+    def add_usage(
+        self,
+        usage: Optional[str],
+        actions: Iterable[argparse.Action],
+        groups: Iterable[argparse._MutuallyExclusiveGroup],
+        prefix: Optional[str] = None,
+    ) -> None:
+        """Add usage with capitalized prefix.
+
+        :param usage: usage message.
+        :type usage: Optional[str]
+        :param actions: actions.
+        :type actions: Iterable[argparse.Action]
+        :param groups: Arguments to be parsed.
+        :type groups: Iterable[argparse._MutuallyExclusiveGroup]
+        :param prefix: Arguments to be parsed.
+        :type prefix: Optional[str]
+        """
+        if prefix is None:
+            prefix = "Usage: "
+        super().add_usage(usage, actions, groups, prefix)
 
 
 def parse_args(args: Any) -> argparse.Namespace:
@@ -42,112 +69,169 @@ def parse_args(args: Any) -> argparse.Namespace:
     :return: Arguments parsed to the cli execution.
     :rtype: argparse.Namespace
     """
+    # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
-        description="Charmed OpenStack Upgrader(cou) is an application to upgrade Charmed "
+        description="Canonical OpenStack Upgrader(cou) is an application to upgrade Canonical "
         "OpenStack. Application identifies the lowest OpenStack version on the components and "
         "upgrade to the next version.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        formatter_class=CapitalisedHelpFormatter,
+        usage="%(prog)s [options] <command>",
         exit_on_error=False,
         add_help=False,
+        allow_abbrev=False,
     )
     parser.add_argument(
-        "--run",
-        help="Use this flag to run the upgrade, otherwise just print out the upgrade steps.",
-        action="store_true",
-        default=False,
+        "--version",
+        "-V",
+        action="version",
+        default=argparse.SUPPRESS,
+        help="Show version details.",
+        version=pkg_resources.require("canonical_openstack_upgrader")[0].version,
     )
     parser.add_argument(
-        "--log-level",
-        default="INFO",
-        dest="loglevel",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        type=str.upper,
-        help="Set the logging level. Defaults to INFO. This only affects stdout. The logfile "
-        "will be always DEBUG. The file location is in COU_DATA/log. You can set the "
-        "COU_DATA via environment variable. However it needs to be plugged to snap.",
-    )
-    parser.add_argument(
-        "--model",
-        default=None,
-        dest="model_name",
-        help="Set the model to operate on. If not set it gets the model name in this order:\n"
-        "  1 - Environment variable JUJU_MODEL,"
-        "  2 - Environment variable MODEL_NAME,"
-        "  3 - Current active juju model",
-    )
-    parser.add_argument(
-        "--interactive",
-        help="Run upgrade with prompt.",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    parser.add_argument(
-        "-h",
         "--help",
+        "-h",
         action="help",
         default=argparse.SUPPRESS,
         help="Show this help message and exit.",
     )
 
-    return parser.parse_args(args)
+    # Configure subcommand and their common flags
+    subparsers = parser.add_subparsers(
+        title="Commands:",
+        dest="command",
+    )
+    base_subparser = argparse.ArgumentParser(add_help=False)
+    base_subparser.add_argument(
+        "--model",
+        default=None,
+        dest="model_name",
+        type=str,
+        help="Set the model to operate on. If not set it gets the model name in this order:\n"
+        "  1 - Environment variable JUJU_MODEL,"
+        "  2 - Environment variable MODEL_NAME,"
+        "  3 - Current active juju model",
+    )
+    group = base_subparser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--verbose",
+        "-v",
+        default=0,
+        action="count",
+        dest="verbosity",
+        help="Increase logging verbosity in STDOUT. Repeat the 'v' in the short option "
+        "for more detail. Maximum verbosity is obtained with 4 (or more) "
+        "v's, i.e. -vvvv. \nNote that this doesn't affect the verbosity in logfile, "
+        "which will always have the maximum verbosity.",
+    )
+    group.add_argument(
+        "--quiet",
+        "-q",
+        default=False,
+        action="store_true",
+        dest="quiet",
+        help="Disable output in STDOUT.",
+    )
+
+    # Arg parser for "cou plan" sub-command
+    subparsers.add_parser(
+        "plan",
+        description="Show the steps for upgrading the cloud to the next release.",
+        help="Show the steps for upgrading the cloud to the next release.",
+        usage="cou run [options]",
+        parents=[base_subparser],
+    )
+
+    # Arg parser for "cou run" sub-command
+    run_parser = subparsers.add_parser(
+        "run",
+        description="Run the cloud upgrade.",
+        help="Run the cloud upgrade.",
+        usage="cou run [options]",
+        parents=[base_subparser],
+    )
+    run_parser.add_argument(
+        "--interactive",
+        help="Run upgrade with prompt.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+
+    # It no sub-commands or options are given, print help message and exit
+    if len(args) == 0:
+        parser.print_help()
+        sys.exit(0)
+
+    try:
+        return parser.parse_args(args)
+    except argparse.ArgumentError as exc:
+        print(f"Unrecognized sub-command: {exc}.")
+        parser.print_help()
+        sys.exit(1)
 
 
-def setup_logging(log_level: str = "INFO") -> None:
-    """Do setup for logging.
+def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
+    """Get a log level based on input options.
 
-    :returns: Nothing: This function is executed for its side effect
-    :rtype: None
+    :param quiet: Whether to run COU in quiet mode.
+    :type quiet: bool
+    :param verbosity: Verbosity level based on user's input.
+    :type verbosity: int
+    :return: Log level.
+    :rtype: str
     """
-    log_formatter_file = logging.Formatter(
-        fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    log_formatter_console = logging.Formatter(
-        fmt="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    root_logger = logging.getLogger()
-    root_logger.setLevel("DEBUG")
+    if quiet:
+        return "CRITICAL"
+    return VERBOSITY_LEVEL[verbosity] if verbosity <= 4 else VERBOSITY_LEVEL[4]
 
-    # handler for the log file. Log level is DEBUG
-    time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
-    pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
-    log_file_handler = logging.FileHandler(file_name)
-    log_file_handler.setFormatter(log_formatter_file)
 
-    # handler for the console. Log level comes from the CLI
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(log_level)
-    console_handler.setFormatter(log_formatter_console)
-    # just cou logs on console
-    console_handler.addFilter(logging.Filter(__package__))
+async def get_plan(model_name: Optional[str] = None) -> UpgradeStep:
+    """Get the upgrade plan with steps.
 
-    root_logger.addHandler(log_file_handler)
-    root_logger.addHandler(console_handler)
-    logger.info("Logs of this execution can be found at %s", file_name)
+    :param model_name: Model name inputted by user.
+    :type model_name: Optional[str]
+    :return: Generated upgrade plan.
+    :rtype: UpgradeStep
+    """
+    model = await utils.async_set_current_model_name(model_name)
+    logger.info("Setting current model name: %s", model)
+    analysis_result = await Analysis.create()
+    logger.info(analysis_result)
+    upgrade_plan = await generate_plan(analysis_result)
+    print(upgrade_plan)
+    return upgrade_plan
+
+
+async def run_upgrade(model_name: Optional[str] = None, interactive: bool = True) -> None:
+    """Run cloud upgrade.
+
+    :param model_name: Model name inputted by user.
+    :type model_name: Optional[str]
+    :param interactive: Whether to run upgrade in the interactive mode.
+    :type interactive: bool
+    """
+    upgrade_plan = await get_plan(model_name)
+    await execute(upgrade_plan, interactive)
+    print("Upgrade completed.")
 
 
 async def entrypoint() -> None:
-    """Execute 'charmed-openstack-upgrade' command."""
+    """Execute 'canonical-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
 
-        setup_logging(log_level=args.loglevel)
+        setup_logging(log_level=get_log_level(quiet=args.quiet, verbosity=args.verbosity))
 
-        model_name = await utils.async_set_current_model_name(args.model_name)
-        logger.info("Setting current model name: %s", model_name)
-
-        analysis_result = await Analysis.create()
-        print(analysis_result)
-        upgrade_plan = await generate_plan(analysis_result)
-        if args.run:
-            await execute(upgrade_plan, args.interactive)
-        else:
-            print(upgrade_plan)
+        match args.command:
+            case "run":
+                await run_upgrade(model_name=args.model_name, interactive=args.interactive)
+            case "plan":
+                await get_plan(args.model_name)
 
     except COUException as exc:
         logger.error(exc)
         sys.exit(1)
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("unexpected error occurred")
+        logger.error("Unexpected error occurred")
         logger.exception(exc)
         sys.exit(2)

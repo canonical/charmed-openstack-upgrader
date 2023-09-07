@@ -123,7 +123,7 @@ class AppFactory:
 
 @dataclass
 class OpenStackApplication:
-    """Representation of a charmed OpenStack application in the deployment.
+    """Representation of a Canonical OpenStack application in the deployment.
 
     :param name: Name of the application
     :type name: str

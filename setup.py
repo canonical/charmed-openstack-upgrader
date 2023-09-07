@@ -20,7 +20,7 @@ from setuptools import setup
 
 
 def find_version() -> str:
-    """Parse charmed-openstack-upgrader version based on the git tag."""
+    """Parse canonical-openstack-upgrader version based on the git tag."""
     try:
         cmd: List[str] = ["git", "describe", "--tags", "--always", "HEAD"]
         gitversion: str = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode().strip()
