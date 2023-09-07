@@ -45,7 +45,7 @@ class UpgradeStep:
         """
         self.parallel = parallel
         self.description = description
-        self.sub_steps: List[UpgradeStep] = list[UpgradeStep]()
+        self.sub_steps: List[UpgradeStep] = []
         self.params = params
         self.function = function
 
