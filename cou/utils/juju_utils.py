@@ -16,7 +16,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from juju.action import Action
 from juju.client._definitions import FullStatus
@@ -30,6 +30,12 @@ JUJU_MAX_FRAME_SIZE = 2**30
 
 CURRENT_MODEL_NAME: Optional[str] = None
 CURRENT_MODEL: Optional[Model] = None
+# Total wait timeout. After this timeout TimeoutException is raised
+DEFAULT_TIMEOUT: int = 3600
+# Model should be idle for MODEL_IDLE_PERIOD consecutive seconds to be counted as idle.
+MODEL_IDLE_PERIOD: int = 30
+# At each iteration juju will wait JUJU_IDLE_TIMEOUT seconds
+JUJU_IDLE_TIMEOUT: int = 40
 
 logger = logging.getLogger(__name__)
 
@@ -414,63 +420,78 @@ async def async_set_application_config(
     return await model.applications[application_name].set_config(configuration)
 
 
-# pylint: disable=too-few-public-methods
-class JujuWaiter:
-    """Enhanced version of wait_for_idle.
+class COUModel(Model):
+    """COU version of juju.model.Model.
 
-    Usage:
-        JujuWaiter(model).wait(120)
+    This version of the model provides better waiting for the model to turn idle reconnection and
+    some other required features for COU.
     """
 
-    # Total wait timeout. After this timeout TimeoutException is raised
-    DEFAULT_TIMEOUT: int = 3600
-
-    # Model should be idle for MODEL_IDLE_PERIOD consecutive seconds to be counted as idle.
-    MODEL_IDLE_PERIOD: int = 30
-
-    # At each iteration juju will wait JUJU_IDLE_TIMEOUT seconds
-    JUJU_IDLE_TIMEOUT: int = 40
-
-    def __init__(self, model: Model):
-        """Initialize.
-
-        :param model: model to wait
-        :type model: Model
-        """
-        self.model = model
-        self.model_name = self.model.name
-        self.timeout = timedelta(seconds=JujuWaiter.DEFAULT_TIMEOUT)
+    def __init__(self, model_name: str, *args: Any, **kwargs: Any):
+        """COU Model initialization with model_name compared to original juju.model.Model."""
+        super().__init__(*args, **kwargs)
+        self.model_name = model_name
+        self.timeout = timedelta(seconds=DEFAULT_TIMEOUT)
         self.start_time = datetime.now()
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger(model_name)
 
-    async def wait(self, timeout_seconds: int = DEFAULT_TIMEOUT) -> None:
+    @property
+    def disconnected(self) -> bool:
+        """Check if model is connected."""
+        return not (self.is_connected() and self.connection().is_open)
+
+    def _check_time(self) -> None:
+        """Check time.
+
+        :raises TimeoutException: if timeout occurs
+        """
+        if datetime.now() - self.start_time > self.timeout:
+            self.log.debug("Model %s is not idle after %d seconds.", self.model_name, self.timeout)
+            raise TimeoutException(
+                f"Model {self.model_name} has not stabilized after {self.timeout} seconds."
+            )
+
+    async def _ensure_model_connected(self) -> None:
+        """Ensure that the model is connected.
+
+        :raises TimeoutException: if timeout occurs
+        """
+        while self.disconnect:
+            await self.disconnect()
+            try:
+                self._check_time()
+                await self.connect()
+            except TimeoutException:
+                raise
+            except Exception:
+                self.log.debug(
+                    "Model has unexpected exception while connecting, retrying", exc_info=True
+                )
+
+    async def _wait_for_idle(self, timeout: int) -> None:
         """Wait for model to stabilize.
 
-        :param timeout_seconds: wait model till timeout_seconds. If passed raise TimeoutException
-        :type timeout_seconds: int
-        :return: None
-        :raises TimeoutException: if timeout_seconds passed.
+        :param timeout: wait model till timeout_seconds. If passed raise TimeoutException
+        :type timeout: int
+        :raises TimeoutException: if timeout passed.
         :raises JujuMachineError: if it has a machine exception
         :raises JujuAgentError: if it has an agent exception
         :raises JujuUnitError: if it has unit exception
         :raises JujuAppError: if it has application exception
         """
         self.start_time = datetime.now()
-        if timeout_seconds:
-            self.timeout = timedelta(seconds=timeout_seconds)
+        self.timeout = timedelta(seconds=timeout)
+
         self.log.debug("Waiting to stabilize in %s seconds", self.timeout)
 
         while True:
             await self._ensure_model_connected()
             try:
-                await self.model.wait_for_idle(
-                    idle_period=JujuWaiter.MODEL_IDLE_PERIOD,
-                    timeout=JujuWaiter.JUJU_IDLE_TIMEOUT,
+                await super().wait_for_idle(
+                    idle_period=MODEL_IDLE_PERIOD, timeout=JUJU_IDLE_TIMEOUT
                 )
                 self.log.debug(
-                    "Model %s is idle for %s seconds.",
-                    self.model.info.name,
-                    JujuWaiter.MODEL_IDLE_PERIOD,
+                    "Model %s is idle for %s seconds.", self.model_name, MODEL_IDLE_PERIOD
                 )
                 return
             except (
@@ -488,30 +509,16 @@ class JujuWaiter:
 
             self._check_time()
 
-    async def _ensure_model_connected(self) -> None:
-        """Ensure that the model is connected.
+    # pylint: disable=arguments-differ
+    async def connect(self) -> None:
+        """Connect to model define by model_name."""
+        await super().connect(model_name=self.model_name)
 
-        :raises TimeoutException: if timeout occurs
+    # pylint: disable=arguments-differ
+    async def wait_for_idle(self, timeout: int = DEFAULT_TIMEOUT) -> None:
+        """Wait for model to idle.
+
+        :param timeout: wait model till timeout_seconds. If passed raise TimeoutException
+        :type timeout: int
         """
-        while _is_model_disconnected(self.model):
-            await _disconnect(self.model)
-            try:
-                self._check_time()
-                await self.model.connect_model(self.model_name)
-            except TimeoutException:
-                raise
-            except Exception:
-                self.log.debug(
-                    "Model has unexpected exception while connecting, retrying", exc_info=True
-                )
-
-    def _check_time(self) -> None:
-        """Check time.
-
-        :raises TimeoutException: if timeout occurs
-        """
-        if datetime.now() - self.start_time > self.timeout:
-            self.log.debug("Model %s is not idle after %d seconds.", self.model_name, self.timeout)
-            raise TimeoutException(
-                f"Model {self.model_name} has not stabilized after {self.timeout} seconds."
-            )
+        await self._wait_for_idle(timeout)
