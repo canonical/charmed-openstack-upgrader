@@ -26,9 +26,9 @@ from cou.steps.backup import _check_db_relations, backup, get_database_app_unit_
 
 @pytest.mark.asyncio
 async def test_backup():
-    with patch("cou.steps.backup.logger") as log, patch("cou.steps.backup.utils") as utils, patch(
-        "cou.steps.backup.get_database_app_unit_name"
-    ) as database_app_name:
+    with patch("cou.steps.backup.logger") as log, patch(
+        "cou.steps.backup.juju_utils"
+    ) as utils, patch("cou.steps.backup.get_database_app_unit_name") as database_app_name:
         database_app_name.return_value = "test"
         utils.run_action = AsyncMock()
         utils.run_on_unit = AsyncMock()
@@ -47,7 +47,7 @@ async def test_get_database_app_name_negative(mocker):
     model.applications.get.return_value = app = mock.MagicMock()
     app.charm_name.return_value = "mysql"
 
-    get_status = mocker.patch("cou.steps.backup.utils.get_status")
+    get_status = mocker.patch("cou.utils.juju_utils.get_status")
     current_path = Path(os.path.dirname(os.path.realpath(__file__)))
     with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
         data = file.read().rstrip()
@@ -64,7 +64,7 @@ async def test_get_database_app_name_negative(mocker):
 async def test_get_database_app_name(mocker):
     charm_name = mocker.patch("cou.utils.juju_utils.extract_charm_name")
     charm_name.return_value = "mysql-innodb-cluster"
-    with patch("cou.steps.backup.utils.get_status") as get_status:
+    with patch("cou.utils.juju_utils.get_status") as get_status:
         current_path = Path(os.path.dirname(os.path.realpath(__file__)))
         with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
             data = file.read().rstrip()

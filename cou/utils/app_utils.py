@@ -19,7 +19,7 @@ from collections.abc import Iterable
 from juju.errors import JujuError
 
 from cou.exceptions import CommandRunFailed, PackageUpgradeError
-from cou.utils.juju_utils import run_on_unit
+from cou.utils import juju_utils
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ async def upgrade_packages(units: Iterable[str], model_name: str) -> None:
         logger.info("Running '%s' on '%s'", command, unit)
 
         try:
-            result = await run_on_unit(
+            result = await juju_utils.run_on_unit(
                 unit_name=unit, command=command, model_name=model_name, timeout=600
             )
             if str(result["Code"]) == "0":

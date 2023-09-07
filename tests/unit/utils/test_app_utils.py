@@ -26,7 +26,9 @@ async def test_application_upgrade_packages(mocker):
     mock_logger = mocker.patch("cou.utils.app_utils.logger")
 
     success_result = {"Code": "0", "Stdout": "Success"}
-    mock_run_on_unit = mocker.patch.object(app_utils, "run_on_unit", return_value=success_result)
+    mock_run_on_unit = mocker.patch(
+        "cou.utils.juju_utils.run_on_unit", return_value=success_result
+    )
     await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
@@ -60,7 +62,7 @@ async def test_application_upgrade_packages_unsuccessful(mocker):
     exp_error_msg = "Cannot upgrade packages on keystone/0."
 
     failed_result = {"Code": "non-zero", "Stderr": "error"}
-    mock_run_on_unit = mocker.patch.object(app_utils, "run_on_unit", return_value=failed_result)
+    mock_run_on_unit = mocker.patch("cou.utils.juju_utils.run_on_unit", return_value=failed_result)
 
     with pytest.raises(PackageUpgradeError, match=exp_error_msg):
         await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
@@ -80,7 +82,7 @@ async def test_application_upgrade_packages_unsuccessful(mocker):
 async def test_application_upgrade_packages_error(mocker):
     side_effect = JujuError("error")
     exp_error_msg = "Cannot upgrade packages on keystone/0."
-    mock_run_on_unit = mocker.patch.object(app_utils, "run_on_unit", side_effect=side_effect)
+    mock_run_on_unit = mocker.patch("cou.utils.juju_utils.run_on_unit", side_effect=side_effect)
 
     with pytest.raises(PackageUpgradeError, match=exp_error_msg):
         await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")

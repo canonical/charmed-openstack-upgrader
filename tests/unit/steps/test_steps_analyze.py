@@ -90,8 +90,10 @@ async def test_populate_model(mocker, full_status, config):
     test_model.applications = {app_name: generate_app(app_name) for app_name in apps_name}
     juju_model = mocker.patch("cou.utils.juju_utils._get_model")
     juju_model.return_value = test_model
-    mocker.patch.object(analyze, "get_status", return_value=full_status)
-    mocker.patch.object(analyze, "get_application_config", return_value=config["openstack_ussuri"])
+    mocker.patch("cou.utils.juju_utils.get_status", return_value=full_status)
+    mocker.patch(
+        "cou.utils.juju_utils.get_application_config", return_value=config["openstack_ussuri"]
+    )
     # Initially, 4 applications are in the status: keystone, cinder, rabbitmq-server and my-app
     # my-app it's not on the lookup and won't be instantiated.
     assert len(full_status.applications) == 4

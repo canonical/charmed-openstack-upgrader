@@ -552,7 +552,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         )
 
     async def test_disconnect(self):
-        mymodel = MagicMock()
+        mymodel = AsyncMock(auto_spec=Model)
         mymodel.disconnect.return_value = "ok"
         await utils._disconnect(mymodel)
 

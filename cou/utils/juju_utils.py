@@ -91,8 +91,9 @@ async def _get_model(model_name: Optional[str] = None) -> Model:
     model = CURRENT_MODEL
     if model is not None and _is_model_disconnected(model):
         await _disconnect(model)
+        model = None
 
-    if model is None:
+    if CURRENT_MODEL is None:
         model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
         await model.connect(model_name)
         CURRENT_MODEL = model
@@ -101,17 +102,14 @@ async def _get_model(model_name: Optional[str] = None) -> Model:
 
 
 # pylint: disable=broad-exception-caught
-async def _disconnect(model: Model) -> None:
+async def _disconnect(model: Model | None) -> None:
     """Disconnect the model.
 
     :param model: the juju.model.Model object.
     :type model: Model
     """
-    try:
-        if model is not None:
-            await model.disconnect()
-    except Exception:
-        pass
+    if model is not None:
+        await model.disconnect()
 
 
 def _is_model_disconnected(model: Model) -> bool:
