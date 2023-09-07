@@ -36,15 +36,15 @@ class Analysis:
     :type apps:  Iterable[OpenStackApplication]
     """
 
-    model_name: str | None
+    model_name: Optional[str]
     apps: Iterable[OpenStackApplication]
 
     @classmethod
-    async def create(cls, model_name: str | None = None) -> Analysis:
+    async def create(cls, model_name: Optional[str] = None) -> Analysis:
         """Analyze the deployment before planning.
 
         :param model_name: Name of model to query, if None the current model will be used
-        :type model_name: str | None
+        :type model_name: Optional[str]
         :return: Analysis object populated with the model applications.
         :rtype: Analysis
         """
@@ -54,7 +54,7 @@ class Analysis:
         return Analysis(model_name=model_name, apps=apps)
 
     @classmethod
-    async def _populate(cls, model_name: str | None) -> list[OpenStackApplication]:
+    async def _populate(cls, model_name: Optional[str]) -> list[OpenStackApplication]:
         """Analyze the applications in the model.
 
         Applications that must be upgraded in a specific order will be returned first, followed
@@ -62,7 +62,7 @@ class Analysis:
         will be ignored.
 
         :param model_name: Name of model to query
-        :type model_name: str | None
+        :type model_name: Optional[str]
         :return: Application objects with their respective information.
         :rtype: List[OpenStackApplication]
         """

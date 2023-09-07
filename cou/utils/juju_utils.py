@@ -102,7 +102,7 @@ async def _get_model(model_name: Optional[str] = None) -> Model:
 
 
 # pylint: disable=broad-exception-caught
-async def _disconnect(model: Model | None) -> None:
+async def _disconnect(model: Optional[Model]) -> None:
     """Disconnect the model.
 
     :param model: the juju.model.Model object.

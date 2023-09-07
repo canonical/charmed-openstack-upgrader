@@ -53,7 +53,7 @@ class AppFactory:
         name: str,
         status: ApplicationStatus,
         config: dict,
-        model_name: str | None,
+        model_name: Optional[str],
         charm: str,
     ) -> Optional[OpenStackApplication]:
         """Create the OpenStackApplication or registered subclasses.
@@ -67,7 +67,7 @@ class AppFactory:
         :param config: Configuration of the application
         :type config: dict
         :param model_name: Model name
-        :type model_name: str | None
+        :type model_name: Optional[str]
         :param charm: Name of the charm
         :type charm: str
         :return: The OpenStackApplication class or None if not supported.
@@ -152,7 +152,7 @@ class OpenStackApplication:
     name: str
     status: ApplicationStatus
     config: dict
-    model_name: str | None
+    model_name: Optional[str]
     charm: str
     charm_origin: str = ""
     os_origin: str = ""
