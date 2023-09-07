@@ -26,13 +26,14 @@ async def test_generate_plan(mocker, apps):
     target = "victoria"
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
-    analysis_result = Analysis(model_name=None, apps=[app_keystone, app_cinder])
+    app_keystone_ldap = apps["keystone_ldap"]
+    analysis_result = Analysis(model_name=None, apps=[app_keystone, app_cinder, app_keystone_ldap])
     plan = await generate_plan(analysis_result)
 
     assert plan.description == "Top level plan"
     assert not plan.parallel
     assert not plan.function
-    assert len(plan.sub_steps) == 2
+    assert len(plan.sub_steps) == 3
 
     sub_step_back_up = plan.sub_steps[0]
     assert sub_step_back_up.description == "backup mysql databases"
@@ -40,26 +41,27 @@ async def test_generate_plan(mocker, apps):
     assert sub_step_back_up.function == backup
 
     sub_step_upgrade_plan = plan.sub_steps[1]
-    assert sub_step_upgrade_plan.description == "Application(s) upgrade plan"
+    assert sub_step_upgrade_plan.description == "Principal(s) upgrade plan"
 
     sub_step_upgrade_keystone = sub_step_upgrade_plan.sub_steps[0]
-    assert (
-        sub_step_upgrade_keystone.description
-        == "Upgrade plan for 'keystone' from: ussuri to victoria"
-    )
+    assert sub_step_upgrade_keystone.description == "Upgrade plan for 'keystone' to victoria"
     expected_description_upgrade_keystone = generate_expected_upgrade_plan_description(
         app_keystone, target
     )
     assert_plan_description(sub_step_upgrade_keystone, expected_description_upgrade_keystone)
 
     sub_step_upgrade_cinder = sub_step_upgrade_plan.sub_steps[1]
-    assert (
-        sub_step_upgrade_cinder.description == "Upgrade plan for 'cinder' from: ussuri to victoria"
-    )
+    assert sub_step_upgrade_cinder.description == "Upgrade plan for 'cinder' to victoria"
     expected_description_upgrade_cinder = generate_expected_upgrade_plan_description(
         app_cinder, target
     )
     assert_plan_description(sub_step_upgrade_cinder, expected_description_upgrade_cinder)
+
+    subordinate_plan = plan.sub_steps[2]
+    assert subordinate_plan.description == "Subordinate(s) upgrade plan"
+    assert (
+        subordinate_plan.sub_steps[0].description == "Upgrade plan for 'keystone-ldap' to victoria"
+    )
 
 
 @pytest.mark.asyncio
