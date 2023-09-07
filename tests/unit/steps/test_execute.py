@@ -230,7 +230,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
 
         This this will check if all steps are run in right order.
         """
-        exp_sequential_results = [
+        exp_results = [
             "sequential",
             "sequential.0",
             "sequential.0.0",
@@ -247,7 +247,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
         await apply_plan(self.plan, interactive=False)
         results = self.execution_order[21:]
 
-        self.assertListEqual(results, exp_sequential_results)
+        self.assertListEqual(results, exp_results)
 
     async def test_apply_plan_parallel_part(self):
         """Test apply_plan parallel part.
@@ -255,7 +255,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
         This this will check if sub-steps of parallel step was run in random order
         and their sub-sub-steps in sequential order.
         """
-        exp_parallel_results = [
+        exp_results = [
             "parallel",
             "parallel.0",
             "parallel.0.0",
@@ -283,8 +283,17 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
         results = self.execution_order[:21]
 
         # checking the results without order, since they are run in parallel with
-        # random sleep
-        self.assertNotEqual(results, exp_parallel_results)
+        # random sleep there only small possibility that they will be in original order
+        self.assertNotEqual(results, exp_results)
+
+        # checking if sub-step of each parallel step is run sequentially
+        for i in range(5):
+            sub_step_order = [result for result in results if result.startswith(f"parallel.{i}.")]
+            exp_sub_step_order = [f"parallel.{i}.{j}" for j in range(3)]
+            self.assertListEqual(sub_step_order, exp_sub_step_order)
+
+        # checking if each result is in expected results and if lists are same length
         for result in results:
-            self.assertIn(result, exp_parallel_results)
-        self.assertEqual(len(results), len(exp_parallel_results))
+            self.assertIn(result, exp_results)
+
+        self.assertEqual(len(results), len(exp_results))
