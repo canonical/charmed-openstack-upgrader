@@ -18,7 +18,7 @@ from typing import Optional
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
-from cou.utils.juju_utils import async_upgrade_charm
+from cou.utils.juju_utils import upgrade_charm
 from cou.utils.openstack import CHARM_FAMILIES, OpenStackRelease, openstack_to_track
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         return UpgradeStep(
             description=description,
             parallel=parallel,
-            function=async_upgrade_charm,
+            function=upgrade_charm,
             application_name=self.name,
             channel=channel,
             model_name=self.model_name,

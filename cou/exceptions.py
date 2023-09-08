@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module of exceptions that charmed-openstack-upgrader may raise."""
-from typing import Any
+from typing import Any, Optional, Union
 
 from juju.action import Action
 
@@ -43,6 +43,10 @@ class UnitNotFound(COUException):
     """Exception raised when a unit is not found in the model."""
 
 
+class ApplicationNotFound(COUException):
+    """Exception raised when a application is not found in the model."""
+
+
 class MismatchedOpenStackVersions(COUException):
     """Exception raised when more than one OpenStack version is found in the Application."""
 
@@ -67,7 +71,7 @@ class ActionFailed(COUException):
     """Exception raised when action fails."""
 
     # pylint: disable=consider-using-f-string
-    def __init__(self, action: Action, output: Any | dict | None = None):
+    def __init__(self, action: Action, output: Optional[Union[Any, dict]] = None):
         """Set information about action failure in message and raise.
 
         :param action: Action that failed.

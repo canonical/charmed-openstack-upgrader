@@ -14,7 +14,6 @@
 
 import pytest
 
-import cou.utils.juju_utils as model
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
@@ -28,8 +27,7 @@ async def test_generate_plan(mocker, apps):
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_keystone_ldap = apps["keystone_ldap"]
-    analysis_result = Analysis(apps=[app_keystone, app_cinder, app_keystone_ldap])
-    mocker.patch.object(model, "async_set_current_model_name", return_value="my_model")
+    analysis_result = Analysis(model_name=None, apps=[app_keystone, app_cinder, app_keystone_ldap])
     plan = await generate_plan(analysis_result)
 
     assert plan.description == "Top level plan"
@@ -81,7 +79,7 @@ async def test_generate_plan_raise_HaltUpgradePlanGeneration(mocker):
     mock_logger = mocker.patch("cou.steps.plan.logger")
     app = mocker.MagicMock()
     app.generate_upgrade_plan.side_effect = HaltUpgradePlanGeneration
-    analysis_result = Analysis(apps=[app])
+    analysis_result = Analysis(model_name=None, apps=[app])
     upgrade_plan = await generate_plan(analysis_result)
     mock_logger.debug.assert_called_once()
     assert upgrade_plan is not None
@@ -93,7 +91,7 @@ async def test_generate_plan_raise_Exception(mocker):
     app = mocker.MagicMock()
     app.generate_upgrade_plan.side_effect = Exception("An error occurred.")
     # Generate an exception during the upgrade plan
-    analysis_result = Analysis(apps=[app])
+    analysis_result = Analysis(model_name=None, apps=[app])
     exp_error_msg = "An error occurred."
     with pytest.raises(Exception, match=exp_error_msg):
         await generate_plan(analysis_result)

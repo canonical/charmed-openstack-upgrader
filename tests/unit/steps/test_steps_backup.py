@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+import mock
 import pytest
 from juju.client._definitions import FullStatus
 
@@ -25,14 +26,14 @@ from cou.steps.backup import _check_db_relations, backup, get_database_app_unit_
 
 @pytest.mark.asyncio
 async def test_backup():
-    with patch("cou.steps.backup.logger") as log, patch("cou.steps.backup.utils") as utils, patch(
-        "cou.steps.backup.get_database_app_unit_name"
-    ) as database_app_name:
+    with patch("cou.steps.backup.logger") as log, patch(
+        "cou.steps.backup.juju_utils"
+    ) as utils, patch("cou.steps.backup.get_database_app_unit_name") as database_app_name:
         database_app_name.return_value = "test"
-        utils.async_run_action = AsyncMock()
-        utils.async_run_on_unit = AsyncMock()
-        utils.async_scp_from_unit = AsyncMock()
-        utils.async_get_unit_from_name = AsyncMock()
+        utils.run_action = AsyncMock()
+        utils.run_on_unit = AsyncMock()
+        utils.scp_from_unit = AsyncMock()
+        utils.get_unit_from_name = AsyncMock()
         utils.async_get_current_model_name = AsyncMock()
 
         await backup(None)
@@ -41,24 +42,29 @@ async def test_backup():
 
 @pytest.mark.asyncio
 async def test_get_database_app_name_negative(mocker):
-    mocker.patch("cou.utils.juju_utils._async_get_model")
-    with patch("cou.steps.backup.utils.async_get_status") as get_status:
-        current_path = Path(os.path.dirname(os.path.realpath(__file__)))
-        with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
-            data = file.read().rstrip()
+    get_model = mocker.patch("cou.utils.juju_utils._get_model")
+    get_model.return_value = model = mock.MagicMock()
+    model.applications.get.return_value = app = mock.MagicMock()
+    app.charm_name.return_value = "mysql"
 
-        status = FullStatus.from_json(data)
-        status.applications["mysql"].relations = {}
-        get_status.return_value = status
-        with pytest.raises(UnitNotFound):
-            await get_database_app_unit_name()
+    get_status = mocker.patch("cou.utils.juju_utils.get_status")
+    current_path = Path(os.path.dirname(os.path.realpath(__file__)))
+    with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
+        data = file.read().rstrip()
+
+    status = FullStatus.from_json(data)
+    status.applications["mysql"].relations = {}
+    get_status.return_value = status
+
+    with pytest.raises(UnitNotFound):
+        await get_database_app_unit_name()
 
 
 @pytest.mark.asyncio
 async def test_get_database_app_name(mocker):
     charm_name = mocker.patch("cou.utils.juju_utils.extract_charm_name")
     charm_name.return_value = "mysql-innodb-cluster"
-    with patch("cou.steps.backup.utils.async_get_status") as get_status:
+    with patch("cou.utils.juju_utils.get_status") as get_status:
         current_path = Path(os.path.dirname(os.path.realpath(__file__)))
         with open(Path.joinpath(current_path, "jujustatus.json"), "r") as file:
             data = file.read().rstrip()

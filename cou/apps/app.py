@@ -31,12 +31,8 @@ from cou.exceptions import (
     MismatchedOpenStackVersions,
 )
 from cou.steps import UpgradeStep
+from cou.utils import juju_utils
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import (
-    async_get_status,
-    async_set_application_config,
-    async_upgrade_charm,
-)
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -58,7 +54,7 @@ class AppFactory:
         name: str,
         status: ApplicationStatus,
         config: dict,
-        model_name: str,
+        model_name: Optional[str],
         charm: str,
     ) -> Optional[OpenStackApplication]:
         """Create the OpenStackApplication or registered subclasses.
@@ -72,7 +68,7 @@ class AppFactory:
         :param config: Configuration of the application
         :type config: dict
         :param model_name: Model name
-        :type model_name: str
+        :type model_name: Optional[str]
         :param charm: Name of the charm
         :type charm: str
         :return: The OpenStackApplication class or None if not supported.
@@ -160,7 +156,7 @@ class OpenStackApplication:
     name: str
     status: ApplicationStatus
     config: dict
-    model_name: str
+    model_name: Optional[str]
     charm: str
     charm_origin: str = ""
     os_origin: str = ""
@@ -360,7 +356,7 @@ class OpenStackApplication:
         :type target: OpenStackRelease
         :raises ApplicationError: When the workload version of the charm doesn't upgrade.
         """
-        status = await async_get_status()
+        status = await juju_utils.get_status(self.model_name)
         app_status = status.applications.get(self.name)
         units_not_upgraded = []
         for unit in app_status.units.keys():
@@ -514,7 +510,7 @@ class OpenStackApplication:
         return UpgradeStep(
             description=description,
             parallel=parallel,
-            function=async_upgrade_charm,
+            function=juju_utils.upgrade_charm,
             application_name=self.name,
             channel=self.expected_current_channel,
             model_name=self.model_name,
@@ -539,7 +535,7 @@ class OpenStackApplication:
                     f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
                 ),
                 parallel=parallel,
-                function=async_upgrade_charm,
+                function=juju_utils.upgrade_charm,
                 application_name=self.name,
                 channel=self.target_channel(target),
                 model_name=self.model_name,
@@ -562,9 +558,10 @@ class OpenStackApplication:
                     f"Change charm config of '{self.name}' " "'action-managed-upgrade' to False."
                 ),
                 parallel=parallel,
-                function=async_set_application_config,
+                function=juju_utils.set_application_config,
                 application_name=self.name,
                 configuration={"action-managed-upgrade": False},
+                model_name=self.model_name,
             )
         return None
 
@@ -587,9 +584,10 @@ class OpenStackApplication:
                     f"'{self.origin_setting}' to '{self.new_origin(target)}'"
                 ),
                 parallel=parallel,
-                function=async_set_application_config,
+                function=juju_utils.set_application_config,
                 application_name=self.name,
                 configuration={self.origin_setting: self.new_origin(target)},
+                model_name=self.model_name,
             )
         logger.warning(
             "Not triggering the workload upgrade of app %s: %s already set to %s",
