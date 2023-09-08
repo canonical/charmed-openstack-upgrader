@@ -115,6 +115,8 @@ def parse_args(args: Any) -> argparse.Namespace:
         "  2 - Environment variable MODEL_NAME,"
         "  3 - Current active juju model",
     )
+
+    # quiet and verbose options are mutually exclusive
     group = base_subparser.add_mutually_exclusive_group()
     group.add_argument(
         "--verbose",
@@ -134,6 +136,42 @@ def parse_args(args: Any) -> argparse.Namespace:
         action="store_true",
         dest="quiet",
         help="Disable output in STDOUT.",
+    )
+
+    base_subparser.add_argument(
+        "--parallel",
+        help="Run upgrade steps in parallel where possible.",
+        default=False,
+        action="store_true",
+    )
+
+    # upgrade partial cloud by specifying sub-groups
+    base_subparser.add_argument(
+        "upgrade_group",
+        help="Run partial cloud upgrade with the specified group.",
+        nargs="?",
+        choices=["control-plane", "data-plane"],
+    )
+    base_subparser.add_argument(
+        "--machine",
+        "-m",
+        action="append",
+        help="Specify machines ids to upgrade.",
+        dest="machines",
+    )
+    base_subparser.add_argument(
+        "--hostname",
+        "-n",
+        action="append",
+        help="Specify machine hostnames to upgrade.",
+        dest="hostnames",
+    )
+    base_subparser.add_argument(
+        "--availability-zone",
+        "--az",
+        action="append",
+        help="Specify availability zones to upgrade.",
+        dest="availability_zones",
     )
 
     # Arg parser for "cou plan" sub-command
@@ -195,10 +233,19 @@ def parse_args(args: Any) -> argparse.Namespace:
                     parser.print_help()
             sys.exit(0)
 
+        if (parsed_args.machines or parsed_args.hostnames or parsed_args.availability_zones) and (
+            not parsed_args.upgrade_group or parsed_args.upgrade_group != "data-plane"
+        ):
+            raise argparse.ArgumentError(
+                argument=None,
+                message="You can only specify machine ids, hostnames, or AZs when "
+                "upgrading data-plane.",
+            )
+
         return parsed_args
     except argparse.ArgumentError as exc:
-        print(f"Unrecognized sub-command: {exc}.")
-        parser.print_help()
+        print(f"Error parsing arguments: {exc}\n")
+        print("See 'cou help' for more information.")
         sys.exit(1)
 
 
@@ -288,6 +335,7 @@ async def entrypoint() -> None:
 
         progress_indicator.start("Configuring logging...")  # non-persistent progress output
         setup_logging(log_level=get_log_level(quiet=args.quiet, verbosity=args.verbosity))
+        progress_indicator.stop()
 
         match args.command:
             case "plan":
