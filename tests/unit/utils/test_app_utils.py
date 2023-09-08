@@ -26,8 +26,8 @@ async def test_application_upgrade_packages(mocker):
     mock_logger = mocker.patch("cou.utils.app_utils.logger")
 
     success_result = {"Code": "0", "Stdout": "Success"}
-    mock_async_run_on_unit = mocker.patch.object(
-        app_utils, "async_run_on_unit", return_value=success_result
+    mock_run_on_unit = mocker.patch(
+        "cou.utils.juju_utils.run_on_unit", return_value=success_result
     )
     await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
 
@@ -51,7 +51,7 @@ async def test_application_upgrade_packages(mocker):
         ),
     ]
 
-    mock_async_run_on_unit.assert_has_calls(
+    mock_run_on_unit.assert_has_calls(
         expected_calls,
     )
     assert len(mock_logger.debug.mock_calls) == 2
@@ -62,15 +62,13 @@ async def test_application_upgrade_packages_unsuccessful(mocker):
     exp_error_msg = "Cannot upgrade packages on keystone/0."
 
     failed_result = {"Code": "non-zero", "Stderr": "error"}
-    mock_async_run_on_unit = mocker.patch.object(
-        app_utils, "async_run_on_unit", return_value=failed_result
-    )
+    mock_run_on_unit = mocker.patch("cou.utils.juju_utils.run_on_unit", return_value=failed_result)
 
     with pytest.raises(PackageUpgradeError, match=exp_error_msg):
         await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-    mock_async_run_on_unit.assert_called_once_with(
+    mock_run_on_unit.assert_called_once_with(
         unit_name="keystone/0",
         command="apt-get update && "
         f"apt-get dist-upgrade {dpkg_opts} -y && "
@@ -84,15 +82,13 @@ async def test_application_upgrade_packages_unsuccessful(mocker):
 async def test_application_upgrade_packages_error(mocker):
     side_effect = JujuError("error")
     exp_error_msg = "Cannot upgrade packages on keystone/0."
-    mock_async_run_on_unit = mocker.patch.object(
-        app_utils, "async_run_on_unit", side_effect=side_effect
-    )
+    mock_run_on_unit = mocker.patch("cou.utils.juju_utils.run_on_unit", side_effect=side_effect)
 
     with pytest.raises(PackageUpgradeError, match=exp_error_msg):
         await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-    mock_async_run_on_unit.assert_called_once_with(
+    mock_run_on_unit.assert_called_once_with(
         unit_name="keystone/0",
         command="apt-get update && "
         f"apt-get dist-upgrade {dpkg_opts} -y && "
