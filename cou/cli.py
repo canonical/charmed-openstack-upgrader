@@ -26,7 +26,7 @@ from cou.exceptions import COUException
 from cou.logging import setup_logging
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
-from cou.steps.execute import execute
+from cou.steps.execute import apply_plan
 from cou.steps.plan import generate_plan
 from cou.utils import juju_utils
 
@@ -275,7 +275,7 @@ async def run_upgrade(
         await execute(upgrade_plan, interactive)
         progress_indicator.succeed()
     else:
-        await execute(upgrade_plan, interactive)
+        await apply_plan(upgrade_plan, interactive)
     print("Upgrade completed.")
 
 
