@@ -69,7 +69,7 @@ async def _run_step(step: UpgradeStep, interactive: bool) -> None:
         grouped_coroutines = (apply_plan(sub_step, interactive) for sub_step in step.sub_steps)
         await asyncio.gather(*grouped_coroutines)
     else:
-        logger.debug("running sequentially all sub-steps of %s step", step)
+        logger.debug("running all sub-steps of %s step sequentially", step)
         for sub_step in step.sub_steps:
             logger.debug("running sub-step %s of %s step", sub_step, step)
             await apply_plan(sub_step, interactive)
