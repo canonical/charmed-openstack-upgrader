@@ -223,7 +223,7 @@ async def get_plan(model_name: Optional[str] = None) -> UpgradeStep:
     :return: Generated upgrade plan.
     :rtype: UpgradeStep
     """
-    model_name = args.model_name or await juju_utils.get_current_model_name()
+    model_name = model_name or await juju_utils.get_current_model_name()
     logger.info("Using model: %s", model_name)
     analysis_result = await Analysis.create(model_name)
     logger.info(analysis_result)
