@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 def test_post_init(status):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
     )
     assert app.channel == "ussuri/stable"
     assert app.charm_origin == "ch"
@@ -36,7 +36,7 @@ def test_post_init(status):
 def test_current_os_release(status):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
     )
     assert app.current_os_release == OpenStackRelease("ussuri")
 
@@ -44,7 +44,7 @@ def test_current_os_release(status):
 def test_generate_upgrade_plan(status):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
     )
     plan = app.generate_upgrade_plan("victoria")
     assert plan.description == "Upgrade plan for 'my_keystone_ldap' to victoria"
@@ -73,7 +73,7 @@ def test_generate_upgrade_plan(status):
 def test_channel_setter_valid(status, channel):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
     )
 
     app.channel = channel
@@ -92,7 +92,7 @@ def test_channel_setter_valid(status, channel):
 def test_channel_setter_invalid(status, channel):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
     )
 
     with pytest.raises(ApplicationError):

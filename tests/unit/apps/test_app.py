@@ -33,13 +33,13 @@ def test_application_eq(status, config):
     status_keystone_2 = status["keystone_wallaby"]
     config_keystone_2 = config["openstack_wallaby"]
     keystone_1 = OpenStackApplication(
-        "keystone", status_keystone_1, config_keystone_1, "my_model", "keystone", "keystone"
+        "keystone", status_keystone_1, config_keystone_1, "my_model", "keystone"
     )
     keystone_2 = OpenStackApplication(
-        "keystone", status_keystone_2, config_keystone_2, "my_model", "keystone", "keystone"
+        "keystone", status_keystone_2, config_keystone_2, "my_model", "keystone"
     )
     keystone_3 = OpenStackApplication(
-        "keystone_foo", status_keystone_1, config_keystone_1, "my_model", "keystone", "keystone"
+        "keystone_foo", status_keystone_1, config_keystone_1, "my_model", "keystone"
     )
 
     # keystone_1 is equal to keystone_2 because they have the same name
@@ -502,7 +502,6 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
         app_status,
         app_config,
         "my_model",
-        "keystone",
         "keystone",
     )
     upgrade_plan = app.generate_upgrade_plan(target)

@@ -227,7 +227,7 @@ def apps(status, config):
         "keystone",
     )
     cinder_ussuri = OpenStackApplication(
-        "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model", "cinder", "cinder"
+        "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model", "cinder"
     )
     rmq_ussuri = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
