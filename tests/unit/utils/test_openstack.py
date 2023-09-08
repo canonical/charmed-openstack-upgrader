@@ -251,29 +251,29 @@ def test_determine_previous_openstack_release(os_release, previous_os_release):
 
 
 @pytest.mark.parametrize(
-    "series, charm_family, os_release, exp_result",
+    "series, charm, os_release, exp_result",
     [
-        ("focal", "ceph", "ussuri", "octopus"),
-        ("focal", "ceph", "victoria", "octopus"),
-        ("focal", "ceph", "wallaby", "pacific"),
-        ("focal", "ceph", "xena", "pacific"),
-        ("focal", "ceph", "yoga", "quincy"),
-        ("jammy", "ceph", "yoga", "quincy"),
-        ("jammy", "ceph", "zed", "quincy"),
-        ("focal", "ovn", "ussuri", "22.03"),
-        ("focal", "ovn", "victoria", "22.03"),
-        ("focal", "ovn", "wallaby", "22.03"),
-        ("focal", "ovn", "xena", "22.03"),
-        ("focal", "ovn", "yoga", "22.03"),
-        ("jammy", "ovn", "yoga", "22.03"),
-        ("jammy", "ovn", "zed", "22.09"),
-        ("focal", "mysql", "ussuri", "8.0"),
-        ("focal", "mysql", "victoria", "8.0"),
-        ("focal", "mysql", "wallaby", "8.0"),
-        ("focal", "mysql", "xena", "8.0"),
-        ("focal", "mysql", "yoga", "8.0"),
-        ("jammy", "mysql", "yoga", "8.0"),
-        ("jammy", "mysql", "zed", "8.0"),
+        ("focal", "ceph-mon", "ussuri", "octopus"),
+        ("focal", "ceph-mon", "victoria", "octopus"),
+        ("focal", "ceph-mon", "wallaby", "pacific"),
+        ("focal", "ceph-mon", "xena", "pacific"),
+        ("focal", "ceph-mon", "yoga", "quincy"),
+        ("jammy", "ceph-mon", "yoga", "quincy"),
+        ("jammy", "ceph-mon", "zed", "quincy"),
+        ("focal", "ovn-central", "ussuri", "22.03"),
+        ("focal", "ovn-central", "victoria", "22.03"),
+        ("focal", "ovn-central", "wallaby", "22.03"),
+        ("focal", "ovn-central", "xena", "22.03"),
+        ("focal", "ovn-central", "yoga", "22.03"),
+        ("jammy", "ovn-central", "yoga", "22.03"),
+        ("jammy", "ovn-central", "zed", "22.09"),
+        ("focal", "mysql-router", "ussuri", "8.0"),
+        ("focal", "mysql-router", "victoria", "8.0"),
+        ("focal", "mysql-router", "wallaby", "8.0"),
+        ("focal", "mysql-router", "xena", "8.0"),
+        ("focal", "mysql-router", "yoga", "8.0"),
+        ("jammy", "mysql-router", "yoga", "8.0"),
+        ("jammy", "mysql-router", "zed", "8.0"),
         ("focal", "hacluster", "ussuri", "2.0.3"),
         ("focal", "hacluster", "victoria", "2.0.3"),
         ("focal", "hacluster", "wallaby", "2.0.3"),
@@ -299,5 +299,5 @@ def test_determine_previous_openstack_release(os_release, previous_os_release):
         ("jammy", "my-service", "zed", None),  # family not mapped
     ],
 )
-def test_openstack_to_track(series, charm_family, os_release, exp_result):
-    assert openstack_to_track(series, charm_family, OpenStackRelease(os_release)) == exp_result
+def test_openstack_to_track(charm, series, os_release, exp_result):
+    assert openstack_to_track(charm, series, OpenStackRelease(os_release)) == exp_result

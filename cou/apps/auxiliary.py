@@ -19,12 +19,14 @@ from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils.juju_utils import async_upgrade_charm
-from cou.utils.openstack import OpenStackRelease, openstack_to_track
+from cou.utils.openstack import CHARM_FAMILIES, OpenStackRelease, openstack_to_track
 
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(["rabbitmq-server", "vault", "mysql-innodb-cluster", "ovn"])
+@AppFactory.register_application(
+    ["rabbitmq-server", "vault", "mysql-innodb-cluster"] + CHARM_FAMILIES["ovn"]
+)
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
@@ -38,7 +40,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: The expected current channel for the application.
         :rtype: str
         """
-        track = openstack_to_track(self.series, self.family, self.current_os_release)
+        track = openstack_to_track(self.charm, self.series, self.current_os_release)
         if track:
             return f"{track}/stable"
 
@@ -54,7 +56,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: The next channel for the application. E.g: 3.8/stable
         :rtype: str
         """
-        track = openstack_to_track(self.series, self.family, target)
+        track = openstack_to_track(self.charm, self.series, target)
         if track:
             return f"{track}/stable"
 

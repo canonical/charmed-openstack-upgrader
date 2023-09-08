@@ -30,7 +30,6 @@ def test_auxiliary_app(status, config):
         config["auxiliary_ussuri"],
         "my_model",
         "rabbitmq-server",
-        "rabbitmq-server",
     )
     assert app.channel == "3.8/stable"
     assert app.os_origin == "distro"
@@ -45,7 +44,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config):
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
         "my_model",
-        "rabbitmq-server",
         "rabbitmq-server",
     )
 
@@ -71,7 +69,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
         config["auxiliary_ussuri"],
         "my_model",
         "rabbitmq-server",
-        "rabbitmq-server",
     )
     plan = app.generate_upgrade_plan(target)
 
@@ -95,7 +92,6 @@ def test_auxiliary_upgrade_plan_channel_different_expected(status, config, mocke
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
         "my_model",
-        "rabbitmq-server",
         "rabbitmq-server",
     )
     plan = app.generate_upgrade_plan(target)
@@ -124,7 +120,6 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config):
             config["auxiliary_ussuri"],
             "my_model",
             "rabbitmq-server",
-            "rabbitmq-server",
         )
 
 
@@ -137,7 +132,6 @@ def test_auxiliary_raise_error_unknown_track(status, config):
         app_status,
         config["auxiliary_ussuri"],
         "my_model",
-        "rabbitmq-server",
         "rabbitmq-server",
     )
     with pytest.raises(ApplicationError):
@@ -155,7 +149,6 @@ def test_auxiliary_raise_halt_upgrade(status, config):
         status["rabbitmq_server"],
         config["auxiliary_wallaby"],
         "my_model",
-        "rabbitmq-server",
         "rabbitmq-server",
     )
     with pytest.raises(HaltUpgradePlanGeneration):

@@ -17,7 +17,7 @@
 import csv
 import encodings
 import logging
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, namedtuple
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
@@ -25,6 +25,8 @@ from typing import Any, List, Optional, Tuple
 from packaging.version import Version
 
 logger = logging.getLogger(__name__)
+
+TrackKeys = namedtuple("TrackKeys", ["charm", "series", "os_release"])
 
 SERVICE_COLUMN_INDEX = 0
 VERSION_START_COLUMN_INDEX = 1
@@ -137,71 +139,6 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "jammy": "yoga",
     "kinect": "zed",
     "lunar": "antelope",
-}
-
-
-# https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
-OPENSTACK_TO_TRACK_MAPPING = {
-    "focal": {
-        "ceph": {
-            "ussuri": "octopus",
-            "victoria": "octopus",
-            "wallaby": "pacific",
-            "xena": "pacific",
-            "yoga": "quincy",
-        },
-        "ovn": {
-            "ussuri": "22.03",
-            "victoria": "22.03",
-            "wallaby": "22.03",
-            "xena": "22.03",
-            "yoga": "22.03",
-        },
-        "mysql": {
-            "ussuri": "8.0",
-            "victoria": "8.0",
-            "wallaby": "8.0",
-            "xena": "8.0",
-            "yoga": "8.0",
-        },
-        "hacluster": {
-            "ussuri": "2.0.3",
-            "victoria": "2.0.3",
-            "wallaby": "2.0.3",
-            "xena": "2.0.3",
-            "yoga": "2.0.3",
-        },
-        "pacemaker-remote": {
-            "ussuri": "focal",
-            "victoria": "focal",
-            "wallaby": "focal",
-            "xena": "focal",
-            "yoga": "focal",
-        },
-        "rabbitmq-server": {
-            "ussuri": "3.8",
-            "victoria": "3.8",
-            "wallaby": "3.8",
-            "xena": "3.8",
-            "yoga": "3.8",
-        },
-        "vault": {
-            "ussuri": "1.7",
-            "victoria": "1.7",
-            "wallaby": "1.7",
-            "xena": "1.7",
-            "yoga": "1.7",
-        },
-    },
-    "jammy": {
-        "ceph": {"yoga": "quincy", "zed": "quincy", "2023.1": "quincy"},
-        "ovn": {"yoga": "22.03", "zed": "22.09", "2023.1": "23.03"},
-        "mysql": {"yoga": "8.0", "zed": "8.0", "2023.1": "8.0"},
-        "hacluster": {"yoga": "2.4", "zed": "2.4", "2023.1": "2.4"},
-        "pacemaker-remote": {"yoga": "jammy", "zed": "jammy", "2023.1": "jammy"},
-        "rabbitmq-server": {"yoga": "3.9", "zed": "3.9", "2023.1": "3.9"},
-        "vault": {"yoga": "1.8", "zed": "1.8", "2023.1": "1.8"},
-    },
 }
 
 
@@ -469,21 +406,49 @@ def is_charm_supported(charm: str) -> bool:
     return bool(OpenStackCodenameLookup.lookup(charm)) or charm in SUBORDINATES
 
 
-def openstack_to_track(
-    series: str, charm_family: str, os_release: OpenStackRelease
-) -> Optional[str]:
-    """Find the track of auxiliary charms by series, family and OpenStack release codename.
+def _generate_track_mapping() -> dict[TrackKeys, str]:
+    """Generate the track mapping for the auxiliary charms.
 
-    :param series: Ubuntu series
+    This mapping should be updated periodically by adding new lines in the file
+    openstack_to_track_mapping.csv
+
+    See the following url for more details:
+    https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+
+    :return: Dictionary containing the tracks by charm name, series and OpenStack release.
+    :rtype: dict[namedtuple, str]
+    """
+    track_mapping = {}
+    with open(
+        Path(__file__).parent / "openstack_to_track_mapping.csv",
+        encoding=encodings.utf_8.getregentry().name,
+    ) as csv_file:
+        csv_reader = csv.DictReader(csv_file, delimiter=",")
+        for row in csv_reader:
+            track_key = TrackKeys(
+                charm=row["charm"], series=row["series"], os_release=row["os_release"]
+            )
+            track_mapping[track_key] = row["track"]
+    return track_mapping
+
+
+OPENSTACK_TO_TRACK_MAPPING = _generate_track_mapping()
+
+
+def openstack_to_track(charm: str, series: str, os_release: OpenStackRelease) -> Optional[str]:
+    """Find the track of auxiliary charms by charm name, series and OpenStack release codename.
+
+    :param charm: charm name. E.g: ceph-mon
+    :type charm: str
+    :param series: Ubuntu series. E.g: focal
     :type series: str
-    :param charm_family: Charm family. E.g: ceph, ovn
-    :type charm_family: str
-    :param os_release:  OpenStack release to track.
+    :param os_release: OpenStack release to track.
     :type os_release: OpenStackRelease
     :return: The track of the auxiliary charm.
     :rtype: Optional[str]
     """
+    track_key = TrackKeys(charm=charm, series=series, os_release=os_release.codename)
     try:
-        return OPENSTACK_TO_TRACK_MAPPING[series][charm_family][os_release.codename]
+        return OPENSTACK_TO_TRACK_MAPPING[track_key]
     except KeyError:
         return None
