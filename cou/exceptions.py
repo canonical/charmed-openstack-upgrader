@@ -98,5 +98,13 @@ class ActionFailed(COUException):
         super().__init__(message)
 
 
-class TimeoutException(COUException):
-    """COU timeout exception."""
+class RetryError(COUException):
+    """COU retry exception."""
+
+
+class ModelError(COUException):
+    """Model exception."""
+
+
+class ModelConnectionError(COUException):
+    """Model connection exception."""

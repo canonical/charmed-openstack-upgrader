@@ -15,22 +15,26 @@
 """Juju utilities for charmed-openstack-upgrader."""
 import logging
 import os
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Callable, Dict, NoReturn, Optional
 
 from juju.action import Action
 from juju.client._definitions import FullStatus
-from juju.errors import JujuAgentError, JujuAppError, JujuMachineError, JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
+from macaroonbakery.httpbakery import BakeryException
+from tenacity import (
+    RetryCallState,
+    retry,
+    retry_if_not_exception_type,
+    wait_random_exponential,
+)
 
-from cou.exceptions import ActionFailed, TimeoutException, UnitNotFound
+from cou.exceptions import ActionFailed, RetryError, UnitNotFound
 
 JUJU_MAX_FRAME_SIZE = 2**30
 
 CURRENT_MODEL_NAME: Optional[str] = None
 CURRENT_MODEL: Optional[Model] = None
-# Total wait timeout. After this timeout TimeoutException is raised
 DEFAULT_TIMEOUT: int = 3600
 # Model should be idle for MODEL_IDLE_PERIOD consecutive seconds to be counted as idle.
 MODEL_IDLE_PERIOD: int = 30
@@ -420,105 +424,68 @@ async def async_set_application_config(
     return await model.applications[application_name].set_config(configuration)
 
 
-class COUModel(Model):
-    """COU version of juju.model.Model.
+def retry_error_callback(message: str) -> Callable:
+    """Raise retry error with callback."""
 
-    This version of the model provides better waiting for the model to turn idle reconnection and
-    some other required features for COU.
+    def wrapper(retry_state: RetryCallState) -> NoReturn:
+        if retry_state.outcome is None:
+            raise RetryError(message.format(retry_state))
+
+        raise RetryError(message.format(retry_state)) from retry_state.outcome.exception()
+
+    return wrapper
+
+
+class COUModel:
+    """COU model object.
+
+    This version of the model provides better waiting for the model to turn idle, auto-reconnection
+    and some other required features for COU.
     """
 
-    def __init__(self, model_name: str, *args: Any, **kwargs: Any):
+    def __init__(self, name: str):
         """COU Model initialization with model_name compared to original juju.model.Model."""
-        super().__init__(*args, **kwargs)
-        self.model_name = model_name
-        self.timeout = timedelta(seconds=DEFAULT_TIMEOUT)
-        self.start_time = datetime.now()
-        self.log = logging.getLogger(model_name)
+        self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
+        self._name = name
+        self.logger = logging.getLogger(name)
 
     @property
     def disconnected(self) -> bool:
         """Check if model is connected."""
-        return not (self.is_connected() and self.connection().is_open)
+        return not (self._model.is_connected() and self._model.connection().is_open)
 
-    def _check_time(self) -> None:
-        """Check time.
+    @property
+    def name(self) -> str:
+        """Return model name."""
+        return self._name
 
-        :raises TimeoutException: if timeout occurs
-        """
-        if datetime.now() - self.start_time > self.timeout:
-            self.log.debug("Model %s is not idle after %d seconds.", self.model_name, self.timeout)
-            raise TimeoutException(
-                f"Model {self.model_name} has not stabilized after {self.timeout} seconds."
-            )
-
-    async def _ensure_model_connected(self) -> None:
-        """Ensure that the model is connected.
-
-        :raises TimeoutException: if timeout occurs
-        """
-        while self.disconnect:
-            await self.disconnect()
-            try:
-                self._check_time()
-                await self.connect()
-            except TimeoutException:
-                raise
-            except Exception:
-                self.log.debug(
-                    "Model has unexpected exception while connecting, retrying", exc_info=True
-                )
-
-    async def _wait_for_idle(self, timeout: int) -> None:
-        """Wait for model to stabilize.
-
-        :param timeout: wait model till timeout_seconds. If passed raise TimeoutException
-        :type timeout: int
-        :raises TimeoutException: if timeout passed.
-        :raises JujuMachineError: if it has a machine exception
-        :raises JujuAgentError: if it has an agent exception
-        :raises JujuUnitError: if it has unit exception
-        :raises JujuAppError: if it has application exception
-        """
-        self.start_time = datetime.now()
-        self.timeout = timedelta(seconds=timeout)
-
-        self.log.debug("Waiting to stabilize in %s seconds", self.timeout)
-
-        while True:
-            await self._ensure_model_connected()
-            try:
-                await super().wait_for_idle(
-                    idle_period=MODEL_IDLE_PERIOD, timeout=JUJU_IDLE_TIMEOUT
-                )
-                self.log.debug(
-                    "Model %s is idle for %s seconds.", self.model_name, MODEL_IDLE_PERIOD
-                )
-                return
-            except (
-                JujuMachineError,
-                JujuAgentError,
-                JujuUnitError,
-                JujuAppError,
-            ):
-                raise
-            except Exception:
-                # We do not care exceptions other than Juju(Machine|Agent|Unit|App)Error because
-                # when juju connection is dropped you can have wide range of exceptions depending
-                # on the case
-                self.log.debug("Unknown error while waiting to stabilize.", exc_info=True)
-
-            self._check_time()
-
-    # pylint: disable=arguments-differ
     async def connect(self) -> None:
-        """Connect to model define by model_name."""
-        await super().connect(model_name=self.model_name)
+        """Make sure that model is connected."""
+        await self._model.disconnect()
+        await self._model.connect(model_name=self.name)
 
-    # pylint: disable=arguments-differ
-    async def wait_for_idle(self, timeout: int = DEFAULT_TIMEOUT) -> None:
-        """Wait for model to idle.
+    @retry(
+        wait=wait_random_exponential(multiplier=1, max=DEFAULT_TIMEOUT),
+        retry=retry_if_not_exception_type(BakeryException),
+        retry_error_callback=retry_error_callback("Model cloud not be connected."),
+    )
+    async def get_model(self) -> Model:
+        """Get juju.model.Model and make sure that's it's connected."""
+        if not self.disconnected:
+            await self.connect()
 
-        :param timeout: wait model till timeout_seconds. If passed raise TimeoutException
-        :type timeout: int
+        return self._model
+
+    @retry(
+        wait=wait_random_exponential(multiplier=1, max=DEFAULT_TIMEOUT),
+        retry=retry_if_not_exception_type(BakeryException),
+        retry_error_callback=retry_error_callback("Model cloud not be connected."),
+    )
+    async def get_status(self) -> FullStatus:
+        """Return the full juju status output.
+
+        :returns: Full juju status output
+        :rtype: FullStatus
         """
-        await self._wait_for_idle(timeout)
+        model = await self.get_model()
+        return await model.get_status()
