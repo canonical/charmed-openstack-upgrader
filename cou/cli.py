@@ -20,6 +20,7 @@ import sys
 from typing import Any, Iterable, Optional
 
 import pkg_resources
+from halo import Halo
 
 from cou.exceptions import COUException
 from cou.logging import setup_logging
@@ -33,6 +34,7 @@ AVAILABLE_OPTIONS = "cas"
 VERBOSITY_LEVEL = {0: "ERROR", 1: "WARNING", 2: "INFO", 3: "DEBUG", 4: "NOTSET"}
 
 logger = logging.getLogger(__name__)
+progress_indicator = Halo(spinner="line", placement="right")
 
 
 class CapitalisedHelpFormatter(argparse.HelpFormatter):
@@ -215,8 +217,8 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     return VERBOSITY_LEVEL[verbosity] if verbosity <= 4 else VERBOSITY_LEVEL[4]
 
 
-async def get_plan(model_name: Optional[str] = None) -> UpgradeStep:
-    """Get the upgrade plan with steps.
+async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
+    """Analyze cloud and generate the upgrade plan with steps.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
@@ -225,23 +227,55 @@ async def get_plan(model_name: Optional[str] = None) -> UpgradeStep:
     """
     model_name = model_name or await juju_utils.get_current_model_name()
     logger.info("Using model: %s", model_name)
+
+    progress_indicator.start("Analyzing cloud...")
     analysis_result = await Analysis.create(model_name)
+    progress_indicator.succeed()
     logger.info(analysis_result)
+
+    progress_indicator.start("Generating upgrade plan...")
     upgrade_plan = await generate_plan(analysis_result)
-    print(upgrade_plan)
+    progress_indicator.succeed()
+
     return upgrade_plan
 
 
-async def run_upgrade(model_name: Optional[str] = None, interactive: bool = True) -> None:
+async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
+    """Get upgrade plan and print to console.
+
+    :param model_name: Model name inputted by user.
+    :type model_name: Optional[str]
+    """
+    upgrade_plan = await analyze_and_plan(model_name)
+    logger.info(upgrade_plan)
+    print(upgrade_plan)  # print plan to console even in quiet mode
+
+
+async def run_upgrade(
+    model_name: Optional[str] = None, interactive: bool = True, quiet: bool = False
+) -> None:
     """Run cloud upgrade.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
-    :param interactive: Whether to run upgrade in the interactive mode.
+    :param interactive: Whether to run upgrade interactively.
     :type interactive: bool
+    :param quiet: Whether to run upgrade in quiet mode.
+    :type quiet: bool
     """
-    upgrade_plan = await get_plan(model_name)
-    await execute(upgrade_plan, interactive)
+    upgrade_plan = await analyze_and_plan(model_name)
+    logger.info(upgrade_plan)
+
+    # don't print plan if in quiet mode
+    if not quiet:
+        print(upgrade_plan)
+
+    if not interactive:
+        progress_indicator.start("Running cloud upgrade...")
+        await execute(upgrade_plan, interactive)
+        progress_indicator.succeed()
+    else:
+        await execute(upgrade_plan, interactive)
     print("Upgrade completed.")
 
 
@@ -249,19 +283,26 @@ async def entrypoint() -> None:
     """Execute 'canonical-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
+        # disable progress indicator when in quite mode to suppress its console output
+        progress_indicator.enabled = not args.quiet
 
+        progress_indicator.start("Configuring logging...")  # non-persistent progress output
         setup_logging(log_level=get_log_level(quiet=args.quiet, verbosity=args.verbosity))
 
         match args.command:
-            case "run":
-                await run_upgrade(model_name=args.model_name, interactive=args.interactive)
             case "plan":
-                await get_plan(args.model_name)
-
+                await get_upgrade_plan(model_name=args.model_name)
+            case "run":
+                await run_upgrade(
+                    model_name=args.model_name, interactive=args.interactive, quiet=args.quiet
+                )
     except COUException as exc:
+        progress_indicator.fail()
         logger.error(exc)
         sys.exit(1)
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.error("Unexpected error occurred")
         logger.exception(exc)
         sys.exit(2)
+    finally:
+        progress_indicator.stop()
