@@ -27,7 +27,7 @@ from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.execute import execute
 from cou.steps.plan import generate_plan
-from cou.utils import juju_utils as utils
+from cou.utils import juju_utils
 
 AVAILABLE_OPTIONS = "cas"
 VERBOSITY_LEVEL = {0: "ERROR", 1: "WARNING", 2: "INFO", 3: "DEBUG", 4: "NOTSET"}
@@ -223,9 +223,9 @@ async def get_plan(model_name: Optional[str] = None) -> UpgradeStep:
     :return: Generated upgrade plan.
     :rtype: UpgradeStep
     """
-    model = await utils.async_set_current_model_name(model_name)
-    logger.info("Setting current model name: %s", model)
-    analysis_result = await Analysis.create()
+    model_name = args.model_name or await juju_utils.get_current_model_name()
+    logger.info("Using model: %s", model_name)
+    analysis_result = await Analysis.create(model_name)
     logger.info(analysis_result)
     upgrade_plan = await generate_plan(analysis_result)
     print(upgrade_plan)

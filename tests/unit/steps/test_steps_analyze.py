@@ -88,16 +88,16 @@ async def test_populate_model(mocker, full_status, config):
 
     test_model = mocker.AsyncMock()
     test_model.applications = {app_name: generate_app(app_name) for app_name in apps_name}
-    juju_model = mocker.patch("cou.utils.juju_utils._async_get_model")
+    juju_model = mocker.patch("cou.utils.juju_utils._get_model")
     juju_model.return_value = test_model
-    mocker.patch.object(analyze, "async_get_status", return_value=full_status)
-    mocker.patch.object(
-        analyze, "async_get_application_config", return_value=config["openstack_ussuri"]
+    mocker.patch("cou.utils.juju_utils.get_status", return_value=full_status)
+    mocker.patch(
+        "cou.utils.juju_utils.get_application_config", return_value=config["openstack_ussuri"]
     )
     # Initially, 4 applications are in the status: keystone, cinder, rabbitmq-server and my-app
     # my-app it's not on the lookup and won't be instantiated.
     assert len(full_status.applications) == 4
-    apps = await Analysis._populate()
+    apps = await Analysis._populate(None)
     assert len(apps) == 3
     # apps are on the UPGRADE_ORDER sequence
     assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder"]
@@ -109,7 +109,7 @@ async def test_analysis_create(mocker, apps):
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_rmq = apps["rmq_ussuri"]
-    expected_result = analyze.Analysis(apps=[app_rmq, app_keystone, app_cinder])
+    expected_result = analyze.Analysis(model_name=None, apps=[app_rmq, app_keystone, app_cinder])
     mocker.patch.object(
         analyze.Analysis,
         "_populate",
@@ -125,7 +125,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(apps)
     keystone_wallaby = apps["keystone_wallaby"]
     cinder_ussuri = apps["cinder_ussuri"]
     rmq_ussuri = apps["rmq_ussuri"]
-    result = analyze.Analysis(apps=[rmq_ussuri, keystone_wallaby, cinder_ussuri])
+    result = analyze.Analysis(model_name=None, apps=[rmq_ussuri, keystone_wallaby, cinder_ussuri])
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
@@ -135,7 +135,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(apps)
 async def test_analysis_detect_current_cloud_os_release_same_release(apps):
     keystone_wallaby = apps["keystone_ussuri"]
     cinder_ussuri = apps["cinder_ussuri"]
-    result = analyze.Analysis(apps=[keystone_wallaby, cinder_ussuri])
+    result = analyze.Analysis(model_name=None, apps=[keystone_wallaby, cinder_ussuri])
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
