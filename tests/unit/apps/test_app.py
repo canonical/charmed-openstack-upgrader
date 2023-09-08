@@ -101,13 +101,7 @@ def test_application_ussuri(status, config, units):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_os_origin_from_apt_sources = exp_current_os_release
 
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -160,13 +154,7 @@ def test_application_cs(status, config, units):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_os_origin_from_apt_sources = exp_current_os_release
 
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -203,13 +191,7 @@ def test_application_wallaby(status, config, units):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_os_origin_from_apt_sources = exp_current_os_release
 
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -327,13 +309,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -351,13 +327,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     target = "victoria"
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -379,13 +349,7 @@ def test_upgrade_plan_change_current_channel(mocker, status, config):
     # channel it's neither the expected as current channel as ussuri/stable or
     # target_channel victoria/stable
     app_status.charm_channel = "foo/stable"
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
 
     steps_description = [
@@ -411,13 +375,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
     app_config = config["openstack_ussuri"]
     # channel it's already on next OpenStack release
     app_status.charm_channel = "victoria/stable"
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
 
     # no sub-step for refresh current channel or next channel
@@ -443,13 +401,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     app_config = config["openstack_ussuri"]
     # openstack-origin already configured for next OpenStack release
     app_config["openstack-origin"]["value"] = "cloud:focal-victoria"
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -479,13 +431,7 @@ def test_upgrade_plan_application_already_upgraded(status, config, mocker):
     mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
-    app = OpenStackApplication(
-        "my_keystone",
-        app_status,
-        app_config,
-        "my_model",
-        "keystone",
-    )
+    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     # victoria is lesser than wallaby, so application should not generate a plan.
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app.generate_upgrade_plan(target)

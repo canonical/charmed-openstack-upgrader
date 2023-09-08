@@ -213,42 +213,22 @@ def apps(status, config):
     keystone_ldap_status = status["keystone-ldap"]
 
     keystone_ussuri = OpenStackApplication(
-        "keystone",
-        keystone_ussuri_status,
-        config["openstack_ussuri"],
-        "my_model",
-        "keystone",
+        "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model", "keystone"
     )
     keystone_wallaby = OpenStackApplication(
-        "keystone",
-        keystone_wallaby_status,
-        config["openstack_wallaby"],
-        "my_model",
-        "keystone",
+        "keystone", keystone_wallaby_status, config["openstack_wallaby"], "my_model", "keystone"
     )
     cinder_ussuri = OpenStackApplication(
         "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model", "cinder"
     )
     rmq_ussuri = OpenStackAuxiliaryApplication(
-        "rabbitmq-server",
-        rmq_status,
-        config["auxiliary_ussuri"],
-        "my_model",
-        "rabbitmq-server",
+        "rabbitmq-server", rmq_status, config["auxiliary_ussuri"], "my_model", "rabbitmq-server"
     )
     rmq_wallaby = OpenStackAuxiliaryApplication(
-        "rabbitmq-server",
-        rmq_status,
-        config["auxiliary_wallaby"],
-        "my_model",
-        "rabbitmq-server",
+        "rabbitmq-server", rmq_status, config["auxiliary_wallaby"], "my_model", "rabbitmq-server"
     )
     keystone_ldap = OpenStackSubordinateApplication(
-        "keystone-ldap",
-        keystone_ldap_status,
-        {},
-        "my_model",
-        "keystone-ldap",
+        "keystone-ldap", keystone_ldap_status, {}, "my_model", "keystone-ldap"
     )
 
     return {

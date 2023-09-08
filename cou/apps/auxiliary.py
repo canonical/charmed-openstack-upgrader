@@ -37,6 +37,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         Note that this is not necessarily equal to the "channel" property since it is
         determined based on the workload version.
 
+        :raises ApplicationError: When cannot find a track.
         :return: The expected current channel for the application.
         :rtype: str
         """
@@ -53,6 +54,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :raises ApplicationError: When cannot find a track.
         :return: The next channel for the application. E.g: 3.8/stable
         :rtype: str
         """

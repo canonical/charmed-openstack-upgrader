@@ -453,7 +453,4 @@ def openstack_to_track(charm: str, series: str, os_release: OpenStackRelease) ->
     :rtype: Optional[str]
     """
     track_key = TrackKeys(charm=charm, series=series, os_release=os_release.codename)
-    try:
-        return OPENSTACK_TO_TRACK_MAPPING[track_key]
-    except KeyError:
-        return None
+    return OPENSTACK_TO_TRACK_MAPPING.get(track_key)
