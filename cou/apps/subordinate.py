@@ -15,7 +15,6 @@
 import logging
 
 from cou.apps.app import AppFactory, OpenStackApplication
-from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
@@ -50,9 +49,11 @@ class OpenStackSubordinateApplication(OpenStackApplication):
             parallel=False,
             function=None,
         )
-        refresh_charm_plan = self._get_refresh_charm_plan(OpenStackRelease(target))
-        if refresh_charm_plan:
-            plan.add_step(refresh_charm_plan)
+
+        if not self._default_used:
+            refresh_charm_plan = self._get_refresh_charm_plan(OpenStackRelease(target))
+            if refresh_charm_plan:
+                plan.add_step(refresh_charm_plan)
 
         upgrade_charm_plan = self._get_upgrade_charm_plan(OpenStackRelease(target))
         if upgrade_charm_plan:
@@ -81,7 +82,10 @@ class OpenStackSubordinateApplication(OpenStackApplication):
         try:
             OpenStackRelease(charm_channel.split("/")[0])
             self._channel = charm_channel
-        except ValueError as exc:
-            raise ApplicationError(
-                f"Cannot determine the OpenStack version from channel: {charm_channel}"
-            ) from exc
+            self._default_used = False
+        except ValueError:
+            # if it has charm origin like cs:
+            # or latest/stable it means it does not support openstack channels yet,
+            # so it should be minimum
+            self._default_used = True
+            self._channel = "ussuri/stable"
