@@ -13,7 +13,7 @@
 # limitations under the License.
 import asyncio
 import os
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import aiounittest
 import mock
@@ -637,6 +637,7 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
         await waiter._ensure_model_connected()
 
 
+@pytest.mark.asyncio
 @mock.patch("cou.utils.juju_utils._get_model")
 async def test_extract_charm_name(mocked_get_model):
     """Test extraction charm name from application name."""
@@ -699,6 +700,7 @@ async def test_retry_with_args():
 
 
 @pytest.mark.asyncio
+@patch("asyncio.sleep", new=AsyncMock())
 async def test_retry_with_failures():
     """Tets retry with some failures."""
     obj = mock.MagicMock()
@@ -715,6 +717,7 @@ async def test_retry_with_failures():
 
 
 @pytest.mark.asyncio
+@patch("asyncio.sleep", new=AsyncMock())
 async def test_retry_ignored_exceptions():
     """Tets retry with ignored exceptions."""
     obj = mock.MagicMock()
