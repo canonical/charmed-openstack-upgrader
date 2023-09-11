@@ -22,6 +22,7 @@ from typing import Any, Callable, Dict, Optional
 from juju.action import Action
 from juju.application import Application
 from juju.client._definitions import FullStatus
+from juju.client.connector import NoConnectionException
 from juju.errors import JujuAgentError, JujuAppError, JujuMachineError, JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
@@ -538,12 +539,12 @@ def retry(
 
     def _wrapper(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(self: "COUModel", *args: Any, **kwargs: Any) -> Any:
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             attempt: int = 0
             start_time = datetime.now()
             while (datetime.now() - start_time).seconds <= timeout:
                 try:
-                    return await func(self, *args, **kwargs)
+                    return await func(*args, **kwargs)
                 except ignored_exceptions:
                     # raising exception if no_retry_exception happen or TimeoutException
                     raise
@@ -577,9 +578,13 @@ class COUModel:
         self.logger = logging.getLogger(name)
 
     @property
-    def disconnected(self) -> bool:
+    def connected(self) -> bool:
         """Check if model is connected."""
-        return not (self._model.is_connected() and self._model.connection().is_open)
+        try:
+            connection = self._model.connection()
+            return connection is not None and connection.is_open
+        except NoConnectionException:
+            return False
 
     @property
     def name(self) -> str:
@@ -608,7 +613,7 @@ class COUModel:
     @retry(no_retry_exception=(BakeryException,))
     async def _get_model(self) -> Model:
         """Get juju.model.Model and make sure that's it's connected."""
-        if not self.disconnected:
+        if not self.connected:
             await self._connect()
 
         return self._model
@@ -627,6 +632,7 @@ class COUModel:
 
         return unit
 
+    @retry(no_retry_exception=(ApplicationNotFound,))
     async def get_application_config(self, name: str) -> Dict:
         """Return application configuration.
 
@@ -727,13 +733,10 @@ class COUModel:
         :param model_name: Name of model to query.
         :type model_name: Optional[str]
         """
-        model = await self._get_model()
-        app = model.applications.get(name)
-        if app is None:
-            raise ApplicationNotFound(f"application {name} was not found in model {self.name}")
-
+        app = await self._get_application(name)
         await app.set_config(configuration)
 
+    @retry(no_retry_exception=(UnitNotFound,))
     async def scp_from_unit(
         self,
         unit_name: str,
@@ -807,4 +810,14 @@ class COUModel:
             resources=resources,
             revision=revision,
             switch=switch,
+        )
+
+    async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
+        """Wait for model to rich idle state."""
+        model = await self._get_model()
+        wait = retry(model.wait_for_idle, timeout=timeout)
+        await wait(
+            apps=apps,
+            idle_period=JujuWaiter.MODEL_IDLE_PERIOD,
+            timeout=JujuWaiter.JUJU_IDLE_TIMEOUT,
         )
