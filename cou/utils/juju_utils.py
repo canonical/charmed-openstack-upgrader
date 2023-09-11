@@ -16,13 +16,15 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from juju.action import Action
 from juju.client._definitions import FullStatus
 from juju.errors import JujuAgentError, JujuAppError, JujuMachineError, JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
+from macaroonbakery.httpbakery import BakeryException
+from six import wraps
 
 from cou.exceptions import (
     ActionFailed,
@@ -509,3 +511,110 @@ class JujuWaiter:
             raise TimeoutException(
                 f"Model {self.model_name} has not stabilized after {self.timeout} seconds."
             )
+
+
+def retry(
+    function: Optional[Callable] = None,
+    timeout: int = 60,
+    no_retry_exception: Optional[tuple] = None,
+) -> Callable:
+    """Retry function for usage in COUModel.
+
+    :param function: function to wrapped
+    :type function: Optional[Callable]
+    :param timeout: timeout in seconds
+    :type timeout: int
+    :param no_retry_exception: tuple of exception on which function will not be retried
+    :type no_retry_exception: Optional[tuple]
+    :return: wrapped function
+    :rtype: Callable
+    """
+    ignored_exceptions = (TimeoutException, *(no_retry_exception or ()))
+
+    def _wrapper(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(self: "COUModel", *args: Any, **kwargs: Any) -> Any:
+            start_time = datetime.now()
+            while (datetime.now() - start_time).seconds <= timeout:
+                try:
+                    return await func(self, *args, **kwargs)
+                except ignored_exceptions:
+                    # raising exception if no_retry_exception happen or TimeoutException
+                    raise
+                except Exception:
+                    logger.debug("function %s failed", func.__name__, exc_info=True)
+
+            # if while loop ends, it means we reached the timeout
+            raise TimeoutException(f"function {func.__name__} rich timeout {timeout}s")
+
+        return wrapper
+
+    if function is not None:
+        return _wrapper(function)
+
+    return _wrapper
+
+
+class COUModel:
+    """COU model object.
+
+    This version of the model provides better waiting for the model to turn idle, auto-reconnection
+    and some other required features for COU.
+    """
+
+    def __init__(self, name: str):
+        """COU Model initialization with model_name compared to original juju.model.Model."""
+        self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
+        self._name = name
+        self.logger = logging.getLogger(name)
+
+    @property
+    def disconnected(self) -> bool:
+        """Check if model is connected."""
+        return not (self._model.is_connected() and self._model.connection().is_open)
+
+    @property
+    def name(self) -> str:
+        """Return model name."""
+        return self._name
+
+    async def _connect(self) -> None:
+        """Make sure that model is connected."""
+        await self._model.disconnect()
+        await self._model.connect(model_name=self.name)
+
+    @retry(no_retry_exception=(BakeryException,))
+    async def _get_model(self) -> Model:
+        """Get juju.model.Model and make sure that's it's connected."""
+        if not self.disconnected:
+            await self._connect()
+
+        return self._model
+
+    @retry
+    async def get_status(self) -> FullStatus:
+        """Return the full juju status output.
+
+        :returns: Full juju status output
+        :rtype: FullStatus
+        """
+        model = await self._get_model()
+        return await model.get_status()
+
+    @retry(no_retry_exception=(ApplicationNotFound,))
+    async def set_application_config(self, name: str, configuration: Dict[str, str]) -> None:
+        """Set application configuration.
+
+        :param name: Name of application
+        :type name: str
+        :param configuration: Dictionary of configuration setting(s)
+        :type configuration: Dict[str,str]
+        :param model_name: Name of model to query.
+        :type model_name: Optional[str]
+        """
+        model = await self._get_model()
+        app = model.applications.get(name)
+        if app is None:
+            raise ApplicationNotFound(f"application {name} was not found in model {self.name}")
+
+        await app.set_config(configuration)

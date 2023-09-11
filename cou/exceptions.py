@@ -40,11 +40,11 @@ class CommandRunFailed(COUException):
 
 
 class UnitNotFound(COUException):
-    """Exception raised when a unit is not found in the model."""
+    """Exception raised when an unit is not found in the model."""
 
 
 class ApplicationNotFound(COUException):
-    """Exception raised when a application is not found in the model."""
+    """Exception raised when an application is not found in the model."""
 
 
 class MismatchedOpenStackVersions(COUException):
