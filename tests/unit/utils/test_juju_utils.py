@@ -13,14 +13,13 @@
 # limitations under the License.
 import asyncio
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiounittest
 import mock
 import pytest
 from juju.errors import JujuUnitError
 from juju.model import Model
-from mock.mock import AsyncMock
 
 from cou.exceptions import ApplicationNotFound, TimeoutException
 from cou.utils import juju_utils
@@ -751,3 +750,14 @@ async def test_retry_failure():
     test_model = TestModel()
     with pytest.raises(TimeoutException):
         await test_model.func()
+
+
+@patch("cou.utils.juju_utils.Model")
+def test_coumodel_init(mocked_model):
+    """Test COUModel initialization."""
+    name = "test-model"
+    model = juju_utils.COUModel(name)
+
+    mocked_model.assert_called_once_with(max_frame_size=juju_utils.JUJU_MAX_FRAME_SIZE)
+    assert model._model == mocked_model.return_value
+    assert model.name == name

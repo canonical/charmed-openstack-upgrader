@@ -40,6 +40,8 @@ JUJU_MAX_FRAME_SIZE: int = 2**30
 DEFAULT_TIMEOUT: int = 60
 DEFAULT_MAX_WAIT: int = 5
 DEFAULT_WAIT: float = 1.1
+DEFAULT_MODEL_RETRIES: int = 30
+DEFAULT_MODEL_RETRY_BACKOFF = 2
 
 CURRENT_MODEL: Optional[Model] = None
 
@@ -575,7 +577,6 @@ class COUModel:
         """COU Model initialization with model_name compared to original juju.model.Model."""
         self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
         self._name = name
-        self.logger = logging.getLogger(name)
 
     @property
     def connected(self) -> bool:
@@ -591,10 +592,15 @@ class COUModel:
         """Return model name."""
         return self._name
 
+    @retry(no_retry_exception=(BakeryException,))
     async def _connect(self) -> None:
         """Make sure that model is connected."""
         await self._model.disconnect()
-        await self._model.connect(model_name=self.name)
+        await self._model.connect(
+            model_name=self.name,
+            retries=DEFAULT_MODEL_RETRIES,
+            retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
+        )
 
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
@@ -610,7 +616,6 @@ class COUModel:
 
         return app
 
-    @retry(no_retry_exception=(BakeryException,))
     async def _get_model(self) -> Model:
         """Get juju.model.Model and make sure that's it's connected."""
         if not self.connected:
@@ -632,7 +637,6 @@ class COUModel:
 
         return unit
 
-    @retry(no_retry_exception=(ApplicationNotFound,))
     async def get_application_config(self, name: str) -> Dict:
         """Return application configuration.
 
@@ -657,7 +661,6 @@ class COUModel:
         app = await self._get_application(application_name)
         return app.charm_name
 
-    @retry
     async def get_status(self) -> FullStatus:
         """Return the full juju status output.
 
@@ -722,7 +725,6 @@ class COUModel:
         results = action.data.get("results")
         return _normalise_action_results(results)
 
-    @retry(no_retry_exception=(ApplicationNotFound,))
     async def set_application_config(self, name: str, configuration: Dict[str, str]) -> None:
         """Set application configuration.
 
@@ -736,7 +738,6 @@ class COUModel:
         app = await self._get_application(name)
         await app.set_config(configuration)
 
-    @retry(no_retry_exception=(UnitNotFound,))
     async def scp_from_unit(
         self,
         unit_name: str,
