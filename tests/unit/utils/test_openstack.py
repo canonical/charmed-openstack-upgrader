@@ -14,10 +14,11 @@
 import pytest
 
 from cou.utils.openstack import (
+    OPENSTACK_TO_TRACK_MAPPING,
+    TRACK_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
     OpenStackRelease,
     VersionRange,
-    openstack_to_track,
 )
 
 
@@ -192,15 +193,17 @@ def test_compare_openstack_release_order():
     wallaby = OpenStackRelease("wallaby")
     antelope = OpenStackRelease("antelope")
     bobcat = OpenStackRelease("bobcat")
+    caracal = OpenStackRelease("2024.1")
     os_releases = {
+        caracal,
         wallaby,
         ussuri,
         bobcat,
         antelope,
     }
     assert min(os_releases) == ussuri
-    assert max(os_releases) == bobcat
-    assert sorted(os_releases) == [ussuri, wallaby, antelope, bobcat]
+    assert max(os_releases) == caracal
+    assert sorted(os_releases) == [ussuri, wallaby, antelope, bobcat, caracal]
 
 
 def test_openstack_release_setter():
@@ -209,6 +212,13 @@ def test_openstack_release_setter():
     # change OpenStack release
     openstack_release.codename = "xena"
     assert openstack_release.next_release == "yoga"
+
+
+def test_openstack_release_setter_by_date():
+    openstack_release = OpenStackRelease("2023.1")
+    assert openstack_release.codename == "antelope"
+    assert openstack_release.next_release == "bobcat"
+    assert openstack_release.date == "2023.1"
 
 
 @pytest.mark.parametrize("os_release", ["victoria", "wallaby"])
@@ -307,4 +317,139 @@ def test_determine_previous_openstack_release(os_release, previous_os_release):
     ],
 )
 def test_openstack_to_track(charm, series, os_release, exp_result):
-    assert openstack_to_track(charm, series, OpenStackRelease(os_release)) == exp_result
+    assert OPENSTACK_TO_TRACK_MAPPING.get((charm, series, os_release)) == exp_result
+
+
+@pytest.mark.parametrize(
+    "series, charm, track, exp_result",
+    [
+        (
+            "focal",
+            "ceph-mon",
+            "octopus",
+            [OpenStackRelease("ussuri"), OpenStackRelease("victoria")],
+        ),
+        (
+            "focal",
+            "ceph-mon",
+            "pacific",
+            [OpenStackRelease("wallaby"), OpenStackRelease("xena")],
+        ),
+        (
+            "focal",
+            "ceph-mon",
+            "quincy",
+            [OpenStackRelease("yoga")],
+        ),
+        (
+            "jammy",
+            "ceph-mon",
+            "quincy",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "ovn-central",
+            "22.03",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "ovn-central",
+            "22.03",
+            [OpenStackRelease("yoga")],
+        ),
+        (
+            "jammy",
+            "ovn-central",
+            "22.09",
+            [OpenStackRelease("zed")],
+        ),
+        (
+            "jammy",
+            "ovn-central",
+            "23.03",
+            [OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "mysql-router",
+            "8.0",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "mysql-router",
+            "8.0",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "hacluster",
+            "2.0.3",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "hacluster",
+            "2.4",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "rabbitmq-server",
+            "3.8",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "rabbitmq-server",
+            "3.9",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "vault",
+            "1.7",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "vault",
+            "1.8",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+    ],
+)
+def test_track_to_openstack(charm, series, track, exp_result):
+    assert TRACK_TO_OPENSTACK_MAPPING.get((charm, series, track)) == exp_result

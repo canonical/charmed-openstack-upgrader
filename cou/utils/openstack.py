@@ -27,6 +27,7 @@ from packaging.version import Version
 logger = logging.getLogger(__name__)
 
 TrackKeys = namedtuple("TrackKeys", ["charm", "series", "os_release"])
+OSReleaseKeys = namedtuple("OSReleaseKeys", ["charm", "series", "track"])
 
 SERVICE_COLUMN_INDEX = 0
 VERSION_START_COLUMN_INDEX = 1
@@ -220,10 +221,16 @@ class OpenStackRelease:
         :type value: str
         :raises ValueError: Raise ValueError if codename is unknown.
         """
-        if value not in self.openstack_codenames:
+        if value in self.openstack_codenames:
+            self._codename = value
+            self.index = self.openstack_codenames.index(value)
+        # NOTE (gabrielcocenza) From antelope, OpenStack releases are commonly referenced
+        # by the release date and not on the codename.
+        elif value in self.openstack_release_date:
+            self.index = self.openstack_release_date.index(value)
+            self._codename = self.openstack_codenames[self.index]
+        else:
             raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
-        self._codename = value
-        self.index = self.openstack_codenames.index(value)
 
     @property
     def next_release(self) -> Optional[str]:
@@ -411,19 +418,29 @@ def is_charm_supported(charm: str) -> bool:
     return bool(OpenStackCodenameLookup.lookup(charm)) or charm in SUBORDINATES
 
 
-def _generate_track_mapping() -> dict[TrackKeys, str]:
-    """Generate the track mapping for the auxiliary charms.
+def _generate_track_mapping() -> (
+    tuple[
+        dict[tuple[str, str, str], str], defaultdict[tuple[str, str, str], list[OpenStackRelease]]
+    ]
+):
+    """Generate the track mappings for the auxiliary charms.
 
-    This mapping should be updated periodically by adding new lines in the file
+    Those mappings should be updated periodically by adding new lines in the file
     openstack_to_track_mapping.csv
 
     See the following url for more details:
     https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 
-    :return: Dictionary containing the tracks by charm name, series and OpenStack release.
-    :rtype: dict[namedtuple, str]
+    :return: Dictionaries containing the tracks by charm name, series and OpenStack release.
+    :rtype: tuple[
+        dict[tuple[str, str, str], str],
+        defaultdict[tuple[str, str, str], list[OpenStackRelease]]
+    ]
     """
-    track_mapping = {}
+    track_mapping: dict[tuple[str, str, str], str] = {}
+    os_release_mapping: defaultdict[tuple[str, str, str], list[OpenStackRelease]] = defaultdict(
+        list
+    )
     with open(
         Path(__file__).parent / "openstack_to_track_mapping.csv",
         encoding=encodings.utf_8.getregentry().name,
@@ -433,24 +450,12 @@ def _generate_track_mapping() -> dict[TrackKeys, str]:
             track_key = TrackKeys(
                 charm=row["charm"], series=row["series"], os_release=row["os_release"]
             )
+            os_release_key = OSReleaseKeys(
+                charm=row["charm"], series=row["series"], track=row["track"]
+            )
             track_mapping[track_key] = row["track"]
-    return track_mapping
+            os_release_mapping[os_release_key].append(OpenStackRelease(row["os_release"]))
+    return track_mapping, os_release_mapping
 
 
-OPENSTACK_TO_TRACK_MAPPING = _generate_track_mapping()
-
-
-def openstack_to_track(charm: str, series: str, os_release: OpenStackRelease) -> Optional[str]:
-    """Find the track of auxiliary charms by charm name, series and OpenStack release codename.
-
-    :param charm: charm name. E.g: ceph-mon
-    :type charm: str
-    :param series: Ubuntu series. E.g: focal
-    :type series: str
-    :param os_release: OpenStack release to track.
-    :type os_release: OpenStackRelease
-    :return: The track of the auxiliary charm.
-    :rtype: Optional[str]
-    """
-    track_key = TrackKeys(charm=charm, series=series, os_release=os_release.codename)
-    return OPENSTACK_TO_TRACK_MAPPING.get(track_key)
+OPENSTACK_TO_TRACK_MAPPING, TRACK_TO_OPENSTACK_MAPPING = _generate_track_mapping()

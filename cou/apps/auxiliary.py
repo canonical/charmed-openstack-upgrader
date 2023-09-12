@@ -13,13 +13,15 @@
 # limitations under the License.
 """Auxiliary application class."""
 import logging
-from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError
-from cou.steps import UpgradeStep
-from cou.utils.juju_utils import upgrade_charm
-from cou.utils.openstack import CHARM_FAMILIES, OpenStackRelease, openstack_to_track
+from cou.utils.openstack import (
+    CHARM_FAMILIES,
+    OPENSTACK_TO_TRACK_MAPPING,
+    TRACK_TO_OPENSTACK_MAPPING,
+    OpenStackRelease,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +43,21 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: The expected current channel for the application.
         :rtype: str
         """
-        track = openstack_to_track(self.charm, self.series, self.current_os_release)
+        track = OPENSTACK_TO_TRACK_MAPPING.get(
+            (self.charm, self.series, self.current_os_release.codename)
+        )
         if track:
             return f"{track}/stable"
 
         raise ApplicationError(
-            f"Cannot find a track of '{self.charm}' for {self.current_os_release.codename}"
+            (
+                f"Cannot find a suitable '{self.charm}' charm channel for "
+                f"{self.current_os_release.codename}"
+            )
         )
 
     def target_channel(self, target: OpenStackRelease) -> str:
-        """Return the channel based on the target passed.
+        """Return the appropriate channel for the passed OpenStack target.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
@@ -58,52 +65,33 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: The next channel for the application. E.g: 3.8/stable
         :rtype: str
         """
-        track = openstack_to_track(self.charm, self.series, target)
+        track = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.codename))
         if track:
             return f"{track}/stable"
 
-        raise ApplicationError(f"Cannot find a track of '{self.charm}' for {target.codename}")
+        raise ApplicationError(
+            f"Cannot find a suitable '{self.charm}' charm channel for {target.codename}"
+        )
 
-    def _get_refresh_charm_plan(
-        self, target: OpenStackRelease, parallel: bool = False
-    ) -> Optional[UpgradeStep]:
-        """Get plan for refreshing the current channel.
+    @property
+    def channel_codename(self) -> OpenStackRelease:
+        """Identify the OpenStack release set in the charm channel.
 
-        This function also identifies if charm comes from charmstore and in that case,
-        makes the migration. This method overwrite OpenStackApplication method because
-        a channel track from auxiliary charms can have multiple OpenStack releases.
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Plan for refreshing the charm.
-        :rtype: Optional[UpgradeStep]
+        Auxiliary charms can have multiple compatible OpenStack releases. In
+        that case, return the latest compatible OpenStack version.
+        :raises ApplicationError: When cannot identify suitable OpenStack release codename
+            based on the track of the charm channel.
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
         """
-        switch = None
-        channel = self.channel
+        track: str = self.channel.split("/", maxsplit=1)[0]
+        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
+        if compatible_os_releases:
+            return max(compatible_os_releases)
 
-        description = f"Refresh '{self.name}' to the latest revision of '{self.channel}'"
-
-        if self.charm_origin == "cs":
-            description = f"Migration of '{self.name}' from charmstore to charmhub"
-            switch = f"ch:{self.charm}"
-            channel = self.expected_current_channel
-        elif self.channel != self.expected_current_channel:
-            logger.warning(
-                "'%s' has the channel set to: %s which is different from the expected channel: %s",
-                self.name,
-                self.channel,
-                self.expected_current_channel,
+        raise ApplicationError(
+            (
+                f"'{self.charm}' cannot identify suitable OpenStack release codename "
+                f"for channel: '{self.channel}'"
             )
-            return None
-
-        # pylint: disable=duplicate-code
-        return UpgradeStep(
-            description=description,
-            parallel=parallel,
-            function=upgrade_charm,
-            application_name=self.name,
-            channel=channel,
-            model_name=self.model_name,
-            switch=switch,
         )

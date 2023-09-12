@@ -65,7 +65,8 @@ def assert_application(
     exp_current_channel,
     exp_target_channel,
     exp_new_origin,
-    exp_os_origin_from_apt_sources,
+    exp_apt_source_codename,
+    exp_channel_codename,
     target,
 ):
     target_version = OpenStackRelease(target)
@@ -83,7 +84,8 @@ def assert_application(
     assert app.expected_current_channel == exp_current_channel
     assert app.target_channel(target_version) == exp_target_channel
     assert app.new_origin(target_version) == exp_new_origin
-    assert app.os_origin_from_apt_sources(target_version) == exp_os_origin_from_apt_sources
+    assert app.apt_source_codename == exp_apt_source_codename
+    assert app.channel_codename == exp_channel_codename
 
 
 def test_application_ussuri(status, config, units):
@@ -99,7 +101,8 @@ def test_application_ussuri(status, config, units):
     exp_current_channel = "ussuri/stable"
     exp_target_channel = f"{target}/stable"
     exp_new_origin = f"cloud:{exp_series}-{target}"
-    exp_os_origin_from_apt_sources = exp_current_os_release
+    exp_apt_source_codename = exp_current_os_release
+    exp_channel_codename = exp_current_os_release
 
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -118,7 +121,8 @@ def test_application_ussuri(status, config, units):
         exp_current_channel,
         exp_target_channel,
         exp_new_origin,
-        exp_os_origin_from_apt_sources,
+        exp_apt_source_codename,
+        exp_channel_codename,
         target,
     )
 
@@ -152,7 +156,8 @@ def test_application_cs(status, config, units):
     exp_current_channel = "ussuri/stable"
     exp_target_channel = f"{target}/stable"
     exp_new_origin = f"cloud:{exp_series}-{target}"
-    exp_os_origin_from_apt_sources = exp_current_os_release
+    exp_apt_source_codename = exp_current_os_release
+    exp_channel_codename = exp_current_os_release
 
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -171,7 +176,8 @@ def test_application_cs(status, config, units):
         exp_current_channel,
         exp_target_channel,
         exp_new_origin,
-        exp_os_origin_from_apt_sources,
+        exp_apt_source_codename,
+        exp_channel_codename,
         target,
     )
 
@@ -189,7 +195,8 @@ def test_application_wallaby(status, config, units):
     exp_current_channel = "wallaby/stable"
     exp_target_channel = f"{target}/stable"
     exp_new_origin = f"cloud:{exp_series}-{target}"
-    exp_os_origin_from_apt_sources = exp_current_os_release
+    exp_apt_source_codename = exp_current_os_release
+    exp_channel_codename = exp_current_os_release
 
     app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
     assert_application(
@@ -208,13 +215,13 @@ def test_application_wallaby(status, config, units):
         exp_current_channel,
         exp_target_channel,
         exp_new_origin,
-        exp_os_origin_from_apt_sources,
+        exp_apt_source_codename,
+        exp_channel_codename,
         target,
     )
 
 
 def test_application_no_origin_config(status):
-    target = "victoria"
     app = OpenStackApplication(
         "my_keystone",
         status["keystone_ussuri"],
@@ -223,18 +230,10 @@ def test_application_no_origin_config(status):
         "keystone",
     )
     assert app._get_os_origin() == ""
-    assert app.os_origin_from_apt_sources(OpenStackRelease(target)) is None
+    assert app.apt_source_codename is None
 
 
-@pytest.mark.parametrize(
-    "target, expected_os_origin_from_apt_sources",
-    [("victoria", "ussuri"), ("wallaby", "victoria")],
-)
-def test_application_empty_origin_config(
-    status, target, expected_os_origin_from_apt_sources, mocker
-):
-    target_version = OpenStackRelease(target)
-    mock_logger = mocker.patch("cou.apps.app.logger")
+def test_application_empty_origin_config(status):
     app = OpenStackApplication(
         "my_keystone",
         status["keystone_ussuri"],
@@ -242,16 +241,7 @@ def test_application_empty_origin_config(
         "my_model",
         "keystone",
     )
-    assert app.os_origin_from_apt_sources(target_version) == expected_os_origin_from_apt_sources
-    mock_logger.warning.assert_called_once_with(
-        (
-            "OpenStack origin from apt sources of '%s' will be considered "
-            "as %s because %s was empty."
-        ),
-        app.name,
-        target_version.previous_release,
-        app.origin_setting,
-    )
+    assert app.apt_source_codename is None
 
 
 @pytest.mark.parametrize(
@@ -259,7 +249,6 @@ def test_application_empty_origin_config(
     ["ppa:myteam/ppa", "cloud:xenial-proposed/ocata", "http://my.archive.com/ubuntu main"],
 )
 def test_application_unknown_source(status, source_value):
-    target = "victoria"
     app = OpenStackApplication(
         "my_keystone",
         status["keystone_ussuri"],
@@ -268,7 +257,7 @@ def test_application_unknown_source(status, source_value):
         "keystone",
     )
     with pytest.raises(ApplicationError):
-        app.os_origin_from_apt_sources(OpenStackRelease(target))
+        app.apt_source_codename
 
 
 @pytest.mark.asyncio

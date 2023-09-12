@@ -22,7 +22,6 @@ from tests.unit.apps.utils import assert_plan_description
 
 def test_auxiliary_app(status, config):
     # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
-    target = "victoria"
     expected_units = {"rabbitmq-server/0": {"os_version": "yoga", "workload_version": "3.8"}}
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
@@ -34,7 +33,8 @@ def test_auxiliary_app(status, config):
     assert app.channel == "3.8/stable"
     assert app.os_origin == "distro"
     assert app.units == expected_units
-    assert app.os_origin_from_apt_sources(OpenStackRelease(target)) == "ussuri"
+    assert app.apt_source_codename == "ussuri"
+    assert app.channel_codename == "yoga"
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config):
@@ -82,11 +82,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     assert_plan_description(plan, steps_description)
 
 
-def test_auxiliary_upgrade_plan_channel_different_expected(status, config, mocker):
-    mock_logger = mocker.patch("cou.apps.auxiliary.logger")
+def test_auxiliary_upgrade_plan_unknown_track(status, config):
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
-    rmq_status.charm_channel = "3.6/stable"
+    # 2.0 is an unknown track
+    rmq_status.charm_channel = "2.0/stable"
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
@@ -94,22 +94,8 @@ def test_auxiliary_upgrade_plan_channel_different_expected(status, config, mocke
         "my_model",
         "rabbitmq-server",
     )
-    plan = app.generate_upgrade_plan(target)
-
-    steps_description = [
-        f"Upgrade software packages of '{app.name}' from the current APT repositories",
-        f"Upgrade '{app.name}' to the new channel: '3.8/stable'",
-        f"Change charm config of '{app.name}' 'source' to 'cloud:focal-victoria'",
-        f"Check if the workload of '{app.name}' has been upgraded",
-    ]
-
-    assert_plan_description(plan, steps_description)
-    mock_logger.warning.assert_called_once_with(
-        "'%s' has the channel set to: %s which is different from the expected channel: %s",
-        app.name,
-        app.channel,
-        app.expected_current_channel,
-    )
+    with pytest.raises(ApplicationError):
+        app.generate_upgrade_plan(target)
 
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config):

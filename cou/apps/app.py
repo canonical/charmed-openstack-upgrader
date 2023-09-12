@@ -243,7 +243,7 @@ class OpenStackApplication:
         return f"{self.current_os_release.codename}/stable"
 
     def target_channel(self, target: OpenStackRelease) -> str:
-        """Return the channel based on the target passed.
+        """Return the appropriate channel for the passed OpenStack target.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
@@ -281,12 +281,12 @@ class OpenStackApplication:
             f"{os_versions}. This is not currently handled."
         )
 
-    def os_origin_from_apt_sources(self, target: OpenStackRelease) -> Optional[OpenStackRelease]:
+    @property
+    def apt_source_codename(self) -> Optional[OpenStackRelease]:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
-        :raises ValueError: If os_origin_parsed it's not a valid OpenStack release.
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
+        :raises ValueError: If os_origin_parsed it's not a valid OpenStack release or os_origin
+            is on an unexpected format (ppa, url and etc).
         :return: OpenStackRelease object or None if the app doesn't have os_origin config.
         :rtype: Optional[OpenStackRelease]
         """
@@ -296,33 +296,46 @@ class OpenStackApplication:
             return None
 
         # Ex: "cloud:focal-ussuri" will result in "ussuri"
-        *_, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
-        if os_origin_parsed == "distro":
+        if self.os_origin.startswith("cloud"):
+            *_, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
+            try:
+                return OpenStackRelease(os_origin_parsed)
+            except ValueError as exc:
+                raise ApplicationError(
+                    f"'{self.name}' has invalid '{self.origin_setting}': {self.os_origin}"
+                ) from exc
+
+        elif self.os_origin == "distro":
             # find the OpenStack release based on ubuntu series
             os_origin_parsed = DISTRO_TO_OPENSTACK_MAPPING[self.series]
-        elif os_origin_parsed == "":
-            # if it's empty we consider the previous release from the target.
-            # Ex: rabbitmq-server has empty "source" and receive target "victoria".
-            # In that case it will be considered as ussuri and with the upgrade,
-            # "source" config will be changed to "cloud:focal-victoria".
-            os_origin_parsed = target.previous_release
-            logger.warning(
-                (
-                    "OpenStack origin from apt sources of '%s' will be considered "
-                    "as %s because %s was empty."
-                ),
-                self.name,
-                os_origin_parsed,
-                self.origin_setting,
-            )
+            return OpenStackRelease(os_origin_parsed)
 
-        try:
-            return OpenStackRelease(os_origin_parsed) if os_origin_parsed else None
-        except ValueError as exc:
+        elif self.os_origin == "":
+            return None
+
+        else:
             # probably because user set a ppa or an url
             raise ApplicationError(
                 f"'{self.name}' has invalid '{self.origin_setting}': {self.os_origin}"
-            ) from exc
+            )
+
+    @property
+    def channel_codename(self) -> OpenStackRelease:
+        """Identify the OpenStack release set in the charm channel.
+
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        try:
+            # get the OpenStack release from the channel track of the application.
+            os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
+        except ValueError:
+            logger.debug(
+                "The current channel of '%s' does not exist or is unexpectedly formatted",
+                self.name,
+            )
+            os_track_release_channel = self.current_os_release
+        return os_track_release_channel
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -394,7 +407,7 @@ class OpenStackApplication:
         :return: Plan that will add upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        os_origin_apt_sources = self.os_origin_from_apt_sources(target)
+        os_origin_apt_sources = self.apt_source_codename
         if self.current_os_release >= target and os_origin_apt_sources >= target:
             msg = (
                 f"Application '{self.name}' already configured for release equal or greater "
@@ -481,16 +494,6 @@ class OpenStackApplication:
             f"to: '{self.expected_current_channel}'"
         )
 
-        try:
-            # get the OpenStack release from the channel track of the application.
-            os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
-        except ValueError:
-            logger.debug(
-                "The current channel of '%s' does not exist or is unexpectedly formatted",
-                self.name,
-            )
-            os_track_release_channel = self.current_os_release
-
         if self.charm_origin == "cs":
             description = f"Migration of '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
@@ -499,7 +502,7 @@ class OpenStackApplication:
                 f"Refresh '{self.name}' to the latest revision of "
                 f"'{self.expected_current_channel}'"
             )
-        elif os_track_release_channel >= target:
+        elif self.channel_codename >= target:
             logger.info(
                 "Skipping charm refresh for %s, its channel is already set to %s.",
                 self.name,
