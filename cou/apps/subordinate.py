@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 class OpenStackSubordinateApplication(OpenStackApplication):
     """Subordinate application class."""
 
+    _default_used = False
+
     @property
     def current_os_release(self) -> OpenStackRelease:
         """Infer the OpenStack release from subordinate charm's channel.
