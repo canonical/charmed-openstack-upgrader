@@ -148,25 +148,28 @@ def parse_args(args: Any) -> argparse.Namespace:
     # upgrade partial cloud by specifying sub-groups
     base_subparser.add_argument(
         "upgrade_group",
-        help="Run partial cloud upgrade with the specified group.",
+        help="Run partial cloud upgrade for the specified group.",
         nargs="?",
         choices=["control-plane", "data-plane"],
     )
-    base_subparser.add_argument(
+
+    # make the specified sub-group options mutually exclusive
+    partial_upgrade_group = base_subparser.add_mutually_exclusive_group()
+    partial_upgrade_group.add_argument(
         "--machine",
         "-m",
         action="append",
         help="Specify machines ids to upgrade.",
         dest="machines",
     )
-    base_subparser.add_argument(
+    partial_upgrade_group.add_argument(
         "--hostname",
         "-n",
         action="append",
         help="Specify machine hostnames to upgrade.",
         dest="hostnames",
     )
-    base_subparser.add_argument(
+    partial_upgrade_group.add_argument(
         "--availability-zone",
         "--az",
         action="append",
@@ -198,6 +201,13 @@ def parse_args(args: Any) -> argparse.Namespace:
         help="Run upgrade with prompt.",
         action=argparse.BooleanOptionalAction,
         default=True,
+    )
+    run_parser.add_argument(
+        "--i-really-mean-it",
+        help="Run upgrade steps even if they are considered as risky operations (e.g. upgrading "
+        "data-plane nodes with non-empty computes).",
+        action="store_true",
+        default=False,
     )
 
     help_parser = subparsers.add_parser(
