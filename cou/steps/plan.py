@@ -83,7 +83,7 @@ async def create_upgrade_group(
     :rtype: UpgradeStep
     """
     group_upgrade_plan = UpgradeStep(description=description, parallel=False, function=None)
-    for app in filter(filter_function, analysis_result.apps):
+    for app in filter(filter_function, analysis_result.apps_control_plane):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
         except HaltUpgradePlanGeneration as exc:
