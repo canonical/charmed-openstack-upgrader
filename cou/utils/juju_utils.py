@@ -42,6 +42,7 @@ DEFAULT_MAX_WAIT: int = 5
 DEFAULT_WAIT: float = 1.1
 DEFAULT_MODEL_RETRIES: int = 30
 DEFAULT_MODEL_RETRY_BACKOFF = 2
+DEFAULT_MODEL_IDLE_PERIOD: int = 30
 
 CURRENT_MODEL: Optional[Model] = None
 
@@ -695,12 +696,15 @@ class COUModel:
         action_params = action_params or {}
         unit = await self._get_unit(unit_name)
         action = await unit.run_action(action_name, **action_params)
-        await action.wait()
-        if raise_on_failure and action.status != "completed":
-            output = await action.model.get_action_output(action.id)
-            raise ActionFailed(action, output=output)
+        result = await action.wait()
+        if raise_on_failure:
+            model = await self._get_model()
+            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
+            if status != "completed":
+                output = await model.get_action_output(action.entity_id)
+                raise ActionFailed(action, output=output)
 
-        return action
+        return result
 
     async def run_on_unit(
         self, unit_name: str, command: str, timeout: Optional[int] = None
@@ -711,8 +715,6 @@ class COUModel:
         :type unit: str
         :param command: Command to execute
         :type command: str
-        :param model_name: Name of model unit is in
-        :type model_name: Optional[str]
         :param timeout: How long in seconds to wait for command to complete
         :type timeout: Optional[int]
         :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
@@ -816,9 +818,6 @@ class COUModel:
     async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
         """Wait for model to rich idle state."""
         model = await self._get_model()
-        wait = retry(model.wait_for_idle, timeout=timeout)
-        await wait(
-            apps=apps,
-            idle_period=JujuWaiter.MODEL_IDLE_PERIOD,
-            timeout=JujuWaiter.JUJU_IDLE_TIMEOUT,
+        await model.wait_for_idle(
+            apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
         )
