@@ -1,6 +1,6 @@
 name: charmed-openstack-upgrader
 base: core22
-version: '0.1'
+adopt-info: cou
 summary: Charmed Openstack Upgrader
 license: Apache-2.0
 description: |
@@ -38,6 +38,12 @@ parts:
     stage-packages:
       - git
       - openssh-client
+    override-build: |
+        craftctl default
+        set -e
+        VERSION=$(python3 setup.py --version)
+        echo "Version: ${VERSION}"
+        craftctl set version=${VERSION}
 
 plugs:
   dot-local-share-juju:
