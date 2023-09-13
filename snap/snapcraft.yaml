@@ -1,6 +1,6 @@
 name: canonical-openstack-upgrader
 base: core22
-version: '0.1'
+adopt-info: cou
 summary: Canonical Openstack Upgrader
 license: Apache-2.0
 description: |
@@ -42,9 +42,16 @@ parts:
     override-build: |
       craftctl default
       set -e
+
+      # set up bash completion
       mkdir -p ${CRAFT_PART_INSTALL}/etc/bash_completion.d/
       echo 'export PATH="${PATH}:/snap/bin:/var/lib/snapd/snap/bin"' > ${CRAFT_PART_INSTALL}/etc/bash_completion.d/snap.cou
       cat ../src/completions/bash/cou_bash_completion >> ${CRAFT_PART_INSTALL}/etc/bash_completion.d/snap.cou
+
+      # set version
+      VERSION=$(python3 setup.py --version)
+      echo "Version: ${VERSION}"
+      craftctl set version=${VERSION}
 
 plugs:
   dot-local-share-juju:
