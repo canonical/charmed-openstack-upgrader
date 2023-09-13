@@ -308,7 +308,7 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     """
     if quiet:
         return "CRITICAL"
-    return VERBOSITY_LEVEL[verbosity] if verbosity <= 4 else VERBOSITY_LEVEL[4]
+    return VERBOSITY_LEVEL[min(verbosity, 4)]
 
 
 async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
