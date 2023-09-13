@@ -74,8 +74,8 @@ def parse_args(args: Any) -> argparse.Namespace:
     # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
         description="Canonical OpenStack Upgrader(cou) is an application to upgrade Canonical "
-        "OpenStack cloud. Application identifies the lowest OpenStack version on the components and "
-        "upgrade to the next version.",
+        "OpenStack cloud. Application identifies the lowest OpenStack version on the components "
+        "and upgrade to the next version.",
         formatter_class=CapitalisedHelpFormatter,
         usage="%(prog)s [options] <command>",
         exit_on_error=False,
