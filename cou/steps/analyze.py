@@ -16,9 +16,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
 from dataclasses import dataclass
-from itertools import chain
 from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
@@ -33,14 +31,14 @@ class Analysis:
     """Analyze result.
 
     :param apps_control_plane: Control plane applications in the model
-    :type apps_control_plane:  Iterable[OpenStackApplication]
+    :type apps_control_plane:  list[OpenStackApplication]
     :param apps_data_plane: Data plane applications in the model
-    :type apps_data_plane:  Iterable[OpenStackApplication]
+    :type apps_data_plane:  list[OpenStackApplication]
     """
 
     model_name: Optional[str]
-    apps_control_plane: Iterable[OpenStackApplication]
-    apps_data_plane: Iterable[OpenStackApplication]
+    apps_control_plane: list[OpenStackApplication]
+    apps_data_plane: list[OpenStackApplication]
 
     @classmethod
     async def create(cls, model_name: Optional[str] = None) -> Analysis:
@@ -62,7 +60,7 @@ class Analysis:
 
     @classmethod
     def _split_control_plane_and_data_plane(
-        cls, apps: Iterable[OpenStackApplication]
+        cls, apps: list[OpenStackApplication]
     ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
         """Split control plane and data plane apps.
 
@@ -143,8 +141,7 @@ class Analysis:
         :return: OpenStack release codename
         :rtype: OpenStackRelease
         """
-        all_apps = chain(self.apps_control_plane, self.apps_data_plane)
         return min(
-            (app.current_os_release for app in all_apps),
+            (app.current_os_release for app in self.apps_control_plane + self.apps_data_plane),
             default=None,
         )
