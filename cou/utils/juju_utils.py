@@ -41,7 +41,7 @@ DEFAULT_TIMEOUT: int = 60
 DEFAULT_MAX_WAIT: int = 5
 DEFAULT_WAIT: float = 1.1
 DEFAULT_MODEL_RETRIES: int = 30
-DEFAULT_MODEL_RETRY_BACKOFF = 2
+DEFAULT_MODEL_RETRY_BACKOFF: int = 2
 DEFAULT_MODEL_IDLE_PERIOD: int = 30
 
 CURRENT_MODEL: Optional[Model] = None
@@ -525,20 +525,19 @@ class JujuWaiter:
 def retry(
     function: Optional[Callable] = None,
     timeout: int = DEFAULT_TIMEOUT,
-    no_retry_exception: Optional[tuple] = None,
+    no_retry_exceptions: tuple = (),
 ) -> Callable:
     """Retry function for usage in COUModel.
 
-    :param function: function to wrapped
+    :param function: function to be wrapped
     :type function: Optional[Callable]
     :param timeout: timeout in seconds
     :type timeout: int
-    :param no_retry_exception: tuple of exception on which function will not be retried
-    :type no_retry_exception: Optional[tuple]
+    :param no_retry_exceptions: tuple of exception on which function will not be retried
+    :type no_retry_exceptions: tuple
     :return: wrapped function
     :rtype: Callable
     """
-    ignored_exceptions = (TimeoutException, *(no_retry_exception or ()))
 
     def _wrapper(func: Callable) -> Callable:
         @wraps(func)
@@ -548,7 +547,7 @@ def retry(
             while (datetime.now() - start_time).seconds <= timeout:
                 try:
                     return await func(*args, **kwargs)
-                except ignored_exceptions:
+                except (TimeoutException, *no_retry_exceptions):
                     # raising exception if no_retry_exception happen or TimeoutException
                     raise
                 except Exception:
@@ -557,7 +556,7 @@ def retry(
                     attempt += 1
 
             # if while loop ends, it means we reached the timeout
-            raise TimeoutException(f"function {func.__name__} rich timeout {timeout}s")
+            raise TimeoutException(f"function {func.__name__} timed out after {timeout}s")
 
         return wrapper
 
@@ -593,7 +592,7 @@ class COUModel:
         """Return model name."""
         return self._name
 
-    @retry(no_retry_exception=(BakeryException,))
+    @retry(no_retry_exceptions=(BakeryException,))
     async def _connect(self) -> None:
         """Make sure that model is connected."""
         await self._model.disconnect()
@@ -606,6 +605,8 @@ class COUModel:
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
 
+        :param name: Name of application
+        :type name: str
         :return: Application
         :rtype: Application
         :raises: ApplicationNotFound
@@ -618,7 +619,7 @@ class COUModel:
         return app
 
     async def _get_model(self) -> Model:
-        """Get juju.model.Model and make sure that's it's connected."""
+        """Get juju.model.Model and make sure that it is connected."""
         if not self.connected:
             await self._connect()
 
@@ -627,6 +628,8 @@ class COUModel:
     async def _get_unit(self, name: str) -> Unit:
         """Get juju.unit.unit from model.
 
+        :param name: Name of unit
+        :type name: str
         :return: Unit
         :rtype: Unit
         :raises: UnitNotFound
@@ -734,8 +737,6 @@ class COUModel:
         :type name: str
         :param configuration: Dictionary of configuration setting(s)
         :type configuration: Dict[str,str]
-        :param model_name: Name of model to query.
-        :type model_name: Optional[str]
         """
         app = await self._get_application(name)
         await app.set_config(configuration)
@@ -749,7 +750,7 @@ class COUModel:
         proxy: bool = False,
         scp_opts: str = "",
     ) -> None:
-        """Transfer files from unit_name in model_name.
+        """Transfer files from unit_name.
 
         :param unit_name: Name of unit to scp from
         :type unit_name: str
@@ -800,8 +801,6 @@ class COUModel:
         :type revision: int
         :param switch: Crossgrade charm url
         :type switch: str
-        :param model_name: Name of model to operate on
-        :type model_name: str
         :raises: ApplicationNotFound
         """
         app = await self._get_application(application_name)
@@ -816,7 +815,7 @@ class COUModel:
         )
 
     async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
-        """Wait for model to rich idle state."""
+        """Wait for model to reach an idle state."""
         model = await self._get_model()
         await model.wait_for_idle(
             apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD

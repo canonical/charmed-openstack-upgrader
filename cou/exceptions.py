@@ -40,7 +40,7 @@ class CommandRunFailed(COUException):
 
 
 class UnitNotFound(COUException):
-    """Exception raised when an unit is not found in the model."""
+    """Exception raised when a unit is not found in the model."""
 
 
 class ApplicationNotFound(COUException):

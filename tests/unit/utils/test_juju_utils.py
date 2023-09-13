@@ -698,7 +698,7 @@ async def test_retry_with_args():
     obj = mock.MagicMock()
 
     class TestModel:
-        @juju_utils.retry(timeout=1, no_retry_exception=(Exception,))
+        @juju_utils.retry(timeout=1, no_retry_exceptions=(Exception,))
         async def func(self):
             obj.run()
 
@@ -710,7 +710,7 @@ async def test_retry_with_args():
 @pytest.mark.asyncio
 @patch("asyncio.sleep", new=AsyncMock())
 async def test_retry_with_failures():
-    """Tets retry with some failures."""
+    """Test retry with some failures."""
     obj = mock.MagicMock()
     obj.run.side_effect = [ValueError, KeyError, None]
 
@@ -727,12 +727,12 @@ async def test_retry_with_failures():
 @pytest.mark.asyncio
 @patch("asyncio.sleep", new=AsyncMock())
 async def test_retry_ignored_exceptions():
-    """Tets retry with ignored exceptions."""
+    """Test retry with ignored exceptions."""
     obj = mock.MagicMock()
     obj.run.side_effect = [ValueError, KeyError, SystemExit]
 
     class TestModel:
-        @juju_utils.retry(timeout=1, no_retry_exception=(SystemExit,))
+        @juju_utils.retry(timeout=1, no_retry_exceptions=(SystemExit,))
         async def func(self):
             obj.run()
 
