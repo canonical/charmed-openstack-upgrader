@@ -694,7 +694,7 @@ async def test_retry_without_args():
 
 @pytest.mark.asyncio
 async def test_retry_with_args():
-    """Tets retry as decorator with arguments."""
+    """Test retry as decorator with arguments."""
     obj = mock.MagicMock()
 
     class TestModel:
@@ -745,7 +745,7 @@ async def test_retry_ignored_exceptions():
 
 @pytest.mark.asyncio
 async def test_retry_failure():
-    """Tets retry with ignored exceptions."""
+    """Test retry with ignored exceptions."""
     obj = mock.MagicMock()
     obj.run.side_effect = [ValueError]
     timeout = 1
