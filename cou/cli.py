@@ -74,7 +74,7 @@ def parse_args(args: Any) -> argparse.Namespace:
     # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
         description="Canonical OpenStack Upgrader(cou) is an application to upgrade Canonical "
-        "OpenStack. Application identifies the lowest OpenStack version on the components and "
+        "OpenStack cloud. Application identifies the lowest OpenStack version on the components and "
         "upgrade to the next version.",
         formatter_class=CapitalisedHelpFormatter,
         usage="%(prog)s [options] <command>",
@@ -98,14 +98,30 @@ def parse_args(args: Any) -> argparse.Namespace:
         help="Show this help message and exit.",
     )
 
-    # Configure subcommand and their common flags
+    # Configure subcommand parser
     subparsers = parser.add_subparsers(
         title="Commands",
         dest="command",
         help="For more information about a command, run 'cou help <command>'.",
     )
-    base_subparser = argparse.ArgumentParser(add_help=False)
-    base_subparser.add_argument(
+
+    # Arg parser for "cou help" sub-command
+    help_parser = subparsers.add_parser(
+        "help",
+        usage="cou help [command]",
+    )
+    help_parser.add_argument(
+        "subcommand",
+        nargs="?",
+        choices=["plan", "run", "all"],
+        default="all",
+        type=str,
+        help="A sub-command to get information of.",
+    )
+
+    # Define common options for subcommands and their child commands
+    subcommand_common_opts_parser = argparse.ArgumentParser(add_help=False)
+    subcommand_common_opts_parser.add_argument(
         "--model",
         default=None,
         dest="model_name",
@@ -115,9 +131,15 @@ def parse_args(args: Any) -> argparse.Namespace:
         "  2 - Environment variable MODEL_NAME,"
         "  3 - Current active juju model",
     )
+    subcommand_common_opts_parser.add_argument(
+        "--parallel",
+        help="Run upgrade steps in parallel where possible.",
+        default=False,
+        action="store_true",
+    )
 
     # quiet and verbose options are mutually exclusive
-    group = base_subparser.add_mutually_exclusive_group()
+    group = subcommand_common_opts_parser.add_mutually_exclusive_group()
     group.add_argument(
         "--verbose",
         "-v",
@@ -138,38 +160,24 @@ def parse_args(args: Any) -> argparse.Namespace:
         help="Disable output in STDOUT.",
     )
 
-    base_subparser.add_argument(
-        "--parallel",
-        help="Run upgrade steps in parallel where possible.",
-        default=False,
-        action="store_true",
-    )
-
-    # upgrade partial cloud by specifying sub-groups
-    base_subparser.add_argument(
-        "upgrade_group",
-        help="Run partial cloud upgrade for the specified group.",
-        nargs="?",
-        choices=["control-plane", "data-plane"],
-    )
-
-    # make the specified sub-group options mutually exclusive
-    partial_upgrade_group = base_subparser.add_mutually_exclusive_group()
-    partial_upgrade_group.add_argument(
+    # Define options specific to data-plane child command and make them mutually exclusive
+    dp_subparser = argparse.ArgumentParser(add_help=False)
+    dp_upgrade_group = dp_subparser.add_mutually_exclusive_group()
+    dp_upgrade_group.add_argument(
         "--machine",
         "-m",
         action="append",
         help="Specify machines ids to upgrade.",
         dest="machines",
     )
-    partial_upgrade_group.add_argument(
+    dp_upgrade_group.add_argument(
         "--hostname",
         "-n",
         action="append",
         help="Specify machine hostnames to upgrade.",
         dest="hostnames",
     )
-    partial_upgrade_group.add_argument(
+    dp_upgrade_group.add_argument(
         "--availability-zone",
         "--az",
         action="append",
@@ -183,45 +191,83 @@ def parse_args(args: Any) -> argparse.Namespace:
         description="Show the steps for upgrading the cloud to the next release.",
         help="Show the steps for upgrading the cloud to the next release.",
         usage="cou plan [options]",
-        parents=[base_subparser],
+        parents=[subcommand_common_opts_parser],
         formatter_class=CapitalisedHelpFormatter,
     )
 
-    # Arg parser for "cou run" sub-command
-    run_parser = subparsers.add_parser(
-        "run",
-        description="Run the cloud upgrade.",
-        help="Run the cloud upgrade.",
-        usage="cou run [options]",
-        parents=[base_subparser],
+    # Create control-plane and data-plane child commands to plan partial upgrades
+    plan_subparser = plan_parser.add_subparsers(
+        title="Upgrade group",
+        dest="upgrade-group",
+        help="For more information about a upgrade group, run 'cou plan <upgrade-group>' -h.",
+    )
+    plan_subparser.add_parser(
+        "control-plane",
+        description="Show the steps for upgrading the control-plane components.",
+        help="Show the steps for upgrading the control-plane components.",
+        usage="cou plan control-plane [options]",
+        parents=[subcommand_common_opts_parser],
         formatter_class=CapitalisedHelpFormatter,
     )
-    run_parser.add_argument(
+
+    plan_subparser.add_parser(
+        "data-plane",
+        description="Show the steps for upgrading the data-plane components.",
+        help="Show the steps for upgrading the data-plane components.",
+        usage="cou plan data-plane [options]",
+        parents=[subcommand_common_opts_parser, dp_subparser],
+        formatter_class=CapitalisedHelpFormatter,
+    )
+
+    # Arg parser for "cou run" sub-command and set up common options
+    run_args_parser = argparse.ArgumentParser(add_help=False)
+    run_args_parser.add_argument(
         "--interactive",
         help="Run upgrade with prompt.",
         action=argparse.BooleanOptionalAction,
         default=True,
     )
-    run_parser.add_argument(
+    run_args_parser.add_argument(
         "--i-really-mean-it",
         help="Run upgrade steps even if they are considered as risky operations (e.g. upgrading "
         "data-plane nodes with non-empty computes).",
         action="store_true",
         default=False,
     )
-
-    help_parser = subparsers.add_parser(
-        "help",
-        usage="cou help [command]",
+    run_parser = subparsers.add_parser(
+        "run",
+        description="Run the cloud upgrade.",
+        help="Run the cloud upgrade.",
+        usage="cou run [options]",
+        parents=[subcommand_common_opts_parser, run_args_parser],
+        formatter_class=CapitalisedHelpFormatter,
     )
 
-    help_parser.add_argument(
-        "subcommand",
-        nargs="?",
-        choices=["plan", "run", "all"],
-        default="all",
-        type=str,
-        help="A sub-command to get information of.",
+    # Create control-plane and data-plane child commands to run partial upgrades
+    run_subparser = run_parser.add_subparsers(
+        title="Upgrade group",
+        dest="upgrade-group",
+        help="For more information about a upgrade group, run 'cou run <upgrade-group> -h'.",
+    )
+    run_subparser.add_parser(
+        "control-plane",
+        description="Run upgrade for the control-plane components.",
+        help="Run upgrade for the control-plane components.",
+        usage="cou plan control-plane [options]",
+        parents=[subcommand_common_opts_parser, run_args_parser],
+        formatter_class=CapitalisedHelpFormatter,
+    )
+    run_subparser.add_parser(
+        "data-plane",
+        description="Run upgrade for the data-plane components.",
+        help="Run upgrade for the data-plane components.",
+        usage="cou plan data-plane [options]",
+        parents=[
+            subcommand_common_opts_parser,
+            dp_subparser,
+            run_args_parser,
+        ],
+        formatter_class=CapitalisedHelpFormatter,
     )
 
     # It no sub-commands or options are given, print help message and exit
@@ -242,15 +288,6 @@ def parse_args(args: Any) -> argparse.Namespace:
                 case "all":
                     parser.print_help()
             sys.exit(0)
-
-        if (parsed_args.machines or parsed_args.hostnames or parsed_args.availability_zones) and (
-            not parsed_args.upgrade_group or parsed_args.upgrade_group != "data-plane"
-        ):
-            raise argparse.ArgumentError(
-                argument=None,
-                message="You can only specify machine ids, hostnames, or AZs when "
-                "upgrading data-plane.",
-            )
 
         return parsed_args
     except argparse.ArgumentError as exc:

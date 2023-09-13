@@ -13,6 +13,7 @@ confinement: strict
 apps:
   cou:
     command: bin/cou.wrapper
+    completer: etc/bash_completion.d/snap.cou
     aliases: [ cou ]
     plugs:
       - juju-client-observe
@@ -38,6 +39,12 @@ parts:
     stage-packages:
       - git
       - openssh-client
+    override-build: |
+      craftctl default
+      set -e
+      mkdir -p ${CRAFT_PART_INSTALL}/etc/bash_completion.d/
+      echo 'export PATH="${PATH}:/snap/bin:/var/lib/snapd/snap/bin"' > ${CRAFT_PART_INSTALL}/etc/bash_completion.d/snap.cou
+      cat ../src/completions/bash/cou_bash_completion >> ${CRAFT_PART_INSTALL}/etc/bash_completion.d/snap.cou
 
 plugs:
   dot-local-share-juju:

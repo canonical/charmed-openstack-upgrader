@@ -1,0 +1,61 @@
+_cou_bash_completion() {
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    # Define top level options
+    top_opts="--help --version"
+
+    # Define the available subcommands
+    subcommands="plan run help"
+
+    # Define completion for top-level options and subcommands
+    if [ $COMP_CWORD -eq 1 ]; then
+        COMPREPLY=( $(compgen -W "${subcommands} ${top_opts}" -- "${cur}") )
+        return 0
+    fi
+
+    # Define subcommand-specific options and child commands
+    if [ $COMP_CWORD -eq 2 ]; then
+        cmd="${COMP_WORDS[1]}"
+        case "${cmd}" in
+            plan)
+                opts="--help --quite --verbose --parallel --model"
+                child_commands="control-plane data-plane"
+                ;;
+            run)
+                opts="--help --quite --verbose --parallel --model --interactive --no-interactive --i-really-mean-it"
+                child_commands="control-plane data-plane"
+                ;;
+            help)
+                opts=""
+                child_commands="plan run"
+                ;;
+            *)
+                opts=""
+                child_commands=""
+                ;;
+        esac
+
+        COMPREPLY=( $(compgen -W "${child_commands} ${opts}" -- "${cur}") )
+        return 0
+    fi
+
+    # Define options specific to child-commands 
+    upgrade_group="${COMP_WORDS[2]}"
+    case "${upgrade_group}" in
+        data-plane)
+            opts="${opts} --machine --hostname --availability-zone"
+            ;;
+        control-plane)
+            ;;
+        *)
+            opts=""
+            ;;
+    esac
+
+    COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+
+}
+
+# Register the completion function
+complete -F _cou_bash_completion cou canonical-openstack-upgrader.cou
