@@ -54,14 +54,14 @@ class Analysis:
         logger.info("Analyzing the OpenStack deployment...")
         apps = await Analysis._populate(model_name)
 
-        control_plane, data_plane = await cls._split_control_plane_and_data_plane(apps)
+        control_plane, data_plane = cls._split_control_plane_and_data_plane(apps)
 
         return Analysis(
             model_name=model_name, apps_data_plane=data_plane, apps_control_plane=control_plane
         )
 
     @classmethod
-    async def _split_control_plane_and_data_plane(
+    def _split_control_plane_and_data_plane(
         cls, apps: Iterable[OpenStackApplication]
     ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
         """Split control plane and data plane apps.
@@ -143,8 +143,7 @@ class Analysis:
         :return: OpenStack release codename
         :rtype: OpenStackRelease
         """
-        control_plane = (app for app in self.apps_control_plane)
-        all_apps = chain(control_plane, self.apps_data_plane)
+        all_apps = chain(self.apps_control_plane, self.apps_data_plane)
         return min(
             (app.current_os_release for app in all_apps),
             default=None,
