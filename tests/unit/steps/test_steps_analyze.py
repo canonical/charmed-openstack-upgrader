@@ -149,3 +149,10 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps):
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
+
+
+def test_split_control_plane_and_data_plane(apps):
+    all_apps = [apps["nova_wallaby"], apps["keystone_wallaby"], apps["cinder_ussuri"]]
+    control_plane, data_plane = Analysis._split_control_plane_and_data_plane(all_apps)
+    assert control_plane == [apps["keystone_wallaby"], apps["cinder_ussuri"]]
+    assert data_plane == [apps["nova_wallaby"]]

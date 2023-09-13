@@ -109,6 +109,21 @@ def status():
         ]
     )
 
+    mock_nova_wallaby = mock.MagicMock()
+    mock_nova_wallaby.series = "focal"
+    mock_nova_wallaby.charm_channel = "wallaby/stable"
+    mock_nova_wallaby.charm = "ch:amd64/focal/keystone-638"
+    mock_nova_wallaby.subordinate_to = []
+    mock_units_nova_wallaby = mock.MagicMock()
+    mock_units_nova_wallaby.workload_version = "24.1.0"
+    mock_nova_wallaby.units = OrderedDict(
+        [
+            ("nova-compute/0", mock_units_nova_wallaby),
+            ("nova-compute/1", mock_units_nova_wallaby),
+            ("nova-compute/2", mock_units_nova_wallaby),
+        ]
+    )
+
     mock_rmq = mock.MagicMock()
     mock_rmq.series = "focal"
     mock_units_rmq = mock.MagicMock()
@@ -172,6 +187,7 @@ def status():
         "mysql_router": mock_mysql_router,
         "vault": mock_vault,
         "keystone-ldap": mock_keystone_ldap,
+        "nova_wallaby": mock_nova_wallaby,
     }
     return status
 
@@ -210,6 +226,7 @@ def apps(status, config):
     cinder_ussuri_status = status["cinder_ussuri"]
     rmq_status = status["rabbitmq_server"]
     keystone_ldap_status = status["keystone-ldap"]
+    nova_wallaby_status = status["nova_wallaby"]
 
     keystone_ussuri = OpenStackApplication(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], "my_model", "keystone"
@@ -230,6 +247,9 @@ def apps(status, config):
         "keystone-ldap", keystone_ldap_status, {}, "my_model", "keystone-ldap"
     )
 
+    nova_wallaby = OpenStackSubordinateApplication(
+        "nova-compute", nova_wallaby_status, {}, "my_model", "nova-compute"
+    )
     return {
         "keystone_ussuri": keystone_ussuri,
         "keystone_wallaby": keystone_wallaby,
@@ -237,6 +257,7 @@ def apps(status, config):
         "rmq_ussuri": rmq_ussuri,
         "rmq_wallaby": rmq_wallaby,
         "keystone_ldap": keystone_ldap,
+        "nova_wallaby": nova_wallaby,
     }
 
 
