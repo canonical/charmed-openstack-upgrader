@@ -45,7 +45,7 @@ async def test_generate_plan(mocker, apps):
     assert sub_step_back_up.function == backup
 
     sub_step_upgrade_plan = plan.sub_steps[1]
-    assert sub_step_upgrade_plan.description == "Principal(s) upgrade plan"
+    assert sub_step_upgrade_plan.description == "Control Plane principal(s) upgrade plan"
 
     sub_step_upgrade_keystone = sub_step_upgrade_plan.sub_steps[0]
     assert sub_step_upgrade_keystone.description == "Upgrade plan for 'keystone' to victoria"
@@ -62,7 +62,7 @@ async def test_generate_plan(mocker, apps):
     assert_plan_description(sub_step_upgrade_cinder, expected_description_upgrade_cinder)
 
     subordinate_plan = plan.sub_steps[2]
-    assert subordinate_plan.description == "Subordinate(s) upgrade plan"
+    assert subordinate_plan.description == "Control Plane subordinate(s) upgrade plan"
     assert (
         subordinate_plan.sub_steps[0].description == "Upgrade plan for 'keystone-ldap' to victoria"
     )
