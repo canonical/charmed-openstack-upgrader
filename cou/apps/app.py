@@ -286,7 +286,7 @@ class OpenStackApplication:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
         :raises ApplicationError: If os_origin_parsed is not a valid OpenStack release or os_origin
-            is on an unexpected format (ppa, url, etc).
+            is in an unexpected format (ppa, url, etc).
         :return: OpenStackRelease object or None if the app doesn't have os_origin config.
         :rtype: Optional[OpenStackRelease]
         """
