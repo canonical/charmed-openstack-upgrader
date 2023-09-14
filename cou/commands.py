@@ -68,55 +68,12 @@ class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
         super().add_argument(action)
 
 
-def parse_args(args: Any) -> argparse.Namespace:
-    """Parse cli arguments.
+def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
+    """Create a shared parser for options specific to subcommands.
 
-    :param args: Arguments to be parsed.
-    :type args: Any
-    :return: Arguments parsed to the cli execution.
-    :rtype: argparse.Namespace
+    :return: a parser groups options commonly shared by subcommands
+    :rtype: argparse.ArgumentParser
     """
-    # Configure top level argparser and its options
-    parser = argparse.ArgumentParser(
-        description="Charmed OpenStack Upgrader (cou) is an application to upgrade a Canonical "
-        "distribution of Charmed OpenStack. The application auto-detects the version of the "
-        "running cloud and will propose an upgrade to the next available version.",
-        formatter_class=CapitalizeHelpFormatter,
-        usage="%(prog)s [options] <command>",
-        exit_on_error=False,
-        add_help=True,
-        allow_abbrev=False,
-    )
-    parser.add_argument(
-        "--version",
-        "-V",
-        action="version",
-        default=argparse.SUPPRESS,
-        help="Show version details.",
-        version=pkg_resources.require("charmed_openstack_upgrader")[0].version,
-    )
-
-    # Configure subcommand parser
-    subparsers = parser.add_subparsers(
-        title="Commands",
-        dest="command",
-        help="For more information about a command, run 'cou help <command>'.",
-    )
-
-    # Arg parser for "cou help" sub-command
-    help_parser = subparsers.add_parser(
-        "help",
-        usage="cou help [command]",
-    )
-    help_parser.add_argument(
-        "subcommand",
-        nargs="?",
-        choices=["plan", "run", "all"],
-        default="all",
-        type=str,
-        help="A sub-command to get information of.",
-    )
-
     # Define common options for subcommands and their children commands
     subcommand_common_opts_parser = argparse.ArgumentParser(add_help=False)
     subcommand_common_opts_parser.add_argument(
@@ -158,6 +115,15 @@ def parse_args(args: Any) -> argparse.Namespace:
         help="Disable output in STDOUT.",
     )
 
+    return subcommand_common_opts_parser
+
+
+def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
+    """Create a shared parser for options specific to data-plane.
+
+    :return: a parser groups options specific to data-plane
+    :rtype: argparse.ArgumentParser
+    """
     # Define options specific to data-plane child command and make them mutually exclusive
     dp_subparser = argparse.ArgumentParser(add_help=False)
     dp_upgrade_group = dp_subparser.add_mutually_exclusive_group()
@@ -191,7 +157,23 @@ def parse_args(args: Any) -> argparse.Namespace:
         dest="availability_zones",
         type=str,
     )
+    return dp_subparser
 
+
+def create_plan_subparser(
+    subparsers: argparse._SubParsersAction,
+    subcommand_common_opts_parser: argparse.ArgumentParser,
+    dp_parser: argparse.ArgumentParser,
+) -> None:
+    """Create and configure 'plan' subcommand parser.
+
+    :param subparsers: subparsers that plan subparser belongs to
+    :type subparsers: argparse.ArgumentParser
+    :param subcommand_common_opts_parser parser groups options commonly shared by subcommands
+    :type subcommand_common_opts_parser: argparse.ArgumentParser
+    :param dp_parser: a parser groups options specific to data-plane
+    :type dp_parser: argparse.ArgumentParser
+    """
     # Arg parser for "cou plan" sub-command
     plan_parser = subparsers.add_parser(
         "plan",
@@ -217,7 +199,6 @@ def parse_args(args: Any) -> argparse.Namespace:
         parents=[subcommand_common_opts_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
-
     plan_subparser.add_parser(
         "data-plane",
         description="Show the steps for upgrading the data-plane components. This is possible "
@@ -225,10 +206,25 @@ def parse_args(args: Any) -> argparse.Namespace:
         help="Show the steps for upgrading the data-plane components. This is possible "
         "only if control-plane has been fully upgrade. Otherwise an error will be thrown.",
         usage="cou plan data-plane [options]",
-        parents=[subcommand_common_opts_parser, dp_subparser],
+        parents=[subcommand_common_opts_parser, dp_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
 
+
+def create_run_subparser(
+    subparsers: argparse._SubParsersAction,
+    subcommand_common_opts_parser: argparse.ArgumentParser,
+    dp_parser: argparse.ArgumentParser,
+) -> None:
+    """Create and configure 'run' subcommand parser.
+
+    :param subparsers: subparsers that plan subparser belongs to
+    :type subparsers: argparse.ArgumentParser
+    :param subcommand_common_opts_parser parser groups options commonly shared by subcommands
+    :type subcommand_common_opts_parser: argparse.ArgumentParser
+    :param dp_parser: a parser groups options specific to data-plane
+    :type dp_parser: argparse.ArgumentParser
+    """
     # Arg parser for "cou run" sub-command and set up common options
     run_args_parser = argparse.ArgumentParser(add_help=False)
     run_args_parser.add_argument(
@@ -270,11 +266,80 @@ def parse_args(args: Any) -> argparse.Namespace:
         usage="cou plan data-plane [options]",
         parents=[
             subcommand_common_opts_parser,
-            dp_subparser,
+            dp_parser,
             run_args_parser,
         ],
         formatter_class=CapitalizeHelpFormatter,
     )
+
+
+def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction:
+    """Create and configure subparsers.
+
+    :param parsers: the top level parser to create subparsers for,
+    :type parsers: argparse.ArgumentParser
+    :return subparsers: configured subparsers
+    :type subparsers: argparse.ArgumentParser
+    """
+    # Configure subcommand parser
+    subparsers = parser.add_subparsers(
+        title="Commands",
+        dest="command",
+        help="For more information about a command, run 'cou help <command>'.",
+    )
+
+    # Arg parser for "cou help" sub-command
+    help_parser = subparsers.add_parser(
+        "help",
+        usage="cou help [command]",
+    )
+    help_parser.add_argument(
+        "subcommand",
+        nargs="?",
+        choices=["plan", "run", "all"],
+        default="all",
+        type=str,
+        help="A sub-command to get information of.",
+    )
+
+    subcommand_common_opts_parser = get_subcommand_common_opts_parser()
+    dp_parser = get_dataplane_common_opts_parser()
+    create_plan_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
+    create_run_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
+
+    return subparsers
+
+
+def parse_args(args: Any) -> argparse.Namespace:
+    """Parse cli arguments.
+
+    :param args: Arguments to be parsed.
+    :type args: Any
+    :return: Arguments parsed to the cli execution.
+    :rtype: argparse.Namespace
+    """
+    # Configure top level argparser and its options
+    parser = argparse.ArgumentParser(
+        description="Charmed OpenStack Upgrader (cou) is an application to upgrade a Canonical "
+        "distribution of Charmed OpenStack. The application auto-detects the version of the "
+        "running cloud and will propose an upgrade to the next available version.",
+        formatter_class=CapitalizeHelpFormatter,
+        usage="%(prog)s [options] <command>",
+        exit_on_error=False,
+        add_help=True,
+        allow_abbrev=False,
+    )
+    parser.add_argument(
+        "--version",
+        "-V",
+        action="version",
+        default=argparse.SUPPRESS,
+        help="Show version details.",
+        version=pkg_resources.require("charmed_openstack_upgrader")[0].version,
+    )
+
+    # Configure subparsers for subcommands and their options
+    subparsers = create_subparsers(parser)
 
     # It no sub-commands or options are given, print help message and exit
     if len(sys.argv[1:]) == 0:
@@ -287,10 +352,10 @@ def parse_args(args: Any) -> argparse.Namespace:
         # print help messages for an available sub-command
         if parsed_args.command == "help":
             match parsed_args.subcommand:
-                case "run":
-                    run_parser.print_help()
                 case "plan":
-                    plan_parser.print_help()
+                    subparsers.choices["plan"].print_help()
+                case "run":
+                    subparsers.choices["run"].print_help()
                 case "all":
                     parser.print_help()
             sys.exit(0)
