@@ -285,8 +285,8 @@ class OpenStackApplication:
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
-        :raises ValueError: If os_origin_parsed it's not a valid OpenStack release or os_origin
-            is on an unexpected format (ppa, url and etc).
+        :raises ApplicationError: If os_origin_parsed is not a valid OpenStack release or os_origin
+            is on an unexpected format (ppa, url, etc).
         :return: OpenStackRelease object or None if the app doesn't have os_origin config.
         :rtype: Optional[OpenStackRelease]
         """
@@ -302,7 +302,7 @@ class OpenStackApplication:
                 return OpenStackRelease(os_origin_parsed)
             except ValueError as exc:
                 raise ApplicationError(
-                    f"'{self.name}' has invalid '{self.origin_setting}': {self.os_origin}"
+                    f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
                 ) from exc
 
         elif self.os_origin == "distro":
@@ -316,7 +316,7 @@ class OpenStackApplication:
         else:
             # probably because user set a ppa or an url
             raise ApplicationError(
-                f"'{self.name}' has invalid '{self.origin_setting}': {self.os_origin}"
+                f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
             )
 
     @property
@@ -407,8 +407,7 @@ class OpenStackApplication:
         :return: Plan that will add upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        os_origin_apt_sources = self.apt_source_codename
-        if self.current_os_release >= target and os_origin_apt_sources >= target:
+        if self.current_os_release >= target and self.apt_source_codename >= target:
             msg = (
                 f"Application '{self.name}' already configured for release equal or greater "
                 f"than {target}. Ignoring."
