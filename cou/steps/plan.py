@@ -18,6 +18,10 @@ import logging
 from typing import Callable
 
 from cou.apps.app import OpenStackApplication
+
+# NOTE we need to import the module to register the charms with the register_application decorator
+# pylint: disable=unused-import
+from cou.apps.auxiliary import OpenStackAuxiliaryApplication  # noqa: F401
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
