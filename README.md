@@ -8,21 +8,20 @@ different repository, and only use some of the code and ideas found here.
 # Setup
 
 ```bash
-rm *.snap
-snapcraft clean
-sudo snap remove canonical-openstack-upgrader --purge
+make clean
+sudo snap remove charmed-openstack-upgrader --purge
 make build
-sudo snap install ./canonical-openstack-upgrader.snap --devmode
-sudo snap connect canonical-openstack-upgrader:juju-client-observe snapd
-sudo snap connect canonical-openstack-upgrader:dot-local-share-juju snapd
-sudo snap connect canonical-openstack-upgrader:local-cou snapd
+sudo snap install ./charmed-openstack-upgrader.snap --devmode
+sudo snap connect charmed-openstack-upgrader:juju-client-observe snapd
+sudo snap connect charmed-openstack-upgrader:dot-local-share-juju snapd
+sudo snap connect charmed-openstack-upgrader:local-cou snapd
 ```
 
 Then you can use ```cou```
 
 ## Environment Variables
 
-- `COU_DATA`: Main directory for Canonical Openstack Upgrader configuration files. Currently only log files are kept under
+- `COU_DATA`: Main directory for Charmed Openstack Upgrader configuration files. Currently only log files are kept under
   COU_DATA/logs.
 - `JUJU_MODEL`: Active juju model to operate on.
 

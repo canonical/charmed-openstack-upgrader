@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Command line arguments parsing for 'canonical-openstack-upgrader'."""
+"""Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
 import sys
 from typing import Any, Iterable, Optional
@@ -78,7 +78,7 @@ def parse_args(args: Any) -> argparse.Namespace:
     """
     # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
-        description="Canonical OpenStack Upgrader (cou) is an application to upgrade a Canonical "
+        description="Charmed OpenStack Upgrader (cou) is an application to upgrade a Canonical "
         "distribution of Charmed OpenStack. The application auto-detects the version of the "
         "running cloud and will propose an upgrade to the next available version.",
         formatter_class=CapitalizeHelpFormatter,
@@ -93,7 +93,7 @@ def parse_args(args: Any) -> argparse.Namespace:
         action="version",
         default=argparse.SUPPRESS,
         help="Show version details.",
-        version=pkg_resources.require("canonical_openstack_upgrader")[0].version,
+        version=pkg_resources.require("charmed_openstack_upgrader")[0].version,
     )
 
     # Configure subcommand parser
@@ -221,7 +221,8 @@ def parse_args(args: Any) -> argparse.Namespace:
         "data-plane",
         description="Show the steps for upgrading the data-plane components. This is possible "
         "only if control-plane has been fully upgrade. Otherwise an error will be thrown.",
-        help="Show the steps for upgrading the data-plane components.",
+        help="Show the steps for upgrading the data-plane components. This is possible "
+        "only if control-plane has been fully upgrade. Otherwise an error will be thrown.",
         usage="cou plan data-plane [options]",
         parents=[subcommand_common_opts_parser, dp_subparser],
         formatter_class=CapitalizeHelpFormatter,
@@ -248,7 +249,7 @@ def parse_args(args: Any) -> argparse.Namespace:
     run_subparser = run_parser.add_subparsers(
         title="Upgrade group",
         dest="upgrade-group",
-        help="For more information about a upgrade group, run 'cou run <upgrade-group> -h'.",
+        help="For more information about an upgrade group, run 'cou run <upgrade-group> -h'.",
     )
     run_subparser.add_parser(
         "control-plane",
@@ -262,7 +263,8 @@ def parse_args(args: Any) -> argparse.Namespace:
         "data-plane",
         description="Run upgrade for the data-plane components. This is possible only if "
         "control-plane has been fully upgrade. Otherwise an error will be thrown.",
-        help="Run upgrade for the data-plane components.",
+        help="Run upgrade for the data-plane components. This is possible only if "
+        "control-plane has been fully upgrade. Otherwise an error will be thrown.",
         usage="cou plan data-plane [options]",
         parents=[
             subcommand_common_opts_parser,

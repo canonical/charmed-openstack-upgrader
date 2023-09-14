@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Juju utilities for canonical-openstack-upgrader."""
+"""Juju utilities for charmed-openstack-upgrader."""
 import logging
 import os
 from datetime import datetime, timedelta

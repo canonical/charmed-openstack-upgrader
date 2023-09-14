@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utilities for canonical-openstack-upgrader."""
+"""Utilities for charmed-openstack-upgrader."""

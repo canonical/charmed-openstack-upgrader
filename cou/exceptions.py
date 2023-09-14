@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module of exceptions that canonical-openstack-upgrader may raise."""
+"""Module of exceptions that charmed-openstack-upgrader may raise."""
 from typing import Any, Optional, Union
 
 from juju.action import Action

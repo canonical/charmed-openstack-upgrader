@@ -1,10 +1,10 @@
-name: canonical-openstack-upgrader
+name: charmed-openstack-upgrader
 base: core22
 adopt-info: cou
-summary: Canonical Openstack Upgrader
+summary: Charmed Openstack Upgrader
 license: Apache-2.0
 description: |
-  Snap for automatically upgrading Canonical Openstack and related
+  Snap for automatically upgrading Canonical Charmed Openstack and related
   components.
 
 grade: devel

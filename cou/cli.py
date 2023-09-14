@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Entrypoint for 'canonical-openstack-upgrader'."""
+"""Entrypoint for 'charmed-openstack-upgrader'."""
 import logging
 import logging.handlers
 import sys
@@ -146,7 +146,7 @@ async def run_upgrade(
 
 
 async def entrypoint() -> None:
-    """Execute 'canonical-openstack-upgrade' command."""
+    """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
         # disable progress indicator when in quite mode to suppress its console output

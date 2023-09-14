@@ -28,7 +28,7 @@ class TracebackInfoFilter(logging.Filter):  # pylint: disable=too-few-public-met
     """Filter to clear out exception tracebacks."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        """Filter function that sets excption info and cache to None.
+        """Filter function that sets exception info and cache to None.
 
         :return: Whether the specified record is to be logged.
         :rtype: bool
