@@ -145,8 +145,9 @@ def status():
     mock_vault.subordinate_to = []
     mock_vault.units = OrderedDict([("vault/0", mock_units_vault)])
 
-    # subordinate application
+    # auxiliary subordinate application
     mock_mysql_router = mock.MagicMock()
+    mock_mysql_router.series = "focal"
     mock_mysql_router.charm_channel = "8.0/stable"
     mock_mysql_router.charm = "ch:amd64/focal/mysql-router-437"
     mock_mysql_router.subordinate_to = ["keystone"]

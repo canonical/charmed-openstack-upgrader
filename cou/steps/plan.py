@@ -23,6 +23,7 @@ from cou.apps.app import OpenStackApplication
 # pylint: disable=unused-import
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication  # noqa: F401
 from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.apps.subordinate_auxiliary import OpenStackAuxiliarySubordinateApplication
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -52,7 +53,9 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         analysis_result=analysis_result,
         description="Principal(s) upgrade plan",
         target=target,
-        filter_function=lambda app: not isinstance(app, OpenStackSubordinateApplication),
+        filter_function=lambda app: not isinstance(
+            app, (OpenStackSubordinateApplication, OpenStackAuxiliarySubordinateApplication)
+        ),
     )
     plan.add_step(principal_upgrade_plan)
 
@@ -60,7 +63,9 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         analysis_result=analysis_result,
         description="Subordinate(s) upgrade plan",
         target=target,
-        filter_function=lambda app: isinstance(app, OpenStackSubordinateApplication),
+        filter_function=lambda app: isinstance(
+            app, (OpenStackSubordinateApplication, OpenStackAuxiliarySubordinateApplication)
+        ),
     )
     plan.add_step(subordinate_upgrade_plan)
 

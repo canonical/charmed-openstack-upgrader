@@ -97,6 +97,11 @@ SUBORDINATES = [
     "octavia-diskimage-retrofit",
 ]
 
+AUXILIARY_SUBORDINATES = [
+    "hacluster",
+    "mysql-router",
+]
+
 OPENSTACK_CODENAMES = OrderedDict(
     [
         ("diablo", "2011.2"),
@@ -415,7 +420,10 @@ def is_charm_supported(charm: str) -> bool:
     :return: True if supported, else False
     :rtype: bool
     """
-    return bool(OpenStackCodenameLookup.lookup(charm)) or charm in SUBORDINATES
+    return (
+        bool(OpenStackCodenameLookup.lookup(charm))
+        or charm in SUBORDINATES + AUXILIARY_SUBORDINATES
+    )
 
 
 def _generate_track_mapping() -> (
