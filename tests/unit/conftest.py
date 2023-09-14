@@ -112,7 +112,7 @@ def status():
     mock_nova_wallaby = mock.MagicMock()
     mock_nova_wallaby.series = "focal"
     mock_nova_wallaby.charm_channel = "wallaby/stable"
-    mock_nova_wallaby.charm = "ch:amd64/focal/keystone-638"
+    mock_nova_wallaby.charm = "ch:amd64/focal/nova-compute-638"
     mock_nova_wallaby.subordinate_to = []
     mock_units_nova_wallaby = mock.MagicMock()
     mock_units_nova_wallaby.workload_version = "24.1.0"
