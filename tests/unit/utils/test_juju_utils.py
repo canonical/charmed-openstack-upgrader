@@ -13,14 +13,13 @@
 # limitations under the License.
 import asyncio
 import os
+from unittest import mock
 from unittest.mock import MagicMock
 
 import aiounittest
-import mock
 import pytest
 from juju.errors import JujuUnitError
 from juju.model import Model
-from mock.mock import AsyncMock
 
 import cou.utils.juju_utils as utils
 from cou.exceptions import ApplicationNotFound
@@ -343,9 +342,9 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
     async def test_get_full_juju_status(self):
         with mock.patch("cou.utils.juju_utils._get_model") as get_model:
-            mymodel = AsyncMock()
+            mymodel = mock.AsyncMock()
             get_model.return_value = mymodel
-            mymodel.get_status = AsyncMock()
+            mymodel.get_status = mock.AsyncMock()
             mymodel.get_status.return_value = "test"
             result = await utils.get_status()
             get_model.assert_called()
@@ -409,9 +408,9 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
             await utils.get_unit_from_name("bad_name", model_name="mname")
 
     async def test_get_application_config(self):
-        test_model = AsyncMock()
-        test_app = AsyncMock()
-        test_app.get_config = AsyncMock()
+        test_model = mock.AsyncMock()
+        test_app = mock.AsyncMock()
+        test_app.get_config = mock.AsyncMock()
         test_app.get_config.return_value = "config"
         test_model.applications = {"app": test_app}
 
@@ -552,14 +551,14 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         )
 
     async def test_disconnect(self):
-        mymodel = AsyncMock(auto_spec=Model)
+        mymodel = mock.AsyncMock(auto_spec=Model)
         mymodel.disconnect.return_value = "ok"
         await utils._disconnect(mymodel)
 
     async def test_set_application_config(self):
-        test_model = AsyncMock()
-        test_app = AsyncMock()
-        test_app.set_config = AsyncMock()
+        test_model = mock.AsyncMock()
+        test_app = mock.AsyncMock()
+        test_app.set_config = mock.AsyncMock()
         test_model.applications = {"app": test_app}
         config = {"openstack-origin": "cloud:focal-victoria"}
 
@@ -573,17 +572,17 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
     def setUp(self):
         super().setUp()
 
-        self.model_connected = AsyncMock()
+        self.model_connected = mock.AsyncMock()
         self.model_connected.info.name = "test"
         self.model_connected.is_connected = MagicMock()
         self.model_connected.is_connected.return_value = True
         self.model_connected.connection = MagicMock()
-        self.model_connected.wait_for_idle = AsyncMock()
+        self.model_connected.wait_for_idle = mock.AsyncMock()
         connection = MagicMock()
         connection.is_open = True
         self.model_connected.connection.return_value = connection
 
-        self.model_juju_exception = AsyncMock()
+        self.model_juju_exception = mock.AsyncMock()
         self.model_juju_exception.info.name = "test"
         self.model_juju_exception.is_connected = MagicMock()
         self.model_juju_exception.is_connected.return_value = True
@@ -613,7 +612,7 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
             await waiter.wait(1)
 
     async def test_ensure_model_connected(self):
-        model_disconnected = AsyncMock()
+        model_disconnected = mock.AsyncMock()
         model_disconnected.info.name = "test"
         model_disconnected.is_connected = MagicMock()
         model_disconnected.is_connected.side_effect = [False, True, False, True, False, True, True]

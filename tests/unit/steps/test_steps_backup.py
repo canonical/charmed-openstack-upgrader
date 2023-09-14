@@ -14,9 +14,8 @@
 
 import os
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import mock
 import pytest
 from juju.client._definitions import FullStatus
 
@@ -43,8 +42,8 @@ async def test_backup():
 @pytest.mark.asyncio
 async def test_get_database_app_name_negative(mocker):
     get_model = mocker.patch("cou.utils.juju_utils._get_model")
-    get_model.return_value = model = mock.MagicMock()
-    model.applications.get.return_value = app = mock.MagicMock()
+    get_model.return_value = model = MagicMock()
+    model.applications.get.return_value = app = MagicMock()
     app.charm_name.return_value = "mysql"
 
     get_status = mocker.patch("cou.utils.juju_utils.get_status")
