@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Entrypoint for 'charmed-openstack-upgrader'."""
+import argparse
 import logging
 import logging.handlers
 import sys
@@ -148,7 +149,27 @@ async def run_upgrade(
 async def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
-        args = parse_args(sys.argv[1:])
+        raw_args = sys.argv[1:]
+        parser, subparsers = parse_args()
+
+        # It no sub-commands or options are given, print help message and exit
+        if len(raw_args) == 0:
+            parser.print_help()
+            sys.exit(0)
+
+        args = parser.parse_args(raw_args)
+
+        # print help messages for an available sub-command
+        if args.command == "help":
+            match args.subcommand:
+                case "plan":
+                    subparsers.choices["plan"].print_help()
+                case "run":
+                    subparsers.choices["run"].print_help()
+                case "all":
+                    parser.print_help()
+            sys.exit(0)
+
         # disable progress indicator when in quite mode to suppress its console output
         progress_indicator.enabled = not args.quiet
 
@@ -166,6 +187,10 @@ async def entrypoint() -> None:
     except COUException as exc:
         progress_indicator.fail()
         logger.error(exc)
+        sys.exit(1)
+    except argparse.ArgumentError as exc:
+        print(f"Error parsing arguments: {exc}\n")
+        print("See 'cou help' for more information.")
         sys.exit(1)
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.error("Unexpected error occurred")

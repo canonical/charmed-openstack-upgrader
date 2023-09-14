@@ -14,8 +14,7 @@
 
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
-import sys
-from typing import Any, Iterable, Optional
+from typing import Iterable, Optional
 
 import pkg_resources
 
@@ -310,13 +309,13 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
     return subparsers
 
 
-def parse_args(args: Any) -> argparse.Namespace:
+def parse_args() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]:
     """Parse cli arguments.
 
-    :param args: Arguments to be parsed.
-    :type args: Any
-    :return: Arguments parsed to the cli execution.
-    :rtype: argparse.Namespace
+    :return: Arguments parser.
+    :rtype: argparse.ArgumentParser
+    :return: Arguments subparsers.
+    :rtype: argparse._SubParsersAction
     """
     # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
@@ -341,27 +340,4 @@ def parse_args(args: Any) -> argparse.Namespace:
     # Configure subparsers for subcommands and their options
     subparsers = create_subparsers(parser)
 
-    # It no sub-commands or options are given, print help message and exit
-    if len(sys.argv[1:]) == 0:
-        parser.print_help()
-        sys.exit(0)
-
-    try:
-        parsed_args = parser.parse_args(args)
-
-        # print help messages for an available sub-command
-        if parsed_args.command == "help":
-            match parsed_args.subcommand:
-                case "plan":
-                    subparsers.choices["plan"].print_help()
-                case "run":
-                    subparsers.choices["run"].print_help()
-                case "all":
-                    parser.print_help()
-            sys.exit(0)
-
-        return parsed_args
-    except argparse.ArgumentError as exc:
-        print(f"Error parsing arguments: {exc}\n")
-        print("See 'cou help' for more information.")
-        sys.exit(1)
+    return parser, subparsers
