@@ -46,7 +46,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
 
     control_plane_principal_upgrade_plan = await create_upgrade_group(
         apps=analysis_result.apps_control_plane,
-        description="Principal(s) upgrade plan",
+        description="Control Plane principal(s) upgrade plan",
         target=target,
         filter_function=lambda app: not isinstance(app, OpenStackSubordinateApplication),
     )
