@@ -195,7 +195,8 @@ def parse_args(args: Any) -> argparse.Namespace:
     # Arg parser for "cou plan" sub-command
     plan_parser = subparsers.add_parser(
         "plan",
-        description="Show the steps COU will take to upgrade the cloud to the next release.",
+        description="Show the steps COU will take to upgrade the cloud to the next release. "
+        "If upgrade-group is unspecified, plan upgrade for the entire cloud",
         help="Show the steps COU will take to upgrade the cloud to the next release.",
         usage="cou plan [options]",
         parents=[subcommand_common_opts_parser],
@@ -238,7 +239,8 @@ def parse_args(args: Any) -> argparse.Namespace:
     )
     run_parser = subparsers.add_parser(
         "run",
-        description="Run the cloud upgrade.",
+        description="Run the cloud upgrade. If upgrade-group is unspecified, perform "
+        "upgrade for the entire cloud",
         help="Run the cloud upgrade.",
         usage="cou run [options]",
         parents=[subcommand_common_opts_parser, run_args_parser],
