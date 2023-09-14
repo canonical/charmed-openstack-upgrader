@@ -17,7 +17,7 @@
 import csv
 import encodings
 import logging
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, namedtuple
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
@@ -26,9 +26,12 @@ from packaging.version import Version
 
 logger = logging.getLogger(__name__)
 
+TrackKeys = namedtuple("TrackKeys", ["charm", "series", "os_release"])
+OSReleaseKeys = namedtuple("OSReleaseKeys", ["charm", "series", "track"])
+
 SERVICE_COLUMN_INDEX = 0
 VERSION_START_COLUMN_INDEX = 1
-CHARM_TYPES = {
+CHARM_FAMILIES = {
     "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"],
     "swift": ["swift-proxy", "swift-storage"],
     "nova": ["nova-cloud-controller", "nova-compute"],
@@ -125,6 +128,20 @@ OPENSTACK_CODENAMES = OrderedDict(
     ]
 )
 
+DISTRO_TO_OPENSTACK_MAPPING = {
+    "bionic": "queens",
+    "cosmic": "rocky",
+    "disco": "stein",
+    "eoan": "train",
+    "focal": "ussuri",
+    "groovy": "victoria",
+    "hirsute": "wallaby",
+    "impish": "xena",
+    "jammy": "yoga",
+    "kinect": "zed",
+    "lunar": "antelope",
+}
+
 
 class OpenStackRelease:
     """Provides a class that will compare OpenStack releases by the codename.
@@ -204,23 +221,42 @@ class OpenStackRelease:
         :type value: str
         :raises ValueError: Raise ValueError if codename is unknown.
         """
-        if value not in self.openstack_codenames:
+        if value in self.openstack_codenames:
+            self._codename = value
+            self.index = self.openstack_codenames.index(value)
+        # NOTE (gabrielcocenza) From antelope, OpenStack releases are commonly referenced
+        # by the release date and not on the codename.
+        elif value in self.openstack_release_date:
+            self.index = self.openstack_release_date.index(value)
+            self._codename = self.openstack_codenames[self.index]
+        else:
             raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
-        self._codename = value
-        self.index = self.openstack_codenames.index(value)
 
     @property
     def next_release(self) -> Optional[str]:
         """Return the next OpenStack release codename.
 
         :return: OpenStack release codename.
-        :rtype: str
+        :rtype: Optional[str]
         """
         try:
             return self.openstack_codenames[self.index + 1]
         except IndexError:
-            logger.warning("There is no OpenStack release after %s", self.codename)
+            logger.warning("Cannot find an OpenStack release after %s", self.codename)
             return None
+
+    @property
+    def previous_release(self) -> Optional[str]:
+        """Return the previous OpenStack release codename.
+
+        :return: OpenStack release codename.
+        :rtype: Optional[str]
+        """
+        if self.index == 0:
+            logger.warning("Cannot find an OpenStack release before %s", self.codename)
+            return None
+
+        return self.openstack_codenames[self.index - 1]
 
     @property
     def date(self) -> str:
@@ -309,9 +345,9 @@ class OpenStackCodenameLookup:
                 service, service_dict = cls._parse_row(header, row)
                 openstack_lookup[service] = service_dict
         # add openstack charms
-        for charm_type, charms in CHARM_TYPES.items():
+        for family, charms in CHARM_FAMILIES.items():
             for charm in charms:
-                openstack_lookup[charm] = openstack_lookup[charm_type]
+                openstack_lookup[charm] = openstack_lookup[family]
         return openstack_lookup
 
     @classmethod
@@ -380,3 +416,46 @@ def is_charm_supported(charm: str) -> bool:
     :rtype: bool
     """
     return bool(OpenStackCodenameLookup.lookup(charm)) or charm in SUBORDINATES
+
+
+def _generate_track_mapping() -> (
+    tuple[
+        dict[tuple[str, str, str], str], defaultdict[tuple[str, str, str], list[OpenStackRelease]]
+    ]
+):
+    """Generate the track mappings for the auxiliary charms.
+
+    Those mappings should be updated periodically by adding new lines in the file
+    openstack_to_track_mapping.csv
+
+    See the following url for more details:
+    https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+
+    :return: Dictionaries containing the tracks by charm name, series and OpenStack release.
+    :rtype: tuple[
+        dict[tuple[str, str, str], str],
+        defaultdict[tuple[str, str, str], list[OpenStackRelease]]
+    ]
+    """
+    track_mapping: dict[tuple[str, str, str], str] = {}
+    os_release_mapping: defaultdict[tuple[str, str, str], list[OpenStackRelease]] = defaultdict(
+        list
+    )
+    with open(
+        Path(__file__).parent / "openstack_to_track_mapping.csv",
+        encoding=encodings.utf_8.getregentry().name,
+    ) as csv_file:
+        csv_reader = csv.DictReader(csv_file, delimiter=",")
+        for row in csv_reader:
+            track_key = TrackKeys(
+                charm=row["charm"], series=row["series"], os_release=row["os_release"]
+            )
+            os_release_key = OSReleaseKeys(
+                charm=row["charm"], series=row["series"], track=row["track"]
+            )
+            track_mapping[track_key] = row["track"]
+            os_release_mapping[os_release_key].append(OpenStackRelease(row["os_release"]))
+    return track_mapping, os_release_mapping
+
+
+OPENSTACK_TO_TRACK_MAPPING, TRACK_TO_OPENSTACK_MAPPING = _generate_track_mapping()

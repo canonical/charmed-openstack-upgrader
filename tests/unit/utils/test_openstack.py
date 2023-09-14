@@ -13,7 +13,13 @@
 # limitations under the License.
 import pytest
 
-from cou.utils.openstack import OpenStackCodenameLookup, OpenStackRelease, VersionRange
+from cou.utils.openstack import (
+    OPENSTACK_TO_TRACK_MAPPING,
+    TRACK_TO_OPENSTACK_MAPPING,
+    OpenStackCodenameLookup,
+    OpenStackRelease,
+    VersionRange,
+)
 
 
 @pytest.mark.parametrize("lower, upper", [("2.0", "2.0"), ("2.0", "1.0")])
@@ -187,15 +193,17 @@ def test_compare_openstack_release_order():
     wallaby = OpenStackRelease("wallaby")
     antelope = OpenStackRelease("antelope")
     bobcat = OpenStackRelease("bobcat")
+    caracal = OpenStackRelease("2024.1")
     os_releases = {
+        caracal,
         wallaby,
         ussuri,
         bobcat,
         antelope,
     }
     assert min(os_releases) == ussuri
-    assert max(os_releases) == bobcat
-    assert sorted(os_releases) == [ussuri, wallaby, antelope, bobcat]
+    assert max(os_releases) == caracal
+    assert sorted(os_releases) == [ussuri, wallaby, antelope, bobcat, caracal]
 
 
 def test_openstack_release_setter():
@@ -204,6 +212,13 @@ def test_openstack_release_setter():
     # change OpenStack release
     openstack_release.codename = "xena"
     assert openstack_release.next_release == "yoga"
+
+
+def test_openstack_release_setter_by_date():
+    openstack_release = OpenStackRelease("2023.1")
+    assert openstack_release.codename == "antelope"
+    assert openstack_release.next_release == "bobcat"
+    assert openstack_release.date == "2023.1"
 
 
 @pytest.mark.parametrize("os_release", ["victoria", "wallaby"])
@@ -235,3 +250,206 @@ def test_determine_next_openstack_release(os_release, release_year, next_os_rele
     release = OpenStackRelease(os_release)
     assert release.next_release == next_os_release
     assert release.date == release_year
+
+
+@pytest.mark.parametrize(
+    "os_release, previous_os_release",
+    [
+        ("ussuri", "train"),
+        ("victoria", "ussuri"),
+        ("wallaby", "victoria"),
+        ("xena", "wallaby"),
+        ("diablo", None),  # None when there is no previous release
+    ],
+)
+def test_determine_previous_openstack_release(os_release, previous_os_release):
+    release = OpenStackRelease(os_release)
+    assert release.previous_release == previous_os_release
+
+
+@pytest.mark.parametrize(
+    "series, charm, os_release, exp_result",
+    [
+        ("focal", "ceph-mon", "ussuri", "octopus"),
+        ("focal", "ceph-mon", "victoria", "octopus"),
+        ("focal", "ceph-mon", "wallaby", "pacific"),
+        ("focal", "ceph-mon", "xena", "pacific"),
+        ("focal", "ceph-mon", "yoga", "quincy"),
+        ("jammy", "ceph-mon", "yoga", "quincy"),
+        ("jammy", "ceph-mon", "zed", "quincy"),
+        ("focal", "ovn-central", "ussuri", "22.03"),
+        ("focal", "ovn-central", "victoria", "22.03"),
+        ("focal", "ovn-central", "wallaby", "22.03"),
+        ("focal", "ovn-central", "xena", "22.03"),
+        ("focal", "ovn-central", "yoga", "22.03"),
+        ("jammy", "ovn-central", "yoga", "22.03"),
+        ("jammy", "ovn-central", "zed", "22.09"),
+        ("focal", "mysql-router", "ussuri", "8.0"),
+        ("focal", "mysql-router", "victoria", "8.0"),
+        ("focal", "mysql-router", "wallaby", "8.0"),
+        ("focal", "mysql-router", "xena", "8.0"),
+        ("focal", "mysql-router", "yoga", "8.0"),
+        ("jammy", "mysql-router", "yoga", "8.0"),
+        ("jammy", "mysql-router", "zed", "8.0"),
+        ("focal", "hacluster", "ussuri", "2.0.3"),
+        ("focal", "hacluster", "victoria", "2.0.3"),
+        ("focal", "hacluster", "wallaby", "2.0.3"),
+        ("focal", "hacluster", "xena", "2.0.3"),
+        ("focal", "hacluster", "yoga", "2.0.3"),
+        ("jammy", "hacluster", "yoga", "2.4"),
+        ("jammy", "hacluster", "zed", "2.4"),
+        ("focal", "rabbitmq-server", "ussuri", "3.8"),
+        ("focal", "rabbitmq-server", "victoria", "3.8"),
+        ("focal", "rabbitmq-server", "wallaby", "3.8"),
+        ("focal", "rabbitmq-server", "xena", "3.8"),
+        ("focal", "rabbitmq-server", "yoga", "3.8"),
+        ("jammy", "rabbitmq-server", "yoga", "3.9"),
+        ("jammy", "rabbitmq-server", "zed", "3.9"),
+        ("focal", "vault", "ussuri", "1.7"),
+        ("focal", "vault", "victoria", "1.7"),
+        ("focal", "vault", "wallaby", "1.7"),
+        ("focal", "vault", "xena", "1.7"),
+        ("focal", "vault", "yoga", "1.7"),
+        ("jammy", "vault", "yoga", "1.8"),
+        ("jammy", "vault", "zed", "1.8"),
+        ("bionic", "vault", "zed", None),  # release not mapped
+        ("jammy", "my-service", "zed", None),  # family not mapped
+    ],
+)
+def test_openstack_to_track(charm, series, os_release, exp_result):
+    assert OPENSTACK_TO_TRACK_MAPPING.get((charm, series, os_release)) == exp_result
+
+
+@pytest.mark.parametrize(
+    "series, charm, track, exp_result",
+    [
+        (
+            "focal",
+            "ceph-mon",
+            "octopus",
+            [OpenStackRelease("ussuri"), OpenStackRelease("victoria")],
+        ),
+        (
+            "focal",
+            "ceph-mon",
+            "pacific",
+            [OpenStackRelease("wallaby"), OpenStackRelease("xena")],
+        ),
+        (
+            "focal",
+            "ceph-mon",
+            "quincy",
+            [OpenStackRelease("yoga")],
+        ),
+        (
+            "jammy",
+            "ceph-mon",
+            "quincy",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "ovn-central",
+            "22.03",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "ovn-central",
+            "22.03",
+            [OpenStackRelease("yoga")],
+        ),
+        (
+            "jammy",
+            "ovn-central",
+            "22.09",
+            [OpenStackRelease("zed")],
+        ),
+        (
+            "jammy",
+            "ovn-central",
+            "23.03",
+            [OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "mysql-router",
+            "8.0",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "mysql-router",
+            "8.0",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "hacluster",
+            "2.0.3",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "hacluster",
+            "2.4",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "rabbitmq-server",
+            "3.8",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "rabbitmq-server",
+            "3.9",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+        (
+            "focal",
+            "vault",
+            "1.7",
+            [
+                OpenStackRelease("ussuri"),
+                OpenStackRelease("victoria"),
+                OpenStackRelease("wallaby"),
+                OpenStackRelease("xena"),
+                OpenStackRelease("yoga"),
+            ],
+        ),
+        (
+            "jammy",
+            "vault",
+            "1.8",
+            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+        ),
+    ],
+)
+def test_track_to_openstack(charm, series, track, exp_result):
+    assert TRACK_TO_OPENSTACK_MAPPING.get((charm, series, track)) == exp_result

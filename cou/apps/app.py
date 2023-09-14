@@ -34,6 +34,7 @@ from cou.steps import UpgradeStep
 from cou.utils import juju_utils
 from cou.utils.app_utils import upgrade_packages
 from cou.utils.openstack import (
+    DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
     OpenStackRelease,
     is_charm_supported,
@@ -45,7 +46,7 @@ logger = logging.getLogger(__name__)
 class AppFactory:
     """Factory class for Application objects."""
 
-    apps_type: dict[str, type[OpenStackApplication]] = {}
+    charms: dict[str, type[OpenStackApplication]] = {}
 
     @classmethod
     def create(
@@ -75,7 +76,7 @@ class AppFactory:
         """
         # pylint: disable=too-many-arguments
         if is_charm_supported(charm):
-            app_class = cls.apps_type.get(charm, OpenStackApplication)
+            app_class = cls.charms.get(charm, OpenStackApplication)
             return app_class(
                 name=name, status=status, config=config, model_name=model_name, charm=charm
             )
@@ -87,7 +88,7 @@ class AppFactory:
 
     @classmethod
     def register_application(
-        cls, app_types: list[str]
+        cls, charms: list[str]
     ) -> Callable[[type[OpenStackApplication]], type[OpenStackApplication]]:
         """Register Application subclasses.
 
@@ -95,23 +96,23 @@ class AppFactory:
         cannot be described appropriately by the OpenStackApplication class.
 
         Example:
-        ceph_types = ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"]
+        ceph_charms = ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"]
 
-        @AppFactory.register_application(ceph_types)
+        @AppFactory.register_application(ceph_charms)
         class Ceph(OpenStackApplication):
             pass
         This is registering the charms "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"
         to the Ceph class.
 
-        :param app_types: List of charm names the Application sub class should handle.
-        :type app_types: list[str]
+        :param charms: List of charms names.
+        :type charms: list[str]
         :return: The decorated class. E.g: the Ceph class in the example above.
         :rtype: Callable[[type[OpenStackApplication]], type[OpenStackApplication]]
         """
 
         def decorator(application: type[OpenStackApplication]) -> type[OpenStackApplication]:
-            for app_type in app_types:
-                cls.apps_type[app_type] = application
+            for charm in charms:
+                cls.charms[charm] = application
             return application
 
         return decorator
@@ -135,6 +136,9 @@ class OpenStackApplication:
     :type charm_origin: str, defaults to ""
     :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
     :type os_origin: str, defaults to ""
+    :param origin_setting: "source" or "openstack-origin" of the charm configuration.
+        Return None if not present
+    :type origin_setting: Optional[str], defaults to None
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
     :type channel: str, defaults to ""
     :param units: Units representation of an application.
@@ -156,6 +160,7 @@ class OpenStackApplication:
     charm: str
     charm_origin: str = ""
     os_origin: str = ""
+    origin_setting: Optional[str] = None
     units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
 
     def __post_init__(self) -> None:
@@ -238,7 +243,7 @@ class OpenStackApplication:
         return f"{self.current_os_release.codename}/stable"
 
     def target_channel(self, target: OpenStackRelease) -> str:
-        """Return the channel based on the target passed.
+        """Return the appropriate channel for the passed OpenStack target.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
@@ -275,6 +280,62 @@ class OpenStackApplication:
             f"Units of application {self.name} are running mismatched OpenStack versions: "
             f"{os_versions}. This is not currently handled."
         )
+
+    @property
+    def apt_source_codename(self) -> Optional[OpenStackRelease]:
+        """Identify the OpenStack release set on "openstack-origin" or "source" config.
+
+        :raises ApplicationError: If os_origin_parsed is not a valid OpenStack release or os_origin
+            is in an unexpected format (ppa, url, etc).
+        :return: OpenStackRelease object or None if the app doesn't have os_origin config.
+        :rtype: Optional[OpenStackRelease]
+        """
+        os_origin_parsed: Optional[str]
+        # that means that the charm doesn't have "source" or "openstack-origin" config.
+        if self.origin_setting is None:
+            return None
+
+        # Ex: "cloud:focal-ussuri" will result in "ussuri"
+        if self.os_origin.startswith("cloud"):
+            *_, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
+            try:
+                return OpenStackRelease(os_origin_parsed)
+            except ValueError as exc:
+                raise ApplicationError(
+                    f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
+                ) from exc
+
+        elif self.os_origin == "distro":
+            # find the OpenStack release based on ubuntu series
+            os_origin_parsed = DISTRO_TO_OPENSTACK_MAPPING[self.series]
+            return OpenStackRelease(os_origin_parsed)
+
+        elif self.os_origin == "":
+            return None
+
+        else:
+            # probably because user set a ppa or an url
+            raise ApplicationError(
+                f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
+            )
+
+    @property
+    def channel_codename(self) -> OpenStackRelease:
+        """Identify the OpenStack release set in the charm channel.
+
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        try:
+            # get the OpenStack release from the channel track of the application.
+            os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
+        except ValueError:
+            logger.debug(
+                "The current channel of '%s' does not exist or is unexpectedly formatted",
+                self.name,
+            )
+            os_track_release_channel = self.current_os_release
+        return os_track_release_channel
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -346,20 +407,13 @@ class OpenStackApplication:
         :return: Plan that will add upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        if self.current_os_release >= target:
-            logger.info(
-                (
-                    "Application: '%s' already running %s which is equal or greater "
-                    "than %s. Ignoring."
-                ),
-                self.name,
-                str(self.current_os_release),
-                target,
+        if self.current_os_release >= target and self.apt_source_codename >= target:
+            msg = (
+                f"Application '{self.name}' already configured for release equal or greater "
+                f"than {target}. Ignoring."
             )
-            raise HaltUpgradePlanGeneration(
-                f"Application '{self.name}' already running {self.current_os_release} which is "
-                f"equal or greater than {target}. Ignoring."
-            )
+            logger.info(msg)
+            raise HaltUpgradePlanGeneration(msg)
 
         return [
             self._get_disable_action_managed_plan(),
@@ -411,8 +465,7 @@ class OpenStackApplication:
         """
         return UpgradeStep(
             description=(
-                f"Upgrade software packages of '{self.name}' to the latest "
-                f"'{self.current_os_release}' release"
+                f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
             parallel=parallel,
             function=upgrade_packages,
@@ -440,13 +493,6 @@ class OpenStackApplication:
             f"to: '{self.expected_current_channel}'"
         )
 
-        try:
-            # get the OpenStack release from the channel track of the application.
-            os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
-        except ValueError:
-            logger.debug("The current channel does not exist or is unexpectedly formatted")
-            os_track_release_channel = self.current_os_release
-
         if self.charm_origin == "cs":
             description = f"Migration of '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
@@ -455,7 +501,7 @@ class OpenStackApplication:
                 f"Refresh '{self.name}' to the latest revision of "
                 f"'{self.expected_current_channel}'"
             )
-        elif os_track_release_channel >= target:
+        elif self.channel_codename >= target:
             logger.info(
                 "Skipping charm refresh for %s, its channel is already set to %s.",
                 self.name,

@@ -18,6 +18,7 @@ import mock
 import pytest
 
 from cou.apps.app import OpenStackApplication
+from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
 
 
@@ -220,11 +221,11 @@ def apps(status, config):
     cinder_ussuri = OpenStackApplication(
         "cinder", cinder_ussuri_status, config["openstack_ussuri"], "my_model", "cinder"
     )
-    rmq_ussuri = OpenStackApplication(
-        "rabbitmq-server", rmq_status, config["rmq_ussuri"], "my_model", "rabbitmq-server"
+    rmq_ussuri = OpenStackAuxiliaryApplication(
+        "rabbitmq-server", rmq_status, config["auxiliary_ussuri"], "my_model", "rabbitmq-server"
     )
-    rmq_wallaby = OpenStackApplication(
-        "rabbitmq-server", rmq_status, config["rmq_wallaby"], "my_model", "rabbitmq-server"
+    rmq_wallaby = OpenStackAuxiliaryApplication(
+        "rabbitmq-server", rmq_status, config["auxiliary_wallaby"], "my_model", "rabbitmq-server"
     )
     keystone_ldap = OpenStackSubordinateApplication(
         "keystone-ldap", keystone_ldap_status, {}, "my_model", "keystone-ldap"
@@ -248,6 +249,6 @@ def config():
             "action-managed-upgrade": {"value": True},
         },
         "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
-        "rmq_ussuri": {"source": {"value": "distro"}},
-        "rmq_wallaby": {"source": {"value": "cloud:focal-wallaby"}},
+        "auxiliary_ussuri": {"source": {"value": "distro"}},
+        "auxiliary_wallaby": {"source": {"value": "cloud:focal-wallaby"}},
     }
