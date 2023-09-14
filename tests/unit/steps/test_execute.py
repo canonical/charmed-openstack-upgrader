@@ -16,7 +16,7 @@ import asyncio
 import unittest
 from random import randint
 from textwrap import dedent
-from unittest.mock import ANY, AsyncMock, call, patch
+from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
@@ -43,8 +43,7 @@ async def test_run_step_sequentially(mock_apply_plan):
 
 @pytest.mark.asyncio
 @patch("cou.steps.execute.apply_plan")
-@patch("cou.steps.execute.asyncio.gather", new_callable=AsyncMock)
-async def test_run_step_parallel(mock_gather, mock_apply_plan):
+async def test_run_step_parallel(mock_apply_plan):
     """Test running step and all sub-steps in parallel."""
     upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
     upgrade_plan.parallel = True
@@ -57,8 +56,7 @@ async def test_run_step_parallel(mock_gather, mock_apply_plan):
     await _run_step(upgrade_plan, False)
 
     upgrade_plan.run.assert_awaited_once_with()
-    mock_apply_plan.assert_has_calls([call(step, False) for step in sub_steps])
-    mock_gather.assert_awaited_once_with(ANY, ANY, ANY)  # called with 3 arguments
+    mock_apply_plan.assert_has_awaits([call(step, False) for step in sub_steps])
 
 
 @pytest.mark.asyncio
@@ -72,7 +70,7 @@ async def test_apply_plan_abort(mock_run_step, mock_input):
     with pytest.raises(SystemExit):
         await apply_plan(upgrade_plan, True)
 
-    mock_input.assert_called_once_with(prompt("Test Plan"))
+    mock_input.assert_awaited_once_with(prompt("Test Plan"))
     mock_run_step.assert_not_awaited()
 
 
