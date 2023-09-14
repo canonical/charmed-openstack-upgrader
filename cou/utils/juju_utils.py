@@ -13,16 +13,21 @@
 # limitations under the License.
 
 """Juju utilities for charmed-openstack-upgrader."""
+import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from juju.action import Action
+from juju.application import Application
 from juju.client._definitions import FullStatus
+from juju.client.connector import NoConnectionException
 from juju.errors import JujuAgentError, JujuAppError, JujuMachineError, JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
+from macaroonbakery.httpbakery import BakeryException
+from six import wraps
 
 from cou.exceptions import (
     ActionFailed,
@@ -31,7 +36,13 @@ from cou.exceptions import (
     UnitNotFound,
 )
 
-JUJU_MAX_FRAME_SIZE = 2**30
+JUJU_MAX_FRAME_SIZE: int = 2**30
+DEFAULT_TIMEOUT: int = 60
+DEFAULT_MAX_WAIT: int = 5
+DEFAULT_WAIT: float = 1.1
+DEFAULT_MODEL_RETRIES: int = 30
+DEFAULT_MODEL_RETRY_BACKOFF: int = 2
+DEFAULT_MODEL_IDLE_PERIOD: int = 30
 
 CURRENT_MODEL: Optional[Model] = None
 
@@ -509,3 +520,303 @@ class JujuWaiter:
             raise TimeoutException(
                 f"Model {self.model_name} has not stabilized after {self.timeout} seconds."
             )
+
+
+def retry(
+    function: Optional[Callable] = None,
+    timeout: int = DEFAULT_TIMEOUT,
+    no_retry_exceptions: tuple = (),
+) -> Callable:
+    """Retry function for usage in COUModel.
+
+    :param function: function to be wrapped
+    :type function: Optional[Callable]
+    :param timeout: timeout in seconds
+    :type timeout: int
+    :param no_retry_exceptions: tuple of exception on which function will not be retried
+    :type no_retry_exceptions: tuple
+    :return: wrapped function
+    :rtype: Callable
+    """
+
+    def _wrapper(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            attempt: int = 0
+            start_time = datetime.now()
+            while (datetime.now() - start_time).seconds <= timeout:
+                try:
+                    return await func(*args, **kwargs)
+                except (TimeoutException, *no_retry_exceptions):
+                    # raising exception if no_retry_exception happen or TimeoutException
+                    raise
+                except Exception:
+                    logger.debug("function %s failed [%d]", func.__name__, attempt, exc_info=True)
+                    await asyncio.sleep(DEFAULT_WAIT**attempt)
+                    attempt += 1
+
+            # if while loop ends, it means we reached the timeout
+            raise TimeoutException(f"function {func.__name__} timed out after {timeout}s")
+
+        return wrapper
+
+    if function is not None:
+        return _wrapper(function)
+
+    return _wrapper
+
+
+class COUModel:
+    """COU model object.
+
+    This version of the model provides better waiting for the model to turn idle, auto-reconnection
+    and some other required features for COU.
+    """
+
+    def __init__(self, name: str):
+        """COU Model initialization with model_name compared to original juju.model.Model."""
+        self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
+        self._name = name
+
+    @property
+    def connected(self) -> bool:
+        """Check if model is connected."""
+        try:
+            connection = self._model.connection()
+            return connection is not None and connection.is_open
+        except NoConnectionException:
+            return False
+
+    @property
+    def name(self) -> str:
+        """Return model name."""
+        return self._name
+
+    @retry(no_retry_exceptions=(BakeryException,))
+    async def _connect(self) -> None:
+        """Make sure that model is connected."""
+        await self._model.disconnect()
+        await self._model.connect(
+            model_name=self.name,
+            retries=DEFAULT_MODEL_RETRIES,
+            retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
+        )
+
+    async def _get_application(self, name: str) -> Application:
+        """Get juju.application.Application from model.
+
+        :param name: Name of application
+        :type name: str
+        :return: Application
+        :rtype: Application
+        :raises: ApplicationNotFound
+        """
+        model = await self._get_model()
+        app = model.applications.get(name)
+        if app is None:
+            raise ApplicationNotFound(f"Application {name} was not found in model {model.name}.")
+
+        return app
+
+    async def _get_model(self) -> Model:
+        """Get juju.model.Model and make sure that it is connected."""
+        if not self.connected:
+            await self._connect()
+
+        return self._model
+
+    async def _get_unit(self, name: str) -> Unit:
+        """Get juju.unit.unit from model.
+
+        :param name: Name of unit
+        :type name: str
+        :return: Unit
+        :rtype: Unit
+        :raises: UnitNotFound
+        """
+        model = await self._get_model()
+        unit = model.units.get(name)
+        if unit is None:
+            raise UnitNotFound(f"Unit {name} was not found in model {model.name}.")
+
+        return unit
+
+    async def get_application_config(self, name: str) -> Dict:
+        """Return application configuration.
+
+        :param name: Name of application
+        :type name: str
+        :returns: Dictionary of configuration
+        :rtype: dict
+        :raises: ApplicationNotFound
+        """
+        app = await self._get_application(name)
+        return await app.get_config()
+
+    async def get_charm_name(self, application_name: str) -> Optional[str]:
+        """Get the charm name from the application.
+
+        :param application_name: Name of application
+        :type application_name: str
+        :return: Charm name
+        :rtype: Optional[str]
+        :raises: ApplicationNotFound
+        """
+        app = await self._get_application(application_name)
+        return app.charm_name
+
+    async def get_status(self) -> FullStatus:
+        """Return the full juju status output.
+
+        :returns: Full juju status output
+        :rtype: FullStatus
+        """
+        model = await self._get_model()
+        return await model.get_status()
+
+    async def run_action(
+        self,
+        unit_name: str,
+        action_name: str,
+        action_params: Optional[Dict] = None,
+        raise_on_failure: bool = False,
+    ) -> Action:
+        """Run action on given unit.
+
+        :param unit_name: Name of unit to run action on
+        :type unit_name: str
+        :param action_name: Name of action to run
+        :type action_name: str
+        :param action_params: Dictionary of config options for action
+        :type action_params: Optional[Dict]
+        :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
+        :type raise_on_failure: bool
+        :returns: Action object
+        :rtype: juju.action.Action
+        :raises: UnitNotFound
+        :raises: ActionFailed
+        """
+        action_params = action_params or {}
+        unit = await self._get_unit(unit_name)
+        action = await unit.run_action(action_name, **action_params)
+        result = await action.wait()
+        if raise_on_failure:
+            model = await self._get_model()
+            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
+            if status != "completed":
+                output = await model.get_action_output(action.entity_id)
+                raise ActionFailed(action, output=output)
+
+        return result
+
+    async def run_on_unit(
+        self, unit_name: str, command: str, timeout: Optional[int] = None
+    ) -> Dict[str, str]:
+        """Juju run on unit.
+
+        :param unit_name: Name of unit to match
+        :type unit: str
+        :param command: Command to execute
+        :type command: str
+        :param timeout: How long in seconds to wait for command to complete
+        :type timeout: Optional[int]
+        :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
+        :rtype: Dict[str, str]
+        :raises: UnitNotFound
+        :raises: ActionFailed
+        """
+        unit = await self._get_unit(unit_name)
+        action = await unit.run(command, timeout=timeout)
+        results = action.data.get("results")
+        return _normalise_action_results(results)
+
+    async def set_application_config(self, name: str, configuration: Dict[str, str]) -> None:
+        """Set application configuration.
+
+        :param name: Name of application
+        :type name: str
+        :param configuration: Dictionary of configuration setting(s)
+        :type configuration: Dict[str,str]
+        """
+        app = await self._get_application(name)
+        await app.set_config(configuration)
+
+    async def scp_from_unit(
+        self,
+        unit_name: str,
+        source: str,
+        destination: str,
+        user: str = "ubuntu",
+        proxy: bool = False,
+        scp_opts: str = "",
+    ) -> None:
+        """Transfer files from unit_name.
+
+        :param unit_name: Name of unit to scp from
+        :type unit_name: str
+        :param source: Remote path of file(s) to transfer
+        :type source: str
+        :param destination: Local destination of transferred files
+        :type source: str
+        :param user: Remote username, defaults to ubuntu
+        :type source: str
+        :param proxy: Proxy through the Juju API server, defaults to False
+        :type proxy: bool
+        :param scp_opts: Additional options to the scp command, defaults to ""
+        :type scp_opts: str
+        :raises: UnitNotFound
+        """
+        unit = await self._get_unit(unit_name)
+        await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
+
+    async def upgrade_charm(
+        self,
+        application_name: str,
+        channel: Optional[str] = None,
+        force_series: bool = False,
+        force_units: bool = False,
+        path: Optional[str] = None,
+        resources: Optional[Dict] = None,
+        revision: Optional[int] = None,
+        switch: Optional[str] = None,
+    ) -> None:
+        """
+        Upgrade the given charm.
+
+        :param application_name: Name of application on this side of relation
+        :type application_name: str
+        :param channel: Channel to use when getting the charm from the charm store,
+                        e.g. 'development'
+        :type channel: str
+        :param force_series: Upgrade even if series of deployed application is not
+                            supported by the new charm
+        :type force_series: bool
+        :param force_units: Upgrade all units immediately, even if in error state
+        :type force_units: bool
+        :param path: Uprade to a charm located at path
+        :type path: str
+        :param resources: Dictionary of resource name/filepath pairs
+        :type resources: dict
+        :param revision: Explicit upgrade revision
+        :type revision: int
+        :param switch: Crossgrade charm url
+        :type switch: str
+        :raises: ApplicationNotFound
+        """
+        app = await self._get_application(application_name)
+        await app.upgrade_charm(
+            channel=channel,
+            force_series=force_series,
+            force_units=force_units,
+            path=path,
+            resources=resources,
+            revision=revision,
+            switch=switch,
+        )
+
+    async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
+        """Wait for model to reach an idle state."""
+        model = await self._get_model()
+        await model.wait_for_idle(
+            apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
+        )
