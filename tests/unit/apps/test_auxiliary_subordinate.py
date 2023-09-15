@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
 
-from cou.apps.subordinate_auxiliary import OpenStackAuxiliarySubordinateApplication
+from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.steps import UpgradeStep
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import assert_plan_description
@@ -31,7 +31,7 @@ def test_auxiliary_subordinate(status):
     assert app.current_os_release == "yoga"
 
 
-def test_subordinate_auxiliary_upgrade_plan_to_victoria(status):
+def test_auxiliary_subordinate_upgrade_plan_to_victoria(status):
     target = "victoria"
     app = OpenStackAuxiliarySubordinateApplication(
         "keystone-mysql-router", status["mysql_router"], {}, "my_model", "mysql-router"
@@ -46,7 +46,7 @@ def test_subordinate_auxiliary_upgrade_plan_to_victoria(status):
     assert_plan_description(plan, steps_description)
 
 
-def test_subordinate_auxiliary_upgrade_charm(status, mocker):
+def test_auxiliary_subordinate_upgrade_charm(status, mocker):
     target = "victoria"
     app = OpenStackAuxiliarySubordinateApplication(
         "keystone-mysql-router", status["mysql_router"], {}, "my_model", "mysql-router"
@@ -55,7 +55,7 @@ def test_subordinate_auxiliary_upgrade_charm(status, mocker):
     # channel in the same ubuntu series. That is why we need to mock this situation.
     mocker.patch(
         (
-            "cou.apps.subordinate_auxiliary.OpenStackAuxiliarySubordinateApplication."
+            "cou.apps.auxiliary_subordinate.OpenStackAuxiliarySubordinateApplication."
             "_get_upgrade_charm_plan"
         ),
         return_value=UpgradeStep(
