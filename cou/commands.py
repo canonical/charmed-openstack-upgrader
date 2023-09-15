@@ -80,7 +80,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         default=None,
         dest="model_name",
         type=str,
-        help="Set the model to operate on. If unset, the model name will be determined by "
+        help="Set the model to operate on.\nIf unset, the model name will be determined by "
         "inspecting the environment as follows:\n"
         "  1 - Environment variable JUJU_MODEL,"
         "  2 - Environment variable MODEL_NAME,"
@@ -130,9 +130,8 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         "--machine",
         "-m",
         action="append",
-        help="Specify machine id(s) to upgrade. This option accepts a single machine id as well "
-        "as a stringified comma-separated list for multiple machines. This option can be used "
-        "repetitively.",
+        help="Specify machine id(s) to upgrade.\nThis option accepts a single machine id as well "
+        "as a stringified comma-separated list of ids,\nand can be repeated multiple times.",
         dest="machines",
         type=str,
     )
@@ -140,9 +139,8 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         "--hostname",
         "-n",
         action="append",
-        help="Specify machine hostnames(s) to upgrade. This option accepts a single machine "
-        "hostname as well as a stringified comma-separated list for multiple machines. This "
-        "option can be used repetitively.",
+        help="Specify machine hostnames(s) to upgrade.\nThis option accepts a single hostname as "
+        "well as a stringified comma-separated list of hostnames,\nand can be used repetitively.",
         dest="hostnames",
         type=str,
     )
@@ -150,9 +148,9 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         "--availability-zone",
         "--az",
         action="append",
-        help="Specify availability zone(s) to upgrade. This option accepts a single availability "
-        "zone as well as a stringified comma-separated list for multiple AZs. This option can be "
-        "used repetitively.",
+        help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
+        "availability zone as well as a stringified comma-separated list of AZs,\n"
+        "and can be used repetitively.",
         dest="availability_zones",
         type=str,
     )
@@ -176,8 +174,8 @@ def create_plan_subparser(
     # Arg parser for "cou plan" sub-command
     plan_parser = subparsers.add_parser(
         "plan",
-        description="Show the steps COU will take to upgrade the cloud to the next release. "
-        "If upgrade-group is unspecified, plan upgrade for the entire cloud",
+        description="Show the steps COU will take to upgrade the cloud to the next release.\n"
+        "If upgrade-group is unspecified, plan upgrade for the whole cloud.",
         help="Show the steps COU will take to upgrade the cloud to the next release.",
         usage="cou plan [options]",
         parents=[subcommand_common_opts_parser],
@@ -200,10 +198,10 @@ def create_plan_subparser(
     )
     plan_subparser.add_parser(
         "data-plane",
-        description="Show the steps for upgrading the data-plane components. This is possible "
-        "only if control-plane has been fully upgrade. Otherwise an error will be thrown.",
-        help="Show the steps for upgrading the data-plane components. This is possible "
-        "only if control-plane has been fully upgrade. Otherwise an error will be thrown.",
+        description="Show the steps for upgrading the data-plane components.\nThis is possible "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
+        help="Show the steps for upgrading the data-plane components.\nThis is possible "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
         usage="cou plan data-plane [options]",
         parents=[subcommand_common_opts_parser, dp_parser],
         formatter_class=CapitalizeHelpFormatter,
@@ -234,8 +232,8 @@ def create_run_subparser(
     )
     run_parser = subparsers.add_parser(
         "run",
-        description="Run the cloud upgrade. If upgrade-group is unspecified, perform "
-        "upgrade for the entire cloud",
+        description="Run the cloud upgrade.\nIf upgrade-group is unspecified, "
+        "upgrade the whole cloud.",
         help="Run the cloud upgrade.",
         usage="cou run [options]",
         parents=[subcommand_common_opts_parser, run_args_parser],
@@ -258,10 +256,10 @@ def create_run_subparser(
     )
     run_subparser.add_parser(
         "data-plane",
-        description="Run upgrade for the data-plane components. This is possible only if "
-        "control-plane has been fully upgrade. Otherwise an error will be thrown.",
-        help="Run upgrade for the data-plane components. This is possible only if "
-        "control-plane has been fully upgrade. Otherwise an error will be thrown.",
+        description="Run upgrade for the data-plane components.\nThis is possible only if "
+        "control-plane has been fully upgraded,\notherwise an error will be thrown.",
+        help="Run upgrade for the data-plane components.\nThis is possible only if "
+        "control-plane has been fully upgraded,\notherwise an error will be thrown.",
         usage="cou plan data-plane [options]",
         parents=[
             subcommand_common_opts_parser,
@@ -319,9 +317,9 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]:
     """
     # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
-        description="Charmed OpenStack Upgrader (cou) is an application to upgrade a Canonical "
-        "distribution of Charmed OpenStack. The application auto-detects the version of the "
-        "running cloud and will propose an upgrade to the next available version.",
+        description="Charmed OpenStack Upgrader (cou) is an application to upgrade\na Canonical "
+        "distribution of Charmed OpenStack.\nThe application auto-detects the version of the "
+        "running cloud\nand will propose an upgrade to the next available version.",
         formatter_class=CapitalizeHelpFormatter,
         usage="%(prog)s [options] <command>",
         exit_on_error=False,

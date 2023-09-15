@@ -170,7 +170,7 @@ async def entrypoint() -> None:
                     parser.print_help()
             sys.exit(0)
 
-        # disable progress indicator when in quite mode to suppress its console output
+        # disable progress indicator when in quiet mode to suppress its console output
         progress_indicator.enabled = not args.quiet
 
         progress_indicator.start("Configuring logging...")  # non-persistent progress output
