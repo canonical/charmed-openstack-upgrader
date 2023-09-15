@@ -174,8 +174,11 @@ def create_plan_subparser(
     # Arg parser for "cou plan" sub-command
     plan_parser = subparsers.add_parser(
         "plan",
-        description="Show the steps COU will take to upgrade the cloud to the next release.\n"
-        "If upgrade-group is unspecified, plan upgrade for the whole cloud.",
+        description="Show the steps COU will take to upgrade the cloud to the next release.",
+        # TODO(txiao): Replace the description with the following message after data-plane upgrade
+        # is implemented
+        # description="Show the steps COU will take to upgrade the cloud to the next release.\n"
+        # "If upgrade-group is unspecified, plan upgrade for the whole cloud.",
         help="Show the steps COU will take to upgrade the cloud to the next release.",
         usage="cou plan [options]",
         parents=[subcommand_common_opts_parser],
@@ -186,7 +189,9 @@ def create_plan_subparser(
     plan_subparser = plan_parser.add_subparsers(
         title="Upgrade groups",
         dest="upgrade-group",
-        help="For more information about a upgrade group, run 'cou plan <upgrade-group>' -h.",
+        help=argparse.SUPPRESS,
+        # TODO(txiao): Add the following help message after data-plane upgrade is implemented
+        # help="For more information about a upgrade group, run 'cou plan <upgrade-group>' -h.",
     )
     plan_subparser.add_parser(
         "control-plane",
@@ -232,8 +237,11 @@ def create_run_subparser(
     )
     run_parser = subparsers.add_parser(
         "run",
-        description="Run the cloud upgrade.\nIf upgrade-group is unspecified, "
-        "upgrade the whole cloud.",
+        description="Run the cloud upgrade.",
+        # TODO(txiao): Replace the description with the following message after data-plane upgrade
+        # is implemented
+        # description="Run the cloud upgrade.\nIf upgrade-group is unspecified, "
+        # "upgrade the whole cloud.",
         help="Run the cloud upgrade.",
         usage="cou run [options]",
         parents=[subcommand_common_opts_parser, run_args_parser],
@@ -244,7 +252,9 @@ def create_run_subparser(
     run_subparser = run_parser.add_subparsers(
         title="Upgrade group",
         dest="upgrade-group",
-        help="For more information about an upgrade group, run 'cou run <upgrade-group> -h'.",
+        help=argparse.SUPPRESS,
+        # TODO(txiao): Add the following help message after data-plane upgrade is implemented
+        # help="For more information about an upgrade group, run 'cou run <upgrade-group> -h'.",
     )
     run_subparser.add_parser(
         "control-plane",
