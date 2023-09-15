@@ -19,7 +19,7 @@ from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import assert_plan_description
 
 
-def test_subordinate_auxiliary(status):
+def test_auxiliary_subordinate(status):
     app = OpenStackAuxiliarySubordinateApplication(
         "keystone-mysql-router", status["mysql_router"], {}, "my_model", "mysql-router"
     )
