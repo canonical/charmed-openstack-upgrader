@@ -42,6 +42,8 @@ CHARM_FAMILIES = {
     "mysql": ["mysql-innodb-cluster", "mysql-router"],
 }
 
+DATA_PLANE_CHARMS = ["nova-compute", "ceph-osd"]
+
 # https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
 UPGRADE_ORDER = [
     "rabbitmq-server",

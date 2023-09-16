@@ -22,6 +22,7 @@ from cou.steps.analyze import Analysis
 async def test_analysis_dump(mocker, apps):
     """Test analysis dump."""
     expected_result = (
+        "Control Plane:\n"
         "keystone:\n"
         "  model_name: my_model\n"
         "  charm: keystone\n"
@@ -66,6 +67,7 @@ async def test_analysis_dump(mocker, apps):
         "    rabbitmq-server/0:\n"
         "      workload_version: '3.8'\n"
         "      os_version: yoga\n"
+        "Data Plane:\n"
     )
 
     mocker.patch.object(
@@ -109,7 +111,9 @@ async def test_analysis_create(mocker, apps):
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_rmq = apps["rmq_ussuri"]
-    expected_result = analyze.Analysis(model_name=None, apps=[app_rmq, app_keystone, app_cinder])
+    expected_result = analyze.Analysis(
+        model_name=None, apps_control_plane=[app_rmq, app_keystone, app_cinder], apps_data_plane=[]
+    )
     mocker.patch.object(
         analyze.Analysis,
         "_populate",
@@ -125,7 +129,11 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(apps)
     keystone_wallaby = apps["keystone_wallaby"]
     cinder_ussuri = apps["cinder_ussuri"]
     rmq_ussuri = apps["rmq_ussuri"]
-    result = analyze.Analysis(model_name=None, apps=[rmq_ussuri, keystone_wallaby, cinder_ussuri])
+    result = analyze.Analysis(
+        model_name=None,
+        apps_control_plane=[rmq_ussuri, keystone_wallaby, cinder_ussuri],
+        apps_data_plane=[],
+    )
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
@@ -135,7 +143,16 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(apps)
 async def test_analysis_detect_current_cloud_os_release_same_release(apps):
     keystone_wallaby = apps["keystone_ussuri"]
     cinder_ussuri = apps["cinder_ussuri"]
-    result = analyze.Analysis(model_name=None, apps=[keystone_wallaby, cinder_ussuri])
+    result = analyze.Analysis(
+        model_name=None, apps_control_plane=[keystone_wallaby, cinder_ussuri], apps_data_plane=[]
+    )
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
+
+
+def test_split_control_plane_and_data_plane(apps):
+    all_apps = [apps["nova_wallaby"], apps["keystone_wallaby"], apps["cinder_ussuri"]]
+    control_plane, data_plane = Analysis._split_control_plane_and_data_plane(all_apps)
+    assert control_plane == [apps["keystone_wallaby"], apps["cinder_ussuri"]]
+    assert data_plane == [apps["nova_wallaby"]]
