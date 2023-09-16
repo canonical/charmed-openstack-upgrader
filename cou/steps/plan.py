@@ -49,39 +49,39 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
     )
 
-    principal_upgrade_plan = await create_upgrade_group(
-        analysis_result=analysis_result,
-        description="Principal(s) upgrade plan",
+    control_plane_principal_upgrade_plan = await create_upgrade_group(
+        apps=analysis_result.apps_control_plane,
+        description="Control Plane principal(s) upgrade plan",
         target=target,
         filter_function=lambda app: not isinstance(
             app, (OpenStackSubordinateApplication, OpenStackAuxiliarySubordinateApplication)
         ),
     )
-    plan.add_step(principal_upgrade_plan)
+    plan.add_step(control_plane_principal_upgrade_plan)
 
-    subordinate_upgrade_plan = await create_upgrade_group(
-        analysis_result=analysis_result,
-        description="Subordinate(s) upgrade plan",
+    control_plan_subordinate_upgrade_plan = await create_upgrade_group(
+        apps=analysis_result.apps_control_plane,
+        description="Control Plane subordinate(s) upgrade plan",
         target=target,
         filter_function=lambda app: isinstance(
             app, (OpenStackSubordinateApplication, OpenStackAuxiliarySubordinateApplication)
         ),
     )
-    plan.add_step(subordinate_upgrade_plan)
+    plan.add_step(control_plan_subordinate_upgrade_plan)
 
     return plan
 
 
 async def create_upgrade_group(
-    analysis_result: Analysis,
+    apps: list[OpenStackApplication],
     target: str,
     description: str,
     filter_function: Callable[[OpenStackApplication], bool],
 ) -> UpgradeStep:
     """Create upgrade group.
 
-    :param analysis_result: Result of the analysis.
-    :type analysis_result: Analysis
+    :param apps: Result of the analysis.
+    :type apps: list[OpenStackApplication]
     :param target: Target OpenStack version.
     :type target: str
     :param description: Description of the upgrade step.
@@ -92,7 +92,7 @@ async def create_upgrade_group(
     :rtype: UpgradeStep
     """
     group_upgrade_plan = UpgradeStep(description=description, parallel=False, function=None)
-    for app in filter(filter_function, analysis_result.apps):
+    for app in filter(filter_function, apps):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
         except HaltUpgradePlanGeneration as exc:
