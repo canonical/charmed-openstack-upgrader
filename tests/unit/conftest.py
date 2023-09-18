@@ -163,7 +163,6 @@ def status():
     mock_vault.units = OrderedDict([("vault/0", mock_units_vault)])
 
     # auxiliary subordinate application
-    mock_mysql_router = mock.MagicMock()
     mock_mysql_router = mock.MagicMock(spec_set=ApplicationStatus())
     mock_mysql_router.series = "focal"
     mock_mysql_router.charm_channel = "8.0/stable"
