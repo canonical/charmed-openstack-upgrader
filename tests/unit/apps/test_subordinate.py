@@ -77,7 +77,6 @@ def test_channel_setter_valid(status, channel):
 
     app.channel = channel
     assert app.channel == channel
-    assert not app._default_used
 
 
 @pytest.mark.parametrize(
@@ -97,13 +96,3 @@ def test_channel_setter_invalid(status, channel):
 
     app.channel = channel
     assert app.channel == "ussuri/stable"
-    assert app._default_used
-
-
-def test_channel_default_used(status):
-    app_status = status["keystone-ldap"]
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
-    )
-
-    assert not app._default_used
