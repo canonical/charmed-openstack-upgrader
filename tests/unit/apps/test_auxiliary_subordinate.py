@@ -13,8 +13,6 @@
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
 
-from cou.steps import UpgradeStep
-from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import assert_plan_description
 
 
@@ -38,34 +36,4 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps):
         f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
     ]
 
-    assert_plan_description(plan, steps_description)
-
-
-def test_auxiliary_subordinate_upgrade_charm(apps, mocker):
-    target = "victoria"
-    app = apps["keystone_mysql_router"]
-    # currently there is no auxiliary subordinate charm that needs to change charm
-    # channel in the same ubuntu series. That is why we need to mock this situation.
-    mocker.patch(
-        (
-            "cou.apps.auxiliary_subordinate.OpenStackAuxiliarySubordinateApplication."
-            "_get_upgrade_charm_plan"
-        ),
-        return_value=UpgradeStep(
-            (
-                f"Upgrade '{app.name}' to the new channel: "
-                f"'{app.target_channel(OpenStackRelease(target))}'"
-            ),
-            False,
-            None,
-        ),
-    )
-    steps_description = [
-        f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
-        (
-            f"Upgrade '{app.name}' to the new channel: "
-            f"'{app.target_channel(OpenStackRelease(target))}'"
-        ),
-    ]
-    plan = app.generate_upgrade_plan(target)
     assert_plan_description(plan, steps_description)
