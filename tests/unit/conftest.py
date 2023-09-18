@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from collections import OrderedDict, defaultdict
+from unittest import mock
 
-import mock
 import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
