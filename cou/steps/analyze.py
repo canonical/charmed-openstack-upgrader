@@ -53,6 +53,7 @@ class Analysis:
         apps = await Analysis._populate(model_name)
 
         control_plane, data_plane = cls._split_control_plane_and_data_plane(apps)
+        cls._remove_data_plane_apps(control_plane, data_plane)
 
         return Analysis(
             model_name=model_name, apps_data_plane=data_plane, apps_control_plane=control_plane
@@ -77,6 +78,30 @@ class Analysis:
             else:
                 control_plane.append(app)
         return control_plane, data_plane
+
+    @classmethod
+    def _remove_data_plane_apps(
+        cls, control_plane: list[OpenStackApplication], data_plane: list[OpenStackApplication]
+    ) -> None:
+        """Move control plane applications to data plane if any of its units is on data plane.
+
+        :param control_plane: List of control plane applications.
+        :type control_plane:  list[OpenStackApplication]
+        :param data_plane: List of data plane applications.
+        :type data_plane:  list[OpenStackApplication]
+        """
+        data_plane_machines = set().union(
+            *[{unit.machine for unit in app.units} for app in data_plane]
+        )
+
+        apps_to_move = []
+        for app in control_plane:
+            if len([unit for unit in app.units if unit.machine in data_plane_machines]) > 0:
+                apps_to_move.append(app)
+
+        for app in apps_to_move:
+            control_plane.remove(app)
+            data_plane.append(app)
 
     @classmethod
     async def _populate(cls, model_name: Optional[str]) -> list[OpenStackApplication]:

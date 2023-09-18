@@ -156,3 +156,11 @@ def test_split_control_plane_and_data_plane(apps):
     control_plane, data_plane = Analysis._split_control_plane_and_data_plane(all_apps)
     assert control_plane == [apps["keystone_wallaby"], apps["cinder_ussuri"]]
     assert data_plane == [apps["nova_wallaby"]]
+
+
+def test_remove_data_plane_apps(apps):
+    all_apps = [apps["nova_wallaby"], apps["keystone_wallaby"], apps["cinder_on_nova"]]
+    control_plane, data_plane = Analysis._split_control_plane_and_data_plane(all_apps)
+    Analysis._remove_data_plane_apps(control_plane, data_plane)
+    assert control_plane == [apps["keystone_wallaby"]]
+    assert data_plane == [apps["nova_wallaby"], apps["cinder_on_nova"]]
