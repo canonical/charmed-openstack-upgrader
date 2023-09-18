@@ -16,14 +16,12 @@
 from __future__ import annotations
 
 import logging
-import os
-from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.utils import juju_utils
-from cou.utils.openstack import UPGRADE_ORDER, OpenStackRelease
+from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +30,15 @@ logger = logging.getLogger(__name__)
 class Analysis:
     """Analyze result.
 
-    :param apps: Applications in the model
-    :type apps:  Iterable[OpenStackApplication]
+    :param apps_control_plane: Control plane applications in the model
+    :type apps_control_plane:  list[OpenStackApplication]
+    :param apps_data_plane: Data plane applications in the model
+    :type apps_data_plane:  list[OpenStackApplication]
     """
 
     model_name: Optional[str]
-    apps: Iterable[OpenStackApplication]
+    apps_control_plane: list[OpenStackApplication]
+    apps_data_plane: list[OpenStackApplication]
 
     @classmethod
     async def create(cls, model_name: Optional[str] = None) -> Analysis:
@@ -51,7 +52,31 @@ class Analysis:
         logger.info("Analyzing the OpenStack deployment...")
         apps = await Analysis._populate(model_name)
 
-        return Analysis(model_name=model_name, apps=apps)
+        control_plane, data_plane = cls._split_control_plane_and_data_plane(apps)
+
+        return Analysis(
+            model_name=model_name, apps_data_plane=data_plane, apps_control_plane=control_plane
+        )
+
+    @classmethod
+    def _split_control_plane_and_data_plane(
+        cls, apps: list[OpenStackApplication]
+    ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
+        """Split control plane and data plane apps.
+
+        :param apps: List of applications to split.
+        :type apps:  Iterable[OpenStackApplication]
+        :return: Control plane and data plane application lists.
+        :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
+        """
+        data_plane = []
+        control_plane = []
+        for app in apps:
+            if app.charm in DATA_PLANE_CHARMS:
+                data_plane.append(app)
+            else:
+                control_plane.append(app)
+        return control_plane, data_plane
 
     @classmethod
     async def _populate(cls, model_name: Optional[str]) -> list[OpenStackApplication]:
@@ -100,7 +125,12 @@ class Analysis:
         :return: String representation of Application objects.
         :rtype: str
         """
-        return os.linesep.join([str(app) for app in self.apps])
+        return (
+            "Control Plane:\n"
+            + "\n".join([str(app) for app in self.apps_control_plane])
+            + "Data Plane:\n"
+            + "\n".join([str(app) for app in self.apps_data_plane])
+        )
 
     @property
     def current_cloud_os_release(self) -> Optional[OpenStackRelease]:
@@ -111,4 +141,7 @@ class Analysis:
         :return: OpenStack release codename
         :rtype: OpenStackRelease
         """
-        return min((app.current_os_release for app in self.apps), default=None)
+        return min(
+            (app.current_os_release for app in self.apps_control_plane + self.apps_data_plane),
+            default=None,
+        )

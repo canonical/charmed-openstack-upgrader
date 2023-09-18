@@ -27,7 +27,11 @@ async def test_generate_plan(mocker, apps):
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_keystone_ldap = apps["keystone_ldap"]
-    analysis_result = Analysis(model_name=None, apps=[app_keystone, app_cinder, app_keystone_ldap])
+    analysis_result = Analysis(
+        model_name=None,
+        apps_control_plane=[app_keystone, app_cinder, app_keystone_ldap],
+        apps_data_plane=[],
+    )
     plan = await generate_plan(analysis_result)
 
     assert plan.description == "Top level plan"
@@ -41,7 +45,7 @@ async def test_generate_plan(mocker, apps):
     assert sub_step_back_up.function == backup
 
     sub_step_upgrade_plan = plan.sub_steps[1]
-    assert sub_step_upgrade_plan.description == "Principal(s) upgrade plan"
+    assert sub_step_upgrade_plan.description == "Control Plane principal(s) upgrade plan"
 
     sub_step_upgrade_keystone = sub_step_upgrade_plan.sub_steps[0]
     assert sub_step_upgrade_keystone.description == "Upgrade plan for 'keystone' to victoria"
@@ -58,7 +62,7 @@ async def test_generate_plan(mocker, apps):
     assert_plan_description(sub_step_upgrade_cinder, expected_description_upgrade_cinder)
 
     subordinate_plan = plan.sub_steps[2]
-    assert subordinate_plan.description == "Subordinate(s) upgrade plan"
+    assert subordinate_plan.description == "Control Plane subordinate(s) upgrade plan"
     assert (
         subordinate_plan.sub_steps[0].description == "Upgrade plan for 'keystone-ldap' to victoria"
     )
@@ -79,7 +83,7 @@ async def test_generate_plan_raise_HaltUpgradePlanGeneration(mocker):
     mock_logger = mocker.patch("cou.steps.plan.logger")
     app = mocker.MagicMock()
     app.generate_upgrade_plan.side_effect = HaltUpgradePlanGeneration
-    analysis_result = Analysis(model_name=None, apps=[app])
+    analysis_result = Analysis(model_name=None, apps_control_plane=[app], apps_data_plane=[])
     upgrade_plan = await generate_plan(analysis_result)
     mock_logger.debug.assert_called_once()
     assert upgrade_plan is not None
@@ -91,7 +95,7 @@ async def test_generate_plan_raise_Exception(mocker):
     app = mocker.MagicMock()
     app.generate_upgrade_plan.side_effect = Exception("An error occurred.")
     # Generate an exception during the upgrade plan
-    analysis_result = Analysis(model_name=None, apps=[app])
+    analysis_result = Analysis(model_name=None, apps_control_plane=[app], apps_data_plane=[])
     exp_error_msg = "An error occurred."
     with pytest.raises(Exception, match=exp_error_msg):
         await generate_plan(analysis_result)
@@ -101,8 +105,7 @@ async def test_generate_plan_raise_Exception(mocker):
 def generate_expected_upgrade_plan_description(charm, target):
     target_version = OpenStackRelease(target)
     return [
-        f"Upgrade software packages of '{charm.name}' to the latest "
-        f"'{charm.current_os_release}' release",
+        f"Upgrade software packages of '{charm.name}' from the current APT repositories",
         f"Refresh '{charm.name}' to the latest revision of '{charm.expected_current_channel}'",
         f"Change charm config of '{charm.name}' 'action-managed-upgrade' to False.",
         f"Upgrade '{charm.name}' to the new channel: '{charm.target_channel(target_version)}'",
