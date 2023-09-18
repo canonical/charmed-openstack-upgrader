@@ -13,13 +13,14 @@
 # limitations under the License.
 
 from collections import OrderedDict, defaultdict
+from unittest import mock
 
-import mock
 import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.app import OpenStackApplication
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
+from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
 
 
@@ -176,6 +177,13 @@ def status():
     mock_keystone_ldap.subordinate_to = ["keystone"]
     mock_keystone_ldap.units = {}
 
+    # OpenStack subordinate application cs
+    mock_keystone_ldap_cs = mock.MagicMock(spec_set=ApplicationStatus())
+    mock_keystone_ldap_cs.charm_channel = "stable"
+    mock_keystone_ldap_cs.charm = "cs:amd64/focal/keystone-ldap-437"
+    mock_keystone_ldap_cs.subordinate_to = ["keystone"]
+    mock_keystone_ldap_cs.units = {}
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -190,6 +198,7 @@ def status():
         "mysql_router": mock_mysql_router,
         "vault": mock_vault,
         "keystone-ldap": mock_keystone_ldap,
+        "keystone-ldap-cs": mock_keystone_ldap_cs,
         "nova_wallaby": mock_nova_wallaby,
     }
     return status
@@ -249,6 +258,9 @@ def apps(status, config):
     keystone_ldap = OpenStackSubordinateApplication(
         "keystone-ldap", keystone_ldap_status, {}, "my_model", "keystone-ldap"
     )
+    keystone_mysql_router = OpenStackAuxiliarySubordinateApplication(
+        "keystone-mysql-router", status["mysql_router"], {}, "my_model", "mysql-router"
+    )
 
     nova_wallaby = OpenStackSubordinateApplication(
         "nova-compute", nova_wallaby_status, {}, "my_model", "nova-compute"
@@ -261,6 +273,7 @@ def apps(status, config):
         "rmq_wallaby": rmq_wallaby,
         "keystone_ldap": keystone_ldap,
         "nova_wallaby": nova_wallaby,
+        "keystone_mysql_router": keystone_mysql_router,
     }
 
 

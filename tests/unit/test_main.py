@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import importlib
-
-import mock
+import runpy
+from unittest import mock
 
 
 @mock.patch("cou.cli.entrypoint")
 def test_init(cli):
-    loader = importlib.machinery.SourceFileLoader("__main__", "cou/__main__.py")
-    loader.load_module()
+    runpy.run_path("cou/__main__.py", run_name="__main__")
     cli.assert_called_once_with()

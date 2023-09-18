@@ -16,8 +16,7 @@
 import contextlib
 import io
 import unittest
-
-import mock
+from unittest import mock
 
 
 @contextlib.contextmanager

@@ -25,8 +25,6 @@ logger = logging.getLogger(__name__)
 class OpenStackSubordinateApplication(OpenStackApplication):
     """Subordinate application class."""
 
-    _default_used = False
-
     @property
     def current_os_release(self) -> OpenStackRelease:
         """Infer the OpenStack release from subordinate charm's channel.
@@ -52,10 +50,9 @@ class OpenStackSubordinateApplication(OpenStackApplication):
             function=None,
         )
 
-        if not self._default_used:
-            refresh_charm_plan = self._get_refresh_charm_plan(OpenStackRelease(target))
-            if refresh_charm_plan:
-                plan.add_step(refresh_charm_plan)
+        refresh_charm_plan = self._get_refresh_charm_plan(self.current_os_release)
+        if refresh_charm_plan:
+            plan.add_step(refresh_charm_plan)
 
         upgrade_charm_plan = self._get_upgrade_charm_plan(OpenStackRelease(target))
         if upgrade_charm_plan:
@@ -84,10 +81,8 @@ class OpenStackSubordinateApplication(OpenStackApplication):
         try:
             OpenStackRelease(charm_channel.split("/")[0])
             self._channel = charm_channel
-            self._default_used = False
         except ValueError:
             # if it has charm origin like cs:
             # or latest/stable it means it does not support openstack channels yet,
             # so it should be minimum
-            self._default_used = True
             self._channel = "ussuri/stable"
