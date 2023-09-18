@@ -166,9 +166,9 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
             return _inner_is_leader
 
-        self.run_action = mock.MagicMock()
+        self.run_action = MagicMock()
         self.run_action.wait.side_effect = _wait
-        self.action = mock.MagicMock()
+        self.action = MagicMock()
         self.action.data = {
             "model-uuid": "1a035018-71ff-473e-8aab-d1a8d6b6cda7",
             "id": "e26ffb69-6626-4e93-8840-07f7e041e99d",
@@ -183,9 +183,9 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
             "completed": "2018-04-11T23:13:43Z",
         }
 
-        self.machine3 = mock.MagicMock(status="active")
-        self.machine7 = mock.MagicMock(status="active")
-        self.unit1 = mock.MagicMock()
+        self.machine3 = MagicMock(status="active")
+        self.machine7 = MagicMock(status="active")
+        self.unit1 = MagicMock()
 
         def make_get_public_address(ip):
             async def _get_public_address():
@@ -201,7 +201,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.unit1.name = "app/2"
         self.unit1.entity_id = "app/2"
         self.unit1.machine = self.machine3
-        self.unit2 = mock.MagicMock()
+        self.unit2 = MagicMock()
         self.unit2.public_address = property(fail_on_use)
         self.unit2.get_public_address = make_get_public_address("ip2")
         self.unit2.name = "app/4"
@@ -220,14 +220,14 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.unit1.data = {"agent-status": {"current": "idle"}}
         self.unit2.data = {"agent-status": {"current": "idle"}}
         self.units = [self.unit1, self.unit2]
-        self.relation1 = mock.MagicMock()
+        self.relation1 = MagicMock()
         self.relation1.id = 42
         self.relation1.matches.side_effect = lambda x: True if x == "app" else False
-        self.relation2 = mock.MagicMock()
+        self.relation2 = MagicMock()
         self.relation2.id = 51
         self.relation2.matches.side_effect = lambda x: True if x == "app:interface" else False
         self.relations = [self.relation1, self.relation2]
-        _units = mock.MagicMock()
+        _units = MagicMock()
         _units.units = self.units
         _units.relations = self.relations
         _units.add_relation.side_effect = _add_relation
@@ -236,9 +236,9 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         _units.destroy_unit.side_effect = _destroy_unit
         _units.scale.side_effect = _scale
 
-        self.mymodel = mock.MagicMock()
+        self.mymodel = MagicMock()
         self.mymodel.applications = {"app": _units}
-        self.Model_mock = mock.MagicMock()
+        self.Model_mock = MagicMock()
 
         # Juju Status Object and data
         self.key = "instance-id"
@@ -259,7 +259,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.application_data = {
             "units": {self.unit1.name: self.subordinate_unit_data, self.unit: self.unit_data}
         }
-        self.juju_status = mock.MagicMock()
+        self.juju_status = MagicMock()
         self.juju_status.applications = {
             self.application: self.application_data,
             self.subordinate_application: self.subordinate_application_data,
@@ -296,7 +296,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.model_name = "testmodel"
         self.Model_mock.info.name = self.model_name
 
-        self.Controller_mock = mock.MagicMock()
+        self.Controller_mock = MagicMock()
         self.Controller_mock.connect.side_effect = _ctrl_connect
         self.Controller_mock.add_model.side_effect = _ctrl_add_model
         self.Controller_mock.destroy_models.side_effect = _ctrl_destroy_models
@@ -318,7 +318,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
     @mock.patch(
         "cou.utils.juju_utils._get_current_model_name_from_juju",
-        new=mock.AsyncMock(return_value="model_name"),
+        new=AsyncMock(return_value="model_name"),
     )
     async def test_get_current_model_from_current_model(self):
         model_name = await juju_utils.get_current_model_name()
@@ -343,7 +343,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
     async def test_get_current_model_from_juju(self):
         expected_model = "testmodel"
-        mocked_model = mock.AsyncMock(spec=Model)
+        mocked_model = AsyncMock(spec=Model)
         mocked_model.name = expected_model
         with mock.patch("cou.utils.juju_utils.Model", return_value=mocked_model):
             name = await juju_utils._get_current_model_name_from_juju()
@@ -351,9 +351,9 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
 
     async def test_get_full_juju_status(self):
         with mock.patch("cou.utils.juju_utils._get_model") as get_model:
-            mymodel = mock.AsyncMock()
+            mymodel = AsyncMock()
             get_model.return_value = mymodel
-            mymodel.get_status = mock.AsyncMock()
+            mymodel.get_status = AsyncMock()
             mymodel.get_status.return_value = "test"
             result = await juju_utils.get_status()
             get_model.assert_called()
@@ -419,9 +419,9 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
             await juju_utils.get_unit_from_name("bad_name", model_name="mname")
 
     async def test_get_application_config(self):
-        test_model = mock.AsyncMock()
-        test_app = mock.AsyncMock()
-        test_app.get_config = mock.AsyncMock()
+        test_model = AsyncMock()
+        test_app = AsyncMock()
+        test_app.get_config = AsyncMock()
         test_app.get_config.return_value = "config"
         test_model.applications = {"app": test_app}
 
@@ -547,7 +547,7 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         self.patch_object(juju_utils, "get_unit_from_name")
         self.get_unit_from_name.return_value = self.unit1
         self.Model.return_value = self.Model_mock
-        app_mock = mock.MagicMock()
+        app_mock = MagicMock()
         app_mock.upgrade_charm.side_effect = _upgrade_charm
         self.mymodel.applications["myapp"] = app_mock
         await juju_utils.upgrade_charm("myapp", switch="cs:~me/new-charm-45")
@@ -562,14 +562,14 @@ class AsyncModelTests(aiounittest.AsyncTestCase):
         )
 
     async def test_disconnect(self):
-        mymodel = mock.AsyncMock(auto_spec=Model)
+        mymodel = AsyncMock(auto_spec=Model)
         mymodel.disconnect.return_value = "ok"
         await juju_utils._disconnect(mymodel)
 
     async def test_set_application_config(self):
-        test_model = mock.AsyncMock()
-        test_app = mock.AsyncMock()
-        test_app.set_config = mock.AsyncMock()
+        test_model = AsyncMock()
+        test_app = AsyncMock()
+        test_app.set_config = AsyncMock()
         test_model.applications = {"app": test_app}
         config = {"openstack-origin": "cloud:focal-victoria"}
 
@@ -583,17 +583,17 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
     def setUp(self):
         super().setUp()
 
-        self.model_connected = mock.AsyncMock()
+        self.model_connected = AsyncMock()
         self.model_connected.info.name = "test"
         self.model_connected.is_connected = MagicMock()
         self.model_connected.is_connected.return_value = True
         self.model_connected.connection = MagicMock()
-        self.model_connected.wait_for_idle = mock.AsyncMock()
+        self.model_connected.wait_for_idle = AsyncMock()
         connection = MagicMock()
         connection.is_open = True
         self.model_connected.connection.return_value = connection
 
-        self.model_juju_exception = mock.AsyncMock()
+        self.model_juju_exception = AsyncMock()
         self.model_juju_exception.info.name = "test"
         self.model_juju_exception.is_connected = MagicMock()
         self.model_juju_exception.is_connected.return_value = True
@@ -623,7 +623,7 @@ class JujuWaiterTests(aiounittest.AsyncTestCase):
             await waiter.wait(1)
 
     async def test_ensure_model_connected(self):
-        model_disconnected = mock.AsyncMock()
+        model_disconnected = AsyncMock()
         model_disconnected.info.name = "test"
         model_disconnected.is_connected = MagicMock()
         model_disconnected.is_connected.side_effect = [False, True, False, True, False, True, True]
@@ -651,8 +651,8 @@ async def test_extract_charm_name(mocked_get_model):
     """Test extraction charm name from application name."""
     application_name = "test-app"
     model_name = "test-model"
-    mocked_get_model.return_value = model = mock.AsyncMock(speck=Model)
-    app = mock.MagicMock()
+    mocked_get_model.return_value = model = AsyncMock(speck=Model)
+    app = MagicMock()
     app.charm_name = application_name
     model.applications = {application_name: app}
 
@@ -668,7 +668,7 @@ async def test_extract_charm_name_not_existing_app(mocked_get_model):
     """Test extraction charm name from application name which does not exists."""
     application_name = "test-app"
     model_name = "test-model"
-    mocked_get_model.return_value = model = mock.AsyncMock(speck=Model)
+    mocked_get_model.return_value = model = AsyncMock(speck=Model)
     model.applications = {}
 
     with pytest.raises(ApplicationNotFound):
@@ -680,7 +680,7 @@ async def test_extract_charm_name_not_existing_app(mocked_get_model):
 @pytest.mark.asyncio
 async def test_retry_without_args():
     """Test retry as decorator without any arguments."""
-    obj = mock.MagicMock()
+    obj = MagicMock()
 
     class TestModel:
         @juju_utils.retry
@@ -695,7 +695,7 @@ async def test_retry_without_args():
 @pytest.mark.asyncio
 async def test_retry_with_args():
     """Test retry as decorator with arguments."""
-    obj = mock.MagicMock()
+    obj = MagicMock()
 
     class TestModel:
         @juju_utils.retry(timeout=1, no_retry_exceptions=(Exception,))
@@ -711,7 +711,7 @@ async def test_retry_with_args():
 @patch("asyncio.sleep", new=AsyncMock())
 async def test_retry_with_failures():
     """Test retry with some failures."""
-    obj = mock.MagicMock()
+    obj = MagicMock()
     obj.run.side_effect = [ValueError, KeyError, None]
 
     class TestModel:
@@ -728,7 +728,7 @@ async def test_retry_with_failures():
 @patch("asyncio.sleep", new=AsyncMock())
 async def test_retry_ignored_exceptions():
     """Test retry with ignored exceptions."""
-    obj = mock.MagicMock()
+    obj = MagicMock()
     obj.run.side_effect = [ValueError, KeyError, SystemExit]
 
     class TestModel:
@@ -746,7 +746,7 @@ async def test_retry_ignored_exceptions():
 @pytest.mark.asyncio
 async def test_retry_failure():
     """Test retry with ignored exceptions."""
-    obj = mock.MagicMock()
+    obj = MagicMock()
     obj.run.side_effect = [ValueError]
     timeout = 1
 
