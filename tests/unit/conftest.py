@@ -176,6 +176,13 @@ def status():
     mock_keystone_ldap.subordinate_to = ["keystone"]
     mock_keystone_ldap.units = {}
 
+    # OpenStack subordinate application cs
+    mock_keystone_ldap_cs = mock.MagicMock(spec_set=ApplicationStatus())
+    mock_keystone_ldap_cs.charm_channel = "stable"
+    mock_keystone_ldap_cs.charm = "cs:amd64/focal/keystone-ldap-437"
+    mock_keystone_ldap_cs.subordinate_to = ["keystone"]
+    mock_keystone_ldap_cs.units = {}
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -190,6 +197,7 @@ def status():
         "mysql_router": mock_mysql_router,
         "vault": mock_vault,
         "keystone-ldap": mock_keystone_ldap,
+        "keystone-ldap-cs": mock_keystone_ldap_cs,
         "nova_wallaby": mock_nova_wallaby,
     }
     return status

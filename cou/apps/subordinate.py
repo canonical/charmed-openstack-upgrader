@@ -50,7 +50,7 @@ class OpenStackSubordinateApplication(OpenStackApplication):
             function=None,
         )
 
-        refresh_charm_plan = self._get_refresh_charm_plan(OpenStackRelease(target))
+        refresh_charm_plan = self._get_refresh_charm_plan(self.current_os_release)
         if refresh_charm_plan:
             plan.add_step(refresh_charm_plan)
 

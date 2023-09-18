@@ -96,3 +96,56 @@ def test_channel_setter_invalid(status, channel):
 
     app.channel = channel
     assert app.channel == "ussuri/stable"
+
+
+@pytest.mark.parametrize(
+    "channel",
+    [
+        "focal/edge",
+        "latest/edge",
+        "latest/stable",
+        "something/stable",
+    ],
+)
+def test_generate_plan(status, channel):
+    app_status = status["keystone-ldap-cs"]
+    app = OpenStackSubordinateApplication(
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+    )
+
+    app.channel = channel
+    plan = app.generate_upgrade_plan("wallaby")
+    assert str(plan) == (
+        "Upgrade plan for 'my_keystone_ldap' to wallaby\n"
+        "\tMigration of 'my_keystone_ldap' from charmstore to charmhub\n"
+        "\tUpgrade 'my_keystone_ldap' to the new channel: 'wallaby/stable'\n"
+    )
+
+
+def test_generate_plan_stable1(status):
+    app_status = status["keystone-ldap-cs"]
+    app = OpenStackSubordinateApplication(
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+    )
+
+    app.channel = "ussuri/stable"
+    plan = app.generate_upgrade_plan("wallaby")
+    assert str(plan) == (
+        "Upgrade plan for 'my_keystone_ldap' to wallaby\n"
+        "\tMigration of 'my_keystone_ldap' from charmstore to charmhub\n"
+        "\tUpgrade 'my_keystone_ldap' to the new channel: 'wallaby/stable'\n"
+    )
+
+
+def test_generate_plan_stable2(status):
+    app_status = status["keystone-ldap"]
+    app = OpenStackSubordinateApplication(
+        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+    )
+
+    app.channel = "wallaby/stable"
+    plan = app.generate_upgrade_plan("wallaby")
+    assert str(plan) == (
+        "Upgrade plan for 'my_keystone_ldap' to wallaby\n"
+        "\tRefresh 'my_keystone_ldap' to the latest revision of 'wallaby/stable'\n"
+    )
