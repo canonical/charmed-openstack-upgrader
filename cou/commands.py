@@ -140,7 +140,8 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         "-n",
         action="append",
         help="Specify machine hostnames(s) to upgrade.\nThis option accepts a single hostname as "
-        "well as a stringified comma-separated list of hostnames,\nand can be used repetitively.",
+        "well as a stringified comma-separated list of hostnames,\nand can be repeated multiple "
+        "times.",
         dest="hostnames",
         type=str,
     )
@@ -150,7 +151,7 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         action="append",
         help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
         "availability zone as well as a stringified comma-separated list of AZs,\n"
-        "and can be used repetitively.",
+        "and can be repeated multiple times.",
         dest="availability_zones",
         type=str,
     )
