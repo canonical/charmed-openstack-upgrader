@@ -13,15 +13,20 @@
 #  limitations under the License.
 """Auxiliary subordinate application class."""
 
+from typing import Callable
+
 from cou.apps.app import AppFactory
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
-from cou.steps import UpgradeStep
+from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
 
 @AppFactory.register_application(AUXILIARY_SUBORDINATES)
 class OpenStackAuxiliarySubordinateApplication(OpenStackAuxiliaryApplication):
     """Auxiliary subordinate application class."""
+
+    _default_used = False
+    generate_upgrade_plan: Callable = OpenStackSubordinateApplication.generate_upgrade_plan
 
     @property
     def current_os_release(self) -> OpenStackRelease:
@@ -33,28 +38,3 @@ class OpenStackAuxiliarySubordinateApplication(OpenStackAuxiliaryApplication):
         :rtype: OpenStackRelease
         """
         return self.channel_codename
-
-    def generate_upgrade_plan(self, target: str) -> UpgradeStep:
-        """Generate full upgrade plan for an Application.
-
-        :param target: OpenStack codename to upgrade.
-        :type target: str
-        :return: Full upgrade plan if the Application is able to generate it.
-        :rtype: UpgradeStep
-        """
-        target_version = OpenStackRelease(target)
-        plan = UpgradeStep(
-            description=f"Upgrade plan for '{self.name}' to {target}",
-            parallel=False,
-            function=None,
-        )
-
-        refresh_charm_plan = self._get_refresh_charm_plan(target_version)
-        if refresh_charm_plan:
-            plan.add_step(refresh_charm_plan)
-
-        upgrade_charm_plan = self._get_upgrade_charm_plan(target_version)
-        if upgrade_charm_plan:
-            plan.add_step(upgrade_charm_plan)
-
-        return plan

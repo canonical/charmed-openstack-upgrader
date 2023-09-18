@@ -13,16 +13,13 @@
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
 
-from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.steps import UpgradeStep
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import assert_plan_description
 
 
-def test_auxiliary_subordinate(status):
-    app = OpenStackAuxiliarySubordinateApplication(
-        "keystone-mysql-router", status["mysql_router"], {}, "my_model", "mysql-router"
-    )
+def test_auxiliary_subordinate(apps):
+    app = apps["keystone_mysql_router"]
     assert app.channel == "8.0/stable"
     assert app.charm_origin == "ch"
     assert app.os_origin == ""
@@ -31,11 +28,9 @@ def test_auxiliary_subordinate(status):
     assert app.current_os_release == "yoga"
 
 
-def test_auxiliary_subordinate_upgrade_plan_to_victoria(status):
+def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps):
     target = "victoria"
-    app = OpenStackAuxiliarySubordinateApplication(
-        "keystone-mysql-router", status["mysql_router"], {}, "my_model", "mysql-router"
-    )
+    app = apps["keystone_mysql_router"]
 
     plan = app.generate_upgrade_plan(target)
 
@@ -46,11 +41,9 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(status):
     assert_plan_description(plan, steps_description)
 
 
-def test_auxiliary_subordinate_upgrade_charm(status, mocker):
+def test_auxiliary_subordinate_upgrade_charm(apps, mocker):
     target = "victoria"
-    app = OpenStackAuxiliarySubordinateApplication(
-        "keystone-mysql-router", status["mysql_router"], {}, "my_model", "mysql-router"
-    )
+    app = apps["keystone_mysql_router"]
     # currently there is no auxiliary subordinate charm that needs to change charm
     # channel in the same ubuntu series. That is why we need to mock this situation.
     mocker.patch(
