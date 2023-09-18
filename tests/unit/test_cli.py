@@ -64,39 +64,37 @@ def test_get_log_level(quiet, verbosity, level):
     "model_name, expected_call_count",
     [("model_name", 0), ("", 1), (None, 1)],
 )
-async def test_analyze_and_plan(model_name, expected_call_count):
+@patch("cou.cli.juju_utils.get_current_model_name", new_callable=AsyncMock)
+@patch("cou.cli.generate_plan", new_callable=AsyncMock)
+@patch("cou.cli.Analysis.create", new_callable=AsyncMock)
+async def test_analyze_and_plan(
+    mock_analyze, mock_generate_plan, mock_get_current_model_name, model_name, expected_call_count
+):
     """Test analyze_and_plan function with different model_name arguments."""
+    mock_get_current_model_name.return_value = model_name
     analysis_result = Analysis(model_name=model_name, apps_control_plane=[], apps_data_plane=[])
+    mock_analyze.return_value = analysis_result
 
-    with patch(
-        "cou.cli.juju_utils.get_current_model_name",
-        new=AsyncMock(return_value=model_name),
-    ) as mock_get_current_model_name, patch(
-        "cou.cli.generate_plan", new=AsyncMock()
-    ) as mock_generate_plan, patch(
-        "cou.cli.Analysis.create",
-        new=AsyncMock(return_value=analysis_result),
-    ) as mock_analyze:
-        await cli.analyze_and_plan(model_name)
+    await cli.analyze_and_plan(model_name)
 
-        assert mock_get_current_model_name.call_count == expected_call_count
-        mock_analyze.assert_awaited_once_with(model_name)
-        mock_generate_plan.assert_awaited_once_with(analysis_result)
+    assert mock_get_current_model_name.call_count == expected_call_count
+    mock_analyze.assert_awaited_once_with(model_name)
+    mock_generate_plan.assert_awaited_once_with(analysis_result)
 
 
 @pytest.mark.asyncio
-async def test_get_upgrade_plan():
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.logger")
+async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan):
     """Test get_upgrade_plan function."""
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
 
-    with patch(
-        "cou.cli.analyze_and_plan", new=AsyncMock(return_value=plan)
-    ) as mock_analyze_and_plan, patch("cou.cli.logger") as mock_logger:
-        await cli.get_upgrade_plan()
+    mock_analyze_and_plan.return_value = plan
+    await cli.get_upgrade_plan()
 
-        mock_analyze_and_plan.assert_awaited_once()
-        mock_logger.info.assert_called_once_with(plan)
+    mock_analyze_and_plan.assert_awaited_once()
+    mock_logger.info.assert_called_once_with(plan)
 
 
 @pytest.mark.asyncio
@@ -107,23 +105,24 @@ async def test_get_upgrade_plan():
         (False, 0),
     ],
 )
-async def test_run_upgrade_quiet(quiet, expected_print_count):
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_plan")
+@patch("builtins.print")
+@patch("cou.cli.logger")
+async def test_run_upgrade_quiet(
+    mock_logger, mock_print, mock_apply_plan, mock_analyze_and_plan, quiet, expected_print_count
+):
     """Test get_upgrade_plan function in either quiet or non-quiet mode."""
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    mock_analyze_and_plan.return_value = plan
 
-    with patch(
-        "cou.cli.analyze_and_plan", new=AsyncMock(return_value=plan)
-    ) as mock_analyze_and_plan, patch("cou.cli.logger"), patch(
-        "cou.cli.apply_plan"
-    ) as mock_apply_plan, patch(
-        "builtins.print"
-    ) as mock_print:
-        await cli.run_upgrade(quiet=quiet)
+    await cli.run_upgrade(quiet=quiet)
 
-        mock_analyze_and_plan.assert_called_once()
-        mock_apply_plan.assert_called_once_with(plan, True)
-        mock_print.call_count == expected_print_count
+    mock_analyze_and_plan.assert_called_once()
+    mock_logger.info.assert_called_once_with(plan)
+    mock_apply_plan.assert_called_once_with(plan, True)
+    mock_print.call_count == expected_print_count
 
 
 @pytest.mark.asyncio
@@ -134,24 +133,30 @@ async def test_run_upgrade_quiet(quiet, expected_print_count):
         (True, 0),
     ],
 )
-async def test_run_upgrade_interactive(interactive, progress_indication_count):
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_plan")
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.logger")
+async def test_run_upgrade_interactive(
+    mock_logger,
+    mock_progress_indicator,
+    mock_apply_plan,
+    mock_analyze_and_plan,
+    interactive,
+    progress_indication_count,
+):
     """Test get_upgrade_plan function in either interactive or non-interactive mode."""
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    mock_analyze_and_plan.return_value = plan
 
-    with patch(
-        "cou.cli.analyze_and_plan", new=AsyncMock(return_value=plan)
-    ) as mock_analyze_and_plan, patch("cou.cli.logger"), patch(
-        "cou.cli.apply_plan"
-    ) as mock_apply_plan, patch(
-        "cou.cli.progress_indicator"
-    ) as mock_progress_indicator:
-        await cli.run_upgrade(interactive=interactive)
+    await cli.run_upgrade(interactive=interactive)
 
-        mock_analyze_and_plan.assert_called_once()
-        mock_apply_plan.assert_called_once_with(plan, interactive)
-        assert mock_progress_indicator.start.call_count == progress_indication_count
-        assert mock_progress_indicator.succeed.call_count == progress_indication_count
+    mock_analyze_and_plan.assert_called_once()
+    mock_logger.info.assert_called_once_with(plan)
+    mock_apply_plan.assert_called_once_with(plan, interactive)
+    assert mock_progress_indicator.start.call_count == progress_indication_count
+    assert mock_progress_indicator.succeed.call_count == progress_indication_count
 
 
 @pytest.mark.asyncio
