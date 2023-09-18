@@ -132,9 +132,10 @@ async def entrypoint() -> None:
         args = parse_args(sys.argv[1:])
 
         setup_logging(log_level=args.loglevel)
-        model_name = args.model_name or await juju_utils.get_current_model_name()
-        logger.info("Using model: %s", model_name)
-        analysis_result = await Analysis.create(model_name)
+        model = juju_utils.COUModel(args.model_name)
+        await model.check_model_name()  # check model name if it was None
+        logger.info("Using model: %s", model.name)
+        analysis_result = await Analysis.create(model)
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
         if args.run:
