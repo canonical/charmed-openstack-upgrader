@@ -22,6 +22,7 @@ from juju.client.client import FullStatus
 
 from cou.apps.app import OpenStackApplication
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
+from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
 
 
@@ -300,6 +301,9 @@ def apps(status, config, model):
     keystone_ldap = OpenStackSubordinateApplication(
         "keystone-ldap", keystone_ldap_status, {}, model, "keystone-ldap"
     )
+    keystone_mysql_router = OpenStackAuxiliarySubordinateApplication(
+        "keystone-mysql-router", status["mysql_router"], {}, model, "mysql-router"
+    )
 
     nova_wallaby = OpenStackSubordinateApplication(
         "nova-compute", nova_wallaby_status, {}, model, "nova-compute"
@@ -312,4 +316,5 @@ def apps(status, config, model):
         "rmq_wallaby": rmq_wallaby,
         "keystone_ldap": keystone_ldap,
         "nova_wallaby": nova_wallaby,
+        "keystone_mysql_router": keystone_mysql_router,
     }
