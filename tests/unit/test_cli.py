@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from argparse import ArgumentError
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -67,11 +67,9 @@ def test_setup_logging():
     ],
 )
 async def test_entrypoint_with_exception(mocker, exception, exp_exitcode):
-    mocker.patch("cou.cli.generate_plan", side_effect=exception)
     mocker.patch("cou.cli.parse_args")
     mocker.patch("cou.cli.setup_logging")
-    mocker.patch("cou.cli.apply_plan")
-    mocker.patch("cou.cli.Analysis.create")
+    mocker.patch("cou.utils.juju_utils.COUModel.check_model_name", side_effect=exception)
 
     with pytest.raises(SystemExit, match=exp_exitcode):
         await entrypoint()
@@ -85,27 +83,31 @@ async def test_entrypoint_dry_run(mocker):
     mock_parse_args = mocker.patch("cou.cli.parse_args")
     mock_parse_args.return_value.run = False
     mocker.patch("cou.cli.setup_logging")
+    mocker.patch("cou.utils.juju_utils.COUModel.check_model_name")
+    mock_analysis_create = mocker.patch("cou.cli.Analysis.create")
     mocker.patch("cou.cli.generate_plan", return_value=plan)
     mock_apply_plan = mocker.patch("cou.cli.apply_plan")
-    mocker.patch("cou.cli.Analysis.create")
     mock_print = mocker.patch("builtins.print")
 
-    result = await entrypoint()
-    mock_print.assert_called_with(plan)
+    await entrypoint()
+    mock_print.assert_has_calls([call(mock_analysis_create.return_value), call(plan)])
     mock_apply_plan.assert_not_called()
-
-    assert not result
 
 
 @pytest.mark.asyncio
-async def test_entrypoint_real_run():
-    with patch("cou.cli.parse_args") as mock_parse_args, patch("cou.cli.setup_logging"), patch(
-        "cou.cli.generate_plan"
-    ), patch("cou.cli.apply_plan") as mock_apply_plan, patch("cou.cli.Analysis.create"):
-        mock_parse_args.return_value = MagicMock()
-        mock_parse_args.return_value.run = True
+async def test_entrypoint_real_run(mocker):
+    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
 
-        result = await entrypoint()
+    mock_parse_args = mocker.patch("cou.cli.parse_args")
+    mock_parse_args.return_value.run = True
+    mocker.patch("cou.cli.setup_logging")
+    mocker.patch("cou.utils.juju_utils.COUModel.check_model_name")
+    mock_analysis_create = mocker.patch("cou.cli.Analysis.create")
+    mocker.patch("cou.cli.generate_plan", return_value=plan)
+    mock_apply_plan = mocker.patch("cou.cli.apply_plan")
+    mock_print = mocker.patch("builtins.print")
 
-        assert not result
-        mock_apply_plan.assert_called_once()
+    await entrypoint()
+    mock_print.assert_called_once_with(mock_analysis_create.return_value)
+    mock_apply_plan.assert_called_once_with(plan, mock_parse_args.return_value.interactive)

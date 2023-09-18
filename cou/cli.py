@@ -130,15 +130,14 @@ async def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
-
         setup_logging(log_level=args.loglevel)
         model = juju_utils.COUModel(args.model_name)
-        await model.check_model_name()  # check model name if it was None
+        await model.check_model_name()  # check model name and obtain if it was None
         logger.info("Using model: %s", model.name)
         analysis_result = await Analysis.create(model)
         print(analysis_result)
         upgrade_plan = await generate_plan(analysis_result)
-        if args.run:
+        if args.run is True:
             await apply_plan(upgrade_plan, args.interactive)
         else:
             print(upgrade_plan)

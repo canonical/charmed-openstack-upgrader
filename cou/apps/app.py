@@ -377,6 +377,7 @@ class OpenStackApplication:
             )
             if target not in compatible_os_versions:
                 units_not_upgraded.append(unit)
+
         if units_not_upgraded:
             units_not_upgraded_string = ", ".join(units_not_upgraded)
             raise ApplicationError(

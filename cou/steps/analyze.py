@@ -101,7 +101,9 @@ class Analysis:
                 charm=await model.get_charm_name(app),
             )
             for app, app_status in juju_status.applications.items()
+            if app_status
         }
+
         # remove non-supported charms that return None on AppFactory.create
         apps.discard(None)
         # mypy complains that apps can have None, but we already removed.
