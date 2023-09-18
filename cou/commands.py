@@ -14,13 +14,13 @@
 
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 
 import pkg_resources
 
 
 class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
-    """Capitalize usage prefix."""
+    """Capitalize message prefix."""
 
     def add_usage(
         self,
@@ -317,13 +317,14 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
     return subparsers
 
 
-def parse_args() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]:
+def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent-return-statements
     """Parse cli arguments.
 
     :return: Arguments parser.
     :rtype: argparse.ArgumentParser
-    :return: Arguments subparsers.
-    :rtype: argparse._SubParsersAction
+    :return: Parsed arguments.
+    :rtype: argparse.Namespace
+    :raises argparse.ArgumentError: Unexpected arguments input.
     """
     # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
@@ -348,4 +349,27 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]:
     # Configure subparsers for subcommands and their options
     subparsers = create_subparsers(parser)
 
-    return parser, subparsers
+    # It no sub-commands or options are given, print help message and exit
+    if len(args) == 0:
+        parser.print_help()
+        parser.exit()
+
+    try:
+        parsed_args = parser.parse_args(args)
+
+        # print help messages for an available sub-command
+        if parsed_args.command == "help":
+            match parsed_args.subcommand:
+                case "plan":
+                    subparsers.choices["plan"].print_help()
+                case "run":
+                    subparsers.choices["run"].print_help()
+                case "all":
+                    parser.print_help()
+            parser.exit()
+
+        return parsed_args
+    except argparse.ArgumentError as exc:
+        parser.error(
+            message=f"Error parsing arguments: {exc}\nSee 'cou help' for more information."
+        )
