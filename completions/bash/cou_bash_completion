@@ -4,16 +4,10 @@ _subcommand_args() {
         plan)
             opts="--help --quiet --verbose --parallel --model"
             child_commands=""
-            # TODO(txiao): Replace child_command with the following after data-plan upgrade
-            # is implemented.
-            # child_commands="control-plane data-plane"
             ;;
         run)
             opts="--help --quiet --verbose --parallel --model --interactive --no-interactive"
             child_commands=""
-            # TODO(txiao): Replace child_command with the following after data-plan upgrade
-            # is implemented.
-            # child_commands="control-plane data-plane"
             ;;
         help)
             opts=""
@@ -46,29 +40,7 @@ _cou_bash_completion() {
     cmd="${COMP_WORDS[1]}"
     _subcommand_args ${cmd}
 
-    # TODO(txiao): Remove the line below and un-comment the rest after data-plane upgrade
-    # is implemented.
     COMPREPLY=( $(compgen -W "${child_commands} ${opts}" -- "${cur}") )
-    # if [ $COMP_CWORD -eq 2 ]; then
-    #     COMPREPLY=( $(compgen -W "${child_commands} ${opts}" -- "${cur}") )
-    #     return 0
-    # fi
-
-    # # Define options specific to children commands 
-    # upgrade_group="${COMP_WORDS[2]}"
-    # case "${upgrade_group}" in
-    #     data-plane)
-    #         opts="${opts} --machine --hostname --availability-zone"
-    #         ;;
-    #     control-plane)
-    #         ;;
-    #     *)
-    #         opts=""
-    #         ;;
-    # esac
-
-    # COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-
 }
 
 # Register the completion function
