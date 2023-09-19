@@ -178,8 +178,7 @@ class OpenStackApplication:
         self.os_origin = self._get_os_origin()
         # subordinates don't have units
         units = getattr(self.status, "units", {})
-        for application_unit in units.keys():
-            unit = self.status.units[application_unit]
+        for name, unit in units.items():
             compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
                 self.charm, unit.workload_version
             )
@@ -188,7 +187,7 @@ class OpenStackApplication:
                 unit_os_version = max(compatible_os_versions)
                 self.units.append(
                     ApplicationUnit(
-                        unit=application_unit,
+                        unit=name,
                         workload_version=unit.workload_version,
                         os_version=unit_os_version,
                         machine=unit.machine,
@@ -290,7 +289,6 @@ class OpenStackApplication:
             return os_versions.pop()
         # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
         # upgrade methods, more than one version can be found.
-        # return OpenStackRelease("ussuri")
         raise MismatchedOpenStackVersions(
             f"Units of application {self.name} are running mismatched OpenStack versions: "
             f"{os_versions}. This is not currently handled."
