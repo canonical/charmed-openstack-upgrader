@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any, Optional
@@ -37,85 +36,9 @@ from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
     OpenStackRelease,
-    is_charm_supported,
 )
 
 logger = logging.getLogger(__name__)
-
-
-class AppFactory:
-    """Factory class for Application objects."""
-
-    charms: dict[str, type[OpenStackApplication]] = {}
-
-    @classmethod
-    def create(
-        cls,
-        name: str,
-        status: ApplicationStatus,
-        config: dict,
-        model_name: Optional[str],
-        charm: str,
-    ) -> Optional[OpenStackApplication]:
-        """Create the OpenStackApplication or registered subclasses.
-
-        Applications Subclasses registered with the "register_application"
-        decorator can be instantiated and used with their customized methods.
-        :param name: Name of the application
-        :type name: str
-        :param status: Status of the application
-        :type status: ApplicationStatus
-        :param config: Configuration of the application
-        :type config: dict
-        :param model_name: Model name
-        :type model_name: Optional[str]
-        :param charm: Name of the charm
-        :type charm: str
-        :return: The OpenStackApplication class or None if not supported.
-        :rtype: Optional[OpenStackApplication]
-        """
-        # pylint: disable=too-many-arguments
-        if is_charm_supported(charm):
-            app_class = cls.charms.get(charm, OpenStackApplication)
-            return app_class(
-                name=name, status=status, config=config, model_name=model_name, charm=charm
-            )
-        logger.debug(
-            "'%s' is not a supported OpenStack related application and will be ignored.",
-            name,
-        )
-        return None
-
-    @classmethod
-    def register_application(
-        cls, charms: list[str]
-    ) -> Callable[[type[OpenStackApplication]], type[OpenStackApplication]]:
-        """Register Application subclasses.
-
-        Use this method as decorator to register Applications that
-        cannot be described appropriately by the OpenStackApplication class.
-
-        Example:
-        ceph_charms = ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"]
-
-        @AppFactory.register_application(ceph_charms)
-        class Ceph(OpenStackApplication):
-            pass
-        This is registering the charms "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"
-        to the Ceph class.
-
-        :param charms: List of charms names.
-        :type charms: list[str]
-        :return: The decorated class. E.g: the Ceph class in the example above.
-        :rtype: Callable[[type[OpenStackApplication]], type[OpenStackApplication]]
-        """
-
-        def decorator(application: type[OpenStackApplication]) -> type[OpenStackApplication]:
-            for charm in charms:
-                cls.charms[charm] = application
-            return application
-
-        return decorator
 
 
 @dataclass

@@ -15,13 +15,11 @@
 
 from typing import Callable
 
-from cou.apps.app import AppFactory
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
-from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
+from cou.utils.openstack import OpenStackRelease
 
 
-@AppFactory.register_application(AUXILIARY_SUBORDINATES)
 class OpenStackAuxiliarySubordinateApplication(OpenStackAuxiliaryApplication):
     """Auxiliary subordinate application class."""
 

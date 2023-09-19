@@ -14,14 +14,13 @@
 """Subordinate application class."""
 import logging
 
-from cou.apps.app import AppFactory, OpenStackApplication
+from cou.apps.app import OpenStackApplication
 from cou.steps import UpgradeStep
-from cou.utils.openstack import SUBORDINATES, OpenStackRelease
+from cou.utils.openstack import OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(SUBORDINATES)
 class OpenStackSubordinateApplication(OpenStackApplication):
     """Subordinate application class."""
 

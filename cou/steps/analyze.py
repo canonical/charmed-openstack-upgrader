@@ -19,7 +19,8 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from cou.apps.app import AppFactory, OpenStackApplication
+from cou.apps import get_apps
+from cou.apps.app import OpenStackApplication
 from cou.utils import juju_utils
 from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
@@ -92,32 +93,17 @@ class Analysis:
         :rtype: List[OpenStackApplication]
         """
         juju_status = await juju_utils.get_status(model_name)
-        apps = {
-            AppFactory.create(
-                name=app,
-                status=app_status,
-                config=await juju_utils.get_application_config(app, model_name),
-                model_name=model_name,
-                charm=await juju_utils.extract_charm_name(app, model_name),
-            )
-            for app, app_status in juju_status.applications.items()
-        }
-        # remove non-supported charms that return None on AppFactory.create
-        apps.discard(None)
+        apps = await get_apps(juju_status, model_name)
         # mypy complains that apps can have None, but we already removed.
-        apps_to_upgrade_in_order = {
-            app for app in apps if app.charm in UPGRADE_ORDER  # type: ignore
-        }
+        apps_to_upgrade_in_order = {app for app in apps if app.charm in UPGRADE_ORDER}
         other_o7k_apps = apps - apps_to_upgrade_in_order
         sorted_apps_to_upgrade_in_order = sorted(
             apps_to_upgrade_in_order,
-            key=lambda app: UPGRADE_ORDER.index(app.charm),  # type: ignore
+            key=lambda app: UPGRADE_ORDER.index(app.charm),
         )
         # order by charm name to have a predicable upgrade sequence of others o7k charms.
-        other_o7k_apps_sorted_by_name = sorted(
-            other_o7k_apps, key=lambda app: app.charm  # type: ignore
-        )
-        return sorted_apps_to_upgrade_in_order + other_o7k_apps_sorted_by_name  # type: ignore
+        other_o7k_apps_sorted_by_name = sorted(other_o7k_apps, key=lambda app: app.charm)
+        return sorted_apps_to_upgrade_in_order + other_o7k_apps_sorted_by_name
 
     def __str__(self) -> str:
         """Dump as string.

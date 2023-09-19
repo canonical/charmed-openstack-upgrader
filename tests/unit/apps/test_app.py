@@ -449,32 +449,3 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
     ]
     assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
-
-
-def test_app_factory_not_supported_openstack_charm(mocker):
-    mock_logger = mocker.patch("cou.apps.app.logger")
-    my_app = app_module.AppFactory.create(
-        name="my-app",
-        status=mocker.MagicMock(),
-        config=mocker.MagicMock(),
-        model_name="my_model",
-        charm="my-app",
-    )
-    assert my_app is None
-    assert mock_logger.debug.called_once_with(
-        "'%s' is not a supported OpenStack related application and will be ignored.",
-        "my-app",
-    )
-
-
-def test_app_factory_register(status, mocker):
-    mocker.patch("cou.apps.app.is_charm_supported", return_value=True)
-
-    @app_module.AppFactory.register_application(["foo"])
-    class Foo:
-        def __init__(self, name, status, config, model_name, charm):
-            pass
-
-    assert "foo" in app_module.AppFactory.charms
-    foo = app_module.AppFactory.create("my-foo", mocker.MagicMock(), {}, "my_model", "foo")
-    assert isinstance(foo, Foo)

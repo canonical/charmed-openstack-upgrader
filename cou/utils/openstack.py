@@ -76,33 +76,6 @@ UPGRADE_ORDER = [
     "octavia",
 ]
 
-SUBORDINATES = [
-    "barbican-vault",
-    "ceilometer-agent",
-    "cinder-backup-swift-proxy",
-    "cinder-ceph",
-    "cinder-lvm",
-    "cinder-netapp",
-    "cinder-purestorage",
-    "keystone-kerberos",
-    "keystone-ldap",
-    "keystone-saml-mellon",
-    "magnum-dashboard",
-    "manila-dashboard",
-    "manila-generic",
-    "masakari-monitors",
-    "neutron-api-plugin-arista",
-    "neutron-api-plugin-ironic",
-    "neutron-api-plugin-ovn",
-    "neutron-openvswitch",
-    "octavia-dashboard",
-    "octavia-diskimage-retrofit",
-]
-
-AUXILIARY_SUBORDINATES = [
-    "hacluster",
-    "mysql-router",
-]
 
 OPENSTACK_CODENAMES = OrderedDict(
     [
@@ -412,20 +385,6 @@ class OpenStackCodenameLookup:
         if not cls._OPENSTACK_LOOKUP:
             cls._OPENSTACK_LOOKUP = cls._generate_lookup(cls._DEFAULT_CSV_FILE)
         return cls._OPENSTACK_LOOKUP.get(charm, {})
-
-
-def is_charm_supported(charm: str) -> bool:
-    """Check if a charm upgrade is supported.
-
-    :param charm: Name of the charm.
-    :type charm: str
-    :return: True if supported, else False
-    :rtype: bool
-    """
-    return (
-        bool(OpenStackCodenameLookup.lookup(charm))
-        or charm in SUBORDINATES + AUXILIARY_SUBORDINATES
-    )
 
 
 def _generate_track_mapping() -> (

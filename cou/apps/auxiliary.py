@@ -14,10 +14,9 @@
 """Auxiliary application class."""
 import logging
 
-from cou.apps.app import AppFactory, OpenStackApplication
+from cou.apps.app import OpenStackApplication
 from cou.exceptions import ApplicationError
 from cou.utils.openstack import (
-    CHARM_FAMILIES,
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
     OpenStackRelease,
@@ -26,9 +25,6 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(
-    ["rabbitmq-server", "vault", "mysql-innodb-cluster"] + CHARM_FAMILIES["ovn"]
-)
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
