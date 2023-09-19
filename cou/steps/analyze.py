@@ -21,7 +21,12 @@ from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.utils import juju_utils
-from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
+from cou.utils.openstack import (
+    DATA_PLANE_CHARMS,
+    UPGRADE_ORDER,
+    OpenStackRelease,
+    is_charm_supported,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -91,19 +96,22 @@ class Analysis:
         :return: Application objects with their respective information.
         :rtype: List[OpenStackApplication]
         """
+        apps = set()
         juju_status = await juju_utils.get_status(model_name)
-        apps = {
-            AppFactory.create(
-                name=app,
-                status=app_status,
-                config=await juju_utils.get_application_config(app, model_name),
-                model_name=model_name,
-                charm=await juju_utils.extract_charm_name(app, model_name),
+        for app, app_status in juju_status.applications.items():
+            charm = await juju_utils.extract_charm_name(app, model_name)
+            if not is_charm_supported(charm):
+                continue
+            apps.add(
+                AppFactory.create(
+                    name=app,
+                    status=app_status,
+                    config=await juju_utils.get_application_config(app, model_name),
+                    model_name=model_name,
+                    charm=charm,
+                )
             )
-            for app, app_status in juju_status.applications.items()
-        }
-        # remove non-supported charms that return None on AppFactory.create
-        apps.discard(None)
+
         # mypy complains that apps can have None, but we already removed.
         apps_to_upgrade_in_order = {
             app for app in apps if app.charm in UPGRADE_ORDER  # type: ignore

@@ -37,7 +37,6 @@ from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
     OpenStackRelease,
-    is_charm_supported,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,16 +74,10 @@ class AppFactory:
         :rtype: Optional[OpenStackApplication]
         """
         # pylint: disable=too-many-arguments
-        if is_charm_supported(charm):
-            app_class = cls.charms.get(charm, OpenStackApplication)
-            return app_class(
-                name=name, status=status, config=config, model_name=model_name, charm=charm
-            )
-        logger.debug(
-            "'%s' is not a supported OpenStack related application and will be ignored.",
-            name,
+        app_class = cls.charms.get(charm, OpenStackApplication)
+        return app_class(
+            name=name, status=status, config=config, model_name=model_name, charm=charm
         )
-        return None
 
     @classmethod
     def register_application(
