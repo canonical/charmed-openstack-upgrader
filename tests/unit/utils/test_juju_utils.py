@@ -23,6 +23,7 @@ from juju.unit import Unit
 
 from cou.exceptions import (
     ActionFailed,
+    ApplicationError,
     ApplicationNotFound,
     TimeoutException,
     UnitNotFound,
@@ -243,6 +244,16 @@ async def test_coumodel_get_unit_failure(mocked_model):
 
 
 @pytest.mark.asyncio
+async def test_coumodel_check_model_name(mocked_model):
+    model = juju_utils.COUModel(None)
+    mocked_model.name = exp_name = "test-model-name"
+
+    await model.check_model_name()
+
+    assert exp_name == model.name
+
+
+@pytest.mark.asyncio
 async def test_coumodel_get_application_configs(mocked_model):
     """Test COUModel get application configuration."""
     mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
@@ -263,6 +274,20 @@ async def test_coumodel_get_charm_name(mocked_model):
     charm_name = await model.get_charm_name("test-app")
 
     assert charm_name == mocked_app.charm_name
+
+
+@pytest.mark.asyncio
+async def test_coumodel_get_charm_name_failure(mocked_model):
+    """Test COUModel get charm name from application by application name."""
+    mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
+    mocked_app.charm_name = None
+    app_name = "test-app"
+    model = juju_utils.COUModel("test-model")
+
+    with pytest.raises(
+        ApplicationError, match=f"charm_name could not be obtain for app {app_name}"
+    ):
+        await model.get_charm_name("test-app")
 
 
 @pytest.mark.asyncio
