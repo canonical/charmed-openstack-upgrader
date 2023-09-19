@@ -92,9 +92,9 @@ class Analysis:
         :return: Control plane and data plane application lists.
         :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
         """
-        data_plane_machines = set().union(
-            *[{unit.machine for unit in app.units} for app in data_plane]
-        )
+        data_plane_machines = {
+            unit.machine for units in [app.units for app in data_plane] for unit in units
+        }
 
         apps_to_move = []
         for app in control_plane:
