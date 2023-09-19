@@ -12,49 +12,174 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentError
-from unittest.mock import MagicMock, call, patch
+import argparse
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cou.cli import entrypoint, parse_args, setup_logging
+from cou import cli
 from cou.exceptions import COUException, UnitNotFound
 from cou.steps import UpgradeStep
+from cou.steps.analyze import Analysis
 
 
 @pytest.mark.parametrize(
-    "args, expected_run, expected_loglevel, expected_interactive",
+    "verbosity_value, verbosity_name",
     [
-        (["--run", "--log-level", "DEBUG", "--no-interactive"], True, "DEBUG", False),
-        (["--run", "--log-level", "warning"], True, "WARNING", True),
-        (["--log-level", "debug"], False, "DEBUG", True),
+        (0, "ERROR"),
+        (1, "WARNING"),
+        (2, "INFO"),
+        (3, "DEBUG"),
+        (4, "NOTSET"),
+        (5, "NOTSET"),
+        (10, "NOTSET"),
     ],
 )
-def test_parse_args(args, expected_run, expected_loglevel, expected_interactive):
-    parsed_args = parse_args(args)
-    assert parsed_args.run == expected_run
-    assert parsed_args.loglevel == expected_loglevel
-    assert parsed_args.interactive == expected_interactive
+def test_verbosity_level(verbosity_value, verbosity_name):
+    """Test VerbosityLevel Enum class."""
+    level = cli.VerbosityLevel(verbosity_value)
+    assert level.name == verbosity_name
 
 
 @pytest.mark.parametrize(
-    "args, exception", [(["--log-level=DDD"], ArgumentError), (["--foo"], SystemExit)]
+    "verbosity_value, exception", [(-1, ValueError), ("UNEXPECTED", ValueError)]
 )
-def test_parse_args_raise_exception(args, exception):
+def test_verbosity_level_exception(verbosity_value, exception):
+    """Test VerbosityLevel Enum class with invalid inputs."""
     with pytest.raises(exception):
-        parse_args(args)
+        cli.VerbosityLevel(verbosity_value)
 
 
-def test_setup_logging():
-    with patch("cou.cli.logging") as mock_logging:
-        log_file_handler = MagicMock()
-        console_handler = MagicMock()
-        mock_root_logger = mock_logging.getLogger.return_value
-        mock_logging.FileHandler.return_value = log_file_handler
-        mock_logging.StreamHandler.return_value = console_handler
-        setup_logging("INFO")
-        mock_root_logger.addHandler.assert_any_call(log_file_handler)
-        mock_root_logger.addHandler.assert_any_call(console_handler)
+@pytest.mark.parametrize(
+    "quiet, verbosity, level",
+    [(True, 0, "CRITICAL"), (True, 5, "CRITICAL"), (False, 0, "ERROR"), (False, 2, "INFO")],
+)
+def test_get_log_level(quiet, verbosity, level):
+    """Test get_log_level return value."""
+    assert cli.get_log_level(quiet=quiet, verbosity=verbosity) == level
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.COUModel")
+@patch("cou.cli.generate_plan", new_callable=AsyncMock)
+@patch("cou.cli.Analysis.create", new_callable=AsyncMock)
+async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
+    """Test analyze_and_plan function with different model_name arguments."""
+    cou_model.return_value.check_model_name = AsyncMock()
+    analysis_result = Analysis(
+        model=cou_model.return_value, apps_control_plane=[], apps_data_plane=[]
+    )
+    mock_analyze.return_value = analysis_result
+
+    await cli.analyze_and_plan(None)
+
+    cou_model.assert_called_once_with(None)
+    cou_model.return_value.check_model_name.assert_awaited_once_with()
+    mock_analyze.assert_awaited_once_with(cou_model.return_value)
+    mock_generate_plan.assert_awaited_once_with(analysis_result)
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.logger")
+async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan):
+    """Test get_upgrade_plan function."""
+    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+
+    mock_analyze_and_plan.return_value = plan
+    await cli.get_upgrade_plan()
+
+    mock_analyze_and_plan.assert_awaited_once()
+    mock_logger.info.assert_called_once_with(plan)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "quiet, expected_print_count",
+    [
+        (True, 1),
+        (False, 0),
+    ],
+)
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_plan")
+@patch("builtins.print")
+@patch("cou.cli.logger")
+async def test_run_upgrade_quiet(
+    mock_logger, mock_print, mock_apply_plan, mock_analyze_and_plan, quiet, expected_print_count
+):
+    """Test get_upgrade_plan function in either quiet or non-quiet mode."""
+    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    mock_analyze_and_plan.return_value = plan
+
+    await cli.run_upgrade(quiet=quiet)
+
+    mock_analyze_and_plan.assert_called_once()
+    mock_logger.info.assert_called_once_with(plan)
+    mock_apply_plan.assert_called_once_with(plan, True)
+    mock_print.call_count == expected_print_count
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "interactive, progress_indication_count",
+    [
+        (False, 1),
+        (True, 0),
+    ],
+)
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_plan")
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.logger")
+async def test_run_upgrade_interactive(
+    mock_logger,
+    mock_progress_indicator,
+    mock_apply_plan,
+    mock_analyze_and_plan,
+    interactive,
+    progress_indication_count,
+):
+    """Test get_upgrade_plan function in either interactive or non-interactive mode."""
+    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    mock_analyze_and_plan.return_value = plan
+
+    await cli.run_upgrade(interactive=interactive)
+
+    mock_analyze_and_plan.assert_called_once()
+    mock_logger.info.assert_called_once_with(plan)
+    mock_apply_plan.assert_called_once_with(plan, interactive)
+    assert mock_progress_indicator.start.call_count == progress_indication_count
+    assert mock_progress_indicator.succeed.call_count == progress_indication_count
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "command, function_call",
+    [
+        ("run", "cou.cli.run_upgrade"),
+        ("plan", "cou.cli.get_upgrade_plan"),
+    ],
+)
+async def test_entrypoint_commands(mocker, command, function_call):
+    """Test entrypoint with different commands."""
+    mocker.patch(
+        "cou.cli.parse_args",
+        return_value=argparse.Namespace(
+            quiet=False, command=command, verbosity=0, model_name=None, interactive=True
+        ),
+    )
+    mocker.patch("cou.cli.analyze_and_plan")
+    mocker.patch("cou.cli.setup_logging")
+    mocker.patch("cou.cli.apply_plan")
+    mocker.patch("cou.cli.Analysis.create")
+
+    with patch(function_call, new=AsyncMock()) as mock_function:
+        await cli.entrypoint()
+        mock_function.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -67,47 +192,43 @@ def test_setup_logging():
     ],
 )
 async def test_entrypoint_with_exception(mocker, exception, exp_exitcode):
-    mocker.patch("cou.cli.parse_args")
+    mock_parse_args = mocker.patch("cou.cli.parse_args")
+    mock_parse_args.return_value.command = "plan"
     mocker.patch("cou.cli.setup_logging")
-    mocker.patch("cou.utils.juju_utils.COUModel.check_model_name", side_effect=exception)
+    mocker.patch("cou.cli.get_upgrade_plan", side_effect=exception)
+    mocker.patch("cou.cli.run_upgrade")
 
     with pytest.raises(SystemExit, match=exp_exitcode):
-        await entrypoint()
+        await cli.entrypoint()
 
 
 @pytest.mark.asyncio
-async def test_entrypoint_dry_run(mocker):
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
-
+async def test_entrypoint_plan(mocker):
     mock_parse_args = mocker.patch("cou.cli.parse_args")
-    mock_parse_args.return_value.run = False
+    args = mock_parse_args.return_value
+    args.command = "plan"
     mocker.patch("cou.cli.setup_logging")
-    mocker.patch("cou.utils.juju_utils.COUModel.check_model_name")
-    mock_analysis_create = mocker.patch("cou.cli.Analysis.create")
-    mocker.patch("cou.cli.generate_plan", return_value=plan)
-    mock_apply_plan = mocker.patch("cou.cli.apply_plan")
-    mock_print = mocker.patch("builtins.print")
+    mock_get_upgrade_plan = mocker.patch("cou.cli.get_upgrade_plan")
+    mock_run_upgrade = mocker.patch("cou.cli.run_upgrade")
 
-    await entrypoint()
-    mock_print.assert_has_calls([call(mock_analysis_create.return_value), call(plan)])
-    mock_apply_plan.assert_not_called()
+    await cli.entrypoint()
+
+    mock_get_upgrade_plan.assert_awaited_once_with(model_name=args.model_name)
+    mock_run_upgrade.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 async def test_entrypoint_real_run(mocker):
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
-
     mock_parse_args = mocker.patch("cou.cli.parse_args")
-    mock_parse_args.return_value.run = True
+    args = mock_parse_args.return_value
+    args.command = "run"
     mocker.patch("cou.cli.setup_logging")
-    mocker.patch("cou.utils.juju_utils.COUModel.check_model_name")
-    mock_analysis_create = mocker.patch("cou.cli.Analysis.create")
-    mocker.patch("cou.cli.generate_plan", return_value=plan)
-    mock_apply_plan = mocker.patch("cou.cli.apply_plan")
-    mock_print = mocker.patch("builtins.print")
+    mock_get_upgrade_plan = mocker.patch("cou.cli.get_upgrade_plan")
+    mock_run_upgrade = mocker.patch("cou.cli.run_upgrade")
 
-    await entrypoint()
-    mock_print.assert_called_once_with(mock_analysis_create.return_value)
-    mock_apply_plan.assert_called_once_with(plan, mock_parse_args.return_value.interactive)
+    await cli.entrypoint()
+
+    mock_get_upgrade_plan.assert_not_awaited()
+    mock_run_upgrade.assert_awaited_once_with(
+        model_name=args.model_name, interactive=args.interactive, quiet=args.quiet
+    )

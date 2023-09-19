@@ -130,7 +130,7 @@ class COUModel:
     and some other required features for COU.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: Optional[str]):
         """COU Model initialization with name and juju.model.Model."""
         self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
         self._name = name
@@ -145,7 +145,7 @@ class COUModel:
             return False
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         """Return model name."""
         return self._name
 

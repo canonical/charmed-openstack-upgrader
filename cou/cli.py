@@ -12,140 +12,166 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Entrypoint to the 'charmed-openstack-upgrader'."""
-import argparse
+"""Entrypoint for 'charmed-openstack-upgrader'."""
 import logging
 import logging.handlers
-import os
-import pathlib
 import sys
-from datetime import datetime
-from typing import Any
+from enum import Enum
+from typing import Optional
 
+from halo import Halo
+
+from cou.commands import parse_args
 from cou.exceptions import COUException
+from cou.logging import setup_logging
+from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_plan
 from cou.steps.plan import generate_plan
-from cou.utils import juju_utils
+from cou.utils.juju_utils import COUModel
 
-COU_DIR_LOG = pathlib.Path(os.getenv("COU_DATA", ""), "log")
 AVAILABLE_OPTIONS = "cas"
 
 logger = logging.getLogger(__name__)
+progress_indicator = Halo(spinner="line", placement="right")
 
 
-def parse_args(args: Any) -> argparse.Namespace:
-    """Parse cli arguments.
-
-    :param args: Arguments to be parsed.
-    :type args: Any
-    :return: Arguments parsed to the cli execution.
-    :rtype: argparse.Namespace
+class VerbosityLevel(Enum):
     """
-    parser = argparse.ArgumentParser(
-        description="Charmed OpenStack Upgrader(cou) is an application to upgrade Charmed "
-        "OpenStack. Application identifies the lowest OpenStack version on the components and "
-        "upgrade to the next version.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        exit_on_error=False,
-        add_help=False,
-    )
-    parser.add_argument(
-        "--run",
-        help="Use this flag to run the upgrade, otherwise just print out the upgrade steps.",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--log-level",
-        default="INFO",
-        dest="loglevel",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        type=str.upper,
-        help="Set the logging level. Defaults to INFO. This only affects stdout. The logfile "
-        "will be always DEBUG. The file location is in COU_DATA/log. You can set the "
-        "COU_DATA via environment variable. However it needs to be plugged to snap.",
-    )
-    parser.add_argument(
-        "--model",
-        default=None,
-        dest="model_name",
-        help="Set the model to operate on. If not set it gets the model name in this order:\n"
-        "  1 - Environment variable JUJU_MODEL,"
-        "  2 - Environment variable MODEL_NAME,"
-        "  3 - Current active juju model",
-    )
-    parser.add_argument(
-        "--interactive",
-        help="Run upgrade with prompt.",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    parser.add_argument(
-        "-h",
-        "--help",
-        action="help",
-        default=argparse.SUPPRESS,
-        help="Show this help message and exit.",
-    )
+    Enumeration of verbosity levels for logging.
 
-    return parser.parse_args(args)
-
-
-def setup_logging(log_level: str = "INFO") -> None:
-    """Do setup for logging.
-
-    :returns: Nothing: This function is executed for its side effect
-    :rtype: None
+    - 'ERROR': Only errors will be logged.
+    - 'WARNING': Both errors and warnings will be logged.
+    - 'INFO': Errors, warnings, and general information will be logged.
+    - 'DEBUG': Detailed debugging information will be logged.
+    - 'NOTSET': Maximum verbosity where everything will be logged.
     """
-    log_formatter_file = logging.Formatter(
-        fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    log_formatter_console = logging.Formatter(
-        fmt="%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    root_logger = logging.getLogger()
-    root_logger.setLevel("DEBUG")
 
-    # handler for the log file. Log level is DEBUG
-    time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
-    pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
-    log_file_handler = logging.FileHandler(file_name)
-    log_file_handler.setFormatter(log_formatter_file)
+    ERROR = 0
+    WARNING = 1
+    INFO = 2
+    DEBUG = 3
+    NOTSET = 4
 
-    # handler for the console. Log level comes from the CLI
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(log_level)
-    console_handler.setFormatter(log_formatter_console)
-    # just cou logs on console
-    console_handler.addFilter(logging.Filter(__package__))
+    @classmethod
+    def _missing_(cls, value: object) -> Enum:
+        """Return maximum verbosity for value larger than 4.
 
-    root_logger.addHandler(log_file_handler)
-    root_logger.addHandler(console_handler)
-    logger.info("Logs of this execution can be found at %s", file_name)
+        :param value: value to get enum member
+        :type value: object
+        :return: return a member of VerbosityLevel
+        :rtype: Enum
+        :raises ValueError: Invalid value input.
+        """
+        if isinstance(value, int) and value > 4:
+            return cls.NOTSET
+        raise ValueError(f"{value} is not a valid member of VerbosityLevel.")
+
+
+def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
+    """Get a log level based on input options.
+
+    :param quiet: Whether to run COU in quiet mode.
+    :type quiet: bool
+    :param verbosity: Verbosity level based on user's input.
+    :type verbosity: int
+    :return: Log level.
+    :rtype: str
+    """
+    if quiet:
+        return "CRITICAL"
+    return VerbosityLevel(verbosity).name
+
+
+async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
+    """Analyze cloud and generate the upgrade plan with steps.
+
+    :param model_name: Model name inputted by user.
+    :type model_name: Optional[str]
+    :return: Generated upgrade plan.
+    :rtype: UpgradeStep
+    """
+    model = COUModel(model_name)
+    await model.check_model_name()  # check model name and obtain if it was None
+    logger.info("Using model: %s", model_name)
+
+    progress_indicator.start("Analyzing cloud...")
+    analysis_result = await Analysis.create(model)
+    progress_indicator.succeed()
+    logger.info(analysis_result)
+
+    progress_indicator.start("Generating upgrade plan...")
+    upgrade_plan = await generate_plan(analysis_result)
+    progress_indicator.succeed()
+
+    return upgrade_plan
+
+
+async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
+    """Get upgrade plan and print to console.
+
+    :param model_name: Model name inputted by user.
+    :type model_name: Optional[str]
+    """
+    upgrade_plan = await analyze_and_plan(model_name)
+    logger.info(upgrade_plan)
+    print(upgrade_plan)  # print plan to console even in quiet mode
+
+
+async def run_upgrade(
+    model_name: Optional[str] = None, interactive: bool = True, quiet: bool = False
+) -> None:
+    """Run cloud upgrade.
+
+    :param model_name: Model name inputted by user.
+    :type model_name: Optional[str]
+    :param interactive: Whether to run upgrade interactively.
+    :type interactive: bool
+    :param quiet: Whether to run upgrade in quiet mode.
+    :type quiet: bool
+    """
+    upgrade_plan = await analyze_and_plan(model_name)
+    logger.info(upgrade_plan)
+
+    # don't print plan if in quiet mode
+    if not quiet:
+        print(upgrade_plan)
+
+    if not interactive:
+        progress_indicator.start("Running cloud upgrade...")
+        await apply_plan(upgrade_plan, interactive)
+        progress_indicator.succeed()
+    else:
+        await apply_plan(upgrade_plan, interactive)
+    print("Upgrade completed.")
 
 
 async def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
-        setup_logging(log_level=args.loglevel)
-        model = juju_utils.COUModel(args.model_name)
-        await model.check_model_name()  # check model name and obtain if it was None
-        logger.info("Using model: %s", model.name)
-        analysis_result = await Analysis.create(model)
-        print(analysis_result)
-        upgrade_plan = await generate_plan(analysis_result)
-        if args.run is True:
-            await apply_plan(upgrade_plan, args.interactive)
-        else:
-            print(upgrade_plan)
 
+        # disable progress indicator when in quiet mode to suppress its console output
+        progress_indicator.enabled = not args.quiet
+
+        progress_indicator.start("Configuring logging...")  # non-persistent progress output
+        setup_logging(log_level=get_log_level(quiet=args.quiet, verbosity=args.verbosity))
+        progress_indicator.stop()
+
+        match args.command:
+            case "plan":
+                await get_upgrade_plan(model_name=args.model_name)
+            case "run":
+                await run_upgrade(
+                    model_name=args.model_name, interactive=args.interactive, quiet=args.quiet
+                )
     except COUException as exc:
+        progress_indicator.fail()
         logger.error(exc)
         sys.exit(1)
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("unexpected error occurred")
+        logger.error("Unexpected error occurred")
         logger.exception(exc)
         sys.exit(2)
+    finally:
+        progress_indicator.stop()
