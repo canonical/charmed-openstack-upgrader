@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -84,15 +84,6 @@ def test_analysis_dump(apps, model):
 
 @pytest.mark.asyncio
 async def test_populate_model(full_status, config, model):
-    apps_name = ["rabbitmq-server", "keystone", "cinder", "my_app"]
-
-    def generate_app(value):
-        app = MagicMock()
-        app.charm_name = value
-        return app
-
-    test_model = AsyncMock()
-    test_model.applications = {app_name: generate_app(app_name) for app_name in apps_name}
     model.get_status = AsyncMock(return_value=full_status)
     model.get_application_config = AsyncMock(return_value=config["openstack_ussuri"])
 

@@ -52,7 +52,7 @@ async def test_get_database_app_name_negative(model):
 
 @pytest.mark.asyncio
 async def test_get_database_app_name(model):
-    model.get_charm_name.return_value = "mysql-innodb-cluster"
+    model.get_charm_name = AsyncMock(return_value="mysql-innodb-cluster")
     assert "mysql/0" == await get_database_app_unit_name(model)
 
 

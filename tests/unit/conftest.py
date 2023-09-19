@@ -207,9 +207,9 @@ def status():
 
 
 @pytest.fixture
-def full_status(status):
+def full_status(status, model):
     mock_full_status = MagicMock()
-    mock_full_status.model.name = model
+    mock_full_status.model.name = model.name
     mock_full_status.applications = OrderedDict(
         [
             ("keystone", status["keystone_ussuri"]),
@@ -247,11 +247,17 @@ def config():
 
 
 async def get_status():
+    """Help function to load Juju status from json file."""
     current_path = Path(__file__).parent.resolve()
     with open(current_path / "jujustatus.json", "r") as file:
         status = file.read().rstrip()
 
     return FullStatus.from_json(status)
+
+
+async def get_charm_name(value: str):
+    """Help function to get charm name."""
+    return value
 
 
 @pytest.fixture
@@ -266,7 +272,7 @@ def model(config):
     model.run_action = AsyncMock()
     model.get_charm_name = AsyncMock()
     model.get_status = AsyncMock(side_effect=get_status)
-    model.get_charm_name = AsyncMock()
+    model.get_charm_name = AsyncMock(side_effect=get_charm_name)
     model.scp_from_unit = AsyncMock()
     model.get_application_config = mock_get_app_config = AsyncMock()
     mock_get_app_config.side_effect = config.get
