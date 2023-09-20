@@ -17,35 +17,35 @@ from unittest.mock import call
 import pytest
 from juju.errors import JujuError
 
-from cou.exceptions import PackageUpgradeError
+from cou.exceptions import ApplicationUpgradeError
 from cou.utils import app_utils
 
 
 @pytest.mark.asyncio
-async def test_application_upgrade_packages(mocker):
+async def test_application_run_on_all_units(mocker):
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
+
     mock_logger = mocker.patch("cou.utils.app_utils.logger")
 
     success_result = {"Code": "0", "Stdout": "Success"}
     mock_run_on_unit = mocker.patch(
         "cou.utils.juju_utils.run_on_unit", return_value=success_result
     )
-    await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
+    await app_utils.run_on_all_units(
+        units=["keystone/0", "keystone/1"], model_name="my_model", command=command
+    )
 
-    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     expected_calls = [
         call(
             unit_name="keystone/0",
-            command="apt-get update && "
-            f"apt-get dist-upgrade {dpkg_opts} -y && "
-            "apt-get autoremove -y",
+            command=command,
             model_name="my_model",
             timeout=600,
         ),
         call(
             unit_name="keystone/1",
-            command="apt-get update && "
-            f"apt-get dist-upgrade {dpkg_opts} -y && "
-            "apt-get autoremove -y",
+            command=command,
             model_name="my_model",
             timeout=600,
         ),
@@ -58,41 +58,43 @@ async def test_application_upgrade_packages(mocker):
 
 
 @pytest.mark.asyncio
-async def test_application_upgrade_packages_unsuccessful(mocker):
-    exp_error_msg = "Cannot upgrade packages on keystone/0."
+async def test_application_run_on_all_units_unsuccessful(mocker):
+    exp_error_msg = "Cannot upgrade application: operation on keystone/0 failed."
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
 
     failed_result = {"Code": "non-zero", "Stderr": "error"}
     mock_run_on_unit = mocker.patch("cou.utils.juju_utils.run_on_unit", return_value=failed_result)
 
-    with pytest.raises(PackageUpgradeError, match=exp_error_msg):
-        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
+    with pytest.raises(ApplicationUpgradeError, match=exp_error_msg):
+        await app_utils.run_on_all_units(
+            units=["keystone/0", "keystone/1"], model_name="my_model", command=command
+        )
 
-    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     mock_run_on_unit.assert_called_once_with(
         unit_name="keystone/0",
-        command="apt-get update && "
-        f"apt-get dist-upgrade {dpkg_opts} -y && "
-        "apt-get autoremove -y",
+        command=command,
         model_name="my_model",
         timeout=600,
     )
 
 
 @pytest.mark.asyncio
-async def test_application_upgrade_packages_error(mocker):
+async def test_application_run_on_all_units_error(mocker):
     side_effect = JujuError("error")
-    exp_error_msg = "Cannot upgrade packages on keystone/0."
+    exp_error_msg = "Cannot upgrade application: operation on keystone/0 failed."
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
     mock_run_on_unit = mocker.patch("cou.utils.juju_utils.run_on_unit", side_effect=side_effect)
 
-    with pytest.raises(PackageUpgradeError, match=exp_error_msg):
-        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model_name="my_model")
+    with pytest.raises(ApplicationUpgradeError, match=exp_error_msg):
+        await app_utils.run_on_all_units(
+            units=["keystone/0", "keystone/1"], model_name="my_model", command=command
+        )
 
-    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     mock_run_on_unit.assert_called_once_with(
         unit_name="keystone/0",
-        command="apt-get update && "
-        f"apt-get dist-upgrade {dpkg_opts} -y && "
-        "apt-get autoremove -y",
+        command=command,
         model_name="my_model",
         timeout=600,
     )

@@ -31,8 +31,7 @@ from cou.exceptions import (
     MismatchedOpenStackVersions,
 )
 from cou.steps import UpgradeStep
-from cou.utils import juju_utils
-from cou.utils.app_utils import upgrade_packages
+from cou.utils import app_utils, juju_utils
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -149,6 +148,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
+    :raises ApplicationUpgradeError: When the application upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -463,14 +463,18 @@ class OpenStackApplication:
         :return plan: Plan for upgrading software packages to the latest of the current release.
         :type plan: UpgradeStep
         """
+        dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+        command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
+
         return UpgradeStep(
             description=(
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
             parallel=parallel,
-            function=upgrade_packages,
+            function=app_utils.run_on_all_units,
             units=self.status.units.keys(),
             model_name=self.model_name,
+            command=command,
         )
 
     def _get_refresh_charm_plan(

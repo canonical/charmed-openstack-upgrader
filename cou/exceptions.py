@@ -63,8 +63,8 @@ class ApplicationError(COUException):
     """Exception raised when Application does something unexpected."""
 
 
-class PackageUpgradeError(COUException):
-    """Exception raised when a package upgrade fails."""
+class ApplicationUpgradeError(COUException):
+    """Exception raised when an application upgrade fails."""
 
 
 class ActionFailed(COUException):

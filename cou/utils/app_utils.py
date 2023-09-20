@@ -18,24 +18,23 @@ from collections.abc import Iterable
 
 from juju.errors import JujuError
 
-from cou.exceptions import CommandRunFailed, PackageUpgradeError
+from cou.exceptions import ApplicationUpgradeError, CommandRunFailed
 from cou.utils import juju_utils
 
 logger = logging.getLogger(__name__)
 
 
-async def upgrade_packages(units: Iterable[str], model_name: str) -> None:
-    """Run package updates and upgrades on each unit of an Application.
+async def run_on_all_units(units: Iterable[str], model_name: str, command: str) -> None:
+    """Run command on each unit of an Application.
 
-    :param units: The list of unit names where the package upgrade runs on.
+    :param units: The list of unit names where the command runs on.
     :type Iterable[str]
     :param model_name: The name of the model that the application belongs to.
     :type str
-    :raises PackageUpgradeError: When the package upgrade fails.
+    :param command: The command to run on each unit of an Application.
+    :type str
+    :raises ApplicationUpgradeError: When the application upgrade fails.
     """
-    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
-
     for unit in units:
         logger.info("Running '%s' on '%s'", command, unit)
 
@@ -46,9 +45,11 @@ async def upgrade_packages(units: Iterable[str], model_name: str) -> None:
             if str(result["Code"]) == "0":
                 logger.debug(result["Stdout"])
             else:
-                raise PackageUpgradeError(
-                    f"Cannot upgrade packages on {unit}."
+                raise ApplicationUpgradeError(
+                    f"Cannot upgrade application: operation on {unit} failed."
                 ) from CommandRunFailed(cmd=command, result=result)
 
         except JujuError as exc:
-            raise PackageUpgradeError(f"Cannot upgrade packages on {unit}.") from exc
+            raise ApplicationUpgradeError(
+                f"Cannot upgrade application: operation on {unit} failed."
+            ) from exc
