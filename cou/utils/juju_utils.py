@@ -135,6 +135,13 @@ class COUModel:
         self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
         self._name = name
 
+    @staticmethod
+    async def create(name: Optional[str]) -> "COUModel":
+        """Create COUModel object and connect it to model."""
+        model = COUModel(name)
+        await model._connect()  # pylint: disable=protected-access
+        return model
+
     @property
     def connected(self) -> bool:
         """Check if model is connected."""
@@ -145,8 +152,11 @@ class COUModel:
             return False
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         """Return model name."""
+        if self._name is None:
+            self._name = self._model.name
+
         return self._name
 
     @retry(no_retry_exceptions=(BakeryException,))
@@ -154,7 +164,7 @@ class COUModel:
         """Make sure that model is connected."""
         await self._model.disconnect()
         await self._model.connect(
-            model_name=self.name,
+            model_name=self._name,
             retries=DEFAULT_MODEL_RETRIES,
             retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
         )
@@ -197,14 +207,6 @@ class COUModel:
             raise UnitNotFound(f"Unit {name} was not found in model {model.name}.")
 
         return unit
-
-    async def check_model_name(self) -> None:
-        """Check model name.
-
-        Set default model's name if no model name was explicitly passed in.
-        """
-        model = await self._get_model()
-        self._name = model.name
 
     async def get_application_config(self, name: str) -> Dict:
         """Return application configuration.

@@ -91,9 +91,8 @@ async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
     :return: Generated upgrade plan.
     :rtype: UpgradeStep
     """
-    model = COUModel(model_name)
-    await model.check_model_name()  # check model name and obtain if it was None
-    logger.info("Using model: %s", model_name)
+    model = await COUModel.create(model_name)
+    logger.info("Using model: %s", model.name)
 
     progress_indicator.start("Analyzing cloud...")
     analysis_result = await Analysis.create(model)

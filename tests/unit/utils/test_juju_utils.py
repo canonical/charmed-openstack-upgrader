@@ -153,6 +153,20 @@ def test_coumodel_init(mocker):
     assert model.name == name
 
 
+@pytest.mark.asyncio
+async def test_coumodel_create(mocked_model):
+    """Test COUModel create function with no model_name defined."""
+    model = await juju_utils.COUModel.create(None)
+
+    assert model.name == mocked_model.name
+    mocked_model.disconnect.assert_awaited_once_with()
+    mocked_model.connect.assert_awaited_once_with(
+        model_name=None,
+        retries=juju_utils.DEFAULT_MODEL_RETRIES,
+        retry_backoff=juju_utils.DEFAULT_MODEL_RETRY_BACKOFF,
+    )
+
+
 def test_coumodel_connected_no_connection(mocked_model):
     """Test COUModel connected property."""
     mocked_model.connection.side_effect = NoConnectionException
@@ -241,16 +255,6 @@ async def test_coumodel_get_unit_failure(mocked_model):
 
     with pytest.raises(UnitNotFound):
         await model._get_unit("test-unit")
-
-
-@pytest.mark.asyncio
-async def test_coumodel_check_model_name(mocked_model):
-    model = juju_utils.COUModel(None)
-    mocked_model.name = exp_name = "test-model-name"
-
-    await model.check_model_name()
-
-    assert exp_name == model.name
 
 
 @pytest.mark.asyncio
