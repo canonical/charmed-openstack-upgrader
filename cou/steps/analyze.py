@@ -53,7 +53,7 @@ class Analysis:
         apps = await Analysis._populate(model_name)
 
         control_plane, data_plane = cls._split_control_plane_and_data_plane(apps)
-        control_plane, data_plane = cls._remove_data_plane_apps(control_plane, data_plane)
+        control_plane, data_plane = cls._move_to_data_plane_if_required(control_plane, data_plane)
 
         return Analysis(
             model_name=model_name, apps_data_plane=data_plane, apps_control_plane=control_plane
@@ -80,7 +80,7 @@ class Analysis:
         return control_plane, data_plane
 
     @classmethod
-    def _remove_data_plane_apps(
+    def _move_to_data_plane_if_required(
         cls, control_plane: list[OpenStackApplication], data_plane: list[OpenStackApplication]
     ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
         """Move control plane applications to data plane if any of its units is on data plane.

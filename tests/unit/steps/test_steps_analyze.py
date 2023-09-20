@@ -164,6 +164,6 @@ def test_remove_data_plane_apps(apps):
     assert control_plane == [apps["keystone_wallaby"], apps["cinder_ussuri"]]
     assert data_plane == [apps["nova_wallaby"]]
 
-    control_plane, data_plane = Analysis._remove_data_plane_apps(control_plane, data_plane)
+    control_plane, data_plane = Analysis._move_to_data_plane_if_required(control_plane, data_plane)
     assert control_plane == [apps["keystone_wallaby"]]
     assert data_plane == [apps["nova_wallaby"], apps["cinder_on_nova"]]
