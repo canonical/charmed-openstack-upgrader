@@ -284,9 +284,7 @@ async def test_coumodel_get_charm_name_failure(mocked_model):
     app_name = "test-app"
     model = juju_utils.COUModel("test-model")
 
-    with pytest.raises(
-        ApplicationError, match=f"charm_name could not be obtain for app {app_name}"
-    ):
+    with pytest.raises(ApplicationError, match=f"Cannot obtain charm_name for {app_name}"):
         await model.get_charm_name("test-app")
 
 
