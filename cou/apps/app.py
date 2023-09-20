@@ -119,9 +119,9 @@ class AppFactory:
 
 @dataclass
 class ApplicationUnit:
-    """Representation of singe JujuUnit of application."""
+    """Representation of a singe unit of application."""
 
-    unit: str
+    name: str
     os_version: OpenStackRelease
     workload_version: str = ""
     machine: str = ""
@@ -187,7 +187,7 @@ class OpenStackApplication:
                 unit_os_version = max(compatible_os_versions)
                 self.units.append(
                     ApplicationUnit(
-                        unit=name,
+                        name=name,
                         workload_version=unit.workload_version,
                         os_version=unit_os_version,
                         machine=unit.machine,
@@ -231,7 +231,7 @@ class OpenStackApplication:
                 "os_origin": self.os_origin,
                 "channel": self.channel,
                 "units": {
-                    unit.unit: {
+                    unit.name: {
                         "workload_version": unit.workload_version,
                         "os_version": str(unit.os_version),
                     }

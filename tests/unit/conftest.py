@@ -238,7 +238,7 @@ def units():
     units_wallaby = []
     units_ussuri.append(
         ApplicationUnit(
-            unit="keystone/0",
+            name="keystone/0",
             os_version=OpenStackRelease("ussuri"),
             workload_version="17.0.1",
             machine="0/lxd/12",
@@ -246,7 +246,7 @@ def units():
     )
     units_ussuri.append(
         ApplicationUnit(
-            unit="keystone/1",
+            name="keystone/1",
             os_version=OpenStackRelease("ussuri"),
             workload_version="17.0.1",
             machine="1/lxd/12",
@@ -254,7 +254,7 @@ def units():
     )
     units_ussuri.append(
         ApplicationUnit(
-            unit="keystone/2",
+            name="keystone/2",
             os_version=OpenStackRelease("ussuri"),
             workload_version="17.0.1",
             machine="2/lxd/13",
@@ -262,7 +262,7 @@ def units():
     )
     units_wallaby.append(
         ApplicationUnit(
-            unit="keystone/0",
+            name="keystone/0",
             os_version=OpenStackRelease("wallaby"),
             workload_version="19.1.0",
             machine="0/lxd/12",
@@ -270,7 +270,7 @@ def units():
     )
     units_wallaby.append(
         ApplicationUnit(
-            unit="keystone/1",
+            name="keystone/1",
             os_version=OpenStackRelease("wallaby"),
             workload_version="19.1.0",
             machine="1/lxd/12",
@@ -278,7 +278,7 @@ def units():
     )
     units_wallaby.append(
         ApplicationUnit(
-            unit="keystone/2",
+            name="keystone/2",
             os_version=OpenStackRelease("wallaby"),
             workload_version="19.1.0",
             machine="2/lxd/13",

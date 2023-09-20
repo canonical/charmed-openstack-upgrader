@@ -25,7 +25,7 @@ def test_auxiliary_app(status, config):
     # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
     expected_units = [
         ApplicationUnit(
-            unit="rabbitmq-server/0",
+            name="rabbitmq-server/0",
             os_version=OpenStackRelease("yoga"),
             workload_version="3.8",
             machine="0/lxd/19",
