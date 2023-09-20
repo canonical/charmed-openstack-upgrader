@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_action_results(results: Dict[str, str]) -> Dict[str, str]:
-    """Put action results in a consistent format.
+    """Unify action results format.
 
     :param results: Results dictionary to process.
     :type results: Dict[str, str]
@@ -201,8 +201,7 @@ class COUModel:
     async def check_model_name(self) -> None:
         """Check model name.
 
-        This function should be used if None was used for model name, so it mean that
-        default model will be used.
+        Set default model's name if no model name was explicitly passed in.
         """
         model = await self._get_model()
         self._name = model.name
@@ -231,7 +230,7 @@ class COUModel:
         """
         app = await self._get_application(application_name)
         if app.charm_name is None:
-            raise ApplicationError(f"charm_name could not be obtain for app {application_name}")
+            raise ApplicationError(f"Cannot obtain charm_name for {application_name}")
 
         return app.charm_name
 
