@@ -60,25 +60,20 @@ def test_get_log_level(quiet, verbosity, level):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "model_name, expected_call_count",
-    [("model_name", 0), ("", 1), (None, 1)],
-)
-@patch("cou.cli.juju_utils.get_current_model_name", new_callable=AsyncMock)
+@patch("cou.cli.COUModel", new_callable=AsyncMock)
 @patch("cou.cli.generate_plan", new_callable=AsyncMock)
 @patch("cou.cli.Analysis.create", new_callable=AsyncMock)
-async def test_analyze_and_plan(
-    mock_analyze, mock_generate_plan, mock_get_current_model_name, model_name, expected_call_count
-):
+async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
     """Test analyze_and_plan function with different model_name arguments."""
-    mock_get_current_model_name.return_value = model_name
-    analysis_result = Analysis(model_name=model_name, apps_control_plane=[], apps_data_plane=[])
+    analysis_result = Analysis(
+        model=cou_model.return_value, apps_control_plane=[], apps_data_plane=[]
+    )
     mock_analyze.return_value = analysis_result
 
-    await cli.analyze_and_plan(model_name)
+    await cli.analyze_and_plan(None)
 
-    assert mock_get_current_model_name.call_count == expected_call_count
-    mock_analyze.assert_awaited_once_with(model_name)
+    cou_model.create.assert_awaited_once_with(None)
+    mock_analyze.assert_awaited_once_with(cou_model.create.return_value)
     mock_generate_plan.assert_awaited_once_with(analysis_result)
 
 
@@ -195,13 +190,43 @@ async def test_entrypoint_commands(mocker, command, function_call):
     ],
 )
 async def test_entrypoint_with_exception(mocker, exception, exp_exitcode):
-    """Test entrypoint when exceptions are raised."""
-    mocker.patch(
-        "cou.cli.parse_args",
-        return_value=argparse.Namespace(quiet=False, command="plan", verbosity=0, model_name=None),
-    )
-    mocker.patch("cou.cli.analyze_and_plan", side_effect=exception)
+    mock_parse_args = mocker.patch("cou.cli.parse_args")
+    mock_parse_args.return_value.command = "plan"
     mocker.patch("cou.cli.setup_logging")
+    mocker.patch("cou.cli.get_upgrade_plan", side_effect=exception)
+    mocker.patch("cou.cli.run_upgrade")
 
     with pytest.raises(SystemExit, match=exp_exitcode):
         await cli.entrypoint()
+
+
+@pytest.mark.asyncio
+async def test_entrypoint_plan(mocker):
+    mock_parse_args = mocker.patch("cou.cli.parse_args")
+    args = mock_parse_args.return_value
+    args.command = "plan"
+    mocker.patch("cou.cli.setup_logging")
+    mock_get_upgrade_plan = mocker.patch("cou.cli.get_upgrade_plan")
+    mock_run_upgrade = mocker.patch("cou.cli.run_upgrade")
+
+    await cli.entrypoint()
+
+    mock_get_upgrade_plan.assert_awaited_once_with(model_name=args.model_name)
+    mock_run_upgrade.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_entrypoint_real_run(mocker):
+    mock_parse_args = mocker.patch("cou.cli.parse_args")
+    args = mock_parse_args.return_value
+    args.command = "run"
+    mocker.patch("cou.cli.setup_logging")
+    mock_get_upgrade_plan = mocker.patch("cou.cli.get_upgrade_plan")
+    mock_run_upgrade = mocker.patch("cou.cli.run_upgrade")
+
+    await cli.entrypoint()
+
+    mock_get_upgrade_plan.assert_not_awaited()
+    mock_run_upgrade.assert_awaited_once_with(
+        model_name=args.model_name, interactive=args.interactive, quiet=args.quiet
+    )
