@@ -519,7 +519,6 @@ class OpenStackApplication:
             function=self.model.upgrade_charm,
             application_name=self.name,
             channel=self.expected_current_channel,
-            model=self.model,
             switch=switch,
         )
 
@@ -544,7 +543,6 @@ class OpenStackApplication:
                 function=self.model.upgrade_charm,
                 application_name=self.name,
                 channel=self.target_channel(target),
-                model=self.model,
             )
         return None
 
