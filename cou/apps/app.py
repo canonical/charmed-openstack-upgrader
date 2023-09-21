@@ -232,15 +232,13 @@ class OpenStackApplication:
             return stream.getvalue()
 
     @property
-    def expected_current_channel(self) -> str:
-        """Return the expected current channel based on the current OpenStack release.
+    def possible_current_channels(self) -> list[str]:
+        """Return the possible current channels based on the current OpenStack release.
 
-        Note that this is not necessarily equal to the "channel" property since it is
-        determined based on the workload version.
-        :return: The expected current channel for the application. E.g: ussuri/stable
-        :rtype: str
+        :return: The possible current channels for the application. E.g: ["ussuri/stable"]
+        :rtype: list[str]
         """
-        return f"{self.current_os_release.codename}/stable"
+        return [f"{self.current_os_release.codename}/stable"]
 
     def target_channel(self, target: OpenStackRelease) -> str:
         """Return the appropriate channel for the passed OpenStack target.
@@ -488,19 +486,23 @@ class OpenStackApplication:
         :rtype: Optional[UpgradeStep]
         """
         switch = None
-        description = (
-            f"Changing '{self.name}' channel from: '{self.channel}' "
-            f"to: '{self.expected_current_channel}'"
-        )
+        *_, channel = self.possible_current_channels
+
+        # corner case for rabbitmq and hacluster.
+        if len(self.possible_current_channels) > 1:
+            logger.info(
+                "'%s' is compatible with more than one channel: '%s'. '%s' will be used",
+                self.name,
+                ",".join(self.possible_current_channels),
+                channel,
+            )
 
         if self.charm_origin == "cs":
             description = f"Migration of '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
-        elif self.channel == self.expected_current_channel:
-            description = (
-                f"Refresh '{self.name}' to the latest revision of "
-                f"'{self.expected_current_channel}'"
-            )
+        elif self.channel in self.possible_current_channels:
+            channel = self.channel
+            description = f"Refresh '{self.name}' to the latest revision of '{channel}'"
         elif self.channel_codename >= target:
             logger.info(
                 "Skipping charm refresh for %s, its channel is already set to %s.",
@@ -514,7 +516,7 @@ class OpenStackApplication:
             parallel=parallel,
             function=juju_utils.upgrade_charm,
             application_name=self.name,
-            channel=self.expected_current_channel,
+            channel=channel,
             model_name=self.model_name,
             switch=switch,
         )

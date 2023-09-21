@@ -37,7 +37,7 @@ def test_auxiliary_app(status, config):
     assert app.channel_codename == "yoga"
 
 
-def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config):
+def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config):
     target = "victoria"
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
@@ -49,9 +49,36 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config):
 
     plan = app.generate_upgrade_plan(target)
 
+    # Because rabbitmq is compatible with tracks 3.8 and 3.9 we change to 3.9
     steps_description = [
         f"Upgrade software packages of '{app.name}' from the current APT repositories",
         f"Refresh '{app.name}' to the latest revision of '3.8/stable'",
+        f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
+        f"Change charm config of '{app.name}' 'source' to 'cloud:focal-victoria'",
+        f"Check if the workload of '{app.name}' has been upgraded",
+    ]
+
+    assert_plan_description(plan, steps_description)
+
+
+def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config):
+    target = "victoria"
+    rmq_status = status["rabbitmq_server"]
+    rmq_status.charm_channel = "3.9/stable"
+    app = OpenStackAuxiliaryApplication(
+        "rabbitmq-server",
+        status["rabbitmq_server"],
+        config["auxiliary_ussuri"],
+        "my_model",
+        "rabbitmq-server",
+    )
+
+    plan = app.generate_upgrade_plan(target)
+
+    # Because rabbitmq is compatible with tracks 3.8 and 3.9 we change to 3.9
+    steps_description = [
+        f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
         f"Change charm config of '{app.name}' 'source' to 'cloud:focal-victoria'",
         f"Check if the workload of '{app.name}' has been upgraded",
     ]
@@ -63,6 +90,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
+    rmq_status.charm_channel = "stable"
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
@@ -75,6 +103,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     steps_description = [
         f"Upgrade software packages of '{app.name}' from the current APT repositories",
         f"Migration of '{app.name}' from charmstore to charmhub",
+        f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
         f"Change charm config of '{app.name}' 'source' to 'cloud:focal-victoria'",
         f"Check if the workload of '{app.name}' has been upgraded",
     ]
@@ -121,7 +150,7 @@ def test_auxiliary_raise_error_unknown_track(status, config):
         "rabbitmq-server",
     )
     with pytest.raises(ApplicationError):
-        app.expected_current_channel
+        app.possible_current_channels
 
     with pytest.raises(ApplicationError):
         app.target_channel(target)
