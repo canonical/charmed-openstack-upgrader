@@ -75,6 +75,6 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
             parallel=parallel,
             function=app_utils.run_on_all_units,
             units=self.status.units.keys(),
-            model_name=self.model_name,
+            model=self.model,
             command=set_command,
         )

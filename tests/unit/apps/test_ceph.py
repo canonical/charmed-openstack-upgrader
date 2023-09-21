@@ -16,13 +16,13 @@ from cou.apps.ceph import CephMonApplication
 from tests.unit.apps.utils import assert_plan_description
 
 
-def test_ceph_mon_app(status, config):
+def test_ceph_mon_app(status, config, model):
     expected_units = {"ceph-mon/0": {"os_version": "xena", "workload_version": "16.2.0"}}
     app = CephMonApplication(
         "ceph-mon",
         status["ceph-mon"],
         config["auxiliary_xena"],
-        "my_model",
+        model,
         "ceph-mon",
     )
     assert app.channel == "pacific/stable"
@@ -32,13 +32,13 @@ def test_ceph_mon_app(status, config):
     assert app.channel_codename == "xena"
 
 
-def test_test_ceph_mon_upgrade_plan_xena_to_yoga(status, config):
+def test_test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model):
     target = "yoga"
     app = CephMonApplication(
         "ceph-mon",
         status["ceph-mon"],
         config["auxiliary_xena"],
-        "my_model",
+        model,
         "ceph-mon",
     )
 

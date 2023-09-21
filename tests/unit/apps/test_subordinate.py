@@ -22,28 +22,28 @@ from cou.utils.openstack import OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-def test_post_init(status):
+def test_post_init(status, model):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
     assert app.channel == "ussuri/stable"
     assert app.charm_origin == "ch"
     assert app.os_origin == ""
 
 
-def test_current_os_release(status):
+def test_current_os_release(status, model):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
     assert app.current_os_release == OpenStackRelease("ussuri")
 
 
-def test_generate_upgrade_plan(status):
+def test_generate_upgrade_plan(status, model):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
     plan = app.generate_upgrade_plan("victoria")
     assert plan.description == "Upgrade plan for 'my_keystone_ldap' to victoria"
@@ -69,10 +69,10 @@ def test_generate_upgrade_plan(status):
         "wallaby/edge",
     ],
 )
-def test_channel_setter_valid(status, channel):
+def test_channel_setter_valid(status, model, channel):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
     app.channel = channel
@@ -88,10 +88,10 @@ def test_channel_setter_valid(status, channel):
         "something/stable",
     ],
 )
-def test_channel_setter_invalid(status, channel):
+def test_channel_setter_invalid(status, model, channel):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
     app.channel = channel
@@ -106,10 +106,10 @@ def test_channel_setter_invalid(status, channel):
         "candidate",
     ],
 )
-def test_generate_plan_ch_migration(status, channel):
+def test_generate_plan_ch_migration(status, model, channel):
     app_status = status["keystone-ldap-cs"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
     app.channel = channel
@@ -130,10 +130,10 @@ def test_generate_plan_ch_migration(status, channel):
         (["xena", "yoga"]),
     ],
 )
-def test_generate_plan_from_to(status, from_os, to_os):
+def test_generate_plan_from_to(status, model, from_os, to_os):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
     app.channel = f"{from_os}/stable"
@@ -155,10 +155,10 @@ def test_generate_plan_from_to(status, from_os, to_os):
         "yoga",
     ],
 )
-def test_generate_plan_in_same_version(status, from_to):
+def test_generate_plan_in_same_version(status, model, from_to):
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, "my_model", "keystone-ldap"
+        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
     app.channel = f"{from_to}/stable"

@@ -19,18 +19,18 @@ from collections.abc import Iterable
 from juju.errors import JujuError
 
 from cou.exceptions import ApplicationUpgradeError, CommandRunFailed
-from cou.utils import juju_utils
+from cou.utils.juju_utils import COUModel
 
 logger = logging.getLogger(__name__)
 
 
-async def run_on_all_units(units: Iterable[str], model_name: str, command: str) -> None:
+async def run_on_all_units(units: Iterable[str], model: COUModel, command: str) -> None:
     """Run command on each unit of an Application.
 
     :param units: The list of unit names where the command runs on.
     :type Iterable[str]
-    :param model_name: The name of the model that the application belongs to.
-    :type str
+    :param model: COUModel object
+    :type model: COUModel
     :param command: The command to run on each unit of an Application.
     :type str
     :raises ApplicationUpgradeError: When the application upgrade fails.
@@ -39,9 +39,7 @@ async def run_on_all_units(units: Iterable[str], model_name: str, command: str) 
         logger.info("Running '%s' on '%s'", command, unit)
 
         try:
-            result = await juju_utils.run_on_unit(
-                unit_name=unit, command=command, model_name=model_name, timeout=600
-            )
+            result = await model.run_on_unit(unit_name=unit, command=command, timeout=600)
             if str(result["Code"]) == "0":
                 logger.debug(result["Stdout"])
             else:

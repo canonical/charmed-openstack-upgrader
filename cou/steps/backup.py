@@ -16,39 +16,38 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 
 from cou.exceptions import UnitNotFound
-from cou.utils import juju_utils
+from cou.utils.juju_utils import COUModel
 
 logger = logging.getLogger(__name__)
 
 
-async def backup(model_name: Optional[str] = None) -> Path:
+async def backup(model: COUModel) -> Path:
     """Backup mysql database of openstack.
 
-    :param model_name: Optional model name.
-    :type args: Optional[str]
+    :param model: COUModel object
+    :type model: COUModel
     :return: Path of the local file from the backup.
     :rtype: Path
     """
     logger.info("Backing up mysql database")
-    unit_name = await get_database_app_unit_name(model_name)
+    unit_name = await get_database_app_unit_name(model)
 
     logger.info("mysqldump mysql-innodb-cluster DBs ...")
-    action = await juju_utils.run_action(unit_name, "mysqldump", model_name=model_name)
+    action = await model.run_action(unit_name, "mysqldump")
     remote_file = action.data["results"]["mysqldump-file"]
     basedir = action.data["parameters"]["basedir"]
 
     logger.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
-    await juju_utils.run_on_unit(unit_name, f"chmod o+rx {basedir}", model_name=model_name)
+    await model.run_on_unit(unit_name, f"chmod o+rx {basedir}")
 
     local_file = Path(os.getenv("COU_DATA", ""), os.path.basename(remote_file))
     logger.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
-    await juju_utils.scp_from_unit(unit_name, remote_file, str(local_file), model_name=model_name)
+    await model.scp_from_unit(unit_name, remote_file, str(local_file))
 
     logger.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
-    await juju_utils.run_on_unit(unit_name, f"chmod o-rx {basedir}", model_name=model_name)
+    await model.run_on_unit(unit_name, f"chmod o-rx {basedir}")
     return local_file
 
 
@@ -70,23 +69,23 @@ def _check_db_relations(app_config: dict) -> bool:
     return False
 
 
-async def get_database_app_unit_name(model_name: Optional[str] = None) -> str:
+async def get_database_app_unit_name(model: COUModel) -> str:
     """Get mysql-innodb-cluster application's first unit's name.
 
     Gets the openstack database mysql-innodb-cluster application if there are more than one
     application the one with the keystone relation is selected.
 
-    :param model_name: Name of model to query.
-    :type model_name: str
+    :param model: COUModel object
+    :type model: COUModel
     :returns: Name of the mysql-innodb-cluster application name
     :rtype: ApplicationStatus
     """
-    status = await juju_utils.get_status(model_name)
+    status = await model.get_status()
     for app_name, app_config in status.applications.items():
-        charm_name = await juju_utils.extract_charm_name(app_name, model_name)
+        charm_name = await model.get_charm_name(app_name)
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
             return list(app_config.units.keys())[0]
 
     raise UnitNotFound(
-        f"Cannot find a valid unit for 'mysql-innodb-cluster' in model '{model_name}'."
+        f"Cannot find a valid unit for 'mysql-innodb-cluster' in model '{model.name}'."
     )
