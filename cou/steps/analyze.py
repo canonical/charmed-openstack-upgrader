@@ -92,18 +92,17 @@ class Analysis:
         :return: Control plane and data plane application lists.
         :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
         """
-        data_plane_machines = {
-            unit.machine for units in [app.units for app in data_plane] for unit in units
-        }
+        _control_plane, _data_plane = [], data_plane.copy()
+        data_plane_machines = {unit.machine for app in data_plane for unit in app.units}
 
-        apps_to_move = []
         for app in control_plane:
-            if len([unit for unit in app.units if unit.machine in data_plane_machines]) > 0:
-                apps_to_move.append(app)
+            if any(unit.machine in data_plane_machines for unit in app.units):
+                logger.debug("moving app %s from control plane to data plane", app)
+                _data_plane.append(app)
+            else:
+                _control_plane.append(app)
 
-        control_plane_apps = [app for app in control_plane if app not in apps_to_move]
-        data_plane_apps = data_plane + apps_to_move
-        return control_plane_apps, data_plane_apps
+        return _control_plane, _data_plane
 
     @classmethod
     async def _populate(cls, model_name: Optional[str]) -> list[OpenStackApplication]:
