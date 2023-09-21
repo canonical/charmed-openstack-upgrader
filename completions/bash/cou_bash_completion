@@ -1,0 +1,47 @@
+_subcommand_args() {
+    local cmd=$1
+    case "${cmd}" in
+        plan)
+            opts="--help --quiet --verbose --parallel --model"
+            child_commands=""
+            ;;
+        run)
+            opts="--help --quiet --verbose --parallel --model --interactive --no-interactive"
+            child_commands=""
+            ;;
+        help)
+            opts=""
+            child_commands="plan run"
+            ;;
+        *)
+            opts=""
+            child_commands=""
+            ;;
+    esac
+}
+
+_cou_bash_completion() {
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    # Define top level options
+    top_opts="--help --version"
+
+    # Define the available subcommands
+    subcommands="plan run help"
+
+    # Define completion for top-level options and subcommands
+    if [ $COMP_CWORD -eq 1 ]; then
+        COMPREPLY=( $(compgen -W "${subcommands} ${top_opts}" -- "${cur}") )
+        return 0
+    fi
+
+    # Define subcommand-specific options and children commands
+    cmd="${COMP_WORDS[1]}"
+    _subcommand_args ${cmd}
+
+    COMPREPLY=( $(compgen -W "${child_commands} ${opts}" -- "${cur}") )
+}
+
+# Register the completion function
+complete -F _cou_bash_completion cou charmed-openstack-upgrader.cou

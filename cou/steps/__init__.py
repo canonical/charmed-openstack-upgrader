@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Package for charmed openstack upgrade steps."""
+"""Package for charmed-openstack-upgrade steps."""
 
 from __future__ import annotations
 

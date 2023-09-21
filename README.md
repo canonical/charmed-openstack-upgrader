@@ -8,8 +8,7 @@ different repository, and only use some of the code and ideas found here.
 # Setup
 
 ```bash
-rm *.snap
-snapcraft clean
+make clean
 sudo snap remove charmed-openstack-upgrader --purge
 make build
 sudo snap install ./charmed-openstack-upgrader.snap --dangerous
@@ -23,7 +22,7 @@ Then you can use ```cou```
 ## Environment Variables
 
 - `COU_DATA`: Main directory for Charmed Openstack Upgrader configuration files. Currently only log files are kept under
-  COU_DATA/logs
+  COU_DATA/logs.
 - `JUJU_MODEL`: Active juju model to operate on.
 
 ## Supported Upgrade Paths
