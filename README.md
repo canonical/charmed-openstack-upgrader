@@ -8,6 +8,7 @@ different repository, and only use some of the code and ideas found here.
 # Setup
 
 ```bash
+# Instructions for local builds until we have automatic connections and alias
 make clean
 sudo snap remove charmed-openstack-upgrader --purge
 make build
