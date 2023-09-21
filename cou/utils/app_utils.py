@@ -19,18 +19,18 @@ from collections.abc import Iterable
 from juju.errors import JujuError
 
 from cou.exceptions import CommandRunFailed, PackageUpgradeError
-from cou.utils import juju_utils
+from cou.utils.juju_utils import COUModel
 
 logger = logging.getLogger(__name__)
 
 
-async def upgrade_packages(units: Iterable[str], model_name: str) -> None:
+async def upgrade_packages(units: Iterable[str], model: COUModel) -> None:
     """Run package updates and upgrades on each unit of an Application.
 
     :param units: The list of unit names where the package upgrade runs on.
     :type Iterable[str]
-    :param model_name: The name of the model that the application belongs to.
-    :type str
+    :param model: COUModel object
+    :type model: COUModel
     :raises PackageUpgradeError: When the package upgrade fails.
     """
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
@@ -40,9 +40,7 @@ async def upgrade_packages(units: Iterable[str], model_name: str) -> None:
         logger.info("Running '%s' on '%s'", command, unit)
 
         try:
-            result = await juju_utils.run_on_unit(
-                unit_name=unit, command=command, model_name=model_name, timeout=600
-            )
+            result = await model.run_on_unit(unit_name=unit, command=command, timeout=600)
             if str(result["Code"]) == "0":
                 logger.debug(result["Stdout"])
             else:

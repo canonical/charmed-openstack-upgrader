@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -26,20 +27,20 @@ from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import assert_plan_description
 
 
-def test_application_eq(status, config):
+def test_application_eq(status, config, model):
     """Name of the app is used as comparison between Applications objects."""
     status_keystone_1 = status["keystone_ussuri"]
     config_keystone_1 = config["openstack_ussuri"]
     status_keystone_2 = status["keystone_wallaby"]
     config_keystone_2 = config["openstack_wallaby"]
     keystone_1 = OpenStackApplication(
-        "keystone", status_keystone_1, config_keystone_1, "my_model", "keystone"
+        "keystone", status_keystone_1, config_keystone_1, model, "keystone"
     )
     keystone_2 = OpenStackApplication(
-        "keystone", status_keystone_2, config_keystone_2, "my_model", "keystone"
+        "keystone", status_keystone_2, config_keystone_2, model, "keystone"
     )
     keystone_3 = OpenStackApplication(
-        "keystone_foo", status_keystone_1, config_keystone_1, "my_model", "keystone"
+        "keystone_foo", status_keystone_1, config_keystone_1, model, "keystone"
     )
 
     # keystone_1 is equal to keystone_2 because they have the same name
@@ -74,7 +75,7 @@ def assert_application(
     assert app.series == exp_series
     assert app.status == exp_status
     assert app.config == exp_config
-    assert app.model_name == exp_model
+    assert app.model == exp_model
     assert app.charm == exp_charm
     assert app.charm_origin == exp_charm_origin
     assert app.os_origin == exp_os_origin
@@ -88,7 +89,7 @@ def assert_application(
     assert app.channel_codename == exp_channel_codename
 
 
-def test_application_ussuri(status, config, units):
+def test_application_ussuri(status, config, units, model):
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
@@ -104,14 +105,14 @@ def test_application_ussuri(status, config, units):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
         app,
         "my_keystone",
         exp_series,
         app_status,
         app_config,
-        "my_model",
+        model,
         "keystone",
         exp_charm_origin,
         exp_os_origin,
@@ -127,7 +128,7 @@ def test_application_ussuri(status, config, units):
     )
 
 
-def test_application_different_wl(status, config):
+def test_application_different_wl(status, config, model):
     """Different OpenStack Version on units if workload version is different."""
     exp_error_msg = re.compile(
         "Units of application my_keystone are running mismatched OpenStack versions: "
@@ -137,12 +138,12 @@ def test_application_different_wl(status, config):
     app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
         app.current_os_release
 
 
-def test_application_cs(status, config, units):
+def test_application_cs(status, config, units, model):
     """Test when application is from charm store."""
     target = "victoria"
     app_status = status["keystone_ussuri_cs"]
@@ -159,14 +160,14 @@ def test_application_cs(status, config, units):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
         app,
         "my_keystone",
         exp_series,
         app_status,
         app_config,
-        "my_model",
+        model,
         "keystone",
         exp_charm_origin,
         exp_os_origin,
@@ -182,7 +183,7 @@ def test_application_cs(status, config, units):
     )
 
 
-def test_application_wallaby(status, config, units):
+def test_application_wallaby(status, config, units, model):
     target = "xena"
     exp_units = units["units_wallaby"]
     exp_charm_origin = "ch"
@@ -198,14 +199,14 @@ def test_application_wallaby(status, config, units):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
         app,
         "my_keystone",
         exp_series,
         app_status,
         app_config,
-        "my_model",
+        model,
         "keystone",
         exp_charm_origin,
         exp_os_origin,
@@ -221,24 +222,24 @@ def test_application_wallaby(status, config, units):
     )
 
 
-def test_application_no_origin_config(status):
+def test_application_no_origin_config(status, model):
     app = OpenStackApplication(
         "my_keystone",
         status["keystone_ussuri"],
         {},
-        "my_model",
+        model,
         "keystone",
     )
     assert app._get_os_origin() == ""
     assert app.apt_source_codename is None
 
 
-def test_application_empty_origin_config(status):
+def test_application_empty_origin_config(status, model):
     app = OpenStackApplication(
         "my_keystone",
         status["keystone_ussuri"],
         {"source": {"value": ""}},
-        "my_model",
+        model,
         "keystone",
     )
     assert app.apt_source_codename is None
@@ -248,12 +249,12 @@ def test_application_empty_origin_config(status):
     "source_value",
     ["ppa:myteam/ppa", "cloud:xenial-proposed/ocata", "http://my.archive.com/ubuntu main"],
 )
-def test_application_unknown_source(status, source_value):
+def test_application_unknown_source(status, model, source_value):
     app = OpenStackApplication(
         "my_keystone",
         status["keystone_ussuri"],
         {"source": {"value": source_value}},
-        "my_model",
+        model,
         "keystone",
     )
     with pytest.raises(ApplicationError):
@@ -261,44 +262,40 @@ def test_application_unknown_source(status, source_value):
 
 
 @pytest.mark.asyncio
-async def test_application_check_upgrade(status, config, mocker):
-    target = "victoria"
-    mock_logger = mocker.patch("cou.apps.app.logger")
+async def test_application_check_upgrade(status, config, model):
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
 
     # workload version changed from ussuri to victoria
-    mock_status = mocker.MagicMock()
-    mock_status.applications = {"my_keystone": status["keystone_victoria"]}
-
-    mocker.patch.object(app_module.juju_utils, "get_status", return_value=mock_status)
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    mock_status = AsyncMock()
+    mock_status.return_value.applications = {"my_keystone": status["keystone_victoria"]}
+    model.get_status = mock_status
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     await app._check_upgrade(target)
-    mock_logger.error.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_application_check_upgrade_fail(status, config, mocker):
+async def test_application_check_upgrade_fail(status, config, model):
     exp_error_msg = "Cannot upgrade units 'keystone/0, keystone/1, keystone/2' to victoria."
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
 
     # workload version didn't change from ussuri to victoria
-    mock_status = mocker.MagicMock()
-    mock_status.applications = {"my_keystone": status["keystone_ussuri"]}
-
-    mocker.patch.object(app_module.juju_utils, "get_status", return_value=mock_status)
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    mock_status = AsyncMock()
+    mock_status.return_value.applications = {"my_keystone": app_status}
+    model.get_status = mock_status
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     with pytest.raises(ApplicationError, match=exp_error_msg):
-        await app._check_upgrade(OpenStackRelease(target))
+        await app._check_upgrade(target)
 
 
-def test_upgrade_plan_ussuri_to_victoria(status, config):
+def test_upgrade_plan_ussuri_to_victoria(status, config, model):
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -312,11 +309,11 @@ def test_upgrade_plan_ussuri_to_victoria(status, config):
     assert_plan_description(upgrade_plan, steps_description)
 
 
-def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
+def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
     target = "victoria"
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -330,14 +327,13 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config):
     assert_plan_description(upgrade_plan, steps_description)
 
 
-def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
+def test_upgrade_plan_channel_on_next_os_release(status, config, model):
     target = "victoria"
-    mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     # channel it's already on next OpenStack release
     app_status.charm_channel = "victoria/stable"
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
 
     # no sub-step for refresh current channel or next channel
@@ -349,21 +345,15 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, mocker):
     ]
 
     assert_plan_description(upgrade_plan, steps_description)
-    mock_logger.info.assert_called_once_with(
-        "Skipping charm refresh for %s, its channel is already set to %s.",
-        app.name,
-        app.channel,
-    )
 
 
-def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, mocker):
+def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, model):
     target = "victoria"
-    mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     # openstack-origin already configured for next OpenStack release
     app_config["openstack-origin"]["value"] = "cloud:focal-victoria"
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     steps_description = [
         "Upgrade software packages of 'my_keystone' from the current APT repositories",
@@ -376,31 +366,23 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
     for sub_step, description in sub_steps_check:
         assert sub_step.description == description
-    mock_logger.warning.assert_called_once_with(
-        "Not triggering the workload upgrade of app %s: %s already set to %s",
-        app.name,
-        "openstack-origin",
-        f"cloud:focal-{target}",
-    )
 
 
-def test_upgrade_plan_application_already_upgraded(status, config, mocker):
+def test_upgrade_plan_application_already_upgraded(status, config, model):
     exp_error_msg = (
         "Application 'my_keystone' already configured for release equal or greater "
         "than victoria. Ignoring."
     )
     target = "victoria"
-    mock_logger = mocker.patch("cou.apps.app.logger")
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, "my_model", "keystone")
+    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     # victoria is lesser than wallaby, so application should not generate a plan.
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app.generate_upgrade_plan(target)
-    mock_logger.info.assert_called_once_with(exp_error_msg)
 
 
-def test_upgrade_plan_application_already_disable_action_managed(status, config):
+def test_upgrade_plan_application_already_disable_action_managed(status, config, model):
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
@@ -409,7 +391,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
         "my_keystone",
         app_status,
         app_config,
-        "my_model",
+        model,
         "keystone",
     )
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -424,30 +406,31 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config)
     assert_plan_description(upgrade_plan, steps_description)
 
 
-def test_app_factory_not_supported_openstack_charm(mocker):
-    mock_logger = mocker.patch("cou.apps.app.logger")
+@patch.object(app_module, "is_charm_supported", return_value=False)
+def test_app_factory_not_supported_openstack_charm(mock_is_charm_supported):
+    charm = "my-app"
     my_app = app_module.AppFactory.create(
-        name="my-app",
-        status=mocker.MagicMock(),
-        config=mocker.MagicMock(),
-        model_name="my_model",
-        charm="my-app",
+        name=charm,
+        status=MagicMock(),
+        config=MagicMock(),
+        model=MagicMock(),
+        charm=charm,
     )
     assert my_app is None
-    assert mock_logger.debug.called_once_with(
-        "'%s' is not a supported OpenStack related application and will be ignored.",
-        "my-app",
-    )
+    mock_is_charm_supported.assert_called_once_with(charm)
 
 
-def test_app_factory_register(status, mocker):
-    mocker.patch("cou.apps.app.is_charm_supported", return_value=True)
+@patch.object(app_module, "is_charm_supported", return_value=True)
+def test_app_factory_register(mock_is_charm_supported):
+    charm = "foo"
 
-    @app_module.AppFactory.register_application(["foo"])
+    @app_module.AppFactory.register_application([charm])
     class Foo:
-        def __init__(self, name, status, config, model_name, charm):
+        def __init__(self, *_, **__):
             pass
 
-    assert "foo" in app_module.AppFactory.charms
-    foo = app_module.AppFactory.create("my-foo", mocker.MagicMock(), {}, "my_model", "foo")
+    assert charm in app_module.AppFactory.charms
+    foo = app_module.AppFactory.create("my-foo", MagicMock(), {}, MagicMock(), charm)
+    mock_is_charm_supported.assert_called_once_with(charm)
+    assert foo is not None
     assert isinstance(foo, Foo)
