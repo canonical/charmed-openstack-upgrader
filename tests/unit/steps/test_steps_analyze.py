@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest.mock import MagicMock
 
 import pytest
 
+from cou.apps.app import ApplicationUnit, OpenStackApplication
 from cou.steps import analyze
 from cou.steps.analyze import Analysis
 
@@ -151,18 +153,45 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps):
     assert result.current_cloud_os_release == "ussuri"
 
 
-def test_split_control_plane_and_data_plane(apps):
-    all_apps = [apps["nova_wallaby"], apps["keystone_wallaby"], apps["cinder_ussuri"]]
-    control_plane, data_plane = Analysis._split_control_plane_and_data_plane(all_apps)
-    assert control_plane == [apps["keystone_wallaby"], apps["cinder_ussuri"]]
-    assert data_plane == [apps["nova_wallaby"]]
+def _app(name, units):
+    app = MagicMock(spec_set=OpenStackApplication).return_value
+    app.charm = name
+    app.units = units
+    return app
 
 
-def test_move_to_data_plane_if_required(apps):
-    """Test moving app to data plane."""
-    control_plane = [apps["keystone_wallaby"], apps["cinder_on_nova"]]
-    data_plane = [apps["nova_wallaby"]]
+def _unit(machine):
+    unit = MagicMock(spec_set=ApplicationUnit).return_value
+    unit.machine = machine
+    return unit
 
-    control_plane, data_plane = Analysis._move_to_data_plane_if_required(control_plane, data_plane)
-    assert control_plane == [apps["keystone_wallaby"]]
-    assert data_plane == [apps["nova_wallaby"], apps["cinder_on_nova"]]
+
+@pytest.mark.parametrize(
+    "exp_control_plane, exp_data_plane",
+    [
+        (
+            [_app("keystone", [_unit("0"), _unit("1"), _unit("2")])],
+            [_app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")])],
+        ),
+        (
+            [],
+            [
+                _app("nova-compute", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("keystone", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")]),
+            ],
+        ),
+        (
+            [_app("keystone", [_unit("6"), _unit("7"), _unit("8")])],
+            [
+                _app("nova-compute", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")]),
+            ],
+        ),
+    ],
+)
+def test_split_apps(exp_control_plane, exp_data_plane):
+    all_apps = exp_control_plane + exp_data_plane
+    control_plane, data_plane = Analysis._split_apps(all_apps)
+    assert exp_control_plane == control_plane
+    assert exp_data_plane == data_plane
