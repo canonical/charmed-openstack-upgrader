@@ -53,16 +53,14 @@ async def upgrade_packages(units: Iterable[str], model: COUModel) -> None:
 
 
 async def set_require_osd_release_option(unit: str, model: COUModel, ceph_release: str) -> None:
-    """Run package updates and upgrades on each unit of an Application.
+    """Check and set correct value for require-osd-release on a ceph-mon unit.
 
-    :param unit: The unit name where the check command runs on.
+    :param unit: The ceph-mon unit name where the check command runs on.
     :type str
     :param model: COUModel object
     :type model: COUModel
     :param ceph_release: The ceph release to set for require-osd-release.
     :type str
-    :return: The current release set for require-osd-release setting
-    :rtype: str
     :raises RunUpgradeError: When an upgrade fails.
     """
     check_command = "ceph osd dump | grep require_osd_release"

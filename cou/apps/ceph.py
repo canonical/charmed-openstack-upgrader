@@ -60,21 +60,26 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
     ) -> UpgradeStep:
         """Get plan to set correct value for require-osd-release option on ceph-mon.
 
+        This step is needed as a workaround for LP#1929254. Reference:
+        https://docs.openstack.org/charm-guide/latest/project/issues/upgrade-issues.html#ceph-require-osd-release
+
         :param channel: The channel to get ceph track from.
         :type str
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
-        :return: Plan to check if application workload has been upgraded
+        :return: Plan to check and set correct value for require-osd-release
         :rtype: UpgradeStep
         """
-        track: str = channel.split("/", maxsplit=1)[0]
+        ceph_release: str = channel.split("/", maxsplit=1)[0]
+        ceph_mon_unit, *_ = self.units
         return UpgradeStep(
             description=(
-                f"Ensure require-osd-release option on ceph-mon units correctly set to '{track}'"
+                "Ensure require-osd-release option on ceph-mon units correctly "
+                f"set to '{ceph_release}'"
             ),
             parallel=parallel,
             function=set_require_osd_release_option,
-            unit=list(self.units.keys())[0],
+            unit=ceph_mon_unit,
             model=self.model,
-            ceph_release=track,
+            ceph_release=ceph_release,
         )
