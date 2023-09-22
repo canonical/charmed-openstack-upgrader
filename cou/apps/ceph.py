@@ -38,7 +38,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         return [
             self._get_upgrade_current_release_packages_plan(),
             self._get_refresh_charm_plan(target),
-            self._get_set_require_osd_release_plan(target, self.expected_current_channel),
+            self._get_change_require_osd_release_plan(target, self.expected_current_channel),
         ]
 
     def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
@@ -47,14 +47,14 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[Optional[UpgradeStep]]
         """
         return [
             self._get_reached_expected_target_plan(target),
-            self._get_set_require_osd_release_plan(target, self.target_channel(target)),
+            self._get_change_require_osd_release_plan(target, self.target_channel(target)),
         ]
 
-    def _get_set_require_osd_release_plan(
+    def _get_change_require_osd_release_plan(
         self, target: OpenStackRelease, channel: str, parallel: bool = False
     ) -> Optional[UpgradeStep]:
         """Get plan to set correct value for require-osd-release option on ceph-mon.

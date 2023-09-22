@@ -427,7 +427,7 @@ class OpenStackApplication:
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[Optional[UpgradeStep]]
         """
         return [self._get_reached_expected_target_plan(target)]
 
