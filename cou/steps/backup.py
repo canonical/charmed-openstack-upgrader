@@ -77,6 +77,7 @@ async def get_database_app_unit_name(model: COUModel) -> str:
 
     :param model: COUModel object
     :type model: COUModel
+    :raises UnitNotFound: When cannot find a valid unit for 'mysql-innodb-cluster
     :returns: Name of the mysql-innodb-cluster application name
     :rtype: ApplicationStatus
     """
