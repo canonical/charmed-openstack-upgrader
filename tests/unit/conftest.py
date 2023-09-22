@@ -186,15 +186,25 @@ def status():
     mock_keystone_ldap_cs.subordinate_to = ["keystone"]
     mock_keystone_ldap_cs.units = {}
 
-    # ceph-mon application
-    mock_ceph_mon = MagicMock(spec_set=ApplicationStatus())
-    mock_ceph_mon.series = "focal"
-    mock_units_ceph_mon = MagicMock(spec_set=UnitStatus())
-    mock_ceph_mon.charm_channel = "pacific/stable"
-    mock_units_ceph_mon.workload_version = "16.2.0"
-    mock_ceph_mon.charm = "ch:amd64/focal/ceph-mon-178"
-    mock_ceph_mon.subordinate_to = []
-    mock_ceph_mon.units = OrderedDict([("ceph-mon/0", mock_units_ceph_mon)])
+    # ceph-mon application on ussuri
+    mock_ceph_mon_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_ceph_mon_ussuri.series = "focal"
+    mock_ceph_mon_ussuri.charm_channel = "octopus/stable"
+    mock_ceph_mon_ussuri.charm = "ch:amd64/focal/ceph-mon-177"
+    mock_ceph_mon_ussuri.subordinate_to = []
+    mock_units_ceph_mon_ussuri = MagicMock(spec_set=UnitStatus())
+    mock_units_ceph_mon_ussuri.workload_version = "15.2.0"
+    mock_ceph_mon_ussuri.units = OrderedDict([("ceph-mon/0", mock_units_ceph_mon_ussuri)])
+
+    # ceph-mon application on xena
+    mock_ceph_mon_xena = MagicMock(spec_set=ApplicationStatus())
+    mock_ceph_mon_xena.series = "focal"
+    mock_ceph_mon_xena.charm_channel = "pacific/stable"
+    mock_ceph_mon_xena.charm = "ch:amd64/focal/ceph-mon-178"
+    mock_ceph_mon_xena.subordinate_to = []
+    mock_units_ceph_mon_xena = MagicMock(spec_set=UnitStatus())
+    mock_units_ceph_mon_xena.workload_version = "16.2.0"
+    mock_ceph_mon_xena.units = OrderedDict([("ceph-mon/0", mock_units_ceph_mon_xena)])
 
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
@@ -212,7 +222,8 @@ def status():
         "keystone-ldap": mock_keystone_ldap,
         "keystone-ldap-cs": mock_keystone_ldap_cs,
         "nova_wallaby": mock_nova_wallaby,
-        "ceph-mon": mock_ceph_mon,
+        "ceph-mon_ussuri": mock_ceph_mon_ussuri,
+        "ceph-mon_xena": mock_ceph_mon_xena,
     }
     return status
 

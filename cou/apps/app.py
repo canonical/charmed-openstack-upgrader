@@ -31,7 +31,7 @@ from cou.exceptions import (
     MismatchedOpenStackVersions,
 )
 from cou.steps import UpgradeStep
-from cou.utils import app_utils
+from cou.utils.app_utils import upgrade_packages
 from cou.utils.juju_utils import COUModel
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
@@ -147,7 +147,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
-    :raises ApplicationUpgradeError: When the application upgrade fails.
+    :raises PackageUpgradeError: When the package upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -421,7 +421,7 @@ class OpenStackApplication:
             self._get_workload_upgrade_plan(target),
         ]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -463,18 +463,14 @@ class OpenStackApplication:
         :return plan: Plan for upgrading software packages to the latest of the current release.
         :type plan: UpgradeStep
         """
-        dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-        command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
-
         return UpgradeStep(
             description=(
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
             parallel=parallel,
-            function=app_utils.run_on_all_units,
+            function=upgrade_packages,
             units=self.status.units.keys(),
             model=self.model,
-            command=command,
         )
 
     def _get_refresh_charm_plan(

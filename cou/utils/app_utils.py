@@ -18,23 +18,24 @@ from collections.abc import Iterable
 
 from juju.errors import JujuError
 
-from cou.exceptions import ApplicationUpgradeError, CommandRunFailed
+from cou.exceptions import CommandRunFailed, PackageUpgradeError
 from cou.utils.juju_utils import COUModel
 
 logger = logging.getLogger(__name__)
 
 
-async def run_on_all_units(units: Iterable[str], model: COUModel, command: str) -> None:
-    """Run command on each unit of an Application.
+async def upgrade_packages(units: Iterable[str], model: COUModel) -> None:
+    """Run package updates and upgrades on each unit of an Application.
 
-    :param units: The list of unit names where the command runs on.
+    :param units: The list of unit names where the package upgrade runs on.
     :type Iterable[str]
     :param model: COUModel object
     :type model: COUModel
-    :param command: The command to run on each unit of an Application.
-    :type str
-    :raises ApplicationUpgradeError: When the application upgrade fails.
+    :raises PackageUpgradeError: When the package upgrade fails.
     """
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
+
     for unit in units:
         logger.info("Running '%s' on '%s'", command, unit)
 
@@ -43,11 +44,9 @@ async def run_on_all_units(units: Iterable[str], model: COUModel, command: str) 
             if str(result["Code"]) == "0":
                 logger.debug(result["Stdout"])
             else:
-                raise ApplicationUpgradeError(
-                    f"Cannot upgrade application: operation on {unit} failed."
+                raise PackageUpgradeError(
+                    f"Cannot upgrade packages on {unit}."
                 ) from CommandRunFailed(cmd=command, result=result)
 
         except JujuError as exc:
-            raise ApplicationUpgradeError(
-                f"Cannot upgrade application: operation on {unit} failed."
-            ) from exc
+            raise PackageUpgradeError(f"Cannot upgrade packages on {unit}.") from exc

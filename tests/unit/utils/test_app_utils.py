@@ -17,30 +17,30 @@ from unittest.mock import call
 import pytest
 from juju.errors import JujuError
 
-from cou.exceptions import ApplicationUpgradeError
+from cou.exceptions import PackageUpgradeError
 from cou.utils import app_utils
 
 
 @pytest.mark.asyncio
-async def test_application_run_on_all_units(model):
-    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
-
+async def test_application_upgrade_packages(model):
     model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
 
-    await app_utils.run_on_all_units(
-        units=["keystone/0", "keystone/1"], model=model, command=command
-    )
+    await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
 
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     expected_calls = [
         call(
             unit_name="keystone/0",
-            command=command,
+            command="apt-get update && "
+            f"apt-get dist-upgrade {dpkg_opts} -y && "
+            "apt-get autoremove -y",
             timeout=600,
         ),
         call(
             unit_name="keystone/1",
-            command=command,
+            command="apt-get update && "
+            f"apt-get dist-upgrade {dpkg_opts} -y && "
+            "apt-get autoremove -y",
             timeout=600,
         ),
     ]
@@ -49,38 +49,32 @@ async def test_application_run_on_all_units(model):
 
 
 @pytest.mark.asyncio
-async def test_application_run_on_all_units_unsuccessful(model):
-    exp_error_msg = "Cannot upgrade application: operation on keystone/0 failed."
-    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
+async def test_application_upgrade_packages_unsuccessful(model):
+    exp_error_msg = "Cannot upgrade packages on keystone/0."
     model.run_on_unit.return_value = {"Code": "non-zero", "Stderr": "error"}
 
-    with pytest.raises(ApplicationUpgradeError, match=exp_error_msg):
-        await app_utils.run_on_all_units(
-            units=["keystone/0", "keystone/1"], model=model, command=command
-        )
+    with pytest.raises(PackageUpgradeError, match=exp_error_msg):
+        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
 
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     model.run_on_unit.assert_called_once_with(
         unit_name="keystone/0",
-        command=command,
+        command=f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y",
         timeout=600,
     )
 
 
 @pytest.mark.asyncio
-async def test_application_run_on_all_units_error(model):
-    exp_error_msg = "Cannot upgrade application: operation on keystone/0 failed."
-    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
-    command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
+async def test_application_upgrade_packages_error(model):
+    exp_error_msg = "Cannot upgrade packages on keystone/0."
     model.run_on_unit.side_effect = JujuError("error")
 
-    with pytest.raises(ApplicationUpgradeError, match=exp_error_msg):
-        await app_utils.run_on_all_units(
-            units=["keystone/0", "keystone/1"], model=model, command=command
-        )
+    with pytest.raises(PackageUpgradeError, match=exp_error_msg):
+        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
 
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     model.run_on_unit.assert_called_once_with(
         unit_name="keystone/0",
-        command=command,
+        command=f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y",
         timeout=600,
     )
