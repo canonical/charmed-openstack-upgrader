@@ -14,13 +14,11 @@ apps:
   cou:
     command: bin/cou.wrapper
     completer: etc/bash_completion.d/snap.cou
-    aliases: [ cou ]
     plugs:
       - juju-client-observe
       - network
       - network-bind
-      - dot-local-share-juju
-      - local-cou
+      - dot-local-cou
 
 parts:
   cou-wrapper:
@@ -54,11 +52,7 @@ parts:
       craftctl set version=${VERSION}
 
 plugs:
-  dot-local-share-juju:
-    interface: personal-files
-    write:
-      - $HOME/.local/share/juju
-  local-cou:
+  dot-local-cou:
     interface: personal-files
     write:
       - $HOME/.local/share/cou

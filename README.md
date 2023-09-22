@@ -8,13 +8,14 @@ different repository, and only use some of the code and ideas found here.
 # Setup
 
 ```bash
+# Instructions for local builds until we have automatic connections and alias
 make clean
 sudo snap remove charmed-openstack-upgrader --purge
 make build
-sudo snap install ./charmed-openstack-upgrader.snap --devmode
+sudo snap install ./charmed-openstack-upgrader.snap --dangerous
 sudo snap connect charmed-openstack-upgrader:juju-client-observe snapd
-sudo snap connect charmed-openstack-upgrader:dot-local-share-juju snapd
-sudo snap connect charmed-openstack-upgrader:local-cou snapd
+sudo snap connect charmed-openstack-upgrader:dot-local-cou snapd
+sudo snap alias charmed-openstack-upgrader.cou cou
 ```
 
 Then you can use ```cou```
