@@ -30,13 +30,15 @@ logger = logging.getLogger(__name__)
 class Analysis:
     """Analyze result.
 
+    :param model: COUModel object
+    :type model: COUModel
     :param apps_control_plane: Control plane applications in the model
     :type apps_control_plane:  list[OpenStackApplication]
     :param apps_data_plane: Data plane applications in the model
     :type apps_data_plane:  list[OpenStackApplication]
     """
 
-    model_name: Optional[str]
+    model: juju_utils.COUModel
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
 
@@ -70,47 +72,47 @@ class Analysis:
         return control_plane, data_plane
 
     @classmethod
-    async def create(cls, model_name: Optional[str] = None) -> Analysis:
+    async def create(cls, model: juju_utils.COUModel) -> Analysis:
         """Analyze the deployment before planning.
 
-        :param model_name: Name of model to query, if None the current model will be used
-        :type model_name: Optional[str]
+        :param model: COUModel object
+        :type model: COUModel
         :return: Analysis object populated with the model applications.
         :rtype: Analysis
         """
         logger.info("Analyzing the OpenStack deployment...")
-        apps = await Analysis._populate(model_name)
+        apps = await Analysis._populate(model)
 
         control_plane, data_plane = cls._split_apps(apps)
 
-        return Analysis(
-            model_name=model_name, apps_data_plane=data_plane, apps_control_plane=control_plane
-        )
+        return Analysis(model=model, apps_data_plane=data_plane, apps_control_plane=control_plane)
 
     @classmethod
-    async def _populate(cls, model_name: Optional[str]) -> list[OpenStackApplication]:
+    async def _populate(cls, model: juju_utils.COUModel) -> list[OpenStackApplication]:
         """Analyze the applications in the model.
 
         Applications that must be upgraded in a specific order will be returned first, followed
         by applications that can be upgraded in any order. Applications that are not supported
         will be ignored.
 
-        :param model_name: Name of model to query
-        :type model_name: Optional[str]
+        :param model: COUModel object
+        :type model: COUModel
         :return: Application objects with their respective information.
         :rtype: List[OpenStackApplication]
         """
-        juju_status = await juju_utils.get_status(model_name)
+        juju_status = await model.get_status()
         apps = {
             AppFactory.create(
                 name=app,
                 status=app_status,
-                config=await juju_utils.get_application_config(app, model_name),
-                model_name=model_name,
-                charm=await juju_utils.extract_charm_name(app, model_name),
+                config=await model.get_application_config(app),
+                model=model,
+                charm=await model.get_charm_name(app),
             )
             for app, app_status in juju_status.applications.items()
+            if app_status
         }
+
         # remove non-supported charms that return None on AppFactory.create
         apps.discard(None)
         # mypy complains that apps can have None, but we already removed.

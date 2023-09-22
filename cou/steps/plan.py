@@ -95,15 +95,13 @@ async def create_upgrade_group(
     for app in filter(filter_function, apps):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
+            group_upgrade_plan.add_step(app_upgrade_plan)
         except HaltUpgradePlanGeneration as exc:
             # we do not care if applications halt the upgrade plan generation
             # for some known reason.
             logger.debug("'%s' halted the upgrade planning generation: %s", app.name, exc)
-            app_upgrade_plan = None
         except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
             raise
-        if app_upgrade_plan:
-            group_upgrade_plan.add_step(app_upgrade_plan)
 
     return group_upgrade_plan

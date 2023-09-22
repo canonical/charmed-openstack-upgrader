@@ -28,7 +28,7 @@ from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_plan
 from cou.steps.plan import generate_plan
-from cou.utils import juju_utils
+from cou.utils.juju_utils import COUModel
 
 AVAILABLE_OPTIONS = "cas"
 
@@ -91,11 +91,11 @@ async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
     :return: Generated upgrade plan.
     :rtype: UpgradeStep
     """
-    model_name = model_name or await juju_utils.get_current_model_name()
-    logger.info("Using model: %s", model_name)
+    model = await COUModel.create(model_name)
+    logger.info("Using model: %s", model.name)
 
     progress_indicator.start("Analyzing cloud...")
-    analysis_result = await Analysis.create(model_name)
+    analysis_result = await Analysis.create(model)
     progress_indicator.succeed()
     logger.info(analysis_result)
 
