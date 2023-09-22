@@ -18,6 +18,7 @@ from typing import Optional
 from cou.apps.app import AppFactory
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.steps import UpgradeStep
+from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.openstack import OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -38,29 +39,27 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         return [
             self._get_upgrade_current_release_packages_plan(),
             self._get_refresh_charm_plan(target),
-            self._get_change_require_osd_release_plan(target, self.expected_current_channel),
+            self._get_change_require_osd_release_plan(self.expected_current_channel),
         ]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         return [
             self._get_reached_expected_target_plan(target),
-            self._get_change_require_osd_release_plan(target, self.target_channel(target)),
+            self._get_change_require_osd_release_plan(self.target_channel(target)),
         ]
 
     def _get_change_require_osd_release_plan(
-        self, target: OpenStackRelease, channel: str, parallel: bool = False
-    ) -> Optional[UpgradeStep]:
+        self, channel: str, parallel: bool = False
+    ) -> UpgradeStep:
         """Get plan to set correct value for require-osd-release option on ceph-mon.
 
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
         :param channel: The channel to get ceph track from.
         :type str
         :param parallel: Parallel running, defaults to False
@@ -68,15 +67,14 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :return: Plan to check if application workload has been upgraded
         :rtype: UpgradeStep
         """
-        if self.expected_current_channel != self.target_channel(target):
-            track: str = channel.split("/", maxsplit=1)[0]
-            set_command = f"sudo ceph osd require-osd-release {track}"
-
-            return UpgradeStep(
-                description=(f"Set '{track}' for require-osd-release option on ceph-mon units"),
-                parallel=parallel,
-                function=self.model.run_on_unit,
-                unit=list(self.units.keys())[0],
-                command=set_command,
-            )
-        return None
+        track: str = channel.split("/", maxsplit=1)[0]
+        return UpgradeStep(
+            description=(
+                f"Ensure require-osd-release option on ceph-mon units correctly set to '{track}'"
+            ),
+            parallel=parallel,
+            function=set_require_osd_release_option,
+            unit=list(self.units.keys())[0],
+            model=self.model,
+            ceph_release=track,
+        )

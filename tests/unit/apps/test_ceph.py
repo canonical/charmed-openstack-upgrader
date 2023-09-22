@@ -49,17 +49,17 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model):
     steps_description = [
         f"Upgrade software packages of '{app.name}' from the current APT repositories",
         f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
-        "Set 'pacific' for require-osd-release option on ceph-mon units",
+        "Ensure require-osd-release option on ceph-mon units correctly set to 'pacific'",
         "Upgrade 'ceph-mon' to the new channel: 'quincy/stable'",
         f"Change charm config of '{app.name}' 'source' to 'cloud:focal-yoga'",
         f"Check if the workload of '{app.name}' has been upgraded",
-        "Set 'quincy' for require-osd-release option on ceph-mon units",
+        "Ensure require-osd-release option on ceph-mon units correctly set to 'quincy'",
     ]
 
     assert_plan_description(plan, steps_description)
 
 
-def test_test_ceph_mon_upgrade_plan_ussuri_to_victoria(status, config, model):
+def test_ceph_mon_upgrade_plan_ussuri_to_victoria(status, config, model):
     """Test when ceph version remains the same between os releases."""
     target = "victoria"
     app = CephMonApplication(
@@ -74,8 +74,10 @@ def test_test_ceph_mon_upgrade_plan_ussuri_to_victoria(status, config, model):
     steps_description = [
         f"Upgrade software packages of '{app.name}' from the current APT repositories",
         f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
+        "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'",
         f"Change charm config of '{app.name}' 'source' to 'cloud:focal-victoria'",
         f"Check if the workload of '{app.name}' has been upgraded",
+        "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'",
     ]
 
     assert_plan_description(plan, steps_description)

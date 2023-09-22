@@ -17,7 +17,7 @@ from unittest.mock import call
 import pytest
 from juju.errors import JujuError
 
-from cou.exceptions import PackageUpgradeError
+from cou.exceptions import RunUpgradeError
 from cou.utils import app_utils
 
 
@@ -53,7 +53,7 @@ async def test_application_upgrade_packages_unsuccessful(model):
     exp_error_msg = "Cannot upgrade packages on keystone/0."
     model.run_on_unit.return_value = {"Code": "non-zero", "Stderr": "error"}
 
-    with pytest.raises(PackageUpgradeError, match=exp_error_msg):
+    with pytest.raises(RunUpgradeError, match=exp_error_msg):
         await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
@@ -69,7 +69,7 @@ async def test_application_upgrade_packages_error(model):
     exp_error_msg = "Cannot upgrade packages on keystone/0."
     model.run_on_unit.side_effect = JujuError("error")
 
-    with pytest.raises(PackageUpgradeError, match=exp_error_msg):
+    with pytest.raises(RunUpgradeError, match=exp_error_msg):
         await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
@@ -78,3 +78,172 @@ async def test_application_upgrade_packages_error(model):
         command=f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y",
         timeout=600,
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "current_release_value, target_release_value",
+    [
+        ("octopus", "pacific"),
+        ("pacific", "quincy"),
+    ],
+)
+async def test_set_require_osd_release_option_different_releases(
+    model, current_release_value, target_release_value
+):
+    model.run_on_unit.side_effect = [
+        {"Code": "0", "Stdout": f"required_osd_release {current_release_value}"},
+        {"Code": "0", "Stdout": "Success"},
+    ]
+
+    await app_utils.set_require_osd_release_option(
+        unit="ceph-mon/0", model=model, ceph_release=target_release_value
+    )
+
+    expected_calls = [
+        call(
+            unit_name="ceph-mon/0",
+            command="ceph osd dump | grep require_osd_release",
+            timeout=600,
+        ),
+        call(
+            unit_name="ceph-mon/0",
+            command=f"ceph osd require-osd-release {target_release_value}",
+            timeout=600,
+        ),
+    ]
+
+    model.run_on_unit.assert_has_awaits(expected_calls)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "current_release_value, target_release_value",
+    [
+        ("octopus", "octopus"),
+        ("pacific", "pacific"),
+    ],
+)
+async def test_set_require_osd_release_option_same_release(
+    model, current_release_value, target_release_value
+):
+    model.run_on_unit.side_effect = [
+        {"Code": "0", "Stdout": f"required_osd_release {current_release_value}"},
+        {"Code": "0", "Stdout": "Success"},
+    ]
+
+    await app_utils.set_require_osd_release_option(
+        unit="ceph-mon/0", model=model, ceph_release=target_release_value
+    )
+
+    model.run_on_unit.assert_called_once_with(
+        unit_name="ceph-mon/0",
+        command="ceph osd dump | grep require_osd_release",
+        timeout=600,
+    )
+
+
+@pytest.mark.asyncio
+async def test_set_require_osd_release_option_check_unsuccessful(model):
+    exp_error_msg = (
+        "Cannot determine the current value of require_osd_release on ceph-mon unit 'ceph-mon/0'."
+    )
+    model.run_on_unit.return_value = {"Code": "non-zero", "Stderr": "error"}
+
+    with pytest.raises(RunUpgradeError, match=exp_error_msg):
+        await app_utils.set_require_osd_release_option(
+            unit="ceph-mon/0", model=model, ceph_release="pacific"
+        )
+
+    model.run_on_unit.assert_called_once_with(
+        unit_name="ceph-mon/0",
+        command="ceph osd dump | grep require_osd_release",
+        timeout=600,
+    )
+
+
+@pytest.mark.asyncio
+async def test_set_require_osd_release_option_check_error(model):
+    exp_error_msg = (
+        "Cannot determine the current value of require_osd_release on ceph-mon unit 'ceph-mon/0'."
+    )
+    model.run_on_unit.side_effect = JujuError("error")
+
+    with pytest.raises(RunUpgradeError, match=exp_error_msg):
+        await app_utils.set_require_osd_release_option(
+            unit="ceph-mon/0", model=model, ceph_release="pacific"
+        )
+
+    model.run_on_unit.assert_called_once_with(
+        unit_name="ceph-mon/0",
+        command="ceph osd dump | grep require_osd_release",
+        timeout=600,
+    )
+
+
+@pytest.mark.asyncio
+async def test_set_require_osd_release_option_set_unsuccessful(model):
+    current_release_value = "octopus"
+    target_release_value = "pacific"
+    exp_error_msg = (
+        f"Cannot set '{target_release_value}' to "
+        "require_osd_release on ceph-mon unit 'ceph-mon/0'."
+    )
+    model.run_on_unit.side_effect = [
+        {"Code": "0", "Stdout": f"required_osd_release {current_release_value}"},
+        {"Code": "non-zero", "Stderr": "error"},
+    ]
+
+    with pytest.raises(RunUpgradeError, match=exp_error_msg):
+        await app_utils.set_require_osd_release_option(
+            unit="ceph-mon/0", model=model, ceph_release=target_release_value
+        )
+
+    expected_calls = [
+        call(
+            unit_name="ceph-mon/0",
+            command="ceph osd dump | grep require_osd_release",
+            timeout=600,
+        ),
+        call(
+            unit_name="ceph-mon/0",
+            command=f"ceph osd require-osd-release {target_release_value}",
+            timeout=600,
+        ),
+    ]
+
+    model.run_on_unit.assert_has_awaits(expected_calls)
+
+
+@pytest.mark.asyncio
+async def test_set_require_osd_release_option_set_error(model):
+    current_release_value = "octopus"
+    target_release_value = "pacific"
+    exp_error_msg = (
+        f"Cannot set '{target_release_value}' to "
+        "require_osd_release on ceph-mon unit 'ceph-mon/0'."
+    )
+    model.run_on_unit.side_effect = [
+        {"Code": "0", "Stdout": f"required_osd_release {current_release_value}"},
+        JujuError("error"),
+    ]
+
+    with pytest.raises(RunUpgradeError, match=exp_error_msg):
+        await app_utils.set_require_osd_release_option(
+            unit="ceph-mon/0", model=model, ceph_release=target_release_value
+        )
+
+    expected_calls = [
+        call(
+            unit_name="ceph-mon/0",
+            command="ceph osd dump | grep require_osd_release",
+            timeout=600,
+        ),
+        call(
+            unit_name="ceph-mon/0",
+            command=f"ceph osd require-osd-release {target_release_value}",
+            timeout=600,
+        ),
+    ]
+
+    model.run_on_unit.assert_has_awaits(expected_calls)

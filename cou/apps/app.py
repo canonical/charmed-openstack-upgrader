@@ -147,7 +147,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
-    :raises PackageUpgradeError: When the package upgrade fails.
+    :raises RunUpgradeError: When an upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -421,13 +421,13 @@ class OpenStackApplication:
             self._get_workload_upgrade_plan(target),
         ]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         return [self._get_reached_expected_target_plan(target)]
 
