@@ -561,7 +561,6 @@ class OpenStackApplication:
                 function=self.model.set_application_config,
                 application_name=self.name,
                 configuration={"action-managed-upgrade": False},
-                model=self.model,
             )
         return None
 
@@ -587,7 +586,6 @@ class OpenStackApplication:
                 function=self.model.set_application_config,
                 application_name=self.name,
                 configuration={self.origin_setting: self.new_origin(target)},
-                model=self.model,
             )
         logger.warning(
             "Not triggering the workload upgrade of app %s: %s already set to %s",
