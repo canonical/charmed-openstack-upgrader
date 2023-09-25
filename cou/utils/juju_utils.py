@@ -98,7 +98,7 @@ def retry(
 
     def _wrapper(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:  # pylint: disable=W9011
             attempt: int = 0
             start_time = datetime.now()
             while (datetime.now() - start_time).seconds <= timeout:
@@ -137,7 +137,13 @@ class COUModel:
 
     @staticmethod
     async def create(name: Optional[str]) -> "COUModel":
-        """Create COUModel object and connect it to model."""
+        """Create COUModel object and connect it to model.
+
+        :param name: Name of the model.
+        :type name: Optional[str]
+        :return: COUModel object.
+        :rtype: COUModel
+        """
         model = COUModel(name)
         await model._connect()  # pylint: disable=protected-access
         return model
@@ -225,10 +231,9 @@ class COUModel:
 
         :param application_name: Name of application
         :type application_name: str
+        :raises ApplicationError: if charm_name is None
         :return: Charm name
         :rtype: str
-        :raises: ApplicationNotFound
-        :raises: ApplicationError if charm_name is None
         """
         app = await self._get_application(application_name)
         if app.charm_name is None:
@@ -258,14 +263,13 @@ class COUModel:
         :type unit_name: str
         :param action_name: Name of action to run
         :type action_name: str
-        :param action_params: Dictionary of config options for action
-        :type action_params: Optional[Dict]
+        :param action_params: Dictionary of config options for action, defaults to None
+        :type action_params: Optional[Dict], optional
         :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
-        :type raise_on_failure: bool
-        :returns: Action object
-        :rtype: juju.action.Action
-        :raises: UnitNotFound
-        :raises: ActionFailed
+        :type raise_on_failure: bool, optional
+        :raises ActionFailed: _description_
+        :return: When status is different from "completed"
+        :rtype: Action
         """
         action_params = action_params or {}
         unit = await self._get_unit(unit_name)
@@ -286,7 +290,7 @@ class COUModel:
         """Juju run on unit.
 
         :param unit_name: Name of unit to match
-        :type unit: str
+        :type unit_name: str
         :param command: Command to execute
         :type command: str
         :param timeout: How long in seconds to wait for command to complete
@@ -388,7 +392,13 @@ class COUModel:
         )
 
     async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
-        """Wait for model to reach an idle state."""
+        """Wait for model to reach an idle state.
+
+        :param timeout: Timeout in seconds.
+        :type timeout: int
+        :param apps: Applications to wait, defaults to None
+        :type apps: Optional[list[str]], optional
+        """
         model = await self._get_model()
         await model.wait_for_idle(
             apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
