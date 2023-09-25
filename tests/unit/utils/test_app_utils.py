@@ -91,8 +91,14 @@ async def test_application_upgrade_packages_error(model):
 async def test_set_require_osd_release_option_different_releases(
     model, current_release_value, target_release_value
 ):
+    check_result = f"""
+        crush_version 7
+        require_min_compat_client luminous
+        min_compat_client jewel
+        require_osd_release {current_release_value}
+    """
     model.run_on_unit.side_effect = [
-        {"Code": "0", "Stdout": f"required_osd_release {current_release_value}"},
+        {"Code": "0", "Stdout": check_result},
         {"Code": "0", "Stdout": "Success"},
     ]
 
@@ -103,7 +109,7 @@ async def test_set_require_osd_release_option_different_releases(
     expected_calls = [
         call(
             unit_name="ceph-mon/0",
-            command="ceph osd dump | grep require_osd_release",
+            command="ceph osd dump",
             timeout=600,
         ),
         call(
@@ -127,8 +133,14 @@ async def test_set_require_osd_release_option_different_releases(
 async def test_set_require_osd_release_option_same_release(
     model, current_release_value, target_release_value
 ):
+    check_result = f"""
+        crush_version 7
+        require_min_compat_client luminous
+        min_compat_client jewel
+        require_osd_release {current_release_value}
+    """
     model.run_on_unit.side_effect = [
-        {"Code": "0", "Stdout": f"required_osd_release {current_release_value}"},
+        {"Code": "0", "Stdout": check_result},
         {"Code": "0", "Stdout": "Success"},
     ]
 
@@ -138,7 +150,7 @@ async def test_set_require_osd_release_option_same_release(
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph osd dump | grep require_osd_release",
+        command="ceph osd dump",
         timeout=600,
     )
 
@@ -157,7 +169,7 @@ async def test_set_require_osd_release_option_check_unsuccessful(model):
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph osd dump | grep require_osd_release",
+        command="ceph osd dump",
         timeout=600,
     )
 
@@ -176,7 +188,7 @@ async def test_set_require_osd_release_option_check_error(model):
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph osd dump | grep require_osd_release",
+        command="ceph osd dump",
         timeout=600,
     )
 
@@ -185,12 +197,18 @@ async def test_set_require_osd_release_option_check_error(model):
 async def test_set_require_osd_release_option_set_unsuccessful(model):
     current_release_value = "octopus"
     target_release_value = "pacific"
+    check_result = f"""
+        crush_version 7
+        require_min_compat_client luminous
+        min_compat_client jewel
+        require_osd_release {current_release_value}
+    """
     exp_error_msg = (
         f"Cannot set '{target_release_value}' to "
         "require_osd_release on ceph-mon unit 'ceph-mon/0'."
     )
     model.run_on_unit.side_effect = [
-        {"Code": "0", "Stdout": f"required_osd_release {current_release_value}"},
+        {"Code": "0", "Stdout": check_result},
         {"Code": "non-zero", "Stderr": "error"},
     ]
 
@@ -202,7 +220,7 @@ async def test_set_require_osd_release_option_set_unsuccessful(model):
     expected_calls = [
         call(
             unit_name="ceph-mon/0",
-            command="ceph osd dump | grep require_osd_release",
+            command="ceph osd dump",
             timeout=600,
         ),
         call(
@@ -219,12 +237,18 @@ async def test_set_require_osd_release_option_set_unsuccessful(model):
 async def test_set_require_osd_release_option_set_error(model):
     current_release_value = "octopus"
     target_release_value = "pacific"
+    check_result = f"""
+        crush_version 7
+        require_min_compat_client luminous
+        min_compat_client jewel
+        require_osd_release {current_release_value}
+    """
     exp_error_msg = (
         f"Cannot set '{target_release_value}' to "
         "require_osd_release on ceph-mon unit 'ceph-mon/0'."
     )
     model.run_on_unit.side_effect = [
-        {"Code": "0", "Stdout": f"required_osd_release {current_release_value}"},
+        {"Code": "0", "Stdout": check_result},
         JujuError("error"),
     ]
 
@@ -236,7 +260,7 @@ async def test_set_require_osd_release_option_set_error(model):
     expected_calls = [
         call(
             unit_name="ceph-mon/0",
-            command="ceph osd dump | grep require_osd_release",
+            command="ceph osd dump",
             timeout=600,
         ),
         call(

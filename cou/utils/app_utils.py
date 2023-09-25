@@ -56,21 +56,27 @@ async def set_require_osd_release_option(unit: str, model: COUModel, ceph_releas
     """Check and set correct value for require-osd-release on a ceph-mon unit.
 
     :param unit: The ceph-mon unit name where the check command runs on.
-    :type str
+    :type unit: str
     :param model: COUModel object
     :type model: COUModel
     :param ceph_release: The ceph release to set for require-osd-release.
-    :type str
+    :type ceph_release: str
     :raises RunUpgradeError: When an upgrade fails.
     """
-    check_command = "ceph osd dump | grep require_osd_release"
+    check_command = "ceph osd dump"
     logger.debug("Running '%s' on '%s'", check_command, unit)
 
     try:
         check_result = await model.run_on_unit(unit_name=unit, command=check_command, timeout=600)
         if str(check_result["Code"]) == "0":
             logger.debug(check_result["Stdout"])
-            current_require_osd_release = check_result["Stdout"].strip().split()[-1]
+
+            dump_output = check_result["Stdout"].strip().split("\n")
+            output_dict = {
+                key: value for line in dump_output for key, value in [line.strip().split()]
+            }
+
+            current_require_osd_release = output_dict["require_osd_release"]
             logger.debug("Current require-osd-release is set to: %s", current_require_osd_release)
         else:
             raise RunUpgradeError(
