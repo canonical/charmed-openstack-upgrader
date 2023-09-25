@@ -37,6 +37,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
+    :raises NoTargetError: When cannot find target to upgrade.
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
@@ -88,6 +89,7 @@ async def create_upgrade_group(
     :type description: str
     :param filter_function: Function to filter applications.
     :type filter_function: Callable[[OpenStackApplication], bool]
+    :raises Exception: When cannot generate upgrade plan.
     :return: Upgrade group.
     :rtype: UpgradeStep
     """

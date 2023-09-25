@@ -108,7 +108,9 @@ class AppFactory:
         :rtype: Callable[[type[OpenStackApplication]], type[OpenStackApplication]]
         """
 
-        def decorator(application: type[OpenStackApplication]) -> type[OpenStackApplication]:
+        def decorator(  # pylint: disable=W9011
+            application: type[OpenStackApplication],
+        ) -> type[OpenStackApplication]:
             for charm in charms:
                 cls.charms[charm] = application
             return application

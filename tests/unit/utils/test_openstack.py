@@ -39,7 +39,7 @@ def test_version_range_raises_ValueError(lower, upper):
         ),
         (
             "ceph-mon",
-            ["15.2.0", "16.2.0", "17.2.0"],
+            ["15.2.17", "16.2.14", "17.2.6"],
             [["ussuri", "victoria"], ["wallaby", "xena"], ["yoga"]],
         ),  # version 15 (octopus) can be ussuri or victoria
         # version 16 (pacific) can be wallaby or xena
@@ -62,6 +62,11 @@ def test_version_range_raises_ValueError(lower, upper):
             "vault",  # yoga can be 1.7 to 1.8
             ["1.7", "1.8", "1.9"],
             [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
+        ),
+        (
+            "ovn-central",
+            ["22.03.02"],
+            [["ussuri", "victoria", "wallaby", "xena", "yoga"]],
         ),
         ("my_charm", ["13.1.2"], [[]]),  # unknown charm
         ("keystone", ["63.5.7"], [[]]),  # out-of-bounds of a known charm
