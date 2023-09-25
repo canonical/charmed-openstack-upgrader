@@ -28,7 +28,7 @@ async def upgrade_packages(units: Iterable[str], model: COUModel) -> None:
     """Run package updates and upgrades on each unit of an Application.
 
     :param units: The list of unit names where the package upgrade runs on.
-    :type Iterable[str]
+    :type units: Iterable[str]
     :param model: COUModel object
     :type model: COUModel
     :raises RunUpgradeError: When an upgrade fails.

@@ -167,7 +167,7 @@ def create_plan_subparser(
 
     :param subparsers: subparsers that plan subparser belongs to
     :type subparsers: argparse.ArgumentParser
-    :param subcommand_common_opts_parser parser groups options commonly shared by subcommands
+    :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
     :type subcommand_common_opts_parser: argparse.ArgumentParser
     :param dp_parser: a parser groups options specific to data-plane
     :type dp_parser: argparse.ArgumentParser
@@ -223,7 +223,7 @@ def create_run_subparser(
 
     :param subparsers: subparsers that plan subparser belongs to
     :type subparsers: argparse.ArgumentParser
-    :param subcommand_common_opts_parser parser groups options commonly shared by subcommands
+    :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
     :type subcommand_common_opts_parser: argparse.ArgumentParser
     :param dp_parser: a parser groups options specific to data-plane
     :type dp_parser: argparse.ArgumentParser
@@ -284,10 +284,10 @@ def create_run_subparser(
 def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction:
     """Create and configure subparsers.
 
-    :param parsers: the top level parser to create subparsers for,
-    :type parsers: argparse.ArgumentParser
-    :return subparsers: configured subparsers
-    :type subparsers: argparse.ArgumentParser
+    :param parser: the top level parser to create subparsers for,
+    :type parser: argparse.ArgumentParser
+    :return: configured subparsers
+    :rtype: argparse._SubParsersAction
     """
     # Configure subcommand parser
     subparsers = parser.add_subparsers(
@@ -321,9 +321,9 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
 def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent-return-statements
     """Parse cli arguments.
 
-    :return: Arguments parser.
-    :rtype: argparse.ArgumentParser
-    :return: Parsed arguments.
+    :param args: Arguments parser.
+    :type args: Any
+    :return: argparse.Namespace
     :rtype: argparse.Namespace
     :raises argparse.ArgumentError: Unexpected arguments input.
     """

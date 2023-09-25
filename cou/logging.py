@@ -30,6 +30,8 @@ class TracebackInfoFilter(logging.Filter):  # pylint: disable=too-few-public-met
     def filter(self, record: logging.LogRecord) -> bool:
         """Filter function that sets exception info and cache to None.
 
+        :param record: An event being logged.
+        :type record: logging.LogRecord
         :return: Whether the specified record is to be logged.
         :rtype: bool
         """
@@ -38,7 +40,11 @@ class TracebackInfoFilter(logging.Filter):  # pylint: disable=too-few-public-met
 
 
 def setup_logging(log_level: str = "INFO") -> None:
-    """Do setup for logging."""
+    """Do setup for logging.
+
+    :param log_level: Logging level, defaults to "INFO"
+    :type log_level: str, optional
+    """
     log_formatter_file = logging.Formatter(
         fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )

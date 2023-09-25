@@ -37,9 +37,23 @@ def prompt(parameter: str) -> str:
     """
 
     def bold(text: str) -> str:
+        """Transform the text in bold format.
+
+        :param text: text to format.
+        :type text: str
+        :return: text formatted.
+        :rtype: str
+        """
         return Style.RESET_ALL + Fore.RED + Style.BRIGHT + text + Style.RESET_ALL
 
     def normal(text: str) -> str:
+        """Transform the text in normal format.
+
+        :param text: text to format.
+        :type text: str
+        :return: text formatted.
+        :rtype: str
+        """
         return Style.RESET_ALL + Fore.RED + text + Style.RESET_ALL
 
     return (
