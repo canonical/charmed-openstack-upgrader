@@ -561,7 +561,7 @@ class OpenStackApplication:
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
-                application_name=self.name,
+                name=self.name,
                 configuration={"action-managed-upgrade": False},
             )
         return None
@@ -586,7 +586,7 @@ class OpenStackApplication:
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
-                application_name=self.name,
+                name=self.name,
                 configuration={self.origin_setting: self.new_origin(target)},
             )
         logger.warning(
