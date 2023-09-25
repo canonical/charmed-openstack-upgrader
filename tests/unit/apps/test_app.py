@@ -245,6 +245,22 @@ def test_application_empty_origin_config(status, model):
     assert app.apt_source_codename is None
 
 
+def test_application_unexpected_channel(status, config, model):
+    target = "xena"
+    app_status = status["keystone_wallaby"]
+    # channel is set to a previous OpenStack release
+    app_status.charm_channel = "ussuri/stable"
+    app = OpenStackApplication(
+        "my_keystone",
+        app_status,
+        config["openstack_wallaby"],
+        model,
+        "keystone",
+    )
+    with pytest.raises(ApplicationError):
+        app.generate_upgrade_plan(target)
+
+
 @pytest.mark.parametrize(
     "source_value",
     ["ppa:myteam/ppa", "cloud:xenial-proposed/ocata", "http://my.archive.com/ubuntu main"],

@@ -490,9 +490,12 @@ class OpenStackApplication:
         # corner case for rabbitmq and hacluster.
         if len(self.possible_current_channels) > 1:
             logger.info(
-                "'%s' is compatible with more than one channel: '%s'. '%s' will be used",
+                (
+                    "'%s' has more than one channel compatible with the current OpenStack "
+                    "release: '%s'. '%s' will be used"
+                ),
                 self.name,
-                ",".join(self.possible_current_channels),
+                self.current_os_release.codename,
                 channel,
             )
 
@@ -509,6 +512,12 @@ class OpenStackApplication:
                 self.channel,
             )
             return None
+        elif self.channel not in self.possible_current_channels:
+            raise ApplicationError(
+                f"'{self.name}' has unexpected channel: '{self.channel}' for the current workload "
+                f"version and OpenStack release: '{self.current_os_release.codename}'. "
+                f"Possible channels are: {','.join(self.possible_current_channels)}"
+            )
 
         return UpgradeStep(
             description=description,
