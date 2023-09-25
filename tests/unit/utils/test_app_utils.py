@@ -96,6 +96,8 @@ async def test_set_require_osd_release_option_different_releases(
         require_min_compat_client luminous
         min_compat_client jewel
         require_osd_release {current_release_value}
+        stretch_mode_enabled false
+        foo bar test
     """
     model.run_on_unit.side_effect = [
         {"Code": "0", "Stdout": check_result},
@@ -138,6 +140,7 @@ async def test_set_require_osd_release_option_same_release(
         require_min_compat_client luminous
         min_compat_client jewel
         require_osd_release {current_release_value}
+        foo bar test
     """
     model.run_on_unit.side_effect = [
         {"Code": "0", "Stdout": check_result},
@@ -202,6 +205,7 @@ async def test_set_require_osd_release_option_set_unsuccessful(model):
         require_min_compat_client luminous
         min_compat_client jewel
         require_osd_release {current_release_value}
+        foo bar test
     """
     exp_error_msg = (
         f"Cannot set '{target_release_value}' to "
@@ -242,6 +246,7 @@ async def test_set_require_osd_release_option_set_error(model):
         require_min_compat_client luminous
         min_compat_client jewel
         require_osd_release {current_release_value}
+        foo bar test
     """
     exp_error_msg = (
         f"Cannot set '{target_release_value}' to "

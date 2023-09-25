@@ -72,10 +72,12 @@ async def set_require_osd_release_option(unit: str, model: COUModel, ceph_releas
             logger.debug(check_result["Stdout"])
 
             dump_output = check_result["Stdout"].strip().split("\n")
-            output_dict = {
-                key: value for line in dump_output for key, value in [line.strip().split()]
-            }
-
+            output_dict = {}
+            for line in dump_output:
+                parsed_line = line.strip().split()
+                if len(parsed_line) == 2:
+                    key, value = parsed_line
+                    output_dict[key] = value
             current_require_osd_release = output_dict["require_osd_release"]
             logger.debug("Current require-osd-release is set to: %s", current_require_osd_release)
         else:
