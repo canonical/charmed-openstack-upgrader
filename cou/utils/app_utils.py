@@ -63,6 +63,7 @@ async def set_require_osd_release_option(unit: str, model: COUModel, ceph_releas
     :type ceph_release: str
     :raises RunUpgradeError: When an upgrade fails.
     """
+    current_require_osd_release = ""
     check_command = "ceph osd dump"
     logger.debug("Running '%s' on '%s'", check_command, unit)
 
@@ -71,14 +72,10 @@ async def set_require_osd_release_option(unit: str, model: COUModel, ceph_releas
         if str(check_result["Code"]) == "0":
             logger.debug(check_result["Stdout"])
 
-            dump_output = check_result["Stdout"].strip().split("\n")
-            output_dict = {}
+            dump_output = check_result["Stdout"].strip().splitlines()
             for line in dump_output:
-                parsed_line = line.strip().split()
-                if len(parsed_line) == 2:
-                    key, value = parsed_line
-                    output_dict[key] = value
-            current_require_osd_release = output_dict["require_osd_release"]
+                if line.strip().startswith("require_osd_release"):
+                    current_require_osd_release = line.split()[1]
             logger.debug("Current require-osd-release is set to: %s", current_require_osd_release)
         else:
             raise RunUpgradeError(

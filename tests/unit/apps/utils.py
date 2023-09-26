@@ -24,6 +24,6 @@ def assert_plan(upgrade_plan, expected_plan):
     assert len(upgrade_plan.sub_steps) == len(expected_plan)
     sub_steps_check = zip(upgrade_plan.sub_steps, expected_plan)
     for sub_step, expected_step in sub_steps_check:
-        assert sub_step.description == expected_step["description"]
+        assert expected_step["description"] == sub_step.description
         assert expected_step["function_name"] in sub_step.function.__dict__.values()
-        assert sub_step.params == expected_step["params"]
+        assert expected_step["params"] == sub_step.params
