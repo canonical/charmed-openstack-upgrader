@@ -1,0 +1,12 @@
+variables:
+  openstack-origin: &openstack-origin distro
+
+series: focal
+
+applications:
+  rabbitmq-server:
+    charm: ch:rabbitmq-server
+    num_units: 1
+    channel: 3.9/stable
+    options:
+      source: *openstack-origin
