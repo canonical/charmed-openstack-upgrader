@@ -1,0 +1,26 @@
+variables:
+  openstack-origin: &openstack-origin distro
+  channel: &channel {{ channel }}
+
+series: {{ series }}
+
+applications:
+  keystone:
+    charm: keystone
+    channel: *channel
+    num_units: 1
+    options:
+      admin-password: func-smoke-tests
+  keystone-mysql-router:
+    charm: mysql-router
+    channel: 8.0/stable
+  mysql:
+    charm: mysql-innodb-cluster
+    channel: 8.0/stable
+    num_units: 3
+
+relations:
+- - mysql:db-router
+  - keystone-mysql-router:db-router
+- - keystone:shared-db
+  - keystone-mysql-router:shared-db
