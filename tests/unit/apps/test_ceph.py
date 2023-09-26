@@ -36,13 +36,17 @@ def test_ceph_mon_app(status, config, model):
     assert app.channel_codename == "xena"
 
 
-@patch("cou.apps.app.upgrade_packages", new=AsyncMock(name="upgrade_packages"))
-@patch(
-    "cou.apps.ceph.set_require_osd_release_option",
-    new=AsyncMock(name="set_require_osd_release_option"),
-)
-@patch("cou.apps.ceph.CephMonApplication._check_upgrade", new=AsyncMock(name="_check_upgrade"))
-def test_test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model):
+@patch("cou.apps.app.upgrade_packages", new_callable=AsyncMock)
+@patch("cou.apps.ceph.set_require_osd_release_option", new_callable=AsyncMock)
+@patch("cou.apps.ceph.CephMonApplication._check_upgrade", new_callable=AsyncMock)
+def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
+    mock_check_upgrade,
+    mock_set_require_osd_release_option,
+    mock_upgrade_packages,
+    status,
+    config,
+    model,
+):
     """Test when ceph version changes between os releases."""
     target = "yoga"
     app = CephMonApplication(
@@ -60,12 +64,12 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model):
             "description": (
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
-            "function_name": "upgrade_packages",
+            "function": mock_upgrade_packages,
             "params": {"units": app.status.units.keys(), "model": model},
         },
         {
             "description": f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
-            "function_name": "upgrade_charm",
+            "function": model.upgrade_charm,
             "params": {
                 "application_name": "ceph-mon",
                 "channel": "pacific/stable",
@@ -76,12 +80,12 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model):
             "description": (
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'pacific'"
             ),
-            "function_name": "set_require_osd_release_option",
+            "function": mock_set_require_osd_release_option,
             "params": {"unit": "ceph-mon/0", "model": model, "ceph_release": "pacific"},
         },
         {
             "description": "Upgrade 'ceph-mon' to the new channel: 'quincy/stable'",
-            "function_name": "upgrade_charm",
+            "function": model.upgrade_charm,
             "params": {
                 "application_name": "ceph-mon",
                 "channel": "quincy/stable",
@@ -89,19 +93,19 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model):
         },
         {
             "description": f"Change charm config of '{app.name}' 'source' to 'cloud:focal-yoga'",
-            "function_name": "set_application_config",
+            "function": model.set_application_config,
             "params": {"name": "ceph-mon", "configuration": {"source": "cloud:focal-yoga"}},
         },
         {
             "description": f"Check if the workload of '{app.name}' has been upgraded",
-            "function_name": "_check_upgrade",
+            "function": mock_check_upgrade,
             "params": {"target": OpenStackRelease("yoga")},
         },
         {
             "description": (
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'quincy'"
             ),
-            "function_name": "set_require_osd_release_option",
+            "function": mock_set_require_osd_release_option,
             "params": {"unit": "ceph-mon/0", "model": model, "ceph_release": "quincy"},
         },
     ]
@@ -109,13 +113,17 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model):
     assert_plan(plan, expected_plan)
 
 
-@patch("cou.apps.app.upgrade_packages", new=AsyncMock(name="upgrade_packages"))
-@patch(
-    "cou.apps.ceph.set_require_osd_release_option",
-    new=AsyncMock(name="set_require_osd_release_option"),
-)
-@patch("cou.apps.ceph.CephMonApplication._check_upgrade", new=AsyncMock(name="_check_upgrade"))
-def test_ceph_mon_upgrade_plan_ussuri_to_victoria(status, config, model):
+@patch("cou.apps.app.upgrade_packages", new_callable=AsyncMock)
+@patch("cou.apps.ceph.set_require_osd_release_option", new_callable=AsyncMock)
+@patch("cou.apps.ceph.CephMonApplication._check_upgrade", new_callable=AsyncMock)
+def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
+    mock_check_upgrade,
+    mock_set_require_osd_release_option,
+    mock_upgrade_packages,
+    status,
+    config,
+    model,
+):
     """Test when ceph version remains the same between os releases."""
     target = "victoria"
     app = CephMonApplication(
@@ -132,12 +140,12 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(status, config, model):
             "description": (
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
-            "function_name": "upgrade_packages",
+            "function": mock_upgrade_packages,
             "params": {"units": app.status.units.keys(), "model": model},
         },
         {
             "description": f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
-            "function_name": "upgrade_charm",
+            "function": model.upgrade_charm,
             "params": {
                 "application_name": "ceph-mon",
                 "channel": "octopus/stable",
@@ -148,26 +156,26 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(status, config, model):
             "description": (
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
             ),
-            "function_name": "set_require_osd_release_option",
+            "function": mock_set_require_osd_release_option,
             "params": {"unit": "ceph-mon/0", "model": model, "ceph_release": "octopus"},
         },
         {
             "description": (
                 f"Change charm config of '{app.name}' 'source' to 'cloud:focal-victoria'"
             ),
-            "function_name": "set_application_config",
+            "function": model.set_application_config,
             "params": {"name": "ceph-mon", "configuration": {"source": "cloud:focal-victoria"}},
         },
         {
             "description": f"Check if the workload of '{app.name}' has been upgraded",
-            "function_name": "_check_upgrade",
+            "function": mock_check_upgrade,
             "params": {"target": OpenStackRelease("victoria")},
         },
         {
             "description": (
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
             ),
-            "function_name": "set_require_osd_release_option",
+            "function": mock_set_require_osd_release_option,
             "params": {"unit": "ceph-mon/0", "model": model, "ceph_release": "octopus"},
         },
     ]
