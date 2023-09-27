@@ -115,7 +115,7 @@ class Analysis:
             apps_to_upgrade_in_order,
             key=lambda app: UPGRADE_ORDER.index(app.charm),  # type: ignore
         )
-        # order by charm name to have a predicable upgrade sequence of others o7k charms.
+        # order by charm name to have a predictable upgrade sequence of others o7k charms.
         other_o7k_apps_sorted_by_name = sorted(
             other_o7k_apps, key=lambda app: app.charm  # type: ignore
         )

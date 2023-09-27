@@ -370,7 +370,7 @@ class COUModel:
         :type force_series: bool
         :param force_units: Upgrade all units immediately, even if in error state
         :type force_units: bool
-        :param path: Uprade to a charm located at path
+        :param path: Upgrade to a charm located at path
         :type path: str
         :param resources: Dictionary of resource name/filepath pairs
         :type resources: dict
