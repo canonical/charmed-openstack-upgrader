@@ -39,7 +39,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         return [
             self._get_upgrade_current_release_packages_plan(),
             self._get_refresh_charm_plan(target),
-            self._get_change_require_osd_release_plan(self.expected_current_channel),
+            self._get_change_require_osd_release_plan(self.possible_current_channels[-1]),
         ]
 
     def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
