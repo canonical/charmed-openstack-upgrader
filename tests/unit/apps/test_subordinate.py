@@ -17,7 +17,9 @@ import logging
 import pytest
 
 from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.steps import UpgradeStep
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.apps.utils import add_steps
 
 logger = logging.getLogger(__name__)
 
@@ -41,21 +43,38 @@ def test_current_os_release(status, model):
 
 
 def test_generate_upgrade_plan(status, model):
+    target = "victoria"
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
-    plan = app.generate_upgrade_plan("victoria")
-    assert plan.description == "Upgrade plan for 'my_keystone_ldap' to victoria"
+    upgrade_plan = app.generate_upgrade_plan(target)
 
-    assert (
-        plan.sub_steps[0].description
-        == "Refresh 'my_keystone_ldap' to the latest revision of 'ussuri/stable'"
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
     )
-    assert (
-        plan.sub_steps[1].description
-        == "Upgrade 'my_keystone_ldap' to the new channel: 'victoria/stable'"
-    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch=None,
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="victoria/stable",
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
 
 
 @pytest.mark.parametrize(
@@ -107,18 +126,40 @@ def test_channel_setter_invalid(status, model, channel):
     ],
 )
 def test_generate_plan_ch_migration(status, model, channel):
+    target = "wallaby"
     app_status = status["keystone-ldap-cs"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
     app.channel = channel
-    plan = app.generate_upgrade_plan("wallaby")
-    assert str(plan) == (
-        "Upgrade plan for 'my_keystone_ldap' to wallaby\n"
-        "\tMigration of 'my_keystone_ldap' from charmstore to charmhub\n"
-        "\tUpgrade 'my_keystone_ldap' to the new channel: 'wallaby/stable'\n"
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
     )
+    upgrade_steps = [
+        UpgradeStep(
+            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch="ch:keystone-ldap",
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'wallaby/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="wallaby/stable",
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
 
 
 @pytest.mark.parametrize(
@@ -137,12 +178,33 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
     )
 
     app.channel = f"{from_os}/stable"
-    plan = app.generate_upgrade_plan(to_os)
-    assert str(plan) == (
-        f"Upgrade plan for 'my_keystone_ldap' to {to_os}\n"
-        f"\tRefresh 'my_keystone_ldap' to the latest revision of '{from_os}/stable'\n"
-        f"\tUpgrade 'my_keystone_ldap' to the new channel: '{to_os}/stable'\n"
+    upgrade_plan = app.generate_upgrade_plan(to_os)
+
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {to_os}",
+        parallel=False,
+        function=None,
     )
+    upgrade_steps = [
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '{from_os}/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel=f"{from_os}/stable",
+            switch=None,
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: '{to_os}/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel=f"{to_os}/stable",
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
 
 
 @pytest.mark.parametrize(
@@ -162,8 +224,22 @@ def test_generate_plan_in_same_version(status, model, from_to):
     )
 
     app.channel = f"{from_to}/stable"
-    plan = app.generate_upgrade_plan(from_to)
-    assert str(plan) == (
-        f"Upgrade plan for 'my_keystone_ldap' to {from_to}\n"
-        f"\tRefresh 'my_keystone_ldap' to the latest revision of '{from_to}/stable'\n"
+    upgrade_plan = app.generate_upgrade_plan(from_to)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {from_to}",
+        parallel=False,
+        function=None,
     )
+    upgrade_steps = [
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '{from_to}/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel=f"{from_to}/stable",
+            switch=None,
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan

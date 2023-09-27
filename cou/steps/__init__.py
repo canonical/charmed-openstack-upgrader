@@ -49,6 +49,24 @@ class UpgradeStep:
         self.params = params
         self.function = function
 
+    def __eq__(self, other: Any) -> bool:
+        """Equal magic method for UpgradeStep.
+
+        :param other: UpgradeStep object to compare.
+        :type other: Any
+        :return: True if equal False if different.
+        :rtype: bool
+        """
+        if not isinstance(other, UpgradeStep):
+            return NotImplemented
+        return (
+            other.parallel == self.parallel
+            and other.description == self.description
+            and other.sub_steps == self.sub_steps
+            and other.params == self.params
+            and other.function == self.function
+        )
+
     def add_step(self, step: UpgradeStep) -> UpgradeStep:
         """Add a single step.
 
@@ -86,3 +104,11 @@ class UpgradeStep:
             steps_to_visit.extend([(s, indent + 1) for s in reversed(step.sub_steps)])
 
         return result
+
+    def __repr__(self) -> str:
+        """Representation of UpgradeStep.
+
+        :return: Representation of UpgradeStep.
+        :rtype: str
+        """
+        return f"UpgradeStep({self.description})"
