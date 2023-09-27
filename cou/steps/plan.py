@@ -19,10 +19,12 @@ from typing import Callable
 
 from cou.apps.app import OpenStackApplication
 
-# NOTE we need to import the module to register the charms with the register_application decorator
+# NOTE we need to import the modules to register the charms with the register_application
+# decorator
 # pylint: disable=unused-import
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication  # noqa: F401
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
+from cou.apps.ceph import CephMonApplication  # noqa: F401
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
@@ -37,6 +39,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
+    :raises NoTargetError: When cannot find target to upgrade.
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
@@ -88,6 +91,7 @@ async def create_upgrade_group(
     :type description: str
     :param filter_function: Function to filter applications.
     :type filter_function: Callable[[OpenStackApplication], bool]
+    :raises Exception: When cannot generate upgrade plan.
     :return: Upgrade group.
     :rtype: UpgradeStep
     """

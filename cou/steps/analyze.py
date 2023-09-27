@@ -49,12 +49,19 @@ class Analysis:
         """Split applications to control plane and data plane apps.
 
         :param apps: List of applications to split.
-        :type apps:  Iterable[OpenStackApplication]
+        :type apps: Iterable[OpenStackApplication]
         :return: Control plane and data plane application lists.
         :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
         """
 
         def is_data_plane(app: OpenStackApplication) -> bool:
+            """Check if app belong to data plane.
+
+            :param app: application
+            :type app: OpenStackApplication
+            :return: boolean
+            :rtype: bool
+            """
             return app.charm in DATA_PLANE_CHARMS
 
         control_plane, data_plane = [], []
@@ -124,7 +131,7 @@ class Analysis:
             apps_to_upgrade_in_order,
             key=lambda app: UPGRADE_ORDER.index(app.charm),  # type: ignore
         )
-        # order by charm name to have a predicable upgrade sequence of others o7k charms.
+        # order by charm name to have a predictable upgrade sequence of others o7k charms.
         other_o7k_apps_sorted_by_name = sorted(
             other_o7k_apps, key=lambda app: app.charm  # type: ignore
         )

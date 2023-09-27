@@ -107,7 +107,9 @@ class AppFactory:
         :rtype: Callable[[type[OpenStackApplication]], type[OpenStackApplication]]
         """
 
-        def decorator(application: type[OpenStackApplication]) -> type[OpenStackApplication]:
+        def decorator(  # pylint: disable=W9011
+            application: type[OpenStackApplication],
+        ) -> type[OpenStackApplication]:
             for charm in charms:
                 cls.charms[charm] = application
             return application
@@ -117,7 +119,7 @@ class AppFactory:
 
 @dataclass
 class ApplicationUnit:
-    """Representation of a singe unit of application."""
+    """Representation of a single unit of application."""
 
     name: str
     os_version: OpenStackRelease
@@ -155,6 +157,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
+    :raises RunUpgradeError: When an upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -527,7 +530,6 @@ class OpenStackApplication:
             function=self.model.upgrade_charm,
             application_name=self.name,
             channel=self.expected_current_channel,
-            model=self.model,
             switch=switch,
         )
 
@@ -552,7 +554,6 @@ class OpenStackApplication:
                 function=self.model.upgrade_charm,
                 application_name=self.name,
                 channel=self.target_channel(target),
-                model=self.model,
             )
         return None
 
@@ -573,9 +574,8 @@ class OpenStackApplication:
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
-                application_name=self.name,
+                name=self.name,
                 configuration={"action-managed-upgrade": False},
-                model=self.model,
             )
         return None
 
@@ -599,9 +599,8 @@ class OpenStackApplication:
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
-                application_name=self.name,
+                name=self.name,
                 configuration={self.origin_setting: self.new_origin(target)},
-                model=self.model,
             )
         logger.warning(
             "Not triggering the workload upgrade of app %s: %s already set to %s",
