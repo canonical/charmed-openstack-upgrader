@@ -28,7 +28,7 @@ from cou.utils.openstack import OpenStackRelease
 
 
 def generate_unit(workload_version, machine):
-    unit = MagicMock(spec_set=UnitStatus).return_value
+    unit = MagicMock(spec_set=UnitStatus())
     unit.workload_version = workload_version
     unit.machine = machine
     return unit
