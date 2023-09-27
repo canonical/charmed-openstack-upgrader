@@ -180,7 +180,7 @@ class COUModel:
 
         :param name: Name of application
         :type name: str
-        :raises ApplicationNotFound: When cannot find Application in the model.
+        :raises ApplicationNotFound: When Application is not found in the model.
         :return: Application
         :rtype: Application
         """
@@ -207,7 +207,7 @@ class COUModel:
 
         :param name: Name of unit
         :type name: str
-        :raises UnitNotFound: When cannot find unit in the model.
+        :raises UnitNotFound: When unit is not found in the model.
         :return: Unit
         :rtype: Unit
         """
