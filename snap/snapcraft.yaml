@@ -18,7 +18,7 @@ apps:
       - juju-client-observe
       - network
       - network-bind
-      - dot-local-cou
+      - dot-local-share-cou
 
 parts:
   cou-wrapper:
@@ -52,7 +52,7 @@ parts:
       craftctl set version=${VERSION}
 
 plugs:
-  dot-local-cou:
+  dot-local-share-cou:
     interface: personal-files
     write:
       - $HOME/.local/share/cou

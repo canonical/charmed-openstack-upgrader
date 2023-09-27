@@ -149,6 +149,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
+    :raises RunUpgradeError: When an upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -571,7 +572,7 @@ class OpenStackApplication:
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
-                application_name=self.name,
+                name=self.name,
                 configuration={"action-managed-upgrade": False},
             )
         return None
@@ -596,7 +597,7 @@ class OpenStackApplication:
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
-                application_name=self.name,
+                name=self.name,
                 configuration={self.origin_setting: self.new_origin(target)},
             )
         logger.warning(
