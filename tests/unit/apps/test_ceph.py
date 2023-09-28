@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Tests of the ceph application class."""
+
+from cou.apps.app import ApplicationUnit
 from cou.apps.ceph import CephMonApplication
 from cou.steps import UpgradeStep
 from cou.utils import app_utils
@@ -21,7 +23,6 @@ from tests.unit.apps.utils import add_steps
 
 def test_ceph_mon_app(status, config, model):
     """Test the correctness of instantiating CephMonApplication."""
-    expected_units = {"ceph-mon/0": {"os_version": "xena", "workload_version": "16.2.0"}}
     app = CephMonApplication(
         "ceph-mon",
         status["ceph-mon_xena"],
@@ -31,7 +32,14 @@ def test_ceph_mon_app(status, config, model):
     )
     assert app.channel == "pacific/stable"
     assert app.os_origin == "cloud:focal-xena"
-    assert app.units == expected_units
+    assert app.units == [
+        ApplicationUnit(
+            name="ceph-mon/0",
+            os_version=OpenStackRelease("xena"),
+            workload_version="16.2.0",
+            machine="7",
+        )
+    ]
     assert app.apt_source_codename == "xena"
     assert app.channel_codename == "xena"
 
