@@ -14,6 +14,7 @@
 """Auxiliary application class."""
 import pytest
 
+from cou.apps.app import ApplicationUnit
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.utils.openstack import OpenStackRelease
@@ -22,7 +23,15 @@ from tests.unit.apps.utils import assert_plan_description
 
 def test_auxiliary_app(status, config, model):
     # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
-    expected_units = {"rabbitmq-server/0": {"os_version": "yoga", "workload_version": "3.8"}}
+    expected_units = [
+        ApplicationUnit(
+            name="rabbitmq-server/0",
+            os_version=OpenStackRelease("yoga"),
+            workload_version="3.8",
+            machine="0/lxd/19",
+        )
+    ]
+
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         status["rabbitmq_server"],
