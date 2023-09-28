@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Tests of the ceph application class."""
+
+from cou.apps.app import ApplicationUnit
 from cou.apps.ceph import CephMonApplication
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
@@ -20,7 +22,6 @@ from tests.unit.apps.utils import assert_plan
 
 def test_ceph_mon_app(status, config, model):
     """Test the correctness of instantiating CephMonApplication."""
-    expected_units = {"ceph-mon/0": {"os_version": "xena", "workload_version": "16.2.0"}}
     app = CephMonApplication(
         "ceph-mon",
         status["ceph-mon_xena"],
@@ -30,7 +31,14 @@ def test_ceph_mon_app(status, config, model):
     )
     assert app.channel == "pacific/stable"
     assert app.os_origin == "cloud:focal-xena"
-    assert app.units == expected_units
+    assert app.units == [
+        ApplicationUnit(
+            name="ceph-mon/0",
+            os_version=OpenStackRelease("xena"),
+            workload_version="16.2.0",
+            machine="7",
+        )
+    ]
     assert app.apt_source_codename == "xena"
     assert app.channel_codename == "xena"
 
@@ -74,7 +82,16 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'pacific'"
             ),
             "function": app_utils.set_require_osd_release_option,
-            "params": {"unit": "ceph-mon/0", "model": model, "ceph_release": "pacific"},
+            "params": {
+                "unit": ApplicationUnit(
+                    name="ceph-mon/0",
+                    os_version=OpenStackRelease("xena"),
+                    workload_version="16.2.0",
+                    machine="7",
+                ),
+                "model": model,
+                "ceph_release": "pacific",
+            },
         },
         {
             "description": "Upgrade 'ceph-mon' to the new channel: 'quincy/stable'",
@@ -99,7 +116,16 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'quincy'"
             ),
             "function": app_utils.set_require_osd_release_option,
-            "params": {"unit": "ceph-mon/0", "model": model, "ceph_release": "quincy"},
+            "params": {
+                "unit": ApplicationUnit(
+                    name="ceph-mon/0",
+                    os_version=OpenStackRelease("xena"),
+                    workload_version="16.2.0",
+                    machine="7",
+                ),
+                "model": model,
+                "ceph_release": "quincy",
+            },
         },
     ]
 
@@ -144,7 +170,16 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
             ),
             "function": app_utils.set_require_osd_release_option,
-            "params": {"unit": "ceph-mon/0", "model": model, "ceph_release": "octopus"},
+            "params": {
+                "unit": ApplicationUnit(
+                    name="ceph-mon/0",
+                    os_version=OpenStackRelease("victoria"),
+                    workload_version="15.2.0",
+                    machine="6",
+                ),
+                "model": model,
+                "ceph_release": "octopus",
+            },
         },
         {
             "description": (
@@ -163,7 +198,16 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
             ),
             "function": app_utils.set_require_osd_release_option,
-            "params": {"unit": "ceph-mon/0", "model": model, "ceph_release": "octopus"},
+            "params": {
+                "unit": ApplicationUnit(
+                    name="ceph-mon/0",
+                    os_version=OpenStackRelease("victoria"),
+                    workload_version="15.2.0",
+                    machine="6",
+                ),
+                "model": model,
+                "ceph_release": "octopus",
+            },
         },
     ]
 

@@ -145,14 +145,7 @@ def status():
     mock_rmq.charm_channel = "3.8/stable"
     mock_rmq.charm = "ch:amd64/focal/rabbitmq-server-638"
     mock_rmq.subordinate_to = []
-    mock_rmq.units = OrderedDict(
-        [
-            (
-                "rabbitmq-server/0",
-                generate_unit("3.8", "0/lxd/19"),
-            )
-        ]
-    )
+    mock_rmq.units = OrderedDict([("rabbitmq-server/0", generate_unit("3.8", "0/lxd/19"))])
 
     mock_rmq_unknown = MagicMock(spec_set=ApplicationStatus())
     mock_rmq_unknown.charm_channel = "80.5/stable"
@@ -204,9 +197,7 @@ def status():
     mock_ceph_mon_ussuri.charm_channel = "octopus/stable"
     mock_ceph_mon_ussuri.charm = "ch:amd64/focal/ceph-mon-177"
     mock_ceph_mon_ussuri.subordinate_to = []
-    mock_units_ceph_mon_ussuri = MagicMock(spec_set=UnitStatus())
-    mock_units_ceph_mon_ussuri.workload_version = "15.2.0"
-    mock_ceph_mon_ussuri.units = OrderedDict([("ceph-mon/0", mock_units_ceph_mon_ussuri)])
+    mock_ceph_mon_ussuri.units = OrderedDict([("ceph-mon/0", generate_unit("15.2.0", "6"))])
 
     # ceph-mon application on xena
     mock_ceph_mon_xena = MagicMock(spec_set=ApplicationStatus())
@@ -214,9 +205,7 @@ def status():
     mock_ceph_mon_xena.charm_channel = "pacific/stable"
     mock_ceph_mon_xena.charm = "ch:amd64/focal/ceph-mon-178"
     mock_ceph_mon_xena.subordinate_to = []
-    mock_units_ceph_mon_xena = MagicMock(spec_set=UnitStatus())
-    mock_units_ceph_mon_xena.workload_version = "16.2.0"
-    mock_ceph_mon_xena.units = OrderedDict([("ceph-mon/0", mock_units_ceph_mon_xena)])
+    mock_ceph_mon_xena.units = OrderedDict([("ceph-mon/0", generate_unit("16.2.0", "7"))])
 
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
