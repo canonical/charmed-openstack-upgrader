@@ -311,7 +311,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(
@@ -376,7 +376,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(
@@ -444,7 +444,7 @@ def test_upgrade_plan_change_current_channel(status, config, model):
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(
@@ -513,7 +513,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(
@@ -565,7 +565,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(
@@ -641,7 +641,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(

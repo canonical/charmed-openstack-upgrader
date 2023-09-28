@@ -73,7 +73,7 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(
@@ -161,7 +161,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(

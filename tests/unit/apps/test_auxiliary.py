@@ -72,7 +72,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(
@@ -129,7 +129,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(

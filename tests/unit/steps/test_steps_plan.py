@@ -41,7 +41,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             ),
             parallel=False,
             function=app_utils.upgrade_packages,
-            units=app.units.keys(),
+            units=app.status.units.keys(),
             model=model,
         ),
         UpgradeStep(
