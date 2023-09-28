@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from io import StringIO
@@ -119,6 +118,16 @@ class AppFactory:
 
 
 @dataclass
+class ApplicationUnit:
+    """Representation of a single unit of application."""
+
+    name: str
+    os_version: OpenStackRelease
+    workload_version: str = ""
+    machine: str = ""
+
+
+@dataclass
 class OpenStackApplication:
     """Representation of a charmed OpenStack application in the deployment.
 
@@ -142,8 +151,7 @@ class OpenStackApplication:
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
     :type channel: str, defaults to ""
     :param units: Units representation of an application.
-        E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
-    :type units: defaultdict[str, dict]
+    :type units: list[ApplicationUnit]
     :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version.
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
@@ -162,7 +170,7 @@ class OpenStackApplication:
     charm_origin: str = ""
     os_origin: str = ""
     origin_setting: Optional[str] = None
-    units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
+    units: list[ApplicationUnit] = field(default_factory=lambda: [])
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -171,20 +179,25 @@ class OpenStackApplication:
         self.os_origin = self._get_os_origin()
         # subordinates don't have units
         units = getattr(self.status, "units", {})
-        for unit in units.keys():
-            workload_version = self.status.units[unit].workload_version
-            self.units[unit]["workload_version"] = workload_version
+        for name, unit in units.items():
             compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
-                self.charm, workload_version
+                self.charm, unit.workload_version
             )
             # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
             if compatible_os_versions:
                 unit_os_version = max(compatible_os_versions)
-                self.units[unit]["os_version"] = unit_os_version
+                self.units.append(
+                    ApplicationUnit(
+                        name=name,
+                        workload_version=unit.workload_version,
+                        os_version=unit_os_version,
+                        machine=unit.machine,
+                    )
+                )
             else:
                 raise ApplicationError(
-                    f"'{self.name}' with workload version {workload_version} has no compatible "
-                    "OpenStack release in the lookup."
+                    f"'{self.name}' with workload version {unit.workload_version} has no "
+                    f"compatible OpenStack release in the lookup."
                 )
 
     def __hash__(self) -> int:
@@ -219,11 +232,11 @@ class OpenStackApplication:
                 "os_origin": self.os_origin,
                 "channel": self.channel,
                 "units": {
-                    unit: {
-                        "workload_version": details.get("workload_version", ""),
-                        "os_version": str(details.get("os_version")),
+                    unit.name: {
+                        "workload_version": unit.workload_version,
+                        "os_version": str(unit.os_version),
                     }
-                    for unit, details in self.units.items()
+                    for unit in self.units
                 },
             }
         }
@@ -269,7 +282,7 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        os_versions = {unit_values["os_version"] for unit_values in self.units.values()}
+        os_versions = {unit.os_version for unit in self.units}
 
         if len(os_versions) == 1:
             return os_versions.pop()
