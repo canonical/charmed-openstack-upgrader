@@ -430,7 +430,8 @@ def is_charm_supported(charm: str) -> bool:
 
 def _generate_track_mapping() -> (
     tuple[
-        dict[tuple[str, str, str], str], defaultdict[tuple[str, str, str], list[OpenStackRelease]]
+        defaultdict[tuple[str, str, str], list[str]],
+        defaultdict[tuple[str, str, str], list[OpenStackRelease]],
     ]
 ):
     """Generate the track mappings for the auxiliary charms.
@@ -443,11 +444,11 @@ def _generate_track_mapping() -> (
 
     :return: Dictionaries containing the tracks by charm name, series and OpenStack release.
     :rtype: tuple[
-        dict[tuple[str, str, str], str],
+        defaultdict[tuple[str, str, str], list[str]],
         defaultdict[tuple[str, str, str], list[OpenStackRelease]]
     ]
     """
-    track_mapping: dict[tuple[str, str, str], str] = {}
+    track_mapping: defaultdict[tuple[str, str, str], list[str]] = defaultdict(list)
     os_release_mapping: defaultdict[tuple[str, str, str], list[OpenStackRelease]] = defaultdict(
         list
     )
@@ -463,7 +464,7 @@ def _generate_track_mapping() -> (
             os_release_key = OSReleaseKeys(
                 charm=row["charm"], series=row["series"], track=row["track"]
             )
-            track_mapping[track_key] = row["track"]
+            track_mapping[track_key].append(row["track"])
             os_release_mapping[os_release_key].append(OpenStackRelease(row["os_release"]))
     return track_mapping, os_release_mapping
 

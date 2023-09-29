@@ -77,7 +77,7 @@ def status():
 
     mock_keystone_ussuri_cs = MagicMock(spec_set=ApplicationStatus())
     mock_keystone_ussuri_cs.series = "focal"
-    mock_keystone_ussuri_cs.charm_channel = "ussuri/stable"
+    mock_keystone_ussuri_cs.charm_channel = "stable"
     mock_keystone_ussuri_cs.charm = "cs:amd64/focal/keystone-638"
     mock_keystone_ussuri_cs.subordinate_to = []
     mock_keystone_ussuri_cs.units = OrderedDict(
