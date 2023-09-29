@@ -207,6 +207,26 @@ def status():
     mock_ceph_mon_xena.subordinate_to = []
     mock_ceph_mon_xena.units = OrderedDict([("ceph-mon/0", generate_unit("16.2.0", "7"))])
 
+    # ovn-central application on ussuri
+    mock_ovn_central_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_ovn_central_ussuri.series = "focal"
+    mock_ovn_central_ussuri.charm_channel = "22.03/stable"
+    mock_ovn_central_ussuri.charm = "ch:amd64/focal/ovn-central-178"
+    mock_ovn_central_ussuri.subordinate_to = []
+    mock_ovn_central_ussuri.units = OrderedDict(
+        [("ovn-central/0", generate_unit("22.03.2", "0/lxd/7"))]
+    )
+
+    # ovn-chassis application on ussuri
+    mock_ovn_chassis_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_ovn_chassis_ussuri.series = "focal"
+    mock_ovn_chassis_ussuri.charm_channel = "22.03/stable"
+    mock_ovn_chassis_ussuri.charm = "ch:amd64/focal/ovn-chassis-178"
+    mock_ovn_chassis_ussuri.subordinate_to = ["nova-compute"]
+    mock_ovn_chassis_ussuri.units = OrderedDict(
+        [("ovn-chassis/0", generate_unit("22.03.2", "0/lxd/9"))]
+    )
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -226,6 +246,8 @@ def status():
         "ceph-mon_ussuri": mock_ceph_mon_ussuri,
         "ceph-mon_xena": mock_ceph_mon_xena,
         "cinder_ussuri_on_nova": mock_cinder_on_nova,
+        "ovn_central_ussuri": mock_ovn_central_ussuri,
+        "ovn_chassis_ussuri": mock_ovn_chassis_ussuri,
     }
     return status
 

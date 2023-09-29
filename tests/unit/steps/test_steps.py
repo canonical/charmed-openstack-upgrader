@@ -87,3 +87,30 @@ def test___str__substep_has_substeps():
     aa.add_step(UpgradeStep(description="a.a.a", parallel=False, function=None))
     aa.add_step(UpgradeStep(description="a.a.b", parallel=False, function=None))
     assert str(plan) == expected
+
+
+@pytest.mark.parametrize(
+    "description, function, parallel, expected_result",
+    [
+        ("test", None, False, True),
+        ("test", lambda x: x + 1, False, False),
+        ("test", None, True, False),
+        ("my_test", None, False, False),
+    ],
+)
+def test_upgrade_step__eq__(description, function, parallel, expected_result):
+    upgrade_step = UpgradeStep(description="test", function=None, parallel=False)
+    other_upgrade_step = UpgradeStep(description=description, function=function, parallel=parallel)
+    assert (upgrade_step == other_upgrade_step) is expected_result
+
+
+def test_compare_upgrade_step_eq_not_implemented():
+    upgrade_step = UpgradeStep(description="test", function=None, parallel=False)
+    assert upgrade_step.__eq__(1) == NotImplemented
+
+
+def test_upgrade_step__repr__():
+    description = "test"
+    upgrade_step = UpgradeStep(description="test", function=None, parallel=False)
+    expected_repr = f"UpgradeStep({description})"
+    assert repr(upgrade_step) == expected_repr
