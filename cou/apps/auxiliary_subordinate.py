@@ -25,7 +25,9 @@ from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 class OpenStackAuxiliarySubordinateApplication(OpenStackAuxiliaryApplication):
     """Auxiliary subordinate application class."""
 
-    generate_upgrade_plan: Callable = OpenStackSubordinateApplication.generate_upgrade_plan
+    pre_upgrade_plan: Callable = OpenStackSubordinateApplication.pre_upgrade_plan
+    upgrade_plan: Callable = OpenStackSubordinateApplication.upgrade_plan
+    post_upgrade_plan: Callable = OpenStackSubordinateApplication.post_upgrade_plan
 
     @property
     def current_os_release(self) -> OpenStackRelease:

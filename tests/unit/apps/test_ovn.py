@@ -26,7 +26,7 @@ from tests.unit.apps.utils import add_steps
 def test_ovn_principal(status, config, model):
     app = OvnPrincipalApplication(
         "ovn-central",
-        status["ovn_central_ussuri"],
+        status["ovn_central_ussuri_22"],
         config["auxiliary_ussuri"],
         model,
         "ovn-central",
@@ -41,7 +41,7 @@ def test_ovn_principal(status, config, model):
 def test_ovn_subordinate(status, model):
     app = OvnSubordinateApplication(
         "ovn-chassis",
-        status["ovn_chassis_ussuri"],
+        status["ovn_chassis_ussuri_22"],
         {},
         model,
         "ovn-chassis",
@@ -53,13 +53,8 @@ def test_ovn_subordinate(status, model):
     assert app.current_os_release == "yoga"
 
 
-@pytest.mark.parametrize("channel", ["20.03/stable", "20.12/stable", "21.09/stable"])
-def test_ovn_channel_lesser_22(status, config, model, channel):
+def test_ovn_workload_lesser_22(status, config, model):
     target = "victoria"
-    ovn_central_status = status["ovn_central_ussuri"]
-    ovn_chassis_status = status["ovn_chassis_ussuri"]
-    ovn_central_status.charm_channel = channel
-    ovn_chassis_status.charm_channel = channel
 
     exp_error_msg_ovn_upgrade = (
         "It's recommended to upgrade OVN to 22.03 before upgrading the cloud. "
@@ -70,7 +65,7 @@ def test_ovn_channel_lesser_22(status, config, model, channel):
 
     app_ovn_central = OvnPrincipalApplication(
         "ovn-central",
-        ovn_central_status,
+        status["ovn_central_ussuri_20"],
         config["auxiliary_ussuri"],
         model,
         "ovn-central",
@@ -78,7 +73,7 @@ def test_ovn_channel_lesser_22(status, config, model, channel):
 
     app_ovn_chassis = OvnSubordinateApplication(
         "ovn-chassis",
-        ovn_chassis_status,
+        status["ovn_chassis_ussuri_20"],
         {},
         model,
         "ovn-chassis",
@@ -92,7 +87,7 @@ def test_ovn_channel_lesser_22(status, config, model, channel):
 
 
 def test_ovn_no_compatible_os_release(status, config, model):
-    ovn_central_status = status["ovn_central_ussuri"]
+    ovn_central_status = status["ovn_central_ussuri_22"]
     ovn_central_status.charm_channel = "55.7"
     app = OvnPrincipalApplication(
         "ovn-central",
@@ -115,7 +110,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
     target = "victoria"
     app = OvnPrincipalApplication(
         "ovn-central",
-        status["ovn_central_ussuri"],
+        status["ovn_central_ussuri_22"],
         config["auxiliary_ussuri"],
         model,
         "ovn-central",
@@ -173,7 +168,7 @@ def test_ovn_subordinate_upgrade_plan(status, model):
     target = "victoria"
     app = OvnSubordinateApplication(
         "ovn-chassis",
-        status["ovn_chassis_ussuri"],
+        status["ovn_chassis_ussuri_22"],
         {},
         model,
         "ovn-chassis",

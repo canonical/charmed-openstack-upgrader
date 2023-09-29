@@ -42,7 +42,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
             self._get_change_require_osd_release_plan(self.possible_current_channels[-1]),
         ]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
