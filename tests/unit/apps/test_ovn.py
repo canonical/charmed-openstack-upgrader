@@ -44,7 +44,7 @@ def test_ovn_subordinate(status, model):
         status["ovn_chassis_ussuri"],
         {},
         model,
-        "ovn-dedicated-chassis",
+        "ovn-chassis",
     )
     assert app.channel == "22.03/stable"
     assert app.os_origin == ""
@@ -81,7 +81,7 @@ def test_ovn_channel_lesser_22(status, config, model, channel):
         ovn_chassis_status,
         {},
         model,
-        "ovn-dedicated-chassis",
+        "ovn-chassis",
     )
 
     with pytest.raises(ApplicationError, match=exp_error_msg_ovn_upgrade):
@@ -176,7 +176,7 @@ def test_ovn_subordinate_upgrade_plan(status, model):
         status["ovn_chassis_ussuri"],
         {},
         model,
-        "ovn-dedicated-chassis",
+        "ovn-chassis",
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)
