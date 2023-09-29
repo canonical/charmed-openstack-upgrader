@@ -35,7 +35,10 @@ def generate_expected_upgrade_plan_description(charm, target):
     target_version = OpenStackRelease(target)
     return [
         f"Upgrade software packages of '{charm.name}' from the current APT repositories",
-        f"Refresh '{charm.name}' to the latest revision of '{charm.expected_current_channel}'",
+        (
+            f"Refresh '{charm.name}' to the latest revision of "
+            f"'{charm.possible_current_channels[-1]}'"
+        ),
         f"Change charm config of '{charm.name}' 'action-managed-upgrade' to False.",
         f"Upgrade '{charm.name}' to the new channel: '{charm.target_channel(target_version)}'",
         (
