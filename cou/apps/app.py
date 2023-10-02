@@ -434,7 +434,7 @@ class OpenStackApplication:
             self._get_workload_upgrade_plan(target),
         ]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -602,7 +602,7 @@ class OpenStackApplication:
         :return: Workload upgrade plan
         :rtype: Optional[UpgradeStep]
         """
-        if self.os_origin != self.new_origin(target):
+        if self.os_origin != self.new_origin(target) and self.origin_setting:
             return UpgradeStep(
                 description=(
                     f"Change charm config of '{self.name}' "
@@ -639,3 +639,46 @@ class OpenStackApplication:
             function=self._check_upgrade,
             target=target,
         )
+
+
+@AppFactory.register_application(["designate-bind"])
+class OpenStackAlternativeApplication(OpenStackApplication):
+    """Alternative OpenStack application."""
+
+    @property
+    def current_os_release(self) -> OpenStackRelease:
+        """Infer the OpenStack release from charm's channel.
+
+        On alternative OpenStack applications we cannot determine the OpenStack release base on the
+        workload packages.
+        :return: OpenStackRelease object.
+        :rtype: OpenStackRelease
+        """
+        return self.channel_codename
+
+    @property
+    def channel(self) -> str:
+        """Get charm channel of the application.
+
+        :return: Charm channel. E.g: ussuri/stable
+        :rtype: str
+        """
+        return self._channel
+
+    @channel.setter
+    def channel(self, charm_channel: str) -> None:
+        """Set charm channel of the application.
+
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
+        :raises ApplicationError: Exception raised when channel is not a valid OpenStack
+            channel.
+        """
+        try:
+            OpenStackRelease(charm_channel.split("/")[0])
+            self._channel = charm_channel
+        except ValueError:
+            # if it has charm origin like cs:
+            # or latest/stable it means it does not support openstack channels yet,
+            # so it should be minimum
+            self._channel = "ussuri/stable"

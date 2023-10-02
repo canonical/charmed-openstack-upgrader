@@ -140,6 +140,18 @@ def status():
         ]
     )
 
+    mock_designate_bind_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_designate_bind_ussuri.series = "focal"
+    mock_designate_bind_ussuri.charm_channel = "ussuri/stable"
+    mock_designate_bind_ussuri.charm = "ch:amd64/focal/designate-bind-99"
+    mock_designate_bind_ussuri.subordinate_to = []
+    mock_designate_bind_ussuri.units = OrderedDict(
+        [
+            ("designate-bind/0", generate_unit("9.16.1", "1/lxd/6")),
+            ("designate-bind/1", generate_unit("9.16.1", "2/lxd/6")),
+        ]
+    )
+
     mock_rmq = MagicMock(spec_set=ApplicationStatus())
     mock_rmq.series = "focal"
     mock_rmq.charm_channel = "3.8/stable"
@@ -213,6 +225,7 @@ def status():
         "keystone_wallaby": mock_keystone_wallaby,
         "keystone_ussuri_victoria": mock_keystone_ussuri_victoria,
         "cinder_ussuri": mock_cinder_ussuri,
+        "designate_bind_ussuri": mock_designate_bind_ussuri,
         "rabbitmq_server": mock_rmq,
         "unknown_rabbitmq_server": mock_rmq_unknown,
         "keystone_ussuri_cs": mock_keystone_ussuri_cs,
@@ -248,6 +261,7 @@ def full_status(status, model):
 @pytest.fixture
 def units():
     units_ussuri = []
+    units_alternative_ussuri = []
     units_wallaby = []
     units_ussuri.append(
         ApplicationUnit(
@@ -297,7 +311,27 @@ def units():
             machine="2/lxd/13",
         )
     )
-    return {"units_ussuri": units_ussuri, "units_wallaby": units_wallaby}
+    units_alternative_ussuri.append(
+        ApplicationUnit(
+            name="designate-bind/0",
+            os_version=OpenStackRelease("yoga"),
+            workload_version="9.16.1",
+            machine="1/lxd/6",
+        )
+    )
+    units_alternative_ussuri.append(
+        ApplicationUnit(
+            name="designate-bind/1",
+            os_version=OpenStackRelease("yoga"),
+            workload_version="9.16.1",
+            machine="2/lxd/6",
+        )
+    )
+    return {
+        "units_ussuri": units_ussuri,
+        "units_alternative_ussuri": units_alternative_ussuri,
+        "units_wallaby": units_wallaby,
+    }
 
 
 @pytest.fixture

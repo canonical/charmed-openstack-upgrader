@@ -17,14 +17,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cou.apps import app as app_module
-from cou.apps.app import OpenStackApplication
+from cou.apps.app import OpenStackAlternativeApplication, OpenStackApplication
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
     MismatchedOpenStackVersions,
 )
+from cou.steps import UpgradeStep
+from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import assert_plan_description
+from tests.unit.apps.utils import add_steps, assert_plan_description
 
 
 def test_application_eq(status, config, model):
@@ -114,6 +116,46 @@ def test_application_ussuri(status, config, units, model):
         app_config,
         model,
         "keystone",
+        exp_charm_origin,
+        exp_os_origin,
+        exp_units,
+        exp_channel,
+        exp_current_os_release,
+        exp_possible_current_channels,
+        exp_target_channel,
+        exp_new_origin,
+        exp_apt_source_codename,
+        exp_channel_codename,
+        target,
+    )
+
+
+def test_alternative_application_ussuri(status, units, model):
+    target = "victoria"
+    app_status = status["designate_bind_ussuri"]
+    exp_charm_origin = "ch"
+    exp_os_origin = ""
+    exp_units = units["units_alternative_ussuri"]
+    exp_channel = app_status.charm_channel
+    exp_series = app_status.series
+    exp_current_os_release = "ussuri"
+    exp_possible_current_channels = ["ussuri/stable"]
+    exp_target_channel = f"{target}/stable"
+    exp_new_origin = f"cloud:{exp_series}-{target}"
+    exp_apt_source_codename = None
+    exp_channel_codename = exp_current_os_release
+
+    app = OpenStackAlternativeApplication(
+        "designate-bind", app_status, {}, model, "designate-bind"
+    )
+    assert_application(
+        app,
+        "designate-bind",
+        exp_series,
+        app_status,
+        {},
+        model,
+        "designate-bind",
         exp_charm_origin,
         exp_os_origin,
         exp_units,
@@ -325,6 +367,55 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
     assert_plan_description(upgrade_plan, steps_description)
 
 
+def test_upgrade_plan_alternative_ussuri_to_victoria(status, config, model):
+    target = "victoria"
+    app_status = status["designate_bind_ussuri"]
+    app = OpenStackAlternativeApplication(
+        "designate-bind", app_status, {}, model, "designate-bind"
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch=None,
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="victoria/stable",
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
+
+
 def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
     target = "victoria"
     app_status = status["keystone_ussuri_cs"]
@@ -341,6 +432,57 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
     ]
     assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
     assert_plan_description(upgrade_plan, steps_description)
+
+
+def test_upgrade_plan_alternative_ussuri_to_victoria_ch_migration(status, config, model):
+    target = "victoria"
+    app_status = status["designate_bind_ussuri"]
+    app_status.charm = "cs:amd64/focal/designate-bind-99"
+    app_status.charm_channel = "stable"
+    app = OpenStackAlternativeApplication(
+        "designate-bind", app_status, {}, model, "designate-bind"
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
+        ),
+        UpgradeStep(
+            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch="ch:designate-bind",
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="victoria/stable",
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
 
 
 def test_upgrade_plan_channel_on_next_os_release(status, config, model):
