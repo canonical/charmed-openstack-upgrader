@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
 
-from tests.unit.apps.utils import assert_plan_description
+from cou.steps import UpgradeStep
 
 
 def test_auxiliary_subordinate(apps):
@@ -26,14 +26,25 @@ def test_auxiliary_subordinate(apps):
     assert app.current_os_release == "yoga"
 
 
-def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps):
+def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
     target = "victoria"
     app = apps["keystone_mysql_router"]
 
-    plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    expected_plan.add_step(
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="8.0/stable",
+            switch=None,
+        ),
+    )
 
-    steps_description = [
-        f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
-    ]
-
-    assert_plan_description(plan, steps_description)
+    assert upgrade_plan == expected_plan
