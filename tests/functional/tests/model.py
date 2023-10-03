@@ -39,12 +39,12 @@ class COUModelTest(unittest.TestCase):
         """Test run action."""
         action = zaza.sync_wrapper(self.model.run_action)(TESTED_UNIT, "cluster-status")
         self.assertEqual("completed", action.data["status"])
-        self.assertIn("versions", action.data["results"]["output"])
+        self.assertIn("RabbitMQ", action.data["results"]["output"])
 
     def test_run_on_unit(self):
         """Test run command on unit."""
         results = zaza.sync_wrapper(self.model.run_on_unit)(TESTED_UNIT, "actions/cluster-status")
-        self.assertIn("versions", results["output"])
+        self.assertIn("RabbitMQ", results["output"])
 
     def test_scp_from_unit(self):
         """Test copy file from unit."""

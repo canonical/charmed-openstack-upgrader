@@ -57,7 +57,7 @@ functional-smoke: build
 	@echo "Executing smoke functional tests using built snap"
 	@TEST_SNAP=${SNAP_FILE} tox -e func-smoke -- ${FUNC_ARGS}
 
-functional: functional-smoke
+functional: build
 	@echo "Executing functional tests using built snap"
 	@TEST_SNAP=${SNAP_FILE} tox -e func -- ${FUNC_ARGS}
 
