@@ -15,6 +15,7 @@ make build
 sudo snap install ./charmed-openstack-upgrader.snap --dangerous
 sudo snap connect charmed-openstack-upgrader:juju-client-observe snapd
 sudo snap connect charmed-openstack-upgrader:dot-local-share-cou snapd
+sudo snap connect charmed-openstack-upgrader:ssh-public-keys snapd
 sudo snap alias charmed-openstack-upgrader.cou cou
 ```
 

@@ -18,6 +18,7 @@ apps:
       - juju-client-observe
       - network
       - network-bind
+      - ssh-public-keys
       - dot-local-share-cou
 
 parts:
