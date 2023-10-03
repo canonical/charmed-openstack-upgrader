@@ -18,35 +18,111 @@ import pytest
 
 from cou.apps.app import OpenStackApplication
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
+from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.plan import create_upgrade_group, generate_plan
+from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.apps.utils import add_steps
 
 
-def assert_plan_description(upgrade_plan, steps_description):
-    assert len(upgrade_plan.sub_steps) == len(steps_description)
-    sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
-    for sub_step, description in sub_steps_check:
-        assert sub_step.description == description
-
-
-def generate_expected_upgrade_plan_description(charm, target):
+def generate_expected_upgrade_plan_principal(app, target, model):
     target_version = OpenStackRelease(target)
-    return [
-        f"Upgrade software packages of '{charm.name}' from the current APT repositories",
-        (
-            f"Refresh '{charm.name}' to the latest revision of "
-            f"'{charm.possible_current_channels[-1]}'"
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target_version.codename}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
         ),
-        f"Change charm config of '{charm.name}' 'action-managed-upgrade' to False.",
-        f"Upgrade '{charm.name}' to the new channel: '{charm.target_channel(target_version)}'",
-        (
-            f"Change charm config of '{charm.name}' "
-            f"'{charm.origin_setting}' to '{charm.new_origin(target_version)}'"
+        UpgradeStep(
+            description=(
+                f"Refresh '{app.name}' to the latest revision of "
+                f"'{target_version.previous_release}/stable'"
+            ),
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel=f"{target_version.previous_release}/stable",
+            switch=None,
         ),
-        f"Check if the workload of '{charm.name}' has been upgraded",
+        UpgradeStep(
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={"action-managed-upgrade": False},
+        ),
+        UpgradeStep(
+            description=(
+                f"Upgrade '{app.name}' to the new channel: '{target_version.codename}/stable'"
+            ),
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel=f"{target_version.codename}/stable",
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-{target_version.codename}'"
+            ),
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={f"{app.origin_setting}": f"cloud:focal-{target_version.codename}"},
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
     ]
+    add_steps(expected_plan, upgrade_steps)
+    return expected_plan
+
+
+def generate_expected_upgrade_plan_subordinate(app, target, model):
+    target_version = OpenStackRelease(target)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Refresh '{app.name}' to the latest revision of "
+                f"'{target_version.previous_release}/stable'"
+            ),
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel=f"{target_version.previous_release}/stable",
+            switch=None,
+        ),
+        UpgradeStep(
+            description=(
+                f"Upgrade '{app.name}' to the new channel: '{target_version.codename}/stable'"
+            ),
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel=f"{target_version.codename}/stable",
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+    return expected_plan
 
 
 @pytest.mark.asyncio
@@ -61,40 +137,45 @@ async def test_generate_plan(apps, model):
         apps_data_plane=[],
     )
 
-    plan = await generate_plan(analysis_result)
+    upgrade_plan = await generate_plan(analysis_result)
 
-    assert plan.description == "Top level plan"
-    assert not plan.parallel
-    assert not plan.function
-    assert len(plan.sub_steps) == 3
-
-    sub_step_back_up = plan.sub_steps[0]
-    assert sub_step_back_up.description == "backup mysql databases"
-    assert not sub_step_back_up.parallel
-    assert sub_step_back_up.function == backup
-
-    sub_step_upgrade_plan = plan.sub_steps[1]
-    assert sub_step_upgrade_plan.description == "Control Plane principal(s) upgrade plan"
-
-    sub_step_upgrade_keystone = sub_step_upgrade_plan.sub_steps[0]
-    assert sub_step_upgrade_keystone.description == "Upgrade plan for 'keystone' to victoria"
-    expected_description_upgrade_keystone = generate_expected_upgrade_plan_description(
-        app_keystone, target
+    expected_plan = UpgradeStep(
+        description="Top level plan",
+        parallel=False,
+        function=None,
     )
-    assert_plan_description(sub_step_upgrade_keystone, expected_description_upgrade_keystone)
 
-    sub_step_upgrade_cinder = sub_step_upgrade_plan.sub_steps[1]
-    assert sub_step_upgrade_cinder.description == "Upgrade plan for 'cinder' to victoria"
-    expected_description_upgrade_cinder = generate_expected_upgrade_plan_description(
-        app_cinder, target
+    expected_plan.add_step(
+        UpgradeStep(
+            description="backup mysql databases",
+            parallel=False,
+            function=backup,
+        )
     )
-    assert_plan_description(sub_step_upgrade_cinder, expected_description_upgrade_cinder)
 
-    subordinate_plan = plan.sub_steps[2]
-    assert subordinate_plan.description == "Control Plane subordinate(s) upgrade plan"
-    assert (
-        subordinate_plan.sub_steps[0].description == "Upgrade plan for 'keystone-ldap' to victoria"
+    control_plane_principals = UpgradeStep(
+        description="Control Plane principal(s) upgrade plan",
+        parallel=False,
+        function=None,
     )
+    keystone_plan = generate_expected_upgrade_plan_principal(app_keystone, target, model)
+    cinder_plan = generate_expected_upgrade_plan_principal(app_cinder, target, model)
+    control_plane_principals.add_step(keystone_plan)
+    control_plane_principals.add_step(cinder_plan)
+
+    control_plane_subordinates = UpgradeStep(
+        description="Control Plane subordinate(s) upgrade plan",
+        parallel=False,
+        function=None,
+    )
+    keystone_ldap_plan = generate_expected_upgrade_plan_subordinate(
+        app_keystone_ldap, target, model
+    )
+    control_plane_subordinates.add_step(keystone_ldap_plan)
+
+    expected_plan.add_step(control_plane_principals)
+    expected_plan.add_step(control_plane_subordinates)
+    assert upgrade_plan == expected_plan
 
 
 @pytest.mark.asyncio

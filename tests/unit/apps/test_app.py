@@ -26,7 +26,7 @@ from cou.exceptions import (
 from cou.steps import UpgradeStep
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import add_steps, assert_plan_description
+from tests.unit.apps.utils import add_steps
 
 
 def test_application_eq(status, config, model):
@@ -355,16 +355,63 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
     app_config = config["openstack_ussuri"]
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
-    steps_description = [
-        "Upgrade software packages of 'my_keystone' from the current APT repositories",
-        "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
-        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
-        "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
-        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
-        "Check if the workload of 'my_keystone' has been upgraded",
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch=None,
+        ),
+        UpgradeStep(
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={"action-managed-upgrade": False},
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="victoria/stable",
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
+            ),
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
-    assert_plan_description(upgrade_plan, steps_description)
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
 
 
 def test_upgrade_plan_alternative_ussuri_to_victoria(status, config, model):
@@ -422,16 +469,63 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
     app_config = config["openstack_ussuri"]
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
-    steps_description = [
-        "Upgrade software packages of 'my_keystone' from the current APT repositories",
-        "Migration of 'my_keystone' from charmstore to charmhub",
-        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
-        "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
-        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
-        "Check if the workload of 'my_keystone' has been upgraded",
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
+        ),
+        UpgradeStep(
+            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch="ch:keystone",
+        ),
+        UpgradeStep(
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={"action-managed-upgrade": False},
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="victoria/stable",
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
+            ),
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
-    assert_plan_description(upgrade_plan, steps_description)
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
 
 
 def test_upgrade_plan_alternative_ussuri_to_victoria_ch_migration(status, config, model):
@@ -494,15 +588,49 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
 
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
     # no sub-step for refresh current channel or next channel
-    steps_description = [
-        "Upgrade software packages of 'my_keystone' from the current APT repositories",
-        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
-        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
-        "Check if the workload of 'my_keystone' has been upgraded",
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
+        ),
+        UpgradeStep(
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={"action-managed-upgrade": False},
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
+            ),
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
     ]
+    add_steps(expected_plan, upgrade_steps)
 
-    assert_plan_description(upgrade_plan, steps_description)
+    assert upgrade_plan == expected_plan
 
 
 def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, model):
@@ -513,17 +641,53 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     app_config["openstack-origin"]["value"] = "cloud:focal-victoria"
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
-    steps_description = [
-        "Upgrade software packages of 'my_keystone' from the current APT repositories",
-        "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
-        "Change charm config of 'my_keystone' 'action-managed-upgrade' to False.",
-        "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
-        "Check if the workload of 'my_keystone' has been upgraded",
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch=None,
+        ),
+        UpgradeStep(
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={"action-managed-upgrade": False},
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="victoria/stable",
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
     ]
-    assert len(upgrade_plan.sub_steps) == len(steps_description)
-    sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
-    for sub_step, description in sub_steps_check:
-        assert sub_step.description == description
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
 
 
 def test_upgrade_plan_application_already_upgraded(status, config, model):
@@ -553,15 +717,56 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
         "keystone",
     )
     upgrade_plan = app.generate_upgrade_plan(target)
-    steps_description = [
-        "Upgrade software packages of 'my_keystone' from the current APT repositories",
-        "Refresh 'my_keystone' to the latest revision of 'ussuri/stable'",
-        "Upgrade 'my_keystone' to the new channel: 'victoria/stable'",
-        "Change charm config of 'my_keystone' 'openstack-origin' to 'cloud:focal-victoria'",
-        "Check if the workload of 'my_keystone' has been upgraded",
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch=None,
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="victoria/stable",
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
+            ),
+            parallel=False,
+            function=model.set_application_config,
+            name=app.name,
+            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
     ]
-    assert upgrade_plan.description == "Upgrade plan for 'my_keystone' to victoria"
-    assert_plan_description(upgrade_plan, steps_description)
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
 
 
 @patch.object(app_module, "is_charm_supported", return_value=False)

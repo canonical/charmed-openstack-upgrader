@@ -473,8 +473,8 @@ class OpenStackApplication:
 
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
-        :return plan: Plan for upgrading software packages to the latest of the current release.
-        :type plan: UpgradeStep
+        :return: Plan for upgrading software packages to the latest of the current release.
+        :rtype: UpgradeStep
         """
         return UpgradeStep(
             description=(
@@ -497,6 +497,7 @@ class OpenStackApplication:
         :type target: OpenStackRelease
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
+        :raises ApplicationError: When application has unexpected channel.
         :return: Plan for refreshing the charm.
         :rtype: Optional[UpgradeStep]
         """

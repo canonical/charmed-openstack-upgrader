@@ -64,7 +64,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         https://docs.openstack.org/charm-guide/latest/project/issues/upgrade-issues.html#ceph-require-osd-release
 
         :param channel: The channel to get ceph track from.
-        :type str
+        :type channel: str
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         :return: Plan to check and set correct value for require-osd-release
@@ -79,7 +79,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
             ),
             parallel=parallel,
             function=set_require_osd_release_option,
-            unit=ceph_mon_unit,
+            unit=ceph_mon_unit.name,
             model=self.model,
             ceph_release=ceph_release,
         )

@@ -68,11 +68,11 @@ def prompt(parameter: str) -> str:
 
 
 async def _run_step(step: UpgradeStep, interactive: bool) -> None:
-    """Run step and all sub-steps.
+    """Run step and all its sub-steps.
 
-    :param plan: Plan to be executed on steps.
-    :type plan: UpgradeStep
-    :param interactive:
+    :param step: Plan to be executed on steps.
+    :type step: UpgradeStep
+    :param interactive: Whether to run upgrade step in interactive mode.
     :type interactive: bool
     """
     logger.debug("running step %s", step)
