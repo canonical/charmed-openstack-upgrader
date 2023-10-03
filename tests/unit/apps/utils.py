@@ -14,22 +14,6 @@
 from cou.steps import UpgradeStep
 
 
-def assert_plan_description(upgrade_plan, steps_description):
-    assert len(upgrade_plan.sub_steps) == len(steps_description)
-    sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
-    for sub_step, description in sub_steps_check:
-        assert sub_step.description == description
-
-
-def assert_plan(upgrade_plan, expected_plan):
-    assert len(upgrade_plan.sub_steps) == len(expected_plan)
-    sub_steps_check = zip(upgrade_plan.sub_steps, expected_plan)
-    for sub_step, expected_step in sub_steps_check:
-        assert sub_step.description == expected_step["description"]
-        assert sub_step.function == expected_step["function"]
-        assert sub_step.params == expected_step["params"]
-
-
 def add_steps(expected_plan: UpgradeStep, upgrade_steps: list[UpgradeStep]):
     for step in upgrade_steps:
         expected_plan.add_step(step)
