@@ -473,8 +473,8 @@ class OpenStackApplication:
 
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
-        :return plan: Plan for upgrading software packages to the latest of the current release.
-        :type plan: UpgradeStep
+        :return: Plan for upgrading software packages to the latest of the current release.
+        :rtype: UpgradeStep
         """
         return UpgradeStep(
             description=(
