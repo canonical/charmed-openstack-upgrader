@@ -54,7 +54,7 @@ dev-environment:
 	@tox -r -e dev-environment
 
 functional-smoke: build
-	@echo "Executing functional tests using built snap"
+	@echo "Executing smoke functional tests using built snap"
 	@TEST_SNAP=${SNAP_FILE} tox -e func-smoke -- ${FUNC_ARGS}
 
 functional: functional-smoke

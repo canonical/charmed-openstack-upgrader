@@ -36,7 +36,7 @@ class COUModelTest(unittest.TestCase):
         self.assertIn(TESTED_APP, status.applications)
 
     def test_run_action(self):
-        """Test running action."""
+        """Test run action."""
         action = zaza.sync_wrapper(self.model.run_action)(TESTED_UNIT, "cluster-status")
         self.assertEqual("completed", action.data["status"])
         self.assertIn("versions", action.data["results"]["output"])
@@ -75,13 +75,12 @@ class COUModelTest(unittest.TestCase):
         self.assertFalse(config["enable-auto-restarts"]["value"])
 
     def test_upgrade_charm(self):
-        """Test upgrade charm to already deployed channel.
+        """Test upgrade charm to the latest revision of the current channel.
 
-        This test does not actually perform the update of the charm, but rather just the test
-        results of such operation.
+        Test upgrade charm to the latest revision of the current channel.
         """
         status = zaza.model.get_status()
-        # get original channel, so we will not change it
+        # get the current channel, so we will not change it
         channel = status.applications[TESTED_APP].charm_channel
         zaza.sync_wrapper(self.model.upgrade_charm)(TESTED_APP, channel=channel)
         zaza.sync_wrapper(self.model.wait_for_idle)(120, apps=[TESTED_APP])
