@@ -12,9 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from cou.steps import UpgradeStep
 
-def assert_plan_description(upgrade_plan, steps_description):
-    assert len(upgrade_plan.sub_steps) == len(steps_description)
-    sub_steps_check = zip(upgrade_plan.sub_steps, steps_description)
-    for sub_step, description in sub_steps_check:
-        assert sub_step.description == description
+
+def add_steps(expected_plan: UpgradeStep, upgrade_steps: list[UpgradeStep]):
+    for step in upgrade_steps:
+        expected_plan.add_step(step)

@@ -47,6 +47,7 @@ ignore-paths = [
     "report",
     "tests"
 ]
+no-docstring-rgx = "__.*__"
 default-docstring-type = "sphinx"
 accept-no-param-doc = false
 accept-no-raise-doc = false
@@ -86,3 +87,8 @@ directory = "tests/unit/report/html"
 
 [tool.coverage.xml]
 output = "tests/unit/report/coverage.xml"
+
+[tool.codespell]
+skip = ".eggs,.tox,.git,.venv,venv,build,.build,lib,report"
+quiet-level = 3
+check-filenames = true

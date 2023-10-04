@@ -96,7 +96,7 @@ def retry(
     :rtype: Callable
     """
 
-    def _wrapper(func: Callable) -> Callable:
+    def _wrapper(func: Callable) -> Callable:  # pylint: disable=W9011
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:  # pylint: disable=W9011
             attempt: int = 0
@@ -180,9 +180,9 @@ class COUModel:
 
         :param name: Name of application
         :type name: str
+        :raises ApplicationNotFound: When Application is not found in the model.
         :return: Application
         :rtype: Application
-        :raises: ApplicationNotFound
         """
         model = await self._get_model()
         app = model.applications.get(name)
@@ -192,7 +192,11 @@ class COUModel:
         return app
 
     async def _get_model(self) -> Model:
-        """Get juju.model.Model and make sure that it is connected."""
+        """Get juju.model.Model and make sure that it is connected.
+
+        :return: Model
+        :rtype: Model
+        """
         if not self.connected:
             await self._connect()
 
@@ -203,9 +207,9 @@ class COUModel:
 
         :param name: Name of unit
         :type name: str
+        :raises UnitNotFound: When unit is not found in the model.
         :return: Unit
         :rtype: Unit
-        :raises: UnitNotFound
         """
         model = await self._get_model()
         unit = model.units.get(name)
@@ -370,7 +374,7 @@ class COUModel:
         :type force_series: bool
         :param force_units: Upgrade all units immediately, even if in error state
         :type force_units: bool
-        :param path: Uprade to a charm located at path
+        :param path: Upgrade to a charm located at path
         :type path: str
         :param resources: Dictionary of resource name/filepath pairs
         :type resources: dict

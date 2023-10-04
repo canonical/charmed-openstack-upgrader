@@ -42,6 +42,42 @@ class Analysis:
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
 
+    @staticmethod
+    def _split_apps(
+        apps: list[OpenStackApplication],
+    ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
+        """Split applications to control plane and data plane apps.
+
+        :param apps: List of applications to split.
+        :type apps: Iterable[OpenStackApplication]
+        :return: Control plane and data plane application lists.
+        :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
+        """
+
+        def is_data_plane(app: OpenStackApplication) -> bool:
+            """Check if app belong to data plane.
+
+            :param app: application
+            :type app: OpenStackApplication
+            :return: boolean
+            :rtype: bool
+            """
+            return app.charm in DATA_PLANE_CHARMS
+
+        control_plane, data_plane = [], []
+        data_plane_machines = {
+            unit.machine for app in apps if is_data_plane(app) for unit in app.units
+        }
+        for app in apps:
+            if is_data_plane(app):
+                data_plane.append(app)
+            elif any(unit.machine in data_plane_machines for unit in app.units):
+                data_plane.append(app)
+            else:
+                control_plane.append(app)
+
+        return control_plane, data_plane
+
     @classmethod
     async def create(cls, model: juju_utils.COUModel) -> Analysis:
         """Analyze the deployment before planning.
@@ -54,29 +90,9 @@ class Analysis:
         logger.info("Analyzing the OpenStack deployment...")
         apps = await Analysis._populate(model)
 
-        control_plane, data_plane = cls._split_control_plane_and_data_plane(apps)
+        control_plane, data_plane = cls._split_apps(apps)
 
         return Analysis(model=model, apps_data_plane=data_plane, apps_control_plane=control_plane)
-
-    @classmethod
-    def _split_control_plane_and_data_plane(
-        cls, apps: list[OpenStackApplication]
-    ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
-        """Split control plane and data plane apps.
-
-        :param apps: List of applications to split.
-        :type apps:  Iterable[OpenStackApplication]
-        :return: Control plane and data plane application lists.
-        :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
-        """
-        data_plane = []
-        control_plane = []
-        for app in apps:
-            if app.charm in DATA_PLANE_CHARMS:
-                data_plane.append(app)
-            else:
-                control_plane.append(app)
-        return control_plane, data_plane
 
     @classmethod
     async def _populate(cls, model: juju_utils.COUModel) -> list[OpenStackApplication]:
@@ -115,7 +131,7 @@ class Analysis:
             apps_to_upgrade_in_order,
             key=lambda app: UPGRADE_ORDER.index(app.charm),  # type: ignore
         )
-        # order by charm name to have a predicable upgrade sequence of others o7k charms.
+        # order by charm name to have a predictable upgrade sequence of others o7k charms.
         other_o7k_apps_sorted_by_name = sorted(
             other_o7k_apps, key=lambda app: app.charm  # type: ignore
         )

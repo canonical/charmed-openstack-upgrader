@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from io import StringIO
@@ -119,6 +118,16 @@ class AppFactory:
 
 
 @dataclass
+class ApplicationUnit:
+    """Representation of a single unit of application."""
+
+    name: str
+    os_version: OpenStackRelease
+    workload_version: str = ""
+    machine: str = ""
+
+
+@dataclass
 class OpenStackApplication:
     """Representation of a charmed OpenStack application in the deployment.
 
@@ -142,13 +151,13 @@ class OpenStackApplication:
     :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
     :type channel: str, defaults to ""
     :param units: Units representation of an application.
-        E.g: {"keystone/0": {'os_version': 'victoria', 'workload_version': '2:18.1'}}
-    :type units: defaultdict[str, dict]
+    :type units: list[ApplicationUnit]
     :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version.
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
+    :raises RunUpgradeError: When an upgrade fails.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -161,7 +170,7 @@ class OpenStackApplication:
     charm_origin: str = ""
     os_origin: str = ""
     origin_setting: Optional[str] = None
-    units: defaultdict[str, dict] = field(default_factory=lambda: defaultdict(dict))
+    units: list[ApplicationUnit] = field(default_factory=lambda: [])
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -170,20 +179,25 @@ class OpenStackApplication:
         self.os_origin = self._get_os_origin()
         # subordinates don't have units
         units = getattr(self.status, "units", {})
-        for unit in units.keys():
-            workload_version = self.status.units[unit].workload_version
-            self.units[unit]["workload_version"] = workload_version
+        for name, unit in units.items():
             compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
-                self.charm, workload_version
+                self.charm, unit.workload_version
             )
             # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
             if compatible_os_versions:
                 unit_os_version = max(compatible_os_versions)
-                self.units[unit]["os_version"] = unit_os_version
+                self.units.append(
+                    ApplicationUnit(
+                        name=name,
+                        workload_version=unit.workload_version,
+                        os_version=unit_os_version,
+                        machine=unit.machine,
+                    )
+                )
             else:
                 raise ApplicationError(
-                    f"'{self.name}' with workload version {workload_version} has no compatible "
-                    "OpenStack release in the lookup."
+                    f"'{self.name}' with workload version {unit.workload_version} has no "
+                    f"compatible OpenStack release in the lookup."
                 )
 
     def __hash__(self) -> int:
@@ -218,11 +232,11 @@ class OpenStackApplication:
                 "os_origin": self.os_origin,
                 "channel": self.channel,
                 "units": {
-                    unit: {
-                        "workload_version": details.get("workload_version", ""),
-                        "os_version": str(details.get("os_version")),
+                    unit.name: {
+                        "workload_version": unit.workload_version,
+                        "os_version": str(unit.os_version),
                     }
-                    for unit, details in self.units.items()
+                    for unit in self.units
                 },
             }
         }
@@ -232,15 +246,13 @@ class OpenStackApplication:
             return stream.getvalue()
 
     @property
-    def expected_current_channel(self) -> str:
-        """Return the expected current channel based on the current OpenStack release.
+    def possible_current_channels(self) -> list[str]:
+        """Return the possible current channels based on the current OpenStack release.
 
-        Note that this is not necessarily equal to the "channel" property since it is
-        determined based on the workload version.
-        :return: The expected current channel for the application. E.g: ussuri/stable
-        :rtype: str
+        :return: The possible current channels for the application. E.g: ["ussuri/stable"]
+        :rtype: list[str]
         """
-        return f"{self.current_os_release.codename}/stable"
+        return [f"{self.current_os_release.codename}/stable"]
 
     def target_channel(self, target: OpenStackRelease) -> str:
         """Return the appropriate channel for the passed OpenStack target.
@@ -270,7 +282,7 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        os_versions = {unit_values["os_version"] for unit_values in self.units.values()}
+        os_versions = {unit.os_version for unit in self.units}
 
         if len(os_versions) == 1:
             return os_versions.pop()
@@ -461,8 +473,8 @@ class OpenStackApplication:
 
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
-        :return plan: Plan for upgrading software packages to the latest of the current release.
-        :type plan: UpgradeStep
+        :return: Plan for upgrading software packages to the latest of the current release.
+        :rtype: UpgradeStep
         """
         return UpgradeStep(
             description=(
@@ -485,23 +497,31 @@ class OpenStackApplication:
         :type target: OpenStackRelease
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
+        :raises ApplicationError: When application has unexpected channel.
         :return: Plan for refreshing the charm.
         :rtype: Optional[UpgradeStep]
         """
         switch = None
-        description = (
-            f"Changing '{self.name}' channel from: '{self.channel}' "
-            f"to: '{self.expected_current_channel}'"
-        )
+        *_, channel = self.possible_current_channels
+
+        # corner case for rabbitmq and hacluster.
+        if len(self.possible_current_channels) > 1:
+            logger.info(
+                (
+                    "'%s' has more than one channel compatible with the current OpenStack "
+                    "release: '%s'. '%s' will be used"
+                ),
+                self.name,
+                self.current_os_release.codename,
+                channel,
+            )
 
         if self.charm_origin == "cs":
             description = f"Migration of '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
-        elif self.channel == self.expected_current_channel:
-            description = (
-                f"Refresh '{self.name}' to the latest revision of "
-                f"'{self.expected_current_channel}'"
-            )
+        elif self.channel in self.possible_current_channels:
+            channel = self.channel
+            description = f"Refresh '{self.name}' to the latest revision of '{channel}'"
         elif self.channel_codename >= target:
             logger.info(
                 "Skipping charm refresh for %s, its channel is already set to %s.",
@@ -509,13 +529,19 @@ class OpenStackApplication:
                 self.channel,
             )
             return None
+        elif self.channel not in self.possible_current_channels:
+            raise ApplicationError(
+                f"'{self.name}' has unexpected channel: '{self.channel}' for the current workload "
+                f"version and OpenStack release: '{self.current_os_release.codename}'. "
+                f"Possible channels are: {','.join(self.possible_current_channels)}"
+            )
 
         return UpgradeStep(
             description=description,
             parallel=parallel,
             function=self.model.upgrade_charm,
             application_name=self.name,
-            channel=self.expected_current_channel,
+            channel=channel,
             switch=switch,
         )
 
@@ -560,7 +586,7 @@ class OpenStackApplication:
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
-                application_name=self.name,
+                name=self.name,
                 configuration={"action-managed-upgrade": False},
             )
         return None
@@ -585,7 +611,7 @@ class OpenStackApplication:
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
-                application_name=self.name,
+                name=self.name,
                 configuration={self.origin_setting: self.new_origin(target)},
             )
         logger.warning(

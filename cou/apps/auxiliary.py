@@ -27,27 +27,25 @@ logger = logging.getLogger(__name__)
 
 
 @AppFactory.register_application(
-    ["rabbitmq-server", "vault", "mysql-innodb-cluster"] + CHARM_FAMILIES["ovn"]
+    ["rabbitmq-server", "vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"]
+    + CHARM_FAMILIES["ovn"]
 )
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
     @property
-    def expected_current_channel(self) -> str:
-        """Return the expected current channel based on the current OpenStack release.
+    def possible_current_channels(self) -> list[str]:
+        """Return the possible current channels based on the series and current OpenStack release.
 
-        Note that this is not necessarily equal to the "channel" property since it is
-        determined based on the workload version.
-
-        :raises ApplicationError: When cannot find a track.
-        :return: The expected current channel for the application.
-        :rtype: str
+        :raises ApplicationError: When cannot find tracks.
+        :return: The possible current channels for the application.
+        :rtype: list[str]
         """
-        track = OPENSTACK_TO_TRACK_MAPPING.get(
+        tracks = OPENSTACK_TO_TRACK_MAPPING.get(
             (self.charm, self.series, self.current_os_release.codename)
         )
-        if track:
-            return f"{track}/stable"
+        if tracks:
+            return [f"{track}/stable" for track in tracks]
 
         raise ApplicationError(
             (
@@ -65,9 +63,9 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: The next channel for the application. E.g: 3.8/stable
         :rtype: str
         """
-        track = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.codename))
-        if track:
-            return f"{track}/stable"
+        tracks = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.codename))
+        if tracks:
+            return f"{tracks[-1]}/stable"
 
         raise ApplicationError(
             f"Cannot find a suitable '{self.charm}' charm channel for {target.codename}"

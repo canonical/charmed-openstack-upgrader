@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
@@ -20,10 +20,18 @@ import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 from juju.client.client import FullStatus
 
-from cou.apps.app import OpenStackApplication
+from cou.apps.app import ApplicationUnit, OpenStackApplication
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.utils.openstack import OpenStackRelease
+
+
+def generate_unit(workload_version, machine):
+    unit = MagicMock(spec_set=UnitStatus())
+    unit.workload_version = workload_version
+    unit.machine = machine
+    return unit
 
 
 @pytest.fixture
@@ -33,13 +41,11 @@ def status():
     mock_keystone_ussuri.charm_channel = "ussuri/stable"
     mock_keystone_ussuri.charm = "ch:amd64/focal/keystone-638"
     mock_keystone_ussuri.subordinate_to = []
-    mock_units_keystone_ussuri = MagicMock(spec_set=UnitStatus())
-    mock_units_keystone_ussuri.workload_version = "17.0.1"
     mock_keystone_ussuri.units = OrderedDict(
         [
-            ("keystone/0", mock_units_keystone_ussuri),
-            ("keystone/1", mock_units_keystone_ussuri),
-            ("keystone/2", mock_units_keystone_ussuri),
+            ("keystone/0", generate_unit("17.0.1", "0/lxd/12")),
+            ("keystone/1", generate_unit("17.0.1", "1/lxd/12")),
+            ("keystone/2", generate_unit("17.0.1", "2/lxd/13")),
         ]
     )
 
@@ -48,26 +54,37 @@ def status():
     mock_cinder_ussuri.charm_channel = "ussuri/stable"
     mock_cinder_ussuri.charm = "ch:amd64/focal/cinder-633"
     mock_cinder_ussuri.subordinate_to = []
-    mock_units_cinder_ussuri = MagicMock(spec_set=UnitStatus())
-    mock_units_cinder_ussuri.workload_version = "16.4.2"
     mock_cinder_ussuri.units = OrderedDict(
         [
-            ("cinder/0", mock_units_cinder_ussuri),
-            ("cinder/1", mock_units_cinder_ussuri),
-            ("cinder/2", mock_units_cinder_ussuri),
+            ("cinder/0", generate_unit("16.4.2", "0/lxd/5")),
+            ("cinder/1", generate_unit("16.4.2", "1/lxd/5")),
+            ("cinder/2", generate_unit("16.4.2", "2/lxd/5")),
+        ]
+    )
+
+    mock_cinder_on_nova = MagicMock(spec_set=ApplicationStatus())
+    mock_cinder_on_nova.series = "focal"
+    mock_cinder_on_nova.charm_channel = "ussuri/stable"
+    mock_cinder_on_nova.charm = "ch:amd64/focal/cinder-633"
+    mock_cinder_on_nova.subordinate_to = []
+    mock_cinder_on_nova.units = OrderedDict(
+        [
+            ("cinder/0", generate_unit("16.4.2", "0")),
+            ("cinder/1", generate_unit("16.4.2", "1")),
+            ("cinder/2", generate_unit("16.4.2", "2")),
         ]
     )
 
     mock_keystone_ussuri_cs = MagicMock(spec_set=ApplicationStatus())
     mock_keystone_ussuri_cs.series = "focal"
-    mock_keystone_ussuri_cs.charm_channel = "ussuri/stable"
+    mock_keystone_ussuri_cs.charm_channel = "stable"
     mock_keystone_ussuri_cs.charm = "cs:amd64/focal/keystone-638"
     mock_keystone_ussuri_cs.subordinate_to = []
     mock_keystone_ussuri_cs.units = OrderedDict(
         [
-            ("keystone/0", mock_units_keystone_ussuri),
-            ("keystone/1", mock_units_keystone_ussuri),
-            ("keystone/2", mock_units_keystone_ussuri),
+            ("keystone/0", generate_unit("17.0.1", "0/lxd/12")),
+            ("keystone/1", generate_unit("17.0.1", "1/lxd/12")),
+            ("keystone/2", generate_unit("17.0.1", "2/lxd/13")),
         ]
     )
 
@@ -76,13 +93,11 @@ def status():
     mock_keystone_victoria.charm_channel = "wallaby/stable"
     mock_keystone_victoria.charm = "ch:amd64/focal/keystone-638"
     mock_keystone_victoria.subordinate_to = []
-    mock_units_keystone_victoria = MagicMock(spec_set=UnitStatus())
-    mock_units_keystone_victoria.workload_version = "18.1.0"
     mock_keystone_victoria.units = OrderedDict(
         [
-            ("keystone/0", mock_units_keystone_victoria),
-            ("keystone/1", mock_units_keystone_victoria),
-            ("keystone/2", mock_units_keystone_victoria),
+            ("keystone/0", generate_unit("18.1.0", "0/lxd/12")),
+            ("keystone/1", generate_unit("18.1.0", "1/lxd/12")),
+            ("keystone/2", generate_unit("18.1.0", "2/lxd/13")),
         ]
     )
 
@@ -93,9 +108,9 @@ def status():
     mock_keystone_ussuri_victoria.subordinate_to = []
     mock_keystone_ussuri_victoria.units = OrderedDict(
         [
-            ("keystone/0", mock_units_keystone_ussuri),
-            ("keystone/1", mock_units_keystone_ussuri),
-            ("keystone/2", mock_units_keystone_victoria),
+            ("keystone/0", generate_unit("17.0.1", "0/lxd/12")),
+            ("keystone/1", generate_unit("17.0.1", "1/lxd/12")),
+            ("keystone/2", generate_unit("18.1.0", "2/lxd/13")),
         ]
     )
 
@@ -104,13 +119,11 @@ def status():
     mock_keystone_wallaby.charm_channel = "wallaby/stable"
     mock_keystone_wallaby.charm = "ch:amd64/focal/keystone-638"
     mock_keystone_wallaby.subordinate_to = []
-    mock_units_keystone_wallaby = MagicMock(spec_set=UnitStatus())
-    mock_units_keystone_wallaby.workload_version = "19.1.0"
     mock_keystone_wallaby.units = OrderedDict(
         [
-            ("keystone/0", mock_units_keystone_wallaby),
-            ("keystone/1", mock_units_keystone_wallaby),
-            ("keystone/2", mock_units_keystone_wallaby),
+            ("keystone/0", generate_unit("19.1.0", "0/lxd/12")),
+            ("keystone/1", generate_unit("19.1.0", "1/lxd/12")),
+            ("keystone/2", generate_unit("19.1.0", "2/lxd/13")),
         ]
     )
 
@@ -119,50 +132,42 @@ def status():
     mock_nova_wallaby.charm_channel = "wallaby/stable"
     mock_nova_wallaby.charm = "ch:amd64/focal/nova-compute-638"
     mock_nova_wallaby.subordinate_to = []
-    mock_units_nova_wallaby = MagicMock(spec_set=UnitStatus())
-    mock_units_nova_wallaby.workload_version = "24.1.0"
     mock_nova_wallaby.units = OrderedDict(
         [
-            ("nova-compute/0", mock_units_nova_wallaby),
-            ("nova-compute/1", mock_units_nova_wallaby),
-            ("nova-compute/2", mock_units_nova_wallaby),
+            ("nova-compute/0", generate_unit("24.1.0", "0")),
+            ("nova-compute/1", generate_unit("24.1.0", "1")),
+            ("nova-compute/2", generate_unit("24.1.0", "2")),
         ]
     )
 
     mock_rmq = MagicMock(spec_set=ApplicationStatus())
     mock_rmq.series = "focal"
-    mock_units_rmq = MagicMock(spec_set=UnitStatus())
     mock_rmq.charm_channel = "3.8/stable"
-    mock_units_rmq.workload_version = "3.8"
     mock_rmq.charm = "ch:amd64/focal/rabbitmq-server-638"
     mock_rmq.subordinate_to = []
-    mock_rmq.units = OrderedDict([("rabbitmq-server/0", mock_units_rmq)])
+    mock_rmq.units = OrderedDict([("rabbitmq-server/0", generate_unit("3.8", "0/lxd/19"))])
 
     mock_rmq_unknown = MagicMock(spec_set=ApplicationStatus())
-    mock_units_unknown_rmq = MagicMock(spec_set=UnitStatus())
     mock_rmq_unknown.charm_channel = "80.5/stable"
-    mock_units_unknown_rmq.workload_version = "80.5"
     mock_rmq_unknown.charm = "ch:amd64/focal/rabbitmq-server-638"
     mock_rmq_unknown.subordinate_to = []
-    mock_rmq_unknown.units = OrderedDict([("rabbitmq-server/0", mock_units_unknown_rmq)])
+    mock_rmq_unknown.units = OrderedDict(
+        [("rabbitmq-server/0", generate_unit("80.5", "0/lxd/19"))]
+    )
 
     mock_unknown_app = MagicMock(spec_set=ApplicationStatus())
-    mock_units_unknown_app = MagicMock(spec_set=UnitStatus())
     mock_unknown_app.charm_channel = "12.5/stable"
-    mock_units_unknown_app.workload_version = "12.5"
     mock_unknown_app.charm = "ch:amd64/focal/my-app-638"
     mock_unknown_app.subordinate_to = []
-    mock_unknown_app.units = OrderedDict([("my-app/0", mock_units_unknown_app)])
+    mock_unknown_app.units = OrderedDict([("my-app/0", generate_unit("12.5", "0/lxd/11"))])
 
     # openstack related principal application without openstack origin or source
     mock_vault = MagicMock(spec_set=ApplicationStatus())
     mock_vault.series = "focal"
-    mock_units_vault = MagicMock(spec_set=UnitStatus())
     mock_vault.charm_channel = "1.7/stable"
-    mock_units_vault.workload_version = "1.7"
     mock_vault.charm = "ch:amd64/focal/vault-638"
     mock_vault.subordinate_to = []
-    mock_vault.units = OrderedDict([("vault/0", mock_units_vault)])
+    mock_vault.units = OrderedDict([("vault/0", generate_unit("1.7", "5"))])
 
     # auxiliary subordinate application
     mock_mysql_router = MagicMock(spec_set=ApplicationStatus())
@@ -186,6 +191,22 @@ def status():
     mock_keystone_ldap_cs.subordinate_to = ["keystone"]
     mock_keystone_ldap_cs.units = {}
 
+    # ceph-mon application on ussuri
+    mock_ceph_mon_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_ceph_mon_ussuri.series = "focal"
+    mock_ceph_mon_ussuri.charm_channel = "octopus/stable"
+    mock_ceph_mon_ussuri.charm = "ch:amd64/focal/ceph-mon-177"
+    mock_ceph_mon_ussuri.subordinate_to = []
+    mock_ceph_mon_ussuri.units = OrderedDict([("ceph-mon/0", generate_unit("15.2.0", "6"))])
+
+    # ceph-mon application on xena
+    mock_ceph_mon_xena = MagicMock(spec_set=ApplicationStatus())
+    mock_ceph_mon_xena.series = "focal"
+    mock_ceph_mon_xena.charm_channel = "pacific/stable"
+    mock_ceph_mon_xena.charm = "ch:amd64/focal/ceph-mon-178"
+    mock_ceph_mon_xena.subordinate_to = []
+    mock_ceph_mon_xena.units = OrderedDict([("ceph-mon/0", generate_unit("16.2.0", "7"))])
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -202,6 +223,9 @@ def status():
         "keystone-ldap": mock_keystone_ldap,
         "keystone-ldap-cs": mock_keystone_ldap_cs,
         "nova_wallaby": mock_nova_wallaby,
+        "ceph-mon_ussuri": mock_ceph_mon_ussuri,
+        "ceph-mon_xena": mock_ceph_mon_xena,
+        "cinder_ussuri_on_nova": mock_cinder_on_nova,
     }
     return status
 
@@ -223,13 +247,56 @@ def full_status(status, model):
 
 @pytest.fixture
 def units():
-    units_ussuri = defaultdict(dict)
-    units_wallaby = defaultdict(dict)
-    for unit in ["keystone/0", "keystone/1", "keystone/2"]:
-        units_ussuri[unit]["os_version"] = "ussuri"
-        units_ussuri[unit]["workload_version"] = "17.0.1"
-        units_wallaby[unit]["os_version"] = "wallaby"
-        units_wallaby[unit]["workload_version"] = "19.1.0"
+    units_ussuri = []
+    units_wallaby = []
+    units_ussuri.append(
+        ApplicationUnit(
+            name="keystone/0",
+            os_version=OpenStackRelease("ussuri"),
+            workload_version="17.0.1",
+            machine="0/lxd/12",
+        )
+    )
+    units_ussuri.append(
+        ApplicationUnit(
+            name="keystone/1",
+            os_version=OpenStackRelease("ussuri"),
+            workload_version="17.0.1",
+            machine="1/lxd/12",
+        )
+    )
+    units_ussuri.append(
+        ApplicationUnit(
+            name="keystone/2",
+            os_version=OpenStackRelease("ussuri"),
+            workload_version="17.0.1",
+            machine="2/lxd/13",
+        )
+    )
+    units_wallaby.append(
+        ApplicationUnit(
+            name="keystone/0",
+            os_version=OpenStackRelease("wallaby"),
+            workload_version="19.1.0",
+            machine="0/lxd/12",
+        )
+    )
+    units_wallaby.append(
+        ApplicationUnit(
+            name="keystone/1",
+            os_version=OpenStackRelease("wallaby"),
+            workload_version="19.1.0",
+            machine="1/lxd/12",
+        )
+    )
+    units_wallaby.append(
+        ApplicationUnit(
+            name="keystone/2",
+            os_version=OpenStackRelease("wallaby"),
+            workload_version="19.1.0",
+            machine="2/lxd/13",
+        )
+    )
     return {"units_ussuri": units_ussuri, "units_wallaby": units_wallaby}
 
 
@@ -243,6 +310,7 @@ def config():
         "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
         "auxiliary_ussuri": {"source": {"value": "distro"}},
         "auxiliary_wallaby": {"source": {"value": "cloud:focal-wallaby"}},
+        "auxiliary_xena": {"source": {"value": "cloud:focal-xena"}},
     }
 
 
