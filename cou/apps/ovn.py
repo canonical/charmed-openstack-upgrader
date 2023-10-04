@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Auxiliary application class."""
-import logging
-from typing import Optional
+"""OVN application class."""
+from typing import Callable, Optional
 
 from packaging.version import Version
 
@@ -23,8 +22,6 @@ from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplicat
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils.openstack import OpenStackRelease
-
-logger = logging.getLogger(__name__)
 
 
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
@@ -39,22 +36,28 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        self._check_ovn_workload_version()
-        return [
-            self._get_upgrade_current_release_packages_plan(),
-            self._get_refresh_charm_plan(target),
-        ]
+        self.check_ovn_workload_version()
+        return super().pre_upgrade_plan(target)
 
-    def _check_ovn_workload_version(self) -> None:
-        """Check whether is necessary to manually upgrade OVN to 22.03.
+    @property
+    def ovn_version_lower_than_22(self) -> bool:
+        """Check if OVN version is lower than 22.03.
 
-        :raises ApplicationError: When workload version is lesser than 22.03.0.
+        :return: True if OVN version is lower than 22.03.
+        :rtype: bool
         """
-        if any((Version(unit.workload_version) < Version("22.03.0") for unit in self.units)):
+        return any((Version(unit.workload_version) < Version("22.03.0") for unit in self.units))
+
+    def check_ovn_workload_version(self) -> None:
+        """Check whether it is necessary to manually upgrade OVN to 22.03.
+
+        :raises ApplicationError: When workload version is lower than 22.03.0.
+        """
+        if self.ovn_version_lower_than_22:
             raise ApplicationError(
                 (
-                    "It's recommended to upgrade OVN to 22.03 before upgrading the cloud. "
-                    "Follow the instructions at: "
+                    "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
+                    "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
                     "https://docs.openstack.org/charm-guide/latest/project/procedures/"
                     "ovn-upgrade-2203.html"
                 )
@@ -65,6 +68,8 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
 class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
     """Ovn chassis application class."""
 
+    check_ovn_workload_version: Callable = OvnPrincipalApplication.check_ovn_workload_version
+
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
 
@@ -73,22 +78,14 @@ class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        self._check_ovn_workload_version()
-        return [
-            self._get_refresh_charm_plan(target),
-        ]
+        self.check_ovn_workload_version()
+        return super().pre_upgrade_plan(target)
 
-    def _check_ovn_workload_version(self) -> None:
-        """Check whether is necessary to manually upgrade OVN to 22.03.
+    @property
+    def ovn_version_lower_than_22(self) -> bool:
+        """Check if OVN version is lower than 22.03.
 
-        :raises ApplicationError:  When workload version is lesser than 22.03.0.
+        :return: True if OVN version is lower than 22.03.
+        :rtype: bool
         """
-        if Version(self.status.workload_version) < Version("22.03.0"):
-            raise ApplicationError(
-                (
-                    "It's recommended to upgrade OVN to 22.03 before upgrading the cloud. "
-                    "Follow the instructions at: "
-                    "https://docs.openstack.org/charm-guide/latest/project/procedures/"
-                    "ovn-upgrade-2203.html"
-                )
-            )
+        return Version(self.status.workload_version) < Version("22.03.0")

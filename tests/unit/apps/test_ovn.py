@@ -53,12 +53,12 @@ def test_ovn_subordinate(status, model):
     assert app.current_os_release == "yoga"
 
 
-def test_ovn_workload_lesser_22(status, config, model):
+def test_ovn_workload_lesser_22_principal(status, config, model):
     target = "victoria"
 
     exp_error_msg_ovn_upgrade = (
-        "It's recommended to upgrade OVN to 22.03 before upgrading the cloud. "
-        "Follow the instructions at: "
+        "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
+        "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
         "https://docs.openstack.org/charm-guide/latest/project/procedures/"
         "ovn-upgrade-2203.html"
     )
@@ -71,6 +71,20 @@ def test_ovn_workload_lesser_22(status, config, model):
         "ovn-central",
     )
 
+    with pytest.raises(ApplicationError, match=exp_error_msg_ovn_upgrade):
+        app_ovn_central.generate_upgrade_plan(target)
+
+
+def test_ovn_workload_lesser_22_subordinate(status, config, model):
+    target = "victoria"
+
+    exp_error_msg_ovn_upgrade = (
+        "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
+        "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
+        "https://docs.openstack.org/charm-guide/latest/project/procedures/"
+        "ovn-upgrade-2203.html"
+    )
+
     app_ovn_chassis = OvnSubordinateApplication(
         "ovn-chassis",
         status["ovn_chassis_ussuri_20"],
@@ -78,9 +92,6 @@ def test_ovn_workload_lesser_22(status, config, model):
         model,
         "ovn-chassis",
     )
-
-    with pytest.raises(ApplicationError, match=exp_error_msg_ovn_upgrade):
-        app_ovn_central.generate_upgrade_plan(target)
 
     with pytest.raises(ApplicationError, match=exp_error_msg_ovn_upgrade):
         app_ovn_chassis.generate_upgrade_plan(target)

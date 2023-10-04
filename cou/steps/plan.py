@@ -62,29 +62,21 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         target=target,
         filter_function=lambda app: not isinstance(
             app,
-            (
-                OpenStackSubordinateApplication,
-                OpenStackAuxiliarySubordinateApplication,
-                OvnSubordinateApplication,
-            ),
+            (OpenStackSubordinateApplication, OpenStackAuxiliarySubordinateApplication),
         ),
     )
     plan.add_step(control_plane_principal_upgrade_plan)
 
-    control_plan_subordinate_upgrade_plan = await create_upgrade_group(
+    control_plane_subordinate_upgrade_plan = await create_upgrade_group(
         apps=analysis_result.apps_control_plane,
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
         filter_function=lambda app: isinstance(
             app,
-            (
-                OpenStackSubordinateApplication,
-                OpenStackAuxiliarySubordinateApplication,
-                OvnSubordinateApplication,
-            ),
+            (OpenStackSubordinateApplication, OpenStackAuxiliarySubordinateApplication),
         ),
     )
-    plan.add_step(control_plan_subordinate_upgrade_plan)
+    plan.add_step(control_plane_subordinate_upgrade_plan)
 
     return plan
 

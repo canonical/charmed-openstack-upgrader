@@ -22,20 +22,8 @@ from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(SUBORDINATES)
-class OpenStackSubordinateApplication(OpenStackApplication):
-    """Subordinate application class."""
-
-    @property
-    def current_os_release(self) -> OpenStackRelease:
-        """Infer the OpenStack release from subordinate charm's channel.
-
-        We cannot determine the OpenStack release base on workload packages because the principal
-        charm has already upgraded the packages.
-        :return: OpenStackRelease object.
-        :rtype: OpenStackRelease
-        """
-        return OpenStackRelease(self.channel.split("/")[0])
+class SubordinateBaseClass(OpenStackApplication):
+    """Subordinate base class."""
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
@@ -67,6 +55,22 @@ class OpenStackSubordinateApplication(OpenStackApplication):
         :rtype: list[Optional[UpgradeStep]]
         """
         return [None]
+
+
+@AppFactory.register_application(SUBORDINATES)
+class OpenStackSubordinateApplication(SubordinateBaseClass):
+    """Subordinate application class."""
+
+    @property
+    def current_os_release(self) -> OpenStackRelease:
+        """Infer the OpenStack release from subordinate charm's channel.
+
+        We cannot determine the OpenStack release base on workload packages because the principal
+        charm has already upgraded the packages.
+        :return: OpenStackRelease object.
+        :rtype: OpenStackRelease
+        """
+        return OpenStackRelease(self.channel.split("/")[0])
 
     @property
     def channel(self) -> str:
