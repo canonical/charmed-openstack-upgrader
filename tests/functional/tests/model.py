@@ -60,7 +60,7 @@ class COUModelTest(unittest.TestCase):
     def test_changing_app_configuration(self):
         """Test change of app configuration.
 
-        This tests cover set and get configuration option along with waiting for model to be idle.
+        This test covers set and get configuration option along with waiting for model to be idle.
         """
         original_config = {"enable-auto-restarts": "true"}
         new_config = {"enable-auto-restarts": "false"}
@@ -77,7 +77,7 @@ class COUModelTest(unittest.TestCase):
     def test_upgrade_charm(self):
         """Test upgrade charm to the latest revision of the current channel.
 
-        Test upgrade charm to the latest revision of the current channel.
+        This test only checks the results of such an upgrade operation.
         """
         status = zaza.model.get_status()
         # get the current channel, so we will not change it
