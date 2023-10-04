@@ -497,6 +497,7 @@ class OpenStackApplication:
         :type target: OpenStackRelease
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
+        :raises ApplicationError: When application has unexpected channel.
         :return: Plan for refreshing the charm.
         :rtype: Optional[UpgradeStep]
         """
