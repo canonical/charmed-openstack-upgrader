@@ -53,7 +53,7 @@ def test_ovn_subordinate(status, model):
     assert app.current_os_release == "yoga"
 
 
-def test_ovn_workload_lesser_22_principal(status, config, model):
+def test_ovn_workload_ver_lower_than_22_principal(status, config, model):
     target = "victoria"
 
     exp_error_msg_ovn_upgrade = (
@@ -75,7 +75,7 @@ def test_ovn_workload_lesser_22_principal(status, config, model):
         app_ovn_central.generate_upgrade_plan(target)
 
 
-def test_ovn_workload_lesser_22_subordinate(status, config, model):
+def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
     target = "victoria"
 
     exp_error_msg_ovn_upgrade = (

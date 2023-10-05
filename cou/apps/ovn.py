@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """OVN application class."""
-from typing import Callable, Optional
+from typing import Optional
 
 from packaging.version import Version
 
@@ -36,39 +36,14 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        self.check_ovn_workload_version()
+        for unit in self.units:
+            validate_ovn_support(unit.workload_version)
         return super().pre_upgrade_plan(target)
-
-    @property
-    def ovn_version_lower_than_22(self) -> bool:
-        """Check if OVN version is lower than 22.03.
-
-        :return: True if OVN version is lower than 22.03.
-        :rtype: bool
-        """
-        return any((Version(unit.workload_version) < Version("22.03.0") for unit in self.units))
-
-    def check_ovn_workload_version(self) -> None:
-        """Check whether it is necessary to manually upgrade OVN to 22.03.
-
-        :raises ApplicationError: When workload version is lower than 22.03.0.
-        """
-        if self.ovn_version_lower_than_22:
-            raise ApplicationError(
-                (
-                    "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
-                    "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
-                    "https://docs.openstack.org/charm-guide/latest/project/procedures/"
-                    "ovn-upgrade-2203.html"
-                )
-            )
 
 
 @AppFactory.register_application(["ovn-chassis"])
 class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
     """Ovn chassis application class."""
-
-    check_ovn_workload_version: Callable = OvnPrincipalApplication.check_ovn_workload_version
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
@@ -78,14 +53,25 @@ class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        self.check_ovn_workload_version()
+        validate_ovn_support(self.status.workload_version)
         return super().pre_upgrade_plan(target)
 
-    @property
-    def ovn_version_lower_than_22(self) -> bool:
-        """Check if OVN version is lower than 22.03.
 
-        :return: True if OVN version is lower than 22.03.
-        :rtype: bool
-        """
-        return Version(self.status.workload_version) < Version("22.03.0")
+def validate_ovn_support(version: str) -> None:
+    """Validate COU OVN support.
+
+    COU does not support upgrade clouds with OVN version lower than 22.03.
+
+    :param version: Version of the OVN.
+    :type version: str
+    :raises ApplicationError: When workload version is lower than 22.03.0.
+    """
+    if Version(version) < Version("22.03.0"):
+        raise ApplicationError(
+            (
+                "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
+                "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
+                "https://docs.openstack.org/charm-guide/latest/project/procedures/"
+                "ovn-upgrade-2203.html"
+            )
+        )
