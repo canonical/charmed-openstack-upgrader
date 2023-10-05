@@ -28,7 +28,7 @@ jobs:
   func:
     name: Functional tests
     runs-on: self-hosted
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v3
         with:

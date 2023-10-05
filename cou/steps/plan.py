@@ -49,7 +49,12 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
 
     plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
     plan.add_step(
-        UpgradeStep(description="backup mysql databases", parallel=False, function=backup)
+        UpgradeStep(
+            description="backup mysql databases",
+            parallel=False,
+            function=backup,
+            model=analysis_result.model,
+        )
     )
 
     control_plane_principal_upgrade_plan = await create_upgrade_group(

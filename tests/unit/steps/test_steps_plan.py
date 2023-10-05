@@ -150,6 +150,7 @@ async def test_generate_plan(apps, model):
             description="backup mysql databases",
             parallel=False,
             function=backup,
+            model=model,
         )
     )
 
