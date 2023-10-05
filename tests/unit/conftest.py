@@ -261,7 +261,7 @@ def full_status(status, model):
 @pytest.fixture
 def units():
     units_ussuri = []
-    units_alternative_ussuri = []
+    units_channel_based_ussuri = []
     units_wallaby = []
     units_ussuri.append(
         ApplicationUnit(
@@ -311,7 +311,7 @@ def units():
             machine="2/lxd/13",
         )
     )
-    units_alternative_ussuri.append(
+    units_channel_based_ussuri.append(
         ApplicationUnit(
             name="designate-bind/0",
             os_version=OpenStackRelease("yoga"),
@@ -319,7 +319,7 @@ def units():
             machine="1/lxd/6",
         )
     )
-    units_alternative_ussuri.append(
+    units_channel_based_ussuri.append(
         ApplicationUnit(
             name="designate-bind/1",
             os_version=OpenStackRelease("yoga"),
@@ -329,7 +329,7 @@ def units():
     )
     return {
         "units_ussuri": units_ussuri,
-        "units_alternative_ussuri": units_alternative_ussuri,
+        "units_channel_based_ussuri": units_channel_based_ussuri,
         "units_wallaby": units_wallaby,
     }
 

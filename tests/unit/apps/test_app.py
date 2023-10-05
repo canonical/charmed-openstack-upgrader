@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cou.apps import app as app_module
-from cou.apps.app import OpenStackAlternativeApplication, OpenStackApplication
+from cou.apps.app import OpenStackApplication, OpenStackChannelBasedApplication
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -130,22 +130,22 @@ def test_application_ussuri(status, config, units, model):
     )
 
 
-def test_alternative_application_ussuri(status, units, model):
+def test_channel_based_application_ussuri(status, units, model):
     target = "victoria"
     app_status = status["designate_bind_ussuri"]
     exp_charm_origin = "ch"
     exp_os_origin = ""
-    exp_units = units["units_alternative_ussuri"]
+    exp_units = units["units_channel_based_ussuri"]
     exp_channel = app_status.charm_channel
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
     exp_possible_current_channels = ["ussuri/stable"]
     exp_target_channel = f"{target}/stable"
     exp_new_origin = f"cloud:{exp_series}-{target}"
-    exp_apt_source_codename = None
+    exp_apt_source_codename = "ussuri"
     exp_channel_codename = exp_current_os_release
 
-    app = OpenStackAlternativeApplication(
+    app = OpenStackChannelBasedApplication(
         "designate-bind", app_status, {}, model, "designate-bind"
     )
     assert_application(
@@ -414,10 +414,10 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
     assert upgrade_plan == expected_plan
 
 
-def test_upgrade_plan_alternative_ussuri_to_victoria(status, config, model):
+def test_upgrade_plan_channel_based_ussuri_to_victoria(status, model):
     target = "victoria"
     app_status = status["designate_bind_ussuri"]
-    app = OpenStackAlternativeApplication(
+    app = OpenStackChannelBasedApplication(
         "designate-bind", app_status, {}, model, "designate-bind"
     )
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -528,12 +528,12 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
     assert upgrade_plan == expected_plan
 
 
-def test_upgrade_plan_alternative_ussuri_to_victoria_ch_migration(status, config, model):
+def test_upgrade_plan_channel_based_ussuri_to_victoria_ch_migration(status, config, model):
     target = "victoria"
     app_status = status["designate_bind_ussuri"]
     app_status.charm = "cs:amd64/focal/designate-bind-99"
     app_status.charm_channel = "stable"
-    app = OpenStackAlternativeApplication(
+    app = OpenStackChannelBasedApplication(
         "designate-bind", app_status, {}, model, "designate-bind"
     )
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -701,6 +701,17 @@ def test_upgrade_plan_application_already_upgraded(status, config, model):
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     # victoria is lesser than wallaby, so application should not generate a plan.
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
+        app.generate_upgrade_plan(target)
+
+
+def test_upgrade_plan_channel_based_application_already_upgraded(status, model):
+    target = "victoria"
+    app_status = status["designate_bind_ussuri"]
+    app_status.charm_channel = "victoria/stable"
+    app = OpenStackChannelBasedApplication(
+        "designate-bind", app_status, {}, model, "designate-bind"
+    )
+    with pytest.raises(HaltUpgradePlanGeneration):
         app.generate_upgrade_plan(target)
 
 

@@ -643,15 +643,26 @@ class OpenStackApplication:
 
 
 @AppFactory.register_application(["designate-bind"])
-class OpenStackAlternativeApplication(OpenStackApplication):
-    """Alternative OpenStack application."""
+class OpenStackChannelBasedApplication(OpenStackApplication):
+    """OpenStack channel based application."""
+
+    @property
+    def apt_source_codename(self) -> Optional[OpenStackRelease]:
+        """Identify the OpenStack release set on "openstack-origin" or "source" config.
+
+        OpenStack channel based applications does not have os_origin, then return the OpenStack
+        version found at the channel.
+        :return: OpenStackRelease object or None if the app doesn't have os_origin config.
+        :rtype: Optional[OpenStackRelease]
+        """
+        return self.channel_codename
 
     @property
     def current_os_release(self) -> OpenStackRelease:
         """Infer the OpenStack release from charm's channel.
 
-        On alternative OpenStack applications we cannot determine the OpenStack release base on the
-        workload packages.
+        On OpenStack channel based applications we cannot determine the OpenStack release
+        base on the workload packages.
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
