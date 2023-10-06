@@ -14,12 +14,16 @@
 """Subordinate application class."""
 from typing import Optional
 
-from cou.apps.app import AppFactory, OpenStackChannelBasedApplication
+from cou.apps.app import (
+    AppFactory,
+    OpenStackApplication,
+    OpenStackChannelBasedApplication,
+)
 from cou.steps import UpgradeStep
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
 
-class SubordinateBaseClass(OpenStackChannelBasedApplication):
+class SubordinateBaseClass(OpenStackApplication):
     """Subordinate base class."""
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
@@ -55,7 +59,7 @@ class SubordinateBaseClass(OpenStackChannelBasedApplication):
 
 
 @AppFactory.register_application(SUBORDINATES)
-class OpenStackSubordinateApplication(SubordinateBaseClass):
+class OpenStackSubordinateApplication(SubordinateBaseClass, OpenStackChannelBasedApplication):
     """Subordinate application class."""
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:

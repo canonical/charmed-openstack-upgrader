@@ -273,7 +273,8 @@ def test_application_no_origin_config(status, model):
         "keystone",
     )
     assert app._get_os_origin() == ""
-    assert app.apt_source_codename is None
+    assert app.current_os_release == "ussuri"
+    assert app.apt_source_codename == "ussuri"
 
 
 def test_application_empty_origin_config(status, model):

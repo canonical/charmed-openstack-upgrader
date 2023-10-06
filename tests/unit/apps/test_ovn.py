@@ -48,7 +48,7 @@ def test_ovn_subordinate(status, model):
     )
     assert app.channel == "22.03/stable"
     assert app.os_origin == ""
-    assert app.apt_source_codename is None
+    assert app.apt_source_codename == "yoga"
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
 

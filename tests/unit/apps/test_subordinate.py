@@ -17,7 +17,6 @@ import logging
 import pytest
 
 from cou.apps.subordinate import OpenStackSubordinateApplication
-from cou.exceptions import HaltUpgradePlanGeneration
 from cou.steps import UpgradeStep
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
@@ -225,5 +224,22 @@ def test_generate_plan_in_same_version(status, model, from_to):
     )
 
     app.channel = f"{from_to}/stable"
-    with pytest.raises(HaltUpgradePlanGeneration):
-        app.generate_upgrade_plan(from_to)
+    upgrade_plan = app.generate_upgrade_plan(from_to)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {from_to}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '{from_to}/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel=f"{from_to}/stable",
+            switch=None,
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
