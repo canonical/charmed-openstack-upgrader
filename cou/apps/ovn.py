@@ -26,7 +26,7 @@ from cou.utils.openstack import OpenStackRelease
 
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
 class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
-    """Ovn central application class."""
+    """Ovn principal application class."""
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
@@ -43,7 +43,7 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
 
 @AppFactory.register_application(["ovn-chassis"])
 class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
-    """Ovn chassis application class."""
+    """Ovn subordinate application class."""
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.

@@ -97,9 +97,10 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
         app_ovn_chassis.generate_upgrade_plan(target)
 
 
-def test_ovn_no_compatible_os_release(status, config, model):
+@pytest.mark.parametrize("channel", ["55.7", "19.03"])
+def test_ovn_no_compatible_os_release(status, config, model, channel):
     ovn_central_status = status["ovn_central_ussuri_22"]
-    ovn_central_status.charm_channel = "55.7"
+    ovn_central_status.charm_channel = channel
     app = OvnPrincipalApplication(
         "ovn-central",
         ovn_central_status,
