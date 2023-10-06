@@ -305,7 +305,7 @@ class OpenStackApplication:
         os_origin_parsed: Optional[str]
         # that means that the charm doesn't have "source" or "openstack-origin" config.
         if self.origin_setting is None:
-            return None
+            return self.current_os_release
 
         # Ex: "cloud:focal-ussuri" will result in "ussuri"
         if self.os_origin.startswith("cloud"):
@@ -440,7 +440,7 @@ class OpenStackApplication:
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[Optional[UpgradeStep]]
         """
         return [self._get_reached_expected_target_plan(target)]
 
@@ -645,17 +645,6 @@ class OpenStackApplication:
 @AppFactory.register_application(["designate-bind"])
 class OpenStackChannelBasedApplication(OpenStackApplication):
     """OpenStack channel based application."""
-
-    @property
-    def apt_source_codename(self) -> Optional[OpenStackRelease]:
-        """Identify the OpenStack release set on "openstack-origin" or "source" config.
-
-        OpenStack channel based applications does not have os_origin, then return the OpenStack
-        version found at the channel.
-        :return: OpenStackRelease object or None if the app doesn't have os_origin config.
-        :rtype: Optional[OpenStackRelease]
-        """
-        return self.channel_codename
 
     @property
     def current_os_release(self) -> OpenStackRelease:

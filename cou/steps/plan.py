@@ -23,9 +23,18 @@ from cou.apps.app import OpenStackApplication
 # decorator
 # pylint: disable=unused-import
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication  # noqa: F401
-from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
+from cou.apps.auxiliary_subordinate import (  # noqa: F401
+    OpenStackAuxiliarySubordinateApplication,
+)
 from cou.apps.ceph import CephMonApplication  # noqa: F401
-from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.apps.ovn import (  # noqa: F401
+    OvnPrincipalApplication,
+    OvnSubordinateApplication,
+)
+from cou.apps.subordinate import (  # noqa: F401
+    OpenStackSubordinateApplication,
+    SubordinateBaseClass,
+)
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -61,21 +70,17 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         apps=analysis_result.apps_control_plane,
         description="Control Plane principal(s) upgrade plan",
         target=target,
-        filter_function=lambda app: not isinstance(
-            app, (OpenStackSubordinateApplication, OpenStackAuxiliarySubordinateApplication)
-        ),
+        filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
     )
     plan.add_step(control_plane_principal_upgrade_plan)
 
-    control_plan_subordinate_upgrade_plan = await create_upgrade_group(
+    control_plane_subordinate_upgrade_plan = await create_upgrade_group(
         apps=analysis_result.apps_control_plane,
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
-        filter_function=lambda app: isinstance(
-            app, (OpenStackSubordinateApplication, OpenStackAuxiliarySubordinateApplication)
-        ),
+        filter_function=lambda app: isinstance(app, SubordinateBaseClass),
     )
-    plan.add_step(control_plan_subordinate_upgrade_plan)
+    plan.add_step(control_plane_subordinate_upgrade_plan)
 
     return plan
 

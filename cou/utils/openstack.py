@@ -35,7 +35,7 @@ CHARM_FAMILIES = {
     "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"],
     "swift": ["swift-proxy", "swift-storage"],
     "nova": ["nova-cloud-controller", "nova-compute"],
-    "ovn": ["ovn-dedicated-chassis", "ovn-central"],
+    "ovn": ["ovn-dedicated-chassis", "ovn-central", "ovn-chassis"],
     "neutron": ["neutron-api", "neutron-gateway"],
     "manila": ["manila-ganesha"],
     "horizon": ["openstack-dashboard"],

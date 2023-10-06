@@ -19,9 +19,8 @@ from cou.steps import UpgradeStep
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
 
-@AppFactory.register_application(SUBORDINATES)
-class OpenStackSubordinateApplication(OpenStackChannelBasedApplication):
-    """Subordinate application class."""
+class SubordinateBaseClass(OpenStackChannelBasedApplication):
+    """Subordinate base class."""
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Pre Upgrade planning.
@@ -33,6 +32,17 @@ class OpenStackSubordinateApplication(OpenStackChannelBasedApplication):
         """
         return [self._get_refresh_charm_plan(target)]
 
+    def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :return: Plan that will add upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        return [self._get_upgrade_charm_plan(target)]
+
     def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Post Upgrade planning.
 
@@ -42,3 +52,18 @@ class OpenStackSubordinateApplication(OpenStackChannelBasedApplication):
         :rtype: list[Optional[UpgradeStep]]
         """
         return [None]
+
+
+@AppFactory.register_application(SUBORDINATES)
+class OpenStackSubordinateApplication(SubordinateBaseClass):
+    """Subordinate application class."""
+
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Pre Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add pre upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        return [self._get_refresh_charm_plan(target)]

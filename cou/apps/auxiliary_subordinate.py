@@ -13,21 +13,17 @@
 #  limitations under the License.
 """Auxiliary subordinate application class."""
 
-from typing import Callable
-
 from cou.apps.app import AppFactory
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
-from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.apps.subordinate import SubordinateBaseClass
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
 
 @AppFactory.register_application(AUXILIARY_SUBORDINATES)
-class OpenStackAuxiliarySubordinateApplication(OpenStackAuxiliaryApplication):
+class OpenStackAuxiliarySubordinateApplication(
+    SubordinateBaseClass, OpenStackAuxiliaryApplication
+):
     """Auxiliary subordinate application class."""
-
-    pre_upgrade_plan: Callable = OpenStackSubordinateApplication.pre_upgrade_plan
-    upgrade_plan: Callable = OpenStackSubordinateApplication.upgrade_plan
-    post_upgrade_plan: Callable = OpenStackSubordinateApplication.post_upgrade_plan
 
     @property
     def current_os_release(self) -> OpenStackRelease:
