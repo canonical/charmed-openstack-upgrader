@@ -642,7 +642,7 @@ class OpenStackApplication:
         )
 
 
-@AppFactory.register_application(["designate-bind"])
+@AppFactory.register_application(["designate-bind", "gnocchi"])
 class OpenStackChannelBasedApplication(OpenStackApplication):
     """OpenStack channel based application."""
 

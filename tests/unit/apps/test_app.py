@@ -135,6 +135,8 @@ def test_channel_based_application_ussuri(status, units, model):
     app_status = status["designate_bind_ussuri"]
     exp_charm_origin = "ch"
     exp_os_origin = ""
+    # units are considered as yoga, but this is a channel based application
+    # and the current_os_release is ussuri because the channel is at ussuri.
     exp_units = units["units_channel_based_ussuri"]
     exp_channel = app_status.charm_channel
     exp_series = app_status.series
