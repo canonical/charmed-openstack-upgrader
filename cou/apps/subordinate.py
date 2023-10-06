@@ -13,6 +13,7 @@
 #  limitations under the License.
 """Subordinate application class."""
 import logging
+from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.steps import UpgradeStep
@@ -21,8 +22,43 @@ from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
+class SubordinateBaseClass(OpenStackApplication):
+    """Subordinate base class."""
+
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Pre Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add pre upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        return [self._get_refresh_charm_plan(target)]
+
+    def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :return: Plan that will add upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        return [self._get_upgrade_charm_plan(target)]
+
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Post Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add post upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        return [None]
+
+
 @AppFactory.register_application(SUBORDINATES)
-class OpenStackSubordinateApplication(OpenStackApplication):
+class OpenStackSubordinateApplication(SubordinateBaseClass):
     """Subordinate application class."""
 
     @property
@@ -35,30 +71,6 @@ class OpenStackSubordinateApplication(OpenStackApplication):
         :rtype: OpenStackRelease
         """
         return OpenStackRelease(self.channel.split("/")[0])
-
-    def generate_upgrade_plan(self, target: str) -> UpgradeStep:
-        """Generate full upgrade plan for an Application.
-
-        :param target: OpenStack codename to upgrade.
-        :type target: str
-        :return: Full upgrade plan if the Application is able to generate it.
-        :rtype: UpgradeStep
-        """
-        plan = UpgradeStep(
-            description=f"Upgrade plan for '{self.name}' to {target}",
-            parallel=False,
-            function=None,
-        )
-
-        refresh_charm_plan = self._get_refresh_charm_plan(self.current_os_release)
-        if refresh_charm_plan:
-            plan.add_step(refresh_charm_plan)
-
-        upgrade_charm_plan = self._get_upgrade_charm_plan(OpenStackRelease(target))
-        if upgrade_charm_plan:
-            plan.add_step(upgrade_charm_plan)
-
-        return plan
 
     @property
     def channel(self) -> str:
