@@ -15,6 +15,7 @@
 """Juju utilities for charmed-openstack-upgrader."""
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
@@ -36,11 +37,11 @@ from cou.exceptions import (
 )
 
 JUJU_MAX_FRAME_SIZE: int = 2**30
-DEFAULT_TIMEOUT: int = 60
+DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 60))
 DEFAULT_MAX_WAIT: int = 5
 DEFAULT_WAIT: float = 1.1
-DEFAULT_MODEL_RETRIES: int = 30
-DEFAULT_MODEL_RETRY_BACKOFF: int = 2
+DEFAULT_MODEL_RETRIES: int = int(os.environ.get("COU_MODEL_RETRIES", 30))
+DEFAULT_MODEL_RETRY_BACKOFF: int = int(os.environ.get("COU_MODEL_RETRY_BACKOFF", 2))
 DEFAULT_MODEL_IDLE_PERIOD: int = 30
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ def retry(
                     # raising exception if no_retry_exception happen or TimeoutException
                     raise
                 except Exception:  # pylint: disable=broad-exception-caught
-                    logger.debug("function %s failed [%d]", func.__name__, attempt, exc_info=True)
+                    logger.info("function %s failed [%d]", func.__name__, attempt, exc_info=True)
                     await asyncio.sleep(DEFAULT_WAIT**attempt)
                     attempt += 1
 
@@ -218,6 +219,7 @@ class COUModel:
 
         return unit
 
+    @retry
     async def get_application_config(self, name: str) -> Dict:
         """Return application configuration.
 
@@ -245,6 +247,7 @@ class COUModel:
 
         return app.charm_name
 
+    @retry
     async def get_status(self) -> FullStatus:
         """Return the full juju status output.
 
@@ -309,6 +312,7 @@ class COUModel:
         results = action.data.get("results")
         return _normalize_action_results(results)
 
+    @retry
     async def set_application_config(self, name: str, configuration: Dict[str, str]) -> None:
         """Set application configuration.
 
@@ -321,6 +325,7 @@ class COUModel:
         await app.set_config(configuration)
 
     # pylint: disable=too-many-arguments
+    @retry
     async def scp_from_unit(
         self,
         unit_name: str,
