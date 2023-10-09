@@ -14,13 +14,27 @@
 
 """Main entry point."""
 import asyncio
-
-from cou import cli
+import signal
+import sys
 
 
 def main() -> None:
     """Enter the application."""
-    asyncio.run(cli.entrypoint())
+    loop = None
+    try:
+        from cou.cli import entrypoint  # pylint: disable=import-outside-toplevel
+
+        loop = asyncio.get_event_loop()
+        entrypoint_task = asyncio.ensure_future(entrypoint())
+        loop.add_signal_handler(signal.SIGINT, entrypoint_task.cancel)
+        loop.add_signal_handler(signal.SIGTERM, entrypoint_task.cancel)
+        loop.run_until_complete(entrypoint_task)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        print(f"{__package__} was interrupted.")
+        sys.exit(130)
+    finally:
+        if loop is not None and loop.is_running():
+            loop.close()
 
 
 if __name__ == "__main__":
