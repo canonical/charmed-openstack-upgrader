@@ -18,7 +18,6 @@ from packaging.version import Version
 
 from cou.apps.app import AppFactory
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
-from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils.openstack import OpenStackRelease
@@ -42,7 +41,7 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
 
 
 @AppFactory.register_application(["ovn-chassis"])
-class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
+class OvnSubordinateApplication(OpenStackAuxiliaryApplication):
     """Ovn subordinate application class."""
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:

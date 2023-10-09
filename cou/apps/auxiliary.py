@@ -17,6 +17,7 @@ import logging
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError
 from cou.utils.openstack import (
+    AUXILIARY_SUBORDINATES,
     CHARM_FAMILIES,
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 @AppFactory.register_application(
     ["rabbitmq-server", "vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"]
     + CHARM_FAMILIES["ovn"]
+    + AUXILIARY_SUBORDINATES
 )
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
@@ -42,17 +44,9 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :rtype: list[str]
         """
         tracks = OPENSTACK_TO_TRACK_MAPPING.get(
-            (self.charm, self.series, self.current_os_release.codename)
+            (self.charm, self.series, self.current_os_release.codename), []
         )
-        if tracks:
-            return [f"{track}/stable" for track in tracks]
-
-        raise ApplicationError(
-            (
-                f"Cannot find a suitable '{self.charm}' charm channel for "
-                f"{self.current_os_release.codename}"
-            )
-        )
+        return [f"{track}/stable" for track in tracks]
 
     def target_channel(self, target: OpenStackRelease) -> str:
         """Return the appropriate channel for the passed OpenStack target.
@@ -93,3 +87,41 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
                 f"for channel: '{self.channel}'"
             )
         )
+
+    @property
+    def channel(self) -> str:
+        """Get charm channel of the application.
+
+        :return: Charm channel. E.g: 3.8/stable
+        :rtype: str
+        """
+        return self._channel
+
+    @channel.setter
+    def channel(self, charm_channel: str) -> None:
+        """Set charm channel of the application.
+
+        When application comes from charm store, the channel won't be track related.
+        If the application is subordinate, we can't check the tracks because the OpenStack
+        release is based on the channel itself.
+        :param charm_channel: Charm channel. E.g: 3.8/stable
+        :type charm_channel: str
+        :raises ValueError: Exception raised when cannot find a channel track
+            based on the charm name, series and current OpenStack codename.
+        """
+        if self.is_from_charm_store or self.is_subordinate:
+            self._channel = charm_channel
+        else:
+            tracks = OPENSTACK_TO_TRACK_MAPPING.get(
+                (self.charm, self.series, self.current_os_release.codename), []
+            )
+            track_from_channel = charm_channel.split("/")[0]
+            if track_from_channel not in tracks:
+                raise ValueError(
+                    (
+                        f"'{self.name}' cannot find a channel track for charm: '{charm_channel}' "
+                        f"series: {self.series} and OpenStack "
+                        f"release: {self.current_os_release.codename}"
+                    )
+                )
+            self._channel = charm_channel

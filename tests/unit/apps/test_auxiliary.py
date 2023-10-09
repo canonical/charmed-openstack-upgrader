@@ -238,19 +238,18 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
 
 
 def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
-    target = "victoria"
     rmq_status = status["rabbitmq_server"]
     # 2.0 is an unknown track
     rmq_status.charm_channel = "2.0/stable"
-    app = OpenStackAuxiliaryApplication(
-        "rabbitmq-server",
-        status["rabbitmq_server"],
-        config["auxiliary_ussuri"],
-        model,
-        "rabbitmq-server",
-    )
-    with pytest.raises(ApplicationError):
-        app.generate_upgrade_plan(target)
+
+    with pytest.raises(ValueError):
+        OpenStackAuxiliaryApplication(
+            "rabbitmq-server",
+            status["rabbitmq_server"],
+            config["auxiliary_ussuri"],
+            model,
+            "rabbitmq-server",
+        )
 
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, model):
@@ -265,21 +264,16 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mo
 
 
 def test_auxiliary_raise_error_unknown_track(status, config, model):
-    target = OpenStackRelease("victoria")
     app_status = status["rabbitmq_server"]
     app_status.series = "foo"
-    app = OpenStackAuxiliaryApplication(
-        "rabbitmq-server",
-        app_status,
-        config["auxiliary_ussuri"],
-        model,
-        "rabbitmq-server",
-    )
-    with pytest.raises(ApplicationError):
-        app.possible_current_channels
-
-    with pytest.raises(ApplicationError):
-        app.target_channel(target)
+    with pytest.raises(ValueError):
+        OpenStackAuxiliaryApplication(
+            "rabbitmq-server",
+            app_status,
+            config["auxiliary_ussuri"],
+            model,
+            "rabbitmq-server",
+        )
 
 
 def test_auxiliary_raise_halt_upgrade(status, config, model):

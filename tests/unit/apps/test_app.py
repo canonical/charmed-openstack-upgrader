@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cou.apps import app as app_module
-from cou.apps.app import OpenStackApplication, OpenStackChannelBasedApplication
+from cou.apps.app import OpenStackApplication
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -60,7 +60,7 @@ def assert_application(
     exp_config,
     exp_model,
     exp_charm,
-    exp_charm_origin,
+    exp_is_from_charm_store,
     exp_os_origin,
     exp_units,
     exp_channel,
@@ -70,6 +70,8 @@ def assert_application(
     exp_new_origin,
     exp_apt_source_codename,
     exp_channel_codename,
+    exp_is_subordinate,
+    exp_is_channel_based,
     target,
 ):
     target_version = OpenStackRelease(target)
@@ -79,7 +81,7 @@ def assert_application(
     assert app.config == exp_config
     assert app.model == exp_model
     assert app.charm == exp_charm
-    assert app.charm_origin == exp_charm_origin
+    assert app.is_from_charm_store == exp_is_from_charm_store
     assert app.os_origin == exp_os_origin
     assert app.units == exp_units
     assert app.channel == exp_channel
@@ -89,13 +91,15 @@ def assert_application(
     assert app.new_origin(target_version) == exp_new_origin
     assert app.apt_source_codename == exp_apt_source_codename
     assert app.channel_codename == exp_channel_codename
+    assert app.is_subordinate == exp_is_subordinate
+    assert app.is_channel_based == exp_is_channel_based
 
 
 def test_application_ussuri(status, config, units, model):
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
-    exp_charm_origin = "ch"
+    exp_is_from_charm_store = False
     exp_os_origin = "distro"
     exp_units = units["units_ussuri"]
     exp_channel = app_status.charm_channel
@@ -106,6 +110,8 @@ def test_application_ussuri(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
+    exp_is_channel_based = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -116,7 +122,7 @@ def test_application_ussuri(status, config, units, model):
         app_config,
         model,
         "keystone",
-        exp_charm_origin,
+        exp_is_from_charm_store,
         exp_os_origin,
         exp_units,
         exp_channel,
@@ -126,6 +132,8 @@ def test_application_ussuri(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
+        exp_is_channel_based,
         target,
     )
 
@@ -133,7 +141,7 @@ def test_application_ussuri(status, config, units, model):
 def test_channel_based_application_ussuri(status, units, model):
     target = "victoria"
     app_status = status["designate_bind_ussuri"]
-    exp_charm_origin = "ch"
+    exp_is_from_charm_store = False
     exp_os_origin = ""
     # units are considered as yoga, but this is a channel based application
     # and the current_os_release is ussuri because the channel is at ussuri.
@@ -146,10 +154,10 @@ def test_channel_based_application_ussuri(status, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = "ussuri"
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
+    exp_is_channel_based = True
 
-    app = OpenStackChannelBasedApplication(
-        "designate-bind", app_status, {}, model, "designate-bind"
-    )
+    app = OpenStackApplication("designate-bind", app_status, {}, model, "designate-bind")
     assert_application(
         app,
         "designate-bind",
@@ -158,7 +166,7 @@ def test_channel_based_application_ussuri(status, units, model):
         {},
         model,
         "designate-bind",
-        exp_charm_origin,
+        exp_is_from_charm_store,
         exp_os_origin,
         exp_units,
         exp_channel,
@@ -168,6 +176,8 @@ def test_channel_based_application_ussuri(status, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
+        exp_is_channel_based,
         target,
     )
 
@@ -195,7 +205,7 @@ def test_application_cs(status, config, units, model):
     exp_os_origin = "distro"
     exp_units = units["units_ussuri"]
     exp_channel = app_status.charm_channel
-    exp_charm_origin = "cs"
+    exp_is_from_charm_store = True
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
     exp_possible_current_channels = ["ussuri/stable"]
@@ -203,6 +213,8 @@ def test_application_cs(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
+    exp_is_channel_based = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -213,7 +225,7 @@ def test_application_cs(status, config, units, model):
         app_config,
         model,
         "keystone",
-        exp_charm_origin,
+        exp_is_from_charm_store,
         exp_os_origin,
         exp_units,
         exp_channel,
@@ -223,6 +235,8 @@ def test_application_cs(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
+        exp_is_channel_based,
         target,
     )
 
@@ -230,7 +244,7 @@ def test_application_cs(status, config, units, model):
 def test_application_wallaby(status, config, units, model):
     target = "xena"
     exp_units = units["units_wallaby"]
-    exp_charm_origin = "ch"
+    exp_is_from_charm_store = False
     app_config = config["openstack_wallaby"]
     app_status = status["keystone_wallaby"]
     exp_os_origin = "cloud:focal-wallaby"
@@ -242,6 +256,8 @@ def test_application_wallaby(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
+    exp_is_channel_based = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -252,7 +268,7 @@ def test_application_wallaby(status, config, units, model):
         app_config,
         model,
         "keystone",
-        exp_charm_origin,
+        exp_is_from_charm_store,
         exp_os_origin,
         exp_units,
         exp_channel,
@@ -262,6 +278,8 @@ def test_application_wallaby(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
+        exp_is_channel_based,
         target,
     )
 
@@ -417,12 +435,59 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
     assert upgrade_plan == expected_plan
 
 
+def test_upgrade_plan_no_workload_version_ussuri_to_victoria(status, model):
+    target = "victoria"
+    app_status = status["glance_simplestreams_sync_ussuri"]
+    app = OpenStackApplication(
+        "glance-simplestreams-sync", app_status, {}, model, "glance-simplestreams-sync"
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+        function=None,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            function=app_utils.upgrade_packages,
+            units=app.status.units.keys(),
+            model=model,
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="ussuri/stable",
+            switch=None,
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            function=model.upgrade_charm,
+            application_name=app.name,
+            channel="victoria/stable",
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            function=app._check_upgrade,
+            target=OpenStackRelease(target),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
+
+
 def test_upgrade_plan_channel_based_ussuri_to_victoria(status, model):
     target = "victoria"
     app_status = status["designate_bind_ussuri"]
-    app = OpenStackChannelBasedApplication(
-        "designate-bind", app_status, {}, model, "designate-bind"
-    )
+    app = OpenStackApplication("designate-bind", app_status, {}, model, "designate-bind")
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
@@ -536,9 +601,7 @@ def test_upgrade_plan_channel_based_ussuri_to_victoria_ch_migration(status, conf
     app_status = status["designate_bind_ussuri"]
     app_status.charm = "cs:amd64/focal/designate-bind-99"
     app_status.charm_channel = "stable"
-    app = OpenStackChannelBasedApplication(
-        "designate-bind", app_status, {}, model, "designate-bind"
-    )
+    app = OpenStackApplication("designate-bind", app_status, {}, model, "designate-bind")
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
@@ -711,9 +774,7 @@ def test_upgrade_plan_channel_based_application_already_upgraded(status, model):
     target = "victoria"
     app_status = status["designate_bind_ussuri"]
     app_status.charm_channel = "victoria/stable"
-    app = OpenStackChannelBasedApplication(
-        "designate-bind", app_status, {}, model, "designate-bind"
-    )
+    app = OpenStackApplication("designate-bind", app_status, {}, model, "designate-bind")
     with pytest.raises(HaltUpgradePlanGeneration):
         app.generate_upgrade_plan(target)
 

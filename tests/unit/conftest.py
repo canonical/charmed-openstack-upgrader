@@ -22,8 +22,6 @@ from juju.client.client import FullStatus
 
 from cou.apps.app import ApplicationUnit, OpenStackApplication
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
-from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
-from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.utils.openstack import OpenStackRelease
 
 
@@ -45,7 +43,7 @@ def status():
         [
             ("keystone/0", generate_unit("17.0.1", "0/lxd/12")),
             ("keystone/1", generate_unit("17.0.1", "1/lxd/12")),
-            ("keystone/2", generate_unit("17.0.1", "2/lxd/13")),
+            ("keystone/2", generate_unit("17.0.1", "2/lxd/12")),
         ]
     )
 
@@ -84,7 +82,7 @@ def status():
         [
             ("keystone/0", generate_unit("17.0.1", "0/lxd/12")),
             ("keystone/1", generate_unit("17.0.1", "1/lxd/12")),
-            ("keystone/2", generate_unit("17.0.1", "2/lxd/13")),
+            ("keystone/2", generate_unit("17.0.1", "2/lxd/12")),
         ]
     )
 
@@ -97,7 +95,7 @@ def status():
         [
             ("keystone/0", generate_unit("18.1.0", "0/lxd/12")),
             ("keystone/1", generate_unit("18.1.0", "1/lxd/12")),
-            ("keystone/2", generate_unit("18.1.0", "2/lxd/13")),
+            ("keystone/2", generate_unit("18.1.0", "2/lxd/12")),
         ]
     )
 
@@ -110,7 +108,7 @@ def status():
         [
             ("keystone/0", generate_unit("17.0.1", "0/lxd/12")),
             ("keystone/1", generate_unit("17.0.1", "1/lxd/12")),
-            ("keystone/2", generate_unit("18.1.0", "2/lxd/13")),
+            ("keystone/2", generate_unit("18.1.0", "2/lxd/12")),
         ]
     )
 
@@ -123,7 +121,7 @@ def status():
         [
             ("keystone/0", generate_unit("19.1.0", "0/lxd/12")),
             ("keystone/1", generate_unit("19.1.0", "1/lxd/12")),
-            ("keystone/2", generate_unit("19.1.0", "2/lxd/13")),
+            ("keystone/2", generate_unit("19.1.0", "2/lxd/12")),
         ]
     )
 
@@ -147,8 +145,8 @@ def status():
     mock_designate_bind_ussuri.subordinate_to = []
     mock_designate_bind_ussuri.units = OrderedDict(
         [
-            ("designate-bind/0", generate_unit("9.16.1", "1/lxd/6")),
-            ("designate-bind/1", generate_unit("9.16.1", "2/lxd/6")),
+            ("designate-bind/0", generate_unit("9.16.1", "0/lxd/6")),
+            ("designate-bind/1", generate_unit("9.16.1", "1/lxd/6")),
         ]
     )
 
@@ -257,6 +255,18 @@ def status():
     mock_ovn_chassis_ussuri_20.workload_version = "20.03.2"
     mock_ovn_chassis_ussuri_20.units = {}
 
+    # glance-simplestreams-sync does not have workload_version
+    mock_glance_simplestreams_sync_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_glance_simplestreams_sync_ussuri.series = "focal"
+    mock_glance_simplestreams_sync_ussuri.charm_channel = "ussuri/stable"
+    mock_glance_simplestreams_sync_ussuri.charm = "ch:amd64/focal/glance-simplestreams-sync-78"
+    mock_glance_simplestreams_sync_ussuri.subordinate_to = []
+    mock_glance_simplestreams_sync_ussuri.units = OrderedDict(
+        [
+            ("glance-simplestreams-sync/0", generate_unit("", "4/lxd/5")),
+        ]
+    )
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -281,6 +291,7 @@ def status():
         "ovn_central_ussuri_20": mock_ovn_central_ussuri_20,
         "ovn_chassis_ussuri_22": mock_ovn_chassis_ussuri_22,
         "ovn_chassis_ussuri_20": mock_ovn_chassis_ussuri_20,
+        "glance_simplestreams_sync_ussuri": mock_glance_simplestreams_sync_ussuri,
     }
     return status
 
@@ -302,77 +313,48 @@ def full_status(status, model):
 
 @pytest.fixture
 def units():
-    units_ussuri = []
-    units_channel_based_ussuri = []
-    units_wallaby = []
-    units_ussuri.append(
+    units_ussuri = [
         ApplicationUnit(
-            name="keystone/0",
+            name=f"keystone/{machine_number}",
             os_version=OpenStackRelease("ussuri"),
             workload_version="17.0.1",
-            machine="0/lxd/12",
+            machine=f"{machine_number}/lxd/12",
         )
-    )
-    units_ussuri.append(
+        for machine_number in [0, 1, 2]
+    ]
+    units_channel_based_ussuri = [
         ApplicationUnit(
-            name="keystone/1",
-            os_version=OpenStackRelease("ussuri"),
-            workload_version="17.0.1",
-            machine="1/lxd/12",
-        )
-    )
-    units_ussuri.append(
-        ApplicationUnit(
-            name="keystone/2",
-            os_version=OpenStackRelease("ussuri"),
-            workload_version="17.0.1",
-            machine="2/lxd/13",
-        )
-    )
-    units_wallaby.append(
-        ApplicationUnit(
-            name="keystone/0",
-            os_version=OpenStackRelease("wallaby"),
-            workload_version="19.1.0",
-            machine="0/lxd/12",
-        )
-    )
-    units_wallaby.append(
-        ApplicationUnit(
-            name="keystone/1",
-            os_version=OpenStackRelease("wallaby"),
-            workload_version="19.1.0",
-            machine="1/lxd/12",
-        )
-    )
-    units_wallaby.append(
-        ApplicationUnit(
-            name="keystone/2",
-            os_version=OpenStackRelease("wallaby"),
-            workload_version="19.1.0",
-            machine="2/lxd/13",
-        )
-    )
-    units_channel_based_ussuri.append(
-        ApplicationUnit(
-            name="designate-bind/0",
+            name=f"designate-bind/{machine_number}",
             os_version=OpenStackRelease("yoga"),
             workload_version="9.16.1",
-            machine="1/lxd/6",
+            machine=f"{machine_number}/lxd/6",
         )
-    )
-    units_channel_based_ussuri.append(
+        for machine_number in [0, 1]
+    ]
+    units_wallaby = [
         ApplicationUnit(
-            name="designate-bind/1",
-            os_version=OpenStackRelease("yoga"),
-            workload_version="9.16.1",
-            machine="2/lxd/6",
+            name=f"keystone/{machine_number}",
+            os_version=OpenStackRelease("wallaby"),
+            workload_version="19.1.0",
+            machine=f"{machine_number}/lxd/12",
         )
-    )
+        for machine_number in [0, 1, 2]
+    ]
+
+    units_no_workload_version = [
+        ApplicationUnit(
+            name="glance-simplestreams-sync/0",
+            os_version=OpenStackRelease("ussuri"),
+            workload_version="",
+            machine="4/lxd/5",
+        )
+    ]
+
     return {
         "units_ussuri": units_ussuri,
         "units_channel_based_ussuri": units_channel_based_ussuri,
         "units_wallaby": units_wallaby,
+        "units_no_workload_version": units_no_workload_version,
     }
 
 
@@ -448,14 +430,14 @@ def apps(status, config, model):
     rmq_wallaby = OpenStackAuxiliaryApplication(
         "rabbitmq-server", rmq_status, config["auxiliary_wallaby"], model, "rabbitmq-server"
     )
-    keystone_ldap = OpenStackSubordinateApplication(
+    keystone_ldap = OpenStackApplication(
         "keystone-ldap", keystone_ldap_status, {}, model, "keystone-ldap"
     )
-    keystone_mysql_router = OpenStackAuxiliarySubordinateApplication(
+    keystone_mysql_router = OpenStackAuxiliaryApplication(
         "keystone-mysql-router", status["mysql_router"], {}, model, "mysql-router"
     )
 
-    nova_wallaby = OpenStackSubordinateApplication(
+    nova_wallaby = OpenStackApplication(
         "nova-compute", nova_wallaby_status, {}, model, "nova-compute"
     )
     return {

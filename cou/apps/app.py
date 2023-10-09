@@ -174,31 +174,10 @@ class OpenStackApplication:
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
-        # subordinates don't have units
-        units = getattr(self.status, "units", {})
-        for name, unit in units.items():
-            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
-                self.charm, unit.workload_version
-            )
-            # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
-            if compatible_os_versions:
-                unit_os_version = max(compatible_os_versions)
-                self.units.append(
-                    ApplicationUnit(
-                        name=name,
-                        workload_version=unit.workload_version,
-                        os_version=unit_os_version,
-                        machine=unit.machine,
-                    )
-                )
-            else:
-                raise ApplicationError(
-                    f"'{self.name}' with workload version {unit.workload_version} has no "
-                    f"compatible OpenStack release in the lookup."
-                )
+        self._populate_units()
+        self.channel = self.status.charm_channel
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -245,6 +224,73 @@ class OpenStackApplication:
             yaml.dump(summary, stream)
             return stream.getvalue()
 
+    def _populate_units(self) -> None:
+        """Populate application units.
+
+        :raises ApplicationError: When there are no compatible OpenStack release for the
+        workload version.
+        """
+        # subordinates don't have units
+        units = getattr(self.status, "units", {})
+        for name, unit in units.items():
+            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+                self.charm, unit.workload_version
+            )
+            # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
+            if compatible_os_versions:
+                unit_os_version = max(compatible_os_versions)
+                self.units.append(
+                    ApplicationUnit(
+                        name=name,
+                        workload_version=unit.workload_version,
+                        os_version=unit_os_version,
+                        machine=unit.machine,
+                    )
+                )
+            # some charms like glance-simplestreams-sync does not have workload_version.
+            elif not unit.workload_version:
+                self.units.append(
+                    ApplicationUnit(
+                        name=name,
+                        workload_version=unit.workload_version,
+                        os_version=self.channel_codename,
+                        machine=unit.machine,
+                    )
+                )
+            else:
+                raise ApplicationError(
+                    f"'{self.name}' with workload version {unit.workload_version} has no "
+                    f"compatible OpenStack release in the lookup."
+                )
+
+    @property
+    def channel(self) -> str:
+        """Get charm channel of the application.
+
+        :return: Charm channel. E.g: ussuri/stable
+        :rtype: str
+        """
+        return self._channel
+
+    @channel.setter
+    def channel(self, charm_channel: str) -> None:
+        """Set charm channel of the application.
+
+        When application comes from charm store, the channel won't be OpenStack related.
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
+        :raises ValueError:  Exception raised when channel is not a valid OpenStack
+            channel.
+        """
+        if self.is_from_charm_store:
+            self._channel = charm_channel
+        else:
+            try:
+                OpenStackRelease(charm_channel.split("/")[0])
+                self._channel = charm_channel
+            except ValueError as exc:
+                raise ValueError(f"'{self.name}' has invalid channel: '{charm_channel}'") from exc
+
     @property
     def possible_current_channels(self) -> list[str]:
         """Return the possible current channels based on the current OpenStack release.
@@ -277,13 +323,23 @@ class OpenStackApplication:
     def current_os_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        if self.is_channel_based or self.is_subordinate:
+            return self.channel_codename
+        return self.current_os_release_by_unit
+
+    @property
+    def current_os_release_by_unit(self) -> OpenStackRelease:
+        """Current OpenStack Release of the application based on units.
+
         :raises MismatchedOpenStackVersions: When units part of this application are
         running mismatched OpenStack versions.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
         os_versions = {unit.os_version for unit in self.units}
-
         if len(os_versions) == 1:
             return os_versions.pop()
         # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
@@ -292,6 +348,33 @@ class OpenStackApplication:
             f"Units of application {self.name} are running mismatched OpenStack versions: "
             f"{os_versions}. This is not currently handled."
         )
+
+    @property
+    def is_from_charm_store(self) -> bool:
+        """Check if application comes from charm store.
+
+        :return: True if comes, False otherwise.
+        :rtype: bool
+        """
+        return self.charm_origin == "cs"
+
+    @property
+    def is_subordinate(self) -> bool:
+        """Check if application is subordinate.
+
+        :return: True if subordinate, False otherwise.
+        :rtype: bool
+        """
+        return bool(self.status.subordinate_to)
+
+    @property
+    def is_channel_based(self) -> bool:
+        """Check if application is channel based.
+
+        :return: True if does have origin setting, False otherwise.
+        :rtype: bool
+        """
+        return not self.origin_setting
 
     @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
@@ -335,19 +418,17 @@ class OpenStackApplication:
     def channel_codename(self) -> OpenStackRelease:
         """Identify the OpenStack release set in the charm channel.
 
+        When application comes from charm store, it's not possible to determine the
+        OpenStack release codename and in that case it will be considered as ussuri.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        try:
-            # get the OpenStack release from the channel track of the application.
-            os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
-        except ValueError:
-            logger.debug(
-                "The current channel of '%s' does not exist or is unexpectedly formatted",
-                self.name,
-            )
-            os_track_release_channel = self.current_os_release
-        return os_track_release_channel
+        self.channel = self.status.charm_channel
+        if self.is_from_charm_store:
+            return OpenStackRelease("ussuri")
+
+        # get the OpenStack release from the channel track of the application.
+        return OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -406,6 +487,8 @@ class OpenStackApplication:
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
+        if self.is_subordinate:
+            return [self._get_refresh_charm_plan(target)]
         return [
             self._get_upgrade_current_release_packages_plan(),
             self._get_refresh_charm_plan(target),
@@ -420,6 +503,9 @@ class OpenStackApplication:
         :return: Plan that will add upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
+        if self.is_subordinate:
+            return [self._get_upgrade_charm_plan(target)]
+
         if self.current_os_release >= target and self.apt_source_codename >= target:
             msg = (
                 f"Application '{self.name}' already configured for release equal or greater "
@@ -442,6 +528,8 @@ class OpenStackApplication:
         :return: Plan that will add post upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
+        if self.is_subordinate:
+            return [None]
         return [self._get_reached_expected_target_plan(target)]
 
     def generate_upgrade_plan(self, target: str) -> UpgradeStep:
@@ -516,7 +604,7 @@ class OpenStackApplication:
                 channel,
             )
 
-        if self.charm_origin == "cs":
+        if self.is_from_charm_store:
             description = f"Migration of '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
         elif self.channel in self.possible_current_channels:
@@ -640,46 +728,3 @@ class OpenStackApplication:
             function=self._check_upgrade,
             target=target,
         )
-
-
-@AppFactory.register_application(["designate-bind", "gnocchi"])
-class OpenStackChannelBasedApplication(OpenStackApplication):
-    """OpenStack channel based application."""
-
-    @property
-    def current_os_release(self) -> OpenStackRelease:
-        """Infer the OpenStack release from charm's channel.
-
-        On OpenStack channel based applications we cannot determine the OpenStack release
-        base on the workload packages.
-        :return: OpenStackRelease object.
-        :rtype: OpenStackRelease
-        """
-        return self.channel_codename
-
-    @property
-    def channel(self) -> str:
-        """Get charm channel of the application.
-
-        :return: Charm channel. E.g: ussuri/stable
-        :rtype: str
-        """
-        return self._channel
-
-    @channel.setter
-    def channel(self, charm_channel: str) -> None:
-        """Set charm channel of the application.
-
-        :param charm_channel: Charm channel. E.g: ussuri/stable
-        :type charm_channel: str
-        :raises ApplicationError: Exception raised when channel is not a valid OpenStack
-            channel.
-        """
-        try:
-            OpenStackRelease(charm_channel.split("/")[0])
-            self._channel = charm_channel
-        except ValueError:
-            # if it has charm origin like cs:
-            # or latest/stable it means it does not support openstack channels yet,
-            # so it should be minimum
-            self._channel = "ussuri/stable"

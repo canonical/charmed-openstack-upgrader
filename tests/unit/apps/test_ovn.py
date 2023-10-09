@@ -101,21 +101,14 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
 def test_ovn_no_compatible_os_release(status, config, model, channel):
     ovn_central_status = status["ovn_central_ussuri_22"]
     ovn_central_status.charm_channel = channel
-    app = OvnPrincipalApplication(
-        "ovn-central",
-        ovn_central_status,
-        config["auxiliary_ussuri"],
-        model,
-        "ovn-central",
-    )
-    with pytest.raises(
-        ApplicationError,
-        match=(
-            f"'{app.charm}' cannot identify suitable OpenStack release codename "
-            f"for channel: '{app.channel}'"
-        ),
-    ):
-        app.channel_codename
+    with pytest.raises(ValueError):
+        OvnPrincipalApplication(
+            "ovn-central",
+            ovn_central_status,
+            config["auxiliary_ussuri"],
+            model,
+            "ovn-central",
+        )
 
 
 def test_ovn_principal_upgrade_plan(status, config, model):

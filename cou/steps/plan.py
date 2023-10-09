@@ -23,17 +23,10 @@ from cou.apps.app import OpenStackApplication
 # decorator
 # pylint: disable=unused-import
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication  # noqa: F401
-from cou.apps.auxiliary_subordinate import (  # noqa: F401
-    OpenStackAuxiliarySubordinateApplication,
-)
 from cou.apps.ceph import CephMonApplication  # noqa: F401
 from cou.apps.ovn import (  # noqa: F401
     OvnPrincipalApplication,
     OvnSubordinateApplication,
-)
-from cou.apps.subordinate import (  # noqa: F401
-    OpenStackSubordinateApplication,
-    SubordinateBaseClass,
 )
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
@@ -70,7 +63,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         apps=analysis_result.apps_control_plane,
         description="Control Plane principal(s) upgrade plan",
         target=target,
-        filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
+        filter_function=lambda app: not app.is_subordinate,
     )
     plan.add_step(control_plane_principal_upgrade_plan)
 
@@ -78,7 +71,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         apps=analysis_result.apps_control_plane,
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
-        filter_function=lambda app: isinstance(app, SubordinateBaseClass),
+        filter_function=lambda app: app.is_subordinate,
     )
     plan.add_step(control_plane_subordinate_upgrade_plan)
 
