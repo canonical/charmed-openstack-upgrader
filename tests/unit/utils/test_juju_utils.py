@@ -23,8 +23,10 @@ from juju.unit import Unit
 
 from cou.exceptions import (
     ActionFailed,
+    ActionFailedToRun,
     ApplicationError,
     ApplicationNotFound,
+    CommandExecutionFailed,
     TimeoutException,
     UnitNotFound,
 )
@@ -321,7 +323,23 @@ async def test_coumodel_run_action(mocked_model):
 
 
 @pytest.mark.asyncio
-async def test_coumodel_run_action_failure(mocked_model):
+async def test_coumodel_run_action_run_failure(mocked_model):
+    """Test COUModel run action failing."""
+    action_name = "test-action"
+    action_params = {"test-arg": "test"}
+    exp_error = (
+        f"Action {action_name} with parameters {action_params} failed to start due any exception."
+    )
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run_action.side_effect = Exception("any exception")
+    model = juju_utils.COUModel("test-model")
+
+    with pytest.raises(ActionFailedToRun, match=exp_error):
+        await model.run_action("test_unit/0", action_name, action_params=action_params)
+
+
+@pytest.mark.asyncio
+async def test_coumodel_run_action_action_failure(mocked_model):
     """Test COUModel run action failing."""
     action_name = "test-action"
     action_params = {"test-arg": "test"}
@@ -354,6 +372,19 @@ async def test_coumodel_run_on_unit(mock_normalize_action_results, mocked_model)
 
     mocked_unit.run.assert_awaited_once_with(command, timeout=None)
     mock_normalize_action_results.assert_called_once_with(results)
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils._normalize_action_results")
+async def test_coumodel_run_on_unit_failure(mock_normalize_action_results, mocked_model):
+    """Test COUModel run on unit."""
+    command = "test-command"
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.side_effect = Exception("any exception")
+    model = juju_utils.COUModel("test-model")
+
+    with pytest.raises(CommandExecutionFailed, match=f"Command {command} failed to be executed."):
+        await model.run_on_unit("test-unit/0", command)
 
 
 @pytest.mark.asyncio

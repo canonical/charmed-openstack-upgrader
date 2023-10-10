@@ -23,6 +23,7 @@ from juju.action import Action
 from juju.application import Application
 from juju.client._definitions import FullStatus
 from juju.client.connector import NoConnectionException
+from juju.errors import JujuError
 from juju.model import Model
 from juju.unit import Unit
 from macaroonbakery.httpbakery import BakeryException
@@ -30,17 +31,19 @@ from six import wraps
 
 from cou.exceptions import (
     ActionFailed,
+    ActionFailedToRun,
     ApplicationError,
     ApplicationNotFound,
+    CommandExecutionFailed,
     TimeoutException,
     UnitNotFound,
 )
 
 JUJU_MAX_FRAME_SIZE: int = 2**30
-DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 60))
+DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 10))
 DEFAULT_MAX_WAIT: int = 5
 DEFAULT_WAIT: float = 1.1
-DEFAULT_MODEL_RETRIES: int = int(os.environ.get("COU_MODEL_RETRIES", 30))
+DEFAULT_MODEL_RETRIES: int = int(os.environ.get("COU_MODEL_RETRIES", 5))
 DEFAULT_MODEL_RETRY_BACKOFF: int = int(os.environ.get("COU_MODEL_RETRY_BACKOFF", 2))
 DEFAULT_MODEL_IDLE_PERIOD: int = 30
 
@@ -257,6 +260,13 @@ class COUModel:
         model = await self._get_model()
         return await model.get_status()
 
+    @retry(
+        no_retry_exceptions=(
+            UnitNotFound,
+            ActionFailedToRun,
+            ActionFailed,
+        )
+    )
     async def run_action(
         self,
         unit_name: str,
@@ -274,13 +284,20 @@ class COUModel:
         :type action_params: Optional[Dict], optional
         :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
         :type raise_on_failure: bool, optional
+        :raises UnitNotFound: _description_
         :raises ActionFailed: _description_
+        :raises ActionFailedToRun: _description_
         :return: When status is different from "completed"
         :rtype: Action
         """
         action_params = action_params or {}
         unit = await self._get_unit(unit_name)
-        action = await unit.run_action(action_name, **action_params)
+        try:
+            action = await unit.run_action(action_name, **action_params)
+        except Exception as exc:
+            # catching any exception if run_action failed, so we do not run int twice due retry
+            raise ActionFailedToRun(action_name, exc, **action_params) from exc
+
         result = await action.wait()
         if raise_on_failure:
             model = await self._get_model()
@@ -291,6 +308,12 @@ class COUModel:
 
         return result
 
+    @retry(
+        no_retry_exceptions=(
+            UnitNotFound,
+            CommandExecutionFailed,
+        )
+    )
     async def run_on_unit(
         self, unit_name: str, command: str, timeout: Optional[int] = None
     ) -> Dict[str, str]:
@@ -304,15 +327,21 @@ class COUModel:
         :type timeout: Optional[int]
         :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
         :rtype: Dict[str, str]
-        :raises: UnitNotFound
-        :raises: ActionFailed
+        :raises UnitNotFound: _description_
+        :raises ActionFailed: _description_
+        :raises CommandExecutionFailed: _description_
         """
         unit = await self._get_unit(unit_name)
-        action = await unit.run(command, timeout=timeout)
+        try:
+            action = await unit.run(command, timeout=timeout)
+        except Exception as exc:
+            # catching any exception if run_action failed, so we do not run int twice due retry
+            raise CommandExecutionFailed(command) from exc
+
         results = action.data.get("results")
         return _normalize_action_results(results)
 
-    @retry
+    @retry(no_retry_exceptions=(ApplicationNotFound,))
     async def set_application_config(self, name: str, configuration: Dict[str, str]) -> None:
         """Set application configuration.
 
@@ -325,7 +354,7 @@ class COUModel:
         await app.set_config(configuration)
 
     # pylint: disable=too-many-arguments
-    @retry
+    @retry(no_retry_exceptions=(UnitNotFound,))
     async def scp_from_unit(
         self,
         unit_name: str,
@@ -355,6 +384,14 @@ class COUModel:
         await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
 
     # pylint: disable=too-many-arguments
+    @retry(
+        no_retry_exceptions=(
+            ApplicationNotFound,
+            NotImplementedError,
+            ValueError,
+            JujuError,
+        )
+    )
     async def upgrade_charm(
         self,
         application_name: str,
@@ -400,6 +437,7 @@ class COUModel:
             switch=switch,
         )
 
+    @retry
     async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
         """Wait for model to reach an idle state.
 
