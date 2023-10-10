@@ -46,6 +46,34 @@ def test_auxiliary_app(status, config, model):
     assert app.units == expected_units
     assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "yoga"
+    assert app.current_os_release == "yoga"
+
+
+def test_auxiliary_app_cs(status, config, model):
+    expected_units = [
+        ApplicationUnit(
+            name="rabbitmq-server/0",
+            os_version=OpenStackRelease("yoga"),
+            workload_version="3.8",
+            machine="0/lxd/19",
+        )
+    ]
+    rmq_status = status["rabbitmq_server"]
+    rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
+    rmq_status.charm_channel = "stable"
+    app = OpenStackAuxiliaryApplication(
+        "rabbitmq-server",
+        status["rabbitmq_server"],
+        config["auxiliary_ussuri"],
+        model,
+        "rabbitmq-server",
+    )
+    assert app.channel == "stable"
+    assert app.os_origin == "distro"
+    assert app.units == expected_units
+    assert app.apt_source_codename == "ussuri"
+    assert app.channel_codename == "ussuri"
+    assert app.current_os_release == "yoga"
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
@@ -288,3 +316,17 @@ def test_auxiliary_raise_halt_upgrade(status, config, model):
     )
     with pytest.raises(HaltUpgradePlanGeneration):
         app.generate_upgrade_plan(target)
+
+
+def test_auxiliary_no_suitable_channel(status, config, model):
+    # OPENSTACK_TO_TRACK_MAPPING can't find a track for rabbitmq, focal, zed.
+    target = OpenStackRelease("zed")
+    app = OpenStackAuxiliaryApplication(
+        "rabbitmq-server",
+        status["rabbitmq_server"],
+        config["auxiliary_wallaby"],
+        model,
+        "rabbitmq-server",
+    )
+    with pytest.raises(ApplicationError):
+        app.target_channel(target)

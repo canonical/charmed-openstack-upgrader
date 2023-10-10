@@ -341,7 +341,7 @@ def units():
         for machine_number in [0, 1, 2]
     ]
 
-    units_no_workload_version = [
+    units_versionless_ussuri = [
         ApplicationUnit(
             name="glance-simplestreams-sync/0",
             os_version=OpenStackRelease("ussuri"),
@@ -354,7 +354,7 @@ def units():
         "units_ussuri": units_ussuri,
         "units_channel_based_ussuri": units_channel_based_ussuri,
         "units_wallaby": units_wallaby,
-        "units_no_workload_version": units_no_workload_version,
+        "units_versionless_ussuri": units_versionless_ussuri,
     }
 
 

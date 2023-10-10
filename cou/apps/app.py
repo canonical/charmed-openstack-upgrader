@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any, Optional
 
-from juju.client._definitions import ApplicationStatus
+from juju.client._definitions import ApplicationStatus, UnitStatus
 from ruamel.yaml import YAML
 
 from cou.exceptions import (
@@ -225,43 +225,47 @@ class OpenStackApplication:
             return stream.getvalue()
 
     def _populate_units(self) -> None:
-        """Populate application units.
+        """Populate application units."""
+        if not self.is_subordinate:
+            for name, unit in self.status.units.items():
+                compatible_os_version = (
+                    self._get_latest_compatible_os_version_by_unit_workload_version(unit)
+                )
+                self.units.append(
+                    ApplicationUnit(
+                        name=name,
+                        workload_version=unit.workload_version,
+                        os_version=compatible_os_version,
+                        machine=unit.machine,
+                    )
+                )
 
+    def _get_latest_compatible_os_version_by_unit_workload_version(
+        self, unit: UnitStatus
+    ) -> OpenStackRelease:
+        """Get the latest compatible OpenStack release based on the unit workload version.
+
+        If the application is versionless, then get from the current OpenStack release.
+
+        :param unit: Application Unit
+        :type unit: UnitStatus
         :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version.
+        :return: The latest compatible OpenStack release.
+        :rtype: OpenStackRelease
         """
-        # subordinates don't have units
-        units = getattr(self.status, "units", {})
-        for name, unit in units.items():
-            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
-                self.charm, unit.workload_version
+        if self.is_versionless:
+            return self.current_os_release
+
+        try:
+            return max(
+                OpenStackCodenameLookup.find_compatible_versions(self.charm, unit.workload_version)
             )
-            # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
-            if compatible_os_versions:
-                unit_os_version = max(compatible_os_versions)
-                self.units.append(
-                    ApplicationUnit(
-                        name=name,
-                        workload_version=unit.workload_version,
-                        os_version=unit_os_version,
-                        machine=unit.machine,
-                    )
-                )
-            # some charms like glance-simplestreams-sync does not have workload_version.
-            elif not unit.workload_version:
-                self.units.append(
-                    ApplicationUnit(
-                        name=name,
-                        workload_version=unit.workload_version,
-                        os_version=self.channel_codename,
-                        machine=unit.machine,
-                    )
-                )
-            else:
-                raise ApplicationError(
-                    f"'{self.name}' with workload version {unit.workload_version} has no "
-                    f"compatible OpenStack release in the lookup."
-                )
+        except ValueError as exc:
+            raise ApplicationError(
+                f"'{self.name}' with workload version {unit.workload_version} has no "
+                f"compatible OpenStack release."
+            ) from exc
 
     @property
     def channel(self) -> str:
@@ -284,12 +288,13 @@ class OpenStackApplication:
         """
         if self.is_from_charm_store:
             self._channel = charm_channel
-        else:
-            try:
-                OpenStackRelease(charm_channel.split("/")[0])
-                self._channel = charm_channel
-            except ValueError as exc:
-                raise ValueError(f"'{self.name}' has invalid channel: '{charm_channel}'") from exc
+            return
+
+        try:
+            OpenStackRelease(charm_channel.split("/")[0])
+            self._channel = charm_channel
+        except ValueError as exc:
+            raise ValueError(f"'{self.name}' has invalid channel: '{charm_channel}'") from exc
 
     @property
     def possible_current_channels(self) -> list[str]:
@@ -326,7 +331,7 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        if self.is_channel_based or self.is_subordinate:
+        if self.is_channel_based or self.is_subordinate or self.is_versionless:
             return self.channel_codename
         return self.current_os_release_by_unit
 
@@ -377,6 +382,18 @@ class OpenStackApplication:
         return not self.origin_setting
 
     @property
+    def is_versionless(self) -> bool:
+        """Check if the application is versionless.
+
+        Versionless applications are those that does not set a workload version.
+        E.g: glance-simplestreams-sync
+
+        :return: True if is versionless, False otherwise.
+        :rtype: bool
+        """
+        return not all((unit.workload_version for unit in self.status.units.values()))
+
+    @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
@@ -423,10 +440,13 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        self.channel = self.status.charm_channel
         if self.is_from_charm_store:
             return OpenStackRelease("ussuri")
 
+        # applications with no workload version will call channel_codename without setting
+        # the channel before
+        if not hasattr(self, "channel"):
+            self.channel = self.status.charm_channel
         # get the OpenStack release from the channel track of the application.
         return OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
 

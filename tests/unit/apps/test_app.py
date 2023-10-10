@@ -72,6 +72,7 @@ def assert_application(
     exp_channel_codename,
     exp_is_subordinate,
     exp_is_channel_based,
+    exp_is_versionless,
     target,
 ):
     target_version = OpenStackRelease(target)
@@ -93,6 +94,7 @@ def assert_application(
     assert app.channel_codename == exp_channel_codename
     assert app.is_subordinate == exp_is_subordinate
     assert app.is_channel_based == exp_is_channel_based
+    assert app.is_versionless == exp_is_versionless
 
 
 def test_application_ussuri(status, config, units, model):
@@ -112,6 +114,7 @@ def test_application_ussuri(status, config, units, model):
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
     exp_is_channel_based = False
+    exp_is_versionless = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -134,6 +137,7 @@ def test_application_ussuri(status, config, units, model):
         exp_channel_codename,
         exp_is_subordinate,
         exp_is_channel_based,
+        exp_is_versionless,
         target,
     )
 
@@ -156,6 +160,7 @@ def test_channel_based_application_ussuri(status, units, model):
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
     exp_is_channel_based = True
+    exp_is_versionless = False
 
     app = OpenStackApplication("designate-bind", app_status, {}, model, "designate-bind")
     assert_application(
@@ -178,6 +183,52 @@ def test_channel_based_application_ussuri(status, units, model):
         exp_channel_codename,
         exp_is_subordinate,
         exp_is_channel_based,
+        exp_is_versionless,
+        target,
+    )
+
+
+def test_versionless_application_ussuri(status, units, model):
+    target = "victoria"
+    app_status = status["glance_simplestreams_sync_ussuri"]
+    exp_is_from_charm_store = False
+    exp_os_origin = ""
+    exp_units = units["units_versionless_ussuri"]
+    exp_channel = app_status.charm_channel
+    exp_series = app_status.series
+    exp_current_os_release = "ussuri"
+    exp_possible_current_channels = ["ussuri/stable"]
+    exp_target_channel = f"{target}/stable"
+    exp_new_origin = f"cloud:{exp_series}-{target}"
+    exp_apt_source_codename = "ussuri"
+    exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
+    exp_is_channel_based = True
+    exp_is_versionless = True
+    app = OpenStackApplication(
+        "glance-simplestreams-sync", app_status, {}, model, "glance-simplestreams-sync"
+    )
+    assert_application(
+        app,
+        "glance-simplestreams-sync",
+        exp_series,
+        app_status,
+        {},
+        model,
+        "glance-simplestreams-sync",
+        exp_is_from_charm_store,
+        exp_os_origin,
+        exp_units,
+        exp_channel,
+        exp_current_os_release,
+        exp_possible_current_channels,
+        exp_target_channel,
+        exp_new_origin,
+        exp_apt_source_codename,
+        exp_channel_codename,
+        exp_is_subordinate,
+        exp_is_channel_based,
+        exp_is_versionless,
         target,
     )
 
@@ -215,6 +266,7 @@ def test_application_cs(status, config, units, model):
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
     exp_is_channel_based = False
+    exp_is_versionless = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -237,6 +289,7 @@ def test_application_cs(status, config, units, model):
         exp_channel_codename,
         exp_is_subordinate,
         exp_is_channel_based,
+        exp_is_versionless,
         target,
     )
 
@@ -258,6 +311,7 @@ def test_application_wallaby(status, config, units, model):
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
     exp_is_channel_based = False
+    exp_is_versionless = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -280,6 +334,7 @@ def test_application_wallaby(status, config, units, model):
         exp_channel_codename,
         exp_is_subordinate,
         exp_is_channel_based,
+        exp_is_versionless,
         target,
     )
 
@@ -435,7 +490,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
     assert upgrade_plan == expected_plan
 
 
-def test_upgrade_plan_no_workload_version_ussuri_to_victoria(status, model):
+def test_upgrade_plan_versionless_ussuri_to_victoria(status, model):
     target = "victoria"
     app_status = status["glance_simplestreams_sync_ussuri"]
     app = OpenStackApplication(

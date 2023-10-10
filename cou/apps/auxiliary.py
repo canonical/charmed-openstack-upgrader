@@ -39,7 +39,6 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
     def possible_current_channels(self) -> list[str]:
         """Return the possible current channels based on the series and current OpenStack release.
 
-        :raises ApplicationError: When cannot find tracks.
         :return: The possible current channels for the application.
         :rtype: list[str]
         """
@@ -71,22 +70,18 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
 
         Auxiliary charms can have multiple compatible OpenStack releases. In
         that case, return the latest compatible OpenStack version.
-        :raises ApplicationError: When cannot identify suitable OpenStack release codename
-            based on the track of the charm channel.
+        When application comes from charm store, it's not possible to determine the
+        OpenStack release codename and in that case it will be considered as ussuri.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
+        if self.is_from_charm_store:
+            return OpenStackRelease("ussuri")
+
         track: str = self.channel.split("/", maxsplit=1)[0]
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
-        if compatible_os_releases:
-            return max(compatible_os_releases)
-
-        raise ApplicationError(
-            (
-                f"'{self.charm}' cannot identify suitable OpenStack release codename "
-                f"for channel: '{self.channel}'"
-            )
-        )
+        # channel setter already validate if it is a valid channel.
+        return max(compatible_os_releases)  # type: ignore
 
     @property
     def channel(self) -> str:
@@ -111,17 +106,18 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         """
         if self.is_from_charm_store or self.is_subordinate:
             self._channel = charm_channel
-        else:
-            tracks = OPENSTACK_TO_TRACK_MAPPING.get(
-                (self.charm, self.series, self.current_os_release.codename), []
-            )
-            track_from_channel = charm_channel.split("/")[0]
-            if track_from_channel not in tracks:
-                raise ValueError(
-                    (
-                        f"'{self.name}' cannot find a channel track for charm: '{charm_channel}' "
-                        f"series: {self.series} and OpenStack "
-                        f"release: {self.current_os_release.codename}"
-                    )
+            return
+
+        tracks = OPENSTACK_TO_TRACK_MAPPING.get(
+            (self.charm, self.series, self.current_os_release.codename), []
+        )
+        track_from_channel = charm_channel.split("/", maxsplit=1)[0]
+        if track_from_channel not in tracks:
+            raise ValueError(
+                (
+                    f"'{self.name}' cannot find a channel track for charm: '{charm_channel}' "
+                    f"series: {self.series} and OpenStack "
+                    f"release: {self.current_os_release.codename}"
                 )
-            self._channel = charm_channel
+            )
+        self._channel = charm_channel
