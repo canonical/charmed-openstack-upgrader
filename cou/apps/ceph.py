@@ -45,12 +45,14 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
     def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Post Upgrade planning.
 
+        Wait until the entire model reaches the idle state and then check the target workload.
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
         :rtype: list[UpgradeStep]
         """
         return [
+            self._get_wait_step(300, wait_for_itself=False),
             self._get_reached_expected_target_plan(target),
             self._get_change_require_osd_release_plan(self.target_channel(target)),
         ]

@@ -13,9 +13,11 @@
 # limitations under the License.
 """Auxiliary application class."""
 import logging
+from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError
+from cou.steps import UpgradeStep
 from cou.utils.openstack import (
     CHARM_FAMILIES,
     OPENSTACK_TO_TRACK_MAPPING,
@@ -27,8 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @AppFactory.register_application(
-    ["rabbitmq-server", "vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"]
-    + CHARM_FAMILIES["ovn"]
+    ["vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"] + CHARM_FAMILIES["ovn"]
 )
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
@@ -93,3 +94,49 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
                 f"for channel: '{self.channel}'"
             )
         )
+
+
+@AppFactory.register_application(["rabbitmq-server"])
+class RabbitMQServer(OpenStackAuxiliaryApplication):
+    """RabbitMQ application.
+
+    RabbitMQ had to wait until the entire model will be idle after the upgrade to ensure other
+    upgrade can continue.
+    """
+
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Post Upgrade planning.
+
+        Wait until the entire model reaches the idle state and then check the target workload.
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add pre upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        return [
+            self._get_wait_step(300, wait_for_itself=False),
+            self._get_reached_expected_target_plan(target),
+        ]
+
+
+@AppFactory.register_application(["keystone"])
+class Keystone(OpenStackApplication):
+    """Keystone application.
+
+    Keystone had to wait until the entire model will be idle after the upgrade to ensure other
+    upgrade can continue.
+    """
+
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Post Upgrade planning.
+
+        Wait until the entire model reaches the idle state and then check the target workload.
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add pre upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        return [
+            self._get_wait_step(300, wait_for_itself=False),
+            self._get_reached_expected_target_plan(target),
+        ]

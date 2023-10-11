@@ -437,12 +437,17 @@ class OpenStackApplication:
     def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
         """Post Upgrade planning.
 
+        Wait until the application reaches the idle state and then check the target workload.
+
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        return [self._get_reached_expected_target_plan(target)]
+        return [
+            self._get_wait_step(120),
+            self._get_reached_expected_target_plan(target),
+        ]
 
     def generate_upgrade_plan(self, target: str) -> UpgradeStep:
         """Generate full upgrade plan for an Application.
@@ -639,4 +644,29 @@ class OpenStackApplication:
             parallel=parallel,
             function=self._check_upgrade,
             target=target,
+        )
+
+    def _get_wait_step(self, timeout: int, wait_for_itself: bool = True) -> UpgradeStep:
+        """Get wait step for entire model or application.
+
+        :param timeout: max wait time
+        :type timeout: int
+        :param wait_for_itself: if app should wait only for itself or whole model
+        :type wait_for_itself: bool
+        :return: Step waiting for entire model or application itself
+        :rtype: UpgradeStep
+        """
+        description = f"Wait ({timeout} s) for model {self.model.name} to reach the idle state."
+        apps = None
+
+        if wait_for_itself:
+            description = f"Wait ({timeout} s) for app {self.name} to reach the idle state."
+            apps = [self.name]
+
+        return UpgradeStep(
+            description=description,
+            parallel=False,
+            function=self.model.wait_for_idle,
+            timeout=timeout,
+            apps=apps,
         )

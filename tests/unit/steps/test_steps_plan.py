@@ -34,6 +34,24 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         parallel=False,
         function=None,
     )
+    if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
+        # apps waiting for whole model
+        wait_step = UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        )
+    else:
+        wait_step = UpgradeStep(
+            description=f"Wait (120 s) for app {app.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=120,
+            apps=[app.name],
+        )
+
     upgrade_steps = [
         UpgradeStep(
             description=(
@@ -81,6 +99,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             name=app.name,
             configuration={f"{app.origin_setting}": f"cloud:focal-{target_version.codename}"},
         ),
+        wait_step,
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
@@ -176,6 +195,8 @@ async def test_generate_plan(apps, model):
 
     expected_plan.add_step(control_plane_principals)
     expected_plan.add_step(control_plane_subordinates)
+    print("generated plan:", upgrade_plan)
+    print("expected plan:", expected_plan)
     assert upgrade_plan == expected_plan
 
 
