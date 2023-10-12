@@ -56,7 +56,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: The OpenStack release codename based on the channel.
         :rtype: OpenStackRelease
         """
-        track: str = self.channel.split("/", maxsplit=1)[0]
+        track: str = self._get_track_from_channel(self.channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
         # channel setter already validate if it is a valid channel.
         return max(compatible_os_releases)  # type: ignore
@@ -72,17 +72,18 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         """
         return False
 
-    @property
-    def is_valid_track(self) -> bool:
+    def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
 
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
         :return: True if valid, False otherwise.
         :rtype: bool
         """
         if self.is_from_charm_store:
             return True
 
-        track = self.status.charm_channel.split("/", maxsplit=1)[0]
+        track = self._get_track_from_channel(charm_channel)
         possible_channels = self._get_channels_based_on_os(self.current_os_release)
         return any((channel for channel in possible_channels if track in channel))
 

@@ -42,7 +42,7 @@ def test_auxiliary_app(status, config, model):
         "rabbitmq-server",
     )
     assert app.channel == "3.8/stable"
-    assert app.is_valid_track is True
+    assert app.is_valid_track(app.channel) is True
     assert app.os_origin == "distro"
     assert app.units == expected_units
     assert app.apt_source_codename == "ussuri"
@@ -71,7 +71,7 @@ def test_auxiliary_app_cs(status, config, model):
         "rabbitmq-server",
     )
     assert app.channel == "stable"
-    assert app.is_valid_track is True
+    assert app.is_valid_track(app.channel) is True
     assert app.os_origin == "distro"
     assert app.units == expected_units
     assert app.apt_source_codename == "ussuri"

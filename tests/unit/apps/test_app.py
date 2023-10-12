@@ -96,7 +96,7 @@ def assert_application(
     assert app.is_subordinate == exp_is_subordinate
     assert app.is_os_channel_based == exp_is_os_channel_based
     assert app.is_versionless == exp_is_versionless
-    assert app.is_valid_track == exp_is_valid_track
+    assert app.is_valid_track(app.channel) == exp_is_valid_track
 
 
 def test_application_ussuri(status, config, units, model):
@@ -387,7 +387,7 @@ def test_application_unexpected_channel(status, config, model):
         model,
         "keystone",
     )
-    assert app.is_valid_track is True
+    assert app.is_valid_track(app.channel) is True
     with pytest.raises(ApplicationError):
         app.generate_upgrade_plan(target)
 

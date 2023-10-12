@@ -25,7 +25,7 @@ def test_auxiliary_subordinate(apps):
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
     assert app.is_subordinate is True
-    assert app.is_valid_track is True
+    assert app.is_valid_track(app.channel) is True
     assert app.is_os_channel_based is False
 
 

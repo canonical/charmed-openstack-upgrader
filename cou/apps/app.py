@@ -228,9 +228,7 @@ class OpenStackApplication:
         """Populate application units."""
         if not self.is_subordinate:
             for name, unit in self.status.units.items():
-                compatible_os_version = (
-                    self._get_latest_compatible_os_version_by_unit_workload_version(unit)
-                )
+                compatible_os_version = self._get_latest_os_version_by_workload_version(unit)
                 self.units.append(
                     ApplicationUnit(
                         name=name,
@@ -240,9 +238,7 @@ class OpenStackApplication:
                     )
                 )
 
-    def _get_latest_compatible_os_version_by_unit_workload_version(
-        self, unit: UnitStatus
-    ) -> OpenStackRelease:
+    def _get_latest_os_version_by_workload_version(self, unit: UnitStatus) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
 
         If the application is versionless, then get from the current OpenStack release.
@@ -264,7 +260,7 @@ class OpenStackApplication:
         except ValueError as exc:
             raise ApplicationError(
                 f"'{self.name}' with workload version {unit.workload_version} has no "
-                f"compatible OpenStack release."
+                "compatible OpenStack release."
             ) from exc
 
     @property
@@ -289,7 +285,7 @@ class OpenStackApplication:
         if (
             self.is_from_charm_store
             or (not self.is_os_channel_based and self.is_subordinate)
-            or self.is_valid_track
+            or self.is_valid_track(charm_channel)
         ):
             self._channel = charm_channel
             return
@@ -404,30 +400,39 @@ class OpenStackApplication:
         :return: True if does have origin setting, False otherwise.
         :rtype: bool
         """
-        if (
+        return (
             not self.origin_setting
             or self.is_versionless
             or self.is_subordinate
             or self.charm == "gnocchi"
-        ):
-            return True
-        return False
+        )
 
-    @property
-    def is_valid_track(self) -> bool:
+    def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
 
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
         :return: True if valid, False otherwise.
         :rtype: bool
         """
         if self.is_from_charm_store:
             return True
         try:
-            track = self.status.charm_channel.split("/", maxsplit=1)[0]
-            OpenStackRelease(track)
+            OpenStackRelease(self._get_track_from_channel(charm_channel))
             return True
         except ValueError:
             return False
+
+    @staticmethod
+    def _get_track_from_channel(charm_channel: str) -> str:
+        """Get the track from a given channel.
+
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
+        :return: The track from a channel. E.g: ussuri
+        :rtype: str
+        """
+        return charm_channel.split("/", maxsplit=1)[0]
 
     @property
     def is_versionless(self) -> bool:
@@ -438,7 +443,7 @@ class OpenStackApplication:
         :return: True if is versionless, False otherwise.
         :rtype: bool
         """
-        return not all((unit.workload_version for unit in self.status.units.values()))
+        return not all(unit.workload_version for unit in self.status.units.values())
 
     @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
@@ -504,7 +509,7 @@ class OpenStackApplication:
         :return: The OpenStack release codename based on the channel.
         :rtype: OpenStackRelease
         """
-        return OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
+        return OpenStackRelease(self._get_track_from_channel(self.channel))
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
