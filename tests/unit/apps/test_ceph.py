@@ -112,6 +112,13 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
             configuration={f"{app.origin_setting}": "cloud:focal-yoga"},
         ),
         UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
@@ -191,6 +198,13 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             function=model.set_application_config,
             name=app.name,
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+        ),
+        UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",

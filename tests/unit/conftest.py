@@ -21,7 +21,7 @@ from juju.client._definitions import ApplicationStatus, UnitStatus
 from juju.client.client import FullStatus
 
 from cou.apps.app import ApplicationUnit, OpenStackApplication
-from cou.apps.auxiliary import OpenStackAuxiliaryApplication
+from cou.apps.auxiliary import Keystone, OpenStackAuxiliaryApplication
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.utils.openstack import OpenStackRelease
@@ -399,7 +399,7 @@ def apps(status, config, model):
     keystone_ldap_status = status["keystone-ldap"]
     nova_wallaby_status = status["nova_wallaby"]
 
-    keystone_ussuri = OpenStackApplication(
+    keystone_ussuri = Keystone(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], model, "keystone"
     )
     keystone_wallaby = OpenStackApplication(

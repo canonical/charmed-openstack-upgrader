@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cou.apps import app as app_module
-from cou.apps.app import OpenStackApplication
+from cou.apps.auxiliary import Keystone
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -35,15 +35,9 @@ def test_application_eq(status, config, model):
     config_keystone_1 = config["openstack_ussuri"]
     status_keystone_2 = status["keystone_wallaby"]
     config_keystone_2 = config["openstack_wallaby"]
-    keystone_1 = OpenStackApplication(
-        "keystone", status_keystone_1, config_keystone_1, model, "keystone"
-    )
-    keystone_2 = OpenStackApplication(
-        "keystone", status_keystone_2, config_keystone_2, model, "keystone"
-    )
-    keystone_3 = OpenStackApplication(
-        "keystone_foo", status_keystone_1, config_keystone_1, model, "keystone"
-    )
+    keystone_1 = Keystone("keystone", status_keystone_1, config_keystone_1, model, "keystone")
+    keystone_2 = Keystone("keystone", status_keystone_2, config_keystone_2, model, "keystone")
+    keystone_3 = Keystone("keystone_foo", status_keystone_1, config_keystone_1, model, "keystone")
 
     # keystone_1 is equal to keystone_2 because they have the same name
     # even if they have different status and config.
@@ -107,7 +101,7 @@ def test_application_ussuri(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -140,7 +134,7 @@ def test_application_different_wl(status, config, model):
     app_status = status["keystone_ussuri_victoria"]
     app_config = config["openstack_ussuri"]
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
         app.current_os_release
 
@@ -162,7 +156,7 @@ def test_application_cs(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -201,7 +195,7 @@ def test_application_wallaby(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
 
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
         app,
         "my_keystone",
@@ -225,7 +219,7 @@ def test_application_wallaby(status, config, units, model):
 
 
 def test_application_no_origin_config(status, model):
-    app = OpenStackApplication(
+    app = Keystone(
         "my_keystone",
         status["keystone_ussuri"],
         {},
@@ -237,7 +231,7 @@ def test_application_no_origin_config(status, model):
 
 
 def test_application_empty_origin_config(status, model):
-    app = OpenStackApplication(
+    app = Keystone(
         "my_keystone",
         status["keystone_ussuri"],
         {"source": {"value": ""}},
@@ -252,7 +246,7 @@ def test_application_unexpected_channel(status, config, model):
     app_status = status["keystone_wallaby"]
     # channel is set to a previous OpenStack release
     app_status.charm_channel = "ussuri/stable"
-    app = OpenStackApplication(
+    app = Keystone(
         "my_keystone",
         app_status,
         config["openstack_wallaby"],
@@ -268,7 +262,7 @@ def test_application_unexpected_channel(status, config, model):
     ["ppa:myteam/ppa", "cloud:xenial-proposed/ocata", "http://my.archive.com/ubuntu main"],
 )
 def test_application_unknown_source(status, model, source_value):
-    app = OpenStackApplication(
+    app = Keystone(
         "my_keystone",
         status["keystone_ussuri"],
         {"source": {"value": source_value}},
@@ -289,7 +283,7 @@ async def test_application_check_upgrade(status, config, model):
     mock_status = AsyncMock()
     mock_status.return_value.applications = {"my_keystone": status["keystone_victoria"]}
     model.get_status = mock_status
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     await app._check_upgrade(target)
 
 
@@ -304,7 +298,7 @@ async def test_application_check_upgrade_fail(status, config, model):
     mock_status = AsyncMock()
     mock_status.return_value.applications = {"my_keystone": app_status}
     model.get_status = mock_status
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     with pytest.raises(ApplicationError, match=exp_error_msg):
         await app._check_upgrade(target)
 
@@ -313,7 +307,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
@@ -363,6 +357,13 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
@@ -378,7 +379,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
     target = "victoria"
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
@@ -428,6 +429,13 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
@@ -445,7 +453,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
     app_config = config["openstack_ussuri"]
     # channel it's already on next OpenStack release
     app_status.charm_channel = "victoria/stable"
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = UpgradeStep(
@@ -482,6 +490,13 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
@@ -499,7 +514,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     app_config = config["openstack_ussuri"]
     # openstack-origin already configured for next OpenStack release
     app_config["openstack-origin"]["value"] = "cloud:focal-victoria"
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
@@ -539,6 +554,13 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
             channel="victoria/stable",
         ),
         UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
@@ -558,7 +580,7 @@ def test_upgrade_plan_application_already_upgraded(status, config, model):
     target = "victoria"
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
-    app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
+    app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     # victoria is lesser than wallaby, so application should not generate a plan.
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app.generate_upgrade_plan(target)
@@ -569,7 +591,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"]["value"] = False
-    app = OpenStackApplication(
+    app = Keystone(
         "my_keystone",
         app_status,
         app_config,
@@ -616,6 +638,13 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
             function=model.set_application_config,
             name=app.name,
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+        ),
+        UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",

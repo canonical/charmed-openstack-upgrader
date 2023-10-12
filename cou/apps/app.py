@@ -587,7 +587,7 @@ class OpenStackApplication:
         if self.config.get("action-managed-upgrade", {}).get("value", False):
             return UpgradeStep(
                 description=(
-                    f"Change charm config of '{self.name}' " "'action-managed-upgrade' to False."
+                    f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,

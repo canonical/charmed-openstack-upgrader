@@ -15,7 +15,7 @@
 import pytest
 
 from cou.apps.app import ApplicationUnit
-from cou.apps.auxiliary import OpenStackAuxiliaryApplication
+from cou.apps.auxiliary import RabbitMQServer
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import UpgradeStep
 from cou.utils import app_utils
@@ -34,7 +34,7 @@ def test_auxiliary_app(status, config, model):
         )
     ]
 
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
@@ -50,7 +50,7 @@ def test_auxiliary_app(status, config, model):
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
     target = "victoria"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
@@ -101,6 +101,13 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
@@ -117,7 +124,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
     rmq_status = status["rabbitmq_server"]
     # rabbitmq already on channel 3.9 on ussuri
     rmq_status.charm_channel = "3.9/stable"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         rmq_status,
         config["auxiliary_ussuri"],
@@ -161,6 +168,13 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
@@ -177,7 +191,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
     rmq_status.charm_channel = "stable"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
@@ -226,6 +240,13 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
+            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            parallel=False,
+            function=model.wait_for_idle,
+            timeout=300,
+            apps=None,
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
@@ -242,7 +263,7 @@ def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
     rmq_status = status["rabbitmq_server"]
     # 2.0 is an unknown track
     rmq_status.charm_channel = "2.0/stable"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
@@ -255,7 +276,7 @@ def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, model):
     with pytest.raises(ApplicationError):
-        OpenStackAuxiliaryApplication(
+        RabbitMQServer(
             "rabbitmq-server",
             status["unknown_rabbitmq_server"],
             config["auxiliary_ussuri"],
@@ -268,7 +289,7 @@ def test_auxiliary_raise_error_unknown_track(status, config, model):
     target = OpenStackRelease("victoria")
     app_status = status["rabbitmq_server"]
     app_status.series = "foo"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         app_status,
         config["auxiliary_ussuri"],
@@ -285,7 +306,7 @@ def test_auxiliary_raise_error_unknown_track(status, config, model):
 def test_auxiliary_raise_halt_upgrade(status, config, model):
     target = "victoria"
     # source is already configured to wallaby, so the plan halt with target victoria
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_wallaby"],
