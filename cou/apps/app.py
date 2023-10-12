@@ -254,8 +254,8 @@ class OpenStackApplication:
         :return: The latest compatible OpenStack release.
         :rtype: OpenStackRelease
         """
-        if self.is_versionless:
-            return self.current_os_release
+        if self.is_os_channel_based:
+            return self.channel_codename
 
         try:
             return max(
@@ -286,15 +286,24 @@ class OpenStackApplication:
         :raises ValueError:  Exception raised when channel is not a valid OpenStack
             channel.
         """
-        if self.is_from_charm_store:
+        if (
+            self.is_from_charm_store
+            or (not self.is_os_channel_based and self.is_subordinate)
+            or self.is_valid_track
+        ):
             self._channel = charm_channel
             return
+        raise ValueError(self.channel_err_msg(charm_channel))
 
-        try:
-            OpenStackRelease(charm_channel.split("/")[0])
-            self._channel = charm_channel
-        except ValueError as exc:
-            raise ValueError(f"'{self.name}' has invalid channel: '{charm_channel}'") from exc
+    def channel_err_msg(self, charm_channel: str) -> str:
+        """Error message when channel is not valid.
+
+        :param charm_channel: Charm channel.
+        :type charm_channel: str
+        :return: error message
+        :rtype: str
+        """
+        return f"'{self.name}' has invalid channel: '{charm_channel}'"
 
     @property
     def possible_current_channels(self) -> list[str]:
@@ -303,17 +312,33 @@ class OpenStackApplication:
         :return: The possible current channels for the application. E.g: ["ussuri/stable"]
         :rtype: list[str]
         """
-        return [f"{self.current_os_release.codename}/stable"]
+        return self._get_channels_based_on_os(self.current_os_release)
 
     def target_channel(self, target: OpenStackRelease) -> str:
         """Return the appropriate channel for the passed OpenStack target.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :raises ApplicationError: When cannot find a suitable target channel.
         :return: The next channel for the application. E.g: victoria/stable
         :rtype: str
         """
-        return f"{target.codename}/stable"
+        targets_channels = self._get_channels_based_on_os(target)
+        if targets_channels:
+            return targets_channels[-1]
+        raise ApplicationError(
+            f"Cannot find a suitable '{self.charm}' charm channel for {target.codename}"
+        )
+
+    def _get_channels_based_on_os(self, os_release: OpenStackRelease) -> list[str]:
+        """Get the channels based on the OpenStack release.
+
+        :param os_release: OpenStack release.
+        :type os_release: OpenStackRelease
+        :return: List of possible channels compatible with a OpenStack release.
+        :rtype: list[str]
+        """
+        return [f"{os_release.codename}/stable"]
 
     @property
     def series(self) -> str:
@@ -331,7 +356,7 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        if self.is_channel_based or self.is_subordinate or self.is_versionless:
+        if self.is_os_channel_based or self.is_subordinate:
             return self.channel_codename
         return self.current_os_release_by_unit
 
@@ -373,13 +398,36 @@ class OpenStackApplication:
         return bool(self.status.subordinate_to)
 
     @property
-    def is_channel_based(self) -> bool:
+    def is_os_channel_based(self) -> bool:
         """Check if application is channel based.
 
         :return: True if does have origin setting, False otherwise.
         :rtype: bool
         """
-        return not self.origin_setting
+        if (
+            not self.origin_setting
+            or self.is_versionless
+            or self.is_subordinate
+            or self.charm == "gnocchi"
+        ):
+            return True
+        return False
+
+    @property
+    def is_valid_track(self) -> bool:
+        """Check if the channel track is valid.
+
+        :return: True if valid, False otherwise.
+        :rtype: bool
+        """
+        if self.is_from_charm_store:
+            return True
+        try:
+            track = self.status.charm_channel.split("/", maxsplit=1)[0]
+            OpenStackRelease(track)
+            return True
+        except ValueError:
+            return False
 
     @property
     def is_versionless(self) -> bool:
@@ -387,7 +435,6 @@ class OpenStackApplication:
 
         Versionless applications are those that does not set a workload version.
         E.g: glance-simplestreams-sync
-
         :return: True if is versionless, False otherwise.
         :rtype: bool
         """
@@ -448,6 +495,15 @@ class OpenStackApplication:
         if not hasattr(self, "channel"):
             self.channel = self.status.charm_channel
         # get the OpenStack release from the channel track of the application.
+        return self._get_channel_codename
+
+    @property
+    def _get_channel_codename(self) -> OpenStackRelease:
+        """Property responsible to get the channel codename.
+
+        :return: The OpenStack release codename based on the channel.
+        :rtype: OpenStackRelease
+        """
         return OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
 
     def new_origin(self, target: OpenStackRelease) -> str:
@@ -548,7 +604,7 @@ class OpenStackApplication:
         :return: Plan that will add post upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        if self.is_subordinate:
+        if self.is_subordinate or self.is_versionless:
             return [None]
         return [self._get_reached_expected_target_plan(target)]
 

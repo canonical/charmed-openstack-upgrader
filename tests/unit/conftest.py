@@ -325,7 +325,7 @@ def units():
     units_channel_based_ussuri = [
         ApplicationUnit(
             name=f"designate-bind/{machine_number}",
-            os_version=OpenStackRelease("yoga"),
+            os_version=OpenStackRelease("ussuri"),
             workload_version="9.16.1",
             machine=f"{machine_number}/lxd/6",
         )

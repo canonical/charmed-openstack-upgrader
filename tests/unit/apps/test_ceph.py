@@ -42,6 +42,7 @@ def test_ceph_mon_app(status, config, model):
     ]
     assert app.apt_source_codename == "xena"
     assert app.channel_codename == "xena"
+    assert app.is_os_channel_based is False
 
 
 def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
