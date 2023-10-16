@@ -12,9 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Tests of the ovn application classes."""
-
-import warnings
-
 import pytest
 
 from cou.apps.ovn import OvnPrincipalApplication, OvnSubordinateApplication
@@ -121,7 +118,6 @@ def test_ovn_no_compatible_os_release(status, config, model, channel):
 
 
 def test_ovn_principal_upgrade_plan(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = OvnPrincipalApplication(
         "ovn-central",
@@ -174,7 +170,6 @@ def test_ovn_principal_upgrade_plan(status, config, model):
 
 
 def test_ovn_subordinate_upgrade_plan(status, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = OvnSubordinateApplication(
         "ovn-chassis",

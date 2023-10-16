@@ -20,6 +20,7 @@ import asyncio
 import inspect
 import logging
 import os
+import warnings
 from typing import Any, Coroutine, List, Optional
 
 from cou.exceptions import CanceledUpgradeStep
@@ -67,6 +68,11 @@ class UpgradeStep:
         :param coro: Step coroutine
         :type coro: Optional[coroutine]
         """
+        if coro is not None:
+            # NOTE(rgildein): We need to ignore coroutine not to be awaited if step is not run
+            warnings.filterwarnings(
+                "ignore", message=f"coroutine '.*{coro.__name__}' was never awaited"
+            )
         self.parallel = parallel
         self.description = description
         self.sub_steps: List[UpgradeStep] = []
@@ -124,6 +130,14 @@ class UpgradeStep:
     def canceled(self) -> bool:
         """Return boolean represent if step was canceled."""
         return self._canceled
+
+    @property
+    def results(self) -> Any:
+        """Return result of UpgradeStep."""
+        if self._task is None:
+            return None
+
+        return self._task.result()
 
     def add_step(self, step: UpgradeStep) -> None:
         """Add a single step.

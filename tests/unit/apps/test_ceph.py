@@ -12,9 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Tests of the ceph application class."""
-
-import warnings
-
 from cou.apps.app import ApplicationUnit
 from cou.apps.ceph import CephMonApplication
 from cou.steps import UpgradeStep
@@ -52,7 +49,6 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
     model,
 ):
     """Test when ceph version changes between os releases."""
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "yoga"
     app = CephMonApplication(
         "ceph-mon",
@@ -132,7 +128,6 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
     model,
 ):
     """Test when ceph version remains the same between os releases."""
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = CephMonApplication(
         "ceph-mon",

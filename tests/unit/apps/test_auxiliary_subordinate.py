@@ -12,9 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
-
-import warnings
-
 from cou.steps import UpgradeStep
 
 
@@ -29,7 +26,6 @@ def test_auxiliary_subordinate(apps):
 
 
 def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = apps["keystone_mysql_router"]
 

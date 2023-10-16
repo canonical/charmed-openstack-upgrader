@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
-import warnings
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -249,7 +248,6 @@ def test_application_empty_origin_config(status, model):
 
 
 def test_application_unexpected_channel(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "xena"
     app_status = status["keystone_wallaby"]
     # channel is set to a previous OpenStack release
@@ -312,7 +310,6 @@ async def test_application_check_upgrade_fail(status, config, model):
 
 
 def test_upgrade_plan_ussuri_to_victoria(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
@@ -364,7 +361,6 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
 
 
 def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
@@ -416,7 +412,6 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
 
 
 def test_upgrade_plan_channel_on_next_os_release(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
@@ -464,7 +459,6 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
 
 
 def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
@@ -511,7 +505,6 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
 
 
 def test_upgrade_plan_application_already_upgraded(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     exp_error_msg = (
         "Application 'my_keystone' already configured for release equal or greater "
         "than victoria. Ignoring."
@@ -526,7 +519,6 @@ def test_upgrade_plan_application_already_upgraded(status, config, model):
 
 
 def test_upgrade_plan_application_already_disable_action_managed(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]

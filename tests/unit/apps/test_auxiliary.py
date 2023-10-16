@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary application class."""
-import warnings
-
 import pytest
 
 from cou.apps.app import ApplicationUnit
@@ -51,7 +49,6 @@ def test_auxiliary_app(status, config, model):
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
@@ -108,7 +105,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     # rabbitmq already on channel 3.9 on ussuri
@@ -163,7 +159,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
@@ -221,7 +216,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
 
 
 def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     # 2.0 is an unknown track
@@ -267,7 +261,6 @@ def test_auxiliary_raise_error_unknown_track(status, config, model):
 
 
 def test_auxiliary_raise_halt_upgrade(status, config, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     # source is already configured to wallaby, so the plan halt with target victoria
     app = OpenStackAuxiliaryApplication(

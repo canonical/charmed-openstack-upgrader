@@ -15,10 +15,10 @@
 """Test steps package."""
 import asyncio
 import re
+import warnings
 from unittest.mock import MagicMock
 
 import pytest
-from juju.model import warnings
 
 from cou.exceptions import CanceledUpgradeStep
 from cou.steps import UpgradeStep, compare_step_coroutines
@@ -47,8 +47,6 @@ def test_compare_step_coroutines(coro1, coro2, exp_result):
 @pytest.mark.parametrize("description, parallel", [("test", False), ("test description", True)])
 def test_step_init(description, parallel):
     """Test UpgradeStep initialization."""
-    warnings.filterwarnings("ignore", message="coroutine 'mock_coro' was never awaited")
-
     coro = mock_coro()
     step = UpgradeStep(description, parallel, coro)
 
@@ -61,8 +59,6 @@ def test_step_init(description, parallel):
 
 def test_step_hash():
     """Test creation of hash from UpgradeStep."""
-    warnings.filterwarnings("ignore", message="coroutine 'mock_coro' was never awaited")
-
     coro = mock_coro()
     step = UpgradeStep("test hash", False, coro)
 
@@ -75,8 +71,6 @@ def test_step_hash():
 )
 def test_step_eq(description, parallel, args):
     """Test UpgradeStep comparison."""
-    warnings.filterwarnings("ignore", message="coroutine 'mock_coro' was never awaited")
-
     # coro = mock_coro(*args)
     step_1 = UpgradeStep(description, parallel, mock_coro(*args))
     step_2 = UpgradeStep(description, parallel, mock_coro(*args))
@@ -162,8 +156,6 @@ async def test_step_run():
 @pytest.mark.asyncio
 async def test_step_run_canceled():
     """Test UpgradeStep run canceled step."""
-    warnings.filterwarnings("ignore", message="coroutine 'mock_coro' was never awaited")
-
     description = "test plan"
     exp_error = re.escape(f"Could not run canceled step: UpgradeStep({description})")
     step = UpgradeStep(description=description, coro=mock_coro())
@@ -221,7 +213,7 @@ async def test_step_cancel_task():
 )
 async def test_step_full_run(sub_steps, exp_order, parallel):
     """Test to simulate running full plan with steps."""
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     steps_order = []
 
     async def sub_step(name, time):

@@ -13,7 +13,6 @@
 #  limitations under the License.
 """Subordinate application class."""
 import logging
-import warnings
 
 import pytest
 
@@ -44,7 +43,6 @@ def test_current_os_release(status, model):
 
 
 def test_generate_upgrade_plan(status, model):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
@@ -122,7 +120,6 @@ def test_channel_setter_invalid(status, model, channel):
     ],
 )
 def test_generate_plan_ch_migration(status, model, channel):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "wallaby"
     app_status = status["keystone-ldap-cs"]
     app = OpenStackSubordinateApplication(
@@ -163,7 +160,6 @@ def test_generate_plan_ch_migration(status, model, channel):
     ],
 )
 def test_generate_plan_from_to(status, model, from_os, to_os):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
@@ -204,7 +200,6 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
     ],
 )
 def test_generate_plan_in_same_version(status, model, from_to):
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
