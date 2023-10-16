@@ -19,6 +19,7 @@ from cou.utils.openstack import (
     OpenStackCodenameLookup,
     OpenStackRelease,
     VersionRange,
+    is_charm_supported,
 )
 
 
@@ -458,3 +459,19 @@ def test_openstack_to_track(charm, series, os_release, exp_result):
 )
 def test_track_to_openstack(charm, series, track, exp_result):
     assert TRACK_TO_OPENSTACK_MAPPING.get((charm, series, track)) == exp_result
+
+
+@pytest.mark.parametrize(
+    "charm, exp_result",
+    [
+        ("keystone", True),
+        ("ceph-mon", True),
+        ("ceph-osd", False),
+        ("nova-compute", False),
+        ("my-charm", False),
+        ("barbican-vault", True),
+        ("hacluster", True),
+    ],
+)
+def test_is_charm_supported(charm, exp_result):
+    assert is_charm_supported(charm) is exp_result
