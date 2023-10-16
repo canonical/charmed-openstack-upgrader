@@ -13,6 +13,8 @@
 #  limitations under the License.
 """Tests of the ovn application classes."""
 
+import warnings
+
 import pytest
 
 from cou.apps.ovn import OvnPrincipalApplication, OvnSubordinateApplication
@@ -119,6 +121,7 @@ def test_ovn_no_compatible_os_release(status, config, model, channel):
 
 
 def test_ovn_principal_upgrade_plan(status, config, model):
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = OvnPrincipalApplication(
         "ovn-central",
@@ -133,7 +136,6 @@ def test_ovn_principal_upgrade_plan(status, config, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
 
     upgrade_steps = [
@@ -142,17 +144,12 @@ def test_ovn_principal_upgrade_plan(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="22.03/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
         ),
         UpgradeStep(
             description=(
@@ -160,15 +157,15 @@ def test_ovn_principal_upgrade_plan(status, config, model):
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -177,6 +174,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
 
 
 def test_ovn_subordinate_upgrade_plan(status, model):
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = OvnSubordinateApplication(
         "ovn-chassis",
@@ -191,17 +189,13 @@ def test_ovn_subordinate_upgrade_plan(status, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
 
     upgrade_steps = [
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="22.03/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

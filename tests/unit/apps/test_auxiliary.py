@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary application class."""
+import warnings
+
 import pytest
 
 from cou.apps.app import ApplicationUnit
@@ -49,6 +51,7 @@ def test_auxiliary_app(status, config, model):
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
@@ -63,7 +66,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -71,24 +73,17 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.8/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.8/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "3.8/stable", switch=None),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.9/stable",
+            coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
         UpgradeStep(
             description=(
@@ -96,15 +91,15 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -113,6 +108,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     # rabbitmq already on channel 3.9 on ussuri
@@ -130,7 +126,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -138,17 +133,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.9/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "3.9/stable", switch=None),
         ),
         UpgradeStep(
             description=(
@@ -156,15 +146,15 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -173,6 +163,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
@@ -188,7 +179,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -196,24 +186,17 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
         ),
         UpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.9/stable",
-            switch="ch:rabbitmq-server",
+            coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.9/stable",
+            coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
         UpgradeStep(
             description=(
@@ -221,15 +204,15 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -238,6 +221,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
 
 
 def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     rmq_status = status["rabbitmq_server"]
     # 2.0 is an unknown track
@@ -283,6 +267,7 @@ def test_auxiliary_raise_error_unknown_track(status, config, model):
 
 
 def test_auxiliary_raise_halt_upgrade(status, config, model):
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     # source is already configured to wallaby, so the plan halt with target victoria
     app = OpenStackAuxiliaryApplication(

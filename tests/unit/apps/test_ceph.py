@@ -13,6 +13,8 @@
 #  limitations under the License.
 """Tests of the ceph application class."""
 
+import warnings
+
 from cou.apps.app import ApplicationUnit
 from cou.apps.ceph import CephMonApplication
 from cou.steps import UpgradeStep
@@ -50,6 +52,7 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
     model,
 ):
     """Test when ceph version changes between os releases."""
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "yoga"
     app = CephMonApplication(
         "ceph-mon",
@@ -64,7 +67,6 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -72,34 +74,28 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="pacific/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
         ),
         UpgradeStep(
             description=(
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'pacific'"
             ),
             parallel=False,
-            function=app_utils.set_require_osd_release_option,
-            unit="ceph-mon/0",
-            model=model,
-            ceph_release="pacific",
+            coro=app_utils.set_require_osd_release_option(
+                "ceph-mon/0",
+                model=model,
+                ceph_release="pacific",
+            ),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="quincy/stable",
+            coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
         UpgradeStep(
             description=(
@@ -107,25 +103,22 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
                 f"'{app.origin_setting}' to 'cloud:focal-yoga'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-yoga"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-yoga"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
         UpgradeStep(
             description=(
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'quincy'"
             ),
             parallel=False,
-            function=app_utils.set_require_osd_release_option,
-            unit="ceph-mon/0",
-            model=model,
-            ceph_release="quincy",
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "quincy"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -139,6 +132,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
     model,
 ):
     """Test when ceph version remains the same between os releases."""
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = CephMonApplication(
         "ceph-mon",
@@ -152,7 +146,6 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -160,27 +153,19 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="octopus/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
         UpgradeStep(
             description=(
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
             ),
             parallel=False,
-            function=app_utils.set_require_osd_release_option,
-            unit="ceph-mon/0",
-            model=model,
-            ceph_release="octopus",
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "octopus"),
         ),
         UpgradeStep(
             description=(
@@ -188,25 +173,22 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
         UpgradeStep(
             description=(
                 "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
             ),
             parallel=False,
-            function=app_utils.set_require_osd_release_option,
-            unit="ceph-mon/0",
-            model=model,
-            ceph_release="octopus",
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "octopus"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

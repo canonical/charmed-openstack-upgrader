@@ -13,6 +13,8 @@
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
 
+import warnings
+
 from cou.steps import UpgradeStep
 
 
@@ -27,6 +29,7 @@ def test_auxiliary_subordinate(apps):
 
 
 def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
+    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     target = "victoria"
     app = apps["keystone_mysql_router"]
 
@@ -34,16 +37,12 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     expected_plan.add_step(
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="8.0/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
         ),
     )
 
