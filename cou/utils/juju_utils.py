@@ -31,10 +31,8 @@ from six import wraps
 
 from cou.exceptions import (
     ActionFailed,
-    ActionFailedToRun,
     ApplicationError,
     ApplicationNotFound,
-    CommandExecutionFailed,
     TimeoutException,
     UnitNotFound,
 )
@@ -260,13 +258,30 @@ class COUModel:
         model = await self._get_model()
         return await model.get_status()
 
-    @retry(
-        no_retry_exceptions=(
-            UnitNotFound,
-            ActionFailedToRun,
-            ActionFailed,
-        )
-    )
+    @retry(no_retry_exceptions=(ActionFailed,))
+    async def _get_action_result(self, action: Action, raise_on_failure: bool) -> Action:
+        """Get results from action.
+
+        :param action: Action object
+        :type: Action
+        :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
+        :type raise_on_failure: bool
+        :return: action results
+        :rtype: Action
+        :raises ActionFailed: _description_
+        """
+        result = await action.wait()
+        if raise_on_failure:
+            model = await self._get_model()
+            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
+            if status != "completed":
+                output = await model.get_action_output(action.entity_id)
+                raise ActionFailed(action, output=output)
+
+        return result
+
+    # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
+    # `unit.run_action(...)` and the rest of the function is covered by retry.
     async def run_action(
         self,
         unit_name: str,
@@ -283,37 +298,20 @@ class COUModel:
         :param action_params: Dictionary of config options for action, defaults to None
         :type action_params: Optional[Dict], optional
         :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
-        :type raise_on_failure: bool, optional
+        :type raise_on_failure: bool
         :raises UnitNotFound: _description_
         :raises ActionFailed: _description_
-        :raises ActionFailedToRun: _description_
         :return: When status is different from "completed"
         :rtype: Action
         """
         action_params = action_params or {}
         unit = await self._get_unit(unit_name)
-        try:
-            action = await unit.run_action(action_name, **action_params)
-        except Exception as exc:
-            # catching any exception if run_action failed, so we do not run int twice due retry
-            raise ActionFailedToRun(action_name, exc, **action_params) from exc
-
-        result = await action.wait()
-        if raise_on_failure:
-            model = await self._get_model()
-            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
-            if status != "completed":
-                output = await model.get_action_output(action.entity_id)
-                raise ActionFailed(action, output=output)
-
+        action = await unit.run_action(action_name, **action_params)
+        result = await self._get_action_result(action, raise_on_failure)
         return result
 
-    @retry(
-        no_retry_exceptions=(
-            UnitNotFound,
-            CommandExecutionFailed,
-        )
-    )
+    # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
+    # `unit.run(...)` and the rest of the function is static.
     async def run_on_unit(
         self, unit_name: str, command: str, timeout: Optional[int] = None
     ) -> Dict[str, str]:
@@ -329,15 +327,9 @@ class COUModel:
         :rtype: Dict[str, str]
         :raises UnitNotFound: _description_
         :raises ActionFailed: _description_
-        :raises CommandExecutionFailed: _description_
         """
         unit = await self._get_unit(unit_name)
-        try:
-            action = await unit.run(command, timeout=timeout)
-        except Exception as exc:
-            # catching any exception if run_action failed, so we do not run int twice due retry
-            raise CommandExecutionFailed(command) from exc
-
+        action = await unit.run(command, timeout=timeout)
         results = action.data.get("results")
         return _normalize_action_results(results)
 

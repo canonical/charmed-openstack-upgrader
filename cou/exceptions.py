@@ -21,14 +21,6 @@ class COUException(Exception):
     """Default COU exception."""
 
 
-class CommandExecutionFailed(COUException):
-    """Exception raised when a command failed to be run on unit."""
-
-    def __init__(self, cmd: str):
-        """Create command run fails to be executed."""
-        super().__init__(f"Command {cmd} failed to be executed.")
-
-
 class CommandRunFailed(COUException):
     """Exception raised when a command fails to run."""
 
@@ -73,16 +65,6 @@ class ApplicationError(COUException):
 
 class RunUpgradeError(COUException):
     """Exception raised when an upgrade fails."""
-
-
-class ActionFailedToRun(COUException):
-    """Exception raised when action failed to run."""
-
-    def __init__(self, name: str, original_error: Exception, **params: Any):
-        """Set information about action in message."""
-        super().__init__(
-            f"Action {name} with parameters {params} failed to start due {original_error}."
-        )
 
 
 class ActionFailed(COUException):

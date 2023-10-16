@@ -15,21 +15,7 @@ from unittest import mock
 
 from juju.action import Action
 
-from cou.exceptions import ActionFailed, ActionFailedToRun, CommandExecutionFailed
-
-
-def test_command_failed_to_be_executed():
-    """Test error message composition for ActionFailedToRun."""
-    error = CommandExecutionFailed("test-command")
-    assert str(error) == "Command test-command failed to be executed."
-
-
-def test_action_failed_to_run():
-    """Test error message composition for ActionFailedToRun."""
-    error = ActionFailedToRun("test-action", Exception("test"), param_1="test")
-    assert str(error) == (
-        "Action test-action with parameters {'param_1': 'test'} failed to start due test."
-    )
+from cou.exceptions import ActionFailed
 
 
 def test_action_failed():
