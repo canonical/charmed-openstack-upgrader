@@ -13,8 +13,8 @@
 #  limitations under the License.
 """Tests of the ceph application class."""
 
-from cou.apps.app import ApplicationUnit
-from cou.apps.ceph import CephMonApplication
+from cou.apps.auxiliary import CephMonApplication
+from cou.apps.core import ApplicationUnit
 from cou.steps import UpgradeStep
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease

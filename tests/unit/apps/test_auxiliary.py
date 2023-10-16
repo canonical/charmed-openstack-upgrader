@@ -14,8 +14,8 @@
 """Auxiliary application class."""
 import pytest
 
-from cou.apps.app import ApplicationUnit
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
+from cou.apps.core import ApplicationUnit
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import UpgradeStep
 from cou.utils import app_utils

@@ -15,7 +15,10 @@
 
 import pytest
 
-from cou.apps.ovn import OvnPrincipalApplication, OvnSubordinateApplication
+from cou.apps.auxiliary_subordinate import (
+    OvnPrincipalApplication,
+    OvnSubordinateApplication,
+)
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils import app_utils
