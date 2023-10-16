@@ -13,104 +13,238 @@
 # limitations under the License.
 
 """Test steps package."""
+import asyncio
+import re
+from unittest.mock import MagicMock
+
 import pytest
+from juju.model import warnings
 
-from cou.steps import UpgradeStep
-
-
-def test_upgrade_step():
-    def sample_function():
-        return 1
-
-    u = UpgradeStep(description="test", function=sample_function, parallel=False)
-    assert u.description == "test"
-    assert u.function is sample_function
-    assert not u.parallel
-    assert u.params == {}
+from cou.exceptions import CanceledUpgradeStep
+from cou.steps import UpgradeStep, compare_step_coroutines
 
 
-def test_upgrade_step_add():
-    u = UpgradeStep(description="test", function=None, parallel=False)
-    substep = u.add_step(UpgradeStep(description="substep", function=None, parallel=False))
-    substep_of_substep1 = substep.add_step(
-        UpgradeStep(description="substep_of_substep1", function=None, parallel=False)
-    )
-    substep_of_substep2 = substep.add_step(
-        UpgradeStep(description="substep_of_substep2", function=None, parallel=False)
-    )
-    assert u.sub_steps[0] is substep
-    assert substep.sub_steps[0] is substep_of_substep1
-    assert substep.sub_steps[1] is substep_of_substep2
-
-
-@pytest.mark.asyncio
-async def test_upgrade_step_run():
-    async def sample_function(**kwargs):
-        return kwargs["x"]
-
-    u = UpgradeStep(description="test", function=sample_function, parallel=False, **{"x": 10})
-
-    result = await u.run()
-    assert result == 10
-
-
-@pytest.mark.asyncio
-async def test_upgrade_step_run_empty():
-    async def sample_function(**kwargs):
-        return 5
-
-    u = UpgradeStep(description="test", function=sample_function, parallel=False)
-
-    result = await u.run()
-    assert result == 5
-
-
-@pytest.mark.asyncio
-async def test_upgrade_step_run_none():
-    u = UpgradeStep(description="test", function=None, parallel=False)
-    result = await u.run()
-    assert result is None
-
-
-def test___str__():
-    expected = "Top level plan\n\tbackup mysql databases\n"
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
-    assert str(plan) == expected
-
-
-def test___str__substep_has_substeps():
-    expected = "a\n\ta.a\n\t\ta.a.a\n\t\ta.a.b\n\ta.b\n"
-    plan = UpgradeStep(description="a", parallel=False, function=None)
-    aa = plan.add_step(UpgradeStep(description="a.a", parallel=False, function=None))
-    plan.add_step(UpgradeStep(description="a.b", parallel=False, function=None))
-    aa.add_step(UpgradeStep(description="a.a.a", parallel=False, function=None))
-    aa.add_step(UpgradeStep(description="a.a.b", parallel=False, function=None))
-    assert str(plan) == expected
+async def mock_coro(*args, **kwargs):
+    ...
 
 
 @pytest.mark.parametrize(
-    "description, function, parallel, expected_result",
+    "coro1, coro2, exp_result",
     [
-        ("test", None, False, True),
-        ("test", lambda x: x + 1, False, False),
-        ("test", None, True, False),
-        ("my_test", None, False, False),
+        (None, mock_coro(), False),
+        (mock_coro(), None, False),
+        (mock_coro(), mock_coro(1, 2, 3), False),
+        (mock_coro(), mock_coro(arg1=True), False),
+        (mock_coro(), mock_coro(), True),
+        (mock_coro(1, 2, 3, kwarg1=True), mock_coro(1, 2, 3, kwarg1=True), True),
     ],
 )
-def test_upgrade_step__eq__(description, function, parallel, expected_result):
-    upgrade_step = UpgradeStep(description="test", function=None, parallel=False)
-    other_upgrade_step = UpgradeStep(description=description, function=function, parallel=parallel)
-    assert (upgrade_step == other_upgrade_step) is expected_result
+def test_compare_step_coroutines(coro1, coro2, exp_result):
+    """Test coroutine comparison."""
+    assert compare_step_coroutines(coro1, coro2) == exp_result
 
 
-def test_compare_upgrade_step_eq_not_implemented():
-    upgrade_step = UpgradeStep(description="test", function=None, parallel=False)
-    assert upgrade_step.__eq__(1) == NotImplemented
+@pytest.mark.parametrize("description, parallel", [("test", False), ("test description", True)])
+def test_step_init(description, parallel):
+    """Test UpgradeStep initialization."""
+    warnings.filterwarnings("ignore", message="coroutine 'mock_coro' was never awaited")
+
+    coro = mock_coro()
+    step = UpgradeStep(description, parallel, coro)
+
+    assert step.description == description
+    assert step.parallel == parallel
+    assert step._coro == coro
+    assert step._canceled is False
+    assert step._task is None
 
 
-def test_upgrade_step__repr__():
-    description = "test"
-    upgrade_step = UpgradeStep(description="test", function=None, parallel=False)
+def test_step_hash():
+    """Test creation of hash from UpgradeStep."""
+    warnings.filterwarnings("ignore", message="coroutine 'mock_coro' was never awaited")
+
+    coro = mock_coro()
+    step = UpgradeStep("test hash", False, coro)
+
+    assert hash(("test hash", False, coro)) == hash(step)
+
+
+@pytest.mark.parametrize(
+    "description, parallel, args",
+    [("test", False, ()), ("test description", True, ("name", 1, 2))],
+)
+def test_step_eq(description, parallel, args):
+    """Test UpgradeStep comparison."""
+    warnings.filterwarnings("ignore", message="coroutine 'mock_coro' was never awaited")
+
+    # coro = mock_coro(*args)
+    step_1 = UpgradeStep(description, parallel, mock_coro(*args))
+    step_2 = UpgradeStep(description, parallel, mock_coro(*args))
+    # define step with different coro
+    step_3 = UpgradeStep(description, parallel, mock_coro(unique_arg=True))
+
+    assert step_1 == step_2
+    assert step_1 != step_3
+    assert step_1 != 1
+
+
+def test_step_repr():
+    """Test UpgradePlan representation."""
+    description = "test plan"
+    upgrade_step = UpgradeStep(description=description)
+    upgrade_step.add_step(UpgradeStep(description="test sub-step"))
     expected_repr = f"UpgradeStep({description})"
     assert repr(upgrade_step) == expected_repr
+
+
+def test_step_str():
+    """Test UpgradePlan string representation."""
+    expected = "a\n\ta.a\n\t\ta.a.a\n\t\ta.a.b\n\ta.b\n"
+    plan = UpgradeStep(description="a")
+    sub_step = UpgradeStep(description="a.a")
+    sub_step.sub_steps = [
+        UpgradeStep(description="a.a.a"),
+        UpgradeStep(description="a.a.b"),
+    ]
+    plan.sub_steps = [sub_step, UpgradeStep(description="a.b")]
+
+    assert str(plan) == expected
+
+
+def test_step_add_step():
+    """Test UpgradePlan adding sub steps."""
+    exp_sub_steps = 3
+    plan = UpgradeStep(description="plan")
+    for i in range(exp_sub_steps):
+        plan.add_step(UpgradeStep(description=f"sub-step-{i}"))
+
+    assert len(plan.sub_steps) == exp_sub_steps
+
+
+def test_step_cancel():
+    """Test step cancel."""
+    plan = UpgradeStep(description="plan")
+    plan.sub_steps = sub_steps = [UpgradeStep(description=f"sub-{i}") for i in range(10)]
+    # add sub-sub-steps to one sub-step
+    sub_steps[0].sub_steps = [UpgradeStep(description=f"sub-0.{i}") for i in range(3)]
+
+    plan.cancel()
+
+    assert plan.canceled is True
+    assert all(step.canceled is True for step in sub_steps)
+    assert all(step.canceled for step in sub_steps[0].sub_steps)
+
+
+def test_step_unsafe_cancel():
+    """Test step unsafe cancel."""
+    plan = UpgradeStep(description="test plan")
+    plan._task = mock_task = MagicMock(spec_sep=asyncio.Task)
+
+    plan.cancel(safe=False)
+
+    assert plan.canceled is True
+    mock_task.cancel.assert_called_once_with("canceled: UpgradeStep(test plan)")
+
+
+@pytest.mark.asyncio
+async def test_step_run():
+    """Test UpgradeStep run."""
+
+    async def asquared(num):
+        return num**2
+
+    step = UpgradeStep(description="plan", coro=asquared(5))
+    value = await step.run()
+
+    assert value == 25
+
+
+@pytest.mark.asyncio
+async def test_step_run_canceled():
+    """Test UpgradeStep run canceled step."""
+    warnings.filterwarnings("ignore", message="coroutine 'mock_coro' was never awaited")
+
+    description = "test plan"
+    exp_error = re.escape(f"Could not run canceled step: UpgradeStep({description})")
+    step = UpgradeStep(description=description, coro=mock_coro())
+    step.cancel()
+    assert step.canceled is True
+    with pytest.raises(CanceledUpgradeStep, match=exp_error):
+        await step.run()
+
+
+@pytest.mark.asyncio
+async def test_step_cancel_task():
+    """Test UpgradeStep cancel step task."""
+
+    async def step_canceller(_step):
+        await asyncio.sleep(0.5)
+        _step._task.cancel()
+
+    # simulate a cancel step task that waits 10 minutes without CancelledError
+    step = UpgradeStep(description="test plan", coro=asyncio.sleep(600))
+    assert step._task is None
+
+    asyncio.create_task(step_canceller(step))
+
+    await step.run()
+
+    assert step._task is not None
+    assert step._task.cancelling() == 1  # task was canceled once
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "sub_steps, exp_order, parallel",
+    [
+        (
+            [("sub-1", 0.4, []), ("sub-2", 0.2, []), ("sub-3", 0.6, []), ("sub-4", 0.8, [])],
+            ["sub-2", "sub-1", "sub-3", "sub-4"],
+            True,
+        ),
+        (
+            [("sub-1", 0.2, [("sub-1.1", 0.05), ("sub-1.2", 0.3)]), ("sub-2", 0.3, [])],
+            ["sub-1", "sub-1.1", "sub-2", "sub-1.2"],
+            True,
+        ),
+        (
+            [("sub-1", 0.6, []), ("sub-2", 0.2, []), ("sub-3", 0.4, [])],
+            ["sub-1", "sub-2", "sub-3"],
+            False,
+        ),
+        (
+            [("sub-1", 0.6, [("sub-1.1", 0.3)]), ("sub-2", 0.2, []), ("sub-3", 0.4, [])],
+            ["sub-1", "sub-1.1", "sub-2", "sub-3"],
+            False,
+        ),
+    ],
+)
+async def test_step_full_run(sub_steps, exp_order, parallel):
+    """Test to simulate running full plan with steps."""
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    steps_order = []
+
+    async def sub_step(name, time):
+        await asyncio.sleep(time)
+        steps_order.append(name)
+
+    async def step_run(_step):
+        await _step.run()
+        for _sub_step in _step.sub_steps:
+            if step.canceled is False:
+                await step_run(_sub_step)
+
+    plan = UpgradeStep(description="upgrade plan")
+    for name, time, step_sub_steps in sub_steps:
+        step = UpgradeStep(description=name, coro=sub_step(name, time))
+        plan.add_step(step)
+        for sub_name, sub_time in step_sub_steps:
+            step.add_step(UpgradeStep(description=sub_name, coro=sub_step(sub_name, sub_time)))
+
+    await plan.run()
+    if parallel:
+        await asyncio.gather(*(step_run(step) for step in plan.sub_steps))
+    else:
+        await step_run(plan)
+
+    assert steps_order == exp_order
