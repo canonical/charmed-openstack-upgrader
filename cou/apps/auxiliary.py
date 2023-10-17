@@ -19,7 +19,7 @@ from cou.apps.core import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
-from cou.utils.app_utils import set_require_osd_release_option
+from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
 from cou.utils.openstack import (
     CHARM_FAMILIES,
     OPENSTACK_TO_TRACK_MAPPING,
@@ -158,3 +158,20 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
             model=self.model,
             ceph_release=ceph_release,
         )
+
+
+@AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
+class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
+    """Ovn principal application class."""
+
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Pre Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add pre upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        for unit in self.units:
+            validate_ovn_support(unit.workload_version)
+        return super().pre_upgrade_plan(target)

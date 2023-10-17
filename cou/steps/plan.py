@@ -23,10 +23,10 @@ from typing import Callable
 from cou.apps.auxiliary import (  # noqa: F401
     CephMonApplication,
     OpenStackAuxiliaryApplication,
+    OvnPrincipalApplication,
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     OpenStackAuxiliarySubordinateApplication,
-    OvnPrincipalApplication,
     OvnSubordinateApplication,
 )
 from cou.apps.core import OpenStackApplication

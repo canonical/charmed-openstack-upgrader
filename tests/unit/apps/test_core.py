@@ -12,11 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
-from cou.apps import factory
 from cou.apps.core import OpenStackApplication
 from cou.exceptions import (
     ApplicationError,
@@ -627,33 +626,3 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
     add_steps(expected_plan, upgrade_steps)
 
     assert upgrade_plan == expected_plan
-
-
-@patch.object(factory, "is_charm_supported", return_value=False)
-def test_app_factory_not_supported_openstack_charm(mock_is_charm_supported):
-    charm = "my-app"
-    my_app = factory.AppFactory.create(
-        name=charm,
-        status=MagicMock(),
-        config=MagicMock(),
-        model=MagicMock(),
-        charm=charm,
-    )
-    assert my_app is None
-    mock_is_charm_supported.assert_called_once_with(charm)
-
-
-@patch.object(factory, "is_charm_supported", return_value=True)
-def test_app_factory_register(mock_is_charm_supported):
-    charm = "foo"
-
-    @factory.AppFactory.register_application([charm])
-    class Foo:
-        def __init__(self, *_, **__):
-            pass
-
-    assert charm in factory.AppFactory.charms
-    foo = factory.AppFactory.create("my-foo", MagicMock(), {}, MagicMock(), charm)
-    mock_is_charm_supported.assert_called_once_with(charm)
-    assert foo is not None
-    assert isinstance(foo, Foo)

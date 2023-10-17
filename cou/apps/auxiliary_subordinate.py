@@ -14,13 +14,11 @@
 """Auxiliary subordinate application class."""
 from typing import Optional
 
-from packaging.version import Version
-
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBaseClass
-from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
+from cou.utils.app_utils import validate_ovn_support
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
 
@@ -42,23 +40,6 @@ class OpenStackAuxiliarySubordinateApplication(
         return self.channel_codename
 
 
-@AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
-class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
-    """Ovn principal application class."""
-
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
-        """Pre Upgrade planning.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
-        """
-        for unit in self.units:
-            validate_ovn_support(unit.workload_version)
-        return super().pre_upgrade_plan(target)
-
-
 @AppFactory.register_application(["ovn-chassis"])
 class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
@@ -73,23 +54,3 @@ class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
         """
         validate_ovn_support(self.status.workload_version)
         return super().pre_upgrade_plan(target)
-
-
-def validate_ovn_support(version: str) -> None:
-    """Validate COU OVN support.
-
-    COU does not support upgrade clouds with OVN version lower than 22.03.
-
-    :param version: Version of the OVN.
-    :type version: str
-    :raises ApplicationError: When workload version is lower than 22.03.0.
-    """
-    if Version(version) < Version("22.03.0"):
-        raise ApplicationError(
-            (
-                "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
-                "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
-                "https://docs.openstack.org/charm-guide/latest/project/procedures/"
-                "ovn-upgrade-2203.html"
-            )
-        )
