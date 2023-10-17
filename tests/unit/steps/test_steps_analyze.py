@@ -87,9 +87,10 @@ async def test_populate_model(full_status, config, model):
     model.get_status = AsyncMock(return_value=full_status)
     model.get_application_config = AsyncMock(return_value=config["openstack_ussuri"])
 
-    # Initially, 6 applications are in the status: keystone, cinder, rabbitmq-serve, my-app,
+    # Initially, 6 applications are in the status: keystone, cinder, rabbitmq-server, my-app,
     # ceph-osd and nova-compute. my-app it's not on the lookup table, ceph-osd and nova-compute
-    # are data plane (not supported yet) and because of that they won't be instantiated.
+    # are data plane applications (not supported yet) and because of that they won't
+    # be instantiated.
     assert len(full_status.applications) == 6
     apps = await Analysis._populate(model)
     assert len(apps) == 3
