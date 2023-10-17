@@ -37,7 +37,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
         # apps waiting for whole model
         wait_step = UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,
@@ -45,7 +45,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         )
     else:
         wait_step = UpgradeStep(
-            description=f"Wait (120 s) for app {app.name} to reach the idle state.",
+            description=f"Wait 120 s for app {app.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=120,
@@ -195,8 +195,6 @@ async def test_generate_plan(apps, model):
 
     expected_plan.add_step(control_plane_principals)
     expected_plan.add_step(control_plane_subordinates)
-    print("generated plan:", upgrade_plan)
-    print("expected plan:", expected_plan)
     assert upgrade_plan == expected_plan
 
 

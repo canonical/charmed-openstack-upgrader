@@ -112,7 +112,7 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
             configuration={f"{app.origin_setting}": "cloud:focal-yoga"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,
@@ -200,7 +200,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,

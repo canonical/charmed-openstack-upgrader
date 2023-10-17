@@ -13,11 +13,9 @@
 # limitations under the License.
 """Auxiliary application class."""
 import logging
-from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError
-from cou.steps import UpgradeStep
 from cou.utils.openstack import (
     CHARM_FAMILIES,
     OPENSTACK_TO_TRACK_MAPPING,
@@ -104,19 +102,8 @@ class RabbitMQServer(OpenStackAuxiliaryApplication):
     upgrade can continue.
     """
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
-        """Post Upgrade planning.
-
-        Wait until the entire model reaches the idle state and then check the target workload.
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
-        """
-        return [
-            self._get_wait_step(300, wait_for_itself=False),
-            self._get_reached_expected_target_plan(target),
-        ]
+    wait_timeout = 300
+    wait_for_model = True
 
 
 @AppFactory.register_application(["keystone"])
@@ -127,16 +114,5 @@ class Keystone(OpenStackApplication):
     upgrade can continue.
     """
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
-        """Post Upgrade planning.
-
-        Wait until the entire model reaches the idle state and then check the target workload.
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
-        """
-        return [
-            self._get_wait_step(300, wait_for_itself=False),
-            self._get_reached_expected_target_plan(target),
-        ]
+    wait_timeout: int = 300
+    wait_for_model: bool = True

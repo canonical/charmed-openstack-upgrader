@@ -101,7 +101,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,
@@ -168,7 +168,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,
@@ -240,7 +240,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,

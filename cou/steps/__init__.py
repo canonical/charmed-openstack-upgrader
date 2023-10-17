@@ -59,6 +59,7 @@ class UpgradeStep:
         """
         if not isinstance(other, UpgradeStep):
             return NotImplemented
+
         return (
             other.parallel == self.parallel
             and other.description == self.description

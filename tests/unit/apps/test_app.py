@@ -102,6 +102,7 @@ def test_application_ussuri(status, config, units, model):
     exp_channel_codename = exp_current_os_release
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
+    assert app.wait_for_model is True
     assert_application(
         app,
         "my_keystone",
@@ -357,7 +358,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,
@@ -429,7 +430,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,
@@ -490,7 +491,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,
@@ -554,7 +555,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
             channel="victoria/stable",
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,
@@ -640,7 +641,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (300 s) for model {model.name} to reach the idle state.",
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=300,

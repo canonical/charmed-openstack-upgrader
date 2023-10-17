@@ -165,7 +165,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
             configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
         ),
         UpgradeStep(
-            description=f"Wait (120 s) for app {app.name} to reach the idle state.",
+            description=f"Wait 120 s for app {app.name} to reach the idle state.",
             parallel=False,
             function=model.wait_for_idle,
             timeout=120,

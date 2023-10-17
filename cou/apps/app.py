@@ -41,6 +41,8 @@ from cou.utils.openstack import (
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_WAITING_TIMEOUT = 120
+
 
 class AppFactory:
     """Factory class for Application objects."""
@@ -76,6 +78,7 @@ class AppFactory:
         # pylint: disable=too-many-arguments
         if is_charm_supported(charm):
             app_class = cls.charms.get(charm, OpenStackApplication)
+            print(f"charm: {charm}[{app_class.__name__}]")
             return app_class(name=name, status=status, config=config, model=model, charm=charm)
         logger.debug(
             "'%s' is not a supported OpenStack related application and will be ignored.",
@@ -171,6 +174,8 @@ class OpenStackApplication:
     os_origin: str = ""
     origin_setting: Optional[str] = None
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
+    wait_timeout: int = field(default=DEFAULT_WAITING_TIMEOUT, init=False)
+    wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -445,7 +450,7 @@ class OpenStackApplication:
         :rtype: list[Optional[UpgradeStep]]
         """
         return [
-            self._get_wait_step(120),
+            self._get_wait_step(),
             self._get_reached_expected_target_plan(target),
         ]
 
@@ -646,27 +651,27 @@ class OpenStackApplication:
             target=target,
         )
 
-    def _get_wait_step(self, timeout: int, wait_for_itself: bool = True) -> UpgradeStep:
+    def _get_wait_step(self) -> UpgradeStep:
         """Get wait step for entire model or application.
 
-        :param timeout: max wait time
-        :type timeout: int
-        :param wait_for_itself: if app should wait only for itself or whole model
-        :type wait_for_itself: bool
         :return: Step waiting for entire model or application itself
         :rtype: UpgradeStep
         """
-        description = f"Wait ({timeout} s) for model {self.model.name} to reach the idle state."
-        apps = None
-
-        if wait_for_itself:
-            description = f"Wait ({timeout} s) for app {self.name} to reach the idle state."
+        if self.wait_for_model:
+            description = (
+                f"Wait {self.wait_timeout} s for model {self.model.name} to reach the idle state."
+            )
+            apps = None
+        else:
+            description = (
+                f"Wait {self.wait_timeout} s for app {self.name} to reach the idle state."
+            )
             apps = [self.name]
 
         return UpgradeStep(
             description=description,
             parallel=False,
             function=self.model.wait_for_idle,
-            timeout=timeout,
+            timeout=self.wait_timeout,
             apps=apps,
         )

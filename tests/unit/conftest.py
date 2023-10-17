@@ -402,7 +402,7 @@ def apps(status, config, model):
     keystone_ussuri = Keystone(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], model, "keystone"
     )
-    keystone_wallaby = OpenStackApplication(
+    keystone_wallaby = Keystone(
         "keystone", keystone_wallaby_status, config["openstack_wallaby"], model, "keystone"
     )
     cinder_ussuri = OpenStackApplication(
