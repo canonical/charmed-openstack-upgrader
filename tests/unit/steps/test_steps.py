@@ -15,7 +15,6 @@
 """Test steps package."""
 import asyncio
 import re
-import warnings
 from unittest.mock import MagicMock
 
 import pytest
@@ -82,17 +81,8 @@ def test_step_eq(description, parallel, args):
     assert step_1 != 1
 
 
-def test_step_repr():
-    """Test UpgradePlan representation."""
-    description = "test plan"
-    upgrade_step = UpgradeStep(description=description)
-    upgrade_step.add_step(UpgradeStep(description="test sub-step"))
-    expected_repr = f"UpgradeStep({description})"
-    assert repr(upgrade_step) == expected_repr
-
-
 def test_step_str():
-    """Test UpgradePlan string representation."""
+    """Test UpgradeStep string representation."""
     expected = "a\n\ta.a\n\t\ta.a.a\n\t\ta.a.b\n\ta.b\n"
     plan = UpgradeStep(description="a")
     sub_step = UpgradeStep(description="a.a")
@@ -105,8 +95,34 @@ def test_step_str():
     assert str(plan) == expected
 
 
+def test_step_repr():
+    """Test UpgradeStep representation."""
+    description = "test plan"
+    upgrade_step = UpgradeStep(description=description)
+    upgrade_step.add_step(UpgradeStep(description="test sub-step"))
+    expected_repr = f"UpgradeStep({description})"
+    assert repr(upgrade_step) == expected_repr
+
+
+@pytest.mark.asyncio
+async def test_properties():
+    """Test UpgradeStep properties."""
+
+    async def coro():
+        return 42
+
+    upgrade_step = UpgradeStep(description="test", coro=coro())
+
+    assert upgrade_step.canceled == upgrade_step._canceled
+    assert upgrade_step.results is None
+
+    await upgrade_step.run()
+
+    assert upgrade_step.results == 42
+
+
 def test_step_add_step():
-    """Test UpgradePlan adding sub steps."""
+    """Test UpgradeStep adding sub steps."""
     exp_sub_steps = 3
     plan = UpgradeStep(description="plan")
     for i in range(exp_sub_steps):
@@ -213,7 +229,7 @@ async def test_step_cancel_task():
 )
 async def test_step_full_run(sub_steps, exp_order, parallel):
     """Test to simulate running full plan with steps."""
-    warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
+    # warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     steps_order = []
 
     async def sub_step(name, time):
