@@ -70,7 +70,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :return: Plan to check and set correct value for require-osd-release
         :rtype: UpgradeStep
         """
-        ceph_release: str = channel.split("/", maxsplit=1)[0]
+        ceph_release: str = self._get_track_from_channel(channel)
         ceph_mon_unit, *_ = self.units
         return UpgradeStep(
             description=(
