@@ -245,6 +245,17 @@ class OpenStackApplication:
             yaml.dump(summary, stream)
             return stream.getvalue()
 
+    @staticmethod
+    def _get_track_from_channel(charm_channel: str) -> str:
+        """Get the track from a given channel.
+
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
+        :return: The track from a channel. E.g: ussuri
+        :rtype: str
+        """
+        return charm_channel.split("/", maxsplit=1)[0]
+
     @property
     def possible_current_channels(self) -> list[str]:
         """Return the possible current channels based on the current OpenStack release.
@@ -340,7 +351,7 @@ class OpenStackApplication:
         """
         try:
             # get the OpenStack release from the channel track of the application.
-            os_track_release_channel = OpenStackRelease(self.channel.split("/", maxsplit=1)[0])
+            os_track_release_channel = OpenStackRelease(self._get_track_from_channel(self.channel))
         except ValueError:
             logger.debug(
                 "The current channel of '%s' does not exist or is unexpectedly formatted",
