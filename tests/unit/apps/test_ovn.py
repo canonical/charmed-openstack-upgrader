@@ -36,6 +36,7 @@ def test_ovn_principal(status, config, model):
     assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
+    assert app.is_subordinate is False
 
 
 def test_ovn_subordinate(status, model):
@@ -51,6 +52,7 @@ def test_ovn_subordinate(status, model):
     assert app.apt_source_codename is None
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
+    assert app.is_subordinate is True
 
 
 def test_ovn_workload_ver_lower_than_22_principal(status, config, model):

@@ -70,6 +70,7 @@ def assert_application(
     exp_new_origin,
     exp_apt_source_codename,
     exp_channel_codename,
+    exp_is_subordinate,
     target,
 ):
     target_version = OpenStackRelease(target)
@@ -89,6 +90,7 @@ def assert_application(
     assert app.new_origin(target_version) == exp_new_origin
     assert app.apt_source_codename == exp_apt_source_codename
     assert app.channel_codename == exp_channel_codename
+    assert app.is_subordinate == exp_is_subordinate
 
 
 def test_application_ussuri(status, config, units, model):
@@ -106,6 +108,7 @@ def test_application_ussuri(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -126,6 +129,7 @@ def test_application_ussuri(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 
@@ -161,6 +165,7 @@ def test_application_cs(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -181,6 +186,7 @@ def test_application_cs(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 
@@ -200,6 +206,7 @@ def test_application_wallaby(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -220,6 +227,7 @@ def test_application_wallaby(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 

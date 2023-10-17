@@ -46,6 +46,7 @@ def test_auxiliary_app(status, config, model):
     assert app.units == expected_units
     assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "yoga"
+    assert app.is_subordinate is False
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
