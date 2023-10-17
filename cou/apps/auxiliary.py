@@ -82,7 +82,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        track: str = self.channel.split("/", maxsplit=1)[0]
+        track: str = self._get_track_from_channel(self.channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
         if compatible_os_releases:
             return max(compatible_os_releases)
