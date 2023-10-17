@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any, Optional
 
-from juju.client._definitions import ApplicationStatus
+from juju.client._definitions import ApplicationStatus, UnitStatus
 from ruamel.yaml import YAML
 
 from cou.exceptions import (
@@ -174,31 +174,10 @@ class OpenStackApplication:
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
-        # subordinates don't have units
-        units = getattr(self.status, "units", {})
-        for name, unit in units.items():
-            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
-                self.charm, unit.workload_version
-            )
-            # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
-            if compatible_os_versions:
-                unit_os_version = max(compatible_os_versions)
-                self.units.append(
-                    ApplicationUnit(
-                        name=name,
-                        workload_version=unit.workload_version,
-                        os_version=unit_os_version,
-                        machine=unit.machine,
-                    )
-                )
-            else:
-                raise ApplicationError(
-                    f"'{self.name}' with workload version {unit.workload_version} has no "
-                    f"compatible OpenStack release in the lookup."
-                )
+        self._populate_units()
+        self.channel = self.status.charm_channel
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -244,6 +223,49 @@ class OpenStackApplication:
         with StringIO() as stream:
             yaml.dump(summary, stream)
             return stream.getvalue()
+
+    def _populate_units(self) -> None:
+        """Populate application units."""
+        if not self.is_subordinate:
+            for name, unit in self.status.units.items():
+                compatible_os_version = self._get_latest_os_version_by_workload_version(unit)
+                self.units.append(
+                    ApplicationUnit(
+                        name=name,
+                        workload_version=unit.workload_version,
+                        os_version=compatible_os_version,
+                        machine=unit.machine,
+                    )
+                )
+
+    @property
+    def is_subordinate(self) -> bool:
+        """Check if application is subordinate.
+
+        :return: True if subordinate, False otherwise.
+        :rtype: bool
+        """
+        return bool(self.status.subordinate_to)
+
+    def _get_latest_os_version_by_workload_version(self, unit: UnitStatus) -> OpenStackRelease:
+        """Get the latest compatible OpenStack release based on the unit workload version.
+
+        :param unit: Application Unit
+        :type unit: UnitStatus
+        :raises ApplicationError: When there are no compatible OpenStack release for the
+        workload version.
+        :return: The latest compatible OpenStack release.
+        :rtype: OpenStackRelease
+        """
+        try:
+            return max(
+                OpenStackCodenameLookup.find_compatible_versions(self.charm, unit.workload_version)
+            )
+        except ValueError as exc:
+            raise ApplicationError(
+                f"'{self.name}' with workload version {unit.workload_version} has no "
+                "compatible OpenStack release."
+            ) from exc
 
     @property
     def possible_current_channels(self) -> list[str]:
