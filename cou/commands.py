@@ -86,12 +86,6 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         "  2 - Environment variable MODEL_NAME,"
         "  3 - Current active juju model",
     )
-    subcommand_common_opts_parser.add_argument(
-        "--parallel",
-        help="Run upgrade steps in parallel where possible.",
-        default=False,
-        action="store_true",
-    )
 
     # quiet and verbose options are mutually exclusive
     group = subcommand_common_opts_parser.add_mutually_exclusive_group()
@@ -235,6 +229,12 @@ def create_run_subparser(
         help="Run upgrade with prompt.",
         action=argparse.BooleanOptionalAction,
         default=True,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--parallel",
+        help="Run upgrade steps in parallel where possible.",
+        default=False,
+        action="store_true",
     )
     run_parser = subparsers.add_parser(
         "run",
