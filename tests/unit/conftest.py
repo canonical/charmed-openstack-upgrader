@@ -282,6 +282,8 @@ def full_status(status, model):
             ("cinder", status["cinder_ussuri"]),
             ("rabbitmq-server", status["rabbitmq_server"]),
             ("my_app", status["unknown_app"]),
+            ("nova-compute", status["unknown_app"]),
+            ("ceph-osd", status["unknown_app"]),
         ]
     )
     return mock_full_status
