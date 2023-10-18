@@ -305,7 +305,7 @@ async def test_coumodel_get_status(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_action_result(mocked_model):
-    """Test COUModel run action."""
+    """Test COUModel get action result."""
     mocked_action = AsyncMock(spec_set=Action).return_value
     model = juju_utils.COUModel("test-model")
 
@@ -318,7 +318,7 @@ async def test_coumodel_get_action_result(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_action_result_failure(mocked_model):
-    """Test COUModel run action failing."""
+    """Test COUModel get action result failing."""
     mocked_action = AsyncMock(spec_set=Action).return_value
     mocked_model.get_action_status.return_value = "failed"
     model = juju_utils.COUModel("test-model")

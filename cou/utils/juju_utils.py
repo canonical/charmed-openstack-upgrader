@@ -268,7 +268,7 @@ class COUModel:
         :type raise_on_failure: bool
         :return: action results
         :rtype: Action
-        :raises ActionFailed: _description_
+        :raises ActionFailed: When cannot find a valid unit.
         """
         result = await action.wait()
         if raise_on_failure:
@@ -299,8 +299,8 @@ class COUModel:
         :type action_params: Optional[Dict], optional
         :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
         :type raise_on_failure: bool
-        :raises UnitNotFound: _description_
-        :raises ActionFailed: _description_
+        :raises UnitNotFound: When cannot find a valid unit.
+        :raises ActionFailed: When cannot find a valid application.
         :return: When status is different from "completed"
         :rtype: Action
         """
@@ -325,8 +325,8 @@ class COUModel:
         :type timeout: Optional[int]
         :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
         :rtype: Dict[str, str]
-        :raises UnitNotFound: _description_
-        :raises ActionFailed: _description_
+        :raises UnitNotFound: When cannot find a valid unit.
+        :raises ActionFailed: When cannot find a valid application.
         """
         unit = await self._get_unit(unit_name)
         action = await unit.run(command, timeout=timeout)
