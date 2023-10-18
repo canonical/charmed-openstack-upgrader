@@ -253,10 +253,10 @@ def test_compare_openstack_raises_error():
 )
 def test_determine_next_openstack_release(os_release, release_year, next_os_release):
     release = OpenStackRelease(os_release)
-    if next_os_release is None:
-        assert release.next_release is None
-    else:
+    if next_os_release:
         assert release.next_release == OpenStackRelease(next_os_release)
+    else:
+        assert release.next_release is None
     assert release.date == release_year
 
 
@@ -272,10 +272,10 @@ def test_determine_next_openstack_release(os_release, release_year, next_os_rele
 )
 def test_determine_previous_openstack_release(os_release, previous_os_release):
     release = OpenStackRelease(os_release)
-    if previous_os_release is None:
-        assert release.previous_release is None
-    else:
+    if previous_os_release:
         assert release.previous_release == OpenStackRelease(previous_os_release)
+    else:
+        assert release.previous_release is None
 
 
 @pytest.mark.parametrize(

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Lookup utils to determine compatible OpenStack codenames for a given component."""
+from __future__ import annotations
 
 import csv
 import encodings
@@ -240,7 +241,7 @@ class OpenStackRelease:
             raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
 
     @property
-    def next_release(self) -> Optional["OpenStackRelease"]:
+    def next_release(self) -> Optional[OpenStackRelease]:
         """Return the next OpenStack release codename.
 
         :return: OpenStack release codename.
@@ -253,7 +254,7 @@ class OpenStackRelease:
             return None
 
     @property
-    def previous_release(self) -> Optional["OpenStackRelease"]:
+    def previous_release(self) -> Optional[OpenStackRelease]:
         """Return the previous OpenStack release codename.
 
         :return: OpenStack release codename.

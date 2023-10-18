@@ -156,8 +156,6 @@ class Analysis:
     def current_cloud_os_release(self) -> Optional[OpenStackRelease]:
         """Shows the current OpenStack release codename.
 
-        This property just consider OpenStack charms as those that have
-        openstack-origin or source on the charm configuration (app.os_origin).
         :return: OpenStack release codename
         :rtype: Optional[OpenStackRelease]
         """
@@ -170,8 +168,6 @@ class Analysis:
     def next_cloud_os_release(self) -> Optional[OpenStackRelease]:
         """Shows the next OpenStack release codename.
 
-        This property just consider OpenStack charms as those that have
-        openstack-origin or source on the charm configuration (app.os_origin).
         :return: OpenStack release codename
         :rtype: Optional[OpenStackRelease]
         """
