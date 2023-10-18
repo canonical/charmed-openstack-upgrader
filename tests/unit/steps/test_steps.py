@@ -70,7 +70,6 @@ def test_step_hash():
 )
 def test_step_eq(description, parallel, args):
     """Test UpgradeStep comparison."""
-    # coro = mock_coro(*args)
     step_1 = UpgradeStep(description, parallel, mock_coro(*args))
     step_2 = UpgradeStep(description, parallel, mock_coro(*args))
     # define step with different coro
@@ -131,8 +130,8 @@ def test_step_add_step():
     assert len(plan.sub_steps) == exp_sub_steps
 
 
-def test_step_cancel():
-    """Test step cancel."""
+def test_step_cancel_safe():
+    """Test step safe cancel."""
     plan = UpgradeStep(description="plan")
     plan.sub_steps = sub_steps = [UpgradeStep(description=f"sub-{i}") for i in range(10)]
     # add sub-sub-steps to one sub-step
@@ -145,7 +144,7 @@ def test_step_cancel():
     assert all(step.canceled for step in sub_steps[0].sub_steps)
 
 
-def test_step_unsafe_cancel():
+def test_step_cancel_unsafe():
     """Test step unsafe cancel."""
     plan = UpgradeStep(description="test plan")
     plan._task = mock_task = MagicMock(spec_sep=asyncio.Task)
@@ -229,7 +228,6 @@ async def test_step_cancel_task():
 )
 async def test_step_full_run(sub_steps, exp_order, parallel):
     """Test to simulate running full plan with steps."""
-    # warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited")
     steps_order = []
 
     async def sub_step(name, time):
