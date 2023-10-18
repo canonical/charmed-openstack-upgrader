@@ -197,7 +197,7 @@ async def test_step_cancel_task():
     await step.run()
 
     assert step._task is not None
-    assert step._task.cancelling() == 1  # task was canceled once
+    assert step._task.cancelled() == 1  # task was canceled once
 
 
 @pytest.mark.asyncio
