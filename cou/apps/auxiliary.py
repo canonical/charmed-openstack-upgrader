@@ -16,6 +16,8 @@ import logging
 
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError
+from cou.steps import UpgradeStep
+from cou.utils.app_utils import upgrade_packages
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
@@ -25,9 +27,7 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(
-    ["rabbitmq-server", "vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"]
-)
+@AppFactory.register_application(["rabbitmq-server", "vault", "ceph-fs", "ceph-radosgw"])
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
@@ -90,4 +90,34 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
                 f"'{self.charm}' cannot identify suitable OpenStack release codename "
                 f"for channel: '{self.channel}'"
             )
+        )
+
+
+@AppFactory.register_application(["mysql-innodb-cluster"])
+class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
+    """Application for mysql-innodb-cluster charm."""
+
+    def _get_upgrade_current_release_packages_plan(self, parallel: bool = False) -> UpgradeStep:
+        """Get Plan for upgrading software packages to the latest of the current release.
+
+        :param parallel: Parallel running, defaults to False
+        :type parallel: bool, optional
+        :return: Plan for upgrading software packages to the latest of the current release.
+        :rtype: UpgradeStep
+        """
+        description = (
+            f"Upgrade software packages of '{self.name}' from the current APT repositories"
+        )
+
+        # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
+        # mysqld processes from restarting, which lead to outages
+        packages_to_hold = ["mysql-server-core-8.0"]
+
+        return UpgradeStep(
+            description=description,
+            parallel=parallel,
+            function=upgrade_packages,
+            units=self.status.units.keys(),
+            model=self.model,
+            packages_to_hold=packages_to_hold,
         )
