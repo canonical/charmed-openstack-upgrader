@@ -29,6 +29,7 @@ def test_auxiliary_subordinate(apps):
     assert app.apt_source_codename is None
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
+    assert app.is_subordinate is True
 
 
 def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
@@ -68,6 +69,7 @@ def test_ovn_subordinate(status, model):
     assert app.apt_source_codename is None
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
+    assert app.is_subordinate is True
 
 
 def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
