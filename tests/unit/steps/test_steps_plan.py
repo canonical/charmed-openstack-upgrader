@@ -32,6 +32,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         description=f"Upgrade plan for '{app.name}' to {target_version.codename}",
         parallel=False,
     )
+
     upgrade_steps = [
         UpgradeStep(
             description=(

@@ -51,7 +51,14 @@ def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutin
 
 
 class UpgradeStep:
-    """Represents each upgrade step."""
+    """Represents each upgrade step.
+
+    This UpgradeStep is used to define any step when performing an OpenStack upgrade.
+    And requires description, parallel and coroutine as arguments. The coroutine is expected by
+    creating an asyncio.Task task instead of waiting directly, so that it is possible to cancel
+    the task and at the same time simply find out which task is really running according to
+    its name.
+    """
 
     def __init__(
         self,
@@ -73,6 +80,7 @@ class UpgradeStep:
             warnings.filterwarnings(
                 "ignore", message=f"coroutine '.*{coro.__name__}' was never awaited"
             )
+
         self.parallel = parallel
         self.description = description
         self.sub_steps: List[UpgradeStep] = []
@@ -134,10 +142,7 @@ class UpgradeStep:
     @property
     def results(self) -> Any:
         """Return result of UpgradeStep."""
-        if self._task is None:
-            return None
-
-        return self._task.result()
+        return self._task.result() if self._task is not None else None
 
     def add_step(self, step: UpgradeStep) -> None:
         """Add a single step.
@@ -171,7 +176,7 @@ class UpgradeStep:
 
         :return: Result of the coroutine.
         :rtype: Any
-        :raises CanceledUpgradeStep: If step has already been cancelled.
+        :raises CanceledUpgradeStep: If step has already been canceled.
         """
         logger.debug("running step: %s", repr(self))
 

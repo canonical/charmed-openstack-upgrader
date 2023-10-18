@@ -77,7 +77,7 @@ def test_step_eq(description, parallel, args):
 
     assert step_1 == step_2
     assert step_1 != step_3
-    assert step_1 != 1
+    assert step_1 != 1  # check __eq__ with another object
 
 
 def test_step_str():
