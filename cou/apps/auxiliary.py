@@ -21,7 +21,6 @@ from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
 from cou.utils.openstack import (
-    CHARM_FAMILIES,
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
     OpenStackRelease,
@@ -32,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 @AppFactory.register_application(
     ["rabbitmq-server", "vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"]
-    + CHARM_FAMILIES["ovn"]
 )
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
@@ -86,7 +84,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        track: str = self.channel.split("/", maxsplit=1)[0]
+        track: str = self._get_track_from_channel(self.channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
         if compatible_os_releases:
             return max(compatible_os_releases)
@@ -145,7 +143,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :return: Plan to check and set correct value for require-osd-release
         :rtype: UpgradeStep
         """
-        ceph_release: str = channel.split("/", maxsplit=1)[0]
+        ceph_release: str = self._get_track_from_channel(channel)
         ceph_mon_unit, *_ = self.units
         return UpgradeStep(
             description=(
