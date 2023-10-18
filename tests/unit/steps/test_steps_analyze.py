@@ -69,6 +69,8 @@ def test_analysis_dump(apps, model):
         "      workload_version: '3.8'\n"
         "      os_version: yoga\n"
         "Data Plane:\n"
+        "\nCurrent Cloud OpenStack Release: ussuri\n"
+        "Next Cloud OpenStack Release: victoria\n"
     )
     result = analyze.Analysis(
         model=model,
@@ -112,7 +114,7 @@ async def test_analysis_create(mock_populate, apps, model):
 
 
 @pytest.mark.asyncio
-async def test_analysis_detect_current_cloud_os_release_different_releases(apps, model):
+async def test_analysis_detect_current_and_next_cloud_os_release_different_releases(apps, model):
     result = analyze.Analysis(
         model=model,
         apps_control_plane=[apps["rmq_ussuri"], apps["keystone_wallaby"], apps["cinder_ussuri"]],
@@ -121,10 +123,11 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(apps,
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
+    assert result.next_cloud_os_release == "victoria"
 
 
 @pytest.mark.asyncio
-async def test_analysis_detect_current_cloud_os_release_same_release(apps, model):
+async def test_analysis_detect_current_and_next_cloud_os_release_same_release(apps, model):
     result = analyze.Analysis(
         model=model,
         apps_control_plane=[apps["cinder_ussuri"], apps["keystone_ussuri"]],
@@ -133,6 +136,19 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps, model
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
+    assert result.next_cloud_os_release == "victoria"
+
+
+@pytest.mark.asyncio
+async def test_analysis_detect_current_and_next_cloud_os_release_empty_cloud(model):
+    result = analyze.Analysis(
+        model=model,
+        apps_control_plane=[],
+        apps_data_plane=[],
+    )
+
+    assert result.current_cloud_os_release is None
+    assert result.next_cloud_os_release is None
 
 
 def _app(name, units):

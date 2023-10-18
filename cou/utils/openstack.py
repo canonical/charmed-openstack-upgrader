@@ -240,20 +240,20 @@ class OpenStackRelease:
             raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
 
     @property
-    def next_release(self) -> Optional[str]:
+    def next_release(self) -> Optional["OpenStackRelease"]:
         """Return the next OpenStack release codename.
 
         :return: OpenStack release codename.
         :rtype: Optional[str]
         """
         try:
-            return self.openstack_codenames[self.index + 1]
+            return OpenStackRelease(self.openstack_codenames[self.index + 1])
         except IndexError:
             logger.warning("Cannot find an OpenStack release after %s", self.codename)
             return None
 
     @property
-    def previous_release(self) -> Optional[str]:
+    def previous_release(self) -> Optional["OpenStackRelease"]:
         """Return the previous OpenStack release codename.
 
         :return: OpenStack release codename.
@@ -263,7 +263,7 @@ class OpenStackRelease:
             logger.warning("Cannot find an OpenStack release before %s", self.codename)
             return None
 
-        return self.openstack_codenames[self.index - 1]
+        return OpenStackRelease(self.openstack_codenames[self.index - 1])
 
     @property
     def date(self) -> str:

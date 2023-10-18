@@ -44,13 +44,13 @@ def test_ceph_mon_app(status, config, model):
     assert app.channel_codename == "xena"
 
 
-def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
+def test_ceph_mon_upgrade_plan_xena_to_yoga(
     status,
     config,
     model,
 ):
     """Test when ceph version changes between os releases."""
-    target = "yoga"
+    target = OpenStackRelease("yoga")
     app = CephMonApplication(
         "ceph-mon",
         status["ceph-mon_xena"],
@@ -115,7 +115,7 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            target=target,
         ),
         UpgradeStep(
             description=(
@@ -139,7 +139,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
     model,
 ):
     """Test when ceph version remains the same between os releases."""
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = CephMonApplication(
         "ceph-mon",
         status["ceph-mon_ussuri"],
@@ -196,7 +196,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            target=target,
         ),
         UpgradeStep(
             description=(

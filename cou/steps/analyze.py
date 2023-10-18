@@ -148,6 +148,8 @@ class Analysis:
             + "\n".join([str(app) for app in self.apps_control_plane])
             + "Data Plane:\n"
             + "\n".join([str(app) for app in self.apps_data_plane])
+            + f"\nCurrent Cloud OpenStack Release: {self.current_cloud_os_release}\n"
+            + f"Next Cloud OpenStack Release: {self.next_cloud_os_release}\n"
         )
 
     @property
@@ -157,9 +159,22 @@ class Analysis:
         This property just consider OpenStack charms as those that have
         openstack-origin or source on the charm configuration (app.os_origin).
         :return: OpenStack release codename
-        :rtype: OpenStackRelease
+        :rtype: Optional[OpenStackRelease]
         """
         return min(
             (app.current_os_release for app in self.apps_control_plane + self.apps_data_plane),
             default=None,
+        )
+
+    @property
+    def next_cloud_os_release(self) -> Optional[OpenStackRelease]:
+        """Shows the next OpenStack release codename.
+
+        This property just consider OpenStack charms as those that have
+        openstack-origin or source on the charm configuration (app.os_origin).
+        :return: OpenStack release codename
+        :rtype: Optional[OpenStackRelease]
+        """
+        return (
+            self.current_cloud_os_release.next_release if self.current_cloud_os_release else None
         )

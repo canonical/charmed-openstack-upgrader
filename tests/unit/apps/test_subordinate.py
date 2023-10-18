@@ -43,7 +43,7 @@ def test_current_os_release(status, model):
 
 
 def test_generate_upgrade_plan(status, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
@@ -126,7 +126,7 @@ def test_channel_setter_invalid(status, model, channel):
     ],
 )
 def test_generate_plan_ch_migration(status, model, channel):
-    target = "wallaby"
+    target = OpenStackRelease("wallaby")
     app_status = status["keystone-ldap-cs"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
@@ -178,10 +178,11 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
     )
 
     app.channel = f"{from_os}/stable"
-    upgrade_plan = app.generate_upgrade_plan(to_os)
+    target = OpenStackRelease(to_os)
+    upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {to_os}",
+        description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
         function=None,
     )
@@ -195,11 +196,11 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
             switch=None,
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: '{to_os}/stable'",
+            description=f"Upgrade '{app.name}' to the new channel: '{target}/stable'",
             parallel=False,
             function=model.upgrade_charm,
             application_name=app.name,
-            channel=f"{to_os}/stable",
+            channel=f"{target}/stable",
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -224,9 +225,10 @@ def test_generate_plan_in_same_version(status, model, from_to):
     )
 
     app.channel = f"{from_to}/stable"
-    upgrade_plan = app.generate_upgrade_plan(from_to)
+    from_to_release = OpenStackRelease(from_to)
+    upgrade_plan = app.generate_upgrade_plan(from_to_release)
     expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {from_to}",
+        description=f"Upgrade plan for '{app.name}' to {from_to_release}",
         parallel=False,
         function=None,
     )

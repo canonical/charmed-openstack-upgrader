@@ -14,6 +14,7 @@
 """Tests of the Auxiliary Subordinate application class."""
 
 from cou.steps import UpgradeStep
+from cou.utils.openstack import OpenStackRelease
 
 
 def test_auxiliary_subordinate(apps):
@@ -27,7 +28,7 @@ def test_auxiliary_subordinate(apps):
 
 
 def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = apps["keystone_mysql_router"]
 
     upgrade_plan = app.generate_upgrade_plan(target)

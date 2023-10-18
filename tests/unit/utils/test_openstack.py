@@ -213,16 +213,16 @@ def test_compare_openstack_release_order():
 
 def test_openstack_release_setter():
     openstack_release = OpenStackRelease("wallaby")
-    assert openstack_release.next_release == "xena"
+    assert openstack_release.next_release == OpenStackRelease("xena")
     # change OpenStack release
     openstack_release.codename = "xena"
-    assert openstack_release.next_release == "yoga"
+    assert openstack_release.next_release == OpenStackRelease("yoga")
 
 
 def test_openstack_release_setter_by_date():
     openstack_release = OpenStackRelease("2023.1")
     assert openstack_release.codename == "antelope"
-    assert openstack_release.next_release == "bobcat"
+    assert openstack_release.next_release == OpenStackRelease("bobcat")
     assert openstack_release.date == "2023.1"
 
 
@@ -253,7 +253,10 @@ def test_compare_openstack_raises_error():
 )
 def test_determine_next_openstack_release(os_release, release_year, next_os_release):
     release = OpenStackRelease(os_release)
-    assert release.next_release == next_os_release
+    if next_os_release is None:
+        assert release.next_release is None
+    else:
+        assert release.next_release == OpenStackRelease(next_os_release)
     assert release.date == release_year
 
 
@@ -269,7 +272,10 @@ def test_determine_next_openstack_release(os_release, release_year, next_os_rele
 )
 def test_determine_previous_openstack_release(os_release, previous_os_release):
     release = OpenStackRelease(os_release)
-    assert release.previous_release == previous_os_release
+    if previous_os_release is None:
+        assert release.previous_release is None
+    else:
+        assert release.previous_release == OpenStackRelease(previous_os_release)
 
 
 @pytest.mark.parametrize(

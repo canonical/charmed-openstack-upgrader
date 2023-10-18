@@ -54,7 +54,7 @@ def test_ovn_subordinate(status, model):
 
 
 def test_ovn_workload_ver_lower_than_22_principal(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
 
     exp_error_msg_ovn_upgrade = (
         "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
@@ -76,7 +76,7 @@ def test_ovn_workload_ver_lower_than_22_principal(status, config, model):
 
 
 def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
 
     exp_error_msg_ovn_upgrade = (
         "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
@@ -119,7 +119,7 @@ def test_ovn_no_compatible_os_release(status, config, model, channel):
 
 
 def test_ovn_principal_upgrade_plan(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = OvnPrincipalApplication(
         "ovn-central",
         status["ovn_central_ussuri_22"],
@@ -168,7 +168,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            target=target,
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -177,7 +177,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
 
 
 def test_ovn_subordinate_upgrade_plan(status, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = OvnSubordinateApplication(
         "ovn-chassis",
         status["ovn_chassis_ussuri_22"],
