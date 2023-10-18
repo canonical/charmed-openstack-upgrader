@@ -245,7 +245,7 @@ class OpenStackRelease:
         """Return the next OpenStack release codename.
 
         :return: OpenStack release codename.
-        :rtype: Optional[str]
+        :rtype: Optional[OpenStackRelease]
         """
         try:
             return OpenStackRelease(self.openstack_codenames[self.index + 1])
@@ -258,7 +258,7 @@ class OpenStackRelease:
         """Return the previous OpenStack release codename.
 
         :return: OpenStack release codename.
-        :rtype: Optional[str]
+        :rtype: Optional[OpenStackRelease]
         """
         if self.index == 0:
             logger.warning("Cannot find an OpenStack release before %s", self.codename)
