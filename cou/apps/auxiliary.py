@@ -13,11 +13,10 @@
 # limitations under the License.
 """Auxiliary application class."""
 import logging
+from typing import Optional
 
 from cou.apps.app import AppFactory, OpenStackApplication
 from cou.exceptions import ApplicationError
-from cou.steps import UpgradeStep
-from cou.utils.app_utils import upgrade_packages
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
@@ -97,27 +96,6 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
 class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
     """Application for mysql-innodb-cluster charm."""
 
-    def _get_upgrade_current_release_packages_plan(self, parallel: bool = False) -> UpgradeStep:
-        """Get Plan for upgrading software packages to the latest of the current release.
-
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Plan for upgrading software packages to the latest of the current release.
-        :rtype: UpgradeStep
-        """
-        description = (
-            f"Upgrade software packages of '{self.name}' from the current APT repositories"
-        )
-
-        # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
-        # mysqld processes from restarting, which lead to outages
-        packages_to_hold = ["mysql-server-core-8.0"]
-
-        return UpgradeStep(
-            description=description,
-            parallel=parallel,
-            function=upgrade_packages,
-            units=self.status.units.keys(),
-            model=self.model,
-            packages_to_hold=packages_to_hold,
-        )
+    # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
+    # mysqld processes from restarting, which lead to outages
+    packages_to_hold: Optional[list] = ["mysql-server-core-8.0"]

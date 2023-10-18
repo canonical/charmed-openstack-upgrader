@@ -329,6 +329,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
@@ -394,6 +395,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
@@ -463,6 +465,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
@@ -515,6 +518,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
@@ -591,6 +595,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",

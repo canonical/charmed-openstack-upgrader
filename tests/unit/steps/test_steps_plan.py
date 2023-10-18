@@ -43,6 +43,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=(

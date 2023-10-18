@@ -75,6 +75,7 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
@@ -163,6 +164,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",

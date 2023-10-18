@@ -145,6 +145,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",

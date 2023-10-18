@@ -77,6 +77,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.8/stable'",
@@ -144,6 +145,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
@@ -202,6 +204,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
             function=app_utils.upgrade_packages,
             units=app.status.units.keys(),
             model=model,
+            packages_to_hold=None,
         ),
         UpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",

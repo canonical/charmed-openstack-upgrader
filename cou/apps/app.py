@@ -171,6 +171,7 @@ class OpenStackApplication:
     os_origin: str = ""
     origin_setting: Optional[str] = None
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
+    packages_to_hold: Optional[list] = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -495,6 +496,7 @@ class OpenStackApplication:
             function=upgrade_packages,
             units=self.status.units.keys(),
             model=self.model,
+            packages_to_hold=self.packages_to_hold,
         )
 
     def _get_refresh_charm_plan(
