@@ -223,13 +223,11 @@ class OpenStackApplication:
         :return: True if valid, False otherwise.
         :rtype: bool
         """
-        if self.is_from_charm_store:
-            return True
         try:
             OpenStackRelease(self._get_track_from_channel(charm_channel))
             return True
         except ValueError:
-            return False
+            return self.is_from_charm_store
 
     def _get_latest_os_version_by_workload_version(self, unit: UnitStatus) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
