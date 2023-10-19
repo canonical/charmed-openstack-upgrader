@@ -43,7 +43,7 @@ async def upgrade_packages(
     command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
     if packages_to_hold:
         packages = " ".join(packages_to_hold)
-        command = f"sudo apt-mark hold {packages} && {command} ; sudo apt-mark unhold {packages}"
+        command = f"apt-mark hold {packages} && {command} ; apt-mark unhold {packages}"
 
     for unit in units:
         logger.info("Running '%s' on '%s'", command, unit)
