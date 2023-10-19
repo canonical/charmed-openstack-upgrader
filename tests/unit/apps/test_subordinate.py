@@ -32,6 +32,7 @@ def test_post_init(status, model):
     assert app.channel == "ussuri/stable"
     assert app.charm_origin == "ch"
     assert app.os_origin == ""
+    assert app.is_subordinate is True
 
 
 def test_current_os_release(status, model):

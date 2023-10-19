@@ -20,9 +20,9 @@ import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 from juju.client.client import FullStatus
 
-from cou.apps.app import ApplicationUnit, OpenStackApplication
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
+from cou.apps.core import ApplicationUnit, OpenStackApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.utils.openstack import OpenStackRelease
 
@@ -293,6 +293,8 @@ def full_status(status, model):
             ("cinder", status["cinder_ussuri"]),
             ("rabbitmq-server", status["rabbitmq_server"]),
             ("my_app", status["unknown_app"]),
+            ("nova-compute", status["unknown_app"]),
+            ("ceph-osd", status["unknown_app"]),
         ]
     )
     return mock_full_status

@@ -16,12 +16,11 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any, Optional
 
-from juju.client._definitions import ApplicationStatus
+from juju.client._definitions import ApplicationStatus, UnitStatus
 from ruamel.yaml import YAML
 
 from cou.exceptions import (
@@ -36,85 +35,9 @@ from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
     OpenStackRelease,
-    is_charm_supported,
 )
 
 logger = logging.getLogger(__name__)
-
-
-class AppFactory:
-    """Factory class for Application objects."""
-
-    charms: dict[str, type[OpenStackApplication]] = {}
-
-    @classmethod
-    def create(
-        cls,
-        name: str,
-        status: ApplicationStatus,
-        config: dict,
-        model: COUModel,
-        charm: str,
-    ) -> Optional[OpenStackApplication]:
-        """Create the OpenStackApplication or registered subclasses.
-
-        Applications Subclasses registered with the "register_application"
-        decorator can be instantiated and used with their customized methods.
-        :param name: Name of the application
-        :type name: str
-        :param status: Status of the application
-        :type status: ApplicationStatus
-        :param config: Configuration of the application
-        :type config: dict
-        :param model: COUModel object
-        :type model: COUModel
-        :param charm: Name of the charm
-        :type charm: str
-        :return: The OpenStackApplication class or None if not supported.
-        :rtype: Optional[OpenStackApplication]
-        """
-        # pylint: disable=too-many-arguments
-        if is_charm_supported(charm):
-            app_class = cls.charms.get(charm, OpenStackApplication)
-            return app_class(name=name, status=status, config=config, model=model, charm=charm)
-        logger.debug(
-            "'%s' is not a supported OpenStack related application and will be ignored.",
-            name,
-        )
-        return None
-
-    @classmethod
-    def register_application(
-        cls, charms: list[str]
-    ) -> Callable[[type[OpenStackApplication]], type[OpenStackApplication]]:
-        """Register Application subclasses.
-
-        Use this method as decorator to register Applications that
-        cannot be described appropriately by the OpenStackApplication class.
-
-        Example:
-        ceph_charms = ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"]
-
-        @AppFactory.register_application(ceph_charms)
-        class Ceph(OpenStackApplication):
-            pass
-        This is registering the charms "ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"
-        to the Ceph class.
-
-        :param charms: List of charms names.
-        :type charms: list[str]
-        :return: The decorated class. E.g: the Ceph class in the example above.
-        :rtype: Callable[[type[OpenStackApplication]], type[OpenStackApplication]]
-        """
-
-        def decorator(  # pylint: disable=W9011
-            application: type[OpenStackApplication],
-        ) -> type[OpenStackApplication]:
-            for charm in charms:
-                cls.charms[charm] = application
-            return application
-
-        return decorator
 
 
 @dataclass
@@ -175,31 +98,10 @@ class OpenStackApplication:
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.channel = self.status.charm_channel
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
-        # subordinates don't have units
-        units = getattr(self.status, "units", {})
-        for name, unit in units.items():
-            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
-                self.charm, unit.workload_version
-            )
-            # NOTE(gabrielcocenza) get the latest compatible OpenStack version.
-            if compatible_os_versions:
-                unit_os_version = max(compatible_os_versions)
-                self.units.append(
-                    ApplicationUnit(
-                        name=name,
-                        workload_version=unit.workload_version,
-                        os_version=unit_os_version,
-                        machine=unit.machine,
-                    )
-                )
-            else:
-                raise ApplicationError(
-                    f"'{self.name}' with workload version {unit.workload_version} has no "
-                    f"compatible OpenStack release in the lookup."
-                )
+        self._populate_units()
+        self.channel = self.status.charm_channel
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -245,6 +147,49 @@ class OpenStackApplication:
         with StringIO() as stream:
             yaml.dump(summary, stream)
             return stream.getvalue()
+
+    def _populate_units(self) -> None:
+        """Populate application units."""
+        if not self.is_subordinate:
+            for name, unit in self.status.units.items():
+                compatible_os_version = self._get_latest_os_version_by_workload_version(unit)
+                self.units.append(
+                    ApplicationUnit(
+                        name=name,
+                        workload_version=unit.workload_version,
+                        os_version=compatible_os_version,
+                        machine=unit.machine,
+                    )
+                )
+
+    @property
+    def is_subordinate(self) -> bool:
+        """Check if application is subordinate.
+
+        :return: True if subordinate, False otherwise.
+        :rtype: bool
+        """
+        return bool(self.status.subordinate_to)
+
+    def _get_latest_os_version_by_workload_version(self, unit: UnitStatus) -> OpenStackRelease:
+        """Get the latest compatible OpenStack release based on the unit workload version.
+
+        :param unit: Application Unit
+        :type unit: UnitStatus
+        :raises ApplicationError: When there are no compatible OpenStack release for the
+        workload version.
+        :return: The latest compatible OpenStack release.
+        :rtype: OpenStackRelease
+        """
+        try:
+            return max(
+                OpenStackCodenameLookup.find_compatible_versions(self.charm, unit.workload_version)
+            )
+        except ValueError as exc:
+            raise ApplicationError(
+                f"'{self.name}' with workload version {unit.workload_version} has no "
+                "compatible OpenStack release."
+            ) from exc
 
     @staticmethod
     def _get_track_from_channel(charm_channel: str) -> str:
@@ -595,7 +540,7 @@ class OpenStackApplication:
         if self.config.get("action-managed-upgrade", {}).get("value", False):
             return UpgradeStep(
                 description=(
-                    f"Change charm config of '{self.name}' " "'action-managed-upgrade' to False."
+                    f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
                 ),
                 parallel=parallel,
                 function=self.model.set_application_config,
