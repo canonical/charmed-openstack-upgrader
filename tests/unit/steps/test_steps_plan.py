@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from unittest.mock import MagicMock
 
 import pytest
@@ -32,17 +31,15 @@ def generate_expected_upgrade_plan_principal(app, target, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target_version.codename}",
         parallel=False,
-        function=None,
     )
+
     upgrade_steps = [
         UpgradeStep(
             description=(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
         ),
         UpgradeStep(
             description=(
@@ -50,26 +47,21 @@ def generate_expected_upgrade_plan_principal(app, target, model):
                 f"'{target_version.previous_release}/stable'"
             ),
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel=f"{target_version.previous_release}/stable",
-            switch=None,
+            coro=model.upgrade_charm(
+                app.name, f"{target_version.previous_release}/stable", switch=None
+            ),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={"action-managed-upgrade": False},
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
             description=(
                 f"Upgrade '{app.name}' to the new channel: '{target_version.codename}/stable'"
             ),
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel=f"{target_version.codename}/stable",
+            coro=model.upgrade_charm(app.name, f"{target_version.codename}/stable"),
         ),
         UpgradeStep(
             description=(
@@ -77,15 +69,14 @@ def generate_expected_upgrade_plan_principal(app, target, model):
                 f"'{app.origin_setting}' to 'cloud:focal-{target_version.codename}'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": f"cloud:focal-{target_version.codename}"},
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": f"cloud:focal-{target_version.codename}"}
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -97,7 +88,6 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -106,19 +96,16 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
                 f"'{target_version.previous_release}/stable'"
             ),
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel=f"{target_version.previous_release}/stable",
-            switch=None,
+            coro=model.upgrade_charm(
+                app.name, f"{target_version.previous_release}/stable", switch=None
+            ),
         ),
         UpgradeStep(
             description=(
                 f"Upgrade '{app.name}' to the new channel: '{target_version.codename}/stable'"
             ),
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel=f"{target_version.codename}/stable",
+            coro=model.upgrade_charm(app.name, f"{target_version.codename}/stable"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -142,22 +129,19 @@ async def test_generate_plan(apps, model):
     expected_plan = UpgradeStep(
         description="Top level plan",
         parallel=False,
-        function=None,
     )
 
     expected_plan.add_step(
         UpgradeStep(
             description="backup mysql databases",
             parallel=False,
-            function=backup,
-            model=model,
+            coro=backup(model),
         )
     )
 
     control_plane_principals = UpgradeStep(
         description="Control Plane principal(s) upgrade plan",
         parallel=False,
-        function=None,
     )
     keystone_plan = generate_expected_upgrade_plan_principal(app_keystone, target, model)
     cinder_plan = generate_expected_upgrade_plan_principal(app_cinder, target, model)
@@ -167,7 +151,6 @@ async def test_generate_plan(apps, model):
     control_plane_subordinates = UpgradeStep(
         description="Control Plane subordinate(s) upgrade plan",
         parallel=False,
-        function=None,
     )
     keystone_ldap_plan = generate_expected_upgrade_plan_subordinate(
         app_keystone_ldap, target, model
@@ -200,7 +183,7 @@ async def test_create_upgrade_plan():
 
     assert plan.description == description
     assert plan.parallel is False
-    assert plan.function is None
+    assert plan._coro is None
     assert len(plan.sub_steps) == 1
     assert plan.sub_steps[0] == app.generate_upgrade_plan.return_value
     app.generate_upgrade_plan.assert_called_once_with(target)

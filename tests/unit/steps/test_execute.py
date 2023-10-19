@@ -145,36 +145,35 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(randint(10, 200) / 1000)  # wait randomly between 10ms and 200ms
             self.execution_order.append(name)
 
-        self.plan = UpgradeStep("test plan", parallel=False, function=None)
+        self.plan = UpgradeStep("test plan", parallel=False)
         # define parallel step
-        parallel_step = UpgradeStep("parallel", parallel=True, function=append, name="parallel")
+        parallel_step = UpgradeStep("parallel", parallel=True, coro=append("parallel"))
         for i in range(5):
-            sub_step = UpgradeStep(
-                f"parallel.{i}", parallel=False, function=append, name=f"parallel.{i}"
-            )
+            sub_step = UpgradeStep(f"parallel.{i}", parallel=False, coro=append(f"parallel.{i}"))
             for j in range(3):
                 sub_step.add_step(
                     UpgradeStep(
                         f"parallel.{i}.{j}",
                         parallel=False,
-                        function=append,
-                        name=f"parallel.{i}.{j}",
+                        coro=append(f"parallel.{i}.{j}"),
                     )
                 )
 
             parallel_step.add_step(sub_step)
         self.plan.add_step(parallel_step)
         # define sequential step
-        sequential_step = UpgradeStep(
-            "sequential", parallel=False, function=append, name="sequential"
-        )
+        sequential_step = UpgradeStep("sequential", parallel=False, coro=append("sequential"))
         for i in range(5):
             sub_step = UpgradeStep(
-                f"sequential.{i}", parallel=False, function=append, name=f"sequential.{i}"
+                f"sequential.{i}",
+                parallel=False,
+                coro=append(f"sequential.{i}"),
             )
             sub_step.add_step(
                 UpgradeStep(
-                    f"sequential.{i}.0", parallel=False, function=append, name=f"sequential.{i}.0"
+                    f"sequential.{i}.0",
+                    parallel=False,
+                    coro=append(f"sequential.{i}.0"),
                 )
             )
             sequential_step.add_step(sub_step)
