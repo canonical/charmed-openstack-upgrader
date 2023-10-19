@@ -104,12 +104,9 @@ def test_channel_setter_valid(status, model, channel):
 )
 def test_channel_setter_invalid(status, model, channel):
     app_status = status["keystone-ldap"]
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
-    )
-
-    app.channel = channel
-    assert app.channel == "ussuri/stable"
+    app_status.charm_channel = channel
+    with pytest.raises(ValueError):
+        OpenStackSubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap")
 
 
 @pytest.mark.parametrize(

@@ -71,31 +71,6 @@ class OpenStackSubordinateApplication(SubordinateBaseClass):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
+        if self.is_from_charm_store:
+            return OpenStackRelease("ussuri")
         return OpenStackRelease(self._get_track_from_channel(self.channel))
-
-    @property
-    def channel(self) -> str:
-        """Get charm channel of the application.
-
-        :return: Charm channel. E.g: ussuri/stable
-        :rtype: str
-        """
-        return self._channel
-
-    @channel.setter
-    def channel(self, charm_channel: str) -> None:
-        """Set charm channel of the application.
-
-        :param charm_channel: Charm channel. E.g: ussuri/stable
-        :type charm_channel: str
-        :raises ApplicationError: Exception raised when channel is not a valid OpenStack
-            channel.
-        """
-        try:
-            OpenStackRelease(self._get_track_from_channel(charm_channel))
-            self._channel = charm_channel
-        except ValueError:
-            # if it has charm origin like cs:
-            # or latest/stable it means it does not support openstack channels yet,
-            # so it should be minimum
-            self._channel = "ussuri/stable"

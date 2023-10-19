@@ -46,11 +46,43 @@ def test_auxiliary_app(status, config, model):
         "rabbitmq-server",
     )
     assert app.channel == "3.8/stable"
+    assert app.is_valid_track(app.channel) is True
     assert app.os_origin == "distro"
     assert app.units == expected_units
     assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "yoga"
     assert app.is_subordinate is False
+    assert app.current_os_release == "yoga"
+    assert app.is_os_channel_based is False
+
+
+def test_auxiliary_app_cs(status, config, model):
+    expected_units = [
+        ApplicationUnit(
+            name="rabbitmq-server/0",
+            os_version=OpenStackRelease("yoga"),
+            workload_version="3.8",
+            machine="0/lxd/19",
+        )
+    ]
+    rmq_status = status["rabbitmq_server"]
+    rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
+    rmq_status.charm_channel = "stable"
+    app = OpenStackAuxiliaryApplication(
+        "rabbitmq-server",
+        status["rabbitmq_server"],
+        config["auxiliary_ussuri"],
+        model,
+        "rabbitmq-server",
+    )
+    assert app.channel == "stable"
+    assert app.is_valid_track(app.channel) is True
+    assert app.os_origin == "distro"
+    assert app.units == expected_units
+    assert app.apt_source_codename == "ussuri"
+    assert app.channel_codename == "ussuri"
+    assert app.current_os_release == "yoga"
+    assert app.is_os_channel_based is False
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
@@ -221,19 +253,17 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
 
 
 def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
-    target = "victoria"
     rmq_status = status["rabbitmq_server"]
     # 2.0 is an unknown track
     rmq_status.charm_channel = "2.0/stable"
-    app = OpenStackAuxiliaryApplication(
-        "rabbitmq-server",
-        status["rabbitmq_server"],
-        config["auxiliary_ussuri"],
-        model,
-        "rabbitmq-server",
-    )
-    with pytest.raises(ApplicationError):
-        app.generate_upgrade_plan(target)
+    with pytest.raises(ValueError):
+        OpenStackAuxiliaryApplication(
+            "rabbitmq-server",
+            status["rabbitmq_server"],
+            config["auxiliary_ussuri"],
+            model,
+            "rabbitmq-server",
+        )
 
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, model):
@@ -247,10 +277,21 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mo
         )
 
 
-def test_auxiliary_raise_error_unknown_track(status, config, model):
-    target = OpenStackRelease("victoria")
+def test_auxiliary_raise_error_unknown_series(status, config, model):
     app_status = status["rabbitmq_server"]
     app_status.series = "foo"
+    with pytest.raises(ValueError):
+        OpenStackAuxiliaryApplication(
+            "rabbitmq-server",
+            app_status,
+            config["auxiliary_ussuri"],
+            model,
+            "rabbitmq-server",
+        )
+
+
+def test_auxiliary_raise_error_os_not_on_lookup(status, config, model, mocker):
+    app_status = status["rabbitmq_server"]
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
         app_status,
@@ -258,11 +299,14 @@ def test_auxiliary_raise_error_unknown_track(status, config, model):
         model,
         "rabbitmq-server",
     )
+    # change OpenStack release to a version that it's not on openstack_to_track_mapping.csv
+    mocker.patch(
+        "cou.apps.core.OpenStackApplication.current_os_release",
+        new_callable=mocker.PropertyMock,
+        return_value=OpenStackRelease("diablo"),
+    )
     with pytest.raises(ApplicationError):
         app.possible_current_channels
-
-    with pytest.raises(ApplicationError):
-        app.target_channel(target)
 
 
 def test_auxiliary_raise_halt_upgrade(status, config, model):
@@ -277,6 +321,20 @@ def test_auxiliary_raise_halt_upgrade(status, config, model):
     )
     with pytest.raises(HaltUpgradePlanGeneration):
         app.generate_upgrade_plan(target)
+
+
+def test_auxiliary_no_suitable_channel(status, config, model):
+    # OPENSTACK_TO_TRACK_MAPPING can't find a track for rabbitmq, focal, zed.
+    target = OpenStackRelease("zed")
+    app = OpenStackAuxiliaryApplication(
+        "rabbitmq-server",
+        status["rabbitmq_server"],
+        config["auxiliary_wallaby"],
+        model,
+        "rabbitmq-server",
+    )
+    with pytest.raises(ApplicationError):
+        app.target_channel(target)
 
 
 def test_ceph_mon_app(status, config, model):
@@ -485,21 +543,14 @@ def test_ovn_workload_ver_lower_than_22_principal(status, config, model):
 def test_ovn_no_compatible_os_release(status, config, model, channel):
     ovn_central_status = status["ovn_central_ussuri_22"]
     ovn_central_status.charm_channel = channel
-    app = OvnPrincipalApplication(
-        "ovn-central",
-        ovn_central_status,
-        config["auxiliary_ussuri"],
-        model,
-        "ovn-central",
-    )
-    with pytest.raises(
-        ApplicationError,
-        match=(
-            f"'{app.charm}' cannot identify suitable OpenStack release codename "
-            f"for channel: '{app.channel}'"
-        ),
-    ):
-        app.channel_codename
+    with pytest.raises(ValueError):
+        OvnPrincipalApplication(
+            "ovn-central",
+            ovn_central_status,
+            config["auxiliary_ussuri"],
+            model,
+            "ovn-central",
+        )
 
 
 def test_ovn_principal_upgrade_plan(status, config, model):

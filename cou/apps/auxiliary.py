@@ -36,6 +36,31 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
     @property
+    def is_os_channel_based(self) -> bool:
+        """Check if application is OpenStack channel based.
+
+        For auxiliary charms, always return false because they are
+        not OpenStack channel based.
+        :return: False.
+        :rtype: bool
+        """
+        return False
+
+    def is_valid_track(self, charm_channel: str) -> bool:
+        """Check if the channel track is valid.
+
+        :param charm_channel: Charm channel. E.g: 3.8/stable
+        :type charm_channel: str
+        :return: True if valid, False otherwise.
+        :rtype: bool
+        """
+        if self.is_from_charm_store:
+            return True
+
+        track = self._get_track_from_channel(charm_channel)
+        return bool(TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track)))
+
+    @property
     def possible_current_channels(self) -> list[str]:
         """Return the possible current channels based on the series and current OpenStack release.
 
@@ -84,17 +109,13 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
+        if self.is_from_charm_store:
+            return OpenStackRelease("ussuri")
+
         track: str = self._get_track_from_channel(self.channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
-        if compatible_os_releases:
-            return max(compatible_os_releases)
-
-        raise ApplicationError(
-            (
-                f"'{self.charm}' cannot identify suitable OpenStack release codename "
-                f"for channel: '{self.channel}'"
-            )
-        )
+        # channel setter already validate if it is a valid channel.
+        return max(compatible_os_releases)  # type: ignore
 
 
 @AppFactory.register_application(["ceph-mon"])
