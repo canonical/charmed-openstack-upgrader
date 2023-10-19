@@ -25,7 +25,9 @@ from cou.utils import app_utils
 async def test_application_upgrade_packages(model):
     model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
 
-    await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
+    await app_utils.upgrade_packages(
+        units=["keystone/0", "keystone/1"], model=model, packages_to_hold=None
+    )
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     expected_calls = [
@@ -83,7 +85,9 @@ async def test_application_upgrade_packages_unsuccessful(model):
     model.run_on_unit.return_value = {"Code": "non-zero", "Stderr": "error"}
 
     with pytest.raises(RunUpgradeError, match=exp_error_msg):
-        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
+        await app_utils.upgrade_packages(
+            units=["keystone/0", "keystone/1"], model=model, packages_to_hold=None
+        )
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     model.run_on_unit.assert_called_once_with(
@@ -99,7 +103,9 @@ async def test_application_upgrade_packages_error(model):
     model.run_on_unit.side_effect = JujuError("error")
 
     with pytest.raises(RunUpgradeError, match=exp_error_msg):
-        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
+        await app_utils.upgrade_packages(
+            units=["keystone/0", "keystone/1"], model=model, packages_to_hold=None
+        )
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     model.run_on_unit.assert_called_once_with(

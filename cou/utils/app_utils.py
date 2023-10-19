@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 async def upgrade_packages(
-    units: Iterable[str], model: COUModel, packages_to_hold: Optional[list] = None
+    units: Iterable[str], model: COUModel, packages_to_hold: Optional[list]
 ) -> None:
     """Run package updates and upgrades on each unit of an Application.
 
