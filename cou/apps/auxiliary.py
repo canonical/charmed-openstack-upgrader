@@ -13,11 +13,14 @@
 # limitations under the License.
 """Auxiliary application class."""
 import logging
+from typing import Optional
 
-from cou.apps.app import AppFactory, OpenStackApplication
+from cou.apps.core import OpenStackApplication
+from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
+from cou.steps import UpgradeStep
+from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
 from cou.utils.openstack import (
-    CHARM_FAMILIES,
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
     OpenStackRelease,
@@ -28,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 @AppFactory.register_application(
     ["rabbitmq-server", "vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"]
-    + CHARM_FAMILIES["ovn"]
 )
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
@@ -82,7 +84,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        track: str = self.channel.split("/", maxsplit=1)[0]
+        track: str = self._get_track_from_channel(self.channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
         if compatible_os_releases:
             return max(compatible_os_releases)
@@ -93,3 +95,78 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
                 f"for channel: '{self.channel}'"
             )
         )
+
+
+@AppFactory.register_application(["ceph-mon"])
+class CephMonApplication(OpenStackAuxiliaryApplication):
+    """Application for Ceph Monitor charm."""
+
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Pre Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add pre upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        return [
+            self._get_upgrade_current_release_packages_plan(),
+            self._get_refresh_charm_plan(target),
+            self._get_change_require_osd_release_plan(self.possible_current_channels[-1]),
+        ]
+
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Post Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add post upgrade as sub steps.
+        :rtype: list[UpgradeStep]
+        """
+        return [
+            self._get_reached_expected_target_plan(target),
+            self._get_change_require_osd_release_plan(self.target_channel(target)),
+        ]
+
+    def _get_change_require_osd_release_plan(
+        self, channel: str, parallel: bool = False
+    ) -> UpgradeStep:
+        """Get plan to set correct value for require-osd-release option on ceph-mon.
+
+        This step is needed as a workaround for LP#1929254. Reference:
+        https://docs.openstack.org/charm-guide/latest/project/issues/upgrade-issues.html#ceph-require-osd-release
+
+        :param channel: The channel to get ceph track from.
+        :type channel: str
+        :param parallel: Parallel running, defaults to False
+        :type parallel: bool, optional
+        :return: Plan to check and set correct value for require-osd-release
+        :rtype: UpgradeStep
+        """
+        ceph_release: str = self._get_track_from_channel(channel)
+        ceph_mon_unit, *_ = self.units
+        return UpgradeStep(
+            description=(
+                "Ensure require-osd-release option on ceph-mon units correctly "
+                f"set to '{ceph_release}'"
+            ),
+            parallel=parallel,
+            coro=set_require_osd_release_option(ceph_mon_unit.name, self.model, ceph_release),
+        )
+
+
+@AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
+class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
+    """Ovn principal application class."""
+
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+        """Pre Upgrade planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: Plan that will add pre upgrade as sub steps.
+        :rtype: list[Optional[UpgradeStep]]
+        """
+        for unit in self.units:
+            validate_ovn_support(unit.workload_version)
+        return super().pre_upgrade_plan(target)

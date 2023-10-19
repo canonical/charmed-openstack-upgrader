@@ -17,20 +17,19 @@
 import logging
 from typing import Callable
 
-from cou.apps.app import OpenStackApplication
-
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
 # pylint: disable=unused-import
-from cou.apps.auxiliary import OpenStackAuxiliaryApplication  # noqa: F401
+from cou.apps.auxiliary import (  # noqa: F401
+    CephMonApplication,
+    OpenStackAuxiliaryApplication,
+    OvnPrincipalApplication,
+)
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     OpenStackAuxiliarySubordinateApplication,
-)
-from cou.apps.ceph import CephMonApplication  # noqa: F401
-from cou.apps.ovn import (  # noqa: F401
-    OvnPrincipalApplication,
     OvnSubordinateApplication,
 )
+from cou.apps.core import OpenStackApplication
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,

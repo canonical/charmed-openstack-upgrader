@@ -19,6 +19,7 @@ from cou.utils.openstack import (
     OpenStackCodenameLookup,
     OpenStackRelease,
     VersionRange,
+    is_charm_supported,
 )
 
 
@@ -282,10 +283,10 @@ def test_determine_previous_openstack_release(os_release, previous_os_release):
         ("focal", "ceph-mon", "yoga", ["quincy"]),
         ("jammy", "ceph-mon", "yoga", ["quincy"]),
         ("jammy", "ceph-mon", "zed", ["quincy"]),
-        ("focal", "ovn-central", "ussuri", ["22.03"]),
-        ("focal", "ovn-central", "victoria", ["22.03"]),
-        ("focal", "ovn-central", "wallaby", ["22.03"]),
-        ("focal", "ovn-central", "xena", ["22.03"]),
+        ("focal", "ovn-central", "ussuri", ["20.03", "22.03"]),
+        ("focal", "ovn-central", "victoria", ["20.03", "22.03"]),
+        ("focal", "ovn-central", "wallaby", ["20.12", "22.03"]),
+        ("focal", "ovn-central", "xena", ["21.09", "22.03"]),
         ("focal", "ovn-central", "yoga", ["22.03"]),
         ("jammy", "ovn-central", "yoga", ["22.03"]),
         ("jammy", "ovn-central", "zed", ["22.09"]),
@@ -458,3 +459,19 @@ def test_openstack_to_track(charm, series, os_release, exp_result):
 )
 def test_track_to_openstack(charm, series, track, exp_result):
     assert TRACK_TO_OPENSTACK_MAPPING.get((charm, series, track)) == exp_result
+
+
+@pytest.mark.parametrize(
+    "charm, exp_result",
+    [
+        ("keystone", True),
+        ("ceph-mon", True),
+        ("ceph-osd", False),
+        ("nova-compute", False),
+        ("my-charm", False),
+        ("barbican-vault", True),
+        ("hacluster", True),
+    ],
+)
+def test_is_charm_supported(charm, exp_result):
+    assert is_charm_supported(charm) is exp_result
