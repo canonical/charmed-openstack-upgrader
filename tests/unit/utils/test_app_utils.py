@@ -62,14 +62,14 @@ async def test_application_upgrade_packages_with_hold(model):
             unit_name="keystone/0",
             command="sudo apt-mark hold package1 package2 && apt-get update && "
             f"apt-get dist-upgrade {dpkg_opts} -y && "
-            "apt-get autoremove -y && sudo apt-mark unhold package1 package2",
+            "apt-get autoremove -y ; sudo apt-mark unhold package1 package2",
             timeout=600,
         ),
         call(
             unit_name="keystone/1",
             command="sudo apt-mark hold package1 package2 && apt-get update && "
             f"apt-get dist-upgrade {dpkg_opts} -y && "
-            "apt-get autoremove -y && sudo apt-mark unhold package1 package2",
+            "apt-get autoremove -y ; sudo apt-mark unhold package1 package2",
             timeout=600,
         ),
     ]
