@@ -15,7 +15,8 @@
 import logging
 from typing import Optional
 
-from cou.apps.app import AppFactory, OpenStackApplication
+from cou.apps.core import OpenStackApplication
+from cou.apps.factory import AppFactory
 from cou.steps import UpgradeStep
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
