@@ -15,7 +15,8 @@
 import logging
 from typing import Optional
 
-from cou.apps.app import AppFactory, OpenStackApplication
+from cou.apps.core import OpenStackApplication
+from cou.apps.factory import AppFactory
 from cou.steps import UpgradeStep
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
@@ -70,7 +71,7 @@ class OpenStackSubordinateApplication(SubordinateBaseClass):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        return OpenStackRelease(self.channel.split("/")[0])
+        return OpenStackRelease(self._get_track_from_channel(self.channel))
 
     @property
     def channel(self) -> str:
@@ -91,7 +92,7 @@ class OpenStackSubordinateApplication(SubordinateBaseClass):
             channel.
         """
         try:
-            OpenStackRelease(charm_channel.split("/")[0])
+            OpenStackRelease(self._get_track_from_channel(charm_channel))
             self._channel = charm_channel
         except ValueError:
             # if it has charm origin like cs:

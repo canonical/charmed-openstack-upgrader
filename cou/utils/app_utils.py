@@ -15,26 +15,35 @@
 """Application utilities."""
 import logging
 from collections.abc import Iterable
+from typing import Optional
 
 from juju.errors import JujuError
+from packaging.version import Version
 
-from cou.exceptions import CommandRunFailed, RunUpgradeError
+from cou.exceptions import ApplicationError, CommandRunFailed, RunUpgradeError
 from cou.utils.juju_utils import COUModel
 
 logger = logging.getLogger(__name__)
 
 
-async def upgrade_packages(units: Iterable[str], model: COUModel) -> None:
+async def upgrade_packages(
+    units: Iterable[str], model: COUModel, packages_to_hold: Optional[list]
+) -> None:
     """Run package updates and upgrades on each unit of an Application.
 
     :param units: The list of unit names where the package upgrade runs on.
     :type units: Iterable[str]
     :param model: COUModel object
     :type model: COUModel
+    :param packages_to_hold: A list of packages to put on hold during package upgrade.
+    :type packages_to_hold: Optional[list]
     :raises RunUpgradeError: When an upgrade fails.
     """
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
+    if packages_to_hold:
+        packages = " ".join(packages_to_hold)
+        command = f"apt-mark hold {packages} && {command} ; apt-mark unhold {packages}"
 
     for unit in units:
         logger.info("Running '%s' on '%s'", command, unit)
@@ -105,3 +114,23 @@ async def set_require_osd_release_option(unit: str, model: COUModel, ceph_releas
             raise RunUpgradeError(
                 f"Cannot set '{ceph_release}' to require_osd_release on ceph-mon unit '{unit}'."
             ) from exc
+
+
+def validate_ovn_support(version: str) -> None:
+    """Validate COU OVN support.
+
+    COU does not support upgrade clouds with OVN version lower than 22.03.
+
+    :param version: Version of the OVN.
+    :type version: str
+    :raises ApplicationError: When workload version is lower than 22.03.0.
+    """
+    if Version(version) < Version("22.03.0"):
+        raise ApplicationError(
+            (
+                "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
+                "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
+                "https://docs.openstack.org/charm-guide/latest/project/procedures/"
+                "ovn-upgrade-2203.html"
+            )
+        )

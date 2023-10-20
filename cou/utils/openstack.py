@@ -417,13 +417,15 @@ class OpenStackCodenameLookup:
 def is_charm_supported(charm: str) -> bool:
     """Check if a charm upgrade is supported.
 
+    Currently data plane apps are not supported.
     :param charm: Name of the charm.
     :type charm: str
     :return: True if supported, else False
     :rtype: bool
     """
     return (
-        bool(OpenStackCodenameLookup.lookup(charm))
+        charm not in DATA_PLANE_CHARMS
+        and bool(OpenStackCodenameLookup.lookup(charm))
         or charm in SUBORDINATES + AUXILIARY_SUBORDINATES
     )
 

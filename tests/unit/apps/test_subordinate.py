@@ -32,6 +32,7 @@ def test_post_init(status, model):
     assert app.channel == "ussuri/stable"
     assert app.charm_origin == "ch"
     assert app.os_origin == ""
+    assert app.is_subordinate is True
 
 
 def test_current_os_release(status, model):
@@ -53,23 +54,17 @@ def test_generate_upgrade_plan(status, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="ussuri/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="victoria/stable",
+            coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -138,23 +133,17 @@ def test_generate_plan_ch_migration(status, model, channel):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="ussuri/stable",
-            switch="ch:keystone-ldap",
+            coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone-ldap"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'wallaby/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="wallaby/stable",
+            coro=model.upgrade_charm(app.name, "wallaby/stable"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -183,23 +172,17 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {to_os}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_os}/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel=f"{from_os}/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, f"{from_os}/stable", switch=None),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: '{to_os}/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel=f"{to_os}/stable",
+            coro=model.upgrade_charm(app.name, f"{to_os}/stable"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -228,16 +211,12 @@ def test_generate_plan_in_same_version(status, model, from_to):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {from_to}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_to}/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel=f"{from_to}/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, f"{from_to}/stable", switch=None),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

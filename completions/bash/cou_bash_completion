@@ -2,7 +2,7 @@ _subcommand_args() {
     local cmd=$1
     case "${cmd}" in
         plan)
-            opts="--help --quiet --verbose --parallel --model"
+            opts="--help --quiet --verbose --model"
             child_commands=""
             ;;
         run)

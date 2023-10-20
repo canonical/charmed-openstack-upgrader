@@ -340,7 +340,7 @@ class COUModel:
         :param name: Name of application
         :type name: str
         :param configuration: Dictionary of configuration setting(s)
-        :type configuration: Dict[str,str]
+        :type configuration: Dict[str,Any]
         """
         app = await self._get_application(name)
         await app.set_config(configuration)

@@ -69,7 +69,6 @@ def test_parse_args_quiet_verbose_exclusive(args):
             Namespace(
                 command="plan",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
                 **{"upgrade-group": None}
@@ -80,7 +79,6 @@ def test_parse_args_quiet_verbose_exclusive(args):
             Namespace(
                 command="plan",
                 model_name="model_name",
-                parallel=False,
                 verbosity=0,
                 quiet=False,
                 **{"upgrade-group": None}
@@ -91,7 +89,6 @@ def test_parse_args_quiet_verbose_exclusive(args):
             Namespace(
                 command="plan",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
                 **{"upgrade-group": "control-plane"}
@@ -102,7 +99,6 @@ def test_parse_args_quiet_verbose_exclusive(args):
             Namespace(
                 command="plan",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
                 machines=None,
@@ -116,7 +112,6 @@ def test_parse_args_quiet_verbose_exclusive(args):
             Namespace(
                 command="plan",
                 model_name=None,
-                parallel=False,
                 verbosity=1,
                 quiet=False,
                 **{"upgrade-group": "control-plane"}
@@ -127,7 +122,6 @@ def test_parse_args_quiet_verbose_exclusive(args):
             Namespace(
                 command="plan",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
                 machines=["1", "2,3"],
@@ -141,7 +135,6 @@ def test_parse_args_quiet_verbose_exclusive(args):
             Namespace(
                 command="plan",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=True,
                 machines=None,
@@ -151,11 +144,10 @@ def test_parse_args_quiet_verbose_exclusive(args):
             ),
         ),
         (
-            ["plan", "data-plane", "--parallel", "--hostname=1", "-n=2,3"],
+            ["plan", "data-plane", "--hostname=1", "-n=2,3"],
             Namespace(
                 command="plan",
                 model_name=None,
-                parallel=True,
                 verbosity=0,
                 quiet=False,
                 machines=None,
