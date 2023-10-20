@@ -52,7 +52,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=(

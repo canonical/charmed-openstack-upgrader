@@ -207,6 +207,16 @@ def status():
     mock_ceph_mon_xena.subordinate_to = []
     mock_ceph_mon_xena.units = OrderedDict([("ceph-mon/0", generate_unit("16.2.0", "7"))])
 
+    # mysql-innodb-cluster application on ussuri using 8.0
+    mock_mysql_innodb_cluster_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_mysql_innodb_cluster_ussuri.series = "focal"
+    mock_mysql_innodb_cluster_ussuri.charm_channel = "8.0/stable"
+    mock_mysql_innodb_cluster_ussuri.charm = "ch:amd64/focal/mysql-innodb-cluster-106"
+    mock_mysql_innodb_cluster_ussuri.subordinate_to = []
+    mock_mysql_innodb_cluster_ussuri.units = OrderedDict(
+        [("ovn-central/0", generate_unit("8.0", "0/lxd/7"))]
+    )
+
     # ovn-central application on ussuri using 22.03
     mock_ovn_central_ussuri_22 = MagicMock(spec_set=ApplicationStatus())
     mock_ovn_central_ussuri_22.series = "focal"
@@ -264,6 +274,7 @@ def status():
         "ceph-mon_ussuri": mock_ceph_mon_ussuri,
         "ceph-mon_xena": mock_ceph_mon_xena,
         "cinder_ussuri_on_nova": mock_cinder_on_nova,
+        "mysql-innodb-cluster": mock_mysql_innodb_cluster_ussuri,
         "ovn_central_ussuri_22": mock_ovn_central_ussuri_22,
         "ovn_central_ussuri_20": mock_ovn_central_ussuri_20,
         "ovn_chassis_ussuri_22": mock_ovn_chassis_ussuri_22,
