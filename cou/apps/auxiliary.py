@@ -177,3 +177,8 @@ class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
     # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
     # mysqld processes from restarting, which lead to outages
     packages_to_hold: Optional[list] = ["mysql-server-core-8.0"]
+
+
+@AppFactory.register_application(["ceph-osd"])
+class CephOSD(OpenStackAuxiliaryApplication):
+    """Application for ceph-osd."""

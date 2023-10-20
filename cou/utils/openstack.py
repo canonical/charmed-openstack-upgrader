@@ -424,8 +424,7 @@ def is_charm_supported(charm: str) -> bool:
     :rtype: bool
     """
     return (
-        charm not in DATA_PLANE_CHARMS
-        and bool(OpenStackCodenameLookup.lookup(charm))
+        bool(OpenStackCodenameLookup.lookup(charm))
         or charm in SUBORDINATES + AUXILIARY_SUBORDINATES
     )
 

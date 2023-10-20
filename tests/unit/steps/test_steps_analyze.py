@@ -88,14 +88,18 @@ async def test_populate_model(full_status, config, model):
     model.get_application_config = AsyncMock(return_value=config["openstack_ussuri"])
 
     # Initially, 6 applications are in the status: keystone, cinder, rabbitmq-server, my-app,
-    # ceph-osd and nova-compute. my-app it's not on the lookup table, ceph-osd and nova-compute
-    # are data plane applications (not supported yet) and because of that they won't
-    # be instantiated.
+    # ceph-osd and nova-compute. my-app it's not on the lookup table, so won't be instantiated.
     assert len(full_status.applications) == 6
     apps = await Analysis._populate(model)
-    assert len(apps) == 3
+    assert len(apps) == 5
     # apps are on the UPGRADE_ORDER sequence
-    assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder"]
+    assert [app.charm for app in apps] == [
+        "rabbitmq-server",
+        "keystone",
+        "cinder",
+        "nova-compute",
+        "ceph-osd",
+    ]
 
 
 @pytest.mark.asyncio
@@ -135,6 +139,30 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps, model
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
+
+
+@patch("builtins.print")
+def test_analysis_print_warn_manually_upgrade(mock_print, model, apps):
+    result = analyze.Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_wallaby"]],
+        apps_data_plane=[apps["nova_ussuri"]],
+    )
+    result.manually_upgrade_data_plane()
+    mock_print.assert_called_with(
+        "WARNING: Please upgrade manually the data plane apps: nova-compute"
+    )
+
+
+@patch("builtins.print")
+def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
+    result = analyze.Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_ussuri"]],
+        apps_data_plane=[apps["nova_ussuri"]],
+    )
+    result.manually_upgrade_data_plane()
+    mock_print.assert_not_called()
 
 
 def _app(name, units):

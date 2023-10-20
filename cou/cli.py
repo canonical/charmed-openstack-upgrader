@@ -83,13 +83,13 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     return VerbosityLevel(verbosity).name
 
 
-async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
+async def analyze_and_plan(model_name: Optional[str] = None) -> tuple[Analysis, UpgradeStep]:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
-    :return: Generated upgrade plan.
-    :rtype: UpgradeStep
+    :return: Generated analyses and upgrade plan.
+    :rtype: tuple[Analysis, UpgradeStep]
     """
     model = await COUModel.create(model_name)
     logger.info("Using model: %s", model.name)
@@ -103,7 +103,7 @@ async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
     upgrade_plan = await generate_plan(analysis_result)
     progress_indicator.succeed()
 
-    return upgrade_plan
+    return analysis_result, upgrade_plan
 
 
 async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
@@ -112,9 +112,10 @@ async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
     """
-    upgrade_plan = await analyze_and_plan(model_name)
+    analysis_result, upgrade_plan = await analyze_and_plan(model_name)
     logger.info(upgrade_plan)
     print(upgrade_plan)  # print plan to console even in quiet mode
+    analysis_result.manually_upgrade_data_plane()
 
 
 async def run_upgrade(
@@ -129,7 +130,7 @@ async def run_upgrade(
     :param quiet: Whether to run upgrade in quiet mode.
     :type quiet: bool
     """
-    upgrade_plan = await analyze_and_plan(model_name)
+    analysis_result, upgrade_plan = await analyze_and_plan(model_name)
     logger.info(upgrade_plan)
 
     # don't print plan if in quiet mode
@@ -142,6 +143,7 @@ async def run_upgrade(
         progress_indicator.succeed()
     else:
         await apply_plan(upgrade_plan, interactive)
+    analysis_result.manually_upgrade_data_plane()
     print("Upgrade completed.")
 
 
