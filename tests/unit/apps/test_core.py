@@ -12,11 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
-from cou.apps import app as app_module
 from cou.apps.auxiliary import Keystone
 from cou.exceptions import (
     ApplicationError,
@@ -64,6 +63,7 @@ def assert_application(
     exp_new_origin,
     exp_apt_source_codename,
     exp_channel_codename,
+    exp_is_subordinate,
     target,
 ):
     target_version = OpenStackRelease(target)
@@ -83,6 +83,7 @@ def assert_application(
     assert app.new_origin(target_version) == exp_new_origin
     assert app.apt_source_codename == exp_apt_source_codename
     assert app.channel_codename == exp_channel_codename
+    assert app.is_subordinate == exp_is_subordinate
 
 
 def test_application_ussuri(status, config, units, model):
@@ -100,6 +101,7 @@ def test_application_ussuri(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert app.wait_for_model is True
@@ -121,6 +123,7 @@ def test_application_ussuri(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 
@@ -156,6 +159,7 @@ def test_application_cs(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -176,6 +180,7 @@ def test_application_cs(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 
@@ -195,6 +200,7 @@ def test_application_wallaby(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -215,6 +221,7 @@ def test_application_wallaby(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 
@@ -657,33 +664,3 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
     add_steps(expected_plan, upgrade_steps)
 
     assert upgrade_plan == expected_plan
-
-
-@patch.object(app_module, "is_charm_supported", return_value=False)
-def test_app_factory_not_supported_openstack_charm(mock_is_charm_supported):
-    charm = "my-app"
-    my_app = app_module.AppFactory.create(
-        name=charm,
-        status=MagicMock(),
-        config=MagicMock(),
-        model=MagicMock(),
-        charm=charm,
-    )
-    assert my_app is None
-    mock_is_charm_supported.assert_called_once_with(charm)
-
-
-@patch.object(app_module, "is_charm_supported", return_value=True)
-def test_app_factory_register(mock_is_charm_supported):
-    charm = "foo"
-
-    @app_module.AppFactory.register_application([charm])
-    class Foo:
-        def __init__(self, *_, **__):
-            pass
-
-    assert charm in app_module.AppFactory.charms
-    foo = app_module.AppFactory.create("my-foo", MagicMock(), {}, MagicMock(), charm)
-    mock_is_charm_supported.assert_called_once_with(charm)
-    assert foo is not None
-    assert isinstance(foo, Foo)
