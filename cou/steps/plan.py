@@ -57,13 +57,12 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     if not target:
         raise NoTargetError("Cannot find target to upgrade.")
 
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan = UpgradeStep(description="Top level plan", parallel=False)
     plan.add_step(
         UpgradeStep(
             description="backup mysql databases",
             parallel=False,
-            function=backup,
-            model=analysis_result.model,
+            coro=backup(analysis_result.model),
         )
     )
 
@@ -106,7 +105,7 @@ async def create_upgrade_group(
     :return: Upgrade group.
     :rtype: UpgradeStep
     """
-    group_upgrade_plan = UpgradeStep(description=description, parallel=False, function=None)
+    group_upgrade_plan = UpgradeStep(description=description, parallel=False)
     for app in filter(filter_function, apps):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)

@@ -421,7 +421,6 @@ class OpenStackApplication:
         upgrade_steps = UpgradeStep(
             description=f"Upgrade plan for '{self.name}' to {target}",
             parallel=False,
-            function=None,
         )
         all_steps = (
             self.pre_upgrade_plan(target_version)
@@ -446,9 +445,7 @@ class OpenStackApplication:
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
             parallel=parallel,
-            function=upgrade_packages,
-            units=self.status.units.keys(),
-            model=self.model,
+            coro=upgrade_packages(self.status.units.keys(), self.model),
         )
 
     def _get_refresh_charm_plan(
@@ -504,10 +501,7 @@ class OpenStackApplication:
         return UpgradeStep(
             description=description,
             parallel=parallel,
-            function=self.model.upgrade_charm,
-            application_name=self.name,
-            channel=channel,
-            switch=switch,
+            coro=self.model.upgrade_charm(self.name, channel, switch=switch),
         )
 
     def _get_upgrade_charm_plan(
@@ -528,9 +522,7 @@ class OpenStackApplication:
                     f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
                 ),
                 parallel=parallel,
-                function=self.model.upgrade_charm,
-                application_name=self.name,
-                channel=self.target_channel(target),
+                coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
             )
         return None
 
@@ -550,9 +542,9 @@ class OpenStackApplication:
                     f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
                 ),
                 parallel=parallel,
-                function=self.model.set_application_config,
-                name=self.name,
-                configuration={"action-managed-upgrade": False},
+                coro=self.model.set_application_config(
+                    self.name, {"action-managed-upgrade": False}
+                ),
             )
         return None
 
@@ -568,16 +560,16 @@ class OpenStackApplication:
         :return: Workload upgrade plan
         :rtype: Optional[UpgradeStep]
         """
-        if self.os_origin != self.new_origin(target):
+        if self.os_origin != self.new_origin(target) and self.origin_setting:
             return UpgradeStep(
                 description=(
                     f"Change charm config of '{self.name}' "
                     f"'{self.origin_setting}' to '{self.new_origin(target)}'"
                 ),
                 parallel=parallel,
-                function=self.model.set_application_config,
-                name=self.name,
-                configuration={self.origin_setting: self.new_origin(target)},
+                coro=self.model.set_application_config(
+                    self.name, {self.origin_setting: self.new_origin(target)}
+                ),
             )
         logger.warning(
             "Not triggering the workload upgrade of app %s: %s already set to %s",
@@ -602,8 +594,7 @@ class OpenStackApplication:
         return UpgradeStep(
             description=f"Check if the workload of '{self.name}' has been upgraded",
             parallel=parallel,
-            function=self._check_upgrade,
-            target=target,
+            coro=self._check_upgrade(target),
         )
 
     def _get_wait_step(self) -> UpgradeStep:
@@ -626,7 +617,5 @@ class OpenStackApplication:
         return UpgradeStep(
             description=description,
             parallel=False,
-            function=self.model.wait_for_idle,
-            timeout=self.wait_timeout,
-            apps=apps,
+            coro=self.model.wait_for_idle(self.wait_timeout, apps),
         )

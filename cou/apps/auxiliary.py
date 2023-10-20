@@ -177,10 +177,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
                 f"set to '{ceph_release}'"
             ),
             parallel=parallel,
-            function=set_require_osd_release_option,
-            unit=ceph_mon_unit.name,
-            model=self.model,
-            ceph_release=ceph_release,
+            coro=set_require_osd_release_option(ceph_mon_unit.name, self.model, ceph_release),
         )
 
 

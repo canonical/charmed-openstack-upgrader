@@ -40,16 +40,12 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     expected_plan.add_step(
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="8.0/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
         ),
     )
 
@@ -107,19 +103,14 @@ def test_ovn_subordinate_upgrade_plan(status, model):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
-        function=None,
+        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
     )
 
     upgrade_steps = [
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="22.03/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

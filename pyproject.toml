@@ -92,3 +92,8 @@ output = "tests/unit/report/coverage.xml"
 skip = ".eggs,.tox,.git,.venv,venv,build,.build,lib,report"
 quiet-level = 3
 check-filenames = true
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::RuntimeWarning",
+]
