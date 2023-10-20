@@ -329,7 +329,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
@@ -380,7 +380,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
@@ -437,7 +437,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
@@ -483,7 +483,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
@@ -548,7 +548,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",

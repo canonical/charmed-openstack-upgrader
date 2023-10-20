@@ -16,6 +16,7 @@ import pytest
 
 from cou.apps.auxiliary import (
     CephMonApplication,
+    MysqlInnodbClusterApplication,
     OpenStackAuxiliaryApplication,
     OvnPrincipalApplication,
 )
@@ -75,7 +76,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.8/stable'",
@@ -134,7 +135,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
@@ -186,7 +187,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
@@ -329,7 +330,7 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
@@ -401,7 +402,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
@@ -524,12 +525,63 @@ def test_ovn_principal_upgrade_plan(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model),
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
+            ),
+            parallel=False,
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            coro=app._check_upgrade(OpenStackRelease(target)),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
+
+
+def test_mysql_innodb_cluster_upgrade(status, config, model):
+    target = "victoria"
+    # source is already configured to wallaby, so the plan halt with target victoria
+    app = MysqlInnodbClusterApplication(
+        "mysql-innodb-cluster",
+        status["mysql-innodb-cluster"],
+        config["auxiliary_ussuri"],
+        model,
+        "mysql-innodb-cluster",
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            coro=app_utils.upgrade_packages(
+                app.status.units.keys(), model, ["mysql-server-core-8.0"]
+            ),
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
         ),
         UpgradeStep(
             description=(

@@ -94,6 +94,7 @@ class OpenStackApplication:
     os_origin: str = ""
     origin_setting: Optional[str] = None
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
+    packages_to_hold: Optional[list] = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -436,7 +437,7 @@ class OpenStackApplication:
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
             parallel=parallel,
-            coro=upgrade_packages(self.status.units.keys(), self.model),
+            coro=upgrade_packages(self.status.units.keys(), self.model, self.packages_to_hold),
         )
 
     def _get_refresh_charm_plan(

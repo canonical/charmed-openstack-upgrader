@@ -29,9 +29,7 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(
-    ["rabbitmq-server", "vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"]
-)
+@AppFactory.register_application(["rabbitmq-server", "vault", "ceph-fs", "ceph-radosgw"])
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
@@ -170,3 +168,12 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
         for unit in self.units:
             validate_ovn_support(unit.workload_version)
         return super().pre_upgrade_plan(target)
+
+
+@AppFactory.register_application(["mysql-innodb-cluster"])
+class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
+    """Application for mysql-innodb-cluster charm."""
+
+    # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
+    # mysqld processes from restarting, which lead to outages
+    packages_to_hold: Optional[list] = ["mysql-server-core-8.0"]
