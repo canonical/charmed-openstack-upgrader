@@ -72,7 +72,6 @@ def assert_application(
     exp_is_subordinate,
     target,
 ):
-    target_version = OpenStackRelease(target)
     assert app.name == exp_name
     assert app.series == exp_series
     assert app.status == exp_status
@@ -85,15 +84,15 @@ def assert_application(
     assert app.channel == exp_channel
     assert app.current_os_release == exp_current_os_release
     assert app.possible_current_channels == exp_possible_current_channels
-    assert app.target_channel(target_version) == exp_target_channel
-    assert app.new_origin(target_version) == exp_new_origin
+    assert app.target_channel(target) == exp_target_channel
+    assert app.new_origin(target) == exp_new_origin
     assert app.apt_source_codename == exp_apt_source_codename
     assert app.channel_codename == exp_channel_codename
     assert app.is_subordinate == exp_is_subordinate
 
 
 def test_application_ussuri(status, config, units, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     exp_charm_origin = "ch"
@@ -150,7 +149,7 @@ def test_application_different_wl(status, config, model):
 
 def test_application_cs(status, config, units, model):
     """Test when application is from charm store."""
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
     exp_os_origin = "distro"
@@ -191,7 +190,7 @@ def test_application_cs(status, config, units, model):
 
 
 def test_application_wallaby(status, config, units, model):
-    target = "xena"
+    target = OpenStackRelease("xena")
     exp_units = units["units_wallaby"]
     exp_charm_origin = "ch"
     app_config = config["openstack_wallaby"]
@@ -255,7 +254,7 @@ def test_application_empty_origin_config(status, model):
 
 
 def test_application_unexpected_channel(status, config, model):
-    target = "xena"
+    target = OpenStackRelease("xena")
     app_status = status["keystone_wallaby"]
     # channel is set to a previous OpenStack release
     app_status.charm_channel = "ussuri/stable"
@@ -317,7 +316,7 @@ async def test_application_check_upgrade_fail(status, config, model):
 
 
 def test_upgrade_plan_ussuri_to_victoria(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
@@ -359,7 +358,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -368,7 +367,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
 
 
 def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri_cs"]
     app_config = config["openstack_ussuri"]
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
@@ -410,7 +409,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -419,7 +418,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
 
 
 def test_upgrade_plan_channel_on_next_os_release(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     # channel it's already on next OpenStack release
@@ -457,7 +456,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -466,7 +465,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
 
 
 def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     # openstack-origin already configured for next OpenStack release
@@ -503,7 +502,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -516,7 +515,7 @@ def test_upgrade_plan_application_already_upgraded(status, config, model):
         "Application 'my_keystone' already configured for release equal or greater "
         "than victoria. Ignoring."
     )
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_wallaby"]
     app_config = config["openstack_wallaby"]
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
@@ -526,7 +525,7 @@ def test_upgrade_plan_application_already_upgraded(status, config, model):
 
 
 def test_upgrade_plan_application_already_disable_action_managed(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"]["value"] = False
@@ -573,7 +572,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

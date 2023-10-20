@@ -158,7 +158,7 @@ class Analysis:
         This property just consider OpenStack charms as those that have
         openstack-origin or source on the charm configuration (app.os_origin).
         :return: OpenStack release codename
-        :rtype: OpenStackRelease
+        :rtype: Optional[OpenStackRelease]
         """
         return min(
             (app.current_os_release for app in self.apps_control_plane + self.apps_data_plane),

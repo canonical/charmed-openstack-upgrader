@@ -18,6 +18,7 @@ import pytest
 from cou.apps.auxiliary_subordinate import OvnSubordinateApplication
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
+from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
 
@@ -33,7 +34,7 @@ def test_auxiliary_subordinate(apps):
 
 
 def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = apps["keystone_mysql_router"]
 
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -69,7 +70,7 @@ def test_ovn_subordinate(status, model):
 
 
 def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
 
     exp_error_msg_ovn_upgrade = (
         "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
@@ -91,7 +92,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
 
 
 def test_ovn_subordinate_upgrade_plan(status, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = OvnSubordinateApplication(
         "ovn-chassis",
         status["ovn_chassis_ussuri_22"],
