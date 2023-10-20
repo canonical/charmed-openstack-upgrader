@@ -25,7 +25,9 @@ from cou.utils import app_utils
 async def test_application_upgrade_packages(model):
     model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
 
-    await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
+    await app_utils.upgrade_packages(
+        units=["keystone/0", "keystone/1"], model=model, packages_to_hold=None
+    )
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     expected_calls = [
@@ -49,12 +51,43 @@ async def test_application_upgrade_packages(model):
 
 
 @pytest.mark.asyncio
+async def test_application_upgrade_packages_with_hold(model):
+    model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
+
+    await app_utils.upgrade_packages(
+        units=["keystone/0", "keystone/1"], model=model, packages_to_hold=["package1", "package2"]
+    )
+
+    dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
+    expected_calls = [
+        call(
+            unit_name="keystone/0",
+            command="apt-mark hold package1 package2 && apt-get update && "
+            f"apt-get dist-upgrade {dpkg_opts} -y && "
+            "apt-get autoremove -y ; apt-mark unhold package1 package2",
+            timeout=600,
+        ),
+        call(
+            unit_name="keystone/1",
+            command="apt-mark hold package1 package2 && apt-get update && "
+            f"apt-get dist-upgrade {dpkg_opts} -y && "
+            "apt-get autoremove -y ; apt-mark unhold package1 package2",
+            timeout=600,
+        ),
+    ]
+
+    model.run_on_unit.assert_has_awaits(expected_calls)
+
+
+@pytest.mark.asyncio
 async def test_application_upgrade_packages_unsuccessful(model):
     exp_error_msg = "Cannot upgrade packages on keystone/0."
     model.run_on_unit.return_value = {"Code": "non-zero", "Stderr": "error"}
 
     with pytest.raises(RunUpgradeError, match=exp_error_msg):
-        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
+        await app_utils.upgrade_packages(
+            units=["keystone/0", "keystone/1"], model=model, packages_to_hold=None
+        )
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     model.run_on_unit.assert_called_once_with(
@@ -70,7 +103,9 @@ async def test_application_upgrade_packages_error(model):
     model.run_on_unit.side_effect = JujuError("error")
 
     with pytest.raises(RunUpgradeError, match=exp_error_msg):
-        await app_utils.upgrade_packages(units=["keystone/0", "keystone/1"], model=model)
+        await app_utils.upgrade_packages(
+            units=["keystone/0", "keystone/1"], model=model, packages_to_hold=None
+        )
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     model.run_on_unit.assert_called_once_with(

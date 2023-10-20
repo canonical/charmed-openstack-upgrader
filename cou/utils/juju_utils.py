@@ -309,13 +309,13 @@ class COUModel:
         results = action.data.get("results")
         return _normalize_action_results(results)
 
-    async def set_application_config(self, name: str, configuration: dict[str, str]) -> None:
+    async def set_application_config(self, name: str, configuration: dict[str, Any]) -> None:
         """Set application configuration.
 
         :param name: Name of application
         :type name: str
         :param configuration: Dictionary of configuration setting(s)
-        :type configuration: dict[str,str]
+        :type configuration: dict[str, Any]
         """
         app = await self._get_application(name)
         await app.set_config(configuration)

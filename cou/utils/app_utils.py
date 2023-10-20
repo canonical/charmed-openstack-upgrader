@@ -15,6 +15,7 @@
 """Application utilities."""
 import logging
 from collections.abc import Iterable
+from typing import Optional
 
 from juju.errors import JujuError
 from packaging.version import Version
@@ -25,17 +26,24 @@ from cou.utils.juju_utils import COUModel
 logger = logging.getLogger(__name__)
 
 
-async def upgrade_packages(units: Iterable[str], model: COUModel) -> None:
+async def upgrade_packages(
+    units: Iterable[str], model: COUModel, packages_to_hold: Optional[list]
+) -> None:
     """Run package updates and upgrades on each unit of an Application.
 
     :param units: The list of unit names where the package upgrade runs on.
     :type units: Iterable[str]
     :param model: COUModel object
     :type model: COUModel
+    :param packages_to_hold: A list of packages to put on hold during package upgrade.
+    :type packages_to_hold: Optional[list]
     :raises RunUpgradeError: When an upgrade fails.
     """
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
+    if packages_to_hold:
+        packages = " ".join(packages_to_hold)
+        command = f"apt-mark hold {packages} && {command} ; apt-mark unhold {packages}"
 
     for unit in units:
         logger.info("Running '%s' on '%s'", command, unit)
