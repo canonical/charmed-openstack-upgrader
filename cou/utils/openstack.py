@@ -150,8 +150,6 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "lunar": "antelope",
 }
 
-SOME_TABLE = {"focal-yoga": True}
-
 
 class OpenStackRelease:
     """Provides a class that will compare OpenStack releases by the codename.
