@@ -145,8 +145,14 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "hirsute": "wallaby",
     "impish": "xena",
     "jammy": "yoga",
-    "kinect": "zed",
+    "kinetic": "zed",
     "lunar": "antelope",
+}
+
+LTS_TO_OS_RELEASE = {
+    "bionic": ["queens", "rocky", "stein", "train", "ussuri"],
+    "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+    "jammy": ["yoga", "zed", "antelope", "bobcat", "caracal"],
 }
 
 

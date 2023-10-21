@@ -69,6 +69,8 @@ def test_analysis_dump(apps, model):
         "      workload_version: '3.8'\n"
         "      os_version: yoga\n"
         "Data Plane:\n"
+        "\nCurrent minimum OS release in the cloud: ussuri\n"
+        "\nCurrent minimum Ubuntu series in the cloud: focal\n"
     )
     result = analyze.Analysis(
         model=model,
@@ -135,6 +137,30 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps, model
 
     # current_cloud_os_release takes the minimum OpenStack version
     assert result.current_cloud_os_release == "ussuri"
+
+
+@pytest.mark.asyncio
+async def test_analysis_detect_current_cloud_series_same_series(apps, model):
+    result = analyze.Analysis(
+        model=model,
+        apps_control_plane=[apps["rmq_ussuri"], apps["keystone_wallaby"], apps["cinder_ussuri"]],
+        apps_data_plane=[],
+    )
+
+    # current_cloud_series takes the minimum Ubuntu series
+    assert result.current_cloud_series == "focal"
+
+
+@pytest.mark.asyncio
+async def test_analysis_detect_current_cloud_series_different_series(apps, model):
+    result = analyze.Analysis(
+        model=model,
+        apps_control_plane=[apps["cinder_ussuri"], apps["keystone_bionic_ussuri"]],
+        apps_data_plane=[],
+    )
+
+    # current_cloud_series takes the minimum Ubuntu series
+    assert result.current_cloud_series == "bionic"
 
 
 def _app(name, units):

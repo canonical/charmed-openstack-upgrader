@@ -43,6 +43,11 @@ class Analysis:
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
 
+    def __post_init__(self) -> None:
+        """Initialize the Analysis dataclass."""
+        self.current_cloud_os_release = self._get_minimum_cloud_os_release()
+        self.current_cloud_series = self._get_minimum_cloud_series()
+
     @staticmethod
     def _split_apps(
         apps: list[OpenStackApplication],
@@ -149,18 +154,28 @@ class Analysis:
             + "\n".join([str(app) for app in self.apps_control_plane])
             + "Data Plane:\n"
             + "\n".join([str(app) for app in self.apps_data_plane])
+            + f"\nCurrent minimum OS release in the cloud: {self.current_cloud_os_release}\n"
+            + f"\nCurrent minimum Ubuntu series in the cloud: {self.current_cloud_series}\n"
         )
 
-    @property
-    def current_cloud_os_release(self) -> Optional[OpenStackRelease]:
-        """Shows the current OpenStack release codename.
+    def _get_minimum_cloud_os_release(self) -> Optional[OpenStackRelease]:
+        """Get the current minimum OpenStack release in the cloud.
 
-        This property just consider OpenStack charms as those that have
-        openstack-origin or source on the charm configuration (app.os_origin).
-        :return: OpenStack release codename
-        :rtype: OpenStackRelease
+        :return: OpenStack release
+        :rtype: Optional[OpenStackRelease]
         """
         return min(
             (app.current_os_release for app in self.apps_control_plane + self.apps_data_plane),
+            default=None,
+        )
+
+    def _get_minimum_cloud_series(self) -> Optional[str]:
+        """Get the current minimum Ubuntu series codename in the cloud.
+
+        :return: Ubuntu series codename. E.g. 'focal', 'jammy'
+        :rtype: Optional[str]
+        """
+        return min(
+            (app.series for app in self.apps_control_plane + self.apps_data_plane),
             default=None,
         )

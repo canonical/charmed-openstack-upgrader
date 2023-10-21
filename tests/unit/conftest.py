@@ -49,6 +49,19 @@ def status():
         ]
     )
 
+    mock_keystone_bionic_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_keystone_bionic_ussuri.series = "bionic"
+    mock_keystone_bionic_ussuri.charm_channel = "ussuri/stable"
+    mock_keystone_bionic_ussuri.charm = "ch:amd64/bionic/keystone-638"
+    mock_keystone_bionic_ussuri.subordinate_to = []
+    mock_keystone_bionic_ussuri.units = OrderedDict(
+        [
+            ("keystone/0", generate_unit("17.0.1", "0/lxd/12")),
+            ("keystone/1", generate_unit("17.0.1", "1/lxd/12")),
+            ("keystone/2", generate_unit("17.0.1", "2/lxd/13")),
+        ]
+    )
+
     mock_cinder_ussuri = MagicMock(spec_set=ApplicationStatus())
     mock_cinder_ussuri.series = "focal"
     mock_cinder_ussuri.charm_channel = "ussuri/stable"
@@ -148,6 +161,7 @@ def status():
     mock_rmq.units = OrderedDict([("rabbitmq-server/0", generate_unit("3.8", "0/lxd/19"))])
 
     mock_rmq_unknown = MagicMock(spec_set=ApplicationStatus())
+    mock_rmq_unknown.series = "focal"
     mock_rmq_unknown.charm_channel = "80.5/stable"
     mock_rmq_unknown.charm = "ch:amd64/focal/rabbitmq-server-638"
     mock_rmq_unknown.subordinate_to = []
@@ -156,6 +170,7 @@ def status():
     )
 
     mock_unknown_app = MagicMock(spec_set=ApplicationStatus())
+    mock_unknown_app.series = "focal"
     mock_unknown_app.charm_channel = "12.5/stable"
     mock_unknown_app.charm = "ch:amd64/focal/my-app-638"
     mock_unknown_app.subordinate_to = []
@@ -179,6 +194,7 @@ def status():
 
     # OpenStack subordinate application
     mock_keystone_ldap = MagicMock(spec_set=ApplicationStatus())
+    mock_keystone_ldap.series = "focal"
     mock_keystone_ldap.charm_channel = "ussuri/stable"
     mock_keystone_ldap.charm = "ch:amd64/focal/keystone-ldap-437"
     mock_keystone_ldap.subordinate_to = ["keystone"]
@@ -186,6 +202,7 @@ def status():
 
     # OpenStack subordinate application cs
     mock_keystone_ldap_cs = MagicMock(spec_set=ApplicationStatus())
+    mock_keystone_ldap_cs.series = "focal"
     mock_keystone_ldap_cs.charm_channel = "stable"
     mock_keystone_ldap_cs.charm = "cs:amd64/focal/keystone-ldap-437"
     mock_keystone_ldap_cs.subordinate_to = ["keystone"]
@@ -260,6 +277,7 @@ def status():
         "keystone_victoria": mock_keystone_victoria,
         "keystone_wallaby": mock_keystone_wallaby,
         "keystone_ussuri_victoria": mock_keystone_ussuri_victoria,
+        "keystone_bionic_ussuri": mock_keystone_bionic_ussuri,
         "cinder_ussuri": mock_cinder_ussuri,
         "rabbitmq_server": mock_rmq,
         "unknown_rabbitmq_server": mock_rmq_unknown,
@@ -411,12 +429,16 @@ def apps(status, config, model):
     rmq_status = status["rabbitmq_server"]
     keystone_ldap_status = status["keystone-ldap"]
     nova_wallaby_status = status["nova_wallaby"]
+    keystone_bionic_ussuri_status = status["keystone_bionic_ussuri"]
 
     keystone_ussuri = OpenStackApplication(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], model, "keystone"
     )
     keystone_wallaby = OpenStackApplication(
         "keystone", keystone_wallaby_status, config["openstack_wallaby"], model, "keystone"
+    )
+    keystone_bionic_ussuri = OpenStackApplication(
+        "keystone", keystone_bionic_ussuri_status, config["openstack_ussuri"], model, "keystone"
     )
     cinder_ussuri = OpenStackApplication(
         "cinder", cinder_ussuri_status, config["openstack_ussuri"], model, "cinder"
@@ -440,6 +462,7 @@ def apps(status, config, model):
     return {
         "keystone_ussuri": keystone_ussuri,
         "keystone_wallaby": keystone_wallaby,
+        "keystone_bionic_ussuri": keystone_bionic_ussuri,
         "cinder_ussuri": cinder_ussuri,
         "rmq_ussuri": rmq_ussuri,
         "rmq_wallaby": rmq_wallaby,
