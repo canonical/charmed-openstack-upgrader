@@ -109,11 +109,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
-        return [
-            self._get_upgrade_current_release_packages_plan(),
-            self._get_refresh_charm_plan(target),
-            self._get_change_require_osd_release_plan(),
-        ]
+        return super().pre_upgrade_plan(target) + [self._get_change_require_osd_release_plan()]
 
     def _get_change_require_osd_release_plan(self, parallel: bool = False) -> UpgradeStep:
         """Get plan to set correct value for require-osd-release option on ceph-mon.
@@ -128,7 +124,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         """
         ceph_mon_unit, *_ = self.units
         return UpgradeStep(
-            description=("Ensure require-osd-release option on ceph-mon units is correctly set"),
+            description=("Ensure require-osd-release option matches with ceph-osd version"),
             parallel=parallel,
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )

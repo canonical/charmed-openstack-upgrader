@@ -119,13 +119,12 @@ async def _get_required_osd_release(unit: str, model: COUModel) -> str:
     :type unit: str
     :param model: COUModel object
     :type model: COUModel
-    :return: True if the value of require-osd-release is the same as the release of OSDs;
-    False otherwise.
-    :rtype: bool
+    :return: the value of require-osd-release option
+    :rtype: str
     :raises RunUpgradeError: When an upgrade fails.
     """
     current_require_osd_release = ""
-    check_command = "ceph osd dump"
+    check_command = "ceph osd dump -f json"
     logger.debug("Running '%s' on '%s'", check_command, unit)
 
     try:
@@ -135,10 +134,9 @@ async def _get_required_osd_release(unit: str, model: COUModel) -> str:
         if str(check_option_result["Code"]) == "0":
             logger.debug(check_option_result["Stdout"])
 
-            dump_output = check_option_result["Stdout"].strip().splitlines()
-            for line in dump_output:
-                if line.strip().startswith("require_osd_release"):
-                    current_require_osd_release = line.split()[1]
+            current_require_osd_release = json.loads(check_option_result["Stdout"]).get(
+                "require_osd_release", ""
+            )
             logger.debug("Current require-osd-release is set to: %s", current_require_osd_release)
         else:
             raise RunUpgradeError(
@@ -163,12 +161,11 @@ async def _get_current_osd_release(unit: str, model: COUModel) -> str:
     :type unit: str
     :param model: COUModel object
     :type model: COUModel
-    :return: True if the value of require-osd-release is the same as the release of OSDs;
-    False otherwise.
-    :rtype: bool
+    :return: the release which OSDs are on
+    :rtype: str
     :raises RunUpgradeError: When an upgrade fails.
     """
-    check_command = "ceph versions"
+    check_command = "ceph versions -f json"
     logger.debug("Running '%s' on '%s'", check_command, unit)
 
     try:
@@ -178,9 +175,9 @@ async def _get_current_osd_release(unit: str, model: COUModel) -> str:
         if str(check_osd_result["Code"]) == "0":
             logger.debug(check_osd_result["Stdout"])
 
-            osd_release_output = json.loads(check_osd_result["Stdout"])["osd"]
+            osd_release_output = json.loads(check_osd_result["Stdout"]).get("osd", None)
             # throw exception if ceph-mon doesn't contain osd release information in `ceph`
-            if len(osd_release_output) == 0:
+            if not osd_release_output:
                 raise RunUpgradeError(
                     f"Cannot get OSD release information on ceph-mon unit '{unit}'."
                 )
@@ -193,8 +190,8 @@ async def _get_current_osd_release(unit: str, model: COUModel) -> str:
 
             # get release name from "osd_release_output". Example value of "osd_release_output":
             # {'ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)': 1}
-            osd_release_key = list(osd_release_output.keys())[0]
-            current_osd_release = osd_release_key.split(")", maxsplit=1)[-1].split("(")[0].strip()
+            osd_release_key, *_ = osd_release_output.keys()
+            current_osd_release = osd_release_key.split(" ")[4].strip()
             logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
 
             return current_osd_release

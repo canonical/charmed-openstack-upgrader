@@ -196,12 +196,8 @@ async def test_set_require_osd_release_option_set_error(
 @pytest.mark.asyncio
 async def test_get_required_osd_release(model):
     expected_current_release = "octopus"
-    check_result = f"""
-        crush_version 7
-        require_min_compat_client luminous
-        min_compat_client jewel
-        require_osd_release {expected_current_release}
-        foo bar test
+    check_result = """
+        {"crush_version":7,"min_compat_client":"jewel","require_osd_release":"octopus"}
     """
     model.run_on_unit.return_value = {"Code": "0", "Stdout": check_result}
     actual_current_release = await app_utils._get_required_osd_release(
@@ -210,7 +206,7 @@ async def test_get_required_osd_release(model):
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph osd dump",
+        command="ceph osd dump -f json",
         timeout=600,
     )
     assert actual_current_release == expected_current_release
@@ -228,7 +224,7 @@ async def test_get_required_osd_release_unsuccessful(model):
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph osd dump",
+        command="ceph osd dump -f json",
         timeout=600,
     )
 
@@ -245,7 +241,7 @@ async def test_get_required_osd_release_error(model):
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph osd dump",
+        command="ceph osd dump -f json",
         timeout=600,
     )
 
@@ -277,7 +273,7 @@ async def test_get_current_osd_release(model):
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph versions",
+        command="ceph versions -f json",
         timeout=600,
     )
 
@@ -334,7 +330,7 @@ async def test_get_current_osd_release_unsuccessful(
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph versions",
+        command="ceph versions -f json",
         timeout=600,
     )
 
@@ -349,6 +345,6 @@ async def test_get_current_osd_release_error(model):
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
-        command="ceph versions",
+        command="ceph versions -f json",
         timeout=600,
     )
