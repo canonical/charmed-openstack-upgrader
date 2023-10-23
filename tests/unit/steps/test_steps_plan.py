@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -20,7 +20,11 @@ from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
-from cou.steps.plan import create_upgrade_group, generate_plan
+from cou.steps.plan import (
+    create_upgrade_group,
+    generate_plan,
+    manually_upgrade_data_plane,
+)
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
@@ -213,3 +217,27 @@ async def test_create_upgrade_plan_failed():
 
     with pytest.raises(Exception, match="test"):
         await create_upgrade_group([app], "victoria", "test", lambda *_: True)
+
+
+@patch("builtins.print")
+def test_plan_print_warn_manually_upgrade(mock_print, model, apps):
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_wallaby"]],
+        apps_data_plane=[apps["nova_ussuri"]],
+    )
+    manually_upgrade_data_plane(result)
+    mock_print.assert_called_with(
+        "WARNING: Please upgrade manually the data plane apps: nova-compute"
+    )
+
+
+@patch("builtins.print")
+def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_ussuri"]],
+        apps_data_plane=[apps["nova_ussuri"]],
+    )
+    manually_upgrade_data_plane(result)
+    mock_print.assert_not_called()

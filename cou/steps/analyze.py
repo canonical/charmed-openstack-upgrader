@@ -186,10 +186,3 @@ class Analysis:
         )
         data_plane = [self.min_os_version_data_plane] if self.min_os_version_data_plane else []
         return min(control_plane + data_plane, default=None)
-
-    def manually_upgrade_data_plane(self) -> None:
-        """Warning message to upgrade data plane charms if necessary."""
-        if self.min_os_version_control_plane and self.min_os_version_data_plane:
-            if self.min_os_version_control_plane > self.min_os_version_data_plane:
-                data_plane_apps = ", ".join([app.name for app in self.apps_data_plane])
-                print(f"WARNING: Please upgrade manually the data plane apps: {data_plane_apps}")

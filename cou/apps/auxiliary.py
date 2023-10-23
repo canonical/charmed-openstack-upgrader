@@ -179,6 +179,10 @@ class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
     packages_to_hold: Optional[list] = ["mysql-server-core-8.0"]
 
 
+# NOTE (gabrielcocenza): Although CephOSD class is empty now, it will be
+# necessary to add post upgrade plan to set require-osd-release. Registering on
+# OpenStackAuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
+# as a normal OpenStackApplication.
 @AppFactory.register_application(["ceph-osd"])
 class CephOSD(OpenStackAuxiliaryApplication):
     """Application for ceph-osd."""

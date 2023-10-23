@@ -27,7 +27,7 @@ from cou.logging import setup_logging
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_plan
-from cou.steps.plan import generate_plan
+from cou.steps.plan import generate_plan, manually_upgrade_data_plane
 from cou.utils.juju_utils import COUModel
 
 AVAILABLE_OPTIONS = "cas"
@@ -115,7 +115,7 @@ async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
     analysis_result, upgrade_plan = await analyze_and_plan(model_name)
     logger.info(upgrade_plan)
     print(upgrade_plan)  # print plan to console even in quiet mode
-    analysis_result.manually_upgrade_data_plane()
+    manually_upgrade_data_plane(analysis_result)
 
 
 async def run_upgrade(
@@ -143,7 +143,7 @@ async def run_upgrade(
         progress_indicator.succeed()
     else:
         await apply_plan(upgrade_plan, interactive)
-    analysis_result.manually_upgrade_data_plane()
+    manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 
 

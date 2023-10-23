@@ -141,30 +141,6 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps, model
     assert result.current_cloud_os_release == "ussuri"
 
 
-@patch("builtins.print")
-def test_analysis_print_warn_manually_upgrade(mock_print, model, apps):
-    result = analyze.Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_wallaby"]],
-        apps_data_plane=[apps["nova_ussuri"]],
-    )
-    result.manually_upgrade_data_plane()
-    mock_print.assert_called_with(
-        "WARNING: Please upgrade manually the data plane apps: nova-compute"
-    )
-
-
-@patch("builtins.print")
-def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
-    result = analyze.Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_ussuri"]],
-        apps_data_plane=[apps["nova_ussuri"]],
-    )
-    result.manually_upgrade_data_plane()
-    mock_print.assert_not_called()
-
-
 def _app(name, units):
     app = MagicMock(spec_set=OpenStackApplication).return_value
     app.charm = name
