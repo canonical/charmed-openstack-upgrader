@@ -71,6 +71,10 @@ class OpenStackSubordinateApplication(SubordinateBaseClass):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        if self.is_from_charm_store:
+        if self.is_from_charm_store:  # pylint: disable=duplicate-code
+            logger.debug(
+                "'%s' is from charm store and will be considered with channel codename as ussuri",
+                self.name,
+            )
             return OpenStackRelease("ussuri")
         return OpenStackRelease(self._get_track_from_channel(self.channel))

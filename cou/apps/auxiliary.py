@@ -47,12 +47,19 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
 
+        Auxiliary charms don't follow the OpenStack track convention
+        and are validated based on the openstack_to_track_mapping.csv table.
         :param charm_channel: Charm channel. E.g: 3.8/stable
         :type charm_channel: str
         :return: True if valid, False otherwise.
         :rtype: bool
         """
         if self.is_from_charm_store:
+            logger.debug(
+                "'%s' with %s comes from charm store and will be considered as valid track",
+                self.name,
+                charm_channel,
+            )
             return True
 
         track = self._get_track_from_channel(charm_channel)
@@ -108,12 +115,16 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :rtype: OpenStackRelease
         """
         if self.is_from_charm_store:
+            logger.debug(
+                "'%s' is from charm store and will be considered with channel codename as ussuri",
+                self.name,
+            )
             return OpenStackRelease("ussuri")
 
         track: str = self._get_track_from_channel(self.channel)
-        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
+        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
         # channel setter already validate if it is a valid channel.
-        return max(compatible_os_releases)  # type: ignore
+        return max(compatible_os_releases)
 
 
 @AppFactory.register_application(["ceph-mon"])
