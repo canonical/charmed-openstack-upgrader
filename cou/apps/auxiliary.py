@@ -15,7 +15,7 @@
 import logging
 from typing import Optional
 
-from cou.apps.core import OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
@@ -105,18 +105,6 @@ class RabbitMQServer(OpenStackAuxiliaryApplication):
 
     wait_timeout = 300
     wait_for_model = True
-
-
-@AppFactory.register_application(["keystone"])
-class Keystone(OpenStackApplication):
-    """Keystone application.
-
-    Keystone had to wait until the entire model will be idle after the upgrade to ensure other
-    upgrade can continue.
-    """
-
-    wait_timeout: int = 300
-    wait_for_model: bool = True
 
 
 @AppFactory.register_application(["ceph-mon"])

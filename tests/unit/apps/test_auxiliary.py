@@ -20,7 +20,7 @@ from cou.apps.auxiliary import (
     OvnPrincipalApplication,
     RabbitMQServer,
 )
-from cou.apps.core import ApplicationUnit
+from cou.apps.base import ApplicationUnit
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import UpgradeStep
 from cou.utils import app_utils

@@ -22,7 +22,6 @@ from typing import Callable
 # pylint: disable=unused-import
 from cou.apps.auxiliary import (  # noqa: F401
     CephMonApplication,
-    Keystone,
     OpenStackAuxiliaryApplication,
     OvnPrincipalApplication,
     RabbitMQServer,
@@ -31,7 +30,8 @@ from cou.apps.auxiliary_subordinate import (  # noqa: F401
     OpenStackAuxiliarySubordinateApplication,
     OvnSubordinateApplication,
 )
-from cou.apps.core import OpenStackApplication
+from cou.apps.base import OpenStackApplication
+from cou.apps.core import Keystone  # noqa: F401
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,

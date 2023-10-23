@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cou.apps.auxiliary import Keystone
+from cou.apps.core import Keystone
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
