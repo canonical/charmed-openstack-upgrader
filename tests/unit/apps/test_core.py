@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import re
 from unittest.mock import AsyncMock
 
 import pytest
@@ -135,9 +134,9 @@ def test_application_ussuri(status, config, units, model):
 
 def test_application_different_wl(status, config, model):
     """Different OpenStack Version on units if workload version is different."""
-    exp_error_msg = re.compile(
+    exp_error_msg = (
         "Units of application my_keystone are running mismatched OpenStack versions: "
-        r"{OpenStackRelease(?:<victoria>|<ussuri>), OpenStackRelease(?:<victoria>|<ussuri>)}. "
+        r"'ussuri': \['keystone\/0', 'keystone\/1'\], 'victoria': \['keystone\/2'\]. "
         "This is not currently handled."
     )
     app_status = status["keystone_ussuri_victoria"]
