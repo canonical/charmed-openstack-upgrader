@@ -406,7 +406,6 @@ async def test_coumodel_upgrade_charm(mocked_model):
         force_series=False,
         force_units=False,
         path=None,
-        resources=None,
         revision=None,
         switch=None,
     )

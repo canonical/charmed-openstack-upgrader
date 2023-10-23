@@ -17,7 +17,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from juju.action import Action
 from juju.application import Application
@@ -48,18 +48,18 @@ DEFAULT_MODEL_IDLE_PERIOD: int = 30
 logger = logging.getLogger(__name__)
 
 
-def _normalize_action_results(results: Dict[str, str]) -> Dict[str, str]:
+def _normalize_action_results(results: dict[str, str]) -> dict[str, str]:
     """Unify action results format.
 
     :param results: Results dictionary to process.
-    :type results: Dict[str, str]
+    :type results: dict[str, str]
     :returns: {
         'Code': '',
         'Stderr': '',
         'Stdout': '',
         'stderr': '',
         'stdout': ''}
-    :rtype: Dict[str, str]
+    :rtype: dict[str, str]
     """
     if results:
         # In Juju 2.7 some keys are dropped from the results if their
@@ -221,7 +221,7 @@ class COUModel:
         return unit
 
     @retry
-    async def get_application_config(self, name: str) -> Dict:
+    async def get_application_config(self, name: str) -> dict:
         """Return application configuration.
 
         :param name: Name of application
@@ -286,7 +286,7 @@ class COUModel:
         self,
         unit_name: str,
         action_name: str,
-        action_params: Optional[Dict] = None,
+        action_params: Optional[dict] = None,
         raise_on_failure: bool = False,
     ) -> Action:
         """Run action on given unit.
@@ -296,7 +296,7 @@ class COUModel:
         :param action_name: Name of action to run
         :type action_name: str
         :param action_params: Dictionary of config options for action, defaults to None
-        :type action_params: Optional[Dict], optional
+        :type action_params: Optional[dict], optional
         :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
         :type raise_on_failure: bool
         :raises UnitNotFound: When a valid unit cannot be found.
@@ -314,7 +314,7 @@ class COUModel:
     # `unit.run(...)` and the rest of the function is static.
     async def run_on_unit(
         self, unit_name: str, command: str, timeout: Optional[int] = None
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Juju run on unit.
 
         :param unit_name: Name of unit to match
@@ -324,7 +324,7 @@ class COUModel:
         :param timeout: How long in seconds to wait for command to complete
         :type timeout: Optional[int]
         :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
-        :rtype: Dict[str, str]
+        :rtype: dict[str, str]
         :raises UnitNotFound: When a valid unit cannot be found.
         :raises ActionFailed: When the application status is in error (it's not 'completed').
         """
@@ -334,13 +334,13 @@ class COUModel:
         return _normalize_action_results(results)
 
     @retry(no_retry_exceptions=(ApplicationNotFound,))
-    async def set_application_config(self, name: str, configuration: Dict[str, str]) -> None:
+    async def set_application_config(self, name: str, configuration: dict[str, str]) -> None:
         """Set application configuration.
 
         :param name: Name of application
         :type name: str
         :param configuration: Dictionary of configuration setting(s)
-        :type configuration: Dict[str,Any]
+        :type configuration: dict[str, Any]
         """
         app = await self._get_application(name)
         await app.set_config(configuration)
@@ -391,7 +391,6 @@ class COUModel:
         force_series: bool = False,
         force_units: bool = False,
         path: Optional[str] = None,
-        resources: Optional[Dict] = None,
         revision: Optional[int] = None,
         switch: Optional[str] = None,
     ) -> None:
@@ -410,8 +409,6 @@ class COUModel:
         :type force_units: bool
         :param path: Upgrade to a charm located at path
         :type path: str
-        :param resources: Dictionary of resource name/filepath pairs
-        :type resources: dict
         :param revision: Explicit upgrade revision
         :type revision: int
         :param switch: Crossgrade charm url
@@ -424,7 +421,6 @@ class COUModel:
             force_series=force_series,
             force_units=force_units,
             path=path,
-            resources=resources,
             revision=revision,
             switch=switch,
         )
