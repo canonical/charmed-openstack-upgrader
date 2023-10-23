@@ -299,7 +299,7 @@ class COUModel:
         :type action_params: Optional[Dict], optional
         :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
         :type raise_on_failure: bool
-        :raises UnitNotFound: When cannot find a valid unit.
+        :raises UnitNotFound: When a valid unit cannot be found.
         :raises ActionFailed: When the application status is in error (it's not 'completed').
         :return: When status is different from "completed"
         :rtype: Action
@@ -325,7 +325,7 @@ class COUModel:
         :type timeout: Optional[int]
         :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
         :rtype: Dict[str, str]
-        :raises UnitNotFound: When cannot find a valid unit.
+        :raises UnitNotFound: When a valid unit cannot be found.
         :raises ActionFailed: When the application status is in error (it's not 'completed').
         """
         unit = await self._get_unit(unit_name)
