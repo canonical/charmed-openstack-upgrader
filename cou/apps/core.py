@@ -306,6 +306,15 @@ class OpenStackApplication:
             os_track_release_channel = self.current_os_release
         return os_track_release_channel
 
+    @property
+    def can_upgrade_current_channel(self) -> bool:
+        """Check if it's possible to upgrade the charm code.
+
+        :return: True if can upgrade, False otherwise.
+        :rtype: bool
+        """
+        return bool(self.status.can_upgrade_to)
+
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
 
@@ -401,13 +410,13 @@ class OpenStackApplication:
         """
         return [self._get_reached_expected_target_plan(target)]
 
-    def generate_upgrade_plan(self, target: str) -> UpgradeStep:
+    def generate_upgrade_plan(self, target: str) -> Optional[UpgradeStep]:
         """Generate full upgrade plan for an Application.
 
         :param target: OpenStack codename to upgrade.
         :type target: str
         :return: Full upgrade plan if the Application is able to generate it.
-        :rtype: UpgradeStep
+        :rtype: Optional[UpgradeStep]
         """
         target_version = OpenStackRelease(target)
         upgrade_steps = UpgradeStep(
@@ -422,7 +431,7 @@ class OpenStackApplication:
         for step in all_steps:
             if step:
                 upgrade_steps.add_step(step)
-        return upgrade_steps
+        return upgrade_steps if upgrade_steps.sub_steps else None
 
     def _get_upgrade_current_release_packages_plan(self, parallel: bool = False) -> UpgradeStep:
         """Get Plan for upgrading software packages to the latest of the current release.
@@ -455,6 +464,9 @@ class OpenStackApplication:
         :return: Plan for refreshing the charm.
         :rtype: Optional[UpgradeStep]
         """
+        if not self.can_upgrade_current_channel:
+            return None
+
         switch = None
         *_, channel = self.possible_current_channels
 

@@ -116,3 +116,21 @@ def test_ovn_subordinate_upgrade_plan(status, model):
     add_steps(expected_plan, upgrade_steps)
 
     assert upgrade_plan == expected_plan
+
+
+def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
+    # ovn chassis 22.03 is considered yoga. If it's not necessary to upgrade
+    # the charm code, there is no steps to upgrade.
+    target = "victoria"
+    app_status = status["ovn_chassis_ussuri_22"]
+    app_status.can_upgrade_to = ""
+    app = OvnSubordinateApplication(
+        "ovn-chassis",
+        app_status,
+        {},
+        model,
+        "ovn-chassis",
+    )
+
+    upgrade_plan = app.generate_upgrade_plan(target)
+    assert upgrade_plan is None
