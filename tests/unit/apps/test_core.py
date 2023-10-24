@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
-from cou.apps import app as app_module
-from cou.apps.app import OpenStackApplication
+from cou.apps.core import OpenStackApplication
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -70,6 +69,7 @@ def assert_application(
     exp_new_origin,
     exp_apt_source_codename,
     exp_channel_codename,
+    exp_is_subordinate,
     target,
 ):
     target_version = OpenStackRelease(target)
@@ -89,6 +89,7 @@ def assert_application(
     assert app.new_origin(target_version) == exp_new_origin
     assert app.apt_source_codename == exp_apt_source_codename
     assert app.channel_codename == exp_channel_codename
+    assert app.is_subordinate == exp_is_subordinate
 
 
 def test_application_ussuri(status, config, units, model):
@@ -106,6 +107,7 @@ def test_application_ussuri(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -126,6 +128,7 @@ def test_application_ussuri(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 
@@ -161,6 +164,7 @@ def test_application_cs(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -181,6 +185,7 @@ def test_application_cs(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 
@@ -200,6 +205,7 @@ def test_application_wallaby(status, config, units, model):
     exp_new_origin = f"cloud:{exp_series}-{target}"
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
+    exp_is_subordinate = False
 
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -220,6 +226,7 @@ def test_application_wallaby(status, config, units, model):
         exp_new_origin,
         exp_apt_source_codename,
         exp_channel_codename,
+        exp_is_subordinate,
         target,
     )
 
@@ -315,42 +322,29 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
     app_config = config["openstack_ussuri"]
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
-    expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
-        function=None,
-    )
+    expected_plan = UpgradeStep(description=f"Upgrade plan for '{app.name}' to {target}")
     upgrade_steps = [
         UpgradeStep(
             description=(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="ussuri/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={"action-managed-upgrade": False},
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="victoria/stable",
+            coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
             description=(
@@ -358,15 +352,14 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -380,42 +373,29 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
     app_config = config["openstack_ussuri"]
     app = OpenStackApplication("my_keystone", app_status, app_config, model, "keystone")
     upgrade_plan = app.generate_upgrade_plan(target)
-    expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
-        function=None,
-    )
+    expected_plan = UpgradeStep(description=f"Upgrade plan for '{app.name}' to {target}")
     upgrade_steps = [
         UpgradeStep(
             description=(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="ussuri/stable",
-            switch="ch:keystone",
+            coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={"action-managed-upgrade": False},
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="victoria/stable",
+            coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
             description=(
@@ -423,15 +403,14 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -450,8 +429,6 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
 
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
-        function=None,
     )
     # no sub-step for refresh current channel or next channel
     upgrade_steps = [
@@ -460,16 +437,12 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={"action-managed-upgrade": False},
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
             description=(
@@ -477,15 +450,14 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -504,7 +476,6 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -512,37 +483,27 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="ussuri/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={"action-managed-upgrade": False},
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="victoria/stable",
+            coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -580,7 +541,6 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -588,24 +548,17 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="ussuri/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="victoria/stable",
+            coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
             description=(
@@ -613,47 +566,16 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
 
     assert upgrade_plan == expected_plan
-
-
-@patch.object(app_module, "is_charm_supported", return_value=False)
-def test_app_factory_not_supported_openstack_charm(mock_is_charm_supported):
-    charm = "my-app"
-    my_app = app_module.AppFactory.create(
-        name=charm,
-        status=MagicMock(),
-        config=MagicMock(),
-        model=MagicMock(),
-        charm=charm,
-    )
-    assert my_app is None
-    mock_is_charm_supported.assert_called_once_with(charm)
-
-
-@patch.object(app_module, "is_charm_supported", return_value=True)
-def test_app_factory_register(mock_is_charm_supported):
-    charm = "foo"
-
-    @app_module.AppFactory.register_application([charm])
-    class Foo:
-        def __init__(self, *_, **__):
-            pass
-
-    assert charm in app_module.AppFactory.charms
-    foo = app_module.AppFactory.create("my-foo", MagicMock(), {}, MagicMock(), charm)
-    mock_is_charm_supported.assert_called_once_with(charm)
-    assert foo is not None
-    assert isinstance(foo, Foo)

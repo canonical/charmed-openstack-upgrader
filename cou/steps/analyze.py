@@ -19,7 +19,8 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from cou.apps.app import AppFactory, OpenStackApplication
+from cou.apps.core import OpenStackApplication
+from cou.apps.factory import AppFactory
 from cou.utils import juju_utils
 from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 

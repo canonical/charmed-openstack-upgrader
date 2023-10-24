@@ -20,9 +20,9 @@ import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 from juju.client.client import FullStatus
 
-from cou.apps.app import ApplicationUnit, OpenStackApplication
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
+from cou.apps.core import ApplicationUnit, OpenStackApplication
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.utils.openstack import OpenStackRelease
 
@@ -207,6 +207,16 @@ def status():
     mock_ceph_mon_xena.subordinate_to = []
     mock_ceph_mon_xena.units = OrderedDict([("ceph-mon/0", generate_unit("16.2.0", "7"))])
 
+    # mysql-innodb-cluster application on ussuri using 8.0
+    mock_mysql_innodb_cluster_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_mysql_innodb_cluster_ussuri.series = "focal"
+    mock_mysql_innodb_cluster_ussuri.charm_channel = "8.0/stable"
+    mock_mysql_innodb_cluster_ussuri.charm = "ch:amd64/focal/mysql-innodb-cluster-106"
+    mock_mysql_innodb_cluster_ussuri.subordinate_to = []
+    mock_mysql_innodb_cluster_ussuri.units = OrderedDict(
+        [("ovn-central/0", generate_unit("8.0", "0/lxd/7"))]
+    )
+
     # ovn-central application on ussuri using 22.03
     mock_ovn_central_ussuri_22 = MagicMock(spec_set=ApplicationStatus())
     mock_ovn_central_ussuri_22.series = "focal"
@@ -264,6 +274,7 @@ def status():
         "ceph-mon_ussuri": mock_ceph_mon_ussuri,
         "ceph-mon_xena": mock_ceph_mon_xena,
         "cinder_ussuri_on_nova": mock_cinder_on_nova,
+        "mysql-innodb-cluster": mock_mysql_innodb_cluster_ussuri,
         "ovn_central_ussuri_22": mock_ovn_central_ussuri_22,
         "ovn_central_ussuri_20": mock_ovn_central_ussuri_20,
         "ovn_chassis_ussuri_22": mock_ovn_chassis_ussuri_22,
@@ -282,6 +293,8 @@ def full_status(status, model):
             ("cinder", status["cinder_ussuri"]),
             ("rabbitmq-server", status["rabbitmq_server"]),
             ("my_app", status["unknown_app"]),
+            ("nova-compute", status["unknown_app"]),
+            ("ceph-osd", status["unknown_app"]),
         ]
     )
     return mock_full_status

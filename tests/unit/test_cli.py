@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cou import cli
-from cou.exceptions import COUException, UnitNotFound
+from cou.exceptions import COUException, TimeoutException, UnitNotFound
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 
@@ -82,8 +82,8 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
 @patch("cou.cli.logger")
 async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan):
     """Test get_upgrade_plan function."""
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    plan = UpgradeStep(description="Top level plan", parallel=False)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
 
     mock_analyze_and_plan.return_value = plan
     await cli.get_upgrade_plan()
@@ -108,8 +108,8 @@ async def test_run_upgrade_quiet(
     mock_logger, mock_print, mock_apply_plan, mock_analyze_and_plan, quiet, expected_print_count
 ):
     """Test get_upgrade_plan function in either quiet or non-quiet mode."""
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    plan = UpgradeStep(description="Top level plan", parallel=False)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
 
     await cli.run_upgrade(quiet=quiet)
@@ -141,8 +141,8 @@ async def test_run_upgrade_interactive(
     progress_indication_count,
 ):
     """Test get_upgrade_plan function in either interactive or non-interactive mode."""
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False, function=None))
+    plan = UpgradeStep(description="Top level plan", parallel=False)
+    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
 
     await cli.run_upgrade(interactive=interactive)
@@ -187,6 +187,7 @@ async def test_entrypoint_commands(mocker, command, function_call):
         (Exception("An error occurred"), "2"),
         (COUException("Caught error"), "1"),
         (UnitNotFound("Unit not found"), "1"),
+        (TimeoutException("The connection timed out"), "1"),
     ],
 )
 async def test_entrypoint_with_exception(mocker, exception, exp_exitcode):

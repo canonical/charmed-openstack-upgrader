@@ -17,20 +17,19 @@
 import logging
 from typing import Callable
 
-from cou.apps.app import OpenStackApplication
-
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
 # pylint: disable=unused-import
-from cou.apps.auxiliary import OpenStackAuxiliaryApplication  # noqa: F401
+from cou.apps.auxiliary import (  # noqa: F401
+    CephMonApplication,
+    OpenStackAuxiliaryApplication,
+    OvnPrincipalApplication,
+)
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     OpenStackAuxiliarySubordinateApplication,
-)
-from cou.apps.ceph import CephMonApplication  # noqa: F401
-from cou.apps.ovn import (  # noqa: F401
-    OvnPrincipalApplication,
     OvnSubordinateApplication,
 )
+from cou.apps.core import OpenStackApplication
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
@@ -56,13 +55,12 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     if not target:
         raise NoTargetError("Cannot find target to upgrade.")
 
-    plan = UpgradeStep(description="Top level plan", parallel=False, function=None)
+    plan = UpgradeStep(description="Top level plan", parallel=False)
     plan.add_step(
         UpgradeStep(
             description="backup mysql databases",
             parallel=False,
-            function=backup,
-            model=analysis_result.model,
+            coro=backup(analysis_result.model),
         )
     )
 
@@ -105,7 +103,7 @@ async def create_upgrade_group(
     :return: Upgrade group.
     :rtype: UpgradeStep
     """
-    group_upgrade_plan = UpgradeStep(description=description, parallel=False, function=None)
+    group_upgrade_plan = UpgradeStep(description=description, parallel=False)
     for app in filter(filter_function, apps):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)

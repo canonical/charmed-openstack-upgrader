@@ -14,8 +14,13 @@
 """Auxiliary application class."""
 import pytest
 
-from cou.apps.app import ApplicationUnit
-from cou.apps.auxiliary import OpenStackAuxiliaryApplication
+from cou.apps.auxiliary import (
+    CephMonApplication,
+    MysqlInnodbClusterApplication,
+    OpenStackAuxiliaryApplication,
+    OvnPrincipalApplication,
+)
+from cou.apps.core import ApplicationUnit
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import UpgradeStep
 from cou.utils import app_utils
@@ -46,6 +51,7 @@ def test_auxiliary_app(status, config, model):
     assert app.units == expected_units
     assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "yoga"
+    assert app.is_subordinate is False
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
@@ -63,7 +69,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -71,24 +76,17 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.8/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.8/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "3.8/stable", switch=None),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.9/stable",
+            coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
         UpgradeStep(
             description=(
@@ -96,15 +94,15 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -130,7 +128,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -138,17 +135,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.9/stable",
-            switch=None,
+            coro=model.upgrade_charm(app.name, "3.9/stable", switch=None),
         ),
         UpgradeStep(
             description=(
@@ -156,15 +148,15 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -188,7 +180,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
-        function=None,
     )
     upgrade_steps = [
         UpgradeStep(
@@ -196,24 +187,17 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
-            function=app_utils.upgrade_packages,
-            units=app.status.units.keys(),
-            model=model,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         UpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.9/stable",
-            switch="ch:rabbitmq-server",
+            coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
             parallel=False,
-            function=model.upgrade_charm,
-            application_name=app.name,
-            channel="3.9/stable",
+            coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
         UpgradeStep(
             description=(
@@ -221,15 +205,15 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
             ),
             parallel=False,
-            function=model.set_application_config,
-            name=app.name,
-            configuration={f"{app.origin_setting}": "cloud:focal-victoria"},
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            function=app._check_upgrade,
-            target=OpenStackRelease(target),
+            coro=app._check_upgrade(OpenStackRelease(target)),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -294,3 +278,327 @@ def test_auxiliary_raise_halt_upgrade(status, config, model):
     )
     with pytest.raises(HaltUpgradePlanGeneration):
         app.generate_upgrade_plan(target)
+
+
+def test_ceph_mon_app(status, config, model):
+    """Test the correctness of instantiating CephMonApplication."""
+    app = CephMonApplication(
+        "ceph-mon",
+        status["ceph-mon_xena"],
+        config["auxiliary_xena"],
+        model,
+        "ceph-mon",
+    )
+    assert app.channel == "pacific/stable"
+    assert app.os_origin == "cloud:focal-xena"
+    assert app.units == [
+        ApplicationUnit(
+            name="ceph-mon/0",
+            os_version=OpenStackRelease("xena"),
+            workload_version="16.2.0",
+            machine="7",
+        )
+    ]
+    assert app.apt_source_codename == "xena"
+    assert app.channel_codename == "xena"
+    assert app.is_subordinate is False
+
+
+def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
+    status,
+    config,
+    model,
+):
+    """Test when ceph version changes between os releases."""
+    target = "yoga"
+    app = CephMonApplication(
+        "ceph-mon",
+        status["ceph-mon_xena"],
+        config["auxiliary_xena"],
+        model,
+        "ceph-mon",
+    )
+
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
+        ),
+        UpgradeStep(
+            description=(
+                "Ensure require-osd-release option on ceph-mon units correctly set to 'pacific'"
+            ),
+            parallel=False,
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "pacific"),
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "quincy/stable"),
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-yoga'"
+            ),
+            parallel=False,
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-yoga"}
+            ),
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            coro=app._check_upgrade(OpenStackRelease(target)),
+        ),
+        UpgradeStep(
+            description=(
+                "Ensure require-osd-release option on ceph-mon units correctly set to 'quincy'"
+            ),
+            parallel=False,
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "quincy"),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
+
+
+def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
+    status,
+    config,
+    model,
+):
+    """Test when ceph version remains the same between os releases."""
+    target = "victoria"
+    app = CephMonApplication(
+        "ceph-mon",
+        status["ceph-mon_ussuri"],
+        config["auxiliary_ussuri"],
+        model,
+        "ceph-mon",
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
+        ),
+        UpgradeStep(
+            description=(
+                "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
+            ),
+            parallel=False,
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "octopus"),
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
+            ),
+            parallel=False,
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            coro=app._check_upgrade(OpenStackRelease(target)),
+        ),
+        UpgradeStep(
+            description=(
+                "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
+            ),
+            parallel=False,
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "octopus"),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
+
+
+def test_ovn_principal(status, config, model):
+    app = OvnPrincipalApplication(
+        "ovn-central",
+        status["ovn_central_ussuri_22"],
+        config["auxiliary_ussuri"],
+        model,
+        "ovn-central",
+    )
+    assert app.channel == "22.03/stable"
+    assert app.os_origin == "distro"
+    assert app.apt_source_codename == "ussuri"
+    assert app.channel_codename == "yoga"
+    assert app.current_os_release == "yoga"
+    assert app.is_subordinate is False
+
+
+def test_ovn_workload_ver_lower_than_22_principal(status, config, model):
+    target = "victoria"
+
+    exp_error_msg_ovn_upgrade = (
+        "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
+        "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
+        "https://docs.openstack.org/charm-guide/latest/project/procedures/"
+        "ovn-upgrade-2203.html"
+    )
+
+    app_ovn_central = OvnPrincipalApplication(
+        "ovn-central",
+        status["ovn_central_ussuri_20"],
+        config["auxiliary_ussuri"],
+        model,
+        "ovn-central",
+    )
+
+    with pytest.raises(ApplicationError, match=exp_error_msg_ovn_upgrade):
+        app_ovn_central.generate_upgrade_plan(target)
+
+
+@pytest.mark.parametrize("channel", ["55.7", "19.03"])
+def test_ovn_no_compatible_os_release(status, config, model, channel):
+    ovn_central_status = status["ovn_central_ussuri_22"]
+    ovn_central_status.charm_channel = channel
+    app = OvnPrincipalApplication(
+        "ovn-central",
+        ovn_central_status,
+        config["auxiliary_ussuri"],
+        model,
+        "ovn-central",
+    )
+    with pytest.raises(
+        ApplicationError,
+        match=(
+            f"'{app.charm}' cannot identify suitable OpenStack release codename "
+            f"for channel: '{app.channel}'"
+        ),
+    ):
+        app.channel_codename
+
+
+def test_ovn_principal_upgrade_plan(status, config, model):
+    target = "victoria"
+    app = OvnPrincipalApplication(
+        "ovn-central",
+        status["ovn_central_ussuri_22"],
+        config["auxiliary_ussuri"],
+        model,
+        "ovn-central",
+    )
+
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    )
+
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
+            ),
+            parallel=False,
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            coro=app._check_upgrade(OpenStackRelease(target)),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
+
+
+def test_mysql_innodb_cluster_upgrade(status, config, model):
+    target = "victoria"
+    # source is already configured to wallaby, so the plan halt with target victoria
+    app = MysqlInnodbClusterApplication(
+        "mysql-innodb-cluster",
+        status["mysql-innodb-cluster"],
+        config["auxiliary_ussuri"],
+        model,
+        "mysql-innodb-cluster",
+    )
+    upgrade_plan = app.generate_upgrade_plan(target)
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}",
+        parallel=False,
+    )
+    upgrade_steps = [
+        UpgradeStep(
+            description=(
+                f"Upgrade software packages of '{app.name}' from the current APT repositories"
+            ),
+            parallel=False,
+            coro=app_utils.upgrade_packages(
+                app.status.units.keys(), model, ["mysql-server-core-8.0"]
+            ),
+        ),
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
+            ),
+            parallel=False,
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
+        ),
+        UpgradeStep(
+            description=f"Check if the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            coro=app._check_upgrade(OpenStackRelease(target)),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
