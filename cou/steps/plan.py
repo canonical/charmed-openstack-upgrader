@@ -125,10 +125,13 @@ def manually_upgrade_data_plane(analysis_result: Analysis) -> None:
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
-    if analysis_result.min_os_version_control_plane and analysis_result.min_os_version_data_plane:
-        if (
+    if (
+        analysis_result.min_os_version_control_plane
+        and analysis_result.min_os_version_data_plane
+        and (
             analysis_result.min_os_version_control_plane
             > analysis_result.min_os_version_data_plane
-        ):
-            data_plane_apps = ", ".join([app.name for app in analysis_result.apps_data_plane])
-            print(f"WARNING: Please upgrade manually the data plane apps: {data_plane_apps}")
+        )
+    ):
+        data_plane_apps = ", ".join([app.name for app in analysis_result.apps_data_plane])
+        print(f"WARNING: Please upgrade manually the data plane apps: {data_plane_apps}")
