@@ -56,9 +56,8 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         """
         if self.is_from_charm_store:
             logger.debug(
-                "'%s' with %s comes from charm store and will be considered as valid track",
+                "'%s' has been installed from from the charm store",
                 self.name,
-                charm_channel,
             )
             return True
 
@@ -116,7 +115,10 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         """
         if self.is_from_charm_store:
             logger.debug(
-                "'%s' is from charm store and will be considered with channel codename as ussuri",
+                (
+                    "'Application %s' installed from charm store; assuming Ussuri as the "
+                    "underlying version."
+                ),
                 self.name,
             )
             return OpenStackRelease("ussuri")

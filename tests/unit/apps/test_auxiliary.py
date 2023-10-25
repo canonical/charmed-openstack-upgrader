@@ -300,7 +300,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(status, config, model, mocker):
         model,
         "rabbitmq-server",
     )
-    # change OpenStack release to a version that it's not on openstack_to_track_mapping.csv
+    # change OpenStack release to a version that is not on openstack_to_track_mapping.csv
     mocker.patch(
         "cou.apps.core.OpenStackApplication.current_os_release",
         new_callable=mocker.PropertyMock,
@@ -327,9 +327,11 @@ def test_auxiliary_raise_halt_upgrade(status, config, model):
 def test_auxiliary_no_suitable_channel(status, config, model):
     # OPENSTACK_TO_TRACK_MAPPING can't find a track for rabbitmq, focal, zed.
     target = OpenStackRelease("zed")
+    app_status = status["rabbitmq_server"]
+    app_status.series = "focal"
     app = OpenStackAuxiliaryApplication(
         "rabbitmq-server",
-        status["rabbitmq_server"],
+        app_status,
         config["auxiliary_wallaby"],
         model,
         "rabbitmq-server",

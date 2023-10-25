@@ -194,8 +194,8 @@ class OpenStackApplication:
             self._channel = charm_channel
             return
         raise ValueError(
-            f"Charm: '{self.charm}' with series: '{self.series}' has invalid track: "
-            f"'{self._get_track_from_channel(charm_channel)}'"
+            f"Track {self._get_track_from_channel(charm_channel)} is not valid for charm "
+            f"'{self.charm}' on series '{self.series}'"
         )
 
     @property
