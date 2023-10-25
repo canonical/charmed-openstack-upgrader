@@ -250,8 +250,8 @@ class OpenStackApplication:
         # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
         # upgrade methods, more than one version can be found.
         mismatched_repr = [
-            f"'{openstack_release.codename}': {apps}"
-            for openstack_release, apps in os_versions.items()
+            f"'{openstack_release.codename}': {units}"
+            for openstack_release, units in os_versions.items()
         ]
         raise MismatchedOpenStackVersions(
             f"Units of application {self.name} are running mismatched OpenStack versions: "
