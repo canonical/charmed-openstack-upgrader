@@ -304,40 +304,49 @@ async def test_coumodel_get_status(mocked_model):
 
 
 @pytest.mark.asyncio
-async def test_coumodel_run_action(mocked_model):
+async def test_coumodel_get_action_result(mocked_model):
+    """Test COUModel get action result."""
+    mocked_action = AsyncMock(spec_set=Action).return_value
+    model = juju_utils.COUModel("test-model")
+
+    action = await model._get_action_result(mocked_action, False)
+
+    mocked_action.wait.assert_awaited_once_with()
+    assert action == mocked_action.wait.return_value
+    mocked_model.get_action_status.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_coumodel_get_action_result_failure(mocked_model):
+    """Test COUModel get action result failing."""
+    mocked_action = AsyncMock(spec_set=Action).return_value
+    mocked_model.get_action_status.return_value = "failed"
+    model = juju_utils.COUModel("test-model")
+
+    with pytest.raises(ActionFailed):
+        await model._get_action_result(mocked_action, True)
+
+    mocked_action.wait.assert_awaited_once_with()
+
+    mocked_model.get_action_status.assert_awaited_once_with(uuid_or_prefix=mocked_action.entity_id)
+    mocked_model.get_action_output.assert_awaited_once_with(mocked_action.entity_id)
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.COUModel._get_action_result")
+async def test_coumodel_run_action(mock_get_action_result, mocked_model):
     """Test COUModel run action."""
     action_name = "test-action"
     action_params = {"test-arg": "test"}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run_action.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.wait.return_value = mocked_result = AsyncMock(Action)
+    mock_get_action_result.return_value = mocked_result = AsyncMock(Action)
     model = juju_utils.COUModel("test-model")
 
     action = await model.run_action("test_unit/0", action_name, action_params=action_params)
 
     mocked_unit.run_action.assert_awaited_once_with(action_name, **action_params)
-    mocked_action.wait.assert_awaited_once_with()
+    mock_get_action_result.assert_awaited_once_with(mocked_unit.run_action.return_value, False)
     assert action == mocked_result
-
-
-@pytest.mark.asyncio
-async def test_coumodel_run_action_failure(mocked_model):
-    """Test COUModel run action failing."""
-    action_name = "test-action"
-    action_params = {"test-arg": "test"}
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run_action.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.entity_id = entity_id = 1
-    mocked_model.get_action_status.return_value = "failed"
-    model = juju_utils.COUModel("test-model")
-
-    with pytest.raises(ActionFailed):
-        await model.run_action(
-            "test_unit/0", action_name, action_params=action_params, raise_on_failure=True
-        )
-
-    mocked_model.get_action_status.assert_awaited_once_with(uuid_or_prefix=entity_id)
-    mocked_model.get_action_output.assert_awaited_once_with(entity_id)
 
 
 @pytest.mark.asyncio
