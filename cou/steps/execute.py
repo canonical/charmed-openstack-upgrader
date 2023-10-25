@@ -89,6 +89,23 @@ async def _run_step(step: UpgradeStep, interactive: bool) -> None:
             await apply_plan(sub_step, interactive)
 
 
+async def _user_input(step: UpgradeStep, interactive: bool) -> str:
+    """Take user input or provide predefined inputs.
+
+    :param step: currently applied step
+    :type step: UpgradeStep
+    :param interactive: Whether to run upgrade step in interactive mode.
+    :type interactive: bool
+    :return: return user input or predefined input
+    :rtype: str
+    """
+    if not interactive:
+        return "c"
+
+    user_input = await ainput(prompt(step.description))
+    return user_input.casefold()
+
+
 async def apply_plan(plan: UpgradeStep, interactive: bool) -> None:
     """Apply the plan for upgrade.
 
@@ -99,7 +116,7 @@ async def apply_plan(plan: UpgradeStep, interactive: bool) -> None:
     """
     result = ""
     while result.casefold() not in AVAILABLE_OPTIONS:
-        result = (await ainput(prompt(plan.description))).casefold() if interactive else "c"
+        result = await _user_input(plan, interactive)
         match result:
             case "c":
                 logger.info("Running: %s", plan.description)
@@ -110,4 +127,4 @@ async def apply_plan(plan: UpgradeStep, interactive: bool) -> None:
             case "s":
                 logger.info("Skipped")
             case _:
-                logger.info("No valid input provided!")
+                logger.debug("No valid input provided!")
