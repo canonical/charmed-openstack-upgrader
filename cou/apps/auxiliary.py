@@ -99,8 +99,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
 class RabbitMQServer(OpenStackAuxiliaryApplication):
     """RabbitMQ application.
 
-    RabbitMQ had to wait until the entire model will be idle after the upgrade to ensure other
-    upgrade can continue.
+    RabbitMQ must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
     wait_timeout = 300
