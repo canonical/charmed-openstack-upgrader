@@ -167,10 +167,7 @@ class Analysis:
         :return: OpenStack release.
         :rtype: Optional[OpenStackRelease]
         """
-        return min(
-            (app.current_os_release for app in apps),
-            default=None,
-        )
+        return min((app.current_os_release for app in apps), default=None)
 
     @property
     def current_cloud_os_release(self) -> Optional[OpenStackRelease]:

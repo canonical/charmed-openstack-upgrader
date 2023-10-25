@@ -122,6 +122,8 @@ async def create_upgrade_group(
 def manually_upgrade_data_plane(analysis_result: Analysis) -> None:
     """Warning message to upgrade data plane charms if necessary.
 
+    NOTE(gabrielcocenza) This function should be removed when cou starts
+    supporting data plan upgrades.
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
