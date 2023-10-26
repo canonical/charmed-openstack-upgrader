@@ -81,10 +81,10 @@ class UpgradeStep:
                 "ignore", message=f"coroutine '.*{coro.__name__}' was never awaited"
             )
 
+        self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
         self.description = description
         self.sub_steps: List[UpgradeStep] = []
-        self._coro: Optional[Coroutine] = coro
         self._canceled: bool = False
         self._task: Optional[asyncio.Task] = None
 
@@ -142,6 +142,27 @@ class UpgradeStep:
         :rtype: bool
         """
         return self._coro is not None or any(bool(step) for step in self.sub_steps)
+
+    @property
+    def description(self) -> str:
+        """Get the description of the UpgradeStep.
+
+        :return: description
+        :rtype: str
+        """
+        return self._description
+
+    @description.setter
+    def description(self, description: str) -> None:
+        """Set the description of the UpgradeStep.
+
+        :param description: description
+        :type description: str
+        :raises ValueError: When a coroutine is passed without description.
+        """
+        if not description and self._coro:
+            raise ValueError("Every coroutine should have a description")
+        self._description = description
 
     @property
     def canceled(self) -> bool:

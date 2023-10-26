@@ -66,7 +66,7 @@ def test_step_hash():
 
 @pytest.mark.parametrize(
     "description, parallel, args",
-    [("test", False, ()), ("test description", True, ("name", 1, 2)), ("", False, ())],
+    [("test", False, ()), ("test description", True, ("name", 1, 2))],
 )
 def test_step_eq(description, parallel, args):
     """Test UpgradeStep comparison."""
@@ -78,6 +78,12 @@ def test_step_eq(description, parallel, args):
     assert step_1 == step_2
     assert step_1 != step_3
     assert step_1 != 1  # check __eq__ with another object
+
+
+def test_step_eq_empty_upgrades():
+    step_1 = UpgradeStep()
+    step_2 = UpgradeStep()
+    assert step_1 == step_2
 
 
 def test_step_bool():
@@ -150,6 +156,12 @@ def test_step_repr():
     upgrade_step.add_step(UpgradeStep(description="test sub-step"))
     expected_repr = f"UpgradeStep({description})"
     assert repr(upgrade_step) == expected_repr
+
+
+def test_step_repr_no_description():
+    """Test UpgradeStep representation when there is no description."""
+    with pytest.raises(ValueError):
+        UpgradeStep(coro=mock_coro("a"))
 
 
 @pytest.mark.asyncio
