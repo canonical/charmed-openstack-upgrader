@@ -99,13 +99,13 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
 class CephMonApplication(OpenStackAuxiliaryApplication):
     """Application for Ceph Monitor charm."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         return [
             self._get_upgrade_current_release_packages_plan(),
@@ -113,7 +113,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
             self._get_change_require_osd_release_plan(self.possible_current_channels[-1]),
         ]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -157,13 +157,13 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
 class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
     """Ovn principal application class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         for unit in self.units:
             validate_ovn_support(unit.workload_version)

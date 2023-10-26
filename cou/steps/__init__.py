@@ -62,7 +62,7 @@ class UpgradeStep:
 
     def __init__(
         self,
-        description: str,
+        description: str = "",
         parallel: bool = False,
         coro: Optional[Coroutine] = None,
     ):
@@ -121,7 +121,7 @@ class UpgradeStep:
         steps_to_visit = [(self, 0)]
         while steps_to_visit:
             step, indent = steps_to_visit.pop()
-            result += f"{tab * indent}{step.description}{os.linesep}"
+            result += f"{tab * indent}{step.description}{os.linesep}" if step else ""
             steps_to_visit.extend([(s, indent + 1) for s in reversed(step.sub_steps)])
 
         return result
@@ -133,6 +133,17 @@ class UpgradeStep:
         :rtype: str
         """
         return f"UpgradeStep({self.description})"
+
+    def __bool__(self) -> bool:
+        """Boolean magic method for UpgradeStep.
+
+        :return: True if there is at least one coroutine in a UpgradeStep
+        or in its sub steps.
+        :rtype: bool
+        """
+        if self._coro or any(step._coro for step in self.sub_steps):
+            return True
+        return any(bool(step) for step in self.sub_steps)
 
     @property
     def canceled(self) -> bool:

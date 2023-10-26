@@ -163,47 +163,6 @@ async def test_generate_plan(apps, model):
 
 
 @pytest.mark.asyncio
-async def test_generate_plan_no_subordinates_plan(apps, model):
-    target = "victoria"
-    app_keystone = apps["keystone_wallaby"]
-    app_cinder = apps["cinder_ussuri"]
-    app_keystone_mysql_router = apps["keystone_mysql_router"]
-    # no upgrade plan for mysql-router
-    app_keystone_mysql_router.status.can_upgrade_to = ""
-    analysis_result = Analysis(
-        model=model,
-        apps_control_plane=[app_keystone, app_cinder, app_keystone_mysql_router],
-        apps_data_plane=[],
-    )
-
-    upgrade_plan = await generate_plan(analysis_result)
-
-    expected_plan = UpgradeStep(
-        description="Top level plan",
-        parallel=False,
-    )
-
-    expected_plan.add_step(
-        UpgradeStep(
-            description="backup mysql databases",
-            parallel=False,
-            coro=backup(model),
-        )
-    )
-
-    control_plane_principals = UpgradeStep(
-        description="Control Plane principal(s) upgrade plan",
-        parallel=False,
-    )
-    # keystone does not generate plan because it's already on wallaby
-    cinder_plan = generate_expected_upgrade_plan_principal(app_cinder, target, model)
-    control_plane_principals.add_step(cinder_plan)
-    expected_plan.add_step(control_plane_principals)
-
-    assert upgrade_plan == expected_plan
-
-
-@pytest.mark.asyncio
 async def test_generate_plan_raise_NoTargetError(mocker):
     exp_error_msg = "Cannot find target to upgrade."
     analysis_result = MagicMock(spec=Analysis)
@@ -241,7 +200,7 @@ async def test_create_upgrade_plan_HaltUpgradePlanGeneration():
 
     plan = await create_upgrade_group([app], target, description, lambda *_: True)
 
-    assert plan is None
+    assert len(plan.sub_steps) == 0
     app.generate_upgrade_plan.assert_called_once_with(target)
 
 

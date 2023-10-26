@@ -15,7 +15,7 @@
 """Upgrade planning utilities."""
 
 import logging
-from typing import Callable, Optional
+from typing import Callable
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -70,8 +70,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         target=target,
         filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
     )
-    if control_plane_principal_upgrade_plan:
-        plan.add_step(control_plane_principal_upgrade_plan)
+    plan.add_step(control_plane_principal_upgrade_plan)
 
     control_plane_subordinate_upgrade_plan = await create_upgrade_group(
         apps=analysis_result.apps_control_plane,
@@ -79,8 +78,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
         target=target,
         filter_function=lambda app: isinstance(app, SubordinateBaseClass),
     )
-    if control_plane_subordinate_upgrade_plan:
-        plan.add_step(control_plane_subordinate_upgrade_plan)
+    plan.add_step(control_plane_subordinate_upgrade_plan)
 
     return plan
 
@@ -90,7 +88,7 @@ async def create_upgrade_group(
     target: str,
     description: str,
     filter_function: Callable[[OpenStackApplication], bool],
-) -> Optional[UpgradeStep]:
+) -> UpgradeStep:
     """Create upgrade group.
 
     :param apps: Result of the analysis.
@@ -103,12 +101,12 @@ async def create_upgrade_group(
     :type filter_function: Callable[[OpenStackApplication], bool]
     :raises Exception: When cannot generate upgrade plan.
     :return: Upgrade group.
-    :rtype: Optional[UpgradeStep]
+    :rtype: UpgradeStep
     """
     group_upgrade_plan = UpgradeStep(description=description, parallel=False)
     for app in filter(filter_function, apps):
         try:
-            app_upgrade_plan: Optional[UpgradeStep] = app.generate_upgrade_plan(target)
+            app_upgrade_plan = app.generate_upgrade_plan(target)
             if app_upgrade_plan:
                 group_upgrade_plan.add_step(app_upgrade_plan)
         except HaltUpgradePlanGeneration as exc:
@@ -119,4 +117,4 @@ async def create_upgrade_group(
             logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
             raise
 
-    return group_upgrade_plan if group_upgrade_plan.sub_steps else None
+    return group_upgrade_plan

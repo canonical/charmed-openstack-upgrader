@@ -66,7 +66,7 @@ def test_step_hash():
 
 @pytest.mark.parametrize(
     "description, parallel, args",
-    [("test", False, ()), ("test description", True, ("name", 1, 2))],
+    [("test", False, ()), ("test description", True, ("name", 1, 2)), ("", False, ())],
 )
 def test_step_eq(description, parallel, args):
     """Test UpgradeStep comparison."""
@@ -80,13 +80,61 @@ def test_step_eq(description, parallel, args):
     assert step_1 != 1  # check __eq__ with another object
 
 
+def test_step_bool():
+    """Test UpgradeStep boolean method."""
+    # no coroutine in the plan
+    plan = UpgradeStep(description="a")
+    assert bool(plan) is False
+
+    # no coroutine in the plan and sub_step
+    sub_step = UpgradeStep(description="a.a")
+    assert bool(sub_step) is False
+
+    plan.sub_steps = [sub_step]
+    assert bool(plan) is False
+
+    # coroutine in the plan sub_steps tree
+    sub_sub_step = UpgradeStep(description="a.a.a", coro=mock_coro("a.a.a"))
+    sub_step.sub_steps = [sub_sub_step]
+    assert bool(sub_sub_step) is True
+    assert bool(sub_step) is True
+    assert bool(plan) is True
+
+
 def test_step_str():
     """Test UpgradeStep string representation."""
     expected = "a\n\ta.a\n\t\ta.a.a\n\t\ta.a.b\n\ta.b\n"
     plan = UpgradeStep(description="a")
     sub_step = UpgradeStep(description="a.a")
     sub_step.sub_steps = [
+        UpgradeStep(description="a.a.a", coro=mock_coro("a.a.a")),
+        UpgradeStep(description="a.a.b", coro=mock_coro("a.a.b")),
+    ]
+    plan.sub_steps = [sub_step, UpgradeStep(description="a.b", coro=mock_coro("a.b"))]
+
+    assert str(plan) == expected
+
+
+def test_step_str_not_show():
+    """Test UpgradeStep string representation when does not print because it's empty."""
+    plan = UpgradeStep(description="a")
+    sub_step = UpgradeStep(description="a.a")
+    sub_step.sub_steps = [
         UpgradeStep(description="a.a.a"),
+        UpgradeStep(description="a.a.b"),
+    ]
+    plan.sub_steps = [sub_step, UpgradeStep(description="a.b")]
+
+    assert str(plan) == ""
+
+
+def test_step_str_partially_show():
+    """Test UpgradeStep string representation when print UpgradeSteps that have coro."""
+    expected = "a\n\ta.a\n\t\ta.a.a\n"
+    plan = UpgradeStep(description="a")
+    sub_step = UpgradeStep(description="a.a")
+    sub_step.sub_steps = [
+        UpgradeStep(description="a.a.a", coro=mock_coro("a.a.a")),
         UpgradeStep(description="a.a.b"),
     ]
     plan.sub_steps = [sub_step, UpgradeStep(description="a.b")]

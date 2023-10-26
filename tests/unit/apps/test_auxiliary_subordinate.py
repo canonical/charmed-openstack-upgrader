@@ -135,8 +135,13 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
         "ovn-chassis",
     )
 
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    )
+
     upgrade_plan = app.generate_upgrade_plan(target)
-    assert upgrade_plan is None
+    assert upgrade_plan == expected_plan
+    assert str(upgrade_plan) == ""
 
 
 def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):

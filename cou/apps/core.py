@@ -372,27 +372,27 @@ class OpenStackApplication:
                 f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
             )
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         return [
             self._get_upgrade_current_release_packages_plan(),
             self._get_refresh_charm_plan(target),
         ]
 
-    def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: Plan that will add upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         if self.current_os_release >= target and self.apt_source_codename >= target:
             msg = (
@@ -408,23 +408,23 @@ class OpenStackApplication:
             self._get_workload_upgrade_plan(target),
         ]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         return [self._get_reached_expected_target_plan(target)]
 
-    def generate_upgrade_plan(self, target: str) -> Optional[UpgradeStep]:
+    def generate_upgrade_plan(self, target: str) -> UpgradeStep:
         """Generate full upgrade plan for an Application.
 
         :param target: OpenStack codename to upgrade.
         :type target: str
         :return: Full upgrade plan if the Application is able to generate it.
-        :rtype: Optional[UpgradeStep]
+        :rtype: UpgradeStep
         """
         target_version = OpenStackRelease(target)
         upgrade_steps = UpgradeStep(
@@ -436,10 +436,11 @@ class OpenStackApplication:
             + self.upgrade_plan(target_version)
             + self.post_upgrade_plan(target_version)
         )
+
         for step in all_steps:
             if step:
                 upgrade_steps.add_step(step)
-        return upgrade_steps if upgrade_steps.sub_steps else None
+        return upgrade_steps
 
     def _get_upgrade_current_release_packages_plan(self, parallel: bool = False) -> UpgradeStep:
         """Get Plan for upgrading software packages to the latest of the current release.
@@ -459,7 +460,7 @@ class OpenStackApplication:
 
     def _get_refresh_charm_plan(
         self, target: OpenStackRelease, parallel: bool = False
-    ) -> Optional[UpgradeStep]:
+    ) -> UpgradeStep:
         """Get plan for refreshing the current channel.
 
         This function also identifies if charm comes from charmstore and in that case,
@@ -470,10 +471,10 @@ class OpenStackApplication:
         :type parallel: bool, optional
         :raises ApplicationError: When application has unexpected channel.
         :return: Plan for refreshing the charm.
-        :rtype: Optional[UpgradeStep]
+        :rtype: UpgradeStep
         """
         if not self.can_upgrade_current_channel:
-            return None
+            return UpgradeStep()
 
         switch = None
         *_, channel = self.possible_current_channels
@@ -502,7 +503,7 @@ class OpenStackApplication:
                 self.name,
                 self.channel,
             )
-            return None
+            return UpgradeStep()
         elif self.channel not in self.possible_current_channels:
             raise ApplicationError(
                 f"'{self.name}' has unexpected channel: '{self.channel}' for the current workload "
@@ -518,7 +519,7 @@ class OpenStackApplication:
 
     def _get_upgrade_charm_plan(
         self, target: OpenStackRelease, parallel: bool = False
-    ) -> Optional[UpgradeStep]:
+    ) -> UpgradeStep:
         """Get plan for upgrading the charm.
 
         :param target: OpenStack release as target to upgrade.
@@ -526,7 +527,7 @@ class OpenStackApplication:
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         :return: Plan for upgrading the charm.
-        :rtype: Optional[UpgradeStep]
+        :rtype: UpgradeStep
         """
         if self.channel != self.target_channel(target):
             return UpgradeStep(
@@ -536,9 +537,9 @@ class OpenStackApplication:
                 parallel=parallel,
                 coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
             )
-        return None
+        return UpgradeStep()
 
-    def _get_disable_action_managed_plan(self, parallel: bool = False) -> Optional[UpgradeStep]:
+    def _get_disable_action_managed_plan(self, parallel: bool = False) -> UpgradeStep:
         """Get plan to disable action-managed-upgrade.
 
         This is used to upgrade as "all-in-one" strategy.
@@ -546,7 +547,7 @@ class OpenStackApplication:
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         :return: Plan to disable action-managed-upgrade
-        :rtype: Optional[UpgradeStep]
+        :rtype: UpgradeStep
         """
         if self.config.get("action-managed-upgrade", {}).get("value", False):
             return UpgradeStep(
@@ -558,11 +559,11 @@ class OpenStackApplication:
                     self.name, {"action-managed-upgrade": False}
                 ),
             )
-        return None
+        return UpgradeStep()
 
     def _get_workload_upgrade_plan(
         self, target: OpenStackRelease, parallel: bool = False
-    ) -> Optional[UpgradeStep]:
+    ) -> UpgradeStep:
         """Get workload upgrade plan by changing openstack-origin or source.
 
         :param target: OpenStack release as target to upgrade.
@@ -570,7 +571,7 @@ class OpenStackApplication:
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         :return: Workload upgrade plan
-        :rtype: Optional[UpgradeStep]
+        :rtype: UpgradeStep
         """
         if self.os_origin != self.new_origin(target) and self.origin_setting:
             return UpgradeStep(
@@ -589,7 +590,7 @@ class OpenStackApplication:
             self.origin_setting,
             self.new_origin(target),
         )
-        return None
+        return UpgradeStep()
 
     def _get_reached_expected_target_plan(
         self, target: OpenStackRelease, parallel: bool = False
