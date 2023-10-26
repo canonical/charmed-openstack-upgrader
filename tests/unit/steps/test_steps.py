@@ -137,7 +137,8 @@ def test_step_str_partially_show():
         UpgradeStep(description="a.a.a", coro=mock_coro("a.a.a")),
         UpgradeStep(description="a.a.b"),
     ]
-    plan.sub_steps = [sub_step, UpgradeStep(description="a.b")]
+    # empty UpgradeStep does not show up
+    plan.sub_steps = [UpgradeStep(), sub_step, UpgradeStep(description="a.b")]
 
     assert str(plan) == expected
 

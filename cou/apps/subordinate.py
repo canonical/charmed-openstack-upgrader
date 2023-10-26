@@ -54,7 +54,7 @@ class SubordinateBaseClass(OpenStackApplication):
         :return: Plan that will add post upgrade as sub steps.
         :rtype: list[UpgradeStep]
         """
-        return [UpgradeStep()]
+        return []
 
 
 @AppFactory.register_application(SUBORDINATES)

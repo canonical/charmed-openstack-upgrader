@@ -141,9 +141,7 @@ class UpgradeStep:
         or in its sub steps.
         :rtype: bool
         """
-        if self._coro or any(step._coro for step in self.sub_steps):
-            return True
-        return any(bool(step) for step in self.sub_steps)
+        return self._coro is not None or any(bool(step) for step in self.sub_steps)
 
     @property
     def canceled(self) -> bool:
