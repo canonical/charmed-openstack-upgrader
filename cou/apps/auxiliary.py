@@ -56,7 +56,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         """
         if self.is_from_charm_store:
             logger.debug(
-                "'%s' has been installed from from the charm store",
+                "'%s' has been installed from the charm store",
                 self.name,
             )
             return True
@@ -81,7 +81,9 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         raise ApplicationError(
             (
                 f"Cannot find a suitable '{self.charm}' charm channel for "
-                f"{self.current_os_release.codename}"
+                f"{self.current_os_release.codename} on series '{self.series}'. "
+                "Please take a look at the documentation: "
+                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
             )
         )
 
@@ -99,7 +101,11 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
             return f"{tracks[-1]}/stable"
 
         raise ApplicationError(
-            f"Cannot find a suitable '{self.charm}' charm channel for {target.codename}"
+            (
+                f"Cannot find a suitable '{self.charm}' charm channel for {target.codename} "
+                f"on series '{self.series}'. Please take a look at the documentation: "
+                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
+            )
         )
 
     @property

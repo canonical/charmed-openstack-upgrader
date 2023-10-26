@@ -307,6 +307,12 @@ def test_auxiliary_raise_error_unknown_series(status, config, model):
 
 
 def test_auxiliary_raise_error_os_not_on_lookup(status, config, model, mocker):
+    # change OpenStack release to a version that is not on openstack_to_track_mapping.csv
+    mocker.patch(
+        "cou.apps.core.OpenStackApplication.current_os_release",
+        new_callable=mocker.PropertyMock,
+        return_value=OpenStackRelease("diablo"),
+    )
     app_status = status["rabbitmq_server"]
     app = RabbitMQServer(
         "rabbitmq-server",
@@ -314,12 +320,6 @@ def test_auxiliary_raise_error_os_not_on_lookup(status, config, model, mocker):
         config["auxiliary_ussuri"],
         model,
         "rabbitmq-server",
-    )
-    # change OpenStack release to a version that is not on openstack_to_track_mapping.csv
-    mocker.patch(
-        "cou.apps.core.OpenStackApplication.current_os_release",
-        new_callable=mocker.PropertyMock,
-        return_value=OpenStackRelease("diablo"),
     )
     with pytest.raises(ApplicationError):
         app.possible_current_channels

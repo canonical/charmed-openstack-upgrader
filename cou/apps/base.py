@@ -199,8 +199,10 @@ class OpenStackApplication:
             self._channel = charm_channel
             return
         raise ValueError(
-            f"Track {self._get_track_from_channel(charm_channel)} is not valid for charm "
-            f"'{self.charm}' on series '{self.series}'"
+            f"Channel: {charm_channel} for charm '{self.charm}' on series '{self.series}' "
+            "is currently not supported in this tool. Please take a look at the documentation:"
+            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see "
+            "if you are using the right track."
         )
 
     @property
