@@ -256,6 +256,22 @@ def status():
     mock_ovn_chassis_ussuri_20.workload_version = "20.03.2"
     mock_ovn_chassis_ussuri_20.units = {}
 
+    # ceph-dashboard on ussuri
+    mock_ceph_dashboard_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_ceph_dashboard_ussuri.series = "focal"
+    mock_ceph_dashboard_ussuri.charm_channel = "octopus/stable"
+    mock_ceph_dashboard_ussuri.charm = "ch:amd64/focal/ceph-dashboard-178"
+    mock_ceph_dashboard_ussuri.subordinate_to = ["ceph-mon"]
+    mock_ceph_dashboard_ussuri.units = {}
+
+    # ceph-dashboard on xena
+    mock_ceph_dashboard_xena = MagicMock(spec_set=ApplicationStatus())
+    mock_ceph_dashboard_xena.series = "focal"
+    mock_ceph_dashboard_xena.charm_channel = "pacific/stable"
+    mock_ceph_dashboard_xena.charm = "ch:amd64/focal/ceph-dashboard-178"
+    mock_ceph_dashboard_xena.subordinate_to = ["ceph-mon"]
+    mock_ceph_dashboard_xena.units = {}
+
     status = {
         "keystone_ussuri": mock_keystone_ussuri,
         "keystone_victoria": mock_keystone_victoria,
@@ -274,6 +290,8 @@ def status():
         "nova_wallaby": mock_nova_wallaby,
         "ceph-mon_ussuri": mock_ceph_mon_ussuri,
         "ceph-mon_xena": mock_ceph_mon_xena,
+        "ceph_dashboard_ussuri": mock_ceph_dashboard_ussuri,
+        "ceph_dashboard_xena": mock_ceph_dashboard_xena,
         "cinder_ussuri_on_nova": mock_cinder_on_nova,
         "mysql-innodb-cluster": mock_mysql_innodb_cluster_ussuri,
         "ovn_central_ussuri_22": mock_ovn_central_ussuri_22,

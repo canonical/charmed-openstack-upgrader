@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any, Optional
@@ -243,15 +244,22 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        os_versions = {unit.os_version for unit in self.units}
+        os_versions = defaultdict(list)
+        for unit in self.units:
+            os_versions[unit.os_version].append(unit.name)
 
-        if len(os_versions) == 1:
-            return os_versions.pop()
+        if len(os_versions.keys()) == 1:
+            return next(iter(os_versions))
+
         # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
         # upgrade methods, more than one version can be found.
+        mismatched_repr = [
+            f"'{openstack_release.codename}': {units}"
+            for openstack_release, units in os_versions.items()
+        ]
         raise MismatchedOpenStackVersions(
             f"Units of application {self.name} are running mismatched OpenStack versions: "
-            f"{os_versions}. This is not currently handled."
+            f"{', '.join(mismatched_repr)}. This is not currently handled."
         )
 
     @property
