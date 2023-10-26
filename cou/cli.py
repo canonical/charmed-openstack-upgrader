@@ -160,7 +160,7 @@ async def run_upgrade(
     print("Upgrade completed.")
 
 
-async def run_command(args: argparse.Namespace) -> None:
+async def _run_command(args: argparse.Namespace) -> None:
     """Run `charmed-openstack-upgrade' command.
 
     :param args: CLI arguments
@@ -171,22 +171,20 @@ async def run_command(args: argparse.Namespace) -> None:
             await get_upgrade_plan(args.model_name)
         case "run":
             await run_upgrade(args.model_name, args.interactive, args.quiet)
-        case _:
-            return
 
 
 def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
-    loop = None
     try:
         args = parse_args(sys.argv[1:])
 
         # disable progress indicator when in quiet mode to suppress its console output
         progress_indicator.enabled = not args.quiet
-        setup_logging(log_level=get_log_level(quiet=args.quiet, verbosity=args.verbosity))
+        log_level = get_log_level(quiet=args.quiet, verbosity=args.verbosity)
+        setup_logging(log_level)
 
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(run_command(args))
+        loop.run_until_complete(_run_command(args))
     except TimeoutException:
         progress_indicator.fail()
         print("The connection was lost. Check your connection or increase the timeout.")
@@ -196,8 +194,8 @@ def entrypoint() -> None:
         logger.error(exc)
         sys.exit(1)
     except KeyboardInterrupt as exc:
+        # NOTE(rgildein): if spinner_id is not None it means that indicator was not finished
         if progress_indicator.spinner_id is not None:
-            # NOTE(rgildein): if spinner_id is not None it means that indicator was not finished
             progress_indicator.fail()
         print(str(exc) or "charmed-openstack-upgrader has been terminated")
         sys.exit(130)
@@ -207,5 +205,3 @@ def entrypoint() -> None:
         sys.exit(2)
     finally:
         progress_indicator.stop()
-        if loop is not None and loop.is_running():
-            loop.close()

@@ -70,7 +70,7 @@ def keyboard_interrupt_handler(
     # KeyboardInterrupt to exit whole cou immediately
     if plan.canceled:
         plan.cancel(safe=False)
-        progress_indicator.stop_and_persist()  # stop previous indicator
+        progress_indicator.fail()  # stop previous indicator
         raise KeyboardInterrupt("charmed-openstack-upgrade has been terminated without waiting")
 
     loop.create_task(_cancel_plan(plan, progress_indicator))
