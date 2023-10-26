@@ -21,7 +21,7 @@ from typing import Optional
 
 from juju.client._definitions import ApplicationStatus
 
-from cou.apps.core import OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.utils.juju_utils import COUModel
 from cou.utils.openstack import is_charm_supported
 
