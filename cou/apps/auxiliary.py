@@ -15,7 +15,7 @@
 import logging
 from typing import Optional
 
-from cou.apps.core import OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
@@ -29,7 +29,7 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(["rabbitmq-server", "vault", "ceph-fs", "ceph-radosgw"])
+@AppFactory.register_application(["vault", "ceph-fs", "ceph-radosgw"])
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
@@ -95,9 +95,23 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         )
 
 
+@AppFactory.register_application(["rabbitmq-server"])
+class RabbitMQServer(OpenStackAuxiliaryApplication):
+    """RabbitMQ application.
+
+    RabbitMQ must wait for the entire model to be idle before declaring the upgrade complete.
+    """
+
+    wait_timeout = 300
+    wait_for_model = True
+
+
 @AppFactory.register_application(["ceph-mon"])
 class CephMonApplication(OpenStackAuxiliaryApplication):
     """Application for Ceph Monitor charm."""
+
+    wait_timeout = 300
+    wait_for_model = True
 
     def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Pre Upgrade planning.
@@ -121,8 +135,9 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :return: Plan that will add post upgrade as sub steps.
         :rtype: list[UpgradeStep]
         """
+        steps = super().post_upgrade_plan(target)
         return [
-            self._get_reached_expected_target_plan(target),
+            *steps,
             self._get_change_require_osd_release_plan(self.target_channel(target)),
         ]
 
