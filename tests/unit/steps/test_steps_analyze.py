@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cou.apps.core import ApplicationUnit, OpenStackApplication
+from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.steps import analyze
 from cou.steps.analyze import Analysis
 

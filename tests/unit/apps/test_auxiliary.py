@@ -17,10 +17,10 @@ import pytest
 from cou.apps.auxiliary import (
     CephMonApplication,
     MysqlInnodbClusterApplication,
-    OpenStackAuxiliaryApplication,
     OvnPrincipalApplication,
+    RabbitMQServer,
 )
-from cou.apps.core import ApplicationUnit
+from cou.apps.base import ApplicationUnit
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import UpgradeStep
 from cou.utils import app_utils
@@ -39,7 +39,7 @@ def test_auxiliary_app(status, config, model):
         )
     ]
 
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
@@ -56,7 +56,7 @@ def test_auxiliary_app(status, config, model):
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
     target = "victoria"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
@@ -100,6 +100,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
             ),
         ),
         UpgradeStep(
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(300, None),
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(OpenStackRelease(target)),
@@ -115,7 +120,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
     rmq_status = status["rabbitmq_server"]
     # rabbitmq already on channel 3.9 on ussuri
     rmq_status.charm_channel = "3.9/stable"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         rmq_status,
         config["auxiliary_ussuri"],
@@ -154,6 +159,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
             ),
         ),
         UpgradeStep(
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(300, None),
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(OpenStackRelease(target)),
@@ -169,7 +179,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
     rmq_status.charm_channel = "stable"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
@@ -211,6 +221,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
             ),
         ),
         UpgradeStep(
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(300, None),
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(OpenStackRelease(target)),
@@ -226,7 +241,7 @@ def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
     rmq_status = status["rabbitmq_server"]
     # 2.0 is an unknown track
     rmq_status.charm_channel = "2.0/stable"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_ussuri"],
@@ -239,7 +254,7 @@ def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, model):
     with pytest.raises(ApplicationError):
-        OpenStackAuxiliaryApplication(
+        RabbitMQServer(
             "rabbitmq-server",
             status["unknown_rabbitmq_server"],
             config["auxiliary_ussuri"],
@@ -252,7 +267,7 @@ def test_auxiliary_raise_error_unknown_track(status, config, model):
     target = OpenStackRelease("victoria")
     app_status = status["rabbitmq_server"]
     app_status.series = "foo"
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         app_status,
         config["auxiliary_ussuri"],
@@ -269,7 +284,7 @@ def test_auxiliary_raise_error_unknown_track(status, config, model):
 def test_auxiliary_raise_halt_upgrade(status, config, model):
     target = "victoria"
     # source is already configured to wallaby, so the plan halt with target victoria
-    app = OpenStackAuxiliaryApplication(
+    app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
         config["auxiliary_wallaby"],
@@ -304,7 +319,7 @@ def test_ceph_mon_app(status, config, model):
     assert app.is_subordinate is False
 
 
-def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
+def test_ceph_mon_upgrade_plan_xena_to_yoga(
     status,
     config,
     model,
@@ -358,6 +373,11 @@ def test_test_ceph_mon_upgrade_plan_xena_to_yoga(
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-yoga"}
             ),
+        ),
+        UpgradeStep(
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(300, None),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
@@ -425,6 +445,11 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
+        ),
+        UpgradeStep(
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(300, None),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
@@ -543,6 +568,11 @@ def test_ovn_principal_upgrade_plan(status, config, model):
             ),
         ),
         UpgradeStep(
+            description=f"Wait 120 s for app {app.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(120, [app.name]),
+        ),
+        UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(OpenStackRelease(target)),
@@ -592,6 +622,11 @@ def test_mysql_innodb_cluster_upgrade(status, config, model):
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
+        ),
+        UpgradeStep(
+            description=f"Wait 120 s for app {app.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(120, [app.name]),
         ),
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",

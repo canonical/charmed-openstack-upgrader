@@ -25,12 +25,14 @@ from cou.apps.auxiliary import (  # noqa: F401
     CephMonApplication,
     OpenStackAuxiliaryApplication,
     OvnPrincipalApplication,
+    RabbitMQServer,
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     OpenStackAuxiliarySubordinateApplication,
     OvnSubordinateApplication,
 )
-from cou.apps.core import OpenStackApplication
+from cou.apps.base import OpenStackApplication
+from cou.apps.core import Keystone  # noqa: F401
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
@@ -114,7 +116,7 @@ async def create_upgrade_group(
             # we do not care if applications halt the upgrade plan generation
             # for some known reason.
             logger.debug("'%s' halted the upgrade planning generation: %s", app.name, exc)
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except Exception as exc:
             logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
             raise
 
