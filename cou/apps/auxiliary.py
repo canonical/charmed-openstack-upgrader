@@ -15,7 +15,7 @@
 import logging
 from typing import Optional
 
-from cou.apps.core import OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
@@ -29,11 +29,37 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(
-    ["rabbitmq-server", "vault", "mysql-innodb-cluster", "ceph-fs", "ceph-radosgw"]
-)
+@AppFactory.register_application(["vault", "ceph-fs", "ceph-radosgw"])
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
+
+    @property
+    def is_os_channel_based(self) -> bool:
+        """Check if application is OpenStack channel based.
+
+        For auxiliary charms, always return false because they are
+        not OpenStack channel based.
+        :return: False.
+        :rtype: bool
+        """
+        return False
+
+    def is_valid_track(self, charm_channel: str) -> bool:
+        """Check if the channel track is valid.
+
+        Auxiliary charms don't follow the OpenStack track convention
+        and are validated based on the openstack_to_track_mapping.csv table.
+        :param charm_channel: Charm channel. E.g: 3.8/stable
+        :type charm_channel: str
+        :return: True if valid, False otherwise.
+        :rtype: bool
+        """
+        if self.is_from_charm_store:
+            logger.debug("'%s' has been installed from the charm store", self.name)
+            return True
+
+        track = self._get_track_from_channel(charm_channel)
+        return (self.charm, self.series, track) in TRACK_TO_OPENSTACK_MAPPING
 
     @property
     def possible_current_channels(self) -> list[str]:
@@ -52,7 +78,9 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         raise ApplicationError(
             (
                 f"Cannot find a suitable '{self.charm}' charm channel for "
-                f"{self.current_os_release.codename}"
+                f"{self.current_os_release.codename} on series '{self.series}'. "
+                "Please take a look at the documentation: "
+                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
             )
         )
 
@@ -70,7 +98,11 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
             return f"{tracks[-1]}/stable"
 
         raise ApplicationError(
-            f"Cannot find a suitable '{self.charm}' charm channel for {target.codename}"
+            (
+                f"Cannot find a suitable '{self.charm}' charm channel for {target.codename} "
+                f"on series '{self.series}'. Please take a look at the documentation: "
+                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
+            )
         )
 
     @property
@@ -84,30 +116,47 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        track: str = self._get_track_from_channel(self.channel)
-        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
-        if compatible_os_releases:
-            return max(compatible_os_releases)
-
-        raise ApplicationError(
-            (
-                f"'{self.charm}' cannot identify suitable OpenStack release codename "
-                f"for channel: '{self.channel}'"
+        if self.is_from_charm_store:
+            logger.debug(
+                (
+                    "'Application %s' installed from charm store; assuming Ussuri as the "
+                    "underlying version."
+                ),
+                self.name,
             )
-        )
+            return OpenStackRelease("ussuri")
+
+        track: str = self._get_track_from_channel(self.channel)
+        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
+        # channel setter already validate if it is a valid channel.
+        return max(compatible_os_releases)
+
+
+@AppFactory.register_application(["rabbitmq-server"])
+class RabbitMQServer(OpenStackAuxiliaryApplication):
+    """RabbitMQ application.
+
+    RabbitMQ must wait for the entire model to be idle before declaring the upgrade complete.
+    """
+
+    wait_timeout = 300
+    wait_for_model = True
 
 
 @AppFactory.register_application(["ceph-mon"])
 class CephMonApplication(OpenStackAuxiliaryApplication):
     """Application for Ceph Monitor charm."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    wait_timeout = 300
+    wait_for_model = True
+
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         return super().pre_upgrade_plan(target) + [self._get_change_require_osd_release_plan()]
 
@@ -134,14 +183,32 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
 class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
     """Ovn principal application class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         for unit in self.units:
             validate_ovn_support(unit.workload_version)
         return super().pre_upgrade_plan(target)
+
+
+@AppFactory.register_application(["mysql-innodb-cluster"])
+class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
+    """Application for mysql-innodb-cluster charm."""
+
+    # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
+    # mysqld processes from restarting, which lead to outages
+    packages_to_hold: Optional[list] = ["mysql-server-core-8.0"]
+
+
+# NOTE (gabrielcocenza): Although CephOSD class is empty now, it will be
+# necessary to add post upgrade plan to set require-osd-release. Registering on
+# OpenStackAuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
+# as a normal OpenStackApplication.
+@AppFactory.register_application(["ceph-osd"])
+class CephOSD(OpenStackAuxiliaryApplication):
+    """Application for ceph-osd."""

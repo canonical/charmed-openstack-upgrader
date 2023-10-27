@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Lookup utils to determine compatible OpenStack codenames for a given component."""
+from __future__ import annotations
 
 import csv
 import encodings
@@ -32,7 +33,7 @@ OSReleaseKeys = namedtuple("OSReleaseKeys", ["charm", "series", "track"])
 SERVICE_COLUMN_INDEX = 0
 VERSION_START_COLUMN_INDEX = 1
 CHARM_FAMILIES = {
-    "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"],
+    "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd", "ceph-dashboard"],
     "swift": ["swift-proxy", "swift-storage"],
     "nova": ["nova-cloud-controller", "nova-compute"],
     "ovn": ["ovn-dedicated-chassis", "ovn-central", "ovn-chassis"],
@@ -99,10 +100,7 @@ SUBORDINATES = [
     "octavia-diskimage-retrofit",
 ]
 
-AUXILIARY_SUBORDINATES = [
-    "hacluster",
-    "mysql-router",
-]
+AUXILIARY_SUBORDINATES = ["hacluster", "mysql-router", "ceph-dashboard"]
 
 OPENSTACK_CODENAMES = OrderedDict(
     [
@@ -240,30 +238,30 @@ class OpenStackRelease:
             raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
 
     @property
-    def next_release(self) -> Optional[str]:
+    def next_release(self) -> Optional[OpenStackRelease]:
         """Return the next OpenStack release codename.
 
         :return: OpenStack release codename.
-        :rtype: Optional[str]
+        :rtype: Optional[OpenStackRelease]
         """
         try:
-            return self.openstack_codenames[self.index + 1]
+            return OpenStackRelease(self.openstack_codenames[self.index + 1])
         except IndexError:
             logger.warning("Cannot find an OpenStack release after %s", self.codename)
             return None
 
     @property
-    def previous_release(self) -> Optional[str]:
+    def previous_release(self) -> Optional[OpenStackRelease]:
         """Return the previous OpenStack release codename.
 
         :return: OpenStack release codename.
-        :rtype: Optional[str]
+        :rtype: Optional[OpenStackRelease]
         """
         if self.index == 0:
             logger.warning("Cannot find an OpenStack release before %s", self.codename)
             return None
 
-        return self.openstack_codenames[self.index - 1]
+        return OpenStackRelease(self.openstack_codenames[self.index - 1])
 
     @property
     def date(self) -> str:
@@ -424,8 +422,7 @@ def is_charm_supported(charm: str) -> bool:
     :rtype: bool
     """
     return (
-        charm not in DATA_PLANE_CHARMS
-        and bool(OpenStackCodenameLookup.lookup(charm))
+        bool(OpenStackCodenameLookup.lookup(charm))
         or charm in SUBORDINATES + AUXILIARY_SUBORDINATES
     )
 

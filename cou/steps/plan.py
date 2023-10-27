@@ -24,12 +24,14 @@ from cou.apps.auxiliary import (  # noqa: F401
     CephMonApplication,
     OpenStackAuxiliaryApplication,
     OvnPrincipalApplication,
+    RabbitMQServer,
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     OpenStackAuxiliarySubordinateApplication,
     OvnSubordinateApplication,
 )
-from cou.apps.core import OpenStackApplication
+from cou.apps.base import OpenStackApplication
+from cou.apps.core import Keystone  # noqa: F401
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
@@ -38,6 +40,7 @@ from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.utils.openstack import OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +88,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
 
 async def create_upgrade_group(
     apps: list[OpenStackApplication],
-    target: str,
+    target: OpenStackRelease,
     description: str,
     filter_function: Callable[[OpenStackApplication], bool],
 ) -> UpgradeStep:
@@ -93,8 +96,8 @@ async def create_upgrade_group(
 
     :param apps: Result of the analysis.
     :type apps: list[OpenStackApplication]
-    :param target: Target OpenStack version.
-    :type target: str
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
     :param description: Description of the upgrade step.
     :type description: str
     :param filter_function: Function to filter applications.
@@ -112,8 +115,28 @@ async def create_upgrade_group(
             # we do not care if applications halt the upgrade plan generation
             # for some known reason.
             logger.debug("'%s' halted the upgrade planning generation: %s", app.name, exc)
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except Exception as exc:
             logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
             raise
 
     return group_upgrade_plan
+
+
+def manually_upgrade_data_plane(analysis_result: Analysis) -> None:
+    """Warning message to upgrade data plane charms if necessary.
+
+    NOTE(gabrielcocenza) This function should be removed when cou starts
+    supporting data plan upgrades.
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    """
+    if (
+        analysis_result.min_os_version_control_plane
+        and analysis_result.min_os_version_data_plane
+        and (
+            analysis_result.min_os_version_control_plane
+            > analysis_result.min_os_version_data_plane
+        )
+    ):
+        data_plane_apps = ", ".join([app.name for app in analysis_result.apps_data_plane])
+        print(f"WARNING: Please upgrade manually the data plane apps: {data_plane_apps}")
