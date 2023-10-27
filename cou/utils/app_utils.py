@@ -18,10 +18,9 @@ import logging
 from collections.abc import Iterable
 from typing import Optional
 
-from juju.errors import JujuError
 from packaging.version import Version
 
-from cou.exceptions import ApplicationError, CommandRunFailed, RunUpgradeError
+from cou.exceptions import ApplicationError, RunUpgradeError
 from cou.utils.juju_utils import COUModel
 
 logger = logging.getLogger(__name__)
@@ -38,7 +37,7 @@ async def upgrade_packages(
     :type model: COUModel
     :param packages_to_hold: A list of packages to put on hold during package upgrade.
     :type packages_to_hold: Optional[list]
-    :raises RunUpgradeError: When an upgrade fails.
+    :raises CommandRunFailed: When a command fails to run.
     """
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     command = f"apt-get update && apt-get dist-upgrade {dpkg_opts} -y && apt-get autoremove -y"
@@ -47,19 +46,7 @@ async def upgrade_packages(
         command = f"apt-mark hold {packages} && {command} ; apt-mark unhold {packages}"
 
     for unit in units:
-        logger.info("Running '%s' on '%s'", command, unit)
-
-        try:
-            result = await model.run_on_unit(unit_name=unit, command=command, timeout=600)
-            if str(result["Code"]) == "0":
-                logger.debug(result["Stdout"])
-            else:
-                raise RunUpgradeError(f"Cannot upgrade packages on {unit}.") from CommandRunFailed(
-                    cmd=command, result=result
-                )
-
-        except JujuError as exc:
-            raise RunUpgradeError(f"Cannot upgrade packages on {unit}.") from exc
+        await model.run_on_unit(unit_name=unit, command=command, timeout=600)
 
 
 async def set_require_osd_release_option(unit: str, model: COUModel) -> None:
@@ -72,7 +59,7 @@ async def set_require_osd_release_option(unit: str, model: COUModel) -> None:
     :type unit: str
     :param model: COUModel object
     :type model: COUModel
-    :raises RunUpgradeError: When an upgrade fails.
+    :raises CommandRunFailed: When a command fails to run.
     """
     # The current `require_osd_release` value set on the ceph-mon unit
     current_require_osd_release = await _get_required_osd_release(unit, model)
@@ -81,22 +68,7 @@ async def set_require_osd_release_option(unit: str, model: COUModel) -> None:
 
     if current_require_osd_release != current_running_osd_release:
         set_command = f"ceph osd require-osd-release {current_running_osd_release}"
-        logger.debug("Running '%s' on '%s'", set_command, unit)
-        try:
-            set_result = await model.run_on_unit(unit_name=unit, command=set_command, timeout=600)
-            if str(set_result["Code"]) == "0":
-                logger.debug(set_result["Stdout"])
-            else:
-                raise RunUpgradeError(
-                    f"Cannot set '{current_running_osd_release}' to require_osd_release "
-                    f"on ceph-mon unit '{unit}'."
-                ) from CommandRunFailed(cmd=set_command, result=set_result)
-
-        except JujuError as exc:
-            raise RunUpgradeError(
-                f"Cannot set '{current_running_osd_release}' to require_osd_release on "
-                f"ceph-mon unit '{unit}'."
-            ) from exc
+        await model.run_on_unit(unit_name=unit, command=set_command, timeout=600)
 
 
 def validate_ovn_support(version: str) -> None:
@@ -129,33 +101,17 @@ async def _get_required_osd_release(unit: str, model: COUModel) -> str:
     :type model: COUModel
     :return: the value of require-osd-release option
     :rtype: str
-    :raises RunUpgradeError: When an upgrade fails.
+    :raises CommandRunFailed: When a command fails to run.
     """
-    current_require_osd_release = ""
     check_command = "ceph osd dump -f json"
-    logger.debug("Running '%s' on '%s'", check_command, unit)
 
-    try:
-        check_option_result = await model.run_on_unit(
-            unit_name=unit, command=check_command, timeout=600
-        )
-        if str(check_option_result["Code"]) == "0":
-            logger.debug(check_option_result["Stdout"])
-
-            current_require_osd_release = json.loads(check_option_result["Stdout"]).get(
-                "require_osd_release", ""
-            )
-            logger.debug("Current require-osd-release is set to: %s", current_require_osd_release)
-        else:
-            raise RunUpgradeError(
-                "Cannot determine the current value of "
-                f"require_osd_release on ceph-mon unit '{unit}'."
-            ) from CommandRunFailed(cmd=check_command, result=check_option_result)
-
-    except JujuError as exc:
-        raise RunUpgradeError(
-            f"Cannot determine the current value of require_osd_release on ceph-mon unit '{unit}'."
-        ) from exc
+    check_option_result = await model.run_on_unit(
+        unit_name=unit, command=check_command, timeout=600
+    )
+    current_require_osd_release = json.loads(check_option_result["Stdout"]).get(
+        "require_osd_release", ""
+    )
+    logger.debug("Current require-osd-release is set to: %s", current_require_osd_release)
 
     return current_require_osd_release
 
@@ -172,43 +128,27 @@ async def _get_current_osd_release(unit: str, model: COUModel) -> str:
     :return: the release which OSDs are on
     :rtype: str
     :raises RunUpgradeError: When an upgrade fails.
+    :raises CommandRunFailed: When a command fails to run.
     """
     check_command = "ceph versions -f json"
-    logger.debug("Running '%s' on '%s'", check_command, unit)
 
-    try:
-        check_osd_result = await model.run_on_unit(
-            unit_name=unit, command=check_command, timeout=600
+    check_osd_result = await model.run_on_unit(unit_name=unit, command=check_command, timeout=600)
+
+    osd_release_output = json.loads(check_osd_result["Stdout"]).get("osd", None)
+    # throw exception if ceph-mon doesn't contain osd release information in `ceph`
+    if not osd_release_output:
+        raise RunUpgradeError(f"Cannot get OSD release information on ceph-mon unit '{unit}'.")
+    # throw exception if OSDs are on mismatched releases
+    if len(osd_release_output) > 1:
+        raise RunUpgradeError(
+            f"OSDs are on mismatched releases:\n{osd_release_output}."
+            "Please manually upgrade them to be on the same release before proceeding."
         )
-        if str(check_osd_result["Code"]) == "0":
-            logger.debug(check_osd_result["Stdout"])
 
-            osd_release_output = json.loads(check_osd_result["Stdout"]).get("osd", None)
-            # throw exception if ceph-mon doesn't contain osd release information in `ceph`
-            if not osd_release_output:
-                raise RunUpgradeError(
-                    f"Cannot get OSD release information on ceph-mon unit '{unit}'."
-                )
-            # throw exception if OSDs are on mismatched releases
-            if len(osd_release_output) > 1:
-                raise RunUpgradeError(
-                    f"OSDs are on mismatched releases:\n{osd_release_output}."
-                    "Please manually upgrade them to be on the same release before proceeding."
-                )
+    # get release name from "osd_release_output". Example value of "osd_release_output":
+    # {'ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)': 1}
+    osd_release_key, *_ = osd_release_output.keys()
+    current_osd_release = osd_release_key.split(" ")[4].strip()
+    logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
 
-            # get release name from "osd_release_output". Example value of "osd_release_output":
-            # {'ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)': 1}
-            osd_release_key, *_ = osd_release_output.keys()
-            current_osd_release = osd_release_key.split(" ")[4].strip()
-            logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
-
-            return current_osd_release
-
-        raise RunUpgradeError(
-            f"Cannot get the current release of OSDs from ceph-mon unit '{unit}'."
-        ) from CommandRunFailed(cmd=check_command, result=check_osd_result)
-
-    except JujuError as exc:
-        raise RunUpgradeError(
-            f"Cannot get the current release of OSDs from ceph-mon unit '{unit}'."
-        ) from exc
+    return current_osd_release

@@ -20,6 +20,7 @@ from enum import Enum
 from typing import Optional
 
 from halo import Halo
+from juju.errors import JujuError
 
 from cou.commands import parse_args
 from cou.exceptions import COUException, TimeoutException
@@ -174,8 +175,13 @@ async def entrypoint() -> None:
         progress_indicator.fail()
         logger.error(exc)
         sys.exit(1)
+    except JujuError as exc:
+        progress_indicator.fail()
+        logger.error("Error occurred in Juju's Python library.")
+        logger.error(exc)
+        sys.exit(1)
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("Unexpected error occurred")
+        logger.error("Unexpected error occurred.")
         logger.exception(exc)
         sys.exit(2)
     finally:
