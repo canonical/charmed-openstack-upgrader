@@ -148,9 +148,7 @@ DISTRO_TO_OPENSTACK_MAPPING = {
 }
 
 LTS_TO_OS_RELEASE = {
-    "bionic": ["queens", "rocky", "stein", "train", "ussuri"],
     "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
-    "jammy": ["yoga", "zed", "antelope", "bobcat", "caracal"],
 }
 
 
