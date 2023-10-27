@@ -183,6 +183,11 @@ class OpenStackApplication:
         :return: Charm channel. E.g: ussuri/stable
         :rtype: str
         """
+        # NOTE(gabrielcocenza) Some applications current_os_release points
+        # to channel_codename without setting the channel before. On that
+        # case we check if the attribute is already set.
+        if not hasattr(self, "_channel"):
+            self.channel = self.status.charm_channel
         return self._channel
 
     @channel.setter
@@ -218,10 +223,11 @@ class OpenStackApplication:
     def is_os_channel_based(self) -> bool:
         """Check if application is OpenStack channel based.
 
-        :return: True if doesn't have origin setting or if is subordinate, False otherwise.
+        :return: True if doesn't have origin setting or if is subordinate or is versionless,
+            False otherwise.
         :rtype: bool
         """
-        return not self.origin_setting or self.is_subordinate
+        return not self.origin_setting or self.is_subordinate or self.is_versionless
 
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
@@ -247,6 +253,9 @@ class OpenStackApplication:
         :return: The latest compatible OpenStack release.
         :rtype: OpenStackRelease
         """
+        if self.is_os_channel_based:
+            return self.channel_codename
+
         try:
             return max(
                 OpenStackCodenameLookup.find_compatible_versions(self.charm, unit.workload_version)
@@ -305,6 +314,19 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
+        if self.is_os_channel_based:
+            return self.channel_codename
+        return self.current_os_release_by_unit
+
+    @property
+    def current_os_release_by_unit(self) -> OpenStackRelease:
+        """Current OpenStack Release of the application based on units.
+
+        :raises MismatchedOpenStackVersions: When units part of this application are
+        running mismatched OpenStack versions.
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
         os_versions = defaultdict(list)
         for unit in self.units:
             os_versions[unit.os_version].append(unit.name)
@@ -322,6 +344,17 @@ class OpenStackApplication:
             f"Units of application {self.name} are running mismatched OpenStack versions: "
             f"{', '.join(mismatched_repr)}. This is not currently handled."
         )
+
+    @property
+    def is_versionless(self) -> bool:
+        """Check if the application is versionless.
+
+        Versionless applications are those that does not set a workload version.
+        E.g: glance-simplestreams-sync
+        :return: True if is versionless, False otherwise.
+        :rtype: bool
+        """
+        return not all(unit.workload_version for unit in self.status.units.values())
 
     @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
@@ -474,6 +507,8 @@ class OpenStackApplication:
         :return: Plan that will add post upgrade as sub steps.
         :rtype: list[Optional[UpgradeStep]]
         """
+        if self.is_versionless:
+            return [None]
         return [
             self._get_wait_step(),
             self._get_reached_expected_target_plan(target),

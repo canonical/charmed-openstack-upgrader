@@ -102,6 +102,8 @@ SUBORDINATES = [
 
 AUXILIARY_SUBORDINATES = ["hacluster", "mysql-router", "ceph-dashboard"]
 
+VERSIONLESS = ["glance-simplestreams-sync"]
+
 OPENSTACK_CODENAMES = OrderedDict(
     [
         ("diablo", "2011.2"),
@@ -423,7 +425,7 @@ def is_charm_supported(charm: str) -> bool:
     """
     return (
         bool(OpenStackCodenameLookup.lookup(charm))
-        or charm in SUBORDINATES + AUXILIARY_SUBORDINATES
+        or charm in SUBORDINATES + AUXILIARY_SUBORDINATES + VERSIONLESS
     )
 
 

@@ -154,6 +154,18 @@ def status():
         ]
     )
 
+    # glance-simplestreams-sync does not have workload_version
+    mock_glance_simplestreams_sync_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_glance_simplestreams_sync_ussuri.series = "focal"
+    mock_glance_simplestreams_sync_ussuri.charm_channel = "ussuri/stable"
+    mock_glance_simplestreams_sync_ussuri.charm = "ch:amd64/focal/glance-simplestreams-sync-78"
+    mock_glance_simplestreams_sync_ussuri.subordinate_to = []
+    mock_glance_simplestreams_sync_ussuri.units = OrderedDict(
+        [
+            ("glance-simplestreams-sync/0", generate_unit("", "4/lxd/5")),
+        ]
+    )
+
     mock_rmq = MagicMock(spec_set=ApplicationStatus())
     mock_rmq.series = "focal"
     mock_rmq.charm_channel = "3.8/stable"
@@ -303,6 +315,7 @@ def status():
         "unknown_rabbitmq_server": mock_rmq_unknown,
         "keystone_ussuri_cs": mock_keystone_ussuri_cs,
         "keystone_wallaby": mock_keystone_wallaby,
+        "glance_simplestreams_sync_ussuri": mock_glance_simplestreams_sync_ussuri,
         "unknown_app": mock_unknown_app,
         "mysql_router": mock_mysql_router,
         "vault": mock_vault,

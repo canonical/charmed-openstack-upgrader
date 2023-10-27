@@ -55,6 +55,7 @@ def test_auxiliary_app(status, config, model):
     assert app.is_subordinate is False
     assert app.current_os_release == "yoga"
     assert app.is_os_channel_based is False
+    assert app.is_versionless is False
 
 
 def test_auxiliary_app_cs(status, config, model):
