@@ -272,7 +272,7 @@ def test_auxiliary_upgrade_plan_unknown_track(status, config, model):
     rmq_status = status["rabbitmq_server"]
     # 2.0 is an unknown track
     rmq_status.charm_channel = "2.0/stable"
-    with pytest.raises(ValueError):
+    with pytest.raises(ApplicationError):
         RabbitMQServer(
             "rabbitmq-server",
             status["rabbitmq_server"],
@@ -296,7 +296,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(status, config, mo
 def test_auxiliary_raise_error_unknown_series(status, config, model):
     app_status = status["rabbitmq_server"]
     app_status.series = "foo"
-    with pytest.raises(ValueError):
+    with pytest.raises(ApplicationError):
         RabbitMQServer(
             "rabbitmq-server",
             app_status,
@@ -571,7 +571,7 @@ def test_ovn_workload_ver_lower_than_22_principal(status, config, model):
 def test_ovn_no_compatible_os_release(status, config, model, channel):
     ovn_central_status = status["ovn_central_ussuri_22"]
     ovn_central_status.charm_channel = channel
-    with pytest.raises(ValueError):
+    with pytest.raises(ApplicationError):
         OvnPrincipalApplication(
             "ovn-central",
             ovn_central_status,

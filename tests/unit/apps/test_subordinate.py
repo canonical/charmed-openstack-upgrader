@@ -17,6 +17,7 @@ import logging
 import pytest
 
 from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
@@ -105,7 +106,7 @@ def test_channel_setter_valid(status, model, channel):
 def test_channel_setter_invalid(status, model, channel):
     app_status = status["keystone-ldap"]
     app_status.charm_channel = channel
-    with pytest.raises(ValueError):
+    with pytest.raises(ApplicationError):
         OpenStackSubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap")
 
 

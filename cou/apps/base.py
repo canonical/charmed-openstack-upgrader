@@ -192,13 +192,13 @@ class OpenStackApplication:
         When application comes from charm store, the channel won't be OpenStack related.
         :param charm_channel: Charm channel. E.g: ussuri/stable
         :type charm_channel: str
-        :raises ValueError:  Exception raised when channel is not a valid OpenStack
+        :raises ApplicationError:  Exception raised when channel is not a valid OpenStack
             channel.
         """
         if self.is_from_charm_store or self.is_valid_track(charm_channel):
             self._channel = charm_channel
             return
-        raise ValueError(
+        raise ApplicationError(
             f"Channel: {charm_channel} for charm '{self.charm}' on series '{self.series}' "
             "is currently not supported in this tool. Please take a look at the documentation:"
             "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see "
