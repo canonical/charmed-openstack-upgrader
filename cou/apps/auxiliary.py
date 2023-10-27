@@ -34,6 +34,34 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
     @property
+    def is_os_channel_based(self) -> bool:
+        """Check if application is OpenStack channel based.
+
+        For auxiliary charms, always return false because they are
+        not OpenStack channel based.
+        :return: False.
+        :rtype: bool
+        """
+        return False
+
+    def is_valid_track(self, charm_channel: str) -> bool:
+        """Check if the channel track is valid.
+
+        Auxiliary charms don't follow the OpenStack track convention
+        and are validated based on the openstack_to_track_mapping.csv table.
+        :param charm_channel: Charm channel. E.g: 3.8/stable
+        :type charm_channel: str
+        :return: True if valid, False otherwise.
+        :rtype: bool
+        """
+        if self.is_from_charm_store:
+            logger.debug("'%s' has been installed from the charm store", self.name)
+            return True
+
+        track = self._get_track_from_channel(charm_channel)
+        return (self.charm, self.series, track) in TRACK_TO_OPENSTACK_MAPPING
+
+    @property
     def possible_current_channels(self) -> list[str]:
         """Return the possible current channels based on the series and current OpenStack release.
 
@@ -50,7 +78,9 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         raise ApplicationError(
             (
                 f"Cannot find a suitable '{self.charm}' charm channel for "
-                f"{self.current_os_release.codename}"
+                f"{self.current_os_release.codename} on series '{self.series}'. "
+                "Please take a look at the documentation: "
+                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
             )
         )
 
@@ -68,7 +98,11 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
             return f"{tracks[-1]}/stable"
 
         raise ApplicationError(
-            f"Cannot find a suitable '{self.charm}' charm channel for {target.codename}"
+            (
+                f"Cannot find a suitable '{self.charm}' charm channel for {target.codename} "
+                f"on series '{self.series}'. Please take a look at the documentation: "
+                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
+            )
         )
 
     @property
@@ -82,17 +116,20 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        track: str = self._get_track_from_channel(self.channel)
-        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track))
-        if compatible_os_releases:
-            return max(compatible_os_releases)
-
-        raise ApplicationError(
-            (
-                f"'{self.charm}' cannot identify suitable OpenStack release codename "
-                f"for channel: '{self.channel}'"
+        if self.is_from_charm_store:
+            logger.debug(
+                (
+                    "'Application %s' installed from charm store; assuming Ussuri as the "
+                    "underlying version."
+                ),
+                self.name,
             )
-        )
+            return OpenStackRelease("ussuri")
+
+        track: str = self._get_track_from_channel(self.channel)
+        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
+        # channel setter already validate if it is a valid channel.
+        return max(compatible_os_releases)
 
 
 @AppFactory.register_application(["rabbitmq-server"])

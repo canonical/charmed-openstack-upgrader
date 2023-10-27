@@ -176,6 +176,67 @@ class OpenStackApplication:
         """
         return bool(self.status.subordinate_to)
 
+    @property
+    def channel(self) -> str:
+        """Get charm channel of the application.
+
+        :return: Charm channel. E.g: ussuri/stable
+        :rtype: str
+        """
+        return self._channel
+
+    @channel.setter
+    def channel(self, charm_channel: str) -> None:
+        """Set charm channel of the application.
+
+        When application comes from charm store, the channel won't be OpenStack related.
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
+        :raises ApplicationError:  Exception raised when channel is not a valid OpenStack
+            channel.
+        """
+        if self.is_from_charm_store or self.is_valid_track(charm_channel):
+            self._channel = charm_channel
+            return
+        raise ApplicationError(
+            f"Channel: {charm_channel} for charm '{self.charm}' on series '{self.series}' "
+            "is currently not supported in this tool. Please take a look at the documentation:"
+            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see "
+            "if you are using the right track."
+        )
+
+    @property
+    def is_from_charm_store(self) -> bool:
+        """Check if application comes from charm store.
+
+        :return: True if comes, False otherwise.
+        :rtype: bool
+        """
+        return self.charm_origin == "cs"
+
+    @property
+    def is_os_channel_based(self) -> bool:
+        """Check if application is OpenStack channel based.
+
+        :return: True if doesn't have origin setting or if is subordinate, False otherwise.
+        :rtype: bool
+        """
+        return not self.origin_setting or self.is_subordinate
+
+    def is_valid_track(self, charm_channel: str) -> bool:
+        """Check if the channel track is valid.
+
+        :param charm_channel: Charm channel. E.g: ussuri/stable
+        :type charm_channel: str
+        :return: True if valid, False otherwise.
+        :rtype: bool
+        """
+        try:
+            OpenStackRelease(self._get_track_from_channel(charm_channel))
+            return True
+        except ValueError:
+            return self.is_from_charm_store
+
     def _get_latest_os_version_by_workload_version(self, unit: UnitStatus) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
 
