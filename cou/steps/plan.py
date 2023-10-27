@@ -186,7 +186,6 @@ def determine_upgrade_target(
             f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
         )
 
-    
     supporting_os_release = ", ".join(LTS_TO_OS_RELEASE[current_series])
     # raise exception if the upgrade scope is not supported by the current series
     if (
