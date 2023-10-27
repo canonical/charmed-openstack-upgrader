@@ -42,11 +42,16 @@ class Analysis:
     model: juju_utils.COUModel
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
+    min_os_version_control_plane: Optional[OpenStackRelease] = None
+    min_os_version_data_plane: Optional[OpenStackRelease] = None
+
     current_cloud_os_release: Optional[OpenStackRelease] = field(init=False)
     current_cloud_series: Optional[str] = field(init=False)
 
     def __post_init__(self) -> None:
         """Initialize the Analysis dataclass."""
+        self.min_os_version_control_plane = self.min_os_release_apps(self.apps_control_plane)
+        self.min_os_version_data_plane = self.min_os_release_apps(self.apps_data_plane)
         self.current_cloud_os_release = self._get_minimum_cloud_os_release()
         self.current_cloud_series = self._get_minimum_cloud_series()
 
@@ -160,16 +165,28 @@ class Analysis:
             + f"\nCurrent minimum Ubuntu series in the cloud: {self.current_cloud_series}\n"
         )
 
+    @staticmethod
+    def min_os_release_apps(apps: list[OpenStackApplication]) -> Optional[OpenStackRelease]:
+        """Get the minimal OpenStack release from a list of applications.
+
+        :param apps: Applications.
+        :type apps: list[OpenStackApplication]
+        :return: OpenStack release.
+        :rtype: Optional[OpenStackRelease]
+        """
+        return min((app.current_os_release for app in apps), default=None)
+
     def _get_minimum_cloud_os_release(self) -> Optional[OpenStackRelease]:
         """Get the current minimum OpenStack release in the cloud.
 
         :return: OpenStack release
-        :rtype: Optional[OpenStackRelease]
+        :rtype: Optional[Optional[OpenStackRelease]]
         """
-        return min(
-            (app.current_os_release for app in self.apps_control_plane + self.apps_data_plane),
-            default=None,
+        control_plane = (
+            [self.min_os_version_control_plane] if self.min_os_version_control_plane else []
         )
+        data_plane = [self.min_os_version_data_plane] if self.min_os_version_data_plane else []
+        return min(control_plane + data_plane, default=None)
 
     def _get_minimum_cloud_series(self) -> Optional[str]:
         """Get the current minimum Ubuntu series codename in the cloud.

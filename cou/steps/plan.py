@@ -96,7 +96,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
 
 async def create_upgrade_group(
     apps: list[OpenStackApplication],
-    target: str,
+    target: OpenStackRelease,
     description: str,
     filter_function: Callable[[OpenStackApplication], bool],
 ) -> UpgradeStep:
@@ -104,8 +104,8 @@ async def create_upgrade_group(
 
     :param apps: Result of the analysis.
     :type apps: list[OpenStackApplication]
-    :param target: Target OpenStack version.
-    :type target: str
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
     :param description: Description of the upgrade step.
     :type description: str
     :param filter_function: Function to filter applications.
@@ -132,7 +132,7 @@ async def create_upgrade_group(
 
 def determine_upgrade_target(
     current_os_release: Optional[OpenStackRelease], current_series: Optional[str]
-) -> str:
+) -> OpenStackRelease:
     """Determine the target release to upgrade to.
 
     Inform user if the cloud is already at the highest supporting release of the current series.
@@ -145,7 +145,7 @@ def determine_upgrade_target(
     already achieved.
     :raises ReleaseOutOfRange: When the release is out of the current supporting range.
     :return: The target OS release to upgrade the cloud to.
-    :rtype: str
+    :rtype: OpenStackRelease
     """
     if not current_os_release:
         raise NoTargetError(
@@ -177,9 +177,7 @@ def determine_upgrade_target(
                 f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
             )
         # raise exception if the upgrade is not in range from ussuri to yoga
-        if current_os_release < OpenStackRelease("ussuri") or OpenStackRelease(
-            target
-        ) > OpenStackRelease("yoga"):
+        if current_os_release < OpenStackRelease("ussuri") or target > OpenStackRelease("yoga"):
             raise ReleaseOutOfRange(
                 "At the moment COU only supports upgrade in the range of `ussuri` and `yoga` "
                 "(inclusive) for `focal` series. Current minimum OS release is "
@@ -191,3 +189,23 @@ def determine_upgrade_target(
             f"Cloud series '{current_series}' is not a recognized Ubuntu LTS series. "
             f"The supporting series are: {supporting_lts_series}"
         ) from KeyError
+
+
+def manually_upgrade_data_plane(analysis_result: Analysis) -> None:
+    """Warning message to upgrade data plane charms if necessary.
+
+    NOTE(gabrielcocenza) This function should be removed when cou starts
+    supporting data plan upgrades.
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    """
+    if (
+        analysis_result.min_os_version_control_plane
+        and analysis_result.min_os_version_data_plane
+        and (
+            analysis_result.min_os_version_control_plane
+            > analysis_result.min_os_version_data_plane
+        )
+    ):
+        data_plane_apps = ", ".join([app.name for app in analysis_result.apps_data_plane])
+        print(f"WARNING: Please upgrade manually the data plane apps: {data_plane_apps}")

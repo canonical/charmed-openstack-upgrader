@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import argparse
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -83,18 +83,21 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
 
 
 @pytest.mark.asyncio
+@patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.logger")
-async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan):
+async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manually_upgrade):
     """Test get_upgrade_plan function."""
     plan = UpgradeStep(description="Top level plan", parallel=False)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
+    mock_analysis_result = MagicMock()
 
-    mock_analyze_and_plan.return_value = plan
+    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
     await cli.get_upgrade_plan()
 
     mock_analyze_and_plan.assert_awaited_once()
     mock_logger.info.assert_called_once_with(plan)
+    mock_manually_upgrade.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -105,17 +108,25 @@ async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan):
         (False, 0),
     ],
 )
+@patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_plan")
 @patch("builtins.print")
 @patch("cou.cli.logger")
 async def test_run_upgrade_quiet(
-    mock_logger, mock_print, mock_apply_plan, mock_analyze_and_plan, quiet, expected_print_count
+    mock_logger,
+    mock_print,
+    mock_apply_plan,
+    mock_analyze_and_plan,
+    mock_manually_upgrade,
+    quiet,
+    expected_print_count,
 ):
     """Test get_upgrade_plan function in either quiet or non-quiet mode."""
     plan = UpgradeStep(description="Top level plan", parallel=False)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
-    mock_analyze_and_plan.return_value = plan
+    mock_analysis_result = MagicMock()
+    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
     await cli.run_upgrade(quiet=quiet)
 
@@ -123,6 +134,7 @@ async def test_run_upgrade_quiet(
     mock_logger.info.assert_called_once_with(plan)
     mock_apply_plan.assert_called_once_with(plan, True)
     mock_print.call_count == expected_print_count
+    mock_manually_upgrade.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -133,6 +145,7 @@ async def test_run_upgrade_quiet(
         (True, 0),
     ],
 )
+@patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_plan")
 @patch("cou.cli.progress_indicator")
@@ -142,13 +155,15 @@ async def test_run_upgrade_interactive(
     mock_progress_indicator,
     mock_apply_plan,
     mock_analyze_and_plan,
+    mock_manually_upgrade,
     interactive,
     progress_indication_count,
 ):
     """Test get_upgrade_plan function in either interactive or non-interactive mode."""
     plan = UpgradeStep(description="Top level plan", parallel=False)
     plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
-    mock_analyze_and_plan.return_value = plan
+    mock_analysis_result = MagicMock()
+    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
     await cli.run_upgrade(interactive=interactive)
 
@@ -157,6 +172,7 @@ async def test_run_upgrade_interactive(
     mock_apply_plan.assert_called_once_with(plan, interactive)
     assert mock_progress_indicator.start.call_count == progress_indication_count
     assert mock_progress_indicator.succeed.call_count == progress_indication_count
+    mock_manually_upgrade.assert_called_once()
 
 
 @pytest.mark.asyncio

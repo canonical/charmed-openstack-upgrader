@@ -418,23 +418,22 @@ class OpenStackApplication:
             self._get_reached_expected_target_plan(target),
         ]
 
-    def generate_upgrade_plan(self, target: str) -> UpgradeStep:
+    def generate_upgrade_plan(self, target: OpenStackRelease) -> UpgradeStep:
         """Generate full upgrade plan for an Application.
 
         :param target: OpenStack codename to upgrade.
-        :type target: str
+        :type target: OpenStackRelease
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: UpgradeStep
         """
-        target_version = OpenStackRelease(target)
         upgrade_steps = UpgradeStep(
             description=f"Upgrade plan for '{self.name}' to {target}",
             parallel=False,
         )
         all_steps = (
-            self.pre_upgrade_plan(target_version)
-            + self.upgrade_plan(target_version)
-            + self.post_upgrade_plan(target_version)
+            self.pre_upgrade_plan(target)
+            + self.upgrade_plan(target)
+            + self.post_upgrade_plan(target)
         )
         for step in all_steps:
             if step:

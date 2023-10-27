@@ -90,14 +90,18 @@ async def test_populate_model(full_status, config, model):
     model.get_application_config = AsyncMock(return_value=config["openstack_ussuri"])
 
     # Initially, 6 applications are in the status: keystone, cinder, rabbitmq-server, my-app,
-    # ceph-osd and nova-compute. my-app it's not on the lookup table, ceph-osd and nova-compute
-    # are data plane applications (not supported yet) and because of that they won't
-    # be instantiated.
+    # ceph-osd and nova-compute. my-app it's not on the lookup table, so won't be instantiated.
     assert len(full_status.applications) == 6
     apps = await Analysis._populate(model)
-    assert len(apps) == 3
+    assert len(apps) == 5
     # apps are on the UPGRADE_ORDER sequence
-    assert [app.charm for app in apps] == ["rabbitmq-server", "keystone", "cinder"]
+    assert [app.charm for app in apps] == [
+        "rabbitmq-server",
+        "keystone",
+        "cinder",
+        "nova-compute",
+        "ceph-osd",
+    ]
 
 
 @pytest.mark.asyncio
