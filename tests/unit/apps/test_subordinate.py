@@ -44,7 +44,7 @@ def test_current_os_release(status, model):
 
 
 def test_generate_upgrade_plan(status, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["keystone-ldap"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
@@ -118,7 +118,7 @@ def test_channel_setter_invalid(status, model, channel):
     ],
 )
 def test_generate_plan_ch_migration(status, model, channel):
-    target = "wallaby"
+    target = OpenStackRelease("wallaby")
     app_status = status["keystone-ldap-cs"]
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
@@ -164,7 +164,7 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
     )
 
     app.channel = f"{from_os}/stable"
-    upgrade_plan = app.generate_upgrade_plan(to_os)
+    upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(to_os))
 
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {to_os}",
@@ -204,7 +204,7 @@ def test_generate_plan_in_same_version(status, model, from_to):
     )
 
     app.channel = f"{from_to}/stable"
-    upgrade_plan = app.generate_upgrade_plan(from_to)
+    upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(from_to))
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {from_to}",
         parallel=False,

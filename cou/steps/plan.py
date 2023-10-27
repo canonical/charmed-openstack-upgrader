@@ -40,6 +40,7 @@ from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.utils.openstack import OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
 
 async def create_upgrade_group(
     apps: list[OpenStackApplication],
-    target: str,
+    target: OpenStackRelease,
     description: str,
     filter_function: Callable[[OpenStackApplication], bool],
 ) -> UpgradeStep:
@@ -95,8 +96,8 @@ async def create_upgrade_group(
 
     :param apps: Result of the analysis.
     :type apps: list[OpenStackApplication]
-    :param target: Target OpenStack version.
-    :type target: str
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
     :param description: Description of the upgrade step.
     :type description: str
     :param filter_function: Function to filter applications.

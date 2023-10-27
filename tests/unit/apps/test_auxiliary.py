@@ -87,7 +87,7 @@ def test_auxiliary_app_cs(status, config, model):
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
@@ -139,7 +139,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -148,7 +148,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     rmq_status = status["rabbitmq_server"]
     # rabbitmq already on channel 3.9 on ussuri
     rmq_status.charm_channel = "3.9/stable"
@@ -198,7 +198,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -207,7 +207,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     rmq_status = status["rabbitmq_server"]
     rmq_status.charm = "cs:amd64/focal/rabbitmq-server-638"
     rmq_status.charm_channel = "stable"
@@ -260,7 +260,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -326,7 +326,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(status, config, model, mocker):
 
 
 def test_auxiliary_raise_halt_upgrade(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     # source is already configured to wallaby, so the plan halt with target victoria
     app = RabbitMQServer(
         "rabbitmq-server",
@@ -385,7 +385,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
     model,
 ):
     """Test when ceph version changes between os releases."""
-    target = "yoga"
+    target = OpenStackRelease("yoga")
     app = CephMonApplication(
         "ceph-mon",
         status["ceph-mon_xena"],
@@ -442,7 +442,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
         UpgradeStep(
             description=(
@@ -463,7 +463,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
     model,
 ):
     """Test when ceph version remains the same between os releases."""
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = CephMonApplication(
         "ceph-mon",
         status["ceph-mon_ussuri"],
@@ -514,7 +514,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
         UpgradeStep(
             description=(
@@ -546,7 +546,7 @@ def test_ovn_principal(status, config, model):
 
 
 def test_ovn_workload_ver_lower_than_22_principal(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
 
     exp_error_msg_ovn_upgrade = (
         "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
@@ -582,7 +582,7 @@ def test_ovn_no_compatible_os_release(status, config, model, channel):
 
 
 def test_ovn_principal_upgrade_plan(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = OvnPrincipalApplication(
         "ovn-central",
         status["ovn_central_ussuri_22"],
@@ -628,7 +628,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -637,7 +637,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
 
 
 def test_mysql_innodb_cluster_upgrade(status, config, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     # source is already configured to wallaby, so the plan halt with target victoria
     app = MysqlInnodbClusterApplication(
         "mysql-innodb-cluster",
@@ -684,7 +684,7 @@ def test_mysql_innodb_cluster_upgrade(status, config, model):
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

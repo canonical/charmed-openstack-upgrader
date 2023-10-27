@@ -27,9 +27,8 @@ from tests.unit.apps.utils import add_steps
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
-    target_version = OpenStackRelease(target)
     expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target_version.codename}",
+        description=f"Upgrade plan for '{app.name}' to {target.codename}",
         parallel=False,
     )
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
@@ -57,12 +56,10 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         UpgradeStep(
             description=(
                 f"Refresh '{app.name}' to the latest revision of "
-                f"'{target_version.previous_release}/stable'"
+                f"'{target.previous_release}/stable'"
             ),
             parallel=False,
-            coro=model.upgrade_charm(
-                app.name, f"{target_version.previous_release}/stable", switch=None
-            ),
+            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
@@ -70,27 +67,25 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
-            description=(
-                f"Upgrade '{app.name}' to the new channel: '{target_version.codename}/stable'"
-            ),
+            description=(f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'"),
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target_version.codename}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
         UpgradeStep(
             description=(
                 f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-{target_version.codename}'"
+                f"'{app.origin_setting}' to 'cloud:focal-{target.codename}'"
             ),
             parallel=False,
             coro=model.set_application_config(
-                app.name, {f"{app.origin_setting}": f"cloud:focal-{target_version.codename}"}
+                app.name, {f"{app.origin_setting}": f"cloud:focal-{target.codename}"}
             ),
         ),
         wait_step,
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
-            coro=app._check_upgrade(OpenStackRelease(target)),
+            coro=app._check_upgrade(target),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -98,7 +93,6 @@ def generate_expected_upgrade_plan_principal(app, target, model):
 
 
 def generate_expected_upgrade_plan_subordinate(app, target, model):
-    target_version = OpenStackRelease(target)
     expected_plan = UpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
@@ -107,19 +101,15 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
         UpgradeStep(
             description=(
                 f"Refresh '{app.name}' to the latest revision of "
-                f"'{target_version.previous_release}/stable'"
+                f"'{target.previous_release}/stable'"
             ),
             parallel=False,
-            coro=model.upgrade_charm(
-                app.name, f"{target_version.previous_release}/stable", switch=None
-            ),
+            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
         ),
         UpgradeStep(
-            description=(
-                f"Upgrade '{app.name}' to the new channel: '{target_version.codename}/stable'"
-            ),
+            description=(f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'"),
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target_version.codename}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -128,7 +118,7 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 @pytest.mark.asyncio
 async def test_generate_plan(apps, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
     app_keystone_ldap = apps["keystone_ldap"]
@@ -190,7 +180,7 @@ async def test_generate_plan_raise_NoTargetError(mocker):
 async def test_create_upgrade_plan():
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     description = "test"
 
     plan = await create_upgrade_group([app], target, description, lambda *_: True)
@@ -209,7 +199,7 @@ async def test_create_upgrade_plan_HaltUpgradePlanGeneration():
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
     app.generate_upgrade_plan.side_effect = HaltUpgradePlanGeneration
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     description = "test"
 
     plan = await create_upgrade_group([app], target, description, lambda *_: True)
