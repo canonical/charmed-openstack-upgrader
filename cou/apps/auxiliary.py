@@ -55,14 +55,11 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
         :rtype: bool
         """
         if self.is_from_charm_store:
-            logger.debug(
-                "'%s' has been installed from the charm store",
-                self.name,
-            )
+            logger.debug("'%s' has been installed from the charm store", self.name)
             return True
 
         track = self._get_track_from_channel(charm_channel)
-        return bool(TRACK_TO_OPENSTACK_MAPPING.get((self.charm, self.series, track)))
+        return (self.charm, self.series, track) in TRACK_TO_OPENSTACK_MAPPING
 
     @property
     def possible_current_channels(self) -> list[str]:
