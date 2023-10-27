@@ -52,7 +52,7 @@ def assert_application(
     exp_config,
     exp_model,
     exp_charm,
-    exp_charm_origin,
+    exp_is_from_charm_store,
     exp_os_origin,
     exp_units,
     exp_channel,
@@ -63,6 +63,8 @@ def assert_application(
     exp_apt_source_codename,
     exp_channel_codename,
     exp_is_subordinate,
+    exp_is_os_channel_based,
+    exp_is_valid_track,
     target,
 ):
     assert app.name == exp_name
@@ -71,7 +73,7 @@ def assert_application(
     assert app.config == exp_config
     assert app.model == exp_model
     assert app.charm == exp_charm
-    assert app.charm_origin == exp_charm_origin
+    assert app.is_from_charm_store == exp_is_from_charm_store
     assert app.os_origin == exp_os_origin
     assert app.units == exp_units
     assert app.channel == exp_channel
@@ -82,13 +84,15 @@ def assert_application(
     assert app.apt_source_codename == exp_apt_source_codename
     assert app.channel_codename == exp_channel_codename
     assert app.is_subordinate == exp_is_subordinate
+    assert app.is_os_channel_based == exp_is_os_channel_based
+    assert app.is_valid_track(app.channel) == exp_is_valid_track
 
 
 def test_application_ussuri(status, config, units, model):
     target = OpenStackRelease("victoria")
     app_status = status["keystone_ussuri"]
     app_config = config["openstack_ussuri"]
-    exp_charm_origin = "ch"
+    exp_is_from_charm_store = False
     exp_os_origin = "distro"
     exp_units = units["units_ussuri"]
     exp_channel = app_status.charm_channel
@@ -100,6 +104,8 @@ def test_application_ussuri(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
+    exp_is_os_channel_based = False
+    exp_is_valid_track = True
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert app.wait_for_model is True
@@ -111,7 +117,7 @@ def test_application_ussuri(status, config, units, model):
         app_config,
         model,
         "keystone",
-        exp_charm_origin,
+        exp_is_from_charm_store,
         exp_os_origin,
         exp_units,
         exp_channel,
@@ -122,6 +128,8 @@ def test_application_ussuri(status, config, units, model):
         exp_apt_source_codename,
         exp_channel_codename,
         exp_is_subordinate,
+        exp_is_os_channel_based,
+        exp_is_valid_track,
         target,
     )
 
@@ -149,7 +157,7 @@ def test_application_cs(status, config, units, model):
     exp_os_origin = "distro"
     exp_units = units["units_ussuri"]
     exp_channel = app_status.charm_channel
-    exp_charm_origin = "cs"
+    exp_is_from_charm_store = True
     exp_series = app_status.series
     exp_current_os_release = "ussuri"
     exp_possible_current_channels = ["ussuri/stable"]
@@ -158,6 +166,8 @@ def test_application_cs(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
+    exp_is_os_channel_based = False
+    exp_is_valid_track = True
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -168,7 +178,7 @@ def test_application_cs(status, config, units, model):
         app_config,
         model,
         "keystone",
-        exp_charm_origin,
+        exp_is_from_charm_store,
         exp_os_origin,
         exp_units,
         exp_channel,
@@ -179,6 +189,8 @@ def test_application_cs(status, config, units, model):
         exp_apt_source_codename,
         exp_channel_codename,
         exp_is_subordinate,
+        exp_is_os_channel_based,
+        exp_is_valid_track,
         target,
     )
 
@@ -186,7 +198,7 @@ def test_application_cs(status, config, units, model):
 def test_application_wallaby(status, config, units, model):
     target = OpenStackRelease("xena")
     exp_units = units["units_wallaby"]
-    exp_charm_origin = "ch"
+    exp_is_from_charm_store = False
     app_config = config["openstack_wallaby"]
     app_status = status["keystone_wallaby"]
     exp_os_origin = "cloud:focal-wallaby"
@@ -199,6 +211,8 @@ def test_application_wallaby(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
+    exp_is_os_channel_based = False
+    exp_is_valid_track = True
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
     assert_application(
@@ -209,7 +223,7 @@ def test_application_wallaby(status, config, units, model):
         app_config,
         model,
         "keystone",
-        exp_charm_origin,
+        exp_is_from_charm_store,
         exp_os_origin,
         exp_units,
         exp_channel,
@@ -220,6 +234,8 @@ def test_application_wallaby(status, config, units, model):
         exp_apt_source_codename,
         exp_channel_codename,
         exp_is_subordinate,
+        exp_is_os_channel_based,
+        exp_is_valid_track,
         target,
     )
 

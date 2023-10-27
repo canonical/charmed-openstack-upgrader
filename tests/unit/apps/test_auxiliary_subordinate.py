@@ -125,7 +125,7 @@ def test_ovn_subordinate_upgrade_plan(status, model):
 def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
     # ovn chassis 22.03 is considered yoga. If it's not necessary to upgrade
     # the charm code, there is no steps to upgrade.
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app_status = status["ovn_chassis_ussuri_22"]
     app_status.can_upgrade_to = ""
     app = OvnSubordinateApplication(
