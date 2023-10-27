@@ -309,8 +309,6 @@ class OpenStackApplication:
     def current_os_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
-        :raises MismatchedOpenStackVersions: When units part of this application are
-        running mismatched OpenStack versions.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
@@ -323,7 +321,7 @@ class OpenStackApplication:
         """Current OpenStack Release of the application based on units.
 
         :raises MismatchedOpenStackVersions: When units part of this application are
-        running mismatched OpenStack versions.
+            running mismatched OpenStack versions.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
