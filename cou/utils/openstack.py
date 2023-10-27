@@ -33,7 +33,7 @@ OSReleaseKeys = namedtuple("OSReleaseKeys", ["charm", "series", "track"])
 SERVICE_COLUMN_INDEX = 0
 VERSION_START_COLUMN_INDEX = 1
 CHARM_FAMILIES = {
-    "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd"],
+    "ceph": ["ceph-mon", "ceph-fs", "ceph-radosgw", "ceph-osd", "ceph-dashboard"],
     "swift": ["swift-proxy", "swift-storage"],
     "nova": ["nova-cloud-controller", "nova-compute"],
     "ovn": ["ovn-dedicated-chassis", "ovn-central", "ovn-chassis"],
@@ -100,10 +100,7 @@ SUBORDINATES = [
     "octavia-diskimage-retrofit",
 ]
 
-AUXILIARY_SUBORDINATES = [
-    "hacluster",
-    "mysql-router",
-]
+AUXILIARY_SUBORDINATES = ["hacluster", "mysql-router", "ceph-dashboard"]
 
 OPENSTACK_CODENAMES = OrderedDict(
     [

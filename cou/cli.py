@@ -22,7 +22,7 @@ from typing import Optional
 from halo import Halo
 
 from cou.commands import parse_args
-from cou.exceptions import COUException
+from cou.exceptions import COUException, TimeoutException
 from cou.logging import setup_logging
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -164,6 +164,10 @@ async def entrypoint() -> None:
                 await run_upgrade(
                     model_name=args.model_name, interactive=args.interactive, quiet=args.quiet
                 )
+    except TimeoutException:
+        progress_indicator.fail()
+        print("The connection was lost. Check your connection or increase the timeout.")
+        sys.exit(1)
     except COUException as exc:
         progress_indicator.fail()
         logger.error(exc)

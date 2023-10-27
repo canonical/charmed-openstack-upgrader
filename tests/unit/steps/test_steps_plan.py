@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cou.apps.core import OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -31,6 +31,19 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         description=f"Upgrade plan for '{app.name}' to {target.codename}",
         parallel=False,
     )
+    if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
+        # apps waiting for whole model
+        wait_step = UpgradeStep(
+            description=f"Wait 300 s for model {model.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(300, None),
+        )
+    else:
+        wait_step = UpgradeStep(
+            description=f"Wait 120 s for app {app.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_idle(120, [app.name]),
+        )
 
     upgrade_steps = [
         UpgradeStep(
@@ -68,6 +81,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
                 app.name, {f"{app.origin_setting}": f"cloud:focal-{target.codename}"}
             ),
         ),
+        wait_step,
         UpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,

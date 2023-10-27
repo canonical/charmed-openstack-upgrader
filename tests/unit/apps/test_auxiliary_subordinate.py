@@ -15,7 +15,10 @@
 
 import pytest
 
-from cou.apps.auxiliary_subordinate import OvnSubordinateApplication
+from cou.apps.auxiliary_subordinate import (
+    OpenStackAuxiliarySubordinateApplication,
+    OvnSubordinateApplication,
+)
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
 from cou.utils.openstack import OpenStackRelease
@@ -112,6 +115,69 @@ def test_ovn_subordinate_upgrade_plan(status, model):
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
+
+
+def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
+    """Test when ceph version remains the same between os releases."""
+    target = OpenStackRelease("victoria")
+    app = OpenStackAuxiliarySubordinateApplication(
+        "ceph-dashboard",
+        status["ceph_dashboard_ussuri"],
+        config["auxiliary_ussuri"],
+        model,
+        "ceph-dashboard",
+    )
+
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    )
+
+    upgrade_steps = [
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
+
+    assert upgrade_plan == expected_plan
+
+
+def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
+    """Test when ceph version changes between os releases."""
+    target = OpenStackRelease("yoga")
+    app = OpenStackAuxiliarySubordinateApplication(
+        "ceph-dashboard",
+        status["ceph_dashboard_xena"],
+        config["auxiliary_xena"],
+        model,
+        "ceph-dashboard",
+    )
+
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    expected_plan = UpgradeStep(
+        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    )
+
+    upgrade_steps = [
+        UpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
