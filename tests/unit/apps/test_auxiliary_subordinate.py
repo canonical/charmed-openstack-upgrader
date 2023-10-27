@@ -21,6 +21,7 @@ from cou.apps.auxiliary_subordinate import (
 )
 from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
+from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
 
@@ -36,7 +37,7 @@ def test_auxiliary_subordinate(apps):
 
 
 def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = apps["keystone_mysql_router"]
 
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -72,7 +73,7 @@ def test_ovn_subordinate(status, model):
 
 
 def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
 
     exp_error_msg_ovn_upgrade = (
         "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
@@ -94,7 +95,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
 
 
 def test_ovn_subordinate_upgrade_plan(status, model):
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = OvnSubordinateApplication(
         "ovn-chassis",
         status["ovn_chassis_ussuri_22"],
@@ -123,7 +124,7 @@ def test_ovn_subordinate_upgrade_plan(status, model):
 
 def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
     """Test when ceph version remains the same between os releases."""
-    target = "victoria"
+    target = OpenStackRelease("victoria")
     app = OpenStackAuxiliarySubordinateApplication(
         "ceph-dashboard",
         status["ceph_dashboard_ussuri"],
@@ -152,7 +153,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
 
 def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
     """Test when ceph version changes between os releases."""
-    target = "yoga"
+    target = OpenStackRelease("yoga")
     app = OpenStackAuxiliarySubordinateApplication(
         "ceph-dashboard",
         status["ceph_dashboard_xena"],
