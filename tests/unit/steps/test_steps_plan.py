@@ -20,7 +20,7 @@ from cou.exceptions import (
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
-    ReleaseOutOfRange,
+    OutOfSupportRange,
 )
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -252,7 +252,7 @@ def test_determine_upgrade_target_no_next_release():
     ],
 )
 def test_determine_upgrade_target_release_out_of_range(current_os_release, current_series):
-    with pytest.raises(ReleaseOutOfRange):
+    with pytest.raises(OutOfSupportRange):
         determine_upgrade_target(current_os_release, current_series)
 
 

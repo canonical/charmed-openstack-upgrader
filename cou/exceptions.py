@@ -114,5 +114,5 @@ class HighestReleaseAchieved(COUException):
     """COU exception when the highest possible OpenStack release is already achieved."""
 
 
-class ReleaseOutOfRange(COUException):
-    """COU exception when the release is out of the current supporting range."""
+class OutOfSupportRange(COUException):
+    """COU exception when the release or series is out of the current supporting range."""

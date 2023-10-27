@@ -40,7 +40,7 @@ from cou.exceptions import (
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
-    ReleaseOutOfRange,
+    OutOfSupportRange,
 )
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -58,13 +58,15 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     :raises NoTargetError: When cannot find target to upgrade.
     :raises HighestReleaseAchieved: When the highest possible OpenStack release is
     already achieved.
-    :raises ReleaseOutOfRange: When the release is out of the current supporting range.
+    :raises OutOfSupportRange: When the OpenStack release or Ubuntu series is out of the current
+    supporting range.
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
     target = determine_upgrade_target(
         analysis_result.current_cloud_os_release, analysis_result.current_cloud_series
     )
+    print(f"Upgrading cloud from '{analysis_result.current_cloud_os_release}' to '{target}'\n.")
 
     plan = UpgradeStep(description="Top level plan", parallel=False)
     plan.add_step(
@@ -143,7 +145,8 @@ def determine_upgrade_target(
     :raises NoTargetError: When cannot find target to upgrade.
     :raises HighestReleaseAchieved: When the highest possible OpenStack release is
     already achieved.
-    :raises ReleaseOutOfRange: When the release is out of the current supporting range.
+    :raises OutOfSupportRange: When the OpenStack release or Ubuntu series is out of the current
+    supporting range.
     :return: The target OS release to upgrade the cloud to.
     :rtype: OpenStackRelease
     """
@@ -168,27 +171,34 @@ def determine_upgrade_target(
                 f"compatible with series '{current_series}', and COU does not support series "
                 "upgrade. Please manually upgrade series and run COU again."
             )
-
-        # get the next release as the target from the current cloud os release
-        target = current_os_release.next_release
-        if not target:
-            raise NoTargetError(
-                "Cannot find target to upgrade. Current minimum OS release is "
-                f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
-            )
-        # raise exception if the upgrade is not in range from ussuri to yoga
-        if current_os_release < OpenStackRelease("ussuri") or target > OpenStackRelease("yoga"):
-            raise ReleaseOutOfRange(
-                "At the moment COU only supports upgrade in the range of `ussuri` and `yoga` "
-                "(inclusive) for `focal` series. Current minimum OS release is "
-                f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
-            )
-        return target
     except KeyError:  # raise exception if the current series is not in LTS_TO_OS_RELEASE map
         raise NoTargetError(
             f"Cloud series '{current_series}' is not a recognized Ubuntu LTS series. "
             f"The supporting series are: {supporting_lts_series}"
         ) from KeyError
+
+    # get the next release as the target from the current cloud os release
+    target = current_os_release.next_release
+    if not target:
+        raise NoTargetError(
+            "Cannot find target to upgrade. Current minimum OS release is "
+            f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
+        )
+
+    # raise exception if the upgrade scope is not in range of ussuri to yoga and
+    # the current series is not focal
+    if (
+        current_os_release < OpenStackRelease("ussuri")
+        or target > OpenStackRelease("yoga")
+        or current_series != "focal"
+    ):
+        raise OutOfSupportRange(
+            "At the moment COU only supports upgrade in the range of `ussuri` and `yoga` "
+            "(inclusive) for `focal` series. Current minimum OS release is "
+            f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
+        )
+
+    return target
 
 
 def manually_upgrade_data_plane(analysis_result: Analysis) -> None:
