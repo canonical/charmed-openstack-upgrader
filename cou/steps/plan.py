@@ -15,7 +15,6 @@
 """Upgrade planning utilities."""
 
 import logging
-import sys
 from typing import Callable, Optional
 
 # NOTE we need to import the modules to register the charms with the register_application
@@ -37,7 +36,12 @@ from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
 )
-from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
+from cou.exceptions import (
+    HaltUpgradePlanGeneration,
+    HighestReleaseAchieved,
+    NoTargetError,
+    ReleaseOutOfRange,
+)
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
@@ -52,6 +56,9 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     :raises NoTargetError: When cannot find target to upgrade.
+    :raises HighestReleaseAchieved: When the highest possible OpenStack release is
+    already achieved.
+    :raises ReleaseOutOfRange: When the release is out of the current supporting range.
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradeStep
     """
@@ -134,6 +141,9 @@ def determine_upgrade_target(
     :param current_series: The current minimum Ubuntu series in cloud.
     :type current_series: Optional[str]
     :raises NoTargetError: When cannot find target to upgrade.
+    :raises HighestReleaseAchieved: When the highest possible OpenStack release is
+    already achieved.
+    :raises ReleaseOutOfRange: When the release is out of the current supporting range.
     :return: The target OS release to upgrade the cloud to.
     :rtype: str
     """
@@ -143,7 +153,7 @@ def determine_upgrade_target(
             "Is this a valid OpenStack cloud?"
         )
 
-    supporting_lts_series = ",".join(list(LTS_TO_OS_RELEASE.keys()))
+    supporting_lts_series = ", ".join(LTS_TO_OS_RELEASE)
     if not current_series:
         raise NoTargetError(
             "Cannot determine the current Ubuntu series of the cloud series. "
@@ -153,18 +163,26 @@ def determine_upgrade_target(
     try:
         # Check if the release is the "last" supported by the series
         if str(current_os_release) == LTS_TO_OS_RELEASE[current_series][-1]:
-            print(
-                f"No upgrade available. '{current_os_release}' (the minimum OS release found "
-                f"in the cloud) is the highest release '{current_series}' (the minimum Ubuntu "
-                "series in the cloud) supports."
+            raise HighestReleaseAchieved(
+                f"The cloud is already at the latest OpenStack release '{current_os_release}' "
+                f"compatible with series '{current_series}', and COU does not support series "
+                "upgrade. Please manually upgrade series and run COU again."
             )
-            sys.exit(0)
 
         # get the next release as the target from the current cloud os release
         target = current_os_release.next_release
         if not target:
             raise NoTargetError(
                 "Cannot find target to upgrade. Current minimum OS release is "
+                f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
+            )
+        # raise exception if the upgrade is not in range from ussuri to yoga
+        if current_os_release < OpenStackRelease("ussuri") or OpenStackRelease(
+            target
+        ) > OpenStackRelease("yoga"):
+            raise ReleaseOutOfRange(
+                "At the moment COU only supports upgrade in the range of `ussuri` and `yoga` "
+                "(inclusive) for `focal` series. Current minimum OS release is "
                 f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
             )
         return target

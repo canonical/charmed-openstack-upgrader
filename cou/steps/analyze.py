@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from cou.apps.base import OpenStackApplication
@@ -42,6 +42,8 @@ class Analysis:
     model: juju_utils.COUModel
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
+    current_cloud_os_release: Optional[OpenStackRelease] = field(init=False)
+    current_cloud_series: Optional[str] = field(init=False)
 
     def __post_init__(self) -> None:
         """Initialize the Analysis dataclass."""

@@ -16,7 +16,12 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 
 from cou.apps.base import OpenStackApplication
-from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
+from cou.exceptions import (
+    HaltUpgradePlanGeneration,
+    HighestReleaseAchieved,
+    NoTargetError,
+    ReleaseOutOfRange,
+)
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
@@ -180,7 +185,7 @@ async def test_generate_plan(apps, model):
     "current_os_release, current_series, next_release",
     [
         (OpenStackRelease("victoria"), "focal", "wallaby"),
-        (OpenStackRelease("yoga"), "jammy", "zed"),
+        (OpenStackRelease("xena"), "focal", "yoga"),
     ],
 )
 def test_determine_upgrade_target(current_os_release, current_series, next_release):
@@ -197,10 +202,8 @@ def test_determine_upgrade_target(current_os_release, current_series, next_relea
     ],
 )
 def test_determine_upgrade_target_no_upgrade_available(current_os_release, current_series):
-    with pytest.raises(SystemExit) as mock_exit:
+    with pytest.raises(HighestReleaseAchieved):
         determine_upgrade_target(current_os_release, current_series)
-
-    assert mock_exit.value.code == 0
 
 
 @pytest.mark.parametrize(
@@ -216,13 +219,13 @@ def test_determine_upgrade_target_no_upgrade_available(current_os_release, curre
             OpenStackRelease("ussuri"),
             None,
             "Cannot determine the current Ubuntu series of the cloud series. "
-            "The supporting series are: bionic,focal,jammy",
+            "The supporting series are: bionic, focal, jammy",
         ),  # current_series is None
         (
             OpenStackRelease("ussuri"),
             "kinetic",
             "Cloud series 'kinetic' is not a recognized Ubuntu LTS series. "
-            "The supporting series are: bionic,focal,jammy",
+            "The supporting series are: bionic, focal, jammy",
         ),  # current series is not a key in LTS_TO_OS_RELEASE
     ],
 )
@@ -243,6 +246,18 @@ def test_determine_upgrade_target_no_next_release():
         current_os_release = OpenStackRelease(
             "ussuri"
         )  # instantiate OpenStackRelease with any valid codename
+        determine_upgrade_target(current_os_release, current_series)
+
+
+@pytest.mark.parametrize(
+    "current_os_release, current_series",
+    [
+        (OpenStackRelease("yoga"), "jammy"),
+        (OpenStackRelease("train"), "bionic"),
+    ],
+)
+def test_determine_upgrade_target_release_out_of_range(current_os_release, current_series):
+    with pytest.raises(ReleaseOutOfRange):
         determine_upgrade_target(current_os_release, current_series)
 
 
