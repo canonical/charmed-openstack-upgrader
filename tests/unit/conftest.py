@@ -128,6 +128,19 @@ def status():
         ]
     )
 
+    mock_nova_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_nova_ussuri.series = "focal"
+    mock_nova_ussuri.charm_channel = "ussuri/stable"
+    mock_nova_ussuri.charm = "ch:amd64/focal/nova-compute-638"
+    mock_nova_ussuri.subordinate_to = []
+    mock_nova_ussuri.units = OrderedDict(
+        [
+            ("nova-compute/0", generate_unit("21.0.0", "0")),
+            ("nova-compute/1", generate_unit("21.0.0", "1")),
+            ("nova-compute/2", generate_unit("21.0.0", "2")),
+        ]
+    )
+
     mock_nova_wallaby = MagicMock(spec_set=ApplicationStatus())
     mock_nova_wallaby.series = "focal"
     mock_nova_wallaby.charm_channel = "wallaby/stable"
@@ -208,6 +221,14 @@ def status():
     mock_ceph_mon_xena.subordinate_to = []
     mock_ceph_mon_xena.units = OrderedDict([("ceph-mon/0", generate_unit("16.2.0", "7"))])
 
+    # ceph-osd application on ussuri
+    mock_ceph_osd_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_ceph_osd_ussuri.series = "focal"
+    mock_ceph_osd_ussuri.charm_channel = "octopus/stable"
+    mock_ceph_osd_ussuri.charm = "ch:amd64/focal/ceph-osd-177"
+    mock_ceph_osd_ussuri.subordinate_to = []
+    mock_ceph_osd_ussuri.units = OrderedDict([("ceph-osd/0", generate_unit("15.2.0", "6"))])
+
     # mysql-innodb-cluster application on ussuri using 8.0
     mock_mysql_innodb_cluster_ussuri = MagicMock(spec_set=ApplicationStatus())
     mock_mysql_innodb_cluster_ussuri.series = "focal"
@@ -287,9 +308,11 @@ def status():
         "vault": mock_vault,
         "keystone-ldap": mock_keystone_ldap,
         "keystone-ldap-cs": mock_keystone_ldap_cs,
+        "nova_ussuri": mock_nova_ussuri,
         "nova_wallaby": mock_nova_wallaby,
         "ceph-mon_ussuri": mock_ceph_mon_ussuri,
         "ceph-mon_xena": mock_ceph_mon_xena,
+        "ceph_osd_ussuri": mock_ceph_osd_ussuri,
         "ceph_dashboard_ussuri": mock_ceph_dashboard_ussuri,
         "ceph_dashboard_xena": mock_ceph_dashboard_xena,
         "cinder_ussuri_on_nova": mock_cinder_on_nova,
@@ -312,8 +335,8 @@ def full_status(status, model):
             ("cinder", status["cinder_ussuri"]),
             ("rabbitmq-server", status["rabbitmq_server"]),
             ("my_app", status["unknown_app"]),
-            ("nova-compute", status["unknown_app"]),
-            ("ceph-osd", status["unknown_app"]),
+            ("nova-compute", status["nova_ussuri"]),
+            ("ceph-osd", status["ceph_osd_ussuri"]),
         ]
     )
     return mock_full_status
@@ -429,7 +452,6 @@ def apps(status, config, model):
     cinder_ussuri_status = status["cinder_ussuri"]
     rmq_status = status["rabbitmq_server"]
     keystone_ldap_status = status["keystone-ldap"]
-    nova_wallaby_status = status["nova_wallaby"]
 
     keystone_ussuri = Keystone(
         "keystone", keystone_ussuri_status, config["openstack_ussuri"], model, "keystone"
@@ -452,9 +474,8 @@ def apps(status, config, model):
     keystone_mysql_router = OpenStackAuxiliarySubordinateApplication(
         "keystone-mysql-router", status["mysql_router"], {}, model, "mysql-router"
     )
-
-    nova_wallaby = OpenStackSubordinateApplication(
-        "nova-compute", nova_wallaby_status, {}, model, "nova-compute"
+    nova_ussuri = OpenStackApplication(
+        "nova-compute", status["nova_ussuri"], config["openstack_ussuri"], model, "nova-compute"
     )
     return {
         "keystone_ussuri": keystone_ussuri,
@@ -463,6 +484,6 @@ def apps(status, config, model):
         "rmq_ussuri": rmq_ussuri,
         "rmq_wallaby": rmq_wallaby,
         "keystone_ldap": keystone_ldap,
-        "nova_wallaby": nova_wallaby,
+        "nova_ussuri": nova_ussuri,
         "keystone_mysql_router": keystone_mysql_router,
     }

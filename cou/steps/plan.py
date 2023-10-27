@@ -120,3 +120,23 @@ async def create_upgrade_group(
             raise
 
     return group_upgrade_plan
+
+
+def manually_upgrade_data_plane(analysis_result: Analysis) -> None:
+    """Warning message to upgrade data plane charms if necessary.
+
+    NOTE(gabrielcocenza) This function should be removed when cou starts
+    supporting data plan upgrades.
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    """
+    if (
+        analysis_result.min_os_version_control_plane
+        and analysis_result.min_os_version_data_plane
+        and (
+            analysis_result.min_os_version_control_plane
+            > analysis_result.min_os_version_data_plane
+        )
+    ):
+        data_plane_apps = ", ".join([app.name for app in analysis_result.apps_data_plane])
+        print(f"WARNING: Please upgrade manually the data plane apps: {data_plane_apps}")
