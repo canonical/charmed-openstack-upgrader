@@ -22,6 +22,7 @@ from packaging.version import Version
 
 from cou.exceptions import ApplicationError, RunUpgradeError
 from cou.utils.juju_utils import COUModel
+from cou.utils.openstack import CEPH_RELEASES
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +150,12 @@ async def _get_current_osd_release(unit: str, model: COUModel) -> str:
     # {'ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)': 1}
     osd_release_key, *_ = osd_release_output.keys()
     current_osd_release = osd_release_key.split(" ")[4].strip()
+    ceph_releases = ", ".join(CEPH_RELEASES)
+    if current_osd_release not in ceph_releases:
+        raise RunUpgradeError(
+            f"Cannot recognize Ceph release '{current_osd_release}'. The supporting "
+            f"releases are: {ceph_releases}"
+        )
     logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
 
     return current_osd_release

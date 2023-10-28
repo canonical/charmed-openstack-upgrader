@@ -201,6 +201,13 @@ async def test_get_current_osd_release(model):
             },  # mismatched OSD releases
             "OSDs are on mismatched releases:\n",
         ),
+        (
+            {
+                "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) invalid (stable)": 3,
+            },  # unsupported OSD releases
+            "Cannot recognize Ceph release 'invalid'. The supporting "
+            "releases are: octopus, pacific, quincy",
+        ),
     ],
 )
 async def test_get_current_osd_release_unsuccessful(model, osd_release_output, error_message):
