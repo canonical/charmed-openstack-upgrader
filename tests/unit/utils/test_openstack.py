@@ -466,8 +466,8 @@ def test_track_to_openstack(charm, series, track, exp_result):
     [
         ("keystone", True),
         ("ceph-mon", True),
-        ("ceph-osd", False),
-        ("nova-compute", False),
+        ("ceph-osd", True),
+        ("nova-compute", True),
         ("my-charm", False),
         ("barbican-vault", True),
         ("hacluster", True),

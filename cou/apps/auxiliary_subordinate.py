@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary subordinate application class."""
-from typing import Optional
-
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBaseClass
@@ -44,13 +42,13 @@ class OpenStackAuxiliarySubordinateApplication(
 class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         validate_ovn_support(self.status.workload_version)
         return super().pre_upgrade_plan(target)

@@ -30,7 +30,7 @@ from cou.logging import setup_logging
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_plan
-from cou.steps.plan import generate_plan
+from cou.steps.plan import generate_plan, manually_upgrade_data_plane
 from cou.utils.cli import keyboard_interrupt_handler
 from cou.utils.juju_utils import COUModel
 
@@ -87,13 +87,13 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     return VerbosityLevel(verbosity).name
 
 
-async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
+async def analyze_and_plan(model_name: Optional[str] = None) -> tuple[Analysis, UpgradeStep]:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
-    :return: Generated upgrade plan.
-    :rtype: UpgradeStep
+    :return: Generated analyses and upgrade plan.
+    :rtype: tuple[Analysis, UpgradeStep]
     """
     progress_indicator.start(f"Connecting to '{model_name or 'default'}' model...")
     model = await COUModel.create(model_name)
@@ -118,7 +118,7 @@ async def analyze_and_plan(model_name: Optional[str] = None) -> UpgradeStep:
         SIGTERM, keyboard_interrupt_handler, upgrade_plan, loop, progress_indicator
     )
 
-    return upgrade_plan
+    return analysis_result, upgrade_plan
 
 
 async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
@@ -127,9 +127,10 @@ async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
     """
-    upgrade_plan = await analyze_and_plan(model_name)
+    analysis_result, upgrade_plan = await analyze_and_plan(model_name)
     logger.info(upgrade_plan)
     print(upgrade_plan)  # print plan to console even in quiet mode
+    manually_upgrade_data_plane(analysis_result)
 
 
 async def run_upgrade(
@@ -144,7 +145,7 @@ async def run_upgrade(
     :param quiet: Whether to run upgrade in quiet mode.
     :type quiet: bool
     """
-    upgrade_plan = await analyze_and_plan(model_name)
+    analysis_result, upgrade_plan = await analyze_and_plan(model_name)
     logger.info(upgrade_plan)
 
     # don't print plan if in quiet mode
@@ -157,6 +158,7 @@ async def run_upgrade(
         progress_indicator.succeed()
     else:
         await apply_plan(upgrade_plan, interactive)
+    manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 
 

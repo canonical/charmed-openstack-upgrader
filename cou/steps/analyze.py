@@ -42,6 +42,13 @@ class Analysis:
     model: juju_utils.COUModel
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
+    min_os_version_control_plane: Optional[OpenStackRelease] = None
+    min_os_version_data_plane: Optional[OpenStackRelease] = None
+
+    def __post_init__(self) -> None:
+        """Initialize the Analysis dataclass."""
+        self.min_os_version_control_plane = self.min_os_release_apps(self.apps_control_plane)
+        self.min_os_version_data_plane = self.min_os_release_apps(self.apps_data_plane)
 
     @staticmethod
     def _split_apps(
@@ -151,6 +158,17 @@ class Analysis:
             + "\n".join([str(app) for app in self.apps_data_plane])
         )
 
+    @staticmethod
+    def min_os_release_apps(apps: list[OpenStackApplication]) -> Optional[OpenStackRelease]:
+        """Get the minimal OpenStack release from a list of applications.
+
+        :param apps: Applications.
+        :type apps: list[OpenStackApplication]
+        :return: OpenStack release.
+        :rtype: Optional[OpenStackRelease]
+        """
+        return min((app.current_os_release for app in apps), default=None)
+
     @property
     def current_cloud_os_release(self) -> Optional[OpenStackRelease]:
         """Shows the current OpenStack release codename.
@@ -158,9 +176,10 @@ class Analysis:
         This property just consider OpenStack charms as those that have
         openstack-origin or source on the charm configuration (app.os_origin).
         :return: OpenStack release codename
-        :rtype: OpenStackRelease
+        :rtype: Optional[OpenStackRelease]
         """
-        return min(
-            (app.current_os_release for app in self.apps_control_plane + self.apps_data_plane),
-            default=None,
+        control_plane = (
+            [self.min_os_version_control_plane] if self.min_os_version_control_plane else []
         )
+        data_plane = [self.min_os_version_data_plane] if self.min_os_version_data_plane else []
+        return min(control_plane + data_plane, default=None)

@@ -62,7 +62,7 @@ class UpgradeStep:
 
     def __init__(
         self,
-        description: str,
+        description: str = "",
         parallel: bool = False,
         coro: Optional[Coroutine] = None,
     ):
@@ -81,10 +81,10 @@ class UpgradeStep:
                 "ignore", message=f"coroutine '.*{coro.__name__}' was never awaited"
             )
 
+        self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
         self.description = description
         self.sub_steps: List[UpgradeStep] = []
-        self._coro: Optional[Coroutine] = coro
         self._canceled: bool = False
         self._task: Optional[asyncio.Task] = None
 
@@ -121,7 +121,7 @@ class UpgradeStep:
         steps_to_visit = [(self, 0)]
         while steps_to_visit:
             step, indent = steps_to_visit.pop()
-            result += f"{tab * indent}{step.description}{os.linesep}"
+            result += f"{tab * indent}{step.description}{os.linesep}" if step else ""
             steps_to_visit.extend([(s, indent + 1) for s in reversed(step.sub_steps)])
 
         return result
@@ -133,6 +133,36 @@ class UpgradeStep:
         :rtype: str
         """
         return f"UpgradeStep({self.description})"
+
+    def __bool__(self) -> bool:
+        """Boolean magic method for UpgradeStep.
+
+        :return: True if there is at least one coroutine in a UpgradeStep
+        or in its sub steps.
+        :rtype: bool
+        """
+        return self._coro is not None or any(bool(step) for step in self.sub_steps)
+
+    @property
+    def description(self) -> str:
+        """Get the description of the UpgradeStep.
+
+        :return: description
+        :rtype: str
+        """
+        return self._description
+
+    @description.setter
+    def description(self, description: str) -> None:
+        """Set the description of the UpgradeStep.
+
+        :param description: description
+        :type description: str
+        :raises ValueError: When a coroutine is passed without description.
+        """
+        if not description and self._coro:
+            raise ValueError("Every coroutine should have a description")
+        self._description = description
 
     @property
     def all_done(self) -> bool:

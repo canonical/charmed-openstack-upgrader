@@ -13,7 +13,6 @@
 #  limitations under the License.
 """Subordinate application class."""
 import logging
-from typing import Optional
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
@@ -26,36 +25,36 @@ logger = logging.getLogger(__name__)
 class SubordinateBaseClass(OpenStackApplication):
     """Subordinate base class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         return [self._get_refresh_charm_plan(target)]
 
-    def upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: Plan that will add upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
         return [self._get_upgrade_charm_plan(target)]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[Optional[UpgradeStep]]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[Optional[UpgradeStep]]
+        :rtype: list[UpgradeStep]
         """
-        return [None]
+        return []
 
 
 @AppFactory.register_application(SUBORDINATES)
@@ -71,31 +70,10 @@ class OpenStackSubordinateApplication(SubordinateBaseClass):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
+        if self.is_from_charm_store:  # pylint: disable=duplicate-code
+            logger.debug(
+                "'%s' is from charm store and will be considered with channel codename as ussuri",
+                self.name,
+            )
+            return OpenStackRelease("ussuri")
         return OpenStackRelease(self._get_track_from_channel(self.channel))
-
-    @property
-    def channel(self) -> str:
-        """Get charm channel of the application.
-
-        :return: Charm channel. E.g: ussuri/stable
-        :rtype: str
-        """
-        return self._channel
-
-    @channel.setter
-    def channel(self, charm_channel: str) -> None:
-        """Set charm channel of the application.
-
-        :param charm_channel: Charm channel. E.g: ussuri/stable
-        :type charm_channel: str
-        :raises ApplicationError: Exception raised when channel is not a valid OpenStack
-            channel.
-        """
-        try:
-            OpenStackRelease(self._get_track_from_channel(charm_channel))
-            self._channel = charm_channel
-        except ValueError:
-            # if it has charm origin like cs:
-            # or latest/stable it means it does not support openstack channels yet,
-            # so it should be minimum
-            self._channel = "ussuri/stable"
