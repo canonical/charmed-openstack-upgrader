@@ -185,7 +185,7 @@ class OpenStackApplication:
         :rtype: str
         """
         # NOTE(gabrielcocenza) Some applications current_os_release points
-        # to channel_codename without setting the channel before. On that
+        # to channel_codename without setting the channel before. In that
         # case we check if the attribute is already set.
         if not hasattr(self, "_channel"):
             self.channel = self.status.charm_channel

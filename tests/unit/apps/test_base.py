@@ -18,12 +18,10 @@ from tests.unit.apps.utils import add_steps
 
 
 def test_application_gnocchi_ussuri(status, config, model):
-    app_config = config["openstack_ussuri"]
-    app_config["action-managed-upgrade"] = {"value": False}
     app = OpenStackApplication(
         "gnocchi",
         status["gnocchi_ussuri"],
-        app_config,
+        config["openstack_ussuri"],
         model,
         "gnocchi",
     )
@@ -31,7 +29,23 @@ def test_application_gnocchi_ussuri(status, config, model):
     assert app.current_os_release == "ussuri"
 
 
+def test_application_gnocchi_xena(status, config, model):
+    # workload version is the same for xena and yoga, but current_os_release
+    # is based on the channel.
+    app = OpenStackApplication(
+        "gnocchi",
+        status["gnocchi_xena"],
+        config["openstack_xena"],
+        model,
+        "gnocchi",
+    )
+    assert app.is_os_channel_based is True
+    assert app.current_os_release == "xena"
+
+
 def test_application_designate_bind_ussuri(status, config, model):
+    # workload version is the same from ussuri to yoga, but current_os_release
+    # is based on the channel.
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"] = {"value": False}
     app = OpenStackApplication(
@@ -46,6 +60,7 @@ def test_application_designate_bind_ussuri(status, config, model):
 
 
 def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, model):
+    # Gnocchi from ussuri to victoria upgrade the workload version from 4.3.4 to 4.4.0.
     target = OpenStackRelease("victoria")
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"] = {"value": False}
@@ -111,6 +126,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
 
 
 def test_application_gnocchi_upgrade_plan_xena_to_yoga(status, config, model):
+    # Gnocchi from xena to yoga does not upgrade the workload version that stays at 4.4.1
     target = OpenStackRelease("yoga")
     app_config = config["openstack_xena"]
     app_config["action-managed-upgrade"] = {"value": False}
