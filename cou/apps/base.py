@@ -34,6 +34,7 @@ from cou.utils.app_utils import upgrade_packages
 from cou.utils.juju_utils import COUModel
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
+    VERSIONLESS,
     OpenStackCodenameLookup,
     OpenStackRelease,
 )
@@ -184,7 +185,7 @@ class OpenStackApplication:
         :rtype: str
         """
         # NOTE(gabrielcocenza) Some applications current_os_release points
-        # to channel_codename without setting the channel before. On that
+        # to channel_codename without setting the channel before. In that
         # case we check if the attribute is already set.
         if not hasattr(self, "_channel"):
             self.channel = self.status.charm_channel
@@ -223,7 +224,7 @@ class OpenStackApplication:
     def is_os_channel_based(self) -> bool:
         """Check if application is OpenStack channel based.
 
-        :return: True if doesn't have origin setting or if is subordinate or is versionless,
+        :return: True if doesn't have origin setting or if is subordinate or if is versionless,
             False otherwise.
         :rtype: bool
         """
@@ -352,7 +353,9 @@ class OpenStackApplication:
         :return: True if is versionless, False otherwise.
         :rtype: bool
         """
-        return not all(unit.workload_version for unit in self.status.units.values())
+        return self.charm in VERSIONLESS or not all(
+            unit.workload_version for unit in self.status.units.values()
+        )
 
     @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:

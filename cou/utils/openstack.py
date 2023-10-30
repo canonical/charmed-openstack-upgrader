@@ -102,6 +102,7 @@ SUBORDINATES = [
 
 AUXILIARY_SUBORDINATES = ["hacluster", "mysql-router", "ceph-dashboard"]
 
+# OpenStack charms that does not have a workload version
 VERSIONLESS = ["glance-simplestreams-sync"]
 
 OPENSTACK_CODENAMES = OrderedDict(
