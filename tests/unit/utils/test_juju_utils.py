@@ -25,6 +25,7 @@ from cou.exceptions import (
     ActionFailed,
     ApplicationError,
     ApplicationNotFound,
+    CommandRunFailed,
     TimeoutException,
     UnitNotFound,
 )
@@ -357,9 +358,28 @@ async def test_coumodel_run_on_unit(mock_normalize_action_results, mocked_model)
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
     results = mocked_action.data.get.return_value
+    mock_normalize_action_results.return_value = {"Code": "0", "Stdout": "some results"}
     model = juju_utils.COUModel("test-model")
 
     await model.run_on_unit("test-unit/0", command)
+
+    mocked_unit.run.assert_awaited_once_with(command, timeout=None)
+    mock_normalize_action_results.assert_called_once_with(results)
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils._normalize_action_results")
+async def test_coumodel_run_on_unit_failed_command(mock_normalize_action_results, mocked_model):
+    """Test COUModel run on unit."""
+    command = "test-command"
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    results = mocked_action.data.get.return_value
+    mock_normalize_action_results.return_value = {"Code": "1", "Stderr": "Error!"}
+    model = juju_utils.COUModel("test-model")
+
+    with pytest.raises(CommandRunFailed):
+        await model.run_on_unit("test-unit/0", command)
 
     mocked_unit.run.assert_awaited_once_with(command, timeout=None)
     mock_normalize_action_results.assert_called_once_with(results)

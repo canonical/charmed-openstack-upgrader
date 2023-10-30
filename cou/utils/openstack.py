@@ -151,6 +151,12 @@ LTS_TO_OS_RELEASE = {
     "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
 }
 
+CEPH_RELEASES = [
+    "octopus",
+    "pacific",
+    "quincy",
+]
+
 
 class OpenStackRelease:
     """Provides a class that will compare OpenStack releases by the codename.
