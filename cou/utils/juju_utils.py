@@ -447,7 +447,6 @@ class COUModel:
             switch=switch,
         )
 
-    @retry
     async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
         """Wait for applications to reach an idle state.
 
