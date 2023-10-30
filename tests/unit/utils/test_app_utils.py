@@ -82,6 +82,7 @@ async def test_application_upgrade_packages_with_hold(model):
 @pytest.mark.parametrize(
     "current_required_osd_release, current_osd_release",
     [
+        ("nautilus", "octopus"),
         ("octopus", "pacific"),
         ("pacific", "quincy"),
     ],
