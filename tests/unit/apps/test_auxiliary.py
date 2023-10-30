@@ -54,7 +54,6 @@ def test_auxiliary_app(status, config, model):
     assert app.channel_codename == "yoga"
     assert app.is_subordinate is False
     assert app.current_os_release == "yoga"
-    assert app.is_os_channel_based is False
 
 
 def test_auxiliary_app_cs(status, config, model):
@@ -83,7 +82,6 @@ def test_auxiliary_app_cs(status, config, model):
     assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "ussuri"
     assert app.current_os_release == "yoga"
-    assert app.is_os_channel_based is False
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):

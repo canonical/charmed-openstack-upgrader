@@ -33,17 +33,6 @@ logger = logging.getLogger(__name__)
 class OpenStackAuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
-    @property
-    def is_os_channel_based(self) -> bool:
-        """Check if application is OpenStack channel based.
-
-        For auxiliary charms, always return false because they are
-        not OpenStack channel based.
-        :return: False.
-        :rtype: bool
-        """
-        return False
-
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
 

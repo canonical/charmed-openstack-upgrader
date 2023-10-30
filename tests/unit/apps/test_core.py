@@ -63,7 +63,6 @@ def assert_application(
     exp_apt_source_codename,
     exp_channel_codename,
     exp_is_subordinate,
-    exp_is_os_channel_based,
     exp_is_valid_track,
     target,
 ):
@@ -84,7 +83,6 @@ def assert_application(
     assert app.apt_source_codename == exp_apt_source_codename
     assert app.channel_codename == exp_channel_codename
     assert app.is_subordinate == exp_is_subordinate
-    assert app.is_os_channel_based == exp_is_os_channel_based
     assert app.is_valid_track(app.channel) == exp_is_valid_track
 
 
@@ -104,7 +102,6 @@ def test_application_ussuri(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
-    exp_is_os_channel_based = False
     exp_is_valid_track = True
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
@@ -128,7 +125,6 @@ def test_application_ussuri(status, config, units, model):
         exp_apt_source_codename,
         exp_channel_codename,
         exp_is_subordinate,
-        exp_is_os_channel_based,
         exp_is_valid_track,
         target,
     )
@@ -166,7 +162,6 @@ def test_application_cs(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
-    exp_is_os_channel_based = False
     exp_is_valid_track = True
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
@@ -189,7 +184,6 @@ def test_application_cs(status, config, units, model):
         exp_apt_source_codename,
         exp_channel_codename,
         exp_is_subordinate,
-        exp_is_os_channel_based,
         exp_is_valid_track,
         target,
     )
@@ -211,7 +205,6 @@ def test_application_wallaby(status, config, units, model):
     exp_apt_source_codename = exp_current_os_release
     exp_channel_codename = exp_current_os_release
     exp_is_subordinate = False
-    exp_is_os_channel_based = False
     exp_is_valid_track = True
 
     app = Keystone("my_keystone", app_status, app_config, model, "keystone")
@@ -234,7 +227,6 @@ def test_application_wallaby(status, config, units, model):
         exp_apt_source_codename,
         exp_channel_codename,
         exp_is_subordinate,
-        exp_is_os_channel_based,
         exp_is_valid_track,
         target,
     )
