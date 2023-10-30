@@ -147,50 +147,24 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :return: Plan that will add pre upgrade as sub steps.
         :rtype: list[UpgradeStep]
         """
-        return [
-            self._get_upgrade_current_release_packages_plan(),
-            self._get_refresh_charm_plan(target),
-            self._get_change_require_osd_release_plan(self.possible_current_channels[-1]),
-        ]
+        return super().pre_upgrade_plan(target) + [self._get_change_require_osd_release_plan()]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
-        """Post Upgrade planning.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[UpgradeStep]
-        """
-        steps = super().post_upgrade_plan(target)
-        return [
-            *steps,
-            self._get_change_require_osd_release_plan(self.target_channel(target)),
-        ]
-
-    def _get_change_require_osd_release_plan(
-        self, channel: str, parallel: bool = False
-    ) -> UpgradeStep:
+    def _get_change_require_osd_release_plan(self, parallel: bool = False) -> UpgradeStep:
         """Get plan to set correct value for require-osd-release option on ceph-mon.
 
         This step is needed as a workaround for LP#1929254. Reference:
         https://docs.openstack.org/charm-guide/latest/project/issues/upgrade-issues.html#ceph-require-osd-release
 
-        :param channel: The channel to get ceph track from.
-        :type channel: str
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         :return: Plan to check and set correct value for require-osd-release
         :rtype: UpgradeStep
         """
-        ceph_release: str = self._get_track_from_channel(channel)
         ceph_mon_unit, *_ = self.units
         return UpgradeStep(
-            description=(
-                "Ensure require-osd-release option on ceph-mon units correctly "
-                f"set to '{ceph_release}'"
-            ),
+            description="Ensure require-osd-release option matches with ceph-osd version",
             parallel=parallel,
-            coro=set_require_osd_release_option(ceph_mon_unit.name, self.model, ceph_release),
+            coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )
 
 

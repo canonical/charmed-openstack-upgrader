@@ -149,6 +149,12 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "lunar": "antelope",
 }
 
+CEPH_RELEASES = [
+    "octopus",
+    "pacific",
+    "quincy",
+]
+
 
 class OpenStackRelease:
     """Provides a class that will compare OpenStack releases by the codename.

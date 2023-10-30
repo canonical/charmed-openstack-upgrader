@@ -16,6 +16,7 @@ import argparse
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from juju.errors import JujuError
 
 from cou import cli
 from cou.exceptions import COUException, TimeoutException, UnitNotFound
@@ -201,6 +202,7 @@ async def test_entrypoint_commands(mocker, command, function_call):
     "exception, exp_exitcode",
     [
         (Exception("An error occurred"), "2"),
+        (JujuError("Error coming from python-libjuju"), "1"),
         (COUException("Caught error"), "1"),
         (UnitNotFound("Unit not found"), "1"),
         (TimeoutException("The connection timed out"), "1"),

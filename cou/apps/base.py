@@ -83,6 +83,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
+    :raises CommandRunFailed: When a command fails to run.
     :raises RunUpgradeError: When an upgrade fails.
     """
 
