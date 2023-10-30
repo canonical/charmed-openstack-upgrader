@@ -173,7 +173,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         """
         ceph_mon_unit, *_ = self.units
         return UpgradeStep(
-            description=("Ensure require-osd-release option matches with ceph-osd version"),
+            description="Ensure require-osd-release option matches with ceph-osd version",
             parallel=parallel,
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )
