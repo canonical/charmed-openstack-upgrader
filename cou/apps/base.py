@@ -34,6 +34,7 @@ from cou.utils.app_utils import upgrade_packages
 from cou.utils.juju_utils import COUModel
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
+    OPENSTACK_CHANNEL_BASED_CHARMS,
     OpenStackCodenameLookup,
     OpenStackRelease,
 )
@@ -183,6 +184,11 @@ class OpenStackApplication:
         :return: Charm channel. E.g: ussuri/stable
         :rtype: str
         """
+        # NOTE(gabrielcocenza) Some applications current_os_release points
+        # to channel_codename without setting the channel before. On that
+        # case we check if the attribute is already set.
+        if not hasattr(self, "_channel"):
+            self.channel = self.status.charm_channel
         return self._channel
 
     @channel.setter
@@ -221,7 +227,7 @@ class OpenStackApplication:
         :return: True if doesn't have origin setting or if is subordinate, False otherwise.
         :rtype: bool
         """
-        return not self.origin_setting or self.is_subordinate
+        return self.charm in OPENSTACK_CHANNEL_BASED_CHARMS or self.is_subordinate
 
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
@@ -247,6 +253,8 @@ class OpenStackApplication:
         :return: The latest compatible OpenStack release.
         :rtype: OpenStackRelease
         """
+        if self.is_os_channel_based:
+            return self.channel_codename
         try:
             return max(
                 OpenStackCodenameLookup.find_compatible_versions(self.charm, unit.workload_version)

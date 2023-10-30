@@ -45,6 +45,10 @@ CHARM_FAMILIES = {
 
 DATA_PLANE_CHARMS = ["nova-compute", "ceph-osd"]
 
+# designate-bind and gnocchi can have more than one compatible OpenStack release
+# for a workload version
+OPENSTACK_CHANNEL_BASED_CHARMS = ["designate-bind", "gnocchi"]
+
 # https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
 UPGRADE_ORDER = [
     "rabbitmq-server",
