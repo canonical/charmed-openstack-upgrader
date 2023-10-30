@@ -33,6 +33,7 @@ from cou.exceptions import (
     ActionFailed,
     ApplicationError,
     ApplicationNotFound,
+    CommandRunFailed,
     TimeoutException,
     UnitNotFound,
 )
@@ -326,12 +327,20 @@ class COUModel:
         :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
         :rtype: dict[str, str]
         :raises UnitNotFound: When a valid unit cannot be found.
-        :raises ActionFailed: When the application status is in error (it's not 'completed').
+        :raises CommandRunFailed: When a command fails to run.
         """
+        logger.debug("Running '%s' on '%s'", command, unit_name)
+
         unit = await self._get_unit(unit_name)
         action = await unit.run(command, timeout=timeout)
         results = action.data.get("results")
-        return _normalize_action_results(results)
+        normalize_results = _normalize_action_results(results)
+
+        if str(normalize_results["Code"]) != "0":
+            raise CommandRunFailed(cmd=command, result=normalize_results)
+        logger.debug(normalize_results["Stdout"])
+
+        return normalize_results
 
     @retry(no_retry_exceptions=(ApplicationNotFound,))
     async def set_application_config(self, name: str, configuration: dict[str, str]) -> None:
