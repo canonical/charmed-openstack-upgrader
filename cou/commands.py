@@ -83,8 +83,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         help="Set the model to operate on.\nIf unset, the model name will be determined by "
         "inspecting the environment as follows:\n"
         "  1 - Environment variable JUJU_MODEL,"
-        "  2 - Environment variable MODEL_NAME,"
-        "  3 - Current active juju model",
+        "  2 - Current active juju model",
     )
 
     # quiet and verbose options are mutually exclusive
