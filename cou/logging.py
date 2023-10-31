@@ -15,11 +15,12 @@
 """Set up both global logger for logfile and console'."""
 import logging
 import logging.handlers
-import os
 import pathlib
 from datetime import datetime
 
-COU_DIR_LOG = pathlib.Path(os.getenv("COU_DATA", ""), "log")
+from cou.utils import COU_DATA
+
+COU_DIR_LOG = COU_DATA / "log"
 
 logger = logging.getLogger(__name__)
 

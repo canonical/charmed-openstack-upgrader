@@ -13,3 +13,9 @@
 # limitations under the License.
 
 """Utilities for charmed-openstack-upgrader."""
+
+
+import os
+from pathlib import Path
+
+COU_DATA = Path(os.getenv("COU_DATA", "."))
