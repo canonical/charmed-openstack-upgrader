@@ -459,4 +459,35 @@ async def test_coumodel_wait_for_idle(mock_get_supported_apps, mocked_model):
     mocked_model.wait_for_idle.assert_awaited_once_with(
         apps=["app1", "app2"], timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
     )
-    mock_get_supported_apps.assert_awaited_once_with()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.COUModel._get_supported_apps")
+@pytest.mark.parametrize(
+    "apps, exp_error_message",
+    [
+        (None, "Not all apps .* reached their idle state in 60s"),
+        (["app1", "app2"], "Not all apps app1,app2 reached their idle state in 60s"),
+    ],
+)
+async def test_coumodel_wait_for_idle_timeout(
+    mock_get_supported_apps, apps, exp_error_message, mocked_model
+):
+    """Test COUModel wait for model to be idle reach timeout."""
+    timeout = 60
+    model_name = "test-model"
+    mocked_model.wait_for_idle.side_effect = asyncio.exceptions.TimeoutError
+    model = juju_utils.COUModel(model_name)
+
+    with pytest.raises(TimeoutException, match=exp_error_message):
+        await model.wait_for_idle(timeout, apps=apps)
+
+    if apps is None:
+        mock_get_supported_apps.assert_awaited_once_with()
+        exp_apps = mock_get_supported_apps.return_value
+    else:
+        exp_apps = apps
+
+    mocked_model.wait_for_idle.assert_awaited_once_with(
+        apps=exp_apps, timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
+    )

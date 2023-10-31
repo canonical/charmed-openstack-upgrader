@@ -457,10 +457,20 @@ class COUModel:
         :param apps: Applications to wait, defaults to None
         :type apps: Optional[list[str]], optional
         """
-        model = await self._get_model()
         if apps is None:
             apps = await self._get_supported_apps()
 
-        await model.wait_for_idle(
-            apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
-        )
+        @retry(timeout=timeout)
+        @wraps(self.wait_for_idle)
+        async def _wait_for_idle() -> None:
+            # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
+            model = await self._get_model()
+            try:
+                await model.wait_for_idle(
+                    apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
+                )
+            except asyncio.exceptions.TimeoutError as error:
+                msg = f"Not all apps {','.join(apps)} reached their idle state in {timeout}s"
+                raise TimeoutException(msg) from error
+
+        await _wait_for_idle()
