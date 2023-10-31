@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Auxiliary application class."""
+"""Channel based application class."""
 import logging
 
 from juju.client._definitions import UnitStatus
@@ -64,6 +64,7 @@ class OpenStackChannelBasedApplication(OpenStackApplication):
         """Post Upgrade planning.
 
         Wait until the application reaches the idle state and then check the target workload.
+        In case the application is versionless, there are no post upgrade steps to run.
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.

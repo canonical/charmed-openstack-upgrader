@@ -186,7 +186,7 @@ class OpenStackApplication:
         """
         # NOTE(gabrielcocenza) Some applications current_os_release points
         # to channel_codename without setting the channel before. In that
-        # case we check if the attribute is already set.
+        # case we set the attribute before accessing it.
         if not hasattr(self, "_channel"):
             self.channel = self.status.charm_channel
         return self._channel
