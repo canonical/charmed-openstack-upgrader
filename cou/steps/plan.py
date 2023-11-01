@@ -31,6 +31,7 @@ from cou.apps.auxiliary_subordinate import (  # noqa: F401
     OvnSubordinateApplication,
 )
 from cou.apps.base import OpenStackApplication
+from cou.apps.channel_based import OpenStackChannelBasedApplication  # noqa: F401
 from cou.apps.core import Keystone  # noqa: F401
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,

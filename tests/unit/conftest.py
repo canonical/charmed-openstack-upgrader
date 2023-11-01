@@ -128,6 +128,47 @@ def status():
         ]
     )
 
+    # gnocchi on ussuri
+    mock_gnocchi_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_gnocchi_ussuri.series = "focal"
+    mock_gnocchi_ussuri.charm_channel = "ussuri/stable"
+    mock_gnocchi_ussuri.charm = "ch:amd64/focal/gnocchi-638"
+    mock_gnocchi_ussuri.subordinate_to = []
+    mock_gnocchi_ussuri.units = OrderedDict(
+        [
+            ("gnocchi/0", generate_unit("4.3.4", "3/lxd/6")),
+            ("gnocchi/1", generate_unit("4.3.4", "4/lxd/6")),
+            ("gnocchi/2", generate_unit("4.3.4", "5/lxd/5")),
+        ]
+    )
+
+    # gnocchi on xena
+    mock_gnocchi_xena = MagicMock(spec_set=ApplicationStatus())
+    mock_gnocchi_xena.series = "focal"
+    mock_gnocchi_xena.charm_channel = "xena/stable"
+    mock_gnocchi_xena.charm = "ch:amd64/focal/gnocchi-638"
+    mock_gnocchi_xena.subordinate_to = []
+    mock_gnocchi_xena.units = OrderedDict(
+        [
+            ("gnocchi/0", generate_unit("4.4.1", "3/lxd/6")),
+            ("gnocchi/1", generate_unit("4.4.1", "4/lxd/6")),
+            ("gnocchi/2", generate_unit("4.4.1", "5/lxd/5")),
+        ]
+    )
+
+    # designate-bind on ussuri
+    mock_designate_bind_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_designate_bind_ussuri.series = "focal"
+    mock_designate_bind_ussuri.charm_channel = "ussuri/stable"
+    mock_designate_bind_ussuri.charm = "ch:amd64/focal/designate-bind-737"
+    mock_designate_bind_ussuri.subordinate_to = []
+    mock_designate_bind_ussuri.units = OrderedDict(
+        [
+            ("gnocchi/0", generate_unit("9.16.1", "1/lxd/6")),
+            ("gnocchi/1", generate_unit("9.16.1", "2/lxd/6")),
+        ]
+    )
+
     mock_nova_ussuri = MagicMock(spec_set=ApplicationStatus())
     mock_nova_ussuri.series = "focal"
     mock_nova_ussuri.charm_channel = "ussuri/stable"
@@ -151,6 +192,18 @@ def status():
             ("nova-compute/0", generate_unit("24.1.0", "0")),
             ("nova-compute/1", generate_unit("24.1.0", "1")),
             ("nova-compute/2", generate_unit("24.1.0", "2")),
+        ]
+    )
+
+    # glance-simplestreams-sync does not have workload_version
+    mock_glance_simplestreams_sync_ussuri = MagicMock(spec_set=ApplicationStatus())
+    mock_glance_simplestreams_sync_ussuri.series = "focal"
+    mock_glance_simplestreams_sync_ussuri.charm_channel = "ussuri/stable"
+    mock_glance_simplestreams_sync_ussuri.charm = "ch:amd64/focal/glance-simplestreams-sync-78"
+    mock_glance_simplestreams_sync_ussuri.subordinate_to = []
+    mock_glance_simplestreams_sync_ussuri.units = OrderedDict(
+        [
+            ("glance-simplestreams-sync/0", generate_unit("", "4/lxd/5")),
         ]
     )
 
@@ -299,6 +352,10 @@ def status():
         "keystone_wallaby": mock_keystone_wallaby,
         "keystone_ussuri_victoria": mock_keystone_ussuri_victoria,
         "cinder_ussuri": mock_cinder_ussuri,
+        "glance_simplestreams_sync_ussuri": mock_glance_simplestreams_sync_ussuri,
+        "gnocchi_ussuri": mock_gnocchi_ussuri,
+        "gnocchi_xena": mock_gnocchi_xena,
+        "designate_bind_ussuri": mock_designate_bind_ussuri,
         "rabbitmq_server": mock_rmq,
         "unknown_rabbitmq_server": mock_rmq_unknown,
         "keystone_ussuri_cs": mock_keystone_ussuri_cs,
@@ -405,6 +462,7 @@ def config():
             "action-managed-upgrade": {"value": True},
         },
         "openstack_wallaby": {"openstack-origin": {"value": "cloud:focal-wallaby"}},
+        "openstack_xena": {"openstack-origin": {"value": "cloud:focal-xena"}},
         "auxiliary_ussuri": {"source": {"value": "distro"}},
         "auxiliary_wallaby": {"source": {"value": "cloud:focal-wallaby"}},
         "auxiliary_xena": {"source": {"value": "cloud:focal-xena"}},
