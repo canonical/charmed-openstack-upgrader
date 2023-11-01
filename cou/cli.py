@@ -84,11 +84,15 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     return VerbosityLevel(verbosity).name
 
 
-async def analyze_and_plan(model_name: Optional[str] = None) -> tuple[Analysis, UpgradeStep]:
+async def analyze_and_plan(
+    model_name: Optional[str] = None, backup_database: bool = True
+) -> tuple[Analysis, UpgradeStep]:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
+    :param backup_database: Whether to create database backup before upgrade.
+    :type backup_database: bool
     :return: Generated analyses and upgrade plan.
     :rtype: tuple[Analysis, UpgradeStep]
     """
@@ -101,37 +105,44 @@ async def analyze_and_plan(model_name: Optional[str] = None) -> tuple[Analysis, 
     logger.info(analysis_result)
 
     progress_indicator.start("Generating upgrade plan...")
-    upgrade_plan = await generate_plan(analysis_result)
+    upgrade_plan = await generate_plan(analysis_result, backup_database)
     progress_indicator.succeed()
 
     return analysis_result, upgrade_plan
 
 
-async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
+async def get_upgrade_plan(model_name: Optional[str] = None, backup_database: bool = True) -> None:
     """Get upgrade plan and print to console.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
+    :param backup_database: Whether to create database backup before upgrade.
+    :type backup_database: bool
     """
-    analysis_result, upgrade_plan = await analyze_and_plan(model_name)
+    analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
     logger.info(upgrade_plan)
     print(upgrade_plan)  # print plan to console even in quiet mode
     manually_upgrade_data_plane(analysis_result)
 
 
 async def run_upgrade(
-    model_name: Optional[str] = None, interactive: bool = True, quiet: bool = False
+    model_name: Optional[str] = None,
+    backup_database: bool = True,
+    interactive: bool = True,
+    quiet: bool = False,
 ) -> None:
     """Run cloud upgrade.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
+    :param backup_database: Whether to create database backup before upgrade.
+    :type backup_database: bool
     :param interactive: Whether to run upgrade interactively.
     :type interactive: bool
     :param quiet: Whether to run upgrade in quiet mode.
     :type quiet: bool
     """
-    analysis_result, upgrade_plan = await analyze_and_plan(model_name)
+    analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
     logger.info(upgrade_plan)
 
     # don't print plan if in quiet mode
@@ -162,10 +173,13 @@ async def entrypoint() -> None:
 
         match args.command:
             case "plan":
-                await get_upgrade_plan(model_name=args.model_name)
+                await get_upgrade_plan(model_name=args.model_name, backup_database=args.backup)
             case "run":
                 await run_upgrade(
-                    model_name=args.model_name, interactive=args.interactive, quiet=args.quiet
+                    model_name=args.model_name,
+                    backup_database=args.backup,
+                    interactive=args.interactive,
+                    quiet=args.quiet,
                 )
     except TimeoutException:
         progress_indicator.fail()

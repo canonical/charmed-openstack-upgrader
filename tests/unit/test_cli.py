@@ -71,11 +71,11 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
     )
     mock_analyze.return_value = analysis_result
 
-    await cli.analyze_and_plan(None)
+    await cli.analyze_and_plan(None, False)
 
     cou_model.create.assert_awaited_once_with(None)
     mock_analyze.assert_awaited_once_with(cou_model.create.return_value)
-    mock_generate_plan.assert_awaited_once_with(analysis_result)
+    mock_generate_plan.assert_awaited_once_with(analysis_result, False)
 
 
 @pytest.mark.asyncio
@@ -184,7 +184,12 @@ async def test_entrypoint_commands(mocker, command, function_call):
     mocker.patch(
         "cou.cli.parse_args",
         return_value=argparse.Namespace(
-            quiet=False, command=command, verbosity=0, model_name=None, interactive=True
+            quiet=False,
+            command=command,
+            verbosity=0,
+            model_name=None,
+            interactive=True,
+            backup=False,
         ),
     )
     mocker.patch("cou.cli.analyze_and_plan")
@@ -230,7 +235,9 @@ async def test_entrypoint_plan(mocker):
 
     await cli.entrypoint()
 
-    mock_get_upgrade_plan.assert_awaited_once_with(model_name=args.model_name)
+    mock_get_upgrade_plan.assert_awaited_once_with(
+        model_name=args.model_name, backup_database=args.backup
+    )
     mock_run_upgrade.assert_not_awaited()
 
 
@@ -247,5 +254,8 @@ async def test_entrypoint_real_run(mocker):
 
     mock_get_upgrade_plan.assert_not_awaited()
     mock_run_upgrade.assert_awaited_once_with(
-        model_name=args.model_name, interactive=args.interactive, quiet=args.quiet
+        model_name=args.model_name,
+        backup_database=args.backup,
+        interactive=args.interactive,
+        quiet=args.quiet,
     )

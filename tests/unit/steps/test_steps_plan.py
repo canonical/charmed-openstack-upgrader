@@ -132,7 +132,7 @@ async def test_generate_plan(apps, model):
         apps_data_plane=[],
     )
 
-    upgrade_plan = await generate_plan(analysis_result)
+    upgrade_plan = await generate_plan(analysis_result, backup_database=True)
 
     expected_plan = UpgradeStep(
         description="Top level plan",
@@ -177,7 +177,7 @@ async def test_generate_plan_raise_NoTargetError(mocker):
     analysis_result.current_cloud_os_release.next_release = None
     # not possible to determine target
     with pytest.raises(NoTargetError, match=exp_error_msg):
-        await generate_plan(analysis_result)
+        await generate_plan(analysis_result, backup_database=True)
 
 
 @pytest.mark.asyncio

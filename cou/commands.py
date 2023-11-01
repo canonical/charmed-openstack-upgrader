@@ -107,6 +107,13 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         dest="quiet",
         help="Disable output in STDOUT.",
     )
+    group.add_argument(
+        "--backup",
+        help="Include database backup step before cloud upgrade.\n"
+        "Default to enabling database backup.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
 
     return subcommand_common_opts_parser
 
