@@ -102,6 +102,8 @@ SUBORDINATES = [
 
 AUXILIARY_SUBORDINATES = ["hacluster", "mysql-router", "ceph-dashboard"]
 
+CHANNEL_BASED_CHARMS = ["designate-bind", "gnocchi", "glance-simplestreams-sync"]
+
 OPENSTACK_CODENAMES = OrderedDict(
     [
         ("diablo", "2011.2"),
@@ -146,6 +148,12 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "kinect": "zed",
     "lunar": "antelope",
 }
+
+CEPH_RELEASES = [
+    "octopus",
+    "pacific",
+    "quincy",
+]
 
 
 class OpenStackRelease:
@@ -423,7 +431,7 @@ def is_charm_supported(charm: str) -> bool:
     """
     return (
         bool(OpenStackCodenameLookup.lookup(charm))
-        or charm in SUBORDINATES + AUXILIARY_SUBORDINATES
+        or charm in SUBORDINATES + AUXILIARY_SUBORDINATES + CHANNEL_BASED_CHARMS
     )
 
 

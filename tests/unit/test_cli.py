@@ -15,6 +15,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from juju.errors import JujuError
 
 from cou import cli
 from cou.exceptions import COUException, TimeoutException
@@ -235,6 +236,22 @@ def test_entrypoint_failure_timeout(mock_run_command, mock_indicator):
 def test_entrypoint_failure_cou_exception(mock_run_command, mock_indicator):
     """Test COUException exception during entrypoint execution."""
     mock_run_command.side_effect = COUException
+
+    with pytest.raises(SystemExit, match="1"):
+        cli.entrypoint()
+
+    mock_indicator.fail.assert_called_once_with()
+    mock_indicator.stop.assert_called_once_with()
+
+
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.parse_args", new=MagicMock())
+@patch("cou.cli.get_log_level", new=MagicMock())
+@patch("cou.cli.setup_logging", new=MagicMock())
+@patch("cou.cli._run_command")
+def test_entrypoint_failure_juju_error(mock_run_command, mock_indicator):
+    """Test JujuError exception during entrypoint execution."""
+    mock_run_command.side_effect = JujuError
 
     with pytest.raises(SystemExit, match="1"):
         cli.entrypoint()

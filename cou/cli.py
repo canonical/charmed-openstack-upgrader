@@ -23,6 +23,7 @@ from signal import SIGINT, SIGTERM
 from typing import Optional
 
 from halo import Halo
+from juju.errors import JujuError
 
 from cou.commands import parse_args
 from cou.exceptions import COUException, TimeoutException
@@ -195,6 +196,11 @@ def entrypoint() -> None:
         progress_indicator.fail()
         logger.error(exc)
         sys.exit(1)
+    except JujuError as exc:
+        progress_indicator.fail()
+        logger.error("Error occurred in Juju's Python library.")
+        logger.error(exc)
+        sys.exit(1)
     except KeyboardInterrupt as exc:
         # NOTE(rgildein): if spinner_id is not None it means that indicator was not finished
         if progress_indicator.spinner_id is not None:
@@ -202,7 +208,7 @@ def entrypoint() -> None:
         print(str(exc) or "charmed-openstack-upgrader has been terminated")
         sys.exit(130)
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("Unexpected error occurred")
+        logger.error("Unexpected error occurred.")
         logger.exception(exc)
         sys.exit(2)
     finally:

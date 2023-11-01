@@ -54,7 +54,6 @@ def test_auxiliary_app(status, config, model):
     assert app.channel_codename == "yoga"
     assert app.is_subordinate is False
     assert app.current_os_release == "yoga"
-    assert app.is_os_channel_based is False
 
 
 def test_auxiliary_app_cs(status, config, model):
@@ -83,7 +82,6 @@ def test_auxiliary_app_cs(status, config, model):
     assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "ussuri"
     assert app.current_os_release == "yoga"
-    assert app.is_os_channel_based is False
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config, model):
@@ -413,11 +411,9 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
             coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
         ),
         UpgradeStep(
-            description=(
-                "Ensure require-osd-release option on ceph-mon units correctly set to 'pacific'"
-            ),
+            description="Ensure require-osd-release option matches with ceph-osd version",
             parallel=False,
-            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "pacific"),
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",
@@ -443,13 +439,6 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
-        ),
-        UpgradeStep(
-            description=(
-                "Ensure require-osd-release option on ceph-mon units correctly set to 'quincy'"
-            ),
-            parallel=False,
-            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "quincy"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -490,11 +479,9 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
         UpgradeStep(
-            description=(
-                "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
-            ),
+            description="Ensure require-osd-release option matches with ceph-osd version",
             parallel=False,
-            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "octopus"),
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
         UpgradeStep(
             description=(
@@ -515,13 +502,6 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
-        ),
-        UpgradeStep(
-            description=(
-                "Ensure require-osd-release option on ceph-mon units correctly set to 'octopus'"
-            ),
-            parallel=False,
-            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model, "octopus"),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

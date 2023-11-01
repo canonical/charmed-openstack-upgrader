@@ -83,6 +83,7 @@ class OpenStackApplication:
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
         OpenStack versions.
     :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
+    :raises CommandRunFailed: When a command fails to run.
     :raises RunUpgradeError: When an upgrade fails.
     """
 
@@ -157,7 +158,7 @@ class OpenStackApplication:
         """Populate application units."""
         if not self.is_subordinate:
             for name, unit in self.status.units.items():
-                compatible_os_version = self._get_latest_os_version_by_workload_version(unit)
+                compatible_os_version = self._get_latest_os_version(unit)
                 self.units.append(
                     ApplicationUnit(
                         name=name,
@@ -183,6 +184,11 @@ class OpenStackApplication:
         :return: Charm channel. E.g: ussuri/stable
         :rtype: str
         """
+        # NOTE(gabrielcocenza) Some applications current_os_release points
+        # to channel_codename without setting the channel before. In that
+        # case we set the attribute before accessing it.
+        if not hasattr(self, "_channel"):
+            self.channel = self.status.charm_channel
         return self._channel
 
     @channel.setter
@@ -214,15 +220,6 @@ class OpenStackApplication:
         """
         return self.charm_origin == "cs"
 
-    @property
-    def is_os_channel_based(self) -> bool:
-        """Check if application is OpenStack channel based.
-
-        :return: True if doesn't have origin setting or if is subordinate, False otherwise.
-        :rtype: bool
-        """
-        return not self.origin_setting or self.is_subordinate
-
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
 
@@ -237,7 +234,7 @@ class OpenStackApplication:
         except ValueError:
             return self.is_from_charm_store
 
-    def _get_latest_os_version_by_workload_version(self, unit: UnitStatus) -> OpenStackRelease:
+    def _get_latest_os_version(self, unit: UnitStatus) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
 
         :param unit: Application Unit
