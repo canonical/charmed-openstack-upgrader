@@ -19,7 +19,12 @@ import pytest
 from juju.errors import JujuError
 
 from cou import cli
-from cou.exceptions import COUException, TimeoutException, UnitNotFound
+from cou.exceptions import (
+    COUException,
+    HighestReleaseAchieved,
+    TimeoutException,
+    UnitNotFound,
+)
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 
@@ -213,6 +218,7 @@ async def test_entrypoint_commands(mocker, command, function_call):
         (COUException("Caught error"), "1"),
         (UnitNotFound("Unit not found"), "1"),
         (TimeoutException("The connection timed out"), "1"),
+        (HighestReleaseAchieved("Highest release achieved"), "0"),
     ],
 )
 async def test_entrypoint_with_exception(mocker, exception, exp_exitcode):
