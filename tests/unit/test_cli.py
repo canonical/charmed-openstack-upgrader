@@ -89,9 +89,9 @@ async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manuall
     mock_analysis_result = MagicMock()
 
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
-    await cli.get_upgrade_plan()
+    await cli.get_upgrade_plan(None, True)
 
-    mock_analyze_and_plan.assert_awaited_once()
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_logger.info.assert_called_once_with(plan)
     mock_manually_upgrade.assert_called_once()
 
@@ -124,9 +124,9 @@ async def test_run_upgrade_quiet(
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(quiet=quiet)
+    await cli.run_upgrade(model_name=None, backup_database=True, interactive=True, quiet=quiet)
 
-    mock_analyze_and_plan.assert_called_once()
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_logger.info.assert_called_once_with(plan)
     mock_apply_plan.assert_called_once_with(plan, True)
     mock_print.call_count == expected_print_count
@@ -161,9 +161,11 @@ async def test_run_upgrade_interactive(
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(interactive=interactive)
+    await cli.run_upgrade(
+        model_name=None, backup_database=True, interactive=interactive, quiet=False
+    )
 
-    mock_analyze_and_plan.assert_called_once()
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_logger.info.assert_called_once_with(plan)
     mock_apply_plan.assert_called_once_with(plan, interactive)
     assert mock_progress_indicator.start.call_count == progress_indication_count

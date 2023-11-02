@@ -85,7 +85,7 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
 
 
 async def analyze_and_plan(
-    model_name: Optional[str] = None, backup_database: bool = True
+    model_name: Optional[str], backup_database: bool
 ) -> tuple[Analysis, UpgradeStep]:
     """Analyze cloud and generate the upgrade plan with steps.
 
@@ -111,7 +111,7 @@ async def analyze_and_plan(
     return analysis_result, upgrade_plan
 
 
-async def get_upgrade_plan(model_name: Optional[str] = None, backup_database: bool = True) -> None:
+async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> None:
     """Get upgrade plan and print to console.
 
     :param model_name: Model name inputted by user.
@@ -126,10 +126,10 @@ async def get_upgrade_plan(model_name: Optional[str] = None, backup_database: bo
 
 
 async def run_upgrade(
-    model_name: Optional[str] = None,
-    backup_database: bool = True,
-    interactive: bool = True,
-    quiet: bool = False,
+    model_name: Optional[str],
+    backup_database: bool,
+    interactive: bool,
+    quiet: bool,
 ) -> None:
     """Run cloud upgrade.
 
