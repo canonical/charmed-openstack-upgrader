@@ -76,11 +76,11 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
     )
     mock_analyze.return_value = analysis_result
 
-    await cli.analyze_and_plan(None)
+    await cli.analyze_and_plan(None, False)
 
     cou_model.create.assert_awaited_once_with(None)
     mock_analyze.assert_awaited_once_with(cou_model.create.return_value)
-    mock_generate_plan.assert_awaited_once_with(analysis_result)
+    mock_generate_plan.assert_awaited_once_with(analysis_result, False)
 
 
 @pytest.mark.asyncio
@@ -94,9 +94,9 @@ async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manuall
     mock_analysis_result = MagicMock()
 
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
-    await cli.get_upgrade_plan()
+    await cli.get_upgrade_plan(None, True)
 
-    mock_analyze_and_plan.assert_awaited_once()
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_logger.info.assert_called_once_with(plan)
     mock_manually_upgrade.assert_called_once()
 
@@ -129,9 +129,9 @@ async def test_run_upgrade_quiet(
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(quiet=quiet)
+    await cli.run_upgrade(model_name=None, backup_database=True, interactive=True, quiet=quiet)
 
-    mock_analyze_and_plan.assert_called_once()
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_logger.info.assert_called_once_with(plan)
     mock_apply_plan.assert_called_once_with(plan, True)
     mock_print.call_count == expected_print_count
@@ -166,9 +166,11 @@ async def test_run_upgrade_interactive(
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(interactive=interactive)
+    await cli.run_upgrade(
+        model_name=None, backup_database=True, interactive=interactive, quiet=False
+    )
 
-    mock_analyze_and_plan.assert_called_once()
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_logger.info.assert_called_once_with(plan)
     mock_apply_plan.assert_called_once_with(plan, interactive)
     assert mock_progress_indicator.start.call_count == progress_indication_count
@@ -189,7 +191,12 @@ async def test_entrypoint_commands(mocker, command, function_call):
     mocker.patch(
         "cou.cli.parse_args",
         return_value=argparse.Namespace(
-            quiet=False, command=command, verbosity=0, model_name=None, interactive=True
+            quiet=False,
+            command=command,
+            verbosity=0,
+            model_name=None,
+            interactive=True,
+            backup=False,
         ),
     )
     mocker.patch("cou.cli.analyze_and_plan")
@@ -236,7 +243,9 @@ async def test_entrypoint_plan(mocker):
 
     await cli.entrypoint()
 
-    mock_get_upgrade_plan.assert_awaited_once_with(model_name=args.model_name)
+    mock_get_upgrade_plan.assert_awaited_once_with(
+        model_name=args.model_name, backup_database=args.backup
+    )
     mock_run_upgrade.assert_not_awaited()
 
 
@@ -253,5 +262,8 @@ async def test_entrypoint_real_run(mocker):
 
     mock_get_upgrade_plan.assert_not_awaited()
     mock_run_upgrade.assert_awaited_once_with(
-        model_name=args.model_name, interactive=args.interactive, quiet=args.quiet
+        model_name=args.model_name,
+        backup_database=args.backup,
+        interactive=args.interactive,
+        quiet=args.quiet,
     )

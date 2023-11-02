@@ -51,11 +51,13 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
+async def generate_plan(analysis_result: Analysis, backup_database: bool) -> UpgradeStep:
     """Generate plan for upgrade.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
+    :param backup_database: Whether to create database backup before upgrade.
+    :type backup_database: bool
     :raises NoTargetError: When cannot find target to upgrade.
     :raises HighestReleaseAchieved: When the highest possible OpenStack release is
     already achieved.
@@ -70,13 +72,14 @@ async def generate_plan(analysis_result: Analysis) -> UpgradeStep:
     print(f"Upgrading cloud from '{analysis_result.current_cloud_os_release}' to '{target}'\n.")
 
     plan = UpgradeStep(description="Top level plan", parallel=False)
-    plan.add_step(
-        UpgradeStep(
-            description="backup mysql databases",
-            parallel=False,
-            coro=backup(analysis_result.model),
+    if backup_database:
+        plan.add_step(
+            UpgradeStep(
+                description="backup mysql databases",
+                parallel=False,
+                coro=backup(analysis_result.model),
+            )
         )
-    )
 
     control_plane_principal_upgrade_plan = await create_upgrade_group(
         apps=analysis_result.apps_control_plane,

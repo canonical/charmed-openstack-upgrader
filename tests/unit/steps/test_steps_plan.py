@@ -138,7 +138,7 @@ async def test_generate_plan(apps, model):
         apps_data_plane=[],
     )
 
-    upgrade_plan = await generate_plan(analysis_result)
+    upgrade_plan = await generate_plan(analysis_result, backup_database=True)
 
     expected_plan = UpgradeStep(
         description="Top level plan",
