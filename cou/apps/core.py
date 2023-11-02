@@ -28,5 +28,15 @@ class Keystone(OpenStackApplication):
     Keystone must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 300
+    wait_timeout = 30 * 60  # 30 min
     wait_for_model = True
+
+
+@AppFactory.register_application(["octavia"])
+class Octavia(OpenStackApplication):
+    """Octavia application.
+
+    Octavia required more time to settle before COU can continue.
+    """
+
+    wait_timeout = 30 * 60  # 30 min

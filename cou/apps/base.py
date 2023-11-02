@@ -40,7 +40,7 @@ from cou.utils.openstack import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_WAITING_TIMEOUT = 120
+DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
 
 
 @dataclass
