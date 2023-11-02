@@ -108,3 +108,11 @@ class TimeoutException(COUException):
 
 class CanceledUpgradeStep(COUException):
     """COU exception when executing canceled step."""
+
+
+class HighestReleaseAchieved(COUException):
+    """COU exception when the highest possible OpenStack release is already achieved."""
+
+
+class OutOfSupportRange(COUException):
+    """COU exception when the release or series is out of the current supporting range."""

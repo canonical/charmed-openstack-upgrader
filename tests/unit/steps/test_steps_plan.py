@@ -11,17 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
 from cou.apps.base import OpenStackApplication
-from cou.exceptions import HaltUpgradePlanGeneration, NoTargetError
+from cou.exceptions import (
+    HaltUpgradePlanGeneration,
+    HighestReleaseAchieved,
+    NoTargetError,
+    OutOfSupportRange,
+)
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.plan import (
     create_upgrade_group,
+    determine_upgrade_target,
     generate_plan,
     manually_upgrade_data_plane,
 )
@@ -170,14 +176,74 @@ async def test_generate_plan(apps, model):
     assert upgrade_plan == expected_plan
 
 
-@pytest.mark.asyncio
-async def test_generate_plan_raise_NoTargetError(mocker):
-    exp_error_msg = "Cannot find target to upgrade."
-    analysis_result = MagicMock(spec=Analysis)
-    analysis_result.current_cloud_os_release.next_release = None
-    # not possible to determine target
+@pytest.mark.parametrize(
+    "current_os_release, current_series, next_release",
+    [
+        (OpenStackRelease("victoria"), "focal", "wallaby"),
+        (OpenStackRelease("xena"), "focal", "yoga"),
+    ],
+)
+def test_determine_upgrade_target(current_os_release, current_series, next_release):
+    target = determine_upgrade_target(current_os_release, current_series)
+
+    assert target == next_release
+
+
+def test_determine_upgrade_target_no_upgrade_available():
+    current_os_release = OpenStackRelease("yoga")
+    current_series = "focal"
+    with pytest.raises(HighestReleaseAchieved):
+        determine_upgrade_target(current_os_release, current_series)
+
+
+@pytest.mark.parametrize(
+    "current_os_release, current_series, exp_error_msg",
+    [
+        (
+            None,
+            "bionic",
+            "Cannot determine the current OS release in the cloud. "
+            "Is this a valid OpenStack cloud?",
+        ),  # current_os_release is None
+        (
+            OpenStackRelease("ussuri"),
+            None,
+            "Cannot determine the current Ubuntu series in the cloud. "
+            "Is this a valid OpenStack cloud?",
+        ),  # current_series is None
+    ],
+)
+def test_determine_upgrade_target_invalid_input(current_os_release, current_series, exp_error_msg):
     with pytest.raises(NoTargetError, match=exp_error_msg):
-        await generate_plan(analysis_result)
+        determine_upgrade_target(current_os_release, current_series)
+
+
+def test_determine_upgrade_target_no_next_release():
+    exp_error_msg = "Cannot find target to upgrade. Current minimum OS release is "
+    "'ussuri'. Current Ubuntu series is 'focal'."
+    current_series = "focal"
+
+    with pytest.raises(NoTargetError, match=exp_error_msg), patch(
+        "cou.utils.openstack.OpenStackRelease.next_release", new_callable=PropertyMock
+    ) as mock_next_release:
+        mock_next_release.return_value = None
+        current_os_release = OpenStackRelease(
+            "ussuri"
+        )  # instantiate OpenStackRelease with any valid codename
+        determine_upgrade_target(current_os_release, current_series)
+
+
+@pytest.mark.parametrize(
+    "current_os_release, current_series",
+    [
+        (OpenStackRelease("yoga"), "jammy"),
+        (OpenStackRelease("train"), "bionic"),
+        (OpenStackRelease("zed"), "focal"),
+    ],
+)
+def test_determine_upgrade_target_release_out_of_range(current_os_release, current_series):
+    with pytest.raises(OutOfSupportRange):
+        determine_upgrade_target(current_os_release, current_series)
 
 
 @pytest.mark.asyncio
