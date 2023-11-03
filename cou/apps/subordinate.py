@@ -16,7 +16,7 @@ import logging
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
-from cou.steps import UpgradeStep
+from cou.steps import PostUpgradeSubStep, PreUpgradeSubStep, UpgradeSubStep
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -25,34 +25,34 @@ logger = logging.getLogger(__name__)
 class SubordinateBaseClass(OpenStackApplication):
     """Subordinate base class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeSubStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[PreUpgradeSubStep]
         """
         return [self._get_refresh_charm_plan(target)]
 
-    def upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeSubStep]:
         """Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: Plan that will add upgrade as sub steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[UpgradeSubStep]
         """
         return [self._get_upgrade_charm_plan(target)]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[PostUpgradeSubStep]:
         """Post Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[PostUpgradeSubStep]
         """
         return []
 

@@ -20,7 +20,7 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
-from cou.steps import UpgradeStep
+from cou.steps import BaseStep
 from cou.steps.execute import _run_step, apply_plan, prompt
 
 
@@ -28,11 +28,11 @@ from cou.steps.execute import _run_step, apply_plan, prompt
 @patch("cou.steps.execute.apply_plan")
 async def test_run_step_sequentially(mock_apply_plan):
     """Test running step and all sub-steps sequentially."""
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=BaseStep)
     upgrade_plan.parallel = False
     upgrade_plan.sub_steps = sub_steps = [
-        AsyncMock(auto_spec=UpgradeStep),
-        AsyncMock(auto_spec=UpgradeStep),
+        AsyncMock(auto_spec=BaseStep),
+        AsyncMock(auto_spec=BaseStep),
     ]
 
     await _run_step(upgrade_plan, False)
@@ -45,12 +45,12 @@ async def test_run_step_sequentially(mock_apply_plan):
 @patch("cou.steps.execute.apply_plan")
 async def test_run_step_parallel(mock_apply_plan):
     """Test running step and all sub-steps in parallel."""
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=BaseStep)
     upgrade_plan.parallel = True
     upgrade_plan.sub_steps = sub_steps = [
-        AsyncMock(auto_spec=UpgradeStep),
-        AsyncMock(auto_spec=UpgradeStep),
-        AsyncMock(auto_spec=UpgradeStep),
+        AsyncMock(auto_spec=BaseStep),
+        AsyncMock(auto_spec=BaseStep),
+        AsyncMock(auto_spec=BaseStep),
     ]
 
     await _run_step(upgrade_plan, False)
@@ -63,7 +63,7 @@ async def test_run_step_parallel(mock_apply_plan):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_abort(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=BaseStep)
     upgrade_plan.description = "Test Plan"
     mock_input.return_value = "a"
 
@@ -78,7 +78,7 @@ async def test_apply_plan_abort(mock_run_step, mock_input):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_non_interactive(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=BaseStep)
     upgrade_plan.description = "Test Plan"
 
     await apply_plan(upgrade_plan, False)
@@ -91,7 +91,7 @@ async def test_apply_plan_non_interactive(mock_run_step, mock_input):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_continue(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=BaseStep)
     upgrade_plan.description = "Test Plan"
     mock_input.return_value = "C"
 
@@ -105,7 +105,7 @@ async def test_apply_plan_continue(mock_run_step, mock_input):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_nonsense(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=BaseStep)
     upgrade_plan.description = "Test Plan"
     mock_input.side_effect = ["x", "a"]
 
@@ -120,7 +120,7 @@ async def test_apply_plan_nonsense(mock_run_step, mock_input):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_skip(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=BaseStep)
     upgrade_plan.description = "Test Plan"
     mock_input.return_value = "s"
 
@@ -145,14 +145,14 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(randint(10, 200) / 1000)  # wait randomly between 10ms and 200ms
             self.execution_order.append(name)
 
-        self.plan = UpgradeStep("test plan", parallel=False)
+        self.plan = BaseStep("test plan", parallel=False)
         # define parallel step
-        parallel_step = UpgradeStep("parallel", parallel=True, coro=append("parallel"))
+        parallel_step = BaseStep("parallel", parallel=True, coro=append("parallel"))
         for i in range(5):
-            sub_step = UpgradeStep(f"parallel.{i}", parallel=False, coro=append(f"parallel.{i}"))
+            sub_step = BaseStep(f"parallel.{i}", parallel=False, coro=append(f"parallel.{i}"))
             for j in range(3):
                 sub_step.add_step(
-                    UpgradeStep(
+                    BaseStep(
                         f"parallel.{i}.{j}",
                         parallel=False,
                         coro=append(f"parallel.{i}.{j}"),
@@ -162,15 +162,15 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             parallel_step.add_step(sub_step)
         self.plan.add_step(parallel_step)
         # define sequential step
-        sequential_step = UpgradeStep("sequential", parallel=False, coro=append("sequential"))
+        sequential_step = BaseStep("sequential", parallel=False, coro=append("sequential"))
         for i in range(5):
-            sub_step = UpgradeStep(
+            sub_step = BaseStep(
                 f"sequential.{i}",
                 parallel=False,
                 coro=append(f"sequential.{i}"),
             )
             sub_step.add_step(
-                UpgradeStep(
+                BaseStep(
                     f"sequential.{i}.0",
                     parallel=False,
                     coro=append(f"sequential.{i}.0"),

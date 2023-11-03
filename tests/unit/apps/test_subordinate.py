@@ -18,7 +18,7 @@ import pytest
 
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.exceptions import ApplicationError
-from cou.steps import UpgradeStep
+from cou.steps import ApplicationUpgradeStep, PreUpgradeSubStep, UpgradeSubStep
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
@@ -52,17 +52,17 @@ def test_generate_upgrade_plan(status, model):
     )
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = UpgradeStep(
+    expected_plan = ApplicationUpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
     )
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeSubStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
-        UpgradeStep(
+        UpgradeSubStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
@@ -128,17 +128,17 @@ def test_generate_plan_ch_migration(status, model, channel):
     app.channel = channel
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = UpgradeStep(
+    expected_plan = ApplicationUpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
     )
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeSubStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone-ldap"),
         ),
-        UpgradeStep(
+        UpgradeSubStep(
             description=f"Upgrade '{app.name}' to the new channel: 'wallaby/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "wallaby/stable"),
@@ -167,17 +167,17 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
     app.channel = f"{from_os}/stable"
     upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(to_os))
 
-    expected_plan = UpgradeStep(
+    expected_plan = ApplicationUpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {to_os}",
         parallel=False,
     )
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeSubStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_os}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{from_os}/stable", switch=None),
         ),
-        UpgradeStep(
+        UpgradeSubStep(
             description=f"Upgrade '{app.name}' to the new channel: '{to_os}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{to_os}/stable"),
@@ -206,12 +206,12 @@ def test_generate_plan_in_same_version(status, model, from_to):
 
     app.channel = f"{from_to}/stable"
     upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(from_to))
-    expected_plan = UpgradeStep(
+    expected_plan = ApplicationUpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {from_to}",
         parallel=False,
     )
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeSubStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_to}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{from_to}/stable", switch=None),

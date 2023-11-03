@@ -19,8 +19,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cou.exceptions import CanceledUpgradeStep
-from cou.steps import UpgradeStep, compare_step_coroutines
+from cou.exceptions import CanceledStep
+from cou.steps import (
+    BaseStep,
+    PostUpgradeSubStep,
+    PreUpgradeSubStep,
+    compare_step_coroutines,
+)
 
 
 async def mock_coro(*args, **kwargs):
@@ -45,9 +50,9 @@ def test_compare_step_coroutines(coro1, coro2, exp_result):
 
 @pytest.mark.parametrize("description, parallel", [("test", False), ("test description", True)])
 def test_step_init(description, parallel):
-    """Test UpgradeStep initialization."""
+    """Test BaseStep initialization."""
     coro = mock_coro()
-    step = UpgradeStep(description, parallel, coro)
+    step = BaseStep(description, parallel, coro)
 
     assert step.description == description
     assert step.parallel == parallel
@@ -57,9 +62,9 @@ def test_step_init(description, parallel):
 
 
 def test_step_hash():
-    """Test creation of hash from UpgradeStep."""
+    """Test creation of hash from BaseStep."""
     coro = mock_coro()
-    step = UpgradeStep("test hash", False, coro)
+    step = BaseStep("test hash", False, coro)
 
     assert hash(("test hash", False, coro)) == hash(step)
 
@@ -69,11 +74,11 @@ def test_step_hash():
     [("test", False, ()), ("test description", True, ("name", 1, 2))],
 )
 def test_step_eq(description, parallel, args):
-    """Test UpgradeStep comparison."""
-    step_1 = UpgradeStep(description, parallel, mock_coro(*args))
-    step_2 = UpgradeStep(description, parallel, mock_coro(*args))
+    """Test BaseStep comparison."""
+    step_1 = BaseStep(description, parallel, mock_coro(*args))
+    step_2 = BaseStep(description, parallel, mock_coro(*args))
     # define step with different coro
-    step_3 = UpgradeStep(description, parallel, mock_coro(unique_arg=True))
+    step_3 = BaseStep(description, parallel, mock_coro(unique_arg=True))
 
     assert step_1 == step_2
     assert step_1 != step_3
@@ -81,26 +86,26 @@ def test_step_eq(description, parallel, args):
 
 
 def test_step_eq_empty_upgrades():
-    step_1 = UpgradeStep()
-    step_2 = UpgradeStep()
+    step_1 = BaseStep()
+    step_2 = BaseStep()
     assert step_1 == step_2
 
 
 def test_step_bool():
-    """Test UpgradeStep boolean method."""
+    """Test BaseStep boolean method."""
     # no coroutine in the plan
-    plan = UpgradeStep(description="a")
+    plan = BaseStep(description="a")
     assert bool(plan) is False
 
     # no coroutine in the plan and sub_step
-    sub_step = UpgradeStep(description="a.a")
+    sub_step = BaseStep(description="a.a")
     assert bool(sub_step) is False
 
     plan.sub_steps = [sub_step]
     assert bool(plan) is False
 
     # coroutine in the plan sub_steps tree
-    sub_sub_step = UpgradeStep(description="a.a.a", coro=mock_coro("a.a.a"))
+    sub_sub_step = BaseStep(description="a.a.a", coro=mock_coro("a.a.a"))
     sub_step.sub_steps = [sub_sub_step]
     assert bool(sub_sub_step) is True
     assert bool(sub_step) is True
@@ -108,73 +113,75 @@ def test_step_bool():
 
 
 def test_step_str():
-    """Test UpgradeStep string representation."""
+    """Test BaseStep string representation."""
     expected = "a\n\ta.a\n\t\ta.a.a\n\t\ta.a.b\n\ta.b\n"
-    plan = UpgradeStep(description="a")
-    sub_step = UpgradeStep(description="a.a")
+    plan = BaseStep(description="a")
+    sub_step = BaseStep(description="a.a")
     sub_step.sub_steps = [
-        UpgradeStep(description="a.a.a", coro=mock_coro("a.a.a")),
-        UpgradeStep(description="a.a.b", coro=mock_coro("a.a.b")),
+        BaseStep(description="a.a.a", coro=mock_coro("a.a.a")),
+        BaseStep(description="a.a.b", coro=mock_coro("a.a.b")),
     ]
-    plan.sub_steps = [sub_step, UpgradeStep(description="a.b", coro=mock_coro("a.b"))]
+    plan.sub_steps = [sub_step, BaseStep(description="a.b", coro=mock_coro("a.b"))]
 
     assert str(plan) == expected
 
 
 def test_step_str_not_show():
-    """Test UpgradeStep string representation when does not print because it's empty."""
-    plan = UpgradeStep(description="a")
-    sub_step = UpgradeStep(description="a.a")
+    """Test BaseStep string representation when does not print because it's empty."""
+    plan = BaseStep(description="a")
+    sub_step = BaseStep(description="a.a")
     sub_step.sub_steps = [
-        UpgradeStep(description="a.a.a"),
-        UpgradeStep(description="a.a.b"),
+        BaseStep(description="a.a.a"),
+        BaseStep(description="a.a.b"),
     ]
-    plan.sub_steps = [sub_step, UpgradeStep(description="a.b")]
+    plan.sub_steps = [sub_step, BaseStep(description="a.b")]
 
     assert str(plan) == ""
 
 
 def test_step_str_partially_show():
-    """Test UpgradeStep string representation when print UpgradeSteps that have coro."""
+    """Test BaseStep string representation when print BaseSteps that have coro."""
     expected = "a\n\ta.a\n\t\ta.a.a\n"
-    plan = UpgradeStep(description="a")
-    sub_step = UpgradeStep(description="a.a")
+    plan = BaseStep(description="a")
+    sub_step = BaseStep(description="a.a")
     sub_step.sub_steps = [
-        UpgradeStep(description="a.a.a", coro=mock_coro("a.a.a")),
-        UpgradeStep(description="a.a.b"),
+        BaseStep(description="a.a.a", coro=mock_coro("a.a.a")),
+        BaseStep(description="a.a.b"),
     ]
-    # empty UpgradeStep does not show up
-    plan.sub_steps = [UpgradeStep(), sub_step, UpgradeStep(description="a.b")]
+    # empty BaseStep does not show up
+    plan.sub_steps = [BaseStep(), sub_step, BaseStep(description="a.b")]
 
     assert str(plan) == expected
 
 
 def test_step_repr():
-    """Test UpgradeStep representation."""
+    """Test BaseStep representation."""
     description = "test plan"
-    upgrade_step = UpgradeStep(description=description)
-    upgrade_step.add_step(UpgradeStep(description="test sub-step"))
+    upgrade_step = BaseStep(description=description)
+    upgrade_step.add_step(BaseStep(description="test sub-step"))
     expected_repr = f"UpgradeStep({description})"
     assert repr(upgrade_step) == expected_repr
 
 
-def test_step_repr_no_description():
-    """Test UpgradeStep representation when there is no description."""
+@pytest.mark.parametrize("step", [BaseStep, PreUpgradeSubStep, PostUpgradeSubStep])
+def test_step_repr_no_description(step):
+    """Test BaseStep representation when there is no description."""
     with pytest.raises(ValueError):
-        UpgradeStep(coro=mock_coro("a"))
+        step(coro=mock_coro("a"))
 
 
 @pytest.mark.asyncio
 async def test_properties():
-    """Test UpgradeStep properties."""
+    """Test BaseStep properties."""
 
     async def coro():
         return 42
 
-    upgrade_step = UpgradeStep(description="test", coro=coro())
+    upgrade_step = BaseStep(description="test", coro=coro())
 
     assert upgrade_step.canceled == upgrade_step._canceled
     assert upgrade_step.results is None
+    assert upgrade_step.is_functionless is False
 
     await upgrade_step.run()
 
@@ -182,21 +189,21 @@ async def test_properties():
 
 
 def test_step_add_step():
-    """Test UpgradeStep adding sub steps."""
+    """Test BaseStep adding sub steps."""
     exp_sub_steps = 3
-    plan = UpgradeStep(description="plan")
+    plan = BaseStep(description="plan")
     for i in range(exp_sub_steps):
-        plan.add_step(UpgradeStep(description=f"sub-step-{i}"))
+        plan.add_step(BaseStep(description=f"sub-step-{i}"))
 
     assert len(plan.sub_steps) == exp_sub_steps
 
 
 def test_step_cancel_safe():
     """Test step safe cancel."""
-    plan = UpgradeStep(description="plan")
-    plan.sub_steps = sub_steps = [UpgradeStep(description=f"sub-{i}") for i in range(10)]
+    plan = BaseStep(description="plan")
+    plan.sub_steps = sub_steps = [BaseStep(description=f"sub-{i}") for i in range(10)]
     # add sub-sub-steps to one sub-step
-    sub_steps[0].sub_steps = [UpgradeStep(description=f"sub-0.{i}") for i in range(3)]
+    sub_steps[0].sub_steps = [BaseStep(description=f"sub-0.{i}") for i in range(3)]
 
     plan.cancel()
 
@@ -207,7 +214,7 @@ def test_step_cancel_safe():
 
 def test_step_cancel_unsafe():
     """Test step unsafe cancel."""
-    plan = UpgradeStep(description="test plan")
+    plan = BaseStep(description="test plan")
     plan._task = mock_task = MagicMock(spec_sep=asyncio.Task)
 
     plan.cancel(safe=False)
@@ -218,12 +225,12 @@ def test_step_cancel_unsafe():
 
 @pytest.mark.asyncio
 async def test_step_run():
-    """Test UpgradeStep run."""
+    """Test BaseStep run."""
 
     async def asquared(num):
         return num**2
 
-    step = UpgradeStep(description="plan", coro=asquared(5))
+    step = BaseStep(description="plan", coro=asquared(5))
     value = await step.run()
 
     assert value == 25
@@ -231,26 +238,26 @@ async def test_step_run():
 
 @pytest.mark.asyncio
 async def test_step_run_canceled():
-    """Test UpgradeStep run canceled step."""
+    """Test BaseStep run canceled step."""
     description = "test plan"
     exp_error = re.escape(f"Could not run canceled step: UpgradeStep({description})")
-    step = UpgradeStep(description=description, coro=mock_coro())
+    step = BaseStep(description=description, coro=mock_coro())
     step.cancel()
     assert step.canceled is True
-    with pytest.raises(CanceledUpgradeStep, match=exp_error):
+    with pytest.raises(CanceledStep, match=exp_error):
         await step.run()
 
 
 @pytest.mark.asyncio
 async def test_step_cancel_task():
-    """Test UpgradeStep cancel step task."""
+    """Test BaseStep cancel step task."""
 
     async def step_canceller(_step):
         await asyncio.sleep(0.5)
         _step._task.cancel()
 
     # simulate a cancel step task that waits 10 minutes without CancelledError
-    step = UpgradeStep(description="test plan", coro=asyncio.sleep(600))
+    step = BaseStep(description="test plan", coro=asyncio.sleep(600))
     assert step._task is None
 
     asyncio.create_task(step_canceller(step))
@@ -301,12 +308,12 @@ async def test_step_full_run(sub_steps, exp_order, parallel):
             if step.canceled is False:
                 await step_run(_sub_step)
 
-    plan = UpgradeStep(description="upgrade plan")
+    plan = BaseStep(description="upgrade plan")
     for name, time, step_sub_steps in sub_steps:
-        step = UpgradeStep(description=name, coro=sub_step(name, time))
+        step = BaseStep(description=name, coro=sub_step(name, time))
         plan.add_step(step)
         for sub_name, sub_time in step_sub_steps:
-            step.add_step(UpgradeStep(description=sub_name, coro=sub_step(sub_name, sub_time)))
+            step.add_step(BaseStep(description=sub_name, coro=sub_step(sub_name, sub_time)))
 
     await plan.run()
     if parallel:

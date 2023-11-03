@@ -22,7 +22,13 @@ from cou.exceptions import (
     NoTargetError,
     OutOfSupportRange,
 )
-from cou.steps import UpgradeStep
+from cou.steps import (
+    ApplicationUpgradeStep,
+    BaseStep,
+    PostUpgradeSubStep,
+    PreUpgradeSubStep,
+    UpgradeSubStep,
+)
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.plan import (
@@ -37,33 +43,33 @@ from tests.unit.apps.utils import add_steps
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
-    expected_plan = UpgradeStep(
+    expected_plan = ApplicationUpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target.codename}",
         parallel=False,
     )
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
         # apps waiting for whole model
-        wait_step = UpgradeStep(
+        wait_step = PostUpgradeSubStep(
             description=f"Wait 300 s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(300, None),
         )
     else:
-        wait_step = UpgradeStep(
+        wait_step = PostUpgradeSubStep(
             description=f"Wait 120 s for app {app.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(120, [app.name]),
         )
 
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeSubStep(
             description=(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
             coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
-        UpgradeStep(
+        PreUpgradeSubStep(
             description=(
                 f"Refresh '{app.name}' to the latest revision of "
                 f"'{target.previous_release}/stable'"
@@ -71,17 +77,17 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
         ),
-        UpgradeStep(
+        UpgradeSubStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
-        UpgradeStep(
+        UpgradeSubStep(
             description=(f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'"),
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
-        UpgradeStep(
+        UpgradeSubStep(
             description=(
                 f"Change charm config of '{app.name}' "
                 f"'{app.origin_setting}' to 'cloud:focal-{target.codename}'"
@@ -92,7 +98,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             ),
         ),
         wait_step,
-        UpgradeStep(
+        PostUpgradeSubStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
@@ -103,12 +109,12 @@ def generate_expected_upgrade_plan_principal(app, target, model):
 
 
 def generate_expected_upgrade_plan_subordinate(app, target, model):
-    expected_plan = UpgradeStep(
+    expected_plan = ApplicationUpgradeStep(
         description=f"Upgrade plan for '{app.name}' to {target}",
         parallel=False,
     )
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeSubStep(
             description=(
                 f"Refresh '{app.name}' to the latest revision of "
                 f"'{target.previous_release}/stable'"
@@ -116,7 +122,7 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
         ),
-        UpgradeStep(
+        UpgradeSubStep(
             description=(f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'"),
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
@@ -140,20 +146,20 @@ async def test_generate_plan(apps, model):
 
     upgrade_plan = await generate_plan(analysis_result, backup_database=True)
 
-    expected_plan = UpgradeStep(
-        description="Top level plan",
+    expected_plan = BaseStep(
+        description="Upgrade cloud from 'ussuri' to 'victoria'",
         parallel=False,
     )
 
     expected_plan.add_step(
-        UpgradeStep(
-            description="backup mysql databases",
+        BaseStep(
+            description="Backup mysql databases",
             parallel=False,
             coro=backup(model),
         )
     )
 
-    control_plane_principals = UpgradeStep(
+    control_plane_principals = BaseStep(
         description="Control Plane principal(s) upgrade plan",
         parallel=False,
     )
@@ -162,7 +168,7 @@ async def test_generate_plan(apps, model):
     control_plane_principals.add_step(keystone_plan)
     control_plane_principals.add_step(cinder_plan)
 
-    control_plane_subordinates = UpgradeStep(
+    control_plane_subordinates = BaseStep(
         description="Control Plane subordinate(s) upgrade plan",
         parallel=False,
     )

@@ -23,7 +23,7 @@ import os
 import warnings
 from typing import Any, Coroutine, List, Optional
 
-from cou.exceptions import CanceledUpgradeStep
+from cou.exceptions import CanceledStep
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +50,10 @@ def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutin
     )
 
 
-class UpgradeStep:
+class BaseStep:
     """Represents each upgrade step.
 
-    This UpgradeStep is used to define any step when performing an OpenStack upgrade.
+    This BaseStep is used to define any step when performing an OpenStack upgrade.
     And requires description, parallel and coroutine as arguments. The coroutine is expected by
     creating an asyncio.Task task instead of waiting directly, so that it is possible to cancel
     the task and at the same time simply find out which task is really running according to
@@ -84,23 +84,23 @@ class UpgradeStep:
         self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
         self.description = description
-        self.sub_steps: List[UpgradeStep] = []
+        self.sub_steps: List[BaseStep] = []
         self._canceled: bool = False
         self._task: Optional[asyncio.Task] = None
 
     def __hash__(self) -> int:
-        """Get hash for UpgradeStep."""
+        """Get hash for BaseStep."""
         return hash((self.description, self.parallel, self._coro))
 
     def __eq__(self, other: Any) -> bool:
-        """Equal magic method for UpgradeStep.
+        """Equal magic method for BaseStep.
 
-        :param other: UpgradeStep object to compare.
+        :param other: BaseStep object to compare.
         :type other: Any
         :return: True if equal False if different.
         :rtype: bool
         """
-        if not isinstance(other, UpgradeStep):
+        if not isinstance(other, BaseStep):
             return NotImplemented
 
         return (
@@ -113,7 +113,7 @@ class UpgradeStep:
     def __str__(self) -> str:
         """Dump the plan for upgrade.
 
-        :return: String representation of UpgradeStep.
+        :return: String representation of BaseStep.
         :rtype: str
         """
         result = ""
@@ -127,17 +127,17 @@ class UpgradeStep:
         return result
 
     def __repr__(self) -> str:
-        """Representation of UpgradeStep.
+        """Representation of BaseStep.
 
-        :return: Representation of UpgradeStep.
+        :return: Representation of BaseStep.
         :rtype: str
         """
         return f"UpgradeStep({self.description})"
 
     def __bool__(self) -> bool:
-        """Boolean magic method for UpgradeStep.
+        """Boolean magic method for BaseStep.
 
-        :return: True if there is at least one coroutine in a UpgradeStep
+        :return: True if there is at least one coroutine in a BaseStep
         or in its sub steps.
         :rtype: bool
         """
@@ -145,7 +145,7 @@ class UpgradeStep:
 
     @property
     def description(self) -> str:
-        """Get the description of the UpgradeStep.
+        """Get the description of the BaseStep.
 
         :return: description
         :rtype: str
@@ -154,7 +154,7 @@ class UpgradeStep:
 
     @description.setter
     def description(self, description: str) -> None:
-        """Set the description of the UpgradeStep.
+        """Set the description of the BaseStep.
 
         :param description: description
         :type description: str
@@ -171,14 +171,23 @@ class UpgradeStep:
 
     @property
     def results(self) -> Any:
-        """Return result of UpgradeStep."""
+        """Return result of BaseStep."""
         return self._task.result() if self._task is not None else None
 
-    def add_step(self, step: UpgradeStep) -> None:
+    @property
+    def is_functionless(self) -> bool:
+        """Check if this is a functionless step.
+
+        :return: True if doesn't contain function. False otherwise.
+        :rtype: bool
+        """
+        return self._coro is None
+
+    def add_step(self, step: BaseStep) -> None:
         """Add a single step.
 
-        :param step: UpgradeStep to be added as sub step.
-        :type step: UpgradeStep
+        :param step: BaseStep to be added as sub step.
+        :type step: BaseStep
         """
         self.sub_steps.append(step)
 
@@ -202,16 +211,16 @@ class UpgradeStep:
         logger.debug("canceled: %s", self)
 
     async def run(self) -> Any:
-        """Run the UpgradeStep coroutine.
+        """Run the BaseStep coroutine.
 
         :return: Result of the coroutine.
         :rtype: Any
-        :raises CanceledUpgradeStep: If step has already been canceled.
+        :raises CanceledStep: If step has already been canceled.
         """
         logger.debug("running step: %s", repr(self))
 
         if self.canceled:
-            raise CanceledUpgradeStep(f"Could not run canceled step: {repr(self)}")
+            raise CanceledStep(f"Could not run canceled step: {repr(self)}")
 
         if self._coro is None:
             return  # do nothing if coro was not provided
@@ -221,3 +230,61 @@ class UpgradeStep:
             return await self._task  # wait until task is completed
         except asyncio.CancelledError:  # ignoring asyncio.CancelledError
             logger.warning("Task %s was stopped unsafely.", repr(self))
+
+
+class ApplicationUpgradeStep(BaseStep):
+    """Represents the step for application-level upgrade."""
+
+
+class UpgradeSubStep(BaseStep):
+    """Represents the sub-step of an application upgrade."""
+
+
+class PreUpgradeSubStep(UpgradeSubStep):
+    """Represents the pre-upgrade sub-step for an application upgrade."""
+
+    @property
+    def description(self) -> str:
+        """Get the description of the PreUpgradeSubStep.
+
+        :return: description
+        :rtype: str
+        """
+        return self._description
+
+    @description.setter
+    def description(self, description: str) -> None:
+        """Set the description of the PreUpgradeSubStep.
+
+        :param description: description
+        :type description: str
+        :raises ValueError: When a coroutine is passed without description.
+        """
+        if not description and self._coro:
+            raise ValueError("Every coroutine should have a description")
+        self._description = "[pre-upgrade] " + description
+
+
+class PostUpgradeSubStep(UpgradeSubStep):
+    """Represents the post-upgrade sub-step for an application upgrade."""
+
+    @property
+    def description(self) -> str:
+        """Get the description of the PostUpgradeSubStep.
+
+        :return: description
+        :rtype: str
+        """
+        return self._description
+
+    @description.setter
+    def description(self, description: str) -> None:
+        """Set the description of the PostUpgradeSubStep.
+
+        :param description: description
+        :type description: str
+        :raises ValueError: When a coroutine is passed without description.
+        """
+        if not description and self._coro:
+            raise ValueError("Every coroutine should have a description")
+        self._description = "[post-upgrade] " + description
