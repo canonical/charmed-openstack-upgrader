@@ -60,12 +60,7 @@ class BaseStep:
     its name.
     """
 
-    def __init__(
-        self,
-        description: str = "",
-        parallel: bool = False,
-        coro: Optional[Coroutine] = None,
-    ):
+    def __init__(self, description: str = "", parallel: bool = False):
         """Initialize upgrade step.
 
         :param description: Description of the step.
@@ -75,22 +70,14 @@ class BaseStep:
         :param coro: Step coroutine
         :type coro: Optional[coroutine]
         """
-        if coro is not None:
-            # NOTE(rgildein): We need to ignore coroutine not to be awaited if step is not run
-            warnings.filterwarnings(
-                "ignore", message=f"coroutine '.*{coro.__name__}' was never awaited"
-            )
-
-        self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
         self.description = description
         self.sub_steps: List[BaseStep] = []
         self._canceled: bool = False
-        self._task: Optional[asyncio.Task] = None
 
     def __hash__(self) -> int:
         """Get hash for BaseStep."""
-        return hash((self.description, self.parallel, self._coro))
+        return hash((self.description, self.parallel))
 
     def __eq__(self, other: Any) -> bool:
         """Equal magic method for BaseStep.
@@ -107,7 +94,6 @@ class BaseStep:
             other.parallel == self.parallel
             and other.description == self.description
             and other.sub_steps == self.sub_steps
-            and compare_step_coroutines(other._coro, self._coro)
         )
 
     def __str__(self) -> str:
@@ -141,7 +127,7 @@ class BaseStep:
         or in its sub steps.
         :rtype: bool
         """
-        return self._coro is not None or any(bool(step) for step in self.sub_steps)
+        return self.description and any(bool(step) for step in self.sub_steps)
 
     @property
     def description(self) -> str:
@@ -158,21 +144,13 @@ class BaseStep:
 
         :param description: description
         :type description: str
-        :raises ValueError: When a coroutine is passed without description.
         """
-        if not description and self._coro:
-            raise ValueError("Every coroutine should have a description")
         self._description = description
 
     @property
     def canceled(self) -> bool:
         """Return boolean represent if step was canceled."""
         return self._canceled
-
-    @property
-    def results(self) -> Any:
-        """Return result of BaseStep."""
-        return self._task.result() if self._task is not None else None
 
     @property
     def is_functionless(self) -> bool:
@@ -204,11 +182,84 @@ class BaseStep:
         for step in self.sub_steps:
             step.cancel(safe=safe)
 
-        if safe is False and self._task is not None:  # unsafe canceling of pending task
-            self._task.cancel(f"canceled: {repr(self)}")
-
         self._canceled = True
         logger.debug("canceled: %s", self)
+
+
+class UpgradeStep(BaseStep):
+
+    def __init__(self, description: str, parallel: bool, coro: Coroutine):
+        """Initialize upgrade step.
+
+        :param description: Description of the step.
+        :type description: str
+        :param parallel: Define if step should run on parallel or not.
+        :type parallel: bool
+        :param coro: Step coroutine
+        :type coro: Optional[coroutine]
+        """
+        super().__init__(description, parallel)
+        # NOTE(rgildein): We need to ignore coroutine not to be awaited if step is not run
+        warnings.filterwarnings(
+            "ignore", message=f"coroutine '.*{coro.__name__}' was never awaited"
+        )
+
+        self._coro: Optional[Coroutine] = coro
+        self._canceled: bool = False
+        self._task: Optional[asyncio.Task] = None
+
+    def __bool__(self) -> bool:
+        """Boolean magic method for BaseStep.
+
+        :return: True if there is at least one coroutine in a BaseStep
+        or in its sub steps.
+        :rtype: bool
+        """
+        return self._coro is not None or super().__bool__()
+
+    def __eq__(self, other: Any) -> bool:
+        """Equal magic method for BaseStep.
+
+        :param other: BaseStep object to compare.
+        :type other: Any
+        :return: True if equal False if different.
+        :rtype: bool
+        """
+        return super().__eq__(other) and compare_step_coroutines(other._coro, self._coro)
+
+    def __hash__(self) -> int:
+        """Get hash for UpgradeStep."""
+        return hash((self.description, self.parallel, self._coro))
+
+    @BaseStep.description.setter
+    def description(self, description: str) -> None:
+        """Set the description of the BaseStep.
+
+        :param description: description
+        :type description: str
+        :raises ValueError: When a coroutine is passed without description.
+        """
+        if not description and self._coro:
+            raise ValueError("Every coroutine should have a description")
+        self._description = description
+
+    @property
+    def results(self) -> Any:
+        """Return result of BaseStep."""
+        return self._task.result() if self._task is not None else None
+
+    def cancel(self, safe: bool = True) -> None:
+        """Cancel step and all its sub steps.
+
+        The dangerous cancellation method should only be used with the user's warning, as it may
+        cause damage to the Juju model.
+
+        :param safe: safe cancellation of only not running tasks
+        :type safe: bool
+        """
+        super().cancel(safe)
+        if safe is False and self._task is not None:  # unsafe canceling of pending task
+            self._task.cancel(f"canceled: {repr(self)}")
 
     async def run(self) -> Any:
         """Run the BaseStep coroutine.
@@ -236,23 +287,15 @@ class ApplicationUpgradeStep(BaseStep):
     """Represents the step for application-level upgrade."""
 
 
+# TODO: drop this or replaced it with UpgradeStep
 class UpgradeSubStep(BaseStep):
     """Represents the sub-step of an application upgrade."""
 
 
-class PreUpgradeSubStep(UpgradeSubStep):
+class PreUpgradeSubStep(UpgradeStep):
     """Represents the pre-upgrade sub-step for an application upgrade."""
 
-    @property
-    def description(self) -> str:
-        """Get the description of the PreUpgradeSubStep.
-
-        :return: description
-        :rtype: str
-        """
-        return self._description
-
-    @description.setter
+    @UpgradeStep.description.setter
     def description(self, description: str) -> None:
         """Set the description of the PreUpgradeSubStep.
 
@@ -260,31 +303,20 @@ class PreUpgradeSubStep(UpgradeSubStep):
         :type description: str
         :raises ValueError: When a coroutine is passed without description.
         """
-        if not description and self._coro:
-            raise ValueError("Every coroutine should have a description")
-        self._description = "[pre-upgrade] " + description
+        UpgradeStep.description.fset(self, description)
+        self._description = "[pre-upgrade] " + self._description
 
 
-class PostUpgradeSubStep(UpgradeSubStep):
+class PostUpgradeSubStep(UpgradeStep):
     """Represents the post-upgrade sub-step for an application upgrade."""
 
-    @property
-    def description(self) -> str:
-        """Get the description of the PostUpgradeSubStep.
-
-        :return: description
-        :rtype: str
-        """
-        return self._description
-
-    @description.setter
+    @UpgradeStep.description.setter
     def description(self, description: str) -> None:
-        """Set the description of the PostUpgradeSubStep.
+        """Set the description of the PreUpgradeSubStep.
 
         :param description: description
         :type description: str
         :raises ValueError: When a coroutine is passed without description.
         """
-        if not description and self._coro:
-            raise ValueError("Every coroutine should have a description")
-        self._description = "[post-upgrade] " + description
+        UpgradeStep.description.fset(self, description)
+        self._description = "[post-upgrade] " + self._description
