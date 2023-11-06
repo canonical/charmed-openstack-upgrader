@@ -44,13 +44,13 @@ def generate_expected_upgrade_plan_principal(app, target, model):
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
         # apps waiting for whole model
         wait_step = UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         )
     else:
         wait_step = UpgradeStep(
-            description=f"Wait 300 s for app {app.name} to reach the idle state.",
+            description=f"Wait 300s for app {app.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(300, [app.name]),
         )

@@ -130,7 +130,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -189,7 +189,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -251,7 +251,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -431,7 +431,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -494,7 +494,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -601,7 +601,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
             ),
         ),
         UpgradeStep(
-            description=f"Wait 300 s for app {app.name} to reach the idle state.",
+            description=f"Wait 300s for app {app.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(300, [app.name]),
         ),
@@ -657,7 +657,7 @@ def test_mysql_innodb_cluster_upgrade(status, config, model):
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for app {app.name} to reach the idle state.",
+            description=f"Wait 1800s for app {app.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, [app.name]),
         ),

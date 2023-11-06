@@ -358,7 +358,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model):
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -414,7 +414,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model):
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -466,7 +466,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model):
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -517,7 +517,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(status, config, m
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),
@@ -592,7 +592,7 @@ def test_upgrade_plan_application_already_disable_action_managed(status, config,
             ),
         ),
         UpgradeStep(
-            description=f"Wait 1800 s for model {model.name} to reach the idle state.",
+            description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         ),

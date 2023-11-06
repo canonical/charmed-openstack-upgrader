@@ -683,13 +683,11 @@ class OpenStackApplication:
         """
         if self.wait_for_model:
             description = (
-                f"Wait {self.wait_timeout} s for model {self.model.name} to reach the idle state."
+                f"Wait {self.wait_timeout}s for model {self.model.name} to reach the idle state."
             )
             apps = None
         else:
-            description = (
-                f"Wait {self.wait_timeout} s for app {self.name} to reach the idle state."
-            )
+            description = f"Wait {self.wait_timeout}s for app {self.name} to reach the idle state."
             apps = [self.name]
 
         return UpgradeStep(
