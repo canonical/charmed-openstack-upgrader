@@ -40,7 +40,7 @@ from cou.utils.openstack import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_WAITING_TIMEOUT = 120
+DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
 
 
 @dataclass
@@ -683,13 +683,11 @@ class OpenStackApplication:
         """
         if self.wait_for_model:
             description = (
-                f"Wait {self.wait_timeout} s for model {self.model.name} to reach the idle state."
+                f"Wait {self.wait_timeout}s for model {self.model.name} to reach the idle state."
             )
             apps = None
         else:
-            description = (
-                f"Wait {self.wait_timeout} s for app {self.name} to reach the idle state."
-            )
+            description = f"Wait {self.wait_timeout}s for app {self.name} to reach the idle state."
             apps = [self.name]
 
         return UpgradeStep(
