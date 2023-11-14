@@ -37,6 +37,7 @@ from cou.exceptions import (
     TimeoutException,
     UnitNotFound,
 )
+from cou.utils.openstack import is_charm_supported
 
 JUJU_MAX_FRAME_SIZE: int = 2**30
 DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 10))
@@ -178,6 +179,28 @@ class COUModel:
             retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
         )
 
+    @retry(no_retry_exceptions=(ActionFailed,))
+    async def _get_action_result(self, action: Action, raise_on_failure: bool) -> Action:
+        """Get results from action.
+
+        :param action: Action object
+        :type: Action
+        :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
+        :type raise_on_failure: bool
+        :return: action results
+        :rtype: Action
+        :raises ActionFailed: When the application status is in error (it's not 'completed').
+        """
+        result = await action.wait()
+        if raise_on_failure:
+            model = await self._get_model()
+            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
+            if status != "completed":
+                output = await model.get_action_output(action.entity_id)
+                raise ActionFailed(action, output=output)
+
+        return result
+
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
 
@@ -259,27 +282,18 @@ class COUModel:
         model = await self._get_model()
         return await model.get_status()
 
-    @retry(no_retry_exceptions=(ActionFailed,))
-    async def _get_action_result(self, action: Action, raise_on_failure: bool) -> Action:
-        """Get results from action.
+    async def list_applications(self) -> dict[str, Application]:
+        """Get all applications related with COU deployed in model.
 
-        :param action: Action object
-        :type: Action
-        :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
-        :type raise_on_failure: bool
-        :return: action results
-        :rtype: Action
-        :raises ActionFailed: When the application status is in error (it's not 'completed').
+        :return: Map object with app name as key and Application as value
+        :rtype: dict[str, Application]
         """
-        result = await action.wait()
-        if raise_on_failure:
-            model = await self._get_model()
-            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
-            if status != "completed":
-                output = await model.get_action_output(action.entity_id)
-                raise ActionFailed(action, output=output)
-
-        return result
+        model = await self._get_model()
+        return {
+            name: app
+            for name, app in model.applications.items()
+            if is_charm_supported(app.charm_name)
+        }
 
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run_action(...)` and the rest of the function is covered by retry.

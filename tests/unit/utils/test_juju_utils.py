@@ -305,6 +305,21 @@ async def test_coumodel_get_status(mocked_model):
 
 
 @pytest.mark.asyncio
+@patch("cou.utils.juju_utils.is_charm_supported")
+async def test_coumodel_list_applications(mock_is_charm_supported, mocked_model):
+    """Test COUModel providing list of applications."""
+    mock_is_charm_supported.side_effect = [False, True]
+    model = juju_utils.COUModel("test-model")
+    app = MagicMock(spec_set=Application).return_value
+    mocked_model.applications = {"unsupported": app, "supported": app}
+
+    apps = await model.list_applications()
+
+    mock_is_charm_supported.assert_has_calls([call(app.charm_name), call(app.charm_name)])
+    assert apps == {"supported": app}
+
+
+@pytest.mark.asyncio
 async def test_coumodel_get_action_result(mocked_model):
     """Test COUModel get action result."""
     mocked_action = AsyncMock(spec_set=Action).return_value
