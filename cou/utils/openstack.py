@@ -145,8 +145,12 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "hirsute": "wallaby",
     "impish": "xena",
     "jammy": "yoga",
-    "kinect": "zed",
+    "kinetic": "zed",
     "lunar": "antelope",
+}
+
+LTS_TO_OS_RELEASE = {
+    "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
 }
 
 CEPH_RELEASES = [

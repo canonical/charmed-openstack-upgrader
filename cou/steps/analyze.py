@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from cou.apps.base import OpenStackApplication
@@ -45,10 +45,15 @@ class Analysis:
     min_os_version_control_plane: Optional[OpenStackRelease] = None
     min_os_version_data_plane: Optional[OpenStackRelease] = None
 
+    current_cloud_os_release: Optional[OpenStackRelease] = field(init=False)
+    current_cloud_series: Optional[str] = field(init=False)
+
     def __post_init__(self) -> None:
         """Initialize the Analysis dataclass."""
         self.min_os_version_control_plane = self.min_os_release_apps(self.apps_control_plane)
         self.min_os_version_data_plane = self.min_os_release_apps(self.apps_data_plane)
+        self.current_cloud_os_release = self._get_minimum_cloud_os_release()
+        self.current_cloud_series = self._get_minimum_cloud_series()
 
     @staticmethod
     def _split_apps(
@@ -156,6 +161,8 @@ class Analysis:
             + "\n".join([str(app) for app in self.apps_control_plane])
             + "Data Plane:\n"
             + "\n".join([str(app) for app in self.apps_data_plane])
+            + f"\nCurrent minimum OS release in the cloud: {self.current_cloud_os_release}\n"
+            + f"\nCurrent minimum Ubuntu series in the cloud: {self.current_cloud_series}\n"
         )
 
     @staticmethod
@@ -169,17 +176,25 @@ class Analysis:
         """
         return min((app.current_os_release for app in apps), default=None)
 
-    @property
-    def current_cloud_os_release(self) -> Optional[OpenStackRelease]:
-        """Shows the current OpenStack release codename.
+    def _get_minimum_cloud_os_release(self) -> Optional[OpenStackRelease]:
+        """Get the current minimum OpenStack release in the cloud.
 
-        This property just consider OpenStack charms as those that have
-        openstack-origin or source on the charm configuration (app.os_origin).
-        :return: OpenStack release codename
-        :rtype: Optional[OpenStackRelease]
+        :return: OpenStack release
+        :rtype: Optional[Optional[OpenStackRelease]]
         """
         control_plane = (
             [self.min_os_version_control_plane] if self.min_os_version_control_plane else []
         )
         data_plane = [self.min_os_version_data_plane] if self.min_os_version_data_plane else []
         return min(control_plane + data_plane, default=None)
+
+    def _get_minimum_cloud_series(self) -> Optional[str]:
+        """Get the current minimum Ubuntu series codename in the cloud.
+
+        :return: Ubuntu series codename. E.g. 'focal', 'jammy'
+        :rtype: Optional[str]
+        """
+        return min(
+            (app.series for app in self.apps_control_plane + self.apps_data_plane),
+            default=None,
+        )

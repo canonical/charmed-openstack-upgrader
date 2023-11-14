@@ -26,7 +26,7 @@ from halo import Halo
 from juju.errors import JujuError
 
 from cou.commands import parse_args
-from cou.exceptions import COUException, TimeoutException
+from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
 from cou.logging import setup_logging
 from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
@@ -88,11 +88,15 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     return VerbosityLevel(verbosity).name
 
 
-async def analyze_and_plan(model_name: Optional[str] = None) -> tuple[Analysis, UpgradeStep]:
+async def analyze_and_plan(
+    model_name: Optional[str], backup_database: bool
+) -> tuple[Analysis, UpgradeStep]:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
+    :param backup_database: Whether to create database backup before upgrade.
+    :type backup_database: bool
     :return: Generated analyses and upgrade plan.
     :rtype: tuple[Analysis, UpgradeStep]
     """
@@ -107,7 +111,7 @@ async def analyze_and_plan(model_name: Optional[str] = None) -> tuple[Analysis, 
     progress_indicator.succeed()
 
     progress_indicator.start("Generating upgrade plan...")
-    upgrade_plan = await generate_plan(analysis_result)
+    upgrade_plan = await generate_plan(analysis_result, backup_database)
     progress_indicator.succeed()
 
     # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
@@ -122,31 +126,38 @@ async def analyze_and_plan(model_name: Optional[str] = None) -> tuple[Analysis, 
     return analysis_result, upgrade_plan
 
 
-async def get_upgrade_plan(model_name: Optional[str] = None) -> None:
+async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> None:
     """Get upgrade plan and print to console.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
+    :param backup_database: Whether to create database backup before upgrade.
+    :type backup_database: bool
     """
-    analysis_result, upgrade_plan = await analyze_and_plan(model_name)
+    analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
     logger.info(upgrade_plan)
     print(upgrade_plan)  # print plan to console even in quiet mode
     manually_upgrade_data_plane(analysis_result)
 
 
 async def run_upgrade(
-    model_name: Optional[str] = None, interactive: bool = True, quiet: bool = False
+    model_name: Optional[str],
+    backup_database: bool,
+    interactive: bool,
+    quiet: bool,
 ) -> None:
     """Run cloud upgrade.
 
     :param model_name: Model name inputted by user.
     :type model_name: Optional[str]
+    :param backup_database: Whether to create database backup before upgrade.
+    :type backup_database: bool
     :param interactive: Whether to run upgrade interactively.
     :type interactive: bool
     :param quiet: Whether to run upgrade in quiet mode.
     :type quiet: bool
     """
-    analysis_result, upgrade_plan = await analyze_and_plan(model_name)
+    analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
     logger.info(upgrade_plan)
 
     # don't print plan if in quiet mode
@@ -171,9 +182,9 @@ async def _run_command(args: argparse.Namespace) -> None:
     """
     match args.command:
         case "plan":
-            await get_upgrade_plan(args.model_name)
+            await get_upgrade_plan(args.model_name, args.backup)
         case "run":
-            await run_upgrade(args.model_name, args.interactive, args.quiet)
+            await run_upgrade(args.model_name, args.backup, args.interactive, args.quiet)
 
 
 def entrypoint() -> None:
@@ -188,6 +199,9 @@ def entrypoint() -> None:
 
         loop = asyncio.get_event_loop()
         loop.run_until_complete(_run_command(args))
+    except HighestReleaseAchieved as exc:
+        print(exc)
+        sys.exit(0)
     except TimeoutException:
         progress_indicator.fail()
         print("The connection was lost. Check your connection or increase the timeout.")
