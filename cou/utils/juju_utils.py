@@ -450,7 +450,9 @@ class COUModel:
 
     @retry
     async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
-        """Wait for model to reach an idle state.
+        """Wait for applications to reach an idle state.
+
+        If no applications are provided, this function will wait for all COU-related applications.
 
         :param timeout: Timeout in seconds.
         :type timeout: int
@@ -458,6 +460,10 @@ class COUModel:
         :type apps: Optional[list[str]], optional
         """
         model = await self._get_model()
+        if apps is None:
+            cou_apps = await self.list_applications()
+            apps = list(cou_apps.keys())
+
         await model.wait_for_idle(
             apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
         )

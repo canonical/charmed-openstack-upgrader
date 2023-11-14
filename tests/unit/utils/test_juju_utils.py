@@ -447,13 +447,16 @@ async def test_coumodel_upgrade_charm(mocked_model):
 
 
 @pytest.mark.asyncio
-async def test_coumodel_wait_for_idle(mocked_model):
+@patch("cou.utils.juju_utils.COUModel.list_applications")
+async def test_coumodel_wait_for_idle(mock_list_applications, mocked_model):
     """Test COUModel wait for model to be idle."""
     timeout = 60
     model = juju_utils.COUModel("test-model")
+    mock_list_applications.return_value = {"app1": MagicMock(), "app2": MagicMock()}
 
     await model.wait_for_idle(timeout)
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
-        apps=None, timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
+        apps=["app1", "app2"], timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
     )
+    mock_list_applications.assert_awaited_once_with()
