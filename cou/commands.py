@@ -93,8 +93,9 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         action="count",
         dest="verbosity",
         help="Increase logging verbosity in STDOUT. Multiple 'v's yield progressively "
-        "more detail (up to 4).\nNote that this doesn't affect the verbosity in logfile, "
-        "which will always have the maximum verbosity.",
+        "more detail (up to 4).\nNote that by default cou use debug level at the logfile."
+        "However, at the maximum verbosity it will include debug logs from libjuju and "
+        "websockets that can generate a big logfile.",
     )
     group.add_argument(
         "--quiet",

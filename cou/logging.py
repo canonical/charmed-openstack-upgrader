@@ -71,6 +71,25 @@ def setup_logging(log_level: str = "INFO") -> None:
     # suppress stack trace on console
     console_handler.addFilter(TracebackInfoFilter())
 
+    # suppress python libjuju debug logs
+    if log_level != "NOTSET":
+        log_file_handler.addFilter(filter_juju_debug_logs)
+
     root_logger.addHandler(log_file_handler)
     root_logger.addHandler(console_handler)
     logger.info("Logs of this execution can be found at %s", file_name)
+
+
+def filter_juju_debug_logs(record: logging.LogRecord) -> bool:
+    """Filter juju debug logs to not go into the log file.
+
+    python-libjuju is very verbose and log files can be huge if not filtered.
+    :param record: A LogRecord instance represents an event being logged.
+    :type record: LogRecord
+    :return: Returns false to not append record in the log file, true for appending it.
+    :rtype: bool
+    """
+    return not (
+        (record.name.startswith("juju.") or record.name.startswith("websockets."))
+        and record.levelname == "DEBUG"
+    )
