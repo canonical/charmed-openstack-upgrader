@@ -100,7 +100,7 @@ async def analyze_and_plan(
     :return: Generated analyses and upgrade plan.
     :rtype: tuple[Analysis, UpgradeStep]
     """
-    progress_indicator.start(f"Connecting to '{model_name or 'default'}' model...")
+    progress_indicator.start(f"Connecting to '{model_name or 'current-model'}' model...")
     model = await COUModel.create(model_name)
     logger.info("Using model: %s", model.name)
     progress_indicator.succeed()
@@ -113,15 +113,6 @@ async def analyze_and_plan(
     progress_indicator.start("Generating upgrade plan...")
     upgrade_plan = await generate_plan(analysis_result, backup_database)
     progress_indicator.succeed()
-
-    # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
-    loop = asyncio.get_event_loop()
-    loop.add_signal_handler(
-        SIGINT, keyboard_interrupt_handler, upgrade_plan, loop, progress_indicator
-    )
-    loop.add_signal_handler(
-        SIGTERM, keyboard_interrupt_handler, upgrade_plan, loop, progress_indicator
-    )
 
     return analysis_result, upgrade_plan
 
@@ -159,6 +150,15 @@ async def run_upgrade(
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
     logger.info(upgrade_plan)
+
+    # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
+    loop = asyncio.get_event_loop()
+    loop.add_signal_handler(
+        SIGINT, keyboard_interrupt_handler, upgrade_plan, loop, progress_indicator
+    )
+    loop.add_signal_handler(
+        SIGTERM, keyboard_interrupt_handler, upgrade_plan, loop, progress_indicator
+    )
 
     # don't print plan if in quiet mode
     if not quiet:

@@ -166,7 +166,7 @@ class UpgradeStep:
 
     @property
     def all_done(self) -> bool:
-        """Check if step and all sub_steps are done."""
+        """Check if step and all its sub_steps are done."""
         if not self.done:
             return False
 
