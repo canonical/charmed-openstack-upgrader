@@ -90,7 +90,6 @@ def filter_debug_logs(record: logging.LogRecord) -> bool:
     :return: Returns false to not append record in the log file, true for appending it.
     :rtype: bool
     """
-    return not (
-        (record.name.startswith("juju.") or record.name.startswith("websockets."))
-        and record.levelname == "DEBUG"
+    return record.levelname != "DEBUG" or not (
+        record.name.startswith("juju.") or record.name.startswith("websockets.")
     )
