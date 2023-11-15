@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from logging import LogRecord
 from unittest.mock import MagicMock, patch
 
-from cou.logging import TracebackInfoFilter, setup_logging
+import pytest
+
+from cou.logging import TracebackInfoFilter, filter_debug_logs, setup_logging
 
 
 def test_filter_clears_exc_info_and_text():
@@ -30,7 +33,8 @@ def test_filter_clears_exc_info_and_text():
     assert record.exc_text is None
 
 
-def test_setup_logging():
+@pytest.mark.parametrize("log_level", ["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR"])
+def test_setup_logging(log_level):
     """Test setting up logging."""
     with patch("cou.logging.logging") as mock_logging:
         log_file_handler = MagicMock()
@@ -39,7 +43,41 @@ def test_setup_logging():
         mock_logging.FileHandler.return_value = log_file_handler
         mock_logging.StreamHandler.return_value = console_handler
 
-        setup_logging("INFO")
+        setup_logging(log_level)
 
         mock_root_logger.addHandler.assert_any_call(log_file_handler)
         mock_root_logger.addHandler.assert_any_call(console_handler)
+
+        if log_level == "NOTSET":
+            log_file_handler.addFilter.assert_not_called()
+        else:
+            log_file_handler.addFilter.assert_called_with(filter_debug_logs)
+
+
+@pytest.mark.parametrize(
+    "name, level, exp_result",
+    [
+        ("juju.client.connection", "DEBUG", False),  # juju debug is not logged
+        ("juju.client.connection", "INFO", True),  # juju debug is not logged
+        ("websockets.client", "DEBUG", False),  # websockets debug is not logged
+        ("websockets.client", "WARNING", True),  # websockets warning is logged
+        ("cou.apps.core", "DEBUG", True),  # debug logs from other modules are logged
+        ("my.juju", "DEBUG", True),  # modules that does not starts with juju are logged
+    ],
+)
+def test_filter_debug_logs(name, level, exp_result):
+    mock_record = MagicMock(
+        spec_set=LogRecord(
+            name,
+            level,
+            pathname="/var/my_path",
+            lineno=56,
+            msg="my log line",
+            args=None,
+            exc_info="my_info",
+        )
+    )
+    mock_record.name = name
+    mock_record.levelname = level
+
+    assert filter_debug_logs(mock_record) is exp_result
