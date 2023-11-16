@@ -58,11 +58,12 @@ def test_setup_logging(log_level):
     "name, level, exp_result",
     [
         ("juju.client.connection", "DEBUG", False),  # juju debug is not logged
-        ("juju.client.connection", "INFO", True),  # juju debug is not logged
+        ("juju.client.connection", "INFO", True),  # juju info is logged
         ("websockets.client", "DEBUG", False),  # websockets debug is not logged
         ("websockets.client", "WARNING", True),  # websockets warning is logged
         ("cou.apps.core", "DEBUG", True),  # debug logs from other modules are logged
-        ("my.juju", "DEBUG", True),  # modules that does not starts with juju are logged
+        ("my.juju", "DEBUG", True),  # modules that doesn't starts with juju are logged
+        ("my.websockets", "DEBUG", True),  # modules that doesn't starts with websockets are logged
     ],
 )
 def test_filter_debug_logs(name, level, exp_result):

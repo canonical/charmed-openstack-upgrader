@@ -61,6 +61,9 @@ def setup_logging(log_level: str = "INFO") -> None:
     pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
     log_file_handler = logging.FileHandler(file_name)
     log_file_handler.setFormatter(log_formatter_file)
+    # suppress python libjuju and websockets debug logs
+    if log_level != "NOTSET":
+        log_file_handler.addFilter(filter_debug_logs)
 
     # handler for the console. Log level comes from the CLI
     console_handler = logging.StreamHandler()
@@ -70,10 +73,6 @@ def setup_logging(log_level: str = "INFO") -> None:
     console_handler.addFilter(logging.Filter(__package__))
     # suppress stack trace on console
     console_handler.addFilter(TracebackInfoFilter())
-
-    # suppress python libjuju debug logs
-    if log_level != "NOTSET":
-        log_file_handler.addFilter(filter_debug_logs)
 
     root_logger.addHandler(log_file_handler)
     root_logger.addHandler(console_handler)
