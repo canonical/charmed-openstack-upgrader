@@ -1,12 +1,14 @@
 """Generic setup for functional tests."""
 import logging
 import os
+import pathlib
 import unittest
 
 import zaza
 import zaza.model as zazamodel
 
 from cou.steps.backup import backup
+from cou.utils import COU_DATA
 from cou.utils.juju_utils import COUModel
 
 logger = logging.getLogger(__name__)
@@ -17,6 +19,8 @@ class BackupTest(unittest.TestCase):
 
     def test_backup(self):
         """Backup Test."""
+        # create the COU_DATA path to place the backup file
+        pathlib.Path(COU_DATA).mkdir(parents=True, exist_ok=True)
         zaza.get_or_create_libjuju_thread()
         sync_backup = zaza.sync_wrapper(backup)
         sync_create_model = zaza.sync_wrapper(COUModel.create)
