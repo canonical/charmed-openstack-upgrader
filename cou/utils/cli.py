@@ -18,24 +18,24 @@ import asyncio
 import logging
 from typing import NoReturn
 
-from halo import Halo
-
+from cou.exceptions import InterruptError
 from cou.steps import UpgradeStep
+from cou.utils import progress_indicator
 
 logger = logging.getLogger(__name__)
 
 
-async def _cancel_plan(plan: UpgradeStep, progress_indicator: Halo) -> NoReturn:
-    """Watch plan and raise KeyboardInterrupt when it is done.
+async def _cancel_plan(plan: UpgradeStep, exit_code: int) -> NoReturn:
+    """Watch plan and raise InterruptError when it is done.
 
-    This watcher will make sure that KeyboardInterrupt is raised after plan and all it's
+    This watcher will make sure that InterruptError is raised after plan and all it's
     sub-steps are done.
 
     :param plan: watched UpgradeStep
     :type plan: UpgradeStep
-    :param progress_indicator: CLI indicator
-    :type progress_indicator: Halo
-    :raise KeyboardInterrupt: raise KeyboardInterrupt after plan and all it's sub-steps are done
+    :param exit_code: Exit code
+    :type exit_code: int
+    :raise InterruptError: raise InterruptError after plan and all it's sub-steps are done
     """
     progress_indicator.clear()  # remove any prompt message
     progress_indicator.start("Canceling upgrade... (Press ctrl+c again to stop immediately)")
@@ -48,29 +48,29 @@ async def _cancel_plan(plan: UpgradeStep, progress_indicator: Halo) -> NoReturn:
 
     progress_indicator.succeed()
 
-    raise KeyboardInterrupt("charmed-openstack-upgrader has been stopped cleanly")
+    raise InterruptError("charmed-openstack-upgrader has been stopped safely", exit_code)
 
 
-def keyboard_interrupt_handler(
-    plan: UpgradeStep, loop: asyncio.AbstractEventLoop, progress_indicator: Halo
-) -> None:
-    """Handle single or multiple ctr+c pressed.
+def interrupt_handler(plan: UpgradeStep, loop: asyncio.AbstractEventLoop, exit_code: int) -> None:
+    """Handle cou interruption.
 
     This handler first tries to safely cancel the update plan otherwise immediately raises
-    the KeyboardInterrupt.
+    the exception.
     :param plan: UpgradeStep to by canceled by this function
     :type plan: UpgradeStep
     :param loop: event loop
     :type loop: asyncio.AbstractEventLoop
-    :param progress_indicator: CLI indicator
-    :type progress_indicator: Halo
-    :raise KeyboardInterrupt: raise KeyboardInterrupt after plan and all it's sub-steps are done
+    :param exit_code: Exit code
+    :type exit_code: int
+    :raise InterruptError: raise InterruptError after plan and all it's sub-steps are done
     """
     # NOTE(rgildein): if step is already canceled (e.g. ctr+c was already pressed) we will raise
     # KeyboardInterrupt to exit whole cou immediately
     if plan.canceled:
         plan.cancel(safe=False)
         progress_indicator.fail()  # stop previous indicator
-        raise KeyboardInterrupt("charmed-openstack-upgrade has been terminated without waiting")
+        raise InterruptError(
+            "charmed-openstack-upgrader has been terminated without waiting", exit_code
+        )
 
-    loop.create_task(_cancel_plan(plan, progress_indicator))
+    loop.create_task(_cancel_plan(plan, exit_code))

@@ -116,3 +116,18 @@ class HighestReleaseAchieved(COUException):
 
 class OutOfSupportRange(COUException):
     """COU exception when the release or series is out of the current supporting range."""
+
+
+class InterruptError(KeyboardInterrupt):
+    """COU exception when upgrade was interrupt by signal."""
+
+    def __init__(self, message: str, exit_code: int) -> None:
+        """Set information about KeyboardInterrupt.
+
+        :param message: error message
+        :type message: str
+        :param exit_code: Exit code
+        :type exit_code: int
+        """
+        self.exit_code = exit_code
+        super().__init__(message)

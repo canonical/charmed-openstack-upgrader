@@ -22,7 +22,6 @@ from enum import Enum
 from signal import SIGINT, SIGTERM
 from typing import Optional
 
-from halo import Halo
 from juju.errors import JujuError
 
 from cou.commands import parse_args
@@ -32,13 +31,13 @@ from cou.steps import UpgradeStep
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_plan
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
-from cou.utils.cli import keyboard_interrupt_handler
+from cou.utils import progress_indicator
+from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
 
 AVAILABLE_OPTIONS = "cas"
 
 logger = logging.getLogger(__name__)
-progress_indicator = Halo(spinner="line", placement="right")
 
 
 class VerbosityLevel(Enum):
@@ -103,7 +102,7 @@ async def analyze_and_plan(
     progress_indicator.start(f"Connecting to '{model_name or 'current-model'}' model...")
     model = await COUModel.create(model_name)
     logger.info("Using model: %s", model.name)
-    progress_indicator.succeed()
+    progress_indicator.succeed(f"Connected to '{model.name}'")
 
     progress_indicator.start("Analyzing cloud...")
     analysis_result = await Analysis.create(model)
@@ -153,12 +152,8 @@ async def run_upgrade(
 
     # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
     loop = asyncio.get_event_loop()
-    loop.add_signal_handler(
-        SIGINT, keyboard_interrupt_handler, upgrade_plan, loop, progress_indicator
-    )
-    loop.add_signal_handler(
-        SIGTERM, keyboard_interrupt_handler, upgrade_plan, loop, progress_indicator
-    )
+    loop.add_signal_handler(SIGINT, interrupt_handler, upgrade_plan, loop, 130)
+    loop.add_signal_handler(SIGTERM, interrupt_handler, upgrade_plan, loop, 143)
 
     # don't print plan if in quiet mode
     if not quiet:
@@ -175,7 +170,7 @@ async def run_upgrade(
 
 
 async def _run_command(args: argparse.Namespace) -> None:
-    """Run `charmed-openstack-upgrade' command.
+    """Run 'charmed-openstack-upgrade' command.
 
     :param args: CLI arguments
     :type args: argparse.Namespace
@@ -220,7 +215,7 @@ def entrypoint() -> None:
         if progress_indicator.spinner_id is not None:
             progress_indicator.fail()
         print(str(exc) or "charmed-openstack-upgrader has been terminated")
-        sys.exit(130)
+        sys.exit(getattr(exc, "exit_code", 130))
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.error("Unexpected error occurred.")
         logger.exception(exc)
