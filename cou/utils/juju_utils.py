@@ -185,7 +185,7 @@ class COUModel:
 
         :param action: Action object
         :type: Action
-        :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
+        :param raise_on_failure: Whether to raise ActionFailed exception on failure, defaults to False
         :type raise_on_failure: bool
         :return: action results
         :rtype: Action
