@@ -14,8 +14,7 @@
 
 """Utilities for charmed-openstack-upgrader."""
 
-
 import os
 from pathlib import Path
 
-COU_DATA = Path(os.getenv("COU_DATA", "."))
+COU_DATA = Path(f"{os.getenv('HOME')}/.local/share/cou")

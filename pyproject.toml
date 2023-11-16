@@ -97,3 +97,6 @@ check-filenames = true
 filterwarnings = [
     "ignore::RuntimeWarning",
 ]
+
+[tool.pytest_env]
+HOME = "~/tmp"

@@ -23,7 +23,6 @@ Then you can use ```cou```
 
 ## Environment Variables
 
-- `COU_DATA` - sets the main cou directory where logs and backups are stored. Defaults to ~/.local/share/cou
 - `JUJU_DATA` - sets the path containing Juju configuration files (e.g. credentials.yaml). Defaults to ~/.local/share/juju
 - `COU_TIMEOUT` - define timeout for cou retry policy. Default value is 10 seconds.
 - `COU_MODEL_RETRIES` - define how many times to retry the connection to Juju model before giving up. Default value is 5 times.
