@@ -259,6 +259,21 @@ async def test_coumodel_get_unit_failure(mocked_model):
 
 
 @pytest.mark.asyncio
+@patch("cou.utils.juju_utils.is_charm_supported")
+async def test_coumodel_get_supported_apps(mock_is_charm_supported, mocked_model):
+    """Test COUModel providing list of supported applications."""
+    mock_is_charm_supported.side_effect = [False, True]
+    model = juju_utils.COUModel("test-model")
+    app = MagicMock(spec_set=Application).return_value
+    mocked_model.applications = {"unsupported": app, "supported": app}
+
+    apps = await model._get_supported_apps()
+
+    mock_is_charm_supported.assert_has_calls([call(app.charm_name), call(app.charm_name)])
+    assert apps == ["supported"]
+
+
+@pytest.mark.asyncio
 async def test_coumodel_get_application_configs(mocked_model):
     """Test COUModel get application configuration."""
     mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
@@ -302,21 +317,6 @@ async def test_coumodel_get_status(mocked_model):
 
     mocked_model.get_status.assert_awaited_once_with()
     assert status == mocked_model.get_status.return_value
-
-
-@pytest.mark.asyncio
-@patch("cou.utils.juju_utils.is_charm_supported")
-async def test_coumodel_list_applications(mock_is_charm_supported, mocked_model):
-    """Test COUModel providing list of applications."""
-    mock_is_charm_supported.side_effect = [False, True]
-    model = juju_utils.COUModel("test-model")
-    app = MagicMock(spec_set=Application).return_value
-    mocked_model.applications = {"unsupported": app, "supported": app}
-
-    apps = await model.list_applications()
-
-    mock_is_charm_supported.assert_has_calls([call(app.charm_name), call(app.charm_name)])
-    assert apps == {"supported": app}
 
 
 @pytest.mark.asyncio
@@ -447,16 +447,16 @@ async def test_coumodel_upgrade_charm(mocked_model):
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils.COUModel.list_applications")
-async def test_coumodel_wait_for_idle(mock_list_applications, mocked_model):
+@patch("cou.utils.juju_utils.COUModel._get_supported_apps")
+async def test_coumodel_wait_for_idle(mock_get_supported_apps, mocked_model):
     """Test COUModel wait for model to be idle."""
     timeout = 60
     model = juju_utils.COUModel("test-model")
-    mock_list_applications.return_value = {"app1": MagicMock(), "app2": MagicMock()}
+    mock_get_supported_apps.return_value = ["app1", "app2"]
 
     await model.wait_for_idle(timeout)
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
         apps=["app1", "app2"], timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
     )
-    mock_list_applications.assert_awaited_once_with()
+    mock_get_supported_apps.assert_awaited_once_with()

@@ -228,6 +228,17 @@ class COUModel:
 
         return self._model
 
+    async def _get_supported_apps(self) -> list[str]:
+        """Get all applications supported by COU deployed in model.
+
+        :return: List of applications names supported by COU
+        :rtype: list[str]
+        """
+        model = await self._get_model()
+        return [
+            name for name, app in model.applications.items() if is_charm_supported(app.charm_name)
+        ]
+
     async def _get_unit(self, name: str) -> Unit:
         """Get juju.unit.unit from model.
 
@@ -281,19 +292,6 @@ class COUModel:
         """
         model = await self._get_model()
         return await model.get_status()
-
-    async def list_applications(self) -> dict[str, Application]:
-        """Get all applications related with COU deployed in model.
-
-        :return: Map object with app name as key and Application as value
-        :rtype: dict[str, Application]
-        """
-        model = await self._get_model()
-        return {
-            name: app
-            for name, app in model.applications.items()
-            if is_charm_supported(app.charm_name)
-        }
 
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run_action(...)` and the rest of the function is covered by retry.
@@ -461,8 +459,7 @@ class COUModel:
         """
         model = await self._get_model()
         if apps is None:
-            cou_apps = await self.list_applications()
-            apps = list(cou_apps.keys())
+            apps = await self._get_supported_apps()
 
         await model.wait_for_idle(
             apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
