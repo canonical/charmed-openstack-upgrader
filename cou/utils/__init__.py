@@ -17,4 +17,4 @@
 import os
 from pathlib import Path
 
-COU_DATA = Path(f"{os.getenv('HOME')}/.local/share/cou")
+COU_DATA = Path(f"/home/{os.getenv('USER')}/.local/share/cou")

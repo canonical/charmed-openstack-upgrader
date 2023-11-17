@@ -32,7 +32,10 @@ def test_filter_clears_exc_info_and_text():
 
 def test_setup_logging():
     """Test setting up logging."""
-    with patch("cou.logging.logging") as mock_logging:
+    with (
+        patch("cou.logging.logging") as mock_logging,
+        patch("cou.logging.pathlib"),
+    ):
         log_file_handler = MagicMock()
         console_handler = MagicMock()
         mock_root_logger = mock_logging.getLogger.return_value
