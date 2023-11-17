@@ -240,7 +240,7 @@ class UpgradePlan(BaseStep):
     """Represents the upgrade plan.
 
     This class is intended to be used as a higher-level group for actual upgrade steps, therefore
-    doesn't accept corotine or parallel as inputs.
+    doesn't accept coroutine or parallel as inputs.
     """
 
     prompt: bool = False
@@ -260,17 +260,17 @@ class UpgradePlan(BaseStep):
     async def run(self) -> None:
         """Run UpgradePlan.
 
-        UpgradePlan should not have contain any corotine, so simply print a debug
+        UpgradePlan should not have contain any coroutine, so simply print a debug
         message to demonstrate the noop.
         """
-        logger.debug("No corotine to run for %s", repr(self))
+        logger.debug("No coroutine to run for %s", repr(self))
 
 
 class ApplicationUpgradePlan(UpgradePlan):
     """Represents the plan for application-level upgrade.
 
     This class is intended to be used as a group for application-level upgrade steps, therefore
-    doesn't accept corotine or parallel as inputs.
+    doesn't accept coroutine or parallel as inputs.
     """
 
     prompt: bool = True
