@@ -12,10 +12,10 @@
 
 from cou.apps.channel_based import OpenStackChannelBasedApplication
 from cou.steps import (
-    ApplicationUpgradeStep,
-    PostUpgradeSubStep,
-    PreUpgradeSubStep,
-    UpgradeSubStep,
+    ApplicationUpgradePlan,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UpgradeStep,
 )
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
@@ -91,30 +91,29 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(status, config,
 
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = ApplicationUpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
     upgrade_steps = [
-        PreUpgradeSubStep(
+        PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
             coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
-        PreUpgradeSubStep(
+        PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
-        UpgradeSubStep(
+        UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
-        UpgradeSubStep(
+        UpgradeStep(
             description=(
                 f"Change charm config of '{app.name}' "
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
@@ -147,30 +146,29 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
 
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = ApplicationUpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
     upgrade_steps = [
-        PreUpgradeSubStep(
+        PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
             coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
-        PreUpgradeSubStep(
+        PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
-        UpgradeSubStep(
+        UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
-        UpgradeSubStep(
+        UpgradeStep(
             description=(
                 f"Change charm config of '{app.name}' "
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
@@ -181,12 +179,12 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
                 {f"{app.origin_setting}": "cloud:focal-victoria"},
             ),
         ),
-        PostUpgradeSubStep(
+        PostUpgradeStep(
             description=f"Wait 120 s for app {app.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(120, [app.name]),
         ),
-        PostUpgradeSubStep(
+        PostUpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
@@ -212,30 +210,29 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(status, conf
 
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = ApplicationUpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
     upgrade_steps = [
-        PreUpgradeSubStep(
+        PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
             coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
-        PreUpgradeSubStep(
+        PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
-        UpgradeSubStep(
+        UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
-        UpgradeSubStep(
+        UpgradeStep(
             description=(
                 f"Change charm config of '{app.name}' "
                 f"'{app.origin_setting}' to 'cloud:focal-victoria'"
@@ -246,12 +243,12 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(status, conf
                 {f"{app.origin_setting}": "cloud:focal-victoria"},
             ),
         ),
-        PostUpgradeSubStep(
+        PostUpgradeStep(
             description=f"Wait 120 s for app {app.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(120, [app.name]),
         ),
-        PostUpgradeSubStep(
+        PostUpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),

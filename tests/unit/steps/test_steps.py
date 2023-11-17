@@ -22,8 +22,9 @@ import pytest
 from cou.exceptions import CanceledStep
 from cou.steps import (
     BaseStep,
-    PostUpgradeSubStep,
-    PreUpgradeSubStep,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UpgradePlan,
     compare_step_coroutines,
 )
 
@@ -48,15 +49,23 @@ def test_compare_step_coroutines(coro1, coro2, exp_result):
     assert compare_step_coroutines(coro1, coro2) == exp_result
 
 
-@pytest.mark.parametrize("description, parallel", [("test", False), ("test description", True)])
-def test_step_init(description, parallel):
+@pytest.mark.parametrize(
+    "description, parallel, prompt, expected_prompt",
+    [
+        ("test", False, True, True),
+        ("test description", True, False, False),
+        ("test description", True, None, True),
+    ],
+)
+def test_step_init(description, parallel, prompt, expected_prompt):
     """Test BaseStep initialization."""
     coro = mock_coro()
-    step = BaseStep(description, parallel, coro)
+    step = BaseStep(description, parallel, coro, prompt)
 
     assert step.description == description
     assert step.parallel == parallel
     assert step._coro == coro
+    assert step.prompt == expected_prompt
     assert step._canceled is False
     assert step._task is None
 
@@ -159,11 +168,11 @@ def test_step_repr():
     description = "test plan"
     upgrade_step = BaseStep(description=description)
     upgrade_step.add_step(BaseStep(description="test sub-step"))
-    expected_repr = f"UpgradeStep({description})"
+    expected_repr = f"BaseStep({description})"
     assert repr(upgrade_step) == expected_repr
 
 
-@pytest.mark.parametrize("step", [BaseStep, PreUpgradeSubStep, PostUpgradeSubStep])
+@pytest.mark.parametrize("step", [BaseStep, PreUpgradeStep, PostUpgradeStep])
 def test_step_repr_no_description(step):
     """Test BaseStep representation when there is no description."""
     with pytest.raises(ValueError):
@@ -181,7 +190,6 @@ async def test_properties():
 
     assert upgrade_step.canceled == upgrade_step._canceled
     assert upgrade_step.results is None
-    assert upgrade_step.is_functionless is False
 
     await upgrade_step.run()
 
@@ -220,7 +228,7 @@ def test_step_cancel_unsafe():
     plan.cancel(safe=False)
 
     assert plan.canceled is True
-    mock_task.cancel.assert_called_once_with("canceled: UpgradeStep(test plan)")
+    mock_task.cancel.assert_called_once_with("canceled: BaseStep(test plan)")
 
 
 @pytest.mark.asyncio
@@ -240,7 +248,7 @@ async def test_step_run():
 async def test_step_run_canceled():
     """Test BaseStep run canceled step."""
     description = "test plan"
-    exp_error = re.escape(f"Could not run canceled step: UpgradeStep({description})")
+    exp_error = re.escape(f"Could not run canceled step: BaseStep({description})")
     step = BaseStep(description=description, coro=mock_coro())
     step.cancel()
     assert step.canceled is True
@@ -266,6 +274,42 @@ async def test_step_cancel_task():
 
     assert step._task is not None
     assert step._task.cancelled() == 1  # task was canceled once
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prompt, expected_prompt", [(True, True), (False, False), (None, False)])
+async def test_upgrade_plan_step_instances(prompt, expected_prompt):
+    """Test setting parallel for UpgradePlan."""
+    description = "test plan"
+    step = UpgradePlan(description=description, prompt=prompt)
+
+    assert step._coro is None
+    assert step.parallel is False
+    assert step.prompt == expected_prompt
+
+
+@pytest.mark.asyncio
+async def test_upgrade_plan_step_invalid_coro_input():
+    """Test setting coro for UpgradePlan."""
+    description = "test plan"
+    with pytest.raises(TypeError):
+        UpgradePlan(description=description, coro=mock_coro())
+
+
+@pytest.mark.asyncio
+async def test_upgrade_plan_step_invalid_parallel_input():
+    """Test setting parallel for UpgradePlan."""
+    description = "test plan"
+    with pytest.raises(TypeError):
+        UpgradePlan(description=description, parallel=False)
+
+
+@pytest.mark.asyncio
+async def test_application_upgrade_plan_step_default_prompt():
+    """Test setting parallel for UpgradePlan."""
+    description = "test plan"
+    with pytest.raises(TypeError):
+        UpgradePlan(description=description, parallel=False)
 
 
 @pytest.mark.asyncio

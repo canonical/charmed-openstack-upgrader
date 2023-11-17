@@ -18,7 +18,7 @@ from typing import Optional
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
-from cou.steps import PreUpgradeSubStep
+from cou.steps import PreUpgradeStep
 from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
@@ -139,17 +139,17 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
     wait_timeout = 300
     wait_for_model = True
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeSubStep]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[PreUpgradeSubStep]
+        :rtype: list[PreUpgradeStep]
         """
         return super().pre_upgrade_plan(target) + [self._get_change_require_osd_release_plan()]
 
-    def _get_change_require_osd_release_plan(self, parallel: bool = False) -> PreUpgradeSubStep:
+    def _get_change_require_osd_release_plan(self, parallel: bool = False) -> PreUpgradeStep:
         """Get plan to set correct value for require-osd-release option on ceph-mon.
 
         This step is needed as a workaround for LP#1929254. Reference:
@@ -158,10 +158,10 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :param parallel: Parallel running, defaults to False
         :type parallel: bool, optional
         :return: Plan to check and set correct value for require-osd-release
-        :rtype: PreUpgradeSubStep
+        :rtype: PreUpgradeStep
         """
         ceph_mon_unit, *_ = self.units
-        return PreUpgradeSubStep(
+        return PreUpgradeStep(
             description="Ensure require-osd-release option matches with ceph-osd version",
             parallel=parallel,
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
@@ -172,13 +172,13 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
 class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
     """Ovn principal application class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeSubStep]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[PreUpgradeSubStep]
+        :rtype: list[PreUpgradeStep]
         """
         for unit in self.units:
             validate_ovn_support(unit.workload_version)

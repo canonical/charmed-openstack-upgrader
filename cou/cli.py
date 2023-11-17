@@ -25,7 +25,7 @@ from juju.errors import JujuError
 from cou.commands import parse_args
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
 from cou.logging import setup_logging
-from cou.steps import BaseStep
+from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_plan
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
@@ -86,7 +86,7 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
 
 async def analyze_and_plan(
     model_name: Optional[str], backup_database: bool
-) -> tuple[Analysis, BaseStep]:
+) -> tuple[Analysis, UpgradePlan]:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param model_name: Model name inputted by user.
@@ -94,7 +94,7 @@ async def analyze_and_plan(
     :param backup_database: Whether to create database backup before upgrade.
     :type backup_database: bool
     :return: Generated analyses and upgrade plan.
-    :rtype: tuple[Analysis, BaseStep]
+    :rtype: tuple[Analysis, UpgradePlan]
     """
     model = await COUModel.create(model_name)
     logger.info("Using model: %s", model.name)

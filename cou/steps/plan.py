@@ -43,7 +43,7 @@ from cou.exceptions import (
     NoTargetError,
     OutOfSupportRange,
 )
-from cou.steps import BaseStep
+from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
@@ -51,7 +51,7 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(analysis_result: Analysis, backup_database: bool) -> BaseStep:
+async def generate_plan(analysis_result: Analysis, backup_database: bool) -> UpgradePlan:
     """Generate plan for upgrade.
 
     :param analysis_result: Analysis result.
@@ -64,23 +64,23 @@ async def generate_plan(analysis_result: Analysis, backup_database: bool) -> Bas
     :raises OutOfSupportRange: When the OpenStack release or Ubuntu series is out of the current
     supporting range.
     :return: Plan with all upgrade steps necessary based on the Analysis.
-    :rtype: BaseStep
+    :rtype: UpgradePlan
     """
     target = determine_upgrade_target(
         analysis_result.current_cloud_os_release, analysis_result.current_cloud_series
     )
 
-    plan = BaseStep(
+    plan = UpgradePlan(
         description=(
             f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
         ),
-        parallel=False,
     )
 
     if backup_database:
         plan.add_step(
-            BaseStep(
+            PreUpgradeStep(
                 description="Backup mysql databases",
+                prompt=True,
                 parallel=False,
                 coro=backup(analysis_result.model),
             )
@@ -110,7 +110,7 @@ async def create_upgrade_group(
     target: OpenStackRelease,
     description: str,
     filter_function: Callable[[OpenStackApplication], bool],
-) -> BaseStep:
+) -> UpgradePlan:
     """Create upgrade group.
 
     :param apps: Result of the analysis.
@@ -123,9 +123,9 @@ async def create_upgrade_group(
     :type filter_function: Callable[[OpenStackApplication], bool]
     :raises Exception: When cannot generate upgrade plan.
     :return: Upgrade group.
-    :rtype: BaseStep
+    :rtype: UpgradePlan
     """
-    group_upgrade_plan = BaseStep(description=description, parallel=False)
+    group_upgrade_plan = UpgradePlan(description=description)
     for app in filter(filter_function, apps):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)
