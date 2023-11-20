@@ -14,7 +14,7 @@
 
 from collections import OrderedDict
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
@@ -568,3 +568,14 @@ def apps(status, config, model):
         "nova_ussuri": nova_ussuri,
         "keystone_mysql_router": keystone_mysql_router,
     }
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cou_data(tmp_path_factory):
+    cou_test = tmp_path_factory.mktemp("cou_test")
+    with (
+        patch("cou.utils.COU_DATA", cou_test),
+        patch("cou.logging.COU_DATA", cou_test),
+        patch("cou.steps.backup.COU_DATA", cou_test),
+    ):
+        yield
