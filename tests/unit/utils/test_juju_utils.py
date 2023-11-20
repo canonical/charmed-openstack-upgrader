@@ -463,23 +463,15 @@ async def test_coumodel_wait_for_idle(mock_get_supported_apps, mocked_model):
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.COUModel._get_supported_apps")
-@pytest.mark.parametrize(
-    "apps, exp_error_message",
-    [
-        (None, "Not all apps .* reached their idle state in 60s"),
-        (["app1", "app2"], "Not all apps app1,app2 reached their idle state in 60s"),
-    ],
-)
-async def test_coumodel_wait_for_idle_timeout(
-    mock_get_supported_apps, apps, exp_error_message, mocked_model
-):
+@pytest.mark.parametrize("apps", [None, ["app1", "app2"]])
+async def test_coumodel_wait_for_idle_timeout(mock_get_supported_apps, apps, mocked_model):
     """Test COUModel wait for model to be idle reach timeout."""
     timeout = 60
     model_name = "test-model"
     mocked_model.wait_for_idle.side_effect = asyncio.exceptions.TimeoutError
     model = juju_utils.COUModel(model_name)
 
-    with pytest.raises(TimeoutException, match=exp_error_message):
+    with pytest.raises(TimeoutException):
         await model.wait_for_idle(timeout, apps=apps)
 
     if apps is None:

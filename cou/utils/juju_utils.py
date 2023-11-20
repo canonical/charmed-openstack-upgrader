@@ -457,8 +457,6 @@ class COUModel:
         :param apps: Applications to wait, defaults to None
         :type apps: Optional[list[str]], optional
         """
-        if apps is None:
-            apps = await self._get_supported_apps()
 
         @retry(timeout=timeout)
         @wraps(self.wait_for_idle)
@@ -470,7 +468,11 @@ class COUModel:
                     apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
                 )
             except asyncio.exceptions.TimeoutError as error:
-                msg = f"Not all apps {','.join(apps)} reached their idle state in {timeout}s"
+                msg = str(error)
+                msg = msg.replace("\n", "\n  ")  # make error message more readable
                 raise TimeoutException(msg) from error
+
+        if apps is None:
+            apps = await self._get_supported_apps()
 
         await _wait_for_idle()
