@@ -119,7 +119,7 @@ class OutOfSupportRange(COUException):
 
 
 class InterruptError(KeyboardInterrupt):
-    """COU exception when upgrade was interrupt by signal."""
+    """COU exception when upgrade was interrupted by signal."""
 
     def __init__(self, message: str, exit_code: int) -> None:
         """Set information about KeyboardInterrupt.
