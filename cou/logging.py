@@ -61,6 +61,9 @@ def setup_logging(log_level: str = "INFO") -> None:
     pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
     log_file_handler = logging.FileHandler(file_name)
     log_file_handler.setFormatter(log_formatter_file)
+    # suppress python libjuju and websockets debug logs
+    if log_level != "NOTSET":
+        log_file_handler.addFilter(filter_debug_logs)
 
     # handler for the console. Log level comes from the CLI
     console_handler = logging.StreamHandler()
@@ -74,3 +77,18 @@ def setup_logging(log_level: str = "INFO") -> None:
     root_logger.addHandler(log_file_handler)
     root_logger.addHandler(console_handler)
     logger.info("Logs of this execution can be found at %s", file_name)
+
+
+def filter_debug_logs(record: logging.LogRecord) -> bool:
+    """Filter debug logs to not go to the logfile.
+
+    libjuju and websockets are very verbose on the debug mode and the logfile
+    can be huge if not filtered.
+    :param record: A LogRecord instance represents an event being logged.
+    :type record: LogRecord
+    :return: Returns false to not append record in the log file, true for appending it.
+    :rtype: bool
+    """
+    return record.levelname != "DEBUG" or not (
+        record.name.startswith("juju.") or record.name.startswith("websockets.")
+    )
