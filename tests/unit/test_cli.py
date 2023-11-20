@@ -66,20 +66,19 @@ def test_get_log_level(quiet, verbosity, level):
 
 
 @pytest.mark.asyncio
-@patch("cou.cli.COUModel", new_callable=AsyncMock)
+@patch("cou.cli.COUModel")
 @patch("cou.cli.generate_plan", new_callable=AsyncMock)
 @patch("cou.cli.Analysis.create", new_callable=AsyncMock)
 async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
     """Test analyze_and_plan function with different model_name arguments."""
-    analysis_result = Analysis(
-        model=cou_model.return_value, apps_control_plane=[], apps_data_plane=[]
-    )
+    cou_model.return_value.connect.side_effect = AsyncMock()
+    analysis_result = Analysis(model=cou_model, apps_control_plane=[], apps_data_plane=[])
     mock_analyze.return_value = analysis_result
 
     await cli.analyze_and_plan(None, False)
 
-    cou_model.create.assert_awaited_once_with(None)
-    mock_analyze.assert_awaited_once_with(cou_model.create.return_value)
+    cou_model.assert_called_once_with(None)
+    mock_analyze.assert_awaited_once_with(cou_model.return_value)
     mock_generate_plan.assert_awaited_once_with(analysis_result, False)
 
 

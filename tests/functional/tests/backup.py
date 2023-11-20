@@ -19,11 +19,11 @@ class BackupTest(unittest.TestCase):
         """Backup Test."""
         zaza.get_or_create_libjuju_thread()
         sync_backup = zaza.sync_wrapper(backup)
-        sync_create_model = zaza.sync_wrapper(COUModel.create)
 
         logger.info("Running backup test....")
         model_name = zazamodel.get_juju_model()
-        model = sync_create_model(model_name)
+        model = COUModel(model_name)
+        model = zaza.sync_wrapper(model.connect())
 
         backup_file = sync_backup(model)
         logger.info("Backup file: %s", backup_file)

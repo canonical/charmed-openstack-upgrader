@@ -139,19 +139,6 @@ class COUModel:
         self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
         self._name = name
 
-    @staticmethod
-    async def create(name: Optional[str]) -> "COUModel":
-        """Create COUModel object and connect it to model.
-
-        :param name: Name of the model.
-        :type name: Optional[str]
-        :return: COUModel object.
-        :rtype: COUModel
-        """
-        model = COUModel(name)
-        await model._connect()  # pylint: disable=protected-access
-        return model
-
     @property
     def connected(self) -> bool:
         """Check if model is connected."""
@@ -164,20 +151,14 @@ class COUModel:
     @property
     def name(self) -> str:
         """Return model name."""
+        if self.connected:
+            return self._model.name
+
         if self._name is None:
-            self._name = self._model.name
+            # pylint: disable=protected-access
+            self._name = self._model._connector.jujudata.current_model(model_only=True)
 
         return self._name
-
-    @retry(no_retry_exceptions=(BakeryException,))
-    async def _connect(self) -> None:
-        """Make sure that model is connected."""
-        await self._model.disconnect()
-        await self._model.connect(
-            model_name=self._name,
-            retries=DEFAULT_MODEL_RETRIES,
-            retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
-        )
 
     @retry(no_retry_exceptions=(ActionFailed,))
     async def _get_action_result(self, action: Action, raise_on_failure: bool) -> Action:
@@ -225,7 +206,7 @@ class COUModel:
         :rtype: Model
         """
         if not self.connected:
-            await self._connect()
+            await self.connect()
 
         return self._model
 
@@ -255,6 +236,16 @@ class COUModel:
             raise UnitNotFound(f"Unit {name} was not found in model {model.name}.")
 
         return unit
+
+    @retry(no_retry_exceptions=(BakeryException,))
+    async def connect(self) -> None:
+        """Make sure that model is connected."""
+        await self._model.disconnect()
+        await self._model.connect(
+            model_name=self._name,
+            retries=DEFAULT_MODEL_RETRIES,
+            retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
+        )
 
     @retry
     async def get_application_config(self, name: str) -> dict:

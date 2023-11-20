@@ -96,8 +96,11 @@ async def analyze_and_plan(
     :return: Generated analyses and upgrade plan.
     :rtype: tuple[Analysis, UpgradeStep]
     """
-    model = await COUModel.create(model_name)
+    model = COUModel(model_name)
+    progress_indicator.start(f"Connecting to '{model.name}' model...")
+    await model.connect()
     logger.info("Using model: %s", model.name)
+    progress_indicator.succeed(f"Connected to '{model.name}'")
 
     progress_indicator.start("Analyzing cloud...")
     analysis_result = await Analysis.create(model)
