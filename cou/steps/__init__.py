@@ -71,7 +71,6 @@ class BaseStep:
         description: str = "",
         parallel: bool = False,
         coro: Optional[Coroutine] = None,
-        prompt: Optional[bool] = None,
     ):
         """Initialize BaseStep.
 
@@ -96,10 +95,6 @@ class BaseStep:
         self.sub_steps: List[BaseStep] = []
         self._canceled: bool = False
         self._task: Optional[asyncio.Task] = None
-
-        # Use default prompt value unless explicitly provided
-        if prompt is not None:
-            self.prompt = prompt
 
     def __hash__(self) -> int:
         """Get hash for BaseStep."""
@@ -248,14 +243,13 @@ class UpgradePlan(BaseStep):
     def __init__(
         self,
         description: str = "",
-        prompt: bool = False,
     ):
         """Initialize upgrade plan.
 
         :param description: Description of the step.
         :type description: str
         """
-        super().__init__(description=description, parallel=False, coro=None, prompt=prompt)
+        super().__init__(description=description, parallel=False, coro=None)
 
     async def run(self) -> None:
         """Run UpgradePlan.
@@ -284,7 +278,7 @@ class UpgradeStep(BaseStep):
 
     @property
     def description(self) -> str:
-        """Get the description of the PreUpgradeStep.
+        """Get the description of the UpgradeStep.
 
         :return: description
         :rtype: str
@@ -293,7 +287,7 @@ class UpgradeStep(BaseStep):
 
     @description.setter
     def description(self, description: str) -> None:
-        """Set the description of the PreUpgradeStep.
+        """Set the description of the UpgradeStep.
 
         :param description: description
         :type description: str

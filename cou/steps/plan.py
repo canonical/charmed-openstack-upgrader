@@ -80,7 +80,6 @@ async def generate_plan(analysis_result: Analysis, backup_database: bool) -> Upg
         plan.add_step(
             PreUpgradeStep(
                 description="Backup mysql databases",
-                prompt=True,
                 parallel=False,
                 coro=backup(analysis_result.model),
             )

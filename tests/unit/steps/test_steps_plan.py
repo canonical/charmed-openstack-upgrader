@@ -150,7 +150,6 @@ async def test_generate_plan(apps, model):
         PreUpgradeStep(
             description="Backup mysql databases",
             parallel=False,
-            prompt=True,
             coro=backup(model),
         )
     )

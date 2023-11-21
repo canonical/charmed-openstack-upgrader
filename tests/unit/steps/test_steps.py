@@ -50,22 +50,22 @@ def test_compare_step_coroutines(coro1, coro2, exp_result):
 
 
 @pytest.mark.parametrize(
-    "description, parallel, prompt, expected_prompt",
+    "description, parallel",
     [
-        ("test", False, True, True),
-        ("test description", True, False, False),
-        ("test description", True, None, True),
+        ("test", False),
+        ("test description", True),
+        ("test description", True),
     ],
 )
-def test_step_init(description, parallel, prompt, expected_prompt):
+def test_step_init(description, parallel):
     """Test BaseStep initialization."""
     coro = mock_coro()
-    step = BaseStep(description, parallel, coro, prompt)
+    step = BaseStep(description, parallel, coro)
 
     assert step.description == description
     assert step.parallel == parallel
     assert step._coro == coro
-    assert step.prompt == expected_prompt
+    assert step.prompt is True
     assert step._canceled is False
     assert step._task is None
 
@@ -277,15 +277,14 @@ async def test_step_cancel_task():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("prompt, expected_prompt", [(True, True), (False, False), (None, False)])
-async def test_upgrade_plan_step_instances(prompt, expected_prompt):
+async def test_upgrade_plan_step_instances():
     """Test setting parallel for UpgradePlan."""
     description = "test plan"
-    step = UpgradePlan(description=description, prompt=prompt)
+    step = UpgradePlan(description=description)
 
     assert step._coro is None
     assert step.parallel is False
-    assert step.prompt == expected_prompt
+    assert step.prompt is False
 
 
 @pytest.mark.asyncio
