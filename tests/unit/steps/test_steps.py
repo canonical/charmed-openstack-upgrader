@@ -174,11 +174,13 @@ async def test_properties():
     upgrade_step = UpgradeStep(description="test", coro=coro())
 
     assert upgrade_step.canceled == upgrade_step._canceled
-    assert upgrade_step.results is None
+    assert upgrade_step.done is False
+    assert upgrade_step.all_done is False
 
     await upgrade_step.run()
 
-    assert upgrade_step.results == 42
+    assert upgrade_step.done is True
+    assert upgrade_step.all_done is True
 
 
 def test_step_add_step():

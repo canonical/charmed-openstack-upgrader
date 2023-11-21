@@ -16,6 +16,6 @@ from unittest import mock
 
 
 @mock.patch("cou.cli.entrypoint")
-def test_init(cli):
+def test_execution(mock_entrypoint):
     runpy.run_path("cou/__main__.py", run_name="__main__")
-    cli.assert_called_once_with()
+    mock_entrypoint.assert_called_once_with()
