@@ -72,6 +72,13 @@ async def generate_plan(analysis_result: Analysis, backup_database: bool) -> Upg
     print(f"Upgrading cloud from '{analysis_result.current_cloud_os_release}' to '{target}'\n.")
 
     plan = UpgradeStep(description="Top level plan", parallel=False)
+    plan.add_step(
+        UpgradeStep(
+            description="verify that all OpenStack applications are in idle state",
+            parallel=False,
+            coro=analysis_result.model.wait_for_idle(timeout=5),
+        )
+    )
     if backup_database:
         plan.add_step(
             UpgradeStep(

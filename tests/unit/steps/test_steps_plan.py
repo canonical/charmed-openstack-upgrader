@@ -144,7 +144,13 @@ async def test_generate_plan(apps, model):
         description="Top level plan",
         parallel=False,
     )
-
+    expected_plan.add_step(
+        UpgradeStep(
+            description="verify that all OpenStack applications are in idle state",
+            parallel=False,
+            coro=analysis_result.model.wait_for_idle(timeout=5),
+        )
+    )
     expected_plan.add_step(
         UpgradeStep(
             description="backup mysql databases",
