@@ -28,6 +28,7 @@ from cou.exceptions import (
     CommandRunFailed,
     TimeoutException,
     UnitNotFound,
+    WaitForApplications,
 )
 from cou.utils import juju_utils
 
@@ -467,11 +468,10 @@ async def test_coumodel_wait_for_idle(mock_get_supported_apps, mocked_model):
 async def test_coumodel_wait_for_idle_timeout(mock_get_supported_apps, apps, mocked_model):
     """Test COUModel wait for model to be idle reach timeout."""
     timeout = 60
-    model_name = "test-model"
     mocked_model.wait_for_idle.side_effect = asyncio.exceptions.TimeoutError
-    model = juju_utils.COUModel(model_name)
+    model = juju_utils.COUModel(None)
 
-    with pytest.raises(TimeoutException):
+    with pytest.raises(WaitForApplications):
         await model.wait_for_idle(timeout, apps=apps)
 
     if apps is None:

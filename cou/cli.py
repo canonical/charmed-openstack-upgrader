@@ -184,9 +184,8 @@ async def entrypoint() -> None:
     except HighestReleaseAchieved as exc:
         print(exc)
         sys.exit(0)
-    except TimeoutException as exc:
+    except TimeoutException:
         progress_indicator.fail()
-        logger.error(exc)
         print("The connection was lost. Check your connection or increase the timeout.")
         sys.exit(1)
     except COUException as exc:
