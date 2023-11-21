@@ -173,14 +173,29 @@ class BaseStep:
         self._description = description
 
     @property
+    def all_done(self) -> bool:
+        """Check if step and all its sub_steps are done."""
+        if not self.done:
+            return False
+
+        return all(step.all_done for step in self.sub_steps)
+
+    @property
     def canceled(self) -> bool:
         """Return boolean represent if step was canceled."""
         return self._canceled
 
     @property
-    def results(self) -> Any:
-        """Return result of BaseStep."""
-        return self._task.result() if self._task is not None else None
+    def done(self) -> bool:
+        """Return boolean represent if step is done.
+
+        Done means either that a result / exception are available for _task, or _task
+        was canceled (unsafely).
+        """
+        if self._task is None:
+            return self.canceled
+
+        return self._task.done()
 
     def add_step(self, step: BaseStep) -> None:
         """Add a single step.
@@ -207,7 +222,7 @@ class BaseStep:
             self._task.cancel(f"canceled: {repr(self)}")
 
         self._canceled = True
-        logger.debug("canceled: %s", self)
+        logger.debug("canceled %s: %s", "safely" if safe else "unsafely", self)
 
     async def run(self) -> Any:
         """Run the BaseStep coroutine.

@@ -13,13 +13,15 @@
 # limitations under the License.
 
 """Entrypoint for 'charmed-openstack-upgrader'."""
+import argparse
+import asyncio
 import logging
 import logging.handlers
 import sys
 from enum import Enum
+from signal import SIGINT, SIGTERM
 from typing import Optional
 
-from halo import Halo
 from juju.errors import JujuError
 
 from cou.commands import parse_args
@@ -29,12 +31,13 @@ from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_plan
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
+from cou.utils import progress_indicator
+from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
 
 AVAILABLE_OPTIONS = "cas"
 
 logger = logging.getLogger(__name__)
-progress_indicator = Halo(spinner="line", placement="right")
 
 
 class VerbosityLevel(Enum):
@@ -101,8 +104,8 @@ async def analyze_and_plan(
 
     progress_indicator.start("Analyzing cloud...")
     analysis_result = await Analysis.create(model)
-    progress_indicator.succeed()
     logger.info(analysis_result)
+    progress_indicator.succeed()
 
     progress_indicator.start("Generating upgrade plan...")
     upgrade_plan = await generate_plan(analysis_result, backup_database)
@@ -145,6 +148,11 @@ async def run_upgrade(
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
     logger.info(upgrade_plan)
 
+    # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
+    loop = asyncio.get_event_loop()
+    loop.add_signal_handler(SIGINT, interrupt_handler, upgrade_plan, loop, 130)
+    loop.add_signal_handler(SIGTERM, interrupt_handler, upgrade_plan, loop, 143)
+
     # don't print plan if in quiet mode
     if not quiet:
         print(upgrade_plan)
@@ -159,28 +167,31 @@ async def run_upgrade(
     print("Upgrade completed.")
 
 
-async def entrypoint() -> None:
+async def _run_command(args: argparse.Namespace) -> None:
+    """Run 'charmed-openstack-upgrade' command.
+
+    :param args: CLI arguments
+    :type args: argparse.Namespace
+    """
+    match args.command:
+        case "plan":
+            await get_upgrade_plan(args.model_name, args.backup)
+        case "run":
+            await run_upgrade(args.model_name, args.backup, args.interactive, args.quiet)
+
+
+def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
 
         # disable progress indicator when in quiet mode to suppress its console output
         progress_indicator.enabled = not args.quiet
+        log_level = get_log_level(quiet=args.quiet, verbosity=args.verbosity)
+        setup_logging(log_level)
 
-        progress_indicator.start("Configuring logging...")  # non-persistent progress output
-        setup_logging(log_level=get_log_level(quiet=args.quiet, verbosity=args.verbosity))
-        progress_indicator.stop()
-
-        match args.command:
-            case "plan":
-                await get_upgrade_plan(model_name=args.model_name, backup_database=args.backup)
-            case "run":
-                await run_upgrade(
-                    model_name=args.model_name,
-                    backup_database=args.backup,
-                    interactive=args.interactive,
-                    quiet=args.quiet,
-                )
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(_run_command(args))
     except HighestReleaseAchieved as exc:
         print(exc)
         sys.exit(0)
@@ -197,6 +208,12 @@ async def entrypoint() -> None:
         logger.error("Error occurred in Juju's Python library.")
         logger.error(exc)
         sys.exit(1)
+    except KeyboardInterrupt as exc:
+        # NOTE(rgildein): if spinner_id is not None it means that indicator was not finished
+        if progress_indicator.spinner_id is not None:
+            progress_indicator.fail()
+        print(str(exc) or "charmed-openstack-upgrader has been terminated")
+        sys.exit(getattr(exc, "exit_code", 130))
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.error("Unexpected error occurred.")
         logger.exception(exc)

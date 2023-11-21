@@ -37,6 +37,7 @@ from cou.exceptions import (
     TimeoutException,
     UnitNotFound,
 )
+from cou.utils.openstack import is_charm_supported
 
 JUJU_MAX_FRAME_SIZE: int = 2**30
 DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 10))
@@ -178,6 +179,29 @@ class COUModel:
             retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
         )
 
+    @retry(no_retry_exceptions=(ActionFailed,))
+    async def _get_action_result(self, action: Action, raise_on_failure: bool) -> Action:
+        """Get results from action.
+
+        :param action: Action object
+        :type: Action
+        :param raise_on_failure: Whether to raise ActionFailed exception on failure, defaults
+                                 to False
+        :type raise_on_failure: bool
+        :return: action results
+        :rtype: Action
+        :raises ActionFailed: When the application status is in error (it's not 'completed').
+        """
+        result = await action.wait()
+        if raise_on_failure:
+            model = await self._get_model()
+            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
+            if status != "completed":
+                output = await model.get_action_output(action.entity_id)
+                raise ActionFailed(action, output=output)
+
+        return result
+
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
 
@@ -204,6 +228,17 @@ class COUModel:
             await self._connect()
 
         return self._model
+
+    async def _get_supported_apps(self) -> list[str]:
+        """Get all applications supported by COU deployed in model.
+
+        :return: List of applications names supported by COU
+        :rtype: list[str]
+        """
+        model = await self._get_model()
+        return [
+            name for name, app in model.applications.items() if is_charm_supported(app.charm_name)
+        ]
 
     async def _get_unit(self, name: str) -> Unit:
         """Get juju.unit.unit from model.
@@ -258,28 +293,6 @@ class COUModel:
         """
         model = await self._get_model()
         return await model.get_status()
-
-    @retry(no_retry_exceptions=(ActionFailed,))
-    async def _get_action_result(self, action: Action, raise_on_failure: bool) -> Action:
-        """Get results from action.
-
-        :param action: Action object
-        :type: Action
-        :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
-        :type raise_on_failure: bool
-        :return: action results
-        :rtype: Action
-        :raises ActionFailed: When the application status is in error (it's not 'completed').
-        """
-        result = await action.wait()
-        if raise_on_failure:
-            model = await self._get_model()
-            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
-            if status != "completed":
-                output = await model.get_action_output(action.entity_id)
-                raise ActionFailed(action, output=output)
-
-        return result
 
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run_action(...)` and the rest of the function is covered by retry.
@@ -436,7 +449,9 @@ class COUModel:
 
     @retry
     async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
-        """Wait for model to reach an idle state.
+        """Wait for applications to reach an idle state.
+
+        If no applications are provided, this function will wait for all COU-related applications.
 
         :param timeout: Timeout in seconds.
         :type timeout: int
@@ -444,6 +459,9 @@ class COUModel:
         :type apps: Optional[list[str]], optional
         """
         model = await self._get_model()
+        if apps is None:
+            apps = await self._get_supported_apps()
+
         await model.wait_for_idle(
             apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
         )

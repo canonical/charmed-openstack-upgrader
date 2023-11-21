@@ -14,8 +14,10 @@
 
 """Utilities for charmed-openstack-upgrader."""
 
-
 import os
 from pathlib import Path
 
+from halo import Halo
+
 COU_DATA = Path(os.getenv("COU_DATA", "."))
+progress_indicator = Halo(spinner="line", placement="right")

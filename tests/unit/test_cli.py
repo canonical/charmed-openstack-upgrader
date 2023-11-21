@@ -12,19 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from juju.errors import JujuError
 
 from cou import cli
-from cou.exceptions import (
-    COUException,
-    HighestReleaseAchieved,
-    TimeoutException,
-    UnitNotFound,
-)
+from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 
@@ -179,91 +173,147 @@ async def test_run_upgrade_interactive(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "command, function_call",
-    [
-        ("run", "cou.cli.run_upgrade"),
-        ("plan", "cou.cli.get_upgrade_plan"),
-    ],
-)
-async def test_entrypoint_commands(mocker, command, function_call):
-    """Test entrypoint with different commands."""
-    mocker.patch(
-        "cou.cli.parse_args",
-        return_value=argparse.Namespace(
-            quiet=False,
-            command=command,
-            verbosity=0,
-            model_name=None,
-            interactive=True,
-            backup=False,
-        ),
-    )
-    mocker.patch("cou.cli.analyze_and_plan")
-    mocker.patch("cou.cli.setup_logging")
-    mocker.patch("cou.cli.apply_plan")
-    mocker.patch("cou.cli.Analysis.create")
+@pytest.mark.parametrize("command", ["plan", "run", "other1", "other2"])
+@patch("cou.cli.get_upgrade_plan")
+@patch("cou.cli.run_upgrade")
+async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command):
+    """Test run command function."""
+    args = MagicMock(spec="argparse.Namespace")()
+    args.command = command
 
-    with patch(function_call, new=AsyncMock()) as mock_function:
-        await cli.entrypoint()
-        mock_function.assert_awaited_once()
+    await cli._run_command(args)
+
+    if command == "plan":
+        mock_get_upgrade_plan.assert_awaited_once_with(
+            args.model_name,
+            args.backup,
+        )
+        mock_run_upgrade.assert_not_called()
+    elif command == "run":
+        mock_run_upgrade.assert_awaited_once_with(
+            args.model_name, args.backup, args.interactive, args.quiet
+        )
+        mock_get_upgrade_plan.assert_not_called()
+    else:
+        mock_run_upgrade.assert_not_called()
+        mock_get_upgrade_plan.assert_not_called()
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "exception, exp_exitcode",
-    [
-        (Exception("An error occurred"), "2"),
-        (JujuError("Error coming from python-libjuju"), "1"),
-        (COUException("Caught error"), "1"),
-        (UnitNotFound("Unit not found"), "1"),
-        (TimeoutException("The connection timed out"), "1"),
-        (HighestReleaseAchieved("Highest release achieved"), "0"),
-    ],
-)
-async def test_entrypoint_with_exception(mocker, exception, exp_exitcode):
-    mock_parse_args = mocker.patch("cou.cli.parse_args")
-    mock_parse_args.return_value.command = "plan"
-    mocker.patch("cou.cli.setup_logging")
-    mocker.patch("cou.cli.get_upgrade_plan", side_effect=exception)
-    mocker.patch("cou.cli.run_upgrade")
+@patch("cou.cli.sys")
+@patch("cou.cli.parse_args")
+@patch("cou.cli.get_log_level")
+@patch("cou.cli.setup_logging")
+@patch("cou.cli._run_command")
+def test_entrypoint(
+    mock_run_command, mock_setup_logging, mock_get_log_level, mock_parse_args, mock_sys
+):
+    """Test successful entrypoint execution."""
+    mock_sys.argv = ["cou", "run"]
 
-    with pytest.raises(SystemExit, match=exp_exitcode):
-        await cli.entrypoint()
+    cli.entrypoint()
 
-
-@pytest.mark.asyncio
-async def test_entrypoint_plan(mocker):
-    mock_parse_args = mocker.patch("cou.cli.parse_args")
+    mock_parse_args.assert_called_once_with(["run"])
     args = mock_parse_args.return_value
-    args.command = "plan"
-    mocker.patch("cou.cli.setup_logging")
-    mock_get_upgrade_plan = mocker.patch("cou.cli.get_upgrade_plan")
-    mock_run_upgrade = mocker.patch("cou.cli.run_upgrade")
-
-    await cli.entrypoint()
-
-    mock_get_upgrade_plan.assert_awaited_once_with(
-        model_name=args.model_name, backup_database=args.backup
-    )
-    mock_run_upgrade.assert_not_awaited()
+    mock_get_log_level.assert_called_once_with(quiet=args.quiet, verbosity=args.verbosity)
+    mock_setup_logging.assert_called_once_with(mock_get_log_level.return_value)
+    mock_run_command.assert_awaited_once_with(args)
 
 
-@pytest.mark.asyncio
-async def test_entrypoint_real_run(mocker):
-    mock_parse_args = mocker.patch("cou.cli.parse_args")
-    args = mock_parse_args.return_value
-    args.command = "run"
-    mocker.patch("cou.cli.setup_logging")
-    mock_get_upgrade_plan = mocker.patch("cou.cli.get_upgrade_plan")
-    mock_run_upgrade = mocker.patch("cou.cli.run_upgrade")
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.parse_args", new=MagicMock())
+@patch("cou.cli.get_log_level", new=MagicMock())
+@patch("cou.cli.setup_logging", new=MagicMock())
+@patch("cou.cli._run_command")
+def test_entrypoint_highest_release(mock_run_command, mock_indicator):
+    """Test TimeoutException exception during entrypoint execution."""
+    mock_run_command.side_effect = HighestReleaseAchieved
 
-    await cli.entrypoint()
+    with pytest.raises(SystemExit, match="0"):
+        cli.entrypoint()
 
-    mock_get_upgrade_plan.assert_not_awaited()
-    mock_run_upgrade.assert_awaited_once_with(
-        model_name=args.model_name,
-        backup_database=args.backup,
-        interactive=args.interactive,
-        quiet=args.quiet,
-    )
+    mock_indicator.stop.assert_called_once_with()
+
+
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.parse_args", new=MagicMock())
+@patch("cou.cli.get_log_level", new=MagicMock())
+@patch("cou.cli.setup_logging", new=MagicMock())
+@patch("cou.cli._run_command")
+def test_entrypoint_failure_timeout(mock_run_command, mock_indicator):
+    """Test TimeoutException exception during entrypoint execution."""
+    mock_run_command.side_effect = TimeoutException
+
+    with pytest.raises(SystemExit, match="1"):
+        cli.entrypoint()
+
+    mock_indicator.fail.assert_called_once_with()
+    mock_indicator.stop.assert_called_once_with()
+
+
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.parse_args", new=MagicMock())
+@patch("cou.cli.get_log_level", new=MagicMock())
+@patch("cou.cli.setup_logging", new=MagicMock())
+@patch("cou.cli._run_command")
+def test_entrypoint_failure_cou_exception(mock_run_command, mock_indicator):
+    """Test COUException exception during entrypoint execution."""
+    mock_run_command.side_effect = COUException
+
+    with pytest.raises(SystemExit, match="1"):
+        cli.entrypoint()
+
+    mock_indicator.fail.assert_called_once_with()
+    mock_indicator.stop.assert_called_once_with()
+
+
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.parse_args", new=MagicMock())
+@patch("cou.cli.get_log_level", new=MagicMock())
+@patch("cou.cli.setup_logging", new=MagicMock())
+@patch("cou.cli._run_command")
+def test_entrypoint_failure_juju_error(mock_run_command, mock_indicator):
+    """Test JujuError exception during entrypoint execution."""
+    mock_run_command.side_effect = JujuError
+
+    with pytest.raises(SystemExit, match="1"):
+        cli.entrypoint()
+
+    mock_indicator.fail.assert_called_once_with()
+    mock_indicator.stop.assert_called_once_with()
+
+
+@patch("cou.cli.print")
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.parse_args", new=MagicMock())
+@patch("cou.cli.get_log_level", new=MagicMock())
+@patch("cou.cli.setup_logging", new=MagicMock())
+@patch("cou.cli._run_command")
+@pytest.mark.parametrize("message", ["test", "", "test2"])
+def test_entrypoint_failure_keyboard_interrupt(
+    mock_run_command, mock_indicator, mock_print, message
+):
+    """Test KeyboardInterrupt exception during entrypoint execution."""
+    mock_run_command.side_effect = KeyboardInterrupt(message)
+
+    with pytest.raises(SystemExit, match="130"):
+        cli.entrypoint()
+
+    mock_print.assert_called_once_with(message or "charmed-openstack-upgrader has been terminated")
+    mock_indicator.fail.assert_called_once_with()
+    mock_indicator.stop.assert_called_once_with()
+
+
+@patch("cou.cli.progress_indicator")
+@patch("cou.cli.parse_args", new=MagicMock())
+@patch("cou.cli.get_log_level", new=MagicMock())
+@patch("cou.cli.setup_logging", new=MagicMock())
+@patch("cou.cli._run_command")
+@pytest.mark.parametrize("exception", [ValueError, KeyError, RuntimeError])
+def test_entrypoint_failure_unexpected_exception(mock_run_command, mock_indicator, exception):
+    """Test Exception exception during entrypoint execution."""
+    mock_run_command.side_effect = exception
+
+    with pytest.raises(SystemExit, match="2"):
+        cli.entrypoint()
+
+    mock_indicator.stop.assert_called_once_with()

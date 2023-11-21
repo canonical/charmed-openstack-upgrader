@@ -110,4 +110,4 @@ async def apply_plan(plan: BaseStep, interactive: bool) -> None:
             case "s":
                 logger.info("Skipped")
             case _:
-                logger.info("No valid input provided!")
+                print("No valid input provided!")
