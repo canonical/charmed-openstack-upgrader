@@ -26,7 +26,6 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
-    UpgradePlan,
     UpgradeStep,
 )
 from cou.steps.analyze import Analysis

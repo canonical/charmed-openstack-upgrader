@@ -81,8 +81,6 @@ class BaseStep:
         :type parallel: bool
         :param coro: Step coroutine
         :type coro: Optional[coroutine]
-        :param prompt: Whether to prompt for user input during execution
-        :type prompt: bool
         """
         if coro is not None:
             # NOTE(rgildein): We need to ignore coroutine not to be awaited if step is not run

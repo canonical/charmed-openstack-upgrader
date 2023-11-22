@@ -44,6 +44,7 @@ from cou.exceptions import (
     OutOfSupportRange,
 )
 from cou.steps import PreUpgradeStep, UpgradePlan
+from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
