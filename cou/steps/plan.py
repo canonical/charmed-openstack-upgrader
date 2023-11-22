@@ -71,9 +71,7 @@ async def generate_plan(analysis_result: Analysis, backup_database: bool) -> Upg
     )
 
     plan = UpgradePlan(
-        description=(
-            f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
-        ),
+        f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
     )
 
     if backup_database:
@@ -124,7 +122,7 @@ async def create_upgrade_group(
     :return: Upgrade group.
     :rtype: UpgradePlan
     """
-    group_upgrade_plan = UpgradePlan(description=description)
+    group_upgrade_plan = UpgradePlan(description)
     for app in filter(filter_function, apps):
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target)

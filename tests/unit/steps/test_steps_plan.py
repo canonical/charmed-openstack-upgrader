@@ -144,7 +144,7 @@ async def test_generate_plan(apps, model):
 
     upgrade_plan = await generate_plan(analysis_result, backup_database=True)
 
-    expected_plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
 
     expected_plan.add_step(
         PreUpgradeStep(
@@ -154,15 +154,13 @@ async def test_generate_plan(apps, model):
         )
     )
 
-    control_plane_principals = UpgradePlan(description="Control Plane principal(s) upgrade plan")
+    control_plane_principals = UpgradePlan("Control Plane principal(s) upgrade plan")
     keystone_plan = generate_expected_upgrade_plan_principal(app_keystone, target, model)
     cinder_plan = generate_expected_upgrade_plan_principal(app_cinder, target, model)
     control_plane_principals.add_step(keystone_plan)
     control_plane_principals.add_step(cinder_plan)
 
-    control_plane_subordinates = UpgradePlan(
-        description="Control Plane subordinate(s) upgrade plan"
-    )
+    control_plane_subordinates = UpgradePlan("Control Plane subordinate(s) upgrade plan")
     keystone_ldap_plan = generate_expected_upgrade_plan_subordinate(
         app_keystone_ldap, target, model
     )

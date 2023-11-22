@@ -65,6 +65,7 @@ class BaseStep:
     # pylint: disable=too-many-instance-attributes
 
     prompt: bool = True  # whether to prompt for user input during execution
+    description_prefix: str = ""  # Common prefix for step description
 
     def __init__(
         self,
@@ -170,7 +171,7 @@ class BaseStep:
         """
         if not description and self._coro:
             raise ValueError("Every coroutine should have a description")
-        self._description = description
+        self._description = self.description_prefix + description
 
     @property
     def all_done(self) -> bool:
@@ -255,10 +256,7 @@ class UpgradePlan(BaseStep):
 
     prompt: bool = False
 
-    def __init__(
-        self,
-        description: str = "",
-    ):
+    def __init__(self, description: str):
         """Initialize upgrade plan.
 
         :param description: Description of the step.
@@ -288,38 +286,17 @@ class ApplicationUpgradePlan(UpgradePlan):
 class UpgradeStep(BaseStep):
     """Represents the upgrade step."""
 
-    sub_step_prefix = "[upgrade] "
     prompt: bool = False
-
-    @property
-    def description(self) -> str:
-        """Get the description of the UpgradeStep.
-
-        :return: description
-        :rtype: str
-        """
-        return self._description
-
-    @description.setter
-    def description(self, description: str) -> None:
-        """Set the description of the UpgradeStep.
-
-        :param description: description
-        :type description: str
-        :raises ValueError: When a coroutine is passed without description.
-        """
-        if not description and self._coro:
-            raise ValueError("Every coroutine should have a description")
-        self._description = self.sub_step_prefix + description
+    description_prefix = "[upgrade] "
 
 
 class PreUpgradeStep(UpgradeStep):
     """Represents the pre-upgrade step."""
 
-    sub_step_prefix = "[pre-upgrade] "
+    description_prefix = "[pre-upgrade] "
 
 
 class PostUpgradeStep(UpgradeStep):
     """Represents the post-upgrade step."""
 
-    sub_step_prefix = "[post-upgrade] "
+    description_prefix = "[post-upgrade] "
