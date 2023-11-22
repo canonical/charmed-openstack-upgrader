@@ -106,7 +106,7 @@ class TimeoutException(COUException):
     """COU timeout exception."""
 
 
-class CanceledUpgradeStep(COUException):
+class CanceledStep(COUException):
     """COU exception when executing canceled step."""
 
 

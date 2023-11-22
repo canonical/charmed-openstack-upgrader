@@ -19,7 +19,7 @@ from juju.errors import JujuError
 
 from cou import cli
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
-from cou.steps import UpgradeStep
+from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 
 
@@ -83,8 +83,8 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
 @patch("cou.cli.logger")
 async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manually_upgrade):
     """Test get_upgrade_plan function."""
-    plan = UpgradeStep(description="Top level plan", parallel=False)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
 
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
@@ -118,8 +118,8 @@ async def test_run_upgrade_quiet(
     expected_print_count,
 ):
     """Test get_upgrade_plan function in either quiet or non-quiet mode."""
-    plan = UpgradeStep(description="Top level plan", parallel=False)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
@@ -155,8 +155,8 @@ async def test_run_upgrade_interactive(
     progress_indication_count,
 ):
     """Test get_upgrade_plan function in either interactive or non-interactive mode."""
-    plan = UpgradeStep(description="Top level plan", parallel=False)
-    plan.add_step(UpgradeStep(description="backup mysql databases", parallel=False))
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
