@@ -105,13 +105,13 @@ async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manuall
 )
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
-@patch("cou.cli.apply_plan")
+@patch("cou.cli.apply_step")
 @patch("builtins.print")
 @patch("cou.cli.logger")
 async def test_run_upgrade_quiet(
     mock_logger,
     mock_print,
-    mock_apply_plan,
+    mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
     quiet,
@@ -127,7 +127,7 @@ async def test_run_upgrade_quiet(
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_logger.info.assert_called_once_with(plan)
-    mock_apply_plan.assert_called_once_with(plan, True)
+    mock_apply_step.assert_called_once_with(plan, True)
     mock_print.call_count == expected_print_count
     mock_manually_upgrade.assert_called_once()
 
@@ -142,13 +142,13 @@ async def test_run_upgrade_quiet(
 )
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
-@patch("cou.cli.apply_plan")
+@patch("cou.cli.apply_step")
 @patch("cou.cli.progress_indicator")
 @patch("cou.cli.logger")
 async def test_run_upgrade_interactive(
     mock_logger,
     mock_progress_indicator,
-    mock_apply_plan,
+    mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
     interactive,
@@ -166,7 +166,7 @@ async def test_run_upgrade_interactive(
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_logger.info.assert_called_once_with(plan)
-    mock_apply_plan.assert_called_once_with(plan, interactive)
+    mock_apply_step.assert_called_once_with(plan, interactive)
     assert mock_progress_indicator.start.call_count == progress_indication_count
     assert mock_progress_indicator.succeed.call_count == progress_indication_count
     mock_manually_upgrade.assert_called_once()

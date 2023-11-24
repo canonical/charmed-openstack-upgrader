@@ -29,7 +29,7 @@ from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutExceptio
 from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
-from cou.steps.execute import apply_plan
+from cou.steps.execute import apply_step
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
 from cou.utils import progress_indicator
 from cou.utils.cli import interrupt_handler
@@ -159,10 +159,10 @@ async def run_upgrade(
 
     if not interactive:
         progress_indicator.start("Running cloud upgrade...")
-        await apply_plan(upgrade_plan, interactive)
+        await apply_step(upgrade_plan, interactive)
         progress_indicator.succeed()
     else:
-        await apply_plan(upgrade_plan, interactive)
+        await apply_step(upgrade_plan, interactive)
     manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 

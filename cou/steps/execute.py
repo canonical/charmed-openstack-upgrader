@@ -20,7 +20,7 @@ import sys
 from aioconsole import ainput
 from colorama import Style
 
-from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradePlan
+from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
 from cou.utils import progress_indicator
 
 AVAILABLE_OPTIONS = ["y", "n"]
@@ -57,20 +57,18 @@ def prompt(parameter: str) -> str:
         """
         return Style.RESET_ALL + text + Style.RESET_ALL
 
-    return normal(parameter + "Continue(") + bold("y") + normal("/") + bold("N") + normal("):")
+    return normal(parameter + "Continue(") + bold("y") + normal("/") + bold("n") + normal("):")
 
 
-async def _run_step(step: BaseStep, interactive: bool, indicate_progress: bool) -> None:
-    """Run step and all its sub-steps.
+async def _run_step(step: BaseStep, interactive: bool) -> None:
+    """Run a step and all its sub-steps.
 
-    :param step: Plan to be executed on steps.
+    :param step: Step to be executed.
     :type step: BaseStep
     :param interactive: Whether to run upgrade step in interactive mode.
     :type interactive: bool
-    :param indicate_progress: Whether to enable progress indicator for running the step.
-    :type indicate_progress: bool
     """
-    if indicate_progress:
+    if isinstance(step, UpgradeStep):
         progress_indicator.start(step.description)
         await step.run()
         progress_indicator.succeed()
@@ -79,52 +77,48 @@ async def _run_step(step: BaseStep, interactive: bool, indicate_progress: bool) 
 
     if step.parallel:
         logger.debug("running all sub-steps of %s step in parallel", step)
-        grouped_coroutines = (apply_plan(sub_step, interactive) for sub_step in step.sub_steps)
+        grouped_coroutines = (apply_step(sub_step, interactive) for sub_step in step.sub_steps)
         await asyncio.gather(*grouped_coroutines)
     else:
         logger.debug("running all sub-steps of %s step sequentially", step)
         for sub_step in step.sub_steps:
             logger.debug("running sub-step %s of %s step", sub_step, step)
-            await apply_plan(sub_step, interactive)
+            await apply_step(sub_step, interactive)
 
 
-async def apply_plan(plan: BaseStep, interactive: bool) -> None:
-async def apply_plan(plan: BaseStep, interactive: bool) -> None:
-    """Apply the plan for upgrade.
+async def apply_step(step: BaseStep, interactive: bool) -> None:
+    """Apply a step to execute.
 
-    :param plan: Plan to be executed on steps.
-    :type plan: BaseStep
+    :param step: Step to be executed.
+    :type step: BaseStep
     :param interactive:
     :type interactive: bool
     """
-    description = plan.description + " "
+    # adding a space at the end to better separate description with prompt options
+    # Example:
+    #   This is an upgrade step Continue(y/n)
+    description = step.description + " "
     result = ""
-    indicate_progress = True
-
     # do nothing for empty upgrade step
-    if not plan:
+    if not step:
         return
 
-    # for UpgradePlan and its children class, do not show progress indicator
-    if isinstance(plan, UpgradePlan):
-        indicate_progress = False
-
     # group and print all sub-steps with hierarchy for ApplicationUpgradePlan
-    if isinstance(plan, ApplicationUpgradePlan):
-        description = str(plan) + "\n"
+    if isinstance(step, ApplicationUpgradePlan):
+        description = str(step) + "\n"
         if not interactive:
-            print(plan.description)
+            print(step.description)
 
     while result.casefold() not in AVAILABLE_OPTIONS:
-        if not interactive or plan.prompt is False:
+        if not interactive or not step.prompt:
             result = "y"
         else:
             result = (await ainput(prompt(description))).casefold()
 
         match result:
             case "y":
-                logger.info("Running: %s", plan.description)
-                await _run_step(plan, interactive, indicate_progress)
+                logger.info("Running: %s", step.description)
+                await _run_step(step, interactive)
             case "n":
                 logger.info("Aborting plan")
                 sys.exit(1)
