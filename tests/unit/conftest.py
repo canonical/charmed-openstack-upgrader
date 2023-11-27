@@ -573,9 +573,5 @@ def apps(status, config, model):
 @pytest.fixture(scope="session", autouse=True)
 def cou_data(tmp_path_factory):
     cou_test = tmp_path_factory.mktemp("cou_test")
-    with (
-        patch("cou.utils.COU_DATA", cou_test),
-        patch("cou.logging.COU_DATA", cou_test),
-        patch("cou.steps.backup.COU_DATA", cou_test),
-    ):
+    with patch("cou.utils.COU_DATA", cou_test):
         yield
