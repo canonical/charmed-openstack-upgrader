@@ -19,5 +19,5 @@ from pathlib import Path
 
 from halo import Halo
 
-COU_DATA = Path(os.getenv("COU_DATA", "."))
+COU_DATA = Path(f"/home/{os.getenv('USER')}/.local/share/cou") if os.getenv("USER") else Path(".")
 progress_indicator = Halo(spinner="line", placement="right")

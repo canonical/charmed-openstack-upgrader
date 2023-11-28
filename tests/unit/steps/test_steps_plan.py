@@ -145,7 +145,13 @@ async def test_generate_plan(apps, model):
     upgrade_plan = await generate_plan(analysis_result, backup_database=True)
 
     expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
-
+    expected_plan.add_step(
+        PreUpgradeStep(
+            description="Verify that all OpenStack applications are in idle state",
+            parallel=False,
+            coro=analysis_result.model.wait_for_idle(timeout=5),
+        )
+    )
     expected_plan.add_step(
         PreUpgradeStep(
             description="Backup mysql databases",
