@@ -162,7 +162,6 @@ class COUModel:
             return self._model.name
 
         if self._name is None:
-            # pylint: disable=protected-access
             self._name = self.juju_data.current_model(model_only=True)
 
         return self._name
