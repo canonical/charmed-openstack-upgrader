@@ -57,7 +57,13 @@ def prompt(parameter: str) -> str:
         """
         return Style.RESET_ALL + text + Style.RESET_ALL
 
-    return normal(parameter + "\nContinue (") + bold("y") + normal("/") + bold("n") + normal("): ")
+    return (
+        normal("\n" + parameter + "\nContinue (")
+        + bold("y")
+        + normal("/")
+        + bold("n")
+        + normal("): ")
+    )
 
 
 async def _run_step(step: BaseStep, interactive: bool, overwrite_progress: bool = False) -> None:
