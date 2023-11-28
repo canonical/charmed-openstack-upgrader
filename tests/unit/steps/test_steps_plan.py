@@ -51,13 +51,13 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         wait_step = PostUpgradeStep(
             description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
-            coro=model.wait_for_idle(1800, None),
+            coro=model.wait_for_idle(1800, apps=None),
         )
     else:
         wait_step = PostUpgradeStep(
             description=f"Wait 300s for app {app.name} to reach the idle state.",
             parallel=False,
-            coro=model.wait_for_idle(300, [app.name]),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         )
 
     upgrade_steps = [
