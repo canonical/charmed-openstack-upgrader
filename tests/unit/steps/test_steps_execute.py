@@ -20,7 +20,13 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
-from cou.steps import UpgradeStep
+from cou.steps import (
+    ApplicationUpgradePlan,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UpgradePlan,
+    UpgradeStep,
+)
 from cou.steps.execute import _run_step, apply_plan, prompt
 
 
@@ -28,10 +34,10 @@ from cou.steps.execute import _run_step, apply_plan, prompt
 @patch("cou.steps.execute.apply_plan")
 async def test_run_step_sequentially(mock_apply_plan):
     """Test running step and all sub-steps sequentially."""
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
     upgrade_plan.parallel = False
     upgrade_plan.sub_steps = sub_steps = [
-        AsyncMock(auto_spec=UpgradeStep),
+        AsyncMock(auto_spec=ApplicationUpgradePlan),
         AsyncMock(auto_spec=UpgradeStep),
     ]
 
@@ -45,12 +51,12 @@ async def test_run_step_sequentially(mock_apply_plan):
 @patch("cou.steps.execute.apply_plan")
 async def test_run_step_parallel(mock_apply_plan):
     """Test running step and all sub-steps in parallel."""
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
     upgrade_plan.parallel = True
     upgrade_plan.sub_steps = sub_steps = [
+        AsyncMock(auto_spec=PreUpgradeStep),
         AsyncMock(auto_spec=UpgradeStep),
-        AsyncMock(auto_spec=UpgradeStep),
-        AsyncMock(auto_spec=UpgradeStep),
+        AsyncMock(auto_spec=PostUpgradeStep),
     ]
 
     await _run_step(upgrade_plan, False)
@@ -63,7 +69,7 @@ async def test_run_step_parallel(mock_apply_plan):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_abort(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
     upgrade_plan.description = "Test Plan"
     mock_input.return_value = "a"
 
@@ -78,7 +84,7 @@ async def test_apply_plan_abort(mock_run_step, mock_input):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_non_interactive(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
     upgrade_plan.description = "Test Plan"
 
     await apply_plan(upgrade_plan, False)
@@ -91,7 +97,7 @@ async def test_apply_plan_non_interactive(mock_run_step, mock_input):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_continue(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
     upgrade_plan.description = "Test Plan"
     mock_input.return_value = "C"
 
@@ -105,7 +111,7 @@ async def test_apply_plan_continue(mock_run_step, mock_input):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_nonsense(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
     upgrade_plan.description = "Test Plan"
     mock_input.side_effect = ["x", "a"]
 
@@ -120,7 +126,7 @@ async def test_apply_plan_nonsense(mock_run_step, mock_input):
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
 async def test_apply_plan_skip(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradeStep)
+    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
     upgrade_plan.description = "Test Plan"
     mock_input.return_value = "s"
 
@@ -145,7 +151,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(randint(10, 200) / 1000)  # wait randomly between 10ms and 200ms
             self.execution_order.append(name)
 
-        self.plan = UpgradeStep("test plan", parallel=False)
+        self.plan = UpgradePlan("test plan")
         # define parallel step
         parallel_step = UpgradeStep("parallel", parallel=True, coro=append("parallel"))
         for i in range(5):
@@ -184,38 +190,38 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
         expected_structure = dedent(
             """
         test plan
-            parallel
-                parallel.0
-                    parallel.0.0
-                    parallel.0.1
-                    parallel.0.2
-                parallel.1
-                    parallel.1.0
-                    parallel.1.1
-                    parallel.1.2
-                parallel.2
-                    parallel.2.0
-                    parallel.2.1
-                    parallel.2.2
-                parallel.3
-                    parallel.3.0
-                    parallel.3.1
-                    parallel.3.2
-                parallel.4
-                    parallel.4.0
-                    parallel.4.1
-                    parallel.4.2
-            sequential
-                sequential.0
-                    sequential.0.0
-                sequential.1
-                    sequential.1.0
-                sequential.2
-                    sequential.2.0
-                sequential.3
-                    sequential.3.0
-                sequential.4
-                    sequential.4.0
+            [upgrade] parallel
+                [upgrade] parallel.0
+                    [upgrade] parallel.0.0
+                    [upgrade] parallel.0.1
+                    [upgrade] parallel.0.2
+                [upgrade] parallel.1
+                    [upgrade] parallel.1.0
+                    [upgrade] parallel.1.1
+                    [upgrade] parallel.1.2
+                [upgrade] parallel.2
+                    [upgrade] parallel.2.0
+                    [upgrade] parallel.2.1
+                    [upgrade] parallel.2.2
+                [upgrade] parallel.3
+                    [upgrade] parallel.3.0
+                    [upgrade] parallel.3.1
+                    [upgrade] parallel.3.2
+                [upgrade] parallel.4
+                    [upgrade] parallel.4.0
+                    [upgrade] parallel.4.1
+                    [upgrade] parallel.4.2
+            [upgrade] sequential
+                [upgrade] sequential.0
+                    [upgrade] sequential.0.0
+                [upgrade] sequential.1
+                    [upgrade] sequential.1.0
+                [upgrade] sequential.2
+                    [upgrade] sequential.2.0
+                [upgrade] sequential.3
+                    [upgrade] sequential.3.0
+                [upgrade] sequential.4
+                    [upgrade] sequential.4.0
         """
         )
         expected_structure = expected_structure[1:]  # drop first new line

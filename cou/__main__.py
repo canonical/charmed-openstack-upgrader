@@ -13,14 +13,12 @@
 # limitations under the License.
 
 """Main entry point."""
-import asyncio
-
-from cou import cli
+from cou.cli import entrypoint
 
 
 def main() -> None:
     """Enter the application."""
-    asyncio.run(cli.entrypoint())
+    entrypoint()
 
 
 if __name__ == "__main__":
