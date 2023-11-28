@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import pytest
 from juju.action import Action
 from juju.application import Application
-from juju.client.connector import Connector, NoConnectionException
+from juju.client.connector import NoConnectionException
 from juju.model import Model
 from juju.unit import Unit
 
@@ -137,14 +137,15 @@ async def test_retry_failure():
 @pytest.fixture
 def mocked_model(mocker):
     """Fixture providing mocked juju.model.Model object."""
+    mocker.patch("cou.utils.juju_utils.FileJujuData")
     model_mocker = mocker.patch("cou.utils.juju_utils.Model", return_value=AsyncMock(Model))
     model = model_mocker.return_value
     model.connection.return_value.is_open = True  # simulate already connected model
-    model._connector = MagicMock(Connector).return_value
     yield model
 
 
-def test_coumodel_init(mocker):
+@patch("cou.utils.juju_utils.FileJujuData")
+def test_coumodel_init(mock_juju_data, mocker):
     """Test COUModel initialization."""
     model_mocker = mocker.patch("cou.utils.juju_utils.Model")
     mocked_model = model_mocker.return_value
@@ -153,8 +154,11 @@ def test_coumodel_init(mocker):
 
     model = juju_utils.COUModel(name)
 
-    model_mocker.assert_called_once_with(max_frame_size=juju_utils.JUJU_MAX_FRAME_SIZE)
-    assert model._model == model_mocker.return_value
+    mock_juju_data.assert_called_once_with()
+    model_mocker.assert_called_once_with(
+        max_frame_size=juju_utils.JUJU_MAX_FRAME_SIZE, jujudata=mock_juju_data.return_value
+    )
+    assert model._model == mocked_model
 
 
 def test_coumodel_connected_no_connection(mocked_model):
@@ -183,7 +187,7 @@ def test_coumodel_name(mocked_model):
     model = juju_utils.COUModel(exp_model_name)
 
     assert model.name == exp_model_name
-    mocked_model._connector.jujudata.current_model.assert_not_called()
+    model.juju_data.current_model.assert_not_called()
 
 
 def test_coumodel_name_no_name(mocked_model):
@@ -192,8 +196,8 @@ def test_coumodel_name_no_name(mocked_model):
 
     model = juju_utils.COUModel(None)
 
-    assert model.name == mocked_model._connector.jujudata.current_model.return_value
-    mocked_model._connector.jujudata.current_model.assert_called_once_with(model_only=True)
+    assert model.name == model.juju_data.current_model.return_value
+    model.juju_data.current_model.assert_called_once_with(model_only=True)
 
 
 def test_coumodel_name_connected(mocked_model):
@@ -203,7 +207,7 @@ def test_coumodel_name_connected(mocked_model):
     model = juju_utils.COUModel(None)
 
     assert model.name == mocked_model.name
-    mocked_model._connector.jujudata.current_model.assert_not_called()
+    model.juju_data.current_model.assert_not_called()
 
 
 @pytest.mark.asyncio

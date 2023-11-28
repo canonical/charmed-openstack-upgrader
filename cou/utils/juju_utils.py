@@ -23,6 +23,7 @@ from juju.action import Action
 from juju.application import Application
 from juju.client._definitions import FullStatus
 from juju.client.connector import NoConnectionException
+from juju.client.jujudata import FileJujuData
 from juju.errors import JujuError
 from juju.model import Model
 from juju.unit import Unit
@@ -136,7 +137,8 @@ class COUModel:
 
     def __init__(self, name: Optional[str]):
         """COU Model initialization with name and juju.model.Model."""
-        self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE)
+        self._juju_data = FileJujuData()
+        self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE, jujudata=self._juju_data)
         self._name = name
 
     @property
@@ -149,6 +151,11 @@ class COUModel:
             return False
 
     @property
+    def juju_data(self) -> FileJujuData:
+        """Juju data."""
+        return self._juju_data
+
+    @property
     def name(self) -> str:
         """Return model name."""
         if self.connected:
@@ -156,7 +163,7 @@ class COUModel:
 
         if self._name is None:
             # pylint: disable=protected-access
-            self._name = self._model._connector.jujudata.current_model(model_only=True)
+            self._name = self.juju_data.current_model(model_only=True)
 
         return self._name
 
