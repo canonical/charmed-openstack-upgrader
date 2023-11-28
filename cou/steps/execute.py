@@ -20,7 +20,7 @@ import sys
 from aioconsole import ainput
 from colorama import Fore, Style
 
-from cou.steps import UpgradeStep
+from cou.steps import BaseStep
 
 AVAILABLE_OPTIONS = ["c", "a", "s"]
 
@@ -67,11 +67,11 @@ def prompt(parameter: str) -> str:
     )
 
 
-async def _run_step(step: UpgradeStep, interactive: bool) -> None:
+async def _run_step(step: BaseStep, interactive: bool) -> None:
     """Run step and all its sub-steps.
 
     :param step: Plan to be executed on steps.
-    :type step: UpgradeStep
+    :type step: BaseStep
     :param interactive: Whether to run upgrade step in interactive mode.
     :type interactive: bool
     """
@@ -89,11 +89,11 @@ async def _run_step(step: UpgradeStep, interactive: bool) -> None:
             await apply_plan(sub_step, interactive)
 
 
-async def apply_plan(plan: UpgradeStep, interactive: bool) -> None:
+async def apply_plan(plan: BaseStep, interactive: bool) -> None:
     """Apply the plan for upgrade.
 
     :param plan: Plan to be executed on steps.
-    :type plan: UpgradeStep
+    :type plan: BaseStep
     :param interactive:
     :type interactive: bool
     """
@@ -110,4 +110,4 @@ async def apply_plan(plan: UpgradeStep, interactive: bool) -> None:
             case "s":
                 logger.info("Skipped")
             case _:
-                logger.info("No valid input provided!")
+                print("No valid input provided!")

@@ -15,7 +15,7 @@
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBaseClass
-from cou.steps import UpgradeStep
+from cou.steps import PreUpgradeStep
 from cou.utils.app_utils import validate_ovn_support
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
@@ -42,13 +42,13 @@ class OpenStackAuxiliarySubordinateApplication(
 class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
         """Pre Upgrade planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add pre upgrade as sub steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[PreUpgradeStep]
         """
         validate_ovn_support(self.status.workload_version)
         return super().pre_upgrade_plan(target)

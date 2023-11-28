@@ -20,7 +20,7 @@ from cou.apps.auxiliary_subordinate import (
     OvnSubordinateApplication,
 )
 from cou.exceptions import ApplicationError
-from cou.steps import UpgradeStep
+from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
@@ -41,12 +41,11 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
     app = apps["keystone_mysql_router"]
 
     upgrade_plan = app.generate_upgrade_plan(target)
-    expected_plan = UpgradeStep(
+    expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
     )
     expected_plan.add_step(
-        UpgradeStep(
+        PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
@@ -106,12 +105,12 @@ def test_ovn_subordinate_upgrade_plan(status, model):
 
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
@@ -136,8 +135,8 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
         "ovn-chassis",
     )
 
-    expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -158,12 +157,12 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
 
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
@@ -187,12 +186,12 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
 
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}", parallel=False
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),

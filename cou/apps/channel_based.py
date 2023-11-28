@@ -18,7 +18,7 @@ from juju.client._definitions import UnitStatus
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
-from cou.steps import UpgradeStep
+from cou.steps import PostUpgradeStep
 from cou.utils.openstack import CHANNEL_BASED_CHARMS, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class OpenStackChannelBasedApplication(OpenStackApplication):
         """
         return not all(unit.workload_version for unit in self.status.units.values())
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def post_upgrade_plan(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
         """Post Upgrade planning.
 
         Wait until the application reaches the idle state and then check the target workload.
@@ -68,7 +68,7 @@ class OpenStackChannelBasedApplication(OpenStackApplication):
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: Plan that will add post upgrade as sub steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[PostUpgradeStep]
         """
         if self.is_versionless:
             return []
