@@ -1,8 +1,6 @@
 #!/bin/sh
 # Wrapper for snap deployment.
 [ -z "$JUJU_DATA" ] && JUJU_DATA="/home/$USER/.local/share/juju"
-[ -z "$COU_DATA" ] && COU_DATA="/home/$USER/.local/share/cou"
 export JUJU_DATA=$JUJU_DATA
-export COU_DATA=$COU_DATA
 
 exec "$SNAP/bin/cou" "$@"
