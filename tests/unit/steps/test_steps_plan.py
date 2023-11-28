@@ -22,7 +22,13 @@ from cou.exceptions import (
     NoTargetError,
     OutOfSupportRange,
 )
-from cou.steps import UpgradeStep
+from cou.steps import (
+    ApplicationUpgradePlan,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UpgradePlan,
+    UpgradeStep,
+)
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.plan import (
@@ -37,33 +43,32 @@ from tests.unit.apps.utils import add_steps
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
-    expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target.codename}",
-        parallel=False,
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target.codename}"
     )
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
         # apps waiting for whole model
-        wait_step = UpgradeStep(
+        wait_step = PostUpgradeStep(
             description=f"Wait 1800s for model {model.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(1800, None),
         )
     else:
-        wait_step = UpgradeStep(
+        wait_step = PostUpgradeStep(
             description=f"Wait 300s for app {app.name} to reach the idle state.",
             parallel=False,
             coro=model.wait_for_idle(300, [app.name]),
         )
 
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{app.name}' from the current APT repositories"
             ),
             parallel=False,
             coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
-        UpgradeStep(
+        PreUpgradeStep(
             description=(
                 f"Refresh '{app.name}' to the latest revision of "
                 f"'{target.previous_release}/stable'"
@@ -92,7 +97,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             ),
         ),
         wait_step,
-        UpgradeStep(
+        PostUpgradeStep(
             description=f"Check if the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
@@ -103,12 +108,11 @@ def generate_expected_upgrade_plan_principal(app, target, model):
 
 
 def generate_expected_upgrade_plan_subordinate(app, target, model):
-    expected_plan = UpgradeStep(
-        description=f"Upgrade plan for '{app.name}' to {target}",
-        parallel=False,
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_steps = [
-        UpgradeStep(
+        PreUpgradeStep(
             description=(
                 f"Refresh '{app.name}' to the latest revision of "
                 f"'{target.previous_release}/stable'"
@@ -140,32 +144,23 @@ async def test_generate_plan(apps, model):
 
     upgrade_plan = await generate_plan(analysis_result, backup_database=True)
 
-    expected_plan = UpgradeStep(
-        description="Top level plan",
-        parallel=False,
-    )
+    expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
 
     expected_plan.add_step(
-        UpgradeStep(
-            description="backup mysql databases",
+        PreUpgradeStep(
+            description="Backup mysql databases",
             parallel=False,
             coro=backup(model),
         )
     )
 
-    control_plane_principals = UpgradeStep(
-        description="Control Plane principal(s) upgrade plan",
-        parallel=False,
-    )
+    control_plane_principals = UpgradePlan("Control Plane principal(s) upgrade plan")
     keystone_plan = generate_expected_upgrade_plan_principal(app_keystone, target, model)
     cinder_plan = generate_expected_upgrade_plan_principal(app_cinder, target, model)
     control_plane_principals.add_step(keystone_plan)
     control_plane_principals.add_step(cinder_plan)
 
-    control_plane_subordinates = UpgradeStep(
-        description="Control Plane subordinate(s) upgrade plan",
-        parallel=False,
-    )
+    control_plane_subordinates = UpgradePlan("Control Plane subordinate(s) upgrade plan")
     keystone_ldap_plan = generate_expected_upgrade_plan_subordinate(
         app_keystone_ldap, target, model
     )

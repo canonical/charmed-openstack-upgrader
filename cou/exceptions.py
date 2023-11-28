@@ -106,7 +106,7 @@ class TimeoutException(COUException):
     """COU timeout exception."""
 
 
-class CanceledUpgradeStep(COUException):
+class CanceledStep(COUException):
     """COU exception when executing canceled step."""
 
 
@@ -120,3 +120,18 @@ class OutOfSupportRange(COUException):
 
 class WaitForApplications(COUException):
     """Waiting for applications hit timeout error."""
+
+
+class InterruptError(KeyboardInterrupt):
+    """COU exception when upgrade was interrupted by signal."""
+
+    def __init__(self, message: str, exit_code: int) -> None:
+        """Set information about KeyboardInterrupt.
+
+        :param message: error message
+        :type message: str
+        :param exit_code: Exit code
+        :type exit_code: int
+        """
+        self.exit_code = exit_code
+        super().__init__(message)
