@@ -118,6 +118,10 @@ class OutOfSupportRange(COUException):
     """COU exception when the release or series is out of the current supporting range."""
 
 
+class WaitForApplicationsTimeout(COUException):
+    """Waiting for applications hit timeout error."""
+
+
 class InterruptError(KeyboardInterrupt):
     """COU exception when upgrade was interrupted by signal."""
 

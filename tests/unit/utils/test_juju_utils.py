@@ -28,6 +28,7 @@ from cou.exceptions import (
     CommandRunFailed,
     TimeoutException,
     UnitNotFound,
+    WaitForApplicationsTimeout,
 )
 from cou.utils import juju_utils
 
@@ -449,7 +450,7 @@ async def test_coumodel_upgrade_charm(mocked_model):
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.COUModel._get_supported_apps")
 async def test_coumodel_wait_for_idle(mock_get_supported_apps, mocked_model):
-    """Test COUModel wait for model to be idle."""
+    """Test COUModel wait for related apps to be idle."""
     timeout = 60
     model = juju_utils.COUModel("test-model")
     mock_get_supported_apps.return_value = ["app1", "app2"]
@@ -460,3 +461,36 @@ async def test_coumodel_wait_for_idle(mock_get_supported_apps, mocked_model):
         apps=["app1", "app2"], timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
     )
     mock_get_supported_apps.assert_awaited_once_with()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.COUModel._get_supported_apps")
+async def test_coumodel_wait_for_idle_apps(mock_get_supported_apps, mocked_model):
+    """Test COUModel wait for specific apps to be idle."""
+    timeout = 60
+    model = juju_utils.COUModel("test-model")
+
+    await model.wait_for_idle(timeout, apps=["app1"])
+
+    mocked_model.wait_for_idle.assert_awaited_once_with(
+        apps=["app1"], timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
+    )
+    mock_get_supported_apps.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.COUModel._get_supported_apps")
+async def test_coumodel_wait_for_idle_timeout(mock_get_supported_apps, mocked_model):
+    """Test COUModel wait for model to be idle reach timeout."""
+    timeout = 60
+    exp_apps = ["app1", "app2"]
+    mocked_model.wait_for_idle.side_effect = asyncio.exceptions.TimeoutError
+    model = juju_utils.COUModel(None)
+
+    with pytest.raises(WaitForApplicationsTimeout):
+        await model.wait_for_idle(timeout, apps=exp_apps)
+
+    mocked_model.wait_for_idle.assert_awaited_once_with(
+        apps=exp_apps, timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
+    )
+    mock_get_supported_apps.assert_not_awaited()
