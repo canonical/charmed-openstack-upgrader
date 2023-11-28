@@ -118,7 +118,7 @@ class OutOfSupportRange(COUException):
     """COU exception when the release or series is out of the current supporting range."""
 
 
-class WaitForApplications(COUException):
+class WaitForApplicationsTimeout(COUException):
     """Waiting for applications hit timeout error."""
 
 

@@ -36,7 +36,7 @@ from cou.exceptions import (
     CommandRunFailed,
     TimeoutException,
     UnitNotFound,
-    WaitForApplications,
+    WaitForApplicationsTimeout,
 )
 from cou.utils.openstack import is_charm_supported
 
@@ -459,7 +459,7 @@ class COUModel:
         :type apps: Optional[list[str]], optional
         """
 
-        @retry(timeout=timeout, no_retry_exceptions=(WaitForApplications,))
+        @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
         @wraps(self.wait_for_idle)
         async def _wait_for_idle() -> None:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
@@ -475,7 +475,7 @@ class COUModel:
                 # Timed out waiting for model:
                 #   nova-compute/0 [executing] maintenance: Installing packages
                 msg = str(error).replace("\n", "\n  ")
-                raise WaitForApplications(msg) from error
+                raise WaitForApplicationsTimeout(msg) from error
 
         if apps is None:
             apps = await self._get_supported_apps()
