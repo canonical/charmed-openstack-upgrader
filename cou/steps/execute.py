@@ -123,8 +123,6 @@ async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool
     # group and print all sub-steps with hierarchy for ApplicationUpgradePlan
     if isinstance(step, ApplicationUpgradePlan):
         description_to_prompt = str(step)
-        if not interactive:
-            print(step.description)
 
     result = ""
     while result.casefold() not in AVAILABLE_OPTIONS:

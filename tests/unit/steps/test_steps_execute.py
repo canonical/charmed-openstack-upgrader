@@ -161,8 +161,7 @@ async def test_apply_step_nonsense(mock_run_step, mock_input):
 @patch("cou.steps.execute._run_step")
 async def test_apply_application_upgrade_plan(mock_run_step, mock_input):
     expected_prompt = (
-        "Test plan\n\t[pre-upgrade] Test pre-upgrade step\n\t[upgrade] Test upgrade step\n\t"
-        + "[post-upgrade] Test post-upgrade step\n"
+        "Test plan\n\tTest pre-upgrade step\n\tTest upgrade step\n\t" + "Test post-upgrade step\n"
     )
     upgrade_plan = ApplicationUpgradePlan("Test plan")
     upgrade_plan.sub_steps = [
@@ -178,12 +177,9 @@ async def test_apply_application_upgrade_plan(mock_run_step, mock_input):
 
 
 @pytest.mark.asyncio
-@patch(("cou.steps.execute.print"))
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
-async def test_apply_application_upgrade_plan_non_interactive(
-    mock_run_step, mock_input, mock_print
-):
+async def test_apply_application_upgrade_plan_non_interactive(mock_run_step, mock_input):
     plan_description = "Test plan"
     upgrade_plan = ApplicationUpgradePlan(plan_description)
     upgrade_plan.sub_steps = [
@@ -194,19 +190,21 @@ async def test_apply_application_upgrade_plan_non_interactive(
 
     await apply_step(upgrade_plan, False)
 
-    mock_print.assert_called_once_with(plan_description)
     mock_input.assert_not_awaited()
+    mock_run_step.assert_awaited()
 
 
 @pytest.mark.asyncio
 @patch("cou.steps.execute.ainput")
-async def test_apply_empty_step(mock_input):
+@patch("cou.steps.execute._run_step")
+async def test_apply_empty_step(mock_run_step, mock_input):
     # upgrade_plan is empty because it has neither coro nor sub-steps
     upgrade_plan = ApplicationUpgradePlan("Test plan")
 
     await apply_step(upgrade_plan, True)
 
     mock_input.assert_not_awaited()
+    mock_run_step.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -301,38 +299,38 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
         expected_structure = dedent(
             """
         test plan
-            [upgrade] parallel
-                [upgrade] parallel.0
-                    [upgrade] parallel.0.0
-                    [upgrade] parallel.0.1
-                    [upgrade] parallel.0.2
-                [upgrade] parallel.1
-                    [upgrade] parallel.1.0
-                    [upgrade] parallel.1.1
-                    [upgrade] parallel.1.2
-                [upgrade] parallel.2
-                    [upgrade] parallel.2.0
-                    [upgrade] parallel.2.1
-                    [upgrade] parallel.2.2
-                [upgrade] parallel.3
-                    [upgrade] parallel.3.0
-                    [upgrade] parallel.3.1
-                    [upgrade] parallel.3.2
-                [upgrade] parallel.4
-                    [upgrade] parallel.4.0
-                    [upgrade] parallel.4.1
-                    [upgrade] parallel.4.2
-            [upgrade] sequential
-                [upgrade] sequential.0
-                    [upgrade] sequential.0.0
-                [upgrade] sequential.1
-                    [upgrade] sequential.1.0
-                [upgrade] sequential.2
-                    [upgrade] sequential.2.0
-                [upgrade] sequential.3
-                    [upgrade] sequential.3.0
-                [upgrade] sequential.4
-                    [upgrade] sequential.4.0
+            parallel
+                parallel.0
+                    parallel.0.0
+                    parallel.0.1
+                    parallel.0.2
+                parallel.1
+                    parallel.1.0
+                    parallel.1.1
+                    parallel.1.2
+                parallel.2
+                    parallel.2.0
+                    parallel.2.1
+                    parallel.2.2
+                parallel.3
+                    parallel.3.0
+                    parallel.3.1
+                    parallel.3.2
+                parallel.4
+                    parallel.4.0
+                    parallel.4.1
+                    parallel.4.2
+            sequential
+                sequential.0
+                    sequential.0.0
+                sequential.1
+                    sequential.1.0
+                sequential.2
+                    sequential.2.0
+                sequential.3
+                    sequential.3.0
+                sequential.4
+                    sequential.4.0
         """
         )
         expected_structure = expected_structure[1:]  # drop first new line

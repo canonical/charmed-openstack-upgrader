@@ -156,13 +156,9 @@ async def run_upgrade(
     # don't print plan if in quiet mode
     if not quiet:
         print(upgrade_plan)
+        print("Running cloud upgrade...")
 
-    if not interactive:
-        progress_indicator.start("Running cloud upgrade...")
-        await apply_step(upgrade_plan, interactive)
-        progress_indicator.succeed()
-    else:
-        await apply_step(upgrade_plan, interactive)
+    await apply_step(upgrade_plan, interactive)
     manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 

@@ -65,7 +65,6 @@ class BaseStep:
     # pylint: disable=too-many-instance-attributes
 
     prompt: bool = True  # whether to prompt for user input during execution
-    description_prefix: str = ""  # Common prefix for step description
 
     def __init__(
         self,
@@ -169,7 +168,7 @@ class BaseStep:
         """
         if not description and self._coro:
             raise ValueError("Every coroutine should have a description")
-        self._description = self.description_prefix + description
+        self._description = description
 
     @property
     def all_done(self) -> bool:
@@ -285,16 +284,11 @@ class UpgradeStep(BaseStep):
     """Represents the upgrade step."""
 
     prompt: bool = False
-    description_prefix = "[upgrade] "
 
 
 class PreUpgradeStep(UpgradeStep):
     """Represents the pre-upgrade step."""
 
-    description_prefix = "[pre-upgrade] "
-
 
 class PostUpgradeStep(UpgradeStep):
     """Represents the post-upgrade step."""
-
-    description_prefix = "[post-upgrade] "
