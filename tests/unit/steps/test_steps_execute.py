@@ -45,7 +45,7 @@ async def test_run_step_sequentially(mock_apply_step):
     await _run_step(upgrade_step, False)
 
     upgrade_step.run.assert_awaited_once_with()
-    mock_apply_step.assert_has_awaits([call(sub_step, False) for sub_step in sub_steps])
+    mock_apply_step.assert_has_awaits([call(sub_step, False, False) for sub_step in sub_steps])
 
 
 @pytest.mark.asyncio
@@ -63,7 +63,7 @@ async def test_run_step_in_parallel(mock_apply_step):
     await _run_step(upgrade_step, False)
 
     upgrade_step.run.assert_awaited_once_with()
-    mock_apply_step.assert_has_awaits([call(step, False) for step in sub_steps])
+    mock_apply_step.assert_has_awaits([call(step, False, False) for step in sub_steps])
 
 
 @pytest.mark.asyncio
@@ -77,10 +77,21 @@ async def test_run_step_with_progress_indicator(mock_progress_indicator, step):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("step", [UpgradeStep, PreUpgradeStep, PostUpgradeStep])
+@patch("cou.steps.execute.progress_indicator")
+async def test_run_step_with_progress_indicator_overwrites(mock_progress_indicator, step):
+    upgrade_step = AsyncMock(spec=step())
+    await _run_step(upgrade_step, False, True)
+    mock_progress_indicator.start.assert_called_once()
+    mock_progress_indicator.succeed.assert_not_called()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("plan", [UpgradePlan, ApplicationUpgradePlan])
 @patch("cou.steps.execute.progress_indicator")
 async def test_run_step_no_progress_indicator(mock_progress_indicator, plan):
     upgrade_plan = AsyncMock(spec_set=plan("Test plan"))
+    mock_progress_indicator.spinner_id = None
     await _run_step(upgrade_plan, False)
     mock_progress_indicator.start.assert_not_called()
     mock_progress_indicator.succeed.assert_not_called()
@@ -98,7 +109,7 @@ async def test_apply_step_abort(mock_run_step, mock_input, input_value):
     with pytest.raises(SystemExit):
         await apply_step(upgrade_step, True)
 
-    mock_input.assert_awaited_once_with(prompt("Test Step "))
+    mock_input.assert_awaited_once_with(prompt("Test Step"))
     mock_run_step.assert_not_awaited()
 
 
@@ -112,7 +123,7 @@ async def test_apply_step_non_interactive(mock_run_step, mock_input):
     await apply_step(upgrade_step, False)
 
     mock_input.assert_not_awaited()
-    mock_run_step.assert_awaited_once_with(upgrade_step, False)
+    mock_run_step.assert_awaited_once_with(upgrade_step, False, False)
 
 
 @pytest.mark.asyncio
@@ -126,8 +137,8 @@ async def test_apply_step_continue(mock_run_step, mock_input, input_value):
 
     await apply_step(upgrade_step, True)
 
-    mock_input.assert_awaited_once_with(prompt("Test Step "))
-    mock_run_step.assert_awaited_once_with(upgrade_step, True)
+    mock_input.assert_awaited_once_with(prompt("Test Step"))
+    mock_run_step.assert_awaited_once_with(upgrade_step, True, False)
 
 
 @pytest.mark.asyncio
@@ -141,7 +152,7 @@ async def test_apply_step_nonsense(mock_run_step, mock_input):
     with pytest.raises(SystemExit, match="1"):
         await apply_step(upgrade_step, True)
 
-    mock_input.assert_has_awaits([call(prompt("Test Step ")), call(prompt("Test Step "))])
+    mock_input.assert_has_awaits([call(prompt("Test Step")), call(prompt("Test Step"))])
     mock_run_step.assert_not_awaited()
 
 
@@ -151,7 +162,7 @@ async def test_apply_step_nonsense(mock_run_step, mock_input):
 async def test_apply_application_upgrade_plan(mock_run_step, mock_input):
     expected_prompt = (
         "Test plan\n\t[pre-upgrade] Test pre-upgrade step\n\t[upgrade] Test upgrade step\n\t"
-        + "[post-upgrade] Test post-upgrade step\n\n"
+        + "[post-upgrade] Test post-upgrade step\n"
     )
     upgrade_plan = ApplicationUpgradePlan("Test plan")
     upgrade_plan.sub_steps = [
@@ -196,6 +207,44 @@ async def test_apply_empty_step(mock_input):
     await apply_step(upgrade_plan, True)
 
     mock_input.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.progress_indicator")
+async def test_run_step_overwrite_progress(mock_progress_indicator):
+    """Test running ApplicationUpgradePlan and all its sub-steps with progress overwrite logic."""
+    calls = []
+
+    async def append(name: str) -> None:
+        await asyncio.sleep(randint(10, 200) / 1000)  # wait randomly between 10ms and 200ms
+        calls.append(name)
+
+    upgrade_plan = ApplicationUpgradePlan("Test plan")
+    upgrade_plan.sub_steps = sub_steps = [
+        PreUpgradeStep(description="Test pre-upgrade step", coro=append("PreUpgradeStep 1")),
+        UpgradeStep(description="Test upgrade step", coro=append("UpgradeStep 1")),
+        PostUpgradeStep(description="Test post-upgrade step", coro=append("PostUpgradeStep 1")),
+    ]
+    sub_steps[-1].sub_steps = [
+        PreUpgradeStep(description="Test pre-upgrade step", coro=append("PreUpgradeStep 2")),
+        UpgradeStep(description="Test upgrade step", coro=append("UpgradeStep 2")),
+        PostUpgradeStep(description="Test post-upgrade step", coro=append("PostUpgradeStep 2")),
+    ]
+
+    mock_progress_indicator.spinner_id = "some id"
+
+    await apply_step(upgrade_plan, False)
+
+    assert calls == [
+        "PreUpgradeStep 1",
+        "UpgradeStep 1",
+        "PostUpgradeStep 1",
+        "PreUpgradeStep 2",
+        "UpgradeStep 2",
+        "PostUpgradeStep 2",
+    ]
+    assert mock_progress_indicator.start.call_count == 6
+    assert mock_progress_indicator.succeed.call_count == 1
 
 
 class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
@@ -293,7 +342,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
     async def test_apply_step_sequential_part(self):
         """Test apply_step sequential part.
 
-        This this will check if all steps are run in right order.
+        This will check if all steps are run in right order.
         """
         exp_results = [
             "sequential",
@@ -317,7 +366,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
     async def test_apply_step_parallel_part(self):
         """Test apply_step parallel part.
 
-        This this will check if sub-steps of parallel step was run in random order
+        This will check if sub-steps of parallel step was run in random order
         and their sub-sub-steps in sequential order.
         """
         exp_results = [
