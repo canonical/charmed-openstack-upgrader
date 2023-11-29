@@ -23,8 +23,9 @@ class BackupTest(unittest.TestCase):
         logger.info("Running backup test....")
         model_name = zazamodel.get_juju_model()
         model = COUModel(model_name)
-        model = zaza.sync_wrapper(model.connect())
+        sync_connect = zaza.sync_wrapper(model.connect)
 
+        sync_connect()
         backup_file = sync_backup(model)
         logger.info("Backup file: %s", backup_file)
         assert os.path.getsize(backup_file) > 0
