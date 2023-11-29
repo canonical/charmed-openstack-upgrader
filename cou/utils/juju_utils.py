@@ -138,7 +138,7 @@ class COUModel:
     def __init__(self, name: Optional[str]):
         """COU Model initialization with name and juju.model.Model."""
         self._juju_data = FileJujuData()
-        self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE, jujudata=self._juju_data)
+        self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE, jujudata=self.juju_data)
         self._name = name
 
     @property
@@ -162,7 +162,6 @@ class COUModel:
             return self._model.name
 
         if self._name is None:
-            # pylint: disable=protected-access
             self._name = self.juju_data.current_model(model_only=True)
 
         return self._name
