@@ -445,13 +445,23 @@ class COUModel:
             switch=switch,
         )
 
-    async def wait_for_idle(self, timeout: int, apps: Optional[list[str]] = None) -> None:
+    async def wait_for_idle(
+        self,
+        timeout: int,
+        idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
+        apps: Optional[list[str]] = None,
+    ) -> None:
         """Wait for applications to reach an idle state.
 
         If no applications are provided, this function will wait for all COU-related applications.
 
-        :param timeout: Timeout in seconds.
+        :param timeout: How long (in seconds) to wait for the bundle settles before raising an
+                        WaitForApplicationsTimeout.
         :type timeout: int
+        :param idle_period: How long (in seconds) statuses of all apps need to be `idle`. This
+                            delay is used to ensure that any pending hooks have a chance to start
+                            to avoid false positives.
+        :type idle_period: int
         :param apps: Applications to wait, defaults to None
         :type apps: Optional[list[str]], optional
         """
@@ -462,9 +472,7 @@ class COUModel:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
             model = await self._get_model()
             try:
-                await model.wait_for_idle(
-                    apps=apps, timeout=timeout, idle_period=DEFAULT_MODEL_IDLE_PERIOD
-                )
+                await model.wait_for_idle(apps=apps, timeout=timeout, idle_period=idle_period)
             except asyncio.exceptions.TimeoutError as error:
                 # NOTE(rgildein): Catching TimeoutError raised as exception when wait_for_idle
                 # reached timeout. Also adding two spaces to make it more user friendly.
