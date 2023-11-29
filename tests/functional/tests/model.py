@@ -9,7 +9,7 @@ from cou.utils.juju_utils import COUModel
 
 log = logging.getLogger(__name__)
 
-TESTED_APP = "rabbitmq-server"
+TESTED_APP = "designate-bind"
 TESTED_UNIT = f"{TESTED_APP}/0"
 
 
@@ -25,6 +25,10 @@ class COUModelTest(unittest.TestCase):
         zaza.sync_wrapper(self.model._model.disconnect)()
         zaza.clean_up_libjuju_thread()
 
+    def test_connection(self):
+        """Test model connection."""
+        self.assertTrue(self.model.connected)
+
     def test_get_charm_name(self):
         """Test get charm name."""
         charm = zaza.sync_wrapper(self.model.get_charm_name)(TESTED_APP)
@@ -37,14 +41,13 @@ class COUModelTest(unittest.TestCase):
 
     def test_run_action(self):
         """Test run action."""
-        action = zaza.sync_wrapper(self.model.run_action)(TESTED_UNIT, "cluster-status")
+        action = zaza.sync_wrapper(self.model.run_action)(TESTED_UNIT, "resume")
         self.assertEqual("completed", action.data["status"])
-        self.assertIn("RabbitMQ", action.data["results"]["output"])
 
     def test_run_on_unit(self):
         """Test run command on unit."""
-        results = zaza.sync_wrapper(self.model.run_on_unit)(TESTED_UNIT, "actions/cluster-status")
-        self.assertIn("RabbitMQ", results["output"])
+        results = zaza.sync_wrapper(self.model.run_on_unit)(TESTED_UNIT, "actions/resume")
+        self.assertIn("active", results["Stdout"])
 
     def test_scp_from_unit(self):
         """Test copy file from unit."""
@@ -62,8 +65,8 @@ class COUModelTest(unittest.TestCase):
 
         This test covers set and get configuration option along with waiting for model to be idle.
         """
-        original_config = {"enable-auto-restarts": "true"}
-        new_config = {"enable-auto-restarts": "false"}
+        original_config = {"debug": "false"}
+        new_config = {"debug": "true"}
         self.addCleanup(zaza.model.set_application_config, TESTED_APP, original_config)
         self.addCleanup(zaza.model.wait_for_unit_idle, TESTED_UNIT)
 
@@ -72,7 +75,7 @@ class COUModelTest(unittest.TestCase):
         zaza.sync_wrapper(self.model.wait_for_idle)(120, apps=[TESTED_APP])
         config = zaza.sync_wrapper(self.model.get_application_config)(TESTED_APP)
 
-        self.assertFalse(config["enable-auto-restarts"]["value"])
+        self.assertTrue(config["debug"]["value"])
 
     def test_upgrade_charm(self):
         """Test upgrade charm to the latest revision of the current channel.
