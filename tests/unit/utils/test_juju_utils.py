@@ -138,35 +138,28 @@ async def test_retry_failure():
 @pytest.fixture
 def mocked_model(mocker):
     """Fixture providing mocked juju.model.Model object."""
+    mocker.patch("cou.utils.juju_utils.FileJujuData")
     model_mocker = mocker.patch("cou.utils.juju_utils.Model", return_value=AsyncMock(Model))
     model = model_mocker.return_value
     model.connection.return_value.is_open = True  # simulate already connected model
     yield model
 
 
-def test_coumodel_init(mocker):
+@patch("cou.utils.juju_utils.FileJujuData")
+def test_coumodel_init(mock_juju_data, mocker):
     """Test COUModel initialization."""
     model_mocker = mocker.patch("cou.utils.juju_utils.Model")
+    mocked_model = model_mocker.return_value
+    mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
     name = "test-model"
+
     model = juju_utils.COUModel(name)
 
-    model_mocker.assert_called_once_with(max_frame_size=juju_utils.JUJU_MAX_FRAME_SIZE)
-    assert model._model == model_mocker.return_value
-    assert model.name == name
-
-
-@pytest.mark.asyncio
-async def test_coumodel_create(mocked_model):
-    """Test COUModel create function with no model_name defined."""
-    model = await juju_utils.COUModel.create(None)
-
-    assert model.name == mocked_model.name
-    mocked_model.disconnect.assert_awaited_once_with()
-    mocked_model.connect.assert_awaited_once_with(
-        model_name=None,
-        retries=juju_utils.DEFAULT_MODEL_RETRIES,
-        retry_backoff=juju_utils.DEFAULT_MODEL_RETRY_BACKOFF,
+    mock_juju_data.assert_called_once_with()
+    model_mocker.assert_called_once_with(
+        max_frame_size=juju_utils.JUJU_MAX_FRAME_SIZE, jujudata=mock_juju_data.return_value
     )
+    assert model._model == mocked_model
 
 
 def test_coumodel_connected_no_connection(mocked_model):
@@ -187,12 +180,43 @@ def test_coumodel_connected(mocked_model):
     assert model.connected is True
 
 
+def test_coumodel_name(mocked_model):
+    """Test COUModel name property without model name."""
+    exp_model_name = "test-model"
+    mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
+
+    model = juju_utils.COUModel(exp_model_name)
+
+    assert model.name == exp_model_name
+    model.juju_data.current_model.assert_not_called()
+
+
+def test_coumodel_name_no_name(mocked_model):
+    """Test COUModel name property without model name."""
+    mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
+
+    model = juju_utils.COUModel(None)
+
+    assert model.name == model.juju_data.current_model.return_value
+    model.juju_data.current_model.assert_called_once_with(model_only=True)
+
+
+def test_coumodel_name_connected(mocked_model):
+    """Test COUModel initialization without model name, but connected."""
+    mocked_model.connection.return_value.is_open = True
+
+    model = juju_utils.COUModel(None)
+
+    assert model.name == mocked_model.name
+    model.juju_data.current_model.assert_not_called()
+
+
 @pytest.mark.asyncio
 async def test_coumodel_connect(mocked_model):
     """Test COUModel connection."""
     name = "test-model"
     model = juju_utils.COUModel(name)
-    await model._connect()
+    await model.connect()
 
     mocked_model.disconnect.assert_awaited_once_with()
     mocked_model.connect.assert_awaited_once_with(
