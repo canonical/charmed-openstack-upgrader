@@ -27,6 +27,7 @@ class COUModelTest(unittest.TestCase):
 
     def test_connection(self):
         """Test model connection."""
+        zaza.sync_wrapper(self.model.connect)()
         self.assertTrue(self.model.connected)
 
     def test_get_charm_name(self):
