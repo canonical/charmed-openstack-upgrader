@@ -27,113 +27,222 @@ from cou.steps import (
     UpgradePlan,
     UpgradeStep,
 )
-from cou.steps.execute import _run_step, apply_plan, prompt
+from cou.steps.execute import _run_step, apply_step, prompt
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.execute.apply_plan")
-async def test_run_step_sequentially(mock_apply_plan):
+@patch("cou.steps.execute.apply_step")
+async def test_run_step_sequentially(mock_apply_step):
     """Test running step and all sub-steps sequentially."""
-    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
-    upgrade_plan.parallel = False
-    upgrade_plan.sub_steps = sub_steps = [
-        AsyncMock(auto_spec=ApplicationUpgradePlan),
-        AsyncMock(auto_spec=UpgradeStep),
+    upgrade_step = AsyncMock(spec_set=UpgradeStep())
+    upgrade_step.parallel = False
+    upgrade_step.sub_steps = sub_steps = [
+        AsyncMock(spec_set=PreUpgradeStep()),
+        AsyncMock(spec_set=UpgradeStep()),
+        AsyncMock(spec_set=PostUpgradeStep()),
     ]
 
-    await _run_step(upgrade_plan, False)
+    await _run_step(upgrade_step, False)
 
-    upgrade_plan.run.assert_awaited_once_with()
-    mock_apply_plan.assert_has_awaits([call(sub_step, False) for sub_step in sub_steps])
+    upgrade_step.run.assert_awaited_once_with()
+    mock_apply_step.assert_has_awaits([call(sub_step, False, False) for sub_step in sub_steps])
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.execute.apply_plan")
-async def test_run_step_parallel(mock_apply_plan):
+@patch("cou.steps.execute.apply_step")
+async def test_run_step_in_parallel(mock_apply_step):
     """Test running step and all sub-steps in parallel."""
-    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
-    upgrade_plan.parallel = True
-    upgrade_plan.sub_steps = sub_steps = [
-        AsyncMock(auto_spec=PreUpgradeStep),
-        AsyncMock(auto_spec=UpgradeStep),
-        AsyncMock(auto_spec=PostUpgradeStep),
+    upgrade_step = AsyncMock(spec_set=UpgradeStep())
+    upgrade_step.parallel = True
+    upgrade_step.sub_steps = sub_steps = [
+        AsyncMock(spec_set=PreUpgradeStep()),
+        AsyncMock(spec_set=UpgradeStep()),
+        AsyncMock(spec_set=PostUpgradeStep()),
     ]
 
-    await _run_step(upgrade_plan, False)
+    await _run_step(upgrade_step, False)
 
-    upgrade_plan.run.assert_awaited_once_with()
-    mock_apply_plan.assert_has_awaits([call(step, False) for step in sub_steps])
+    upgrade_step.run.assert_awaited_once_with()
+    mock_apply_step.assert_has_awaits([call(step, False, False) for step in sub_steps])
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("step", [UpgradeStep, PreUpgradeStep, PostUpgradeStep])
+@patch("cou.steps.execute.progress_indicator")
+async def test_run_step_with_progress_indicator(mock_progress_indicator, step):
+    upgrade_step = AsyncMock(spec=step())
+    await _run_step(upgrade_step, False)
+    mock_progress_indicator.start.assert_called_once()
+    mock_progress_indicator.succeed.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("step", [UpgradeStep, PreUpgradeStep, PostUpgradeStep])
+@patch("cou.steps.execute.progress_indicator")
+async def test_run_step_with_progress_indicator_overwrites(mock_progress_indicator, step):
+    upgrade_step = AsyncMock(spec=step())
+    await _run_step(upgrade_step, False, True)
+    mock_progress_indicator.start.assert_called_once()
+    mock_progress_indicator.succeed.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("plan", [UpgradePlan, ApplicationUpgradePlan])
+@patch("cou.steps.execute.progress_indicator")
+async def test_run_step_no_progress_indicator(mock_progress_indicator, plan):
+    upgrade_plan = AsyncMock(spec_set=plan("Test plan"))
+    mock_progress_indicator.spinner_id = None
+    await _run_step(upgrade_plan, False)
+    mock_progress_indicator.start.assert_not_called()
+    mock_progress_indicator.succeed.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("input_value", ["n", "N"])
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
-async def test_apply_plan_abort(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
-    upgrade_plan.description = "Test Plan"
-    mock_input.return_value = "a"
+async def test_apply_step_abort(mock_run_step, mock_input, input_value):
+    upgrade_step = AsyncMock(spec_set=UpgradeStep())
+    upgrade_step.description = "Test Step"
+    mock_input.return_value = input_value
 
     with pytest.raises(SystemExit):
-        await apply_plan(upgrade_plan, True)
+        await apply_step(upgrade_step, True)
 
-    mock_input.assert_awaited_once_with(prompt("Test Plan"))
+    mock_input.assert_awaited_once_with(prompt("Test Step"))
     mock_run_step.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
-async def test_apply_plan_non_interactive(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
-    upgrade_plan.description = "Test Plan"
+async def test_apply_step_non_interactive(mock_run_step, mock_input):
+    upgrade_step = AsyncMock(spec_set=UpgradeStep())
+    upgrade_step.description = "Test Step"
 
-    await apply_plan(upgrade_plan, False)
+    await apply_step(upgrade_step, False)
 
     mock_input.assert_not_awaited()
-    mock_run_step.assert_awaited_once_with(upgrade_plan, False)
+    mock_run_step.assert_awaited_once_with(upgrade_step, False, False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("input_value", ["y", "Y"])
+@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute._run_step")
+async def test_apply_step_continue(mock_run_step, mock_input, input_value):
+    upgrade_step = AsyncMock(spec_set=UpgradeStep())
+    upgrade_step.description = "Test Step"
+    mock_input.return_value = input_value
+
+    await apply_step(upgrade_step, True)
+
+    mock_input.assert_awaited_once_with(prompt("Test Step"))
+    mock_run_step.assert_awaited_once_with(upgrade_step, True, False)
 
 
 @pytest.mark.asyncio
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
-async def test_apply_plan_continue(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
-    upgrade_plan.description = "Test Plan"
-    mock_input.return_value = "C"
-
-    await apply_plan(upgrade_plan, True)
-
-    mock_input.assert_awaited_once_with(prompt("Test Plan"))
-    mock_run_step.assert_awaited_once_with(upgrade_plan, True)
-
-
-@pytest.mark.asyncio
-@patch("cou.steps.execute.ainput")
-@patch("cou.steps.execute._run_step")
-async def test_apply_plan_nonsense(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
-    upgrade_plan.description = "Test Plan"
-    mock_input.side_effect = ["x", "a"]
+async def test_apply_step_nonsense(mock_run_step, mock_input):
+    upgrade_step = AsyncMock(spec_set=UpgradeStep())
+    upgrade_step.description = "Test Step"
+    mock_input.side_effect = ["x", "n"]
 
     with pytest.raises(SystemExit, match="1"):
-        await apply_plan(upgrade_plan, True)
+        await apply_step(upgrade_step, True)
 
-    mock_input.assert_has_awaits([call(prompt("Test Plan")), call(prompt("Test Plan"))])
+    mock_input.assert_has_awaits([call(prompt("Test Step")), call(prompt("Test Step"))])
     mock_run_step.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
-async def test_apply_plan_skip(mock_run_step, mock_input):
-    upgrade_plan = AsyncMock(auto_spec=UpgradePlan)
-    upgrade_plan.description = "Test Plan"
-    mock_input.return_value = "s"
+async def test_apply_application_upgrade_plan(mock_run_step, mock_input):
+    expected_prompt = (
+        "Test plan\n\tTest pre-upgrade step\n\tTest upgrade step\n\t" + "Test post-upgrade step\n"
+    )
+    upgrade_plan = ApplicationUpgradePlan("Test plan")
+    upgrade_plan.sub_steps = [
+        PreUpgradeStep(description="Test pre-upgrade step", coro=AsyncMock()),
+        UpgradeStep(description="Test upgrade step", coro=AsyncMock()),
+        PostUpgradeStep(description="Test post-upgrade step", coro=AsyncMock()),
+    ]
 
-    await apply_plan(upgrade_plan, True)
+    mock_input.side_effect = ["y"]
+    await apply_step(upgrade_plan, True)
 
-    mock_input.assert_awaited_once_with(prompt("Test Plan"))
+    mock_input.assert_has_awaits([call(prompt(expected_prompt))])
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute._run_step")
+async def test_apply_application_upgrade_plan_non_interactive(mock_run_step, mock_input):
+    plan_description = "Test plan"
+    upgrade_plan = ApplicationUpgradePlan(plan_description)
+    upgrade_plan.sub_steps = [
+        PreUpgradeStep(description="Test pre-upgrade step", coro=AsyncMock()),
+        UpgradeStep(description="Test upgrade step", coro=AsyncMock()),
+        PostUpgradeStep(description="Test post-upgrade step", coro=AsyncMock()),
+    ]
+
+    await apply_step(upgrade_plan, False)
+
+    mock_input.assert_not_awaited()
+    mock_run_step.assert_awaited()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute._run_step")
+async def test_apply_empty_step(mock_run_step, mock_input):
+    # upgrade_plan is empty because it has neither coro nor sub-steps
+    upgrade_plan = ApplicationUpgradePlan("Test plan")
+
+    await apply_step(upgrade_plan, True)
+
+    mock_input.assert_not_awaited()
     mock_run_step.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.progress_indicator")
+async def test_run_step_overwrite_progress(mock_progress_indicator):
+    """Test running ApplicationUpgradePlan and all its sub-steps with progress overwrite logic."""
+    calls = []
+
+    async def append(name: str) -> None:
+        await asyncio.sleep(randint(10, 200) / 1000)  # wait randomly between 10ms and 200ms
+        calls.append(name)
+
+    upgrade_plan = ApplicationUpgradePlan("Test plan")
+    upgrade_plan.sub_steps = sub_steps = [
+        PreUpgradeStep(description="Test pre-upgrade step", coro=append("PreUpgradeStep 1")),
+        UpgradeStep(description="Test upgrade step", coro=append("UpgradeStep 1")),
+        PostUpgradeStep(description="Test post-upgrade step", coro=append("PostUpgradeStep 1")),
+    ]
+    sub_steps[-1].sub_steps = [
+        PreUpgradeStep(description="Test pre-upgrade step", coro=append("PreUpgradeStep 2")),
+        UpgradeStep(description="Test upgrade step", coro=append("UpgradeStep 2")),
+        PostUpgradeStep(description="Test post-upgrade step", coro=append("PostUpgradeStep 2")),
+    ]
+
+    mock_progress_indicator.spinner_id = "some id"
+
+    await apply_step(upgrade_plan, False)
+
+    assert calls == [
+        "PreUpgradeStep 1",
+        "UpgradeStep 1",
+        "PostUpgradeStep 1",
+        "PreUpgradeStep 2",
+        "UpgradeStep 2",
+        "PostUpgradeStep 2",
+    ]
+    assert mock_progress_indicator.start.call_count == 6
+    assert mock_progress_indicator.succeed.call_count == 1
 
 
 class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
@@ -190,48 +299,48 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
         expected_structure = dedent(
             """
         test plan
-            [upgrade] parallel
-                [upgrade] parallel.0
-                    [upgrade] parallel.0.0
-                    [upgrade] parallel.0.1
-                    [upgrade] parallel.0.2
-                [upgrade] parallel.1
-                    [upgrade] parallel.1.0
-                    [upgrade] parallel.1.1
-                    [upgrade] parallel.1.2
-                [upgrade] parallel.2
-                    [upgrade] parallel.2.0
-                    [upgrade] parallel.2.1
-                    [upgrade] parallel.2.2
-                [upgrade] parallel.3
-                    [upgrade] parallel.3.0
-                    [upgrade] parallel.3.1
-                    [upgrade] parallel.3.2
-                [upgrade] parallel.4
-                    [upgrade] parallel.4.0
-                    [upgrade] parallel.4.1
-                    [upgrade] parallel.4.2
-            [upgrade] sequential
-                [upgrade] sequential.0
-                    [upgrade] sequential.0.0
-                [upgrade] sequential.1
-                    [upgrade] sequential.1.0
-                [upgrade] sequential.2
-                    [upgrade] sequential.2.0
-                [upgrade] sequential.3
-                    [upgrade] sequential.3.0
-                [upgrade] sequential.4
-                    [upgrade] sequential.4.0
+            parallel
+                parallel.0
+                    parallel.0.0
+                    parallel.0.1
+                    parallel.0.2
+                parallel.1
+                    parallel.1.0
+                    parallel.1.1
+                    parallel.1.2
+                parallel.2
+                    parallel.2.0
+                    parallel.2.1
+                    parallel.2.2
+                parallel.3
+                    parallel.3.0
+                    parallel.3.1
+                    parallel.3.2
+                parallel.4
+                    parallel.4.0
+                    parallel.4.1
+                    parallel.4.2
+            sequential
+                sequential.0
+                    sequential.0.0
+                sequential.1
+                    sequential.1.0
+                sequential.2
+                    sequential.2.0
+                sequential.3
+                    sequential.3.0
+                sequential.4
+                    sequential.4.0
         """
         )
         expected_structure = expected_structure[1:]  # drop first new line
         expected_structure = expected_structure.replace("    ", "\t")  # replace 4 spaces with \t
         assert str(self.plan) == expected_structure
 
-    async def test_apply_plan_sequential_part(self):
-        """Test apply_plan sequential part.
+    async def test_apply_step_sequential_part(self):
+        """Test apply_step sequential part.
 
-        This this will check if all steps are run in right order.
+        This will check if all steps are run in right order.
         """
         exp_results = [
             "sequential",
@@ -247,15 +356,15 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             "sequential.4.0",
         ]
 
-        await apply_plan(self.plan, interactive=False)
+        await apply_step(self.plan, interactive=False)
         results = self.execution_order[21:]
 
         self.assertListEqual(results, exp_results)
 
-    async def test_apply_plan_parallel_part(self):
-        """Test apply_plan parallel part.
+    async def test_apply_step_parallel_part(self):
+        """Test apply_step parallel part.
 
-        This this will check if sub-steps of parallel step was run in random order
+        This will check if sub-steps of parallel step was run in random order
         and their sub-sub-steps in sequential order.
         """
         exp_results = [
@@ -282,7 +391,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             "parallel.4.2",
         ]
 
-        await apply_plan(self.plan, interactive=False)
+        await apply_step(self.plan, interactive=False)
         results = self.execution_order[:21]
 
         # checking the results without order, since they are run in parallel with
