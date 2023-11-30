@@ -114,3 +114,17 @@ class COUSmokeTest(unittest.TestCase):
             "\t\t\tCheck if the workload of 'designate-bind' has been upgraded\n"
         )
         self.assertIn(expected_plan, result)
+
+    def test_help(self) -> None:
+        """Test that help is working."""
+        assert check_call("cou --help".split()) == 0
+        assert check_call("cou --h".split()) == 0
+        assert check_call("cou plan --help".split()) == 0
+        assert check_call("cou plan -h".split()) == 0
+        assert check_call("cou run --help".split()) == 0
+        assert check_call("cou run -h".split()) == 0
+
+    def test_version(self) -> None:
+        """Test that version is working."""
+        assert check_call("cou --version".split()) == 0
+        assert check_call("cou -v".split()) == 0
