@@ -25,14 +25,14 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       tox-version: '<4'
-
-  func:
-    name: Functional tests
+    
+  snap-build:
+    name: Build and install pacakges
     needs: lint-unit
-    runs-on: self-hosted
-    timeout-minutes: 120
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Setup Python
@@ -42,6 +42,41 @@ jobs:
       - name: Install tox
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "tox"
+          python -m pip install tox
+      - name: Setup LXD
+        uses: canonical/setup-lxd@v0.1.1
+        with:
+          channel: latest/stable
+      - name: Install snapcraft
+        run: sudo snap install snapcraft --classic
+      - name: Build snap
+        run: make build
+      - name: Upload the built snap as an artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: SNAP_FILE
+          path: charmed-openstack-upgrader.snap
+
+  func:
+    name: Functional tests
+    needs: snap-build
+    runs-on: self-hosted
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install tox
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install tox
+      - name: Download snap file artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: SNAP_FILE
       - name: Run func tests
-        run: make functional
+        run: TEST_SNAP=charmed-openstack-upgrader.snap tox -e func
