@@ -27,7 +27,7 @@ jobs:
       tox-version: '<4'
     
   snap-build:
-    name: Build and install pacakges
+    name: Build snap package
     needs: lint-unit
     runs-on: ubuntu-latest
     timeout-minutes: 30
