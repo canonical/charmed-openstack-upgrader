@@ -1,5 +1,6 @@
 tests:
   - tests.functional.tests.model.COUModelTest
+  - tests.functional.tests.cou_smoke.COUSmokeTest
   - openstack:
     - tests.functional.tests.backup.BackupTest
 gate_bundles:
