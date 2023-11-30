@@ -1,12 +1,7 @@
-variables:
-  openstack-origin: &openstack-origin distro
-
 series: focal
 
 applications:
-  rabbitmq-server:
-    charm: ch:rabbitmq-server
+  designate-bind:
+    charm: ch:designate-bind
     num_units: 1
-    channel: 3.8/stable
-    options:
-      source: *openstack-origin
+    channel: ussuri/stable
