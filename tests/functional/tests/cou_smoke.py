@@ -44,9 +44,9 @@ class COUSmokeTest(unittest.TestCase):
             # make the cou alias
             assert check_call("sudo snap alias charmed-openstack-upgrader.cou cou".split()) == 0
 
-            assert check_output("which cou".split()).decode().strip() == os.path.join(
-                "/snap/bin/cou"
-            )
+            cou_path = check_output("which cou".split()).decode().strip()
+            log.info("cou path: %s", cou_path)
+            assert cou_path == os.path.join("/snap/bin/cou")
         else:
             log.warning("Installing python package")
             assert check_call("python3 -m pip install .".split()) == 0
