@@ -118,7 +118,7 @@ class COUSmokeTest(unittest.TestCase):
     def test_help(self) -> None:
         """Test that help is working."""
         assert check_call("cou --help".split()) == 0
-        assert check_call("cou --h".split()) == 0
+        assert check_call("cou -h".split()) == 0
         assert check_call("cou plan --help".split()) == 0
         assert check_call("cou plan -h".split()) == 0
         assert check_call("cou run --help".split()) == 0
@@ -127,4 +127,18 @@ class COUSmokeTest(unittest.TestCase):
     def test_version(self) -> None:
         """Test that version is working."""
         assert check_call("cou --version".split()) == 0
-        assert check_call("cou -v".split()) == 0
+        assert check_call("cou -V".split()) == 0
+
+    def test_run(self) -> None:
+        """Test cou run."""
+        # designate-bind upgrades from ussuri to victoria
+        expected_msg_before_upgrade = "Upgrade plan for 'designate-bind' to victoria"
+        result_before_upgrade = check_output(
+            "cou run --no-backup --no-interactive".split()
+        ).decode()
+        self.assertIn(expected_msg_before_upgrade, result_before_upgrade)
+
+        # designate-bind was upgraded to victoria and next step is to wallaby
+        expected_msg_after_upgrade = "Upgrade plan for 'designate-bind' to wallaby"
+        result_after = check_output("cou plan --no-backup".split()).decode()
+        self.assertIn(expected_msg_after_upgrade, result_after)
