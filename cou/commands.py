@@ -83,6 +83,13 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         help="Set the model to operate on.\nIf not set, the currently active Juju model will "
         "be used.",
     )
+    subcommand_common_opts_parser.add_argument(
+        "--backup",
+        help="Include database backup step before cloud upgrade.\n"
+        "Default to enabling database backup.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
 
     # quiet and verbose options are mutually exclusive
     group = subcommand_common_opts_parser.add_mutually_exclusive_group()
@@ -105,13 +112,6 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="quiet",
         help="Disable output in STDOUT.",
-    )
-    group.add_argument(
-        "--backup",
-        help="Include database backup step before cloud upgrade.\n"
-        "Default to enabling database backup.",
-        action=argparse.BooleanOptionalAction,
-        default=True,
     )
 
     return subcommand_common_opts_parser
