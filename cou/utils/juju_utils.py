@@ -479,7 +479,7 @@ class COUModel:
                 # example:
                 # Timed out waiting for model:
                 #   nova-compute/0 [executing] maintenance: Installing packages
-                msg = str(error).replace("\n", "\n  ")
+                msg = str(error).replace("\n", "\n  ", 1)
                 raise WaitForApplicationsTimeout(msg) from error
 
         if apps is None:
