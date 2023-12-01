@@ -2,7 +2,7 @@ import logging
 import os
 import unittest
 from pathlib import Path
-from subprocess import STDOUT, check_call, check_output
+from subprocess import STDOUT, CalledProcessError, check_call, check_output
 
 import zaza
 
@@ -78,7 +78,10 @@ class SmokeTest(unittest.TestCase):
         :return: Response of the command with the stderr on stdout.
         :rtype: str
         """
-        return check_output([self.exc_path] + cmd, stderr=STDOUT).decode()
+        try:
+            return check_output([self.exc_path] + cmd, stderr=STDOUT).decode()
+        except CalledProcessError as err:
+            log.error(err.output)
 
     def test_plan_backup(self) -> None:
         """Test plan with backup."""
