@@ -1,6 +1,7 @@
 import logging
 import os
 import unittest
+from pathlib import Path
 from subprocess import check_call, check_output
 
 import zaza
@@ -13,19 +14,22 @@ class COUSmokeTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        zaza.get_or_create_libjuju_thread()
         cls.model_name = zaza.model.get_juju_model()
         cls.install_package()
 
     @classmethod
     def tearDownClass(cls) -> None:
         cls.remove_package()
+        zaza.clean_up_libjuju_thread()
 
-    def install_package() -> None:
+    @classmethod
+    def install_package(cls) -> None:
         """Install cou package."""
         cou_test_snap = os.environ.get("TEST_SNAP")
         if cou_test_snap:
             log.info(f"Installing {cou_test_snap}")
-            assert os.path.isfile(cou_test_snap)
+            assert Path(cou_test_snap).is_file()
             # install the snap
             assert check_call(f"sudo snap install --dangerous {cou_test_snap}".split()) == 0
             # connect interfaces
@@ -44,18 +48,16 @@ class COUSmokeTest(unittest.TestCase):
             # make the cou alias
             assert check_call("sudo snap alias charmed-openstack-upgrader.cou cou".split()) == 0
 
-            cou_path = check_output("which cou".split()).decode().strip()
-            log.info("cou path: %s", cou_path)
-            assert cou_path == os.path.join("/snap/bin/cou")
+            # check that the executable path exists
+            assert Path("/snap/bin/cou").exists()
+            cls.exc_path = "/snap/bin/cou"
+
         else:
-            log.warning("Installing python package")
-            assert check_call("python3 -m pip install .".split()) == 0
-            assert (
-                check_output("which cou".split())
-                .decode()
-                .strip()
-                .startswith(os.path.join(os.getcwd(), ".tox"))
-            )
+            # functest already installs cou as python package, but we install again
+            # for better developer experience
+            log.warning("using cou as python package")
+            assert check_call(f"python3 -m pip install {os.getenv('PYTHONPATH')}".split()) == 0
+            cls.exc_path = "cou"
 
     def remove_package() -> None:
         """Remove cou package."""
@@ -69,7 +71,7 @@ class COUSmokeTest(unittest.TestCase):
 
     def test_plan_backup(self) -> None:
         """Test plan with backup."""
-        result = check_output("cou plan".split()).decode()
+        result = check_output(f"{self.exc_path} plan".split()).decode()
         expected_plan = (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
@@ -86,7 +88,7 @@ class COUSmokeTest(unittest.TestCase):
 
     def test_plan_no_backup(self) -> None:
         """Test plan with no backup."""
-        result = check_output("cou plan --no-backup".split()).decode()
+        result = check_output(f"{self.exc_path} plan --no-backup".split()).decode()
         expected_plan = (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
@@ -101,7 +103,9 @@ class COUSmokeTest(unittest.TestCase):
         self.assertIn(expected_plan, result)
 
     def test_plan_no_backup_choosing_model(self) -> None:
-        result = check_output(f"cou plan --model {self.model_name} --no-backup".split()).decode()
+        result = check_output(
+            f"{self.exc_path} plan --model {self.model_name} --no-backup".split()
+        ).decode()
         expected_plan = (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
