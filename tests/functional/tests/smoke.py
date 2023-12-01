@@ -2,26 +2,31 @@ import logging
 import os
 import unittest
 from pathlib import Path
-from subprocess import check_call, check_output
+from subprocess import STDOUT, check_call, check_output
 
 import zaza
 
 log = logging.getLogger(__name__)
 
 
-class COUSmokeTest(unittest.TestCase):
+class SmokeTest(unittest.TestCase):
     """COU smoke functional tests."""
 
     @classmethod
     def setUpClass(cls) -> None:
         zaza.get_or_create_libjuju_thread()
+        cls.create_local_share_folder()
         cls.model_name = zaza.model.get_juju_model()
         cls.install_package()
 
     @classmethod
     def tearDownClass(cls) -> None:
-        cls.remove_package()
+        cls.remove_snap_package()
         zaza.clean_up_libjuju_thread()
+
+    def create_local_share_folder() -> None:
+        """Create the .local/share/ folder if does not exist."""
+        Path(f"/home/{os.getenv('USER')}/.local/share/").mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def install_package(cls) -> None:
@@ -59,19 +64,25 @@ class COUSmokeTest(unittest.TestCase):
             assert check_call(f"python3 -m pip install {os.getenv('PYTHONPATH')}".split()) == 0
             cls.exc_path = "cou"
 
-    def remove_package() -> None:
+    def remove_snap_package() -> None:
         """Remove cou package."""
-        cou_test_snap = os.environ.get("TEST_SNAP")
-        if cou_test_snap:
+        if os.environ.get("TEST_SNAP"):
             log.info("Removing snap package cou")
             check_call("sudo snap remove charmed-openstack-upgrader --purge".split())
-        else:
-            logging.info("Uninstalling python package cou")
-            check_call("python3 -m pip uninstall --yes charmed-openstack-upgrader".split())
+
+    def cou(self, cmd: list[str]) -> str:
+        """Run cou commands.
+
+        :param cmd: Command to run.
+        :type cmd: list[str]
+        :return: Response of the command with the stderr on stdout.
+        :rtype: str
+        """
+        return check_output([self.exc_path] + cmd, stderr=STDOUT).decode()
 
     def test_plan_backup(self) -> None:
         """Test plan with backup."""
-        result = check_output(f"{self.exc_path} plan".split()).decode()
+        result = self.cou(["plan"])
         expected_plan = (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
@@ -88,7 +99,7 @@ class COUSmokeTest(unittest.TestCase):
 
     def test_plan_no_backup(self) -> None:
         """Test plan with no backup."""
-        result = check_output(f"{self.exc_path} plan --no-backup".split()).decode()
+        result = self.cou(["plan", "--no-backup"])
         expected_plan = (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
@@ -103,9 +114,7 @@ class COUSmokeTest(unittest.TestCase):
         self.assertIn(expected_plan, result)
 
     def test_plan_no_backup_choosing_model(self) -> None:
-        result = check_output(
-            f"{self.exc_path} plan --model {self.model_name} --no-backup".split()
-        ).decode()
+        result = self.cou(["plan", "--model", self.model_name, "--no-backup"])
         expected_plan = (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
