@@ -87,6 +87,17 @@ def test_parse_args_quiet_verbose_exclusive(args):
             ),
         ),
         (
+            ["plan", "--no-backup", "--quiet"],
+            Namespace(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=True,
+                backup=False,
+                **{"upgrade-group": None}
+            ),
+        ),
+        (
             ["plan", "--model=model_name"],
             Namespace(
                 command="plan",
@@ -208,6 +219,19 @@ def test_parse_args_plan(args, expected_namespace):
                 parallel=False,
                 verbosity=0,
                 quiet=False,
+                interactive=True,
+                backup=False,
+                **{"upgrade-group": None}
+            ),
+        ),
+        (
+            ["run", "--no-backup", "--quiet"],
+            Namespace(
+                command="run",
+                model_name=None,
+                parallel=False,
+                verbosity=0,
+                quiet=True,
                 interactive=True,
                 backup=False,
                 **{"upgrade-group": None}
