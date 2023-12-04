@@ -1,5 +1,5 @@
 tests:
-  # - tests.functional.tests.model.COUModelTest
+  - tests.functional.tests.model.COUModelTest
   - tests.functional.tests.smoke.SmokeTest
   - openstack:
     - tests.functional.tests.backup.BackupTest
