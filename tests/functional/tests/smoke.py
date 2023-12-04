@@ -85,7 +85,7 @@ class SmokeTest(unittest.TestCase):
 
     def test_plan_backup(self) -> None:
         """Test plan with backup."""
-        result = self.cou(["plan"])
+        result = self.cou(["plan", "--model", self.model_name])
         expected_plan = (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
@@ -102,7 +102,7 @@ class SmokeTest(unittest.TestCase):
 
     def test_plan_no_backup(self) -> None:
         """Test plan with no backup."""
-        result = self.cou(["plan", "--no-backup"])
+        result = self.cou(["plan", "--model", self.model_name, "--no-backup"])
         expected_plan = (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
