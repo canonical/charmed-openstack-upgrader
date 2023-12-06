@@ -464,9 +464,9 @@ class COUModel:
                             to avoid false positives.
         :type idle_period: int
         :param apps: Applications to wait, defaults to None
-        :type apps: Optional[list[str]], optional
+        :type apps: Optional[list[str]]
         :param raise_on_blocked: If any unit or app going into "blocked" status immediately raises
-                                 WaitForApplicationsTimeout.
+                                 WaitForApplicationsTimeout, defaults to False.
         :type raise_on_blocked: bool
         """
 
