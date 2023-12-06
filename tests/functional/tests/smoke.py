@@ -6,6 +6,8 @@ from subprocess import CalledProcessError, CompletedProcess, check_call, run
 
 import zaza
 
+from cou.utils import COU_DATA
+
 log = logging.getLogger(__name__)
 
 
@@ -18,7 +20,6 @@ class SmokeTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        zaza.get_or_create_libjuju_thread()
         cls.create_local_share_folder()
         cls.model_name = zaza.model.get_juju_model()
         cls.configure_executable_path()
@@ -26,11 +27,10 @@ class SmokeTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         cls.remove_snap_package()
-        zaza.clean_up_libjuju_thread()
 
     def create_local_share_folder() -> None:
         """Create the .local/share/ folder if does not exist."""
-        Path(f"/home/{os.getenv('USER')}/.local/share/").mkdir(parents=True, exist_ok=True)
+        COU_DATA.mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def configure_executable_path(cls) -> None:
