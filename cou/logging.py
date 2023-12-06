@@ -50,7 +50,6 @@ def setup_logging(log_level: str = "INFO") -> None:
     time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
     pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
-    progress_indicator.stop_and_persist(text=f"Logs of this execution can be found at {file_name}")
 
     log_formatter_file = logging.Formatter(
         fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -79,6 +78,8 @@ def setup_logging(log_level: str = "INFO") -> None:
 
     root_logger.addHandler(log_file_handler)
     root_logger.addHandler(console_handler)
+
+    progress_indicator.stop_and_persist(text=f"Logs of this execution can be found at {file_name}")
 
 
 def filter_debug_logs(record: logging.LogRecord) -> bool:
