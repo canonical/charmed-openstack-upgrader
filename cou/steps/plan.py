@@ -80,8 +80,11 @@ async def generate_plan(analysis_result: Analysis, backup_database: bool) -> Upg
             parallel=False,
             coro=analysis_result.model.wait_for_idle(
                 # NOTE (rgildein): We need to DEFAULT_TIMEOUT so it's possible to change if
-                #                  a network is too slow, this could cause an issue.
-                timeout=DEFAULT_TIMEOUT + 1,
+                # a network is too slow, this could cause an issue.
+                # Since the default timeout is 10 seconds, we need to add 1 second to it to make
+                # sure that timeout is greater than idle_period. At the same time, we are using max
+                # function to ensure lower timeout used it here is always at least 11.
+                timeout=max(DEFAULT_TIMEOUT + 1, 11),
                 idle_period=10,
                 raise_on_blocked=True,
             ),
