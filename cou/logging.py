@@ -18,7 +18,7 @@ import logging.handlers
 import pathlib
 from datetime import datetime
 
-from cou.utils import COU_DATA
+from cou.utils import COU_DATA, progress_indicator
 
 COU_DIR_LOG = COU_DATA / "log"
 
@@ -76,7 +76,8 @@ def setup_logging(log_level: str = "INFO") -> None:
 
     root_logger.addHandler(log_file_handler)
     root_logger.addHandler(console_handler)
-    logger.info("Logs of this execution can be found at %s", file_name)
+    progress_indicator.start("Configuring logging...")
+    progress_indicator.stop_and_persist(text=f"Logs of this execution can be found at {file_name}")
 
 
 def filter_debug_logs(record: logging.LogRecord) -> bool:
