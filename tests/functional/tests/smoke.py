@@ -122,6 +122,21 @@ class SmokeTest(unittest.TestCase):
         """
         return run([self.exc_path] + cmd, capture_output=True, text=True)
 
+    def test_help(self) -> None:
+        """Test that help command is working."""
+        cmds = ["", "plan", "run"]
+        help_options = ["-h", "--help"]
+        for cmd in cmds:
+            for help in help_options:
+                help_cmd = [cmd, help] if cmd else [help]
+                self.assertTrue(self.cou(help_cmd).returncode == 0)
+
+    def test_version(self) -> None:
+        """Test that version command is working."""
+        version_cmds = ["--version", "-V"]
+        for cmd in version_cmds:
+            self.assertTrue(self.cou([cmd]).returncode == 0)
+
     def test_plan_default(self) -> None:
         """Test plan with backup."""
         result = self.cou(["plan", "--model", self.model_name]).stdout
