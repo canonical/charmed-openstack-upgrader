@@ -79,4 +79,4 @@ jobs:
         with:
           name: SNAP_FILE
       - name: Run func tests
-        run: TEST_SNAP=charmed-openstack-upgrader.snap tox -e func
+        run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader.snap tox -e func
