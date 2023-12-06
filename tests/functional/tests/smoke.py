@@ -122,13 +122,19 @@ class SmokeTest(unittest.TestCase):
         """
         return run([self.exc_path] + cmd, capture_output=True, text=True)
 
-    def test_plan_default(self) -> None:
-        """Test plan with backup."""
-        result = self.cou(["plan", "--model", self.model_name]).stdout
-        expected_plan = (
+    def generate_expected_plan(self, backup: bool = True) -> str:
+        """Generate the expected plan for the smoke bundle.
+
+        :param backup: Weather the plan should contains the backup, defaults to True
+        :type backup: bool, optional
+        :return: The upgrade plan.
+        :rtype: str
+        """
+        backup_plan = "\tBackup mysql databases\n" if backup else ""
+        return (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
-            "\tBackup mysql databases\n"
+            f"{backup_plan}"
             "\tControl Plane principal(s) upgrade plan\n"
             "\t\tUpgrade plan for 'designate-bind' to victoria\n"
             "\t\t\tUpgrade software packages of 'designate-bind' "
@@ -136,21 +142,23 @@ class SmokeTest(unittest.TestCase):
             "\t\t\tUpgrade 'designate-bind' to the new channel: 'victoria/stable'\n"
             "\t\t\tWait 300s for app designate-bind to reach the idle state.\n"
             "\t\t\tCheck if the workload of 'designate-bind' has been upgraded\n"
+            "\t\tUpgrade plan for 'mysql-innodb-cluster' to victoria\n"
+            "\t\t\tUpgrade software packages of 'mysql-innodb-cluster' "
+            "from the current APT repositories\n"
+            "\t\t\tChange charm config of 'mysql-innodb-cluster' 'source' to "
+            "'cloud:focal-victoria'\n"
+            "\t\t\tWait 1800s for app mysql-innodb-cluster to reach the idle state.\n"
+            "\t\t\tCheck if the workload of 'mysql-innodb-cluster' has been upgraded\n"
         )
+
+    def test_plan_default(self) -> None:
+        """Test plan with backup."""
+        result = self.cou(["plan", "--model", self.model_name]).stdout
+        expected_plan = self.generate_expected_plan()
         self.assertIn(expected_plan, result)
 
     def test_plan_no_backup(self) -> None:
         """Test plan with no backup."""
         result = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
-        expected_plan = (
-            "Upgrade cloud from 'ussuri' to 'victoria'\n"
-            "\tVerify that all OpenStack applications are in idle state\n"
-            "\tControl Plane principal(s) upgrade plan\n"
-            "\t\tUpgrade plan for 'designate-bind' to victoria\n"
-            "\t\t\tUpgrade software packages of 'designate-bind' "
-            "from the current APT repositories\n"
-            "\t\t\tUpgrade 'designate-bind' to the new channel: 'victoria/stable'\n"
-            "\t\t\tWait 300s for app designate-bind to reach the idle state.\n"
-            "\t\t\tCheck if the workload of 'designate-bind' has been upgraded\n"
-        )
+        expected_plan = self.generate_expected_plan(backup=False)
         self.assertIn(expected_plan, result)
