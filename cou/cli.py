@@ -22,6 +22,7 @@ from enum import Enum
 from signal import SIGINT, SIGTERM
 from typing import Optional
 
+from aioconsole import ainput
 from juju.errors import JujuError
 
 from cou.commands import parse_args
@@ -34,10 +35,23 @@ from cou.steps.plan import generate_plan, manually_upgrade_data_plane
 from cou.utils import progress_indicator
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
+from cou.utils.text_styler import bold, normal
 
 AVAILABLE_OPTIONS = "cas"
 
 logger = logging.getLogger(__name__)
+
+
+def prompt(parameter: str) -> str:
+    """Generate eye-catching prompt.
+
+    :param parameter: String to show at the prompt with the user options.
+    :type parameter: str
+    :return: Prompt string with the user options.
+    :rtype: str
+    """
+
+    return normal("\n" + parameter + " (") + bold("y") + normal("/") + bold("N") + normal("): ")
 
 
 class VerbosityLevel(Enum):
@@ -96,7 +110,7 @@ async def analyze_and_plan(
     :type model_name: Optional[str]
     :param backup_database: Whether to create database backup before upgrade.
     :type backup_database: bool
-    :return: Generated analyses and upgrade plan.
+    :return: Generated analysis and upgrade plan.
     :rtype: tuple[Analysis, UpgradePlan]
     """
     model = COUModel(model_name)
@@ -124,11 +138,15 @@ async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> 
     :type model_name: Optional[str]
     :param backup_database: Whether to create database backup before upgrade.
     :type backup_database: bool
+    :return: Generated upgrade plan.
+    :rtype: UpgradePlan
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
     logger.info(upgrade_plan)
     print(upgrade_plan)  # print plan to console even in quiet mode
     manually_upgrade_data_plane(analysis_result)
+
+    return upgrade_plan
 
 
 async def run_upgrade(
@@ -136,6 +154,7 @@ async def run_upgrade(
     backup_database: bool,
     interactive: bool,
     quiet: bool,
+    auto_start: bool,
 ) -> None:
     """Run cloud upgrade.
 
@@ -147,9 +166,25 @@ async def run_upgrade(
     :type interactive: bool
     :param quiet: Whether to run upgrade in quiet mode.
     :type quiet: bool
+    :param auto_start: Whether to automatically start the upgrade after printing out plan.
+    :type auto_start: bool
     """
-    analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    logger.info(upgrade_plan)
+    upgrade_plan = await get_upgrade_plan(model_name, backup_database)
+
+    if not auto_start:
+        prompt_input = (
+            await ainput(prompt("Would you like to continue following the upgrade plan?"))
+        ).casefold()
+
+        match prompt_input:
+            case "y":
+                logger.info("Start the upgrade.")
+            case "n" | "":
+                logger.info("Exiting COU without running upgrades.")
+                return
+            case _:
+                print("No valid input provided! Exiting COU without upgrades.")
+                logger.debug("No valid input provided! Exiting COU without upgrades.")
 
     # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
     loop = asyncio.get_event_loop()
@@ -158,11 +193,9 @@ async def run_upgrade(
 
     # don't print plan if in quiet mode
     if not quiet:
-        print(upgrade_plan)
         print("Running cloud upgrade...")
 
     await apply_step(upgrade_plan, interactive)
-    manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 
 
@@ -172,11 +205,20 @@ async def _run_command(args: argparse.Namespace) -> None:
     :param args: CLI arguments
     :type args: argparse.Namespace
     """
-    match args.command:
-        case "plan":
-            await get_upgrade_plan(args.model_name, args.backup)
-        case "run":
-            await run_upgrade(args.model_name, args.backup, args.interactive, args.quiet)
+    if args.dry_run:
+        await get_upgrade_plan(args.model_name, args.backup)
+    elif args.run:
+        await run_upgrade(
+            args.model_name, args.backup, args.interactive, args.quiet, auto_start=True
+        )
+    elif (
+        not sys.stdout.isatty()
+    ):  # only print plan if not running in tty and without specifying `run` option
+        await get_upgrade_plan(args.model_name, args.backup)
+    else:
+        await run_upgrade(
+            args.model_name, args.backup, args.interactive, args.quiet, auto_start=False
+        )
 
 
 def entrypoint() -> None:

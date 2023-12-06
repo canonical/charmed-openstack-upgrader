@@ -67,15 +67,15 @@ class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
         super().add_argument(action)
 
 
-def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
+def get_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
     :return: a parser groups options commonly shared by subcommands
     :rtype: argparse.ArgumentParser
     """
     # Define common options for subcommands and their children commands
-    subcommand_common_opts_parser = argparse.ArgumentParser(add_help=False)
-    subcommand_common_opts_parser.add_argument(
+    common_opts_parser = argparse.ArgumentParser(add_help=False)
+    common_opts_parser.add_argument(
         "--model",
         default=None,
         dest="model_name",
@@ -83,17 +83,30 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         help="Set the model to operate on.\nIf not set, the currently active Juju model will "
         "be used.",
     )
-    subcommand_common_opts_parser.add_argument(
+    common_opts_parser.add_argument(
         "--backup",
         help="Include database backup step before cloud upgrade.\n"
         "Default to enabling database backup.",
         action=argparse.BooleanOptionalAction,
         default=True,
     )
+    common_opts_parser.add_argument(
+        "--interactive",
+        help="Run upgrade with prompt.\nThis option should be used with '--run' option.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    common_opts_parser.add_argument(
+        "--parallel",
+        help="Run upgrade steps in parallel where possible.\nThis option should be used "
+        "with '--run' option.",
+        default=False,
+        action="store_true",
+    )
 
     # quiet and verbose options are mutually exclusive
-    group = subcommand_common_opts_parser.add_mutually_exclusive_group()
-    group.add_argument(
+    verbosity_group = common_opts_parser.add_mutually_exclusive_group()
+    verbosity_group.add_argument(
         "--verbose",
         "-v",
         default=0,
@@ -105,7 +118,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         "To also include the debug level logs from juju and websockets modules, use the "
         "maximum verbosity.",
     )
-    group.add_argument(
+    verbosity_group.add_argument(
         "--quiet",
         "-q",
         default=False,
@@ -114,16 +127,59 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         help="Disable output in STDOUT.",
     )
 
-    return subcommand_common_opts_parser
+    # run and dry-run options are mutually exclusive
+    action_group = common_opts_parser.add_mutually_exclusive_group()
+    action_group.add_argument(
+        "--run",
+        default=False,
+        action="store_true",
+        dest="run",
+        help="Proceed with the upgrade after the plan is generated.",
+    )
+    action_group.add_argument(
+        "--dry-run",
+        default=False,
+        action="store_true",
+        dest="dry_run",
+        help="Generate upgrade plan and exit.",
+    )
+
+    return common_opts_parser
 
 
-def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
-    """Create a shared parser for options specific to data-plane.
+def create_controlplane_subparser(
+    subparsers: argparse._SubParsersAction,
+    common_opts_parser: argparse.ArgumentParser,
+) -> None:
+    """Create and configure 'plan' subcommand parser.
 
-    :return: a parser groups options specific to data-plane
-    :rtype: argparse.ArgumentParser
+    :param subparsers: subparsers that plan subparser belongs to
+    :type subparsers: argparse.ArgumentParser
+    :param common_opts_parser: parser groups options commonly shared across commands
+    :type common_opts_parser: argparse.ArgumentParser
     """
-    # Define options specific to data-plane child command and make them mutually exclusive
+    # Arg parser for "cou control-plane" sub-command
+    subparsers.add_parser(
+        "control-plane",
+        description="Run the control-plane upgrade.",
+        help="Run the control-plane upgrade.",
+        usage="cou control-plane [options]",
+        parents=[common_opts_parser],
+        formatter_class=CapitalizeHelpFormatter,
+    )
+
+
+def create_dataplane_subparser(
+    subparsers: argparse._SubParsersAction,
+    common_opts_parser: argparse.ArgumentParser,
+) -> None:
+    """Create and configure 'run' subcommand parser.
+
+    :param subparsers: subparsers that plan subparser belongs to
+    :type subparsers: argparse.ArgumentParser
+    :param common_opts_parser: parser groups options commonly shared across commands
+    :type common_opts_parser: argparse.ArgumentParser
+    """
     dp_subparser = argparse.ArgumentParser(add_help=False)
     dp_upgrade_group = dp_subparser.add_mutually_exclusive_group()
     dp_upgrade_group.add_argument(
@@ -155,171 +211,54 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         dest="availability_zones",
         type=str,
     )
-    return dp_subparser
 
-
-def create_plan_subparser(
-    subparsers: argparse._SubParsersAction,
-    subcommand_common_opts_parser: argparse.ArgumentParser,
-    dp_parser: argparse.ArgumentParser,
-) -> None:
-    """Create and configure 'plan' subcommand parser.
-
-    :param subparsers: subparsers that plan subparser belongs to
-    :type subparsers: argparse.ArgumentParser
-    :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
-    :type subcommand_common_opts_parser: argparse.ArgumentParser
-    :param dp_parser: a parser groups options specific to data-plane
-    :type dp_parser: argparse.ArgumentParser
-    """
-    # Arg parser for "cou plan" sub-command
-    plan_parser = subparsers.add_parser(
-        "plan",
-        description="Show the steps COU will take to upgrade the cloud to the next release.",
-        # TODO(txiao): Replace the description with the following message after data-plane upgrade
-        # is implemented
-        # description="Show the steps COU will take to upgrade the cloud to the next release.\n"
-        # "If upgrade-group is unspecified, plan upgrade for the whole cloud.",
-        help="Show the steps COU will take to upgrade the cloud to the next release.",
-        usage="cou plan [options]",
-        parents=[subcommand_common_opts_parser],
-        formatter_class=CapitalizeHelpFormatter,
-    )
-
-    # Create control-plane and data-plane child commands to plan partial upgrades
-    plan_subparser = plan_parser.add_subparsers(
-        title="Upgrade groups",
-        dest="upgrade-group",
-        help=argparse.SUPPRESS,
-        # TODO(txiao): Add the following help message after data-plane upgrade is implemented
-        # help="For more information about a upgrade group, run 'cou plan <upgrade-group>' -h.",
-    )
-    plan_subparser.add_parser(
-        "control-plane",
-        description="Show the steps for upgrading the control-plane components.",
-        help="Show the steps for upgrading the control-plane components.",
-        usage="cou plan control-plane [options]",
-        parents=[subcommand_common_opts_parser],
-        formatter_class=CapitalizeHelpFormatter,
-    )
-    plan_subparser.add_parser(
+    subparsers.add_parser(
         "data-plane",
-        description="Show the steps for upgrading the data-plane components.\nThis is possible "
-        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
-        help="Show the steps for upgrading the data-plane components.\nThis is possible "
-        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
-        usage="cou plan data-plane [options]",
-        parents=[subcommand_common_opts_parser, dp_parser],
+        description="Run the data-plane upgrade.",
+        help="Run the data-plane upgrade.",
+        usage="cou data-plane [options]",
+        parents=[common_opts_parser, dp_subparser],
         formatter_class=CapitalizeHelpFormatter,
     )
 
 
-def create_run_subparser(
-    subparsers: argparse._SubParsersAction,
-    subcommand_common_opts_parser: argparse.ArgumentParser,
-    dp_parser: argparse.ArgumentParser,
-) -> None:
-    """Create and configure 'run' subcommand parser.
-
-    :param subparsers: subparsers that plan subparser belongs to
-    :type subparsers: argparse.ArgumentParser
-    :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
-    :type subcommand_common_opts_parser: argparse.ArgumentParser
-    :param dp_parser: a parser groups options specific to data-plane
-    :type dp_parser: argparse.ArgumentParser
-    """
-    # Arg parser for "cou run" sub-command and set up common options
-    run_args_parser = argparse.ArgumentParser(add_help=False)
-    run_args_parser.add_argument(
-        "--interactive",
-        help="Run upgrade with prompt.",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    subcommand_common_opts_parser.add_argument(
-        "--parallel",
-        help="Run upgrade steps in parallel where possible.",
-        default=False,
-        action="store_true",
-    )
-    run_parser = subparsers.add_parser(
-        "run",
-        description="Run the cloud upgrade.",
-        # TODO(txiao): Replace the description with the following message after data-plane upgrade
-        # is implemented
-        # description="Run the cloud upgrade.\nIf upgrade-group is unspecified, "
-        # "upgrade the whole cloud.",
-        help="Run the cloud upgrade.",
-        usage="cou run [options]",
-        parents=[subcommand_common_opts_parser, run_args_parser],
-        formatter_class=CapitalizeHelpFormatter,
-    )
-
-    # Create control-plane and data-plane child commands to run partial upgrades
-    run_subparser = run_parser.add_subparsers(
-        title="Upgrade group",
-        dest="upgrade-group",
-        help=argparse.SUPPRESS,
-        # TODO(txiao): Add the following help message after data-plane upgrade is implemented
-        # help="For more information about an upgrade group, run 'cou run <upgrade-group> -h'.",
-    )
-    run_subparser.add_parser(
-        "control-plane",
-        description="Run upgrade for the control-plane components.",
-        help="Run upgrade for the control-plane components.",
-        usage="cou plan control-plane [options]",
-        parents=[subcommand_common_opts_parser, run_args_parser],
-        formatter_class=CapitalizeHelpFormatter,
-    )
-    run_subparser.add_parser(
-        "data-plane",
-        description="Run upgrade for the data-plane components.\nThis is possible only if "
-        "control-plane has been fully upgraded,\notherwise an error will be thrown.",
-        help="Run upgrade for the data-plane components.\nThis is possible only if "
-        "control-plane has been fully upgraded,\notherwise an error will be thrown.",
-        usage="cou plan data-plane [options]",
-        parents=[
-            subcommand_common_opts_parser,
-            dp_parser,
-            run_args_parser,
-        ],
-        formatter_class=CapitalizeHelpFormatter,
-    )
-
-
-def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction:
+def create_subparsers(
+    parser: argparse.ArgumentParser, common_opts_parser: argparse.ArgumentParser
+) -> argparse._SubParsersAction:
     """Create and configure subparsers.
 
-    :param parser: the top level parser to create subparsers for,
+    :param parser: the top level parser to create subparsers for
     :type parser: argparse.ArgumentParser
+    :param common_opts_parser: parser groups options commonly shared across commands
+    :type common_opts_parser: argparse.ArgumentParser
     :return: configured subparsers
     :rtype: argparse._SubParsersAction
     """
     # Configure subcommand parser
     subparsers = parser.add_subparsers(
-        title="Commands",
+        title="Sub-commands",
         dest="command",
-        help="For more information about a command, run 'cou help <command>'.",
+        help="For more information about a sub-command, run 'cou help <sub-command>'.",
     )
 
     # Arg parser for "cou help" sub-command
     help_parser = subparsers.add_parser(
         "help",
-        usage="cou help [command]",
+        usage="cou help [sub-command]",
     )
     help_parser.add_argument(
         "subcommand",
         nargs="?",
-        choices=["plan", "run", "all"],
+        # TODO(txiao): Add data-plane to the choices when its upgrade is supported
+        choices=["control-plane", "all"],
         default="all",
         type=str,
         help="A sub-command to get information of.",
     )
 
-    subcommand_common_opts_parser = get_subcommand_common_opts_parser()
-    dp_parser = get_dataplane_common_opts_parser()
-    create_plan_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
-    create_run_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
+    create_controlplane_subparser(subparsers, common_opts_parser)
+    # TODO(txiao): Call `create_dataplane_subparser` function when data-plane upgrade is supported
+    # create_dataplane_subparser(subparsers, common_opts_parser)
 
     return subparsers
 
@@ -334,15 +273,17 @@ def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent
     :raises argparse.ArgumentError: Unexpected arguments input.
     """
     # Configure top level argparser and its options
+    common_opts_parser = get_common_opts_parser()
     parser = argparse.ArgumentParser(
         description="Charmed OpenStack Upgrader (cou) is an application to upgrade\na Canonical "
         "distribution of Charmed OpenStack.\nThe application auto-detects the version of the "
         "running cloud\nand will propose an upgrade to the next available version.",
         formatter_class=CapitalizeHelpFormatter,
-        usage="%(prog)s [options] <command>",
+        usage="%(prog)s [options] <sub-command>",
         exit_on_error=False,
         add_help=True,
         allow_abbrev=False,
+        parents=[common_opts_parser],
     )
     parser.add_argument(
         "--version",
@@ -354,12 +295,7 @@ def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent
     )
 
     # Configure subparsers for subcommands and their options
-    subparsers = create_subparsers(parser)
-
-    # It no sub-commands or options are given, print help message and exit
-    if len(args) == 0:
-        parser.print_help()
-        parser.exit()
+    subparsers = create_subparsers(parser, common_opts_parser)
 
     try:
         parsed_args = parser.parse_args(args)
@@ -367,10 +303,11 @@ def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent
         # print help messages for an available sub-command
         if parsed_args.command == "help":
             match parsed_args.subcommand:
-                case "plan":
-                    subparsers.choices["plan"].print_help()
-                case "run":
-                    subparsers.choices["run"].print_help()
+                case "control-plane":
+                    subparsers.choices["control-plane"].print_help()
+                # TODO(txiao): Enable help message for data-plane
+                # case "data-plane":
+                #     subparsers.choices["data-plane"].print_help()
                 case "all":
                     parser.print_help()
             parser.exit()

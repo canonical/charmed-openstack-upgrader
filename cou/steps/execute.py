@@ -18,10 +18,10 @@ import logging
 import sys
 
 from aioconsole import ainput
-from colorama import Style
 
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
 from cou.utils import progress_indicator
+from cou.utils.text_styler import bold, normal
 
 AVAILABLE_OPTIONS = ["y", "n"]
 
@@ -36,26 +36,6 @@ def prompt(parameter: str) -> str:
     :return: Prompt string with the user options.
     :rtype: str
     """
-
-    def bold(text: str) -> str:
-        """Transform the text in bold format.
-
-        :param text: text to format.
-        :type text: str
-        :return: text formatted.
-        :rtype: str
-        """
-        return Style.RESET_ALL + Style.BRIGHT + text + Style.RESET_ALL
-
-    def normal(text: str) -> str:
-        """Transform the text in normal format.
-
-        :param text: text to format.
-        :type text: str
-        :return: text formatted.
-        :rtype: str
-        """
-        return Style.RESET_ALL + text + Style.RESET_ALL
 
     return (
         normal("\n" + parameter + "\nContinue (")
