@@ -24,7 +24,7 @@ from juju.application import Application
 from juju.client._definitions import FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
-from juju.errors import JujuError
+from juju.errors import JujuAppError, JujuError, JujuUnitError
 from juju.model import Model
 from juju.unit import Unit
 from macaroonbakery.httpbakery import BakeryException
@@ -450,6 +450,7 @@ class COUModel:
         timeout: int,
         idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
         apps: Optional[list[str]] = None,
+        raise_on_blocked: bool = False,
     ) -> None:
         """Wait for applications to reach an idle state.
 
@@ -463,7 +464,10 @@ class COUModel:
                             to avoid false positives.
         :type idle_period: int
         :param apps: Applications to wait, defaults to None
-        :type apps: Optional[list[str]], optional
+        :type apps: Optional[list[str]]
+        :param raise_on_blocked: If any unit or app going into "blocked" status immediately raises
+                                 WaitForApplicationsTimeout, defaults to False.
+        :type raise_on_blocked: bool
         """
 
         @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
@@ -472,14 +476,22 @@ class COUModel:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
             model = await self._get_model()
             try:
-                await model.wait_for_idle(apps=apps, timeout=timeout, idle_period=idle_period)
-            except asyncio.exceptions.TimeoutError as error:
+                await model.wait_for_idle(
+                    apps=apps,
+                    timeout=timeout,
+                    idle_period=idle_period,
+                    raise_on_blocked=raise_on_blocked,
+                )
+            except (asyncio.exceptions.TimeoutError, JujuAppError, JujuUnitError) as error:
                 # NOTE(rgildein): Catching TimeoutError raised as exception when wait_for_idle
                 # reached timeout. Also adding two spaces to make it more user friendly.
                 # example:
                 # Timed out waiting for model:
-                #   nova-compute/0 [executing] maintenance: Installing packages
-                msg = str(error).replace("\n", "\n  ")
+                #   rabbitmq-server/0 [idle] active: Unit is ready
+                #   neutron-api/0 [idle] active: Unit is ready
+                #   glance/0 [idle] active: Unit is ready
+                #   cinder/0 [idle] active: Unit is ready
+                msg = str(error).replace("\n", "\n  ", 1)
                 raise WaitForApplicationsTimeout(msg) from error
 
         if apps is None:
