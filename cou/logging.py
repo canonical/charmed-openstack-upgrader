@@ -15,7 +15,6 @@
 """Set up both global logger for logfile and console'."""
 import logging
 import logging.handlers
-import pathlib
 from datetime import datetime
 
 from cou.utils import COU_DATA, progress_indicator
@@ -49,7 +48,7 @@ def setup_logging(log_level: str = "INFO") -> None:
     progress_indicator.start("Configuring logging...")
     time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
-    pathlib.Path(COU_DIR_LOG).mkdir(parents=True, exist_ok=True)
+    COU_DIR_LOG.mkdir(parents=True, exist_ok=True)
 
     log_formatter_file = logging.Formatter(
         fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
