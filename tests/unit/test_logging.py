@@ -36,7 +36,10 @@ def test_filter_clears_exc_info_and_text():
 @pytest.mark.parametrize("log_level", ["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR"])
 def test_setup_logging(log_level):
     """Test setting up logging."""
-    with patch("cou.logging.logging") as mock_logging:
+    with (
+        patch("cou.logging.logging") as mock_logging,
+        patch("cou.logging.progress_indicator") as mock_indicator,
+    ):
         log_file_handler = MagicMock()
         console_handler = MagicMock()
         mock_root_logger = mock_logging.getLogger.return_value
@@ -47,6 +50,8 @@ def test_setup_logging(log_level):
 
         mock_root_logger.addHandler.assert_any_call(log_file_handler)
         mock_root_logger.addHandler.assert_any_call(console_handler)
+        mock_indicator.start.assert_called_once()
+        mock_indicator.stop_and_persist.assert_called_once()
 
         if log_level == "NOTSET":
             log_file_handler.addFilter.assert_not_called()

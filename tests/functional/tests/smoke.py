@@ -162,3 +162,17 @@ class SmokeTest(unittest.TestCase):
         result = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
         expected_plan = self.generate_expected_plan(backup=False)
         self.assertIn(expected_plan, result)
+
+    def test_run(self) -> None:
+        """Test cou run."""
+        # designate-bind upgrades from ussuri to victoria
+        expected_msg_before_upgrade = "Upgrade plan for 'designate-bind' to victoria"
+        result_before_upgrade = self.cou(
+            ["run", "--model", self.model_name, "--no-backup", "--no-interactive"]
+        ).stdout
+        self.assertIn(expected_msg_before_upgrade, result_before_upgrade)
+
+        # designate-bind was upgraded to victoria and next step is to wallaby
+        expected_msg_after_upgrade = "Upgrade plan for 'designate-bind' to wallaby"
+        result_after = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
+        self.assertIn(expected_msg_after_upgrade, result_after)

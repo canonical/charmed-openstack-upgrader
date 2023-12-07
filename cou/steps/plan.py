@@ -46,6 +46,7 @@ from cou.exceptions import (
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.utils.juju_utils import DEFAULT_TIMEOUT
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,15 @@ async def generate_plan(analysis_result: Analysis, backup_database: bool) -> Upg
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
-            coro=analysis_result.model.wait_for_idle(timeout=11, idle_period=10),
+            coro=analysis_result.model.wait_for_idle(
+                # NOTE (rgildein): We need to DEFAULT_TIMEOUT so it's possible to change if
+                # a network is too slow, this could cause an issue.
+                # We are using max function to ensure timeout is always at least 11 (1 second
+                # higher than the idle_period to prevent false negative).
+                timeout=max(DEFAULT_TIMEOUT + 1, 11),
+                idle_period=10,
+                raise_on_blocked=True,
+            ),
         )
     )
     if backup_database:

@@ -149,7 +149,9 @@ async def test_generate_plan(apps, model):
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
-            coro=analysis_result.model.wait_for_idle(timeout=11, idle_period=10),
+            coro=analysis_result.model.wait_for_idle(
+                timeout=11, idle_period=10, raise_on_blocked=True
+            ),
         )
     )
     expected_plan.add_step(

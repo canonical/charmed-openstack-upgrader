@@ -482,7 +482,10 @@ async def test_coumodel_wait_for_idle(mock_get_supported_apps, mocked_model):
     await model.wait_for_idle(timeout)
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
-        apps=["app1", "app2"], timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
+        apps=["app1", "app2"],
+        timeout=timeout,
+        idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
+        raise_on_blocked=False,
     )
     mock_get_supported_apps.assert_awaited_once_with()
 
@@ -497,7 +500,10 @@ async def test_coumodel_wait_for_idle_apps(mock_get_supported_apps, mocked_model
     await model.wait_for_idle(timeout, apps=["app1"])
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
-        apps=["app1"], timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
+        apps=["app1"],
+        timeout=timeout,
+        idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
+        raise_on_blocked=False,
     )
     mock_get_supported_apps.assert_not_awaited()
 
@@ -515,6 +521,9 @@ async def test_coumodel_wait_for_idle_timeout(mock_get_supported_apps, mocked_mo
         await model.wait_for_idle(timeout, apps=exp_apps)
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
-        apps=exp_apps, timeout=timeout, idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD
+        apps=exp_apps,
+        timeout=timeout,
+        idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
+        raise_on_blocked=False,
     )
     mock_get_supported_apps.assert_not_awaited()
