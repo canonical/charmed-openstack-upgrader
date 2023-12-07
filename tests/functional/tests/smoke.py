@@ -125,7 +125,7 @@ class SmokeTest(unittest.TestCase):
     def generate_expected_plan(self, backup: bool = True) -> str:
         """Generate the expected plan for the smoke bundle.
 
-        :param backup: Weather the plan should contains the backup, defaults to True
+        :param backup: Whether the plan should contain the backup step, defaults to True
         :type backup: bool, optional
         :return: The upgrade plan.
         :rtype: str
@@ -166,13 +166,23 @@ class SmokeTest(unittest.TestCase):
     def test_run(self) -> None:
         """Test cou run."""
         # designate-bind upgrades from ussuri to victoria
-        expected_msg_before_upgrade = "Upgrade plan for 'designate-bind' to victoria"
+        expected_msgs_before_upgrade = [
+            "Upgrade plan for 'designate-bind' to victoria",
+            "Upgrade plan for 'mysql-innodb-cluster' to victoria",
+        ]
         result_before_upgrade = self.cou(
             ["run", "--model", self.model_name, "--no-backup", "--no-interactive"]
         ).stdout
-        self.assertIn(expected_msg_before_upgrade, result_before_upgrade)
+        for expected_msg in expected_msgs_before_upgrade:
+            with self.subTest(expected_msg):
+                self.assertIn(expected_msg, result_before_upgrade)
 
         # designate-bind was upgraded to victoria and next step is to wallaby
-        expected_msg_after_upgrade = "Upgrade plan for 'designate-bind' to wallaby"
-        result_after = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
-        self.assertIn(expected_msg_after_upgrade, result_after)
+        expected_msg_after_upgrade = [
+            "Upgrade plan for 'designate-bind' to wallaby",
+            "Upgrade plan for 'mysql-innodb-cluster' to wallaby",
+        ]
+        result_after_upgrade = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
+        for expected_msg in expected_msg_after_upgrade:
+            with self.subTest(expected_msg):
+                self.assertIn(expected_msg, result_after_upgrade)

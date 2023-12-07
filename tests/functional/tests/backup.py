@@ -33,7 +33,7 @@ class BackupTest(unittest.TestCase):
 
         logger.info("Running backup test....")
         # NOTE(gabrielcocenza) mocking _check_db_relations to return True allows
-        # to test that backup without the need of deploying a heavy OpenStack bundle.
+        # backup test without the need of deploying a heavy OpenStack bundle.
         with patch("cou.steps.backup._check_db_relations") as mock_relations:
             mock_relations.return_value = True
             backup_file = sync_backup(self.model)
