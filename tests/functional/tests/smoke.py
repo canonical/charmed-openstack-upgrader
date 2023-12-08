@@ -1,3 +1,4 @@
+import itertools
 import logging
 import os
 import unittest
@@ -150,6 +151,21 @@ class SmokeTest(unittest.TestCase):
             "\t\t\tWait 1800s for app mysql-innodb-cluster to reach the idle state.\n"
             "\t\t\tCheck if the workload of 'mysql-innodb-cluster' has been upgraded\n"
         )
+
+    def test_help(self) -> None:
+        """Test that help command is working."""
+        help_options = itertools.product(["", "plan", "run"], ["-h", "--help"])
+        for cmd, help in help_options:
+            help_cmd = [cmd, help] if cmd else [help]
+            with self.subTest(help_cmd):
+                self.assertEqual(self.cou(help_cmd).returncode, 0)
+
+    def test_version(self) -> None:
+        """Test that version command is working."""
+        version_cmds = ["--version", "-V"]
+        for cmd in version_cmds:
+            with self.subTest(cmd):
+                self.assertEqual(self.cou([cmd]).returncode, 0)
 
     def test_plan_default(self) -> None:
         """Test plan with backup."""
