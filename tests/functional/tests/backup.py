@@ -20,6 +20,7 @@ class BackupTest(unittest.TestCase):
         zaza.get_or_create_libjuju_thread()
         model_name = zaza.model.get_juju_model()
         self.model = COUModel(model_name)
+        zaza.sync_wrapper(self.model.connect)()
 
     def tearDown(self) -> None:
         zaza.sync_wrapper(self.model._model.disconnect)()
