@@ -123,6 +123,35 @@ class SmokeTest(unittest.TestCase):
         """
         return run([self.exc_path] + cmd, capture_output=True, text=True)
 
+    def generate_expected_plan(self, backup: bool = True) -> str:
+        """Generate the expected plan for the smoke bundle.
+
+        :param backup: Whether the plan should contain the backup step, defaults to True
+        :type backup: bool, optional
+        :return: The upgrade plan.
+        :rtype: str
+        """
+        backup_plan = "\tBackup mysql databases\n" if backup else ""
+        return (
+            "Upgrade cloud from 'ussuri' to 'victoria'\n"
+            "\tVerify that all OpenStack applications are in idle state\n"
+            f"{backup_plan}"
+            "\tControl Plane principal(s) upgrade plan\n"
+            "\t\tUpgrade plan for 'designate-bind' to victoria\n"
+            "\t\t\tUpgrade software packages of 'designate-bind' "
+            "from the current APT repositories\n"
+            "\t\t\tUpgrade 'designate-bind' to the new channel: 'victoria/stable'\n"
+            "\t\t\tWait 300s for app designate-bind to reach the idle state.\n"
+            "\t\t\tCheck if the workload of 'designate-bind' has been upgraded\n"
+            "\t\tUpgrade plan for 'mysql-innodb-cluster' to victoria\n"
+            "\t\t\tUpgrade software packages of 'mysql-innodb-cluster' "
+            "from the current APT repositories\n"
+            "\t\t\tChange charm config of 'mysql-innodb-cluster' 'source' to "
+            "'cloud:focal-victoria'\n"
+            "\t\t\tWait 1800s for app mysql-innodb-cluster to reach the idle state.\n"
+            "\t\t\tCheck if the workload of 'mysql-innodb-cluster' has been upgraded\n"
+        )
+
     def test_help(self) -> None:
         """Test that help command is working."""
         help_options = itertools.product(["", "plan", "run"], ["-h", "--help"])
@@ -141,46 +170,35 @@ class SmokeTest(unittest.TestCase):
     def test_plan_default(self) -> None:
         """Test plan with backup."""
         result = self.cou(["plan", "--model", self.model_name]).stdout
-        expected_plan = (
-            "Upgrade cloud from 'ussuri' to 'victoria'\n"
-            "\tVerify that all OpenStack applications are in idle state\n"
-            "\tBackup mysql databases\n"
-            "\tControl Plane principal(s) upgrade plan\n"
-            "\t\tUpgrade plan for 'designate-bind' to victoria\n"
-            "\t\t\tUpgrade software packages of 'designate-bind' "
-            "from the current APT repositories\n"
-            "\t\t\tUpgrade 'designate-bind' to the new channel: 'victoria/stable'\n"
-            "\t\t\tWait 300s for app designate-bind to reach the idle state.\n"
-            "\t\t\tCheck if the workload of 'designate-bind' has been upgraded\n"
-        )
+        expected_plan = self.generate_expected_plan()
         self.assertIn(expected_plan, result)
 
     def test_plan_no_backup(self) -> None:
         """Test plan with no backup."""
         result = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
-        expected_plan = (
-            "Upgrade cloud from 'ussuri' to 'victoria'\n"
-            "\tVerify that all OpenStack applications are in idle state\n"
-            "\tControl Plane principal(s) upgrade plan\n"
-            "\t\tUpgrade plan for 'designate-bind' to victoria\n"
-            "\t\t\tUpgrade software packages of 'designate-bind' "
-            "from the current APT repositories\n"
-            "\t\t\tUpgrade 'designate-bind' to the new channel: 'victoria/stable'\n"
-            "\t\t\tWait 300s for app designate-bind to reach the idle state.\n"
-            "\t\t\tCheck if the workload of 'designate-bind' has been upgraded\n"
-        )
+        expected_plan = self.generate_expected_plan(backup=False)
         self.assertIn(expected_plan, result)
 
     def test_run(self) -> None:
         """Test cou run."""
         # designate-bind upgrades from ussuri to victoria
-        expected_msg_before_upgrade = "Upgrade plan for 'designate-bind' to victoria"
+        expected_msgs_before_upgrade = [
+            "Upgrade plan for 'designate-bind' to victoria",
+            "Upgrade plan for 'mysql-innodb-cluster' to victoria",
+        ]
         result_before_upgrade = self.cou(
             ["run", "--model", self.model_name, "--no-backup", "--no-interactive"]
         ).stdout
-        self.assertIn(expected_msg_before_upgrade, result_before_upgrade)
+        for expected_msg in expected_msgs_before_upgrade:
+            with self.subTest(expected_msg):
+                self.assertIn(expected_msg, result_before_upgrade)
 
         # designate-bind was upgraded to victoria and next step is to wallaby
-        expected_msg_after_upgrade = "Upgrade plan for 'designate-bind' to wallaby"
-        result_after = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
-        self.assertIn(expected_msg_after_upgrade, result_after)
+        expected_msg_after_upgrade = [
+            "Upgrade plan for 'designate-bind' to wallaby",
+            "Upgrade plan for 'mysql-innodb-cluster' to wallaby",
+        ]
+        result_after_upgrade = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
+        for expected_msg in expected_msg_after_upgrade:
+            with self.subTest(expected_msg):
+                self.assertIn(expected_msg, result_after_upgrade)
