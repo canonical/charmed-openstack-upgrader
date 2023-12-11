@@ -18,17 +18,17 @@ import logging
 import sys
 
 from aioconsole import ainput
-from colorama import Style
 
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
 from cou.utils import progress_indicator
+from cou.utils.text_styler import bold, normal
 
 AVAILABLE_OPTIONS = ["y", "n"]
 
 logger = logging.getLogger(__name__)
 
 
-def prompt(parameter: str) -> str:
+def prompt_message(parameter: str) -> str:
     """Generate eye-catching prompt.
 
     :param parameter: String to show at the prompt with the user options.
@@ -36,27 +36,6 @@ def prompt(parameter: str) -> str:
     :return: Prompt string with the user options.
     :rtype: str
     """
-
-    def bold(text: str) -> str:
-        """Transform the text in bold format.
-
-        :param text: text to format.
-        :type text: str
-        :return: text formatted.
-        :rtype: str
-        """
-        return Style.RESET_ALL + Style.BRIGHT + text + Style.RESET_ALL
-
-    def normal(text: str) -> str:
-        """Transform the text in normal format.
-
-        :param text: text to format.
-        :type text: str
-        :return: text formatted.
-        :rtype: str
-        """
-        return Style.RESET_ALL + text + Style.RESET_ALL
-
     return (
         normal("\n" + parameter + "\nContinue (")
         + bold("y")
@@ -135,7 +114,7 @@ async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool
         if not interactive or not step.prompt:
             result = "y"
         else:
-            result = (await ainput(prompt(description_to_prompt))).casefold()
+            result = (await ainput(prompt_message(description_to_prompt))).casefold()
 
         match result:
             case "y":

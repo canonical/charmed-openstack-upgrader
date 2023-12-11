@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from juju.errors import JujuError
@@ -90,7 +90,7 @@ async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manuall
     await cli.get_upgrade_plan(None, True)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
-    mock_logger.info.assert_called_once_with(plan)
+    mock_logger.debug.assert_called_once_with(plan)
     mock_manually_upgrade.assert_called_once()
 
 
@@ -107,7 +107,9 @@ async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manuall
 @patch("cou.cli.apply_step")
 @patch("builtins.print")
 @patch("cou.cli.logger")
+@patch("cou.cli.ainput")
 async def test_run_upgrade_quiet(
+    mock_input,
     mock_logger,
     mock_print,
     mock_apply_step,
@@ -122,12 +124,69 @@ async def test_run_upgrade_quiet(
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(model_name=None, backup_database=True, interactive=True, quiet=quiet)
+    await cli.run_upgrade(model_name=None, backup_database=True, interactive=False, quiet=quiet)
+
+    mock_input.assert_not_awaited()
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
+    mock_logger.debug.assert_called_once_with(plan)
+    mock_apply_step.assert_called_once_with(plan, False)
+    mock_print.call_count == expected_print_count
+    mock_manually_upgrade.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("input_value", ["n", "x"])
+@patch("cou.cli.manually_upgrade_data_plane")
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_step")
+@patch("cou.cli.ainput")
+async def test_run_upgrade_with_prompt_abort(
+    mock_input,
+    mock_apply_step,
+    mock_analyze_and_plan,
+    mock_manually_upgrade,
+    input_value,
+):
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
+    mock_analysis_result = MagicMock()
+    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
+    mock_input.side_effect = input_value
+
+    await cli.run_upgrade(model_name=None, backup_database=True, interactive=True, quiet=False)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
-    mock_logger.info.assert_called_once_with(plan)
+    mock_input.assert_has_awaits(
+        [call(cli.prompt_message("Would you like to start the upgrade?"))]
+    )
+    mock_apply_step.assert_not_awaited()
+    mock_manually_upgrade.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.manually_upgrade_data_plane")
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_step")
+@patch("cou.cli.ainput")
+async def test_run_upgrade_with_prompt_continue(
+    mock_input,
+    mock_apply_step,
+    mock_analyze_and_plan,
+    mock_manually_upgrade,
+):
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
+    mock_analysis_result = MagicMock()
+    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
+    mock_input.side_effect = "y"
+
+    await cli.run_upgrade(model_name=None, backup_database=True, interactive=True, quiet=False)
+
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
+    mock_input.assert_has_awaits(
+        [call(cli.prompt_message("Would you like to start the upgrade?"))]
+    )
     mock_apply_step.assert_called_once_with(plan, True)
-    mock_print.call_count == expected_print_count
     mock_manually_upgrade.assert_called_once()
 
 

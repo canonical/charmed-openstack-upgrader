@@ -27,7 +27,7 @@ from cou.steps import (
     UpgradePlan,
     UpgradeStep,
 )
-from cou.steps.execute import _run_step, apply_step, prompt
+from cou.steps.execute import _run_step, apply_step, prompt_message
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_apply_step_abort(mock_run_step, mock_input, input_value):
     with pytest.raises(SystemExit):
         await apply_step(upgrade_step, True)
 
-    mock_input.assert_awaited_once_with(prompt("Test Step"))
+    mock_input.assert_awaited_once_with(prompt_message("Test Step"))
     mock_run_step.assert_not_awaited()
 
 
@@ -137,7 +137,7 @@ async def test_apply_step_continue(mock_run_step, mock_input, input_value):
 
     await apply_step(upgrade_step, True)
 
-    mock_input.assert_awaited_once_with(prompt("Test Step"))
+    mock_input.assert_awaited_once_with(prompt_message("Test Step"))
     mock_run_step.assert_awaited_once_with(upgrade_step, True, False)
 
 
@@ -152,7 +152,9 @@ async def test_apply_step_nonsense(mock_run_step, mock_input):
     with pytest.raises(SystemExit, match="1"):
         await apply_step(upgrade_step, True)
 
-    mock_input.assert_has_awaits([call(prompt("Test Step")), call(prompt("Test Step"))])
+    mock_input.assert_has_awaits(
+        [call(prompt_message("Test Step")), call(prompt_message("Test Step"))]
+    )
     mock_run_step.assert_not_awaited()
 
 
@@ -173,7 +175,7 @@ async def test_apply_application_upgrade_plan(mock_run_step, mock_input):
     mock_input.side_effect = ["y"]
     await apply_step(upgrade_plan, True)
 
-    mock_input.assert_has_awaits([call(prompt(expected_prompt))])
+    mock_input.assert_has_awaits([call(prompt_message(expected_prompt))])
 
 
 @pytest.mark.asyncio
