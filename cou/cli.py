@@ -109,7 +109,7 @@ async def analyze_and_plan(
     :type model_name: Optional[str]
     :param backup_database: Whether to create database backup before upgrade.
     :type backup_database: bool
-    :return: Generated analyses and upgrade plan.
+    :return: Generated analysis and upgrade plan.
     :rtype: tuple[Analysis, UpgradePlan]
     """
     model = COUModel(model_name)
@@ -151,7 +151,7 @@ async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> 
 async def run_upgrade(
     model_name: Optional[str],
     backup_database: bool,
-    interactive: bool,
+    prompt: bool,
     quiet: bool,
 ) -> None:
     """Run cloud upgrade.
@@ -160,8 +160,8 @@ async def run_upgrade(
     :type model_name: Optional[str]
     :param backup_database: Whether to create database backup before upgrade.
     :type backup_database: bool
-    :param interactive: Whether to run upgrade interactively.
-    :type interactive: bool
+    :param prompt: Whether to prompt to run upgrade interactively.
+    :type prompt: bool
     :param quiet: Whether to run upgrade in quiet mode.
     :type quiet: bool
     """
@@ -169,7 +169,7 @@ async def run_upgrade(
     logger.debug(upgrade_plan)
     print(upgrade_plan)
 
-    if interactive:
+    if prompt:
         prompt_input = (
             await ainput(prompt_message("Would you like to start the upgrade?"))
         ).casefold()
@@ -194,7 +194,7 @@ async def run_upgrade(
     if not quiet:
         print("Running cloud upgrade...")
 
-    await apply_step(upgrade_plan, interactive)
+    await apply_step(upgrade_plan, prompt)
     manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 
@@ -208,8 +208,9 @@ async def _run_command(args: argparse.Namespace) -> None:
     match args.command:
         case "plan":
             await get_upgrade_plan(args.model_name, args.backup)
-        case "run":
-            await run_upgrade(args.model_name, args.backup, args.interactive, args.quiet)
+        case "upgrade":
+            prompt = not args.auto_approve
+            await run_upgrade(args.model_name, args.backup, prompt, args.quiet)
 
 
 def entrypoint() -> None:

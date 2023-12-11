@@ -116,7 +116,7 @@ async def test_apply_step_abort(mock_run_step, mock_input, input_value):
 @pytest.mark.asyncio
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
-async def test_apply_step_non_interactive(mock_run_step, mock_input):
+async def test_apply_step_no_prompt(mock_run_step, mock_input):
     upgrade_step = AsyncMock(spec_set=UpgradeStep())
     upgrade_step.description = "Test Step"
 
@@ -181,7 +181,7 @@ async def test_apply_application_upgrade_plan(mock_run_step, mock_input):
 @pytest.mark.asyncio
 @patch("cou.steps.execute.ainput")
 @patch("cou.steps.execute._run_step")
-async def test_apply_application_upgrade_plan_non_interactive(mock_run_step, mock_input):
+async def test_apply_application_upgrade_plan_no_prompt(mock_run_step, mock_input):
     plan_description = "Test plan"
     upgrade_plan = ApplicationUpgradePlan(plan_description)
     upgrade_plan.sub_steps = [
@@ -358,7 +358,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             "sequential.4.0",
         ]
 
-        await apply_step(self.plan, interactive=False)
+        await apply_step(self.plan, prompt=False)
         results = self.execution_order[21:]
 
         self.assertListEqual(results, exp_results)
@@ -393,7 +393,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             "parallel.4.2",
         ]
 
-        await apply_step(self.plan, interactive=False)
+        await apply_step(self.plan, prompt=False)
         results = self.execution_order[:21]
 
         # checking the results without order, since they are run in parallel with
