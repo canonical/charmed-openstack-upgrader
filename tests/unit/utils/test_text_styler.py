@@ -11,28 +11,34 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 import pytest
 
-from cou.utils.text_styler import prompt_message
+from cou.utils.text_styler import bold, normal, prompt_message
 
 
 @pytest.mark.parametrize(
     "default_choice_input,expected_continue,expected_abort",
     [
-        [None, "y", "n"],
+        ["", "y", "n"],
         ["y", "Y", "n"],
         ["Y", "Y", "n"],
         ["n", "y", "N"],
         ["N", "y", "N"],
     ],
 )
-@patch("cou.utils.text_styler.bold")
-def test_prompt_message(mock_bold, default_choice_input, expected_continue, expected_abort):
-    prompt_message("test prompt message", default_choice=default_choice_input)
+def test_prompt_message(default_choice_input, expected_continue, expected_abort):
+    expected_output = (
+        normal("\n" + "test prompt message\nContinue (")
+        + bold(expected_continue)
+        + normal("/")
+        + bold(expected_abort)
+        + normal("): ")
+    )
+    actual_output = prompt_message("test prompt message", default_choice=default_choice_input)
 
-    mock_bold.assert_has_calls([call(expected_continue), call(expected_abort)], any_order=True)
+    assert actual_output == expected_output
 
 
 @patch("cou.utils.text_styler.bold")

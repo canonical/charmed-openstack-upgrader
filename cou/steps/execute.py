@@ -20,10 +20,10 @@ import sys
 from aioconsole import ainput
 
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
-from cou.utils import progress_indicator
+from cou.utils import print_and_debug, progress_indicator
 from cou.utils.text_styler import prompt_message
 
-AVAILABLE_OPTIONS = ["y", "n"]
+AVAILABLE_OPTIONS = ["y", "yes", "n", "no"]
 
 logger = logging.getLogger(__name__)
 
@@ -100,12 +100,11 @@ async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool
             result = (await ainput(prompt_message(description_to_prompt))).casefold()
 
         match result:
-            case "y":
+            case "y" | "yes":
                 logger.info("Running: %s", step.description)
                 await _run_step(step, interactive, overwrite_progress)
-            case "n":
+            case "n" | "no":
                 logger.info("Aborting plan")
                 sys.exit(1)
             case _:
-                print("No valid input provided!")
-                logger.debug("No valid input provided!")
+                print_and_debug("No valid input provided!", logger)

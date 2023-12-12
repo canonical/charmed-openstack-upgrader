@@ -32,7 +32,7 @@ from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
-from cou.utils import progress_indicator
+from cou.utils import print_and_debug, progress_indicator
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
 from cou.utils.text_styler import prompt_message
@@ -89,6 +89,28 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     return VerbosityLevel(verbosity).name
 
 
+async def continue_upgrade() -> bool:
+    """Determine whether to continue with the upgrade based on user input.
+
+    :return: Boolean value indicate whether to continue with the upgrade.
+    :rtype: bool
+    """
+    prompt_input = (
+        await ainput(prompt_message("Would you like to start the upgrade?", default_choice="n"))
+    ).casefold()
+
+    match prompt_input:
+        case "y" | "yes":
+            logger.info("Start the upgrade.")
+            return True
+        case "n" | "no":
+            logger.info("Exiting COU without running upgrades.")
+        case _:
+            print_and_debug("No valid input provided! Exiting COU without upgrades.", logger)
+
+    return False
+
+
 async def analyze_and_plan(
     model_name: Optional[str], backup_database: bool
 ) -> tuple[Analysis, UpgradePlan]:
@@ -128,12 +150,11 @@ async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> 
     :type backup_database: bool
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    logger.debug(upgrade_plan)
-    print(upgrade_plan)  # print plan to console even in quiet mode
+    print_and_debug(upgrade_plan, logger)
     manually_upgrade_data_plane(analysis_result)
     print(
-        "Please note that the actually upgrade steps could be different "
-        "because the plan will be re-calculated at upgrade time."
+        "Please note that the actually upgrade steps could be different if the cloud state "
+        "changes because the plan will be re-calculated at upgrade time."
     )
 
 
@@ -155,26 +176,10 @@ async def run_upgrade(
     :type quiet: bool
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    logger.debug(upgrade_plan)
-    print(upgrade_plan)
+    print_and_debug(upgrade_plan, logger)
 
-    if interactive:
-        prompt_input = (
-            await ainput(
-                prompt_message("Would you like to start the upgrade?", default_choice="n")
-            )
-        ).casefold()
-
-        match prompt_input:
-            case "y":
-                logger.info("Start the upgrade.")
-            case "n":
-                logger.info("Exiting COU without running upgrades.")
-                return
-            case _:
-                print("No valid input provided! Exiting COU without upgrades.")
-                logger.debug("No valid input provided! Exiting COU without upgrades.")
-                return
+    if interactive and not await continue_upgrade():
+        return
 
     # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
     loop = asyncio.get_event_loop()

@@ -14,8 +14,6 @@
 
 """Command line text styling utilities."""
 
-from typing import Optional
-
 from colorama import Style
 
 
@@ -41,33 +39,24 @@ def normal(text: str) -> str:
     return Style.RESET_ALL + text + Style.RESET_ALL
 
 
-def prompt_message(parameter: str, default_choice: Optional[str] = None) -> str:
+def prompt_message(message: str, default_choice: str = "") -> str:
     """Generate eye-catching prompt.
 
-    :param parameter: String to show at the prompt with the user options.
-    :type parameter: str
+    :param message: String to show at the prompt with the user options.
+    :type message: str
     :param default_choice: Default choice if user doesn't a provide valid input.
-    :type default_choice: Optional[str]
+    :type default_choice: str
     :return: Prompt string with the user options.
     :rtype: str
     :raise ValueError: raise ValueError if default choice is invalid
     """
-    continue_option = "y"
-    abort_option = "n"
+    choices = ["y", "n"]
 
-    if not default_choice:  # use all lowercases if no default is passed
-        pass
-    elif default_choice.casefold() == "y":
-        continue_option = "Y"
-    elif default_choice.casefold() == "n":
-        abort_option = "N"
-    else:
+    if default_choice and default_choice.casefold() not in choices:
         raise ValueError(f"Invalid default choice: {default_choice}")
 
-    return (
-        normal("\n" + parameter + "\nContinue (")
-        + bold(continue_option)
-        + normal("/")
-        + bold(abort_option)
-        + normal("): ")
+    choices_str = normal("/").join(
+        bold(choice.upper() if choice == default_choice.casefold() else choice)
+        for choice in choices
     )
+    return normal("\n" + message + "\nContinue (") + choices_str + normal("): ")
