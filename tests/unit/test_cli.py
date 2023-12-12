@@ -135,7 +135,7 @@ async def test_run_upgrade_quiet(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("input_value", ["n", "x"])
+@pytest.mark.parametrize("input_value", ["n", "N", "x"])
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
@@ -157,13 +157,14 @@ async def test_run_upgrade_with_prompt_abort(
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_input.assert_has_awaits(
-        [call(cli.prompt_message("Would you like to start the upgrade?"))]
+        [call(cli.prompt_message("Would you like to start the upgrade?", default="n"))]
     )
     mock_apply_step.assert_not_awaited()
     mock_manually_upgrade.assert_not_called()
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("input_value", ["y", "Y"])
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
@@ -173,18 +174,19 @@ async def test_run_upgrade_with_prompt_continue(
     mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
+    input_value,
 ):
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
-    mock_input.side_effect = "y"
+    mock_input.side_effect = input_value
 
     await cli.run_upgrade(model_name=None, backup_database=True, interactive=True, quiet=False)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_input.assert_has_awaits(
-        [call(cli.prompt_message("Would you like to start the upgrade?"))]
+        [call(cli.prompt_message("Would you like to start the upgrade?", default="n"))]
     )
     mock_apply_step.assert_called_once_with(plan, True)
     mock_manually_upgrade.assert_called_once()

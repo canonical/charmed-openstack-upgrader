@@ -21,28 +21,11 @@ from aioconsole import ainput
 
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
 from cou.utils import progress_indicator
-from cou.utils.text_styler import bold, normal
+from cou.utils.text_styler import prompt_message
 
 AVAILABLE_OPTIONS = ["y", "n"]
 
 logger = logging.getLogger(__name__)
-
-
-def prompt_message(parameter: str) -> str:
-    """Generate eye-catching prompt.
-
-    :param parameter: String to show at the prompt with the user options.
-    :type parameter: str
-    :return: Prompt string with the user options.
-    :rtype: str
-    """
-    return (
-        normal("\n" + parameter + "\nContinue (")
-        + bold("y")
-        + normal("/")
-        + bold("n")
-        + normal("): ")
-    )
 
 
 async def _run_step(step: BaseStep, interactive: bool, overwrite_progress: bool = False) -> None:

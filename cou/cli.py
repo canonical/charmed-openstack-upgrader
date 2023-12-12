@@ -35,7 +35,7 @@ from cou.steps.plan import generate_plan, manually_upgrade_data_plane
 from cou.utils import progress_indicator
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
-from cou.utils.text_styler import bold, normal
+from cou.utils.text_styler import prompt_message
 
 AVAILABLE_OPTIONS = "cas"
 
@@ -72,17 +72,6 @@ class VerbosityLevel(Enum):
         if isinstance(value, int) and value > 4:
             return cls.NOTSET
         raise ValueError(f"{value} is not a valid member of VerbosityLevel.")
-
-
-def prompt_message(parameter: str) -> str:
-    """Generate eye-catching prompt.
-
-    :param parameter: String to show at the prompt with the user options.
-    :type parameter: str
-    :return: Prompt string with the user options.
-    :rtype: str
-    """
-    return normal("\n" + parameter + " (") + bold("y") + normal("/") + bold("N") + normal("): ")
 
 
 def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
@@ -171,7 +160,7 @@ async def run_upgrade(
 
     if interactive:
         prompt_input = (
-            await ainput(prompt_message("Would you like to start the upgrade?"))
+            await ainput(prompt_message("Would you like to start the upgrade?", default="n"))
         ).casefold()
 
         match prompt_input:

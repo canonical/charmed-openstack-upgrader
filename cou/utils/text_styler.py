@@ -14,6 +14,8 @@
 
 """Command line text styling utilities."""
 
+from typing import Optional
+
 from colorama import Style
 
 
@@ -37,3 +39,35 @@ def normal(text: str) -> str:
     :rtype: str
     """
     return Style.RESET_ALL + text + Style.RESET_ALL
+
+
+def prompt_message(parameter: str, default: Optional[str] = None) -> str:
+    """Generate eye-catching prompt.
+
+    :param parameter: String to show at the prompt with the user options.
+    :type parameter: str
+    :param default: Default choice if user doesn't provide valid input.
+    :type default: Optional[str]
+    :return: Prompt string with the user options.
+    :rtype: str
+    :raise ValueError: raise ValueError if default choice is invalid
+    """
+    continue_option = "y"
+    abort_option = "n"
+
+    if not default:  # use all lowercases if no default is passed
+        pass
+    elif default.casefold() == "y":
+        continue_option = "Y"
+    elif default.casefold() == "n":
+        abort_option = "N"
+    else:
+        raise ValueError(f"Invalid default choice: {default}")
+
+    return (
+        normal("\n" + parameter + "\nContinue (")
+        + bold(continue_option)
+        + normal("/")
+        + bold(abort_option)
+        + normal("): ")
+    )
