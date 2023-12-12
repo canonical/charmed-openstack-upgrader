@@ -157,7 +157,7 @@ async def test_run_upgrade_with_prompt_abort(
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_input.assert_has_awaits(
-        [call(cli.prompt_message("Would you like to start the upgrade?", default="n"))]
+        [call(cli.prompt_message("Would you like to start the upgrade?", default_choice="n"))]
     )
     mock_apply_step.assert_not_awaited()
     mock_manually_upgrade.assert_not_called()
@@ -186,7 +186,7 @@ async def test_run_upgrade_with_prompt_continue(
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_input.assert_has_awaits(
-        [call(cli.prompt_message("Would you like to start the upgrade?", default="n"))]
+        [call(cli.prompt_message("Would you like to start the upgrade?", default_choice="n"))]
     )
     mock_apply_step.assert_called_once_with(plan, True)
     mock_manually_upgrade.assert_called_once()

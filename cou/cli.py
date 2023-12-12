@@ -160,7 +160,9 @@ async def run_upgrade(
 
     if interactive:
         prompt_input = (
-            await ainput(prompt_message("Would you like to start the upgrade?", default="n"))
+            await ainput(
+                prompt_message("Would you like to start the upgrade?", default_choice="n")
+            )
         ).casefold()
 
         match prompt_input:

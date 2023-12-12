@@ -19,7 +19,7 @@ from cou.utils.text_styler import prompt_message
 
 
 @pytest.mark.parametrize(
-    "default_input,expected_continue,expected_abort",
+    "default_choice_input,expected_continue,expected_abort",
     [
         [None, "y", "n"],
         ["y", "Y", "n"],
@@ -29,15 +29,15 @@ from cou.utils.text_styler import prompt_message
     ],
 )
 @patch("cou.utils.text_styler.bold")
-def test_prompt_message(mock_bold, default_input, expected_continue, expected_abort):
-    prompt_message("test prompt message", default=default_input)
+def test_prompt_message(mock_bold, default_choice_input, expected_continue, expected_abort):
+    prompt_message("test prompt message", default_choice=default_choice_input)
 
     mock_bold.assert_has_calls([call(expected_continue), call(expected_abort)], any_order=True)
 
 
 @patch("cou.utils.text_styler.bold")
-def test_prompt_message_invalid_default(mock_bold):
+def test_prompt_message_invalid_default_choice(mock_bold):
     with pytest.raises(ValueError):
-        prompt_message("test prompt message", default="x")
+        prompt_message("test prompt message", default_choice="x")
 
     mock_bold.assert_not_called()
