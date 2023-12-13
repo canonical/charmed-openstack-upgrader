@@ -27,7 +27,7 @@ from cou.steps import (
     UpgradePlan,
     UpgradeStep,
 )
-from cou.steps.execute import _run_step, apply_step, prompt_message
+from cou.steps.execute import _run_step, apply_step
 
 
 @pytest.mark.asyncio
@@ -98,70 +98,72 @@ async def test_run_step_no_progress_indicator(mock_progress_indicator, plan):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("input_value", ["n", "N"])
-@patch("cou.steps.execute.ainput")
+@pytest.mark.parametrize("input_value", ["n", "no"])
+@patch("cou.steps.execute.prompt_input")
 @patch("cou.steps.execute._run_step")
-async def test_apply_step_abort(mock_run_step, mock_input, input_value):
+async def test_apply_step_abort(mock_run_step, mock_prompt_input, input_value):
     upgrade_step = AsyncMock(spec_set=UpgradeStep())
     upgrade_step.description = "Test Step"
-    mock_input.return_value = input_value
+    mock_prompt_input.return_value = input_value
 
     with pytest.raises(SystemExit):
         await apply_step(upgrade_step, True)
 
-    mock_input.assert_awaited_once_with(prompt_message("Test Step"))
+    mock_prompt_input.assert_awaited_once_with(["Test Step", "Continue"])
     mock_run_step.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.execute.ainput")
+@pytest.mark.parametrize("input_value", ["y", "yes"])
+@patch("cou.steps.execute.prompt_input")
 @patch("cou.steps.execute._run_step")
-async def test_apply_step_non_interactive(mock_run_step, mock_input):
+async def test_apply_step_continue(mock_run_step, mock_prompt_input, input_value):
+    upgrade_step = AsyncMock(spec_set=UpgradeStep())
+    upgrade_step.description = "Test Step"
+    mock_prompt_input.return_value = input_value
+
+    await apply_step(upgrade_step, True)
+
+    mock_prompt_input.assert_awaited_once_with(["Test Step", "Continue"])
+    mock_run_step.assert_awaited_once_with(upgrade_step, True, False)
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.prompt_input")
+@patch("cou.steps.execute._run_step")
+async def test_apply_step_non_interactive(mock_run_step, mock_prompt_input):
     upgrade_step = AsyncMock(spec_set=UpgradeStep())
     upgrade_step.description = "Test Step"
 
     await apply_step(upgrade_step, False)
 
-    mock_input.assert_not_awaited()
+    mock_prompt_input.assert_not_awaited()
     mock_run_step.assert_awaited_once_with(upgrade_step, False, False)
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("input_value", ["y", "Y"])
-@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute.prompt_input")
 @patch("cou.steps.execute._run_step")
-async def test_apply_step_continue(mock_run_step, mock_input, input_value):
+@patch("cou.steps.execute.print_and_debug")
+async def test_apply_step_nonsense(mock_print_and_debug, mock_run_step, mock_prompt_input):
     upgrade_step = AsyncMock(spec_set=UpgradeStep())
     upgrade_step.description = "Test Step"
-    mock_input.return_value = input_value
-
-    await apply_step(upgrade_step, True)
-
-    mock_input.assert_awaited_once_with(prompt_message("Test Step"))
-    mock_run_step.assert_awaited_once_with(upgrade_step, True, False)
-
-
-@pytest.mark.asyncio
-@patch("cou.steps.execute.ainput")
-@patch("cou.steps.execute._run_step")
-async def test_apply_step_nonsense(mock_run_step, mock_input):
-    upgrade_step = AsyncMock(spec_set=UpgradeStep())
-    upgrade_step.description = "Test Step"
-    mock_input.side_effect = ["x", "n"]
+    mock_prompt_input.side_effect = ["x", "n"]
 
     with pytest.raises(SystemExit, match="1"):
         await apply_step(upgrade_step, True)
 
-    mock_input.assert_has_awaits(
-        [call(prompt_message("Test Step")), call(prompt_message("Test Step"))]
+    mock_prompt_input.assert_has_awaits(
+        [call(["Test Step", "Continue"]), call(["Test Step", "Continue"])]
     )
     mock_run_step.assert_not_awaited()
+    mock_print_and_debug.assert_called_once_with("No valid input provided!")
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute.prompt_input")
 @patch("cou.steps.execute._run_step")
-async def test_apply_application_upgrade_plan(mock_run_step, mock_input):
+async def test_apply_application_upgrade_plan(mock_run_step, mock_prompt_input):
     expected_prompt = (
         "Test plan\n\tTest pre-upgrade step\n\tTest upgrade step\n\t" + "Test post-upgrade step\n"
     )
@@ -172,16 +174,16 @@ async def test_apply_application_upgrade_plan(mock_run_step, mock_input):
         PostUpgradeStep(description="Test post-upgrade step", coro=AsyncMock()),
     ]
 
-    mock_input.side_effect = ["y"]
+    mock_prompt_input.side_effect = ["y"]
     await apply_step(upgrade_plan, True)
 
-    mock_input.assert_has_awaits([call(prompt_message(expected_prompt))])
+    mock_prompt_input.assert_awaited_once_with([expected_prompt, "Continue"])
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute.prompt_input")
 @patch("cou.steps.execute._run_step")
-async def test_apply_application_upgrade_plan_non_interactive(mock_run_step, mock_input):
+async def test_apply_application_upgrade_plan_non_interactive(mock_run_step, mock_prompt_input):
     plan_description = "Test plan"
     upgrade_plan = ApplicationUpgradePlan(plan_description)
     upgrade_plan.sub_steps = [
@@ -192,20 +194,20 @@ async def test_apply_application_upgrade_plan_non_interactive(mock_run_step, moc
 
     await apply_step(upgrade_plan, False)
 
-    mock_input.assert_not_awaited()
+    mock_prompt_input.assert_not_awaited()
     mock_run_step.assert_awaited()
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.execute.ainput")
+@patch("cou.steps.execute.prompt_input")
 @patch("cou.steps.execute._run_step")
-async def test_apply_empty_step(mock_run_step, mock_input):
+async def test_apply_empty_step(mock_run_step, mock_prompt_input):
     # upgrade_plan is empty because it has neither coro nor sub-steps
     upgrade_plan = ApplicationUpgradePlan("Test plan")
 
     await apply_step(upgrade_plan, True)
 
-    mock_input.assert_not_awaited()
+    mock_prompt_input.assert_not_awaited()
     mock_run_step.assert_not_awaited()
 
 

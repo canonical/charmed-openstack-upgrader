@@ -17,11 +17,8 @@ import asyncio
 import logging
 import sys
 
-from aioconsole import ainput
-
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
-from cou.utils import print_and_debug, progress_indicator
-from cou.utils.text_styler import prompt_message
+from cou.utils import print_and_debug, progress_indicator, prompt_input
 
 AVAILABLE_OPTIONS = ["y", "yes", "n", "no"]
 
@@ -93,11 +90,11 @@ async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool
         description_to_prompt = str(step)
 
     result = ""
-    while result.casefold() not in AVAILABLE_OPTIONS:
+    while result not in AVAILABLE_OPTIONS:
         if not interactive or not step.prompt:
             result = "y"
         else:
-            result = (await ainput(prompt_message(description_to_prompt))).casefold()
+            result = await prompt_input([description_to_prompt, "Continue"])
 
         match result:
             case "y" | "yes":
@@ -107,4 +104,4 @@ async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool
                 logger.info("Aborting plan")
                 sys.exit(1)
             case _:
-                print_and_debug("No valid input provided!", logger)
+                print_and_debug("No valid input provided!")

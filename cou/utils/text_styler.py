@@ -37,26 +37,3 @@ def normal(text: str) -> str:
     :rtype: str
     """
     return Style.RESET_ALL + text + Style.RESET_ALL
-
-
-def prompt_message(message: str, default_choice: str = "") -> str:
-    """Generate eye-catching prompt.
-
-    :param message: String to show at the prompt with the user options.
-    :type message: str
-    :param default_choice: Default choice if user doesn't a provide valid input.
-    :type default_choice: str
-    :return: Prompt string with the user options.
-    :rtype: str
-    :raise ValueError: raise ValueError if default choice is invalid
-    """
-    choices = ["y", "n"]
-
-    if default_choice and default_choice.casefold() not in choices:
-        raise ValueError(f"Invalid default choice: {default_choice}")
-
-    choices_str = normal("/").join(
-        bold(choice.upper() if choice == default_choice.casefold() else choice)
-        for choice in choices
-    )
-    return normal("\n" + message + "\nContinue (") + choices_str + normal("): ")

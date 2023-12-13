@@ -22,7 +22,6 @@ from enum import Enum
 from signal import SIGINT, SIGTERM
 from typing import Optional
 
-from aioconsole import ainput
 from juju.errors import JujuError
 
 from cou.commands import parse_args
@@ -32,10 +31,9 @@ from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
-from cou.utils import print_and_debug, progress_indicator
+from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
-from cou.utils.text_styler import prompt_message
 
 AVAILABLE_OPTIONS = "cas"
 
@@ -95,18 +93,18 @@ async def continue_upgrade() -> bool:
     :return: Boolean value indicate whether to continue with the upgrade.
     :rtype: bool
     """
-    prompt_input = (
-        await ainput(prompt_message("Would you like to start the upgrade?", default_choice="n"))
-    ).casefold()
+    input_value = await prompt_input(
+        ["Would you like to start the upgrade?", "Continue"], separator=" ", default="n"
+    )
 
-    match prompt_input:
+    match input_value:
         case "y" | "yes":
             logger.info("Start the upgrade.")
             return True
         case "n" | "no":
             logger.info("Exiting COU without running upgrades.")
         case _:
-            print_and_debug("No valid input provided! Exiting COU without upgrades.", logger)
+            print_and_debug("No valid input provided! Exiting COU without upgrades.")
 
     return False
 
@@ -150,7 +148,7 @@ async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> 
     :type backup_database: bool
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    print_and_debug(upgrade_plan, logger)
+    print_and_debug(upgrade_plan)
     manually_upgrade_data_plane(analysis_result)
     print(
         "Please note that the actually upgrade steps could be different if the cloud state "
@@ -176,7 +174,7 @@ async def run_upgrade(
     :type quiet: bool
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    print_and_debug(upgrade_plan, logger)
+    print_and_debug(upgrade_plan)
 
     if interactive and not await continue_upgrade():
         return
