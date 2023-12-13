@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from juju.errors import JujuError
@@ -79,8 +79,10 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
 @pytest.mark.asyncio
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
-@patch("cou.cli.logger")
-async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manually_upgrade):
+@patch("cou.cli.print_and_debug")
+async def test_get_upgrade_plan(
+    mock_print_and_debug, mock_analyze_and_plan, mock_manually_upgrade
+):
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
@@ -90,7 +92,7 @@ async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manuall
     await cli.get_upgrade_plan(None, True)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
-    mock_logger.debug.assert_called_once_with(plan)
+    mock_print_and_debug.assert_called_once_with(plan)
     mock_manually_upgrade.assert_called_once()
 
 
@@ -106,11 +108,9 @@ async def test_get_upgrade_plan(mock_logger, mock_analyze_and_plan, mock_manuall
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("builtins.print")
-@patch("cou.cli.logger")
-@patch("cou.cli.ainput")
+@patch("cou.cli.print_and_debug")
 async def test_run_upgrade_quiet(
-    mock_input,
-    mock_logger,
+    mock_print_and_debug,
     mock_print,
     mock_apply_step,
     mock_analyze_and_plan,
@@ -126,39 +126,59 @@ async def test_run_upgrade_quiet(
 
     await cli.run_upgrade(model_name=None, backup_database=True, prompt=False, quiet=quiet)
 
-    mock_input.assert_not_awaited()
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
-    mock_logger.debug.assert_called_once_with(plan)
+    mock_print_and_debug.assert_called_once_with(plan)
     mock_apply_step.assert_called_once_with(plan, False)
     mock_print.call_count == expected_print_count
     mock_manually_upgrade.assert_called_once()
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("input_value", ["n", "x"])
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
-@patch("cou.cli.ainput")
-async def test_run_upgrade_with_prompt_abort(
-    mock_input,
+@patch("cou.cli.continue_upgrade")
+async def test_run_upgrade_with_prompt_continue(
+    mock_continue_upgrade,
     mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
-    input_value,
 ):
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
-    mock_input.side_effect = input_value
+    mock_continue_upgrade.return_value = True
 
     await cli.run_upgrade(model_name=None, backup_database=True, prompt=True, quiet=False)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
-    mock_input.assert_has_awaits(
-        [call(cli.prompt_message("Would you like to start the upgrade?"))]
-    )
+    mock_continue_upgrade.assert_awaited_once_with()
+    mock_apply_step.assert_called_once_with(plan, True)
+    mock_manually_upgrade.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.manually_upgrade_data_plane")
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_step")
+@patch("cou.cli.continue_upgrade")
+async def test_run_upgrade_with_prompt_abort(
+    mock_continue_upgrade,
+    mock_apply_step,
+    mock_analyze_and_plan,
+    mock_manually_upgrade,
+):
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
+    mock_analysis_result = MagicMock()
+    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
+    mock_continue_upgrade.return_value = False
+
+    await cli.run_upgrade(model_name=None, backup_database=True, prompt=True, quiet=False)
+
+    mock_analyze_and_plan.assert_awaited_once_with(None, True)
+    mock_continue_upgrade.assert_awaited_once_with()
     mock_apply_step.assert_not_awaited()
     mock_manually_upgrade.assert_not_called()
 
@@ -167,9 +187,9 @@ async def test_run_upgrade_with_prompt_abort(
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
-@patch("cou.cli.ainput")
-async def test_run_upgrade_with_prompt_continue(
-    mock_input,
+@patch("cou.cli.continue_upgrade", new_callable=AsyncMock)
+async def test_run_upgrade_with_no_prompt(
+    mock_continue_upgrade,
     mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
@@ -178,16 +198,36 @@ async def test_run_upgrade_with_prompt_continue(
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
-    mock_input.side_effect = "y"
 
-    await cli.run_upgrade(model_name=None, backup_database=True, prompt=True, quiet=False)
+    await cli.run_upgrade(model_name=None, backup_database=True, prompt=False, quiet=False)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
-    mock_input.assert_has_awaits(
-        [call(cli.prompt_message("Would you like to start the upgrade?"))]
-    )
-    mock_apply_step.assert_called_once_with(plan, True)
+    mock_continue_upgrade.assert_not_awaited()
+    mock_apply_step.assert_called_once_with(plan, False)
     mock_manually_upgrade.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "input_value,expected_result",
+    [
+        ["y", True],
+        ["yes", True],
+        ["n", False],
+        ["no", False],
+        ["x", False],  # invalid input
+    ],
+)
+@patch("cou.cli.prompt_input")
+async def test_continue_upgrade(
+    mock_prompt_input,
+    input_value,
+    expected_result,
+):
+    mock_prompt_input.return_value = input_value
+    result = await cli.continue_upgrade()
+
+    assert result == expected_result
 
 
 @pytest.mark.asyncio

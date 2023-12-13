@@ -22,7 +22,6 @@ from enum import Enum
 from signal import SIGINT, SIGTERM
 from typing import Optional
 
-from aioconsole import ainput
 from juju.errors import JujuError
 
 from cou.commands import parse_args
@@ -32,10 +31,9 @@ from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
-from cou.utils import progress_indicator
+from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
-from cou.utils.text_styler import bold, normal
 
 AVAILABLE_OPTIONS = "cas"
 
@@ -74,17 +72,6 @@ class VerbosityLevel(Enum):
         raise ValueError(f"{value} is not a valid member of VerbosityLevel.")
 
 
-def prompt_message(parameter: str) -> str:
-    """Generate eye-catching prompt.
-
-    :param parameter: String to show at the prompt with the user options.
-    :type parameter: str
-    :return: Prompt string with the user options.
-    :rtype: str
-    """
-    return normal("\n" + parameter + " (") + bold("y") + normal("/") + bold("N") + normal("): ")
-
-
 def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     """Get a log level based on input options.
 
@@ -98,6 +85,28 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     if quiet:
         return "CRITICAL"
     return VerbosityLevel(verbosity).name
+
+
+async def continue_upgrade() -> bool:
+    """Determine whether to continue with the upgrade based on user input.
+
+    :return: Boolean value indicate whether to continue with the upgrade.
+    :rtype: bool
+    """
+    input_value = await prompt_input(
+        ["Would you like to start the upgrade?", "Continue"], separator=" ", default="n"
+    )
+
+    match input_value:
+        case "y" | "yes":
+            logger.info("Start the upgrade.")
+            return True
+        case "n" | "no":
+            logger.info("Exiting COU without running upgrades.")
+        case _:
+            print_and_debug("No valid input provided! Exiting COU without upgrades.")
+
+    return False
 
 
 async def analyze_and_plan(
@@ -139,12 +148,11 @@ async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> 
     :type backup_database: bool
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    logger.debug(upgrade_plan)
-    print(upgrade_plan)  # print plan to console even in quiet mode
+    print_and_debug(upgrade_plan)
     manually_upgrade_data_plane(analysis_result)
     print(
-        "Please note that the actually upgrade steps could be different "
-        "because the plan will be re-calculated at upgrade time."
+        "Please note that the actually upgrade steps could be different if the cloud state "
+        "changes because the plan will be re-calculated at upgrade time."
     )
 
 
@@ -166,24 +174,10 @@ async def run_upgrade(
     :type quiet: bool
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    logger.debug(upgrade_plan)
-    print(upgrade_plan)
+    print_and_debug(upgrade_plan)
 
-    if prompt:
-        prompt_input = (
-            await ainput(prompt_message("Would you like to start the upgrade?"))
-        ).casefold()
-
-        match prompt_input:
-            case "y":
-                logger.info("Start the upgrade.")
-            case "n":
-                logger.info("Exiting COU without running upgrades.")
-                return
-            case _:
-                print("No valid input provided! Exiting COU without upgrades.")
-                logger.debug("No valid input provided! Exiting COU without upgrades.")
-                return
+    if prompt and not await continue_upgrade():
+        return
 
     # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
     loop = asyncio.get_event_loop()
