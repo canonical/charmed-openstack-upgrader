@@ -17,53 +17,12 @@ import asyncio
 import logging
 import sys
 
-from aioconsole import ainput
-from colorama import Style
-
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
-from cou.utils import progress_indicator
+from cou.utils import print_and_debug, progress_indicator, prompt_input
 
-AVAILABLE_OPTIONS = ["y", "n"]
+AVAILABLE_OPTIONS = ["y", "yes", "n", "no"]
 
 logger = logging.getLogger(__name__)
-
-
-def prompt(parameter: str) -> str:
-    """Generate eye-catching prompt.
-
-    :param parameter: String to show at the prompt with the user options.
-    :type parameter: str
-    :return: Prompt string with the user options.
-    :rtype: str
-    """
-
-    def bold(text: str) -> str:
-        """Transform the text in bold format.
-
-        :param text: text to format.
-        :type text: str
-        :return: text formatted.
-        :rtype: str
-        """
-        return Style.RESET_ALL + Style.BRIGHT + text + Style.RESET_ALL
-
-    def normal(text: str) -> str:
-        """Transform the text in normal format.
-
-        :param text: text to format.
-        :type text: str
-        :return: text formatted.
-        :rtype: str
-        """
-        return Style.RESET_ALL + text + Style.RESET_ALL
-
-    return (
-        normal("\n" + parameter + "\nContinue (")
-        + bold("y")
-        + normal("/")
-        + bold("n")
-        + normal("): ")
-    )
 
 
 async def _run_step(step: BaseStep, interactive: bool, overwrite_progress: bool = False) -> None:
@@ -131,19 +90,18 @@ async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool
         description_to_prompt = str(step)
 
     result = ""
-    while result.casefold() not in AVAILABLE_OPTIONS:
+    while result not in AVAILABLE_OPTIONS:
         if not interactive or not step.prompt:
             result = "y"
         else:
-            result = (await ainput(prompt(description_to_prompt))).casefold()
+            result = await prompt_input([description_to_prompt, "Continue"])
 
         match result:
-            case "y":
+            case "y" | "yes":
                 logger.info("Running: %s", step.description)
                 await _run_step(step, interactive, overwrite_progress)
-            case "n":
+            case "n" | "no":
                 logger.info("Aborting plan")
                 sys.exit(1)
             case _:
-                print("No valid input provided!")
-                logger.debug("No valid input provided!")
+                print_and_debug("No valid input provided!")
