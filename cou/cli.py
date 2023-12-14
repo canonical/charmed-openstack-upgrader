@@ -99,7 +99,7 @@ async def continue_upgrade() -> bool:
 
     match input_value:
         case "y" | "yes":
-            logger.info("Start the upgrade.")
+            logger.info("Starting the upgrade.")
             return True
         case "n" | "no":
             logger.info("Exiting COU without running upgrades.")
@@ -151,7 +151,7 @@ async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> 
     print_and_debug(upgrade_plan)
     manually_upgrade_data_plane(analysis_result)
     print(
-        "Please note that the actually upgrade steps could be different if the cloud state "
+        "Please note that the actual upgrade steps could be different if the cloud state "
         "changes because the plan will be re-calculated at upgrade time."
     )
 
