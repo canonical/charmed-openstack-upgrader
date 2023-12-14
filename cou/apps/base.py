@@ -697,5 +697,5 @@ class OpenStackApplication:
         return PostUpgradeStep(
             description=description,
             parallel=False,
-            coro=self.model.wait_for_active_and_idle(self.wait_timeout, apps=apps),
+            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=apps),
         )

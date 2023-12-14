@@ -78,7 +78,7 @@ async def generate_plan(analysis_result: Analysis, backup_database: bool) -> Upg
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
-            coro=analysis_result.model.wait_for_active_and_idle(
+            coro=analysis_result.model.wait_for_active_idle(
                 # NOTE (rgildein): We need to DEFAULT_TIMEOUT so it's possible to change if
                 # a network is too slow, this could cause an issue.
                 # We are using max function to ensure timeout is always at least 11 (1 second

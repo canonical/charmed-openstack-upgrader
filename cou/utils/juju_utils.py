@@ -445,14 +445,14 @@ class COUModel:
             switch=switch,
         )
 
-    async def wait_for_active_and_idle(
+    async def wait_for_active_idle(
         self,
         timeout: int,
         idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
         apps: Optional[list[str]] = None,
         raise_on_blocked: bool = False,
     ) -> None:
-        """Wait for application(s) to reach active and idle state.
+        """Wait for application(s) to reach active idle state.
 
         If no applications are provided, this function will wait for all COU-related applications.
 
@@ -471,8 +471,8 @@ class COUModel:
         """
 
         @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
-        @wraps(self.wait_for_active_and_idle)
-        async def _wait_for_active_and_idle() -> None:
+        @wraps(self.wait_for_active_idle)
+        async def _wait_for_active_idle() -> None:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
             model = await self._get_model()
             try:
@@ -498,4 +498,4 @@ class COUModel:
         if apps is None:
             apps = await self._get_supported_apps()
 
-        await _wait_for_active_and_idle()
+        await _wait_for_active_idle()

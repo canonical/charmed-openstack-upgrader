@@ -473,13 +473,13 @@ async def test_coumodel_upgrade_charm(mocked_model):
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.COUModel._get_supported_apps")
-async def test_coumodel_wait_for_active_and_idle(mock_get_supported_apps, mocked_model):
-    """Test COUModel wait for related apps to be active and idle."""
+async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_model):
+    """Test COUModel wait for related apps to be active idle."""
     timeout = 60
     model = juju_utils.COUModel("test-model")
     mock_get_supported_apps.return_value = ["app1", "app2"]
 
-    await model.wait_for_active_and_idle(timeout)
+    await model.wait_for_active_idle(timeout)
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
         apps=["app1", "app2"],
@@ -493,12 +493,12 @@ async def test_coumodel_wait_for_active_and_idle(mock_get_supported_apps, mocked
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.COUModel._get_supported_apps")
-async def test_coumodel_wait_for_active_and_idle_apps(mock_get_supported_apps, mocked_model):
-    """Test COUModel wait for specific apps to be active and idle."""
+async def test_coumodel_wait_for_active_idle_apps(mock_get_supported_apps, mocked_model):
+    """Test COUModel wait for specific apps to be active idle."""
     timeout = 60
     model = juju_utils.COUModel("test-model")
 
-    await model.wait_for_active_and_idle(timeout, apps=["app1"])
+    await model.wait_for_active_idle(timeout, apps=["app1"])
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
         apps=["app1"],
@@ -512,15 +512,15 @@ async def test_coumodel_wait_for_active_and_idle_apps(mock_get_supported_apps, m
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.COUModel._get_supported_apps")
-async def test_coumodel_wait_for_active_and_idle_timeout(mock_get_supported_apps, mocked_model):
-    """Test COUModel wait for model to be active and idle reach timeout."""
+async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mocked_model):
+    """Test COUModel wait for model to be active idle reach timeout."""
     timeout = 60
     exp_apps = ["app1", "app2"]
     mocked_model.wait_for_idle.side_effect = asyncio.exceptions.TimeoutError
     model = juju_utils.COUModel(None)
 
     with pytest.raises(WaitForApplicationsTimeout):
-        await model.wait_for_active_and_idle(timeout, apps=exp_apps)
+        await model.wait_for_active_idle(timeout, apps=exp_apps)
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
         apps=exp_apps,
