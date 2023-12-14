@@ -108,7 +108,6 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     group.add_argument(
         "--quiet",
         "-q",
-        default=False,
         action="store_true",
         dest="quiet",
         help="Disable output in STDOUT.",
@@ -165,7 +164,7 @@ def create_plan_subparser(
 ) -> None:
     """Create and configure 'plan' subcommand parser.
 
-    :param subparsers: subparsers that plan subparser belongs to
+    :param subparsers: subparsers that 'plan' subparser belongs to
     :type subparsers: argparse.ArgumentParser
     :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
     :type subcommand_common_opts_parser: argparse.ArgumentParser
@@ -189,7 +188,7 @@ def create_plan_subparser(
     # Create control-plane and data-plane child commands to plan partial upgrades
     plan_subparser = plan_parser.add_subparsers(
         title="Upgrade groups",
-        dest="upgrade-group",
+        dest="upgrade_group",
         help=argparse.SUPPRESS,
         # TODO(txiao): Add the following help message after data-plane upgrade is implemented
         # help="For more information about a upgrade group, run 'cou plan <upgrade-group>' -h.",
@@ -214,64 +213,58 @@ def create_plan_subparser(
     )
 
 
-def create_run_subparser(
+def create_upgrade_subparser(
     subparsers: argparse._SubParsersAction,
     subcommand_common_opts_parser: argparse.ArgumentParser,
     dp_parser: argparse.ArgumentParser,
 ) -> None:
-    """Create and configure 'run' subcommand parser.
+    """Create and configure 'upgrade' subcommand parser.
 
-    :param subparsers: subparsers that plan subparser belongs to
+    :param subparsers: subparsers that 'upgrade' subparser belongs to
     :type subparsers: argparse.ArgumentParser
     :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
     :type subcommand_common_opts_parser: argparse.ArgumentParser
     :param dp_parser: a parser groups options specific to data-plane
     :type dp_parser: argparse.ArgumentParser
     """
-    # Arg parser for "cou run" sub-command and set up common options
-    run_args_parser = argparse.ArgumentParser(add_help=False)
-    run_args_parser.add_argument(
-        "--interactive",
-        help="Run upgrade with prompt.",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    subcommand_common_opts_parser.add_argument(
-        "--parallel",
-        help="Run upgrade steps in parallel where possible.",
-        default=False,
+    # Arg parser for "cou upgrade" sub-command and set up common options
+    upgrade_args_parser = argparse.ArgumentParser(add_help=False)
+    upgrade_args_parser.add_argument(
+        "--auto-approve",
+        help="Automatically approve and continue with each upgrade step without prompt.",
         action="store_true",
+        dest="auto_approve",
     )
-    run_parser = subparsers.add_parser(
-        "run",
+    upgrade_parser = subparsers.add_parser(
+        "upgrade",
         description="Run the cloud upgrade.",
         # TODO(txiao): Replace the description with the following message after data-plane upgrade
         # is implemented
         # description="Run the cloud upgrade.\nIf upgrade-group is unspecified, "
         # "upgrade the whole cloud.",
         help="Run the cloud upgrade.",
-        usage="cou run [options]",
-        parents=[subcommand_common_opts_parser, run_args_parser],
+        usage="cou upgrade [options]",
+        parents=[subcommand_common_opts_parser, upgrade_args_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
 
     # Create control-plane and data-plane child commands to run partial upgrades
-    run_subparser = run_parser.add_subparsers(
+    upgrade_subparser = upgrade_parser.add_subparsers(
         title="Upgrade group",
-        dest="upgrade-group",
+        dest="upgrade_group",
         help=argparse.SUPPRESS,
         # TODO(txiao): Add the following help message after data-plane upgrade is implemented
-        # help="For more information about an upgrade group, run 'cou run <upgrade-group> -h'.",
+        # help="For more information about an upgrade group, run 'cou upgrade <upgrade-group> -h'",
     )
-    run_subparser.add_parser(
+    upgrade_subparser.add_parser(
         "control-plane",
         description="Run upgrade for the control-plane components.",
         help="Run upgrade for the control-plane components.",
         usage="cou plan control-plane [options]",
-        parents=[subcommand_common_opts_parser, run_args_parser],
+        parents=[subcommand_common_opts_parser, upgrade_args_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
-    run_subparser.add_parser(
+    upgrade_subparser.add_parser(
         "data-plane",
         description="Run upgrade for the data-plane components.\nThis is possible only if "
         "control-plane has been fully upgraded,\notherwise an error will be thrown.",
@@ -281,7 +274,7 @@ def create_run_subparser(
         parents=[
             subcommand_common_opts_parser,
             dp_parser,
-            run_args_parser,
+            upgrade_args_parser,
         ],
         formatter_class=CapitalizeHelpFormatter,
     )
@@ -310,8 +303,7 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
     help_parser.add_argument(
         "subcommand",
         nargs="?",
-        choices=["plan", "run", "all"],
-        default="all",
+        choices=["plan", "upgrade"],
         type=str,
         help="A sub-command to get information of.",
     )
@@ -319,7 +311,7 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
     subcommand_common_opts_parser = get_subcommand_common_opts_parser()
     dp_parser = get_dataplane_common_opts_parser()
     create_plan_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
-    create_run_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
+    create_upgrade_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
 
     return subparsers
 
@@ -357,7 +349,7 @@ def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent
     subparsers = create_subparsers(parser)
 
     # It no sub-commands or options are given, print help message and exit
-    if len(args) == 0:
+    if len(args) == 0 or (len(args) == 1 and args[0] == "help"):
         parser.print_help()
         parser.exit()
 
@@ -369,10 +361,8 @@ def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent
             match parsed_args.subcommand:
                 case "plan":
                     subparsers.choices["plan"].print_help()
-                case "run":
-                    subparsers.choices["run"].print_help()
-                case "all":
-                    parser.print_help()
+                case "upgrade":
+                    subparsers.choices["upgrade"].print_help()
             parser.exit()
 
         return parsed_args

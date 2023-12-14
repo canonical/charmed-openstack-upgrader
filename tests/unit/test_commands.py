@@ -28,14 +28,13 @@ from cou import commands
         ["--help"],
         ["help"],
         ["help", "plan"],
-        ["help", "run"],
-        ["help", "all"],
+        ["help", "upgrade"],
         ["plan", "-h"],
-        ["run", "-h"],
+        ["upgrade", "-h"],
         ["plan", "control-plane", "-h"],
         ["plan", "data-plane", "-h"],
-        ["run", "control-plane", "-h"],
-        ["run", "data-plane", "-h"],
+        ["upgrade", "control-plane", "-h"],
+        ["upgrade", "data-plane", "-h"],
     ],
 )
 def test_parse_args_help(args):
@@ -72,7 +71,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
-                **{"upgrade-group": None}
+                **{"upgrade_group": None}
             ),
         ),
         (
@@ -83,7 +82,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=False,
-                **{"upgrade-group": None}
+                **{"upgrade_group": None}
             ),
         ),
         (
@@ -94,7 +93,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=True,
                 backup=False,
-                **{"upgrade-group": None}
+                **{"upgrade_group": None}
             ),
         ),
         (
@@ -105,7 +104,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
-                **{"upgrade-group": None}
+                **{"upgrade_group": None}
             ),
         ),
         (
@@ -116,7 +115,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
-                **{"upgrade-group": "control-plane"}
+                **{"upgrade_group": "control-plane"}
             ),
         ),
         (
@@ -130,7 +129,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 machines=None,
                 hostnames=None,
                 availability_zones=None,
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
         (
@@ -141,7 +140,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=1,
                 quiet=False,
                 backup=True,
-                **{"upgrade-group": "control-plane"}
+                **{"upgrade_group": "control-plane"}
             ),
         ),
         (
@@ -155,7 +154,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 machines=["1", "2,3"],
                 hostnames=None,
                 availability_zones=None,
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
         (
@@ -169,7 +168,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 machines=None,
                 hostnames=None,
                 availability_zones=["1", "2,3"],
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
         (
@@ -183,7 +182,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 machines=None,
                 hostnames=["1", "2,3"],
                 availability_zones=None,
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
     ],
@@ -199,166 +198,155 @@ def test_parse_args_plan(args, expected_namespace):
     "args, expected_namespace",
     [
         (
-            ["run"],
+            ["upgrade"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
-                interactive=True,
+                auto_approve=False,
                 backup=True,
-                **{"upgrade-group": None}
+                **{"upgrade_group": None}
             ),
         ),
         (
-            ["run", "--no-backup"],
+            ["upgrade", "--no-backup"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
-                interactive=True,
+                auto_approve=False,
                 backup=False,
-                **{"upgrade-group": None}
+                **{"upgrade_group": None}
             ),
         ),
         (
-            ["run", "--no-backup", "--quiet"],
+            ["upgrade", "--no-backup", "--quiet"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=True,
-                interactive=True,
+                auto_approve=False,
                 backup=False,
-                **{"upgrade-group": None}
+                **{"upgrade_group": None}
             ),
         ),
         (
-            ["run", "--model=model_name"],
+            ["upgrade", "--model=model_name"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name="model_name",
-                parallel=False,
                 verbosity=0,
                 quiet=False,
-                interactive=True,
+                auto_approve=False,
                 backup=True,
-                **{"upgrade-group": None}
+                **{"upgrade_group": None}
             ),
         ),
         (
-            ["run", "control-plane"],
+            ["upgrade", "control-plane"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
-                interactive=True,
+                auto_approve=False,
                 backup=True,
-                **{"upgrade-group": "control-plane"}
+                **{"upgrade_group": "control-plane"}
             ),
         ),
         (
-            ["run", "data-plane"],
+            ["upgrade", "data-plane"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
-                interactive=True,
+                auto_approve=False,
                 backup=True,
                 machines=None,
                 hostnames=None,
                 availability_zones=None,
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
         (
-            ["run", "control-plane", "--verbose"],
+            ["upgrade", "control-plane", "--verbose"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=1,
                 quiet=False,
-                interactive=True,
+                auto_approve=False,
                 backup=True,
-                **{"upgrade-group": "control-plane"}
+                **{"upgrade_group": "control-plane"}
             ),
         ),
         (
-            ["run", "data-plane", "--machine=1", "-m=2,3"],
+            ["upgrade", "data-plane", "--machine=1", "-m=2,3"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
-                interactive=True,
+                auto_approve=False,
                 backup=True,
                 machines=["1", "2,3"],
                 hostnames=None,
                 availability_zones=None,
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
         (
-            ["run", "data-plane", "--quiet", "--availability-zone=1", "--az=2,3"],
+            ["upgrade", "data-plane", "--quiet", "--availability-zone=1", "--az=2,3"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=True,
-                interactive=True,
+                auto_approve=False,
                 backup=True,
                 machines=None,
                 hostnames=None,
                 availability_zones=["1", "2,3"],
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
         (
-            ["run", "data-plane", "--parallel", "--hostname=1", "-n=2,3"],
+            ["upgrade", "data-plane", "--hostname=1", "-n=2,3"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=True,
                 verbosity=0,
                 quiet=False,
-                interactive=True,
+                auto_approve=False,
                 backup=True,
                 machines=None,
                 hostnames=["1", "2,3"],
                 availability_zones=None,
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
         (
-            ["run", "data-plane", "--no-interactive", "--hostname=1", "-n=2,3"],
+            ["upgrade", "data-plane", "--auto-approve", "--hostname=1", "-n=2,3"],
             Namespace(
-                command="run",
+                command="upgrade",
                 model_name=None,
-                parallel=False,
                 verbosity=0,
                 quiet=False,
-                interactive=False,
+                auto_approve=True,
                 backup=True,
                 machines=None,
                 hostnames=["1", "2,3"],
                 availability_zones=None,
-                **{"upgrade-group": "data-plane"}
+                **{"upgrade_group": "data-plane"}
             ),
         ),
     ],
 )
-def test_parse_args_run(args, expected_namespace):
+def test_parse_args_upgrade(args, expected_namespace):
     """Test parsing 'run' subcommand and its arguments/options."""
     parsed_args = commands.parse_args(args)
 
@@ -368,12 +356,12 @@ def test_parse_args_run(args, expected_namespace):
 @pytest.mark.parametrize(
     "args",
     [
-        ["run", "data-plane", "--machine 1", "--az 2"],
-        ["run", "data-plane", "--hostname 1", "-m 2"],
-        ["run", "data-plane", "--availability-zone 1", "-n 2"],
-        ["run", "data-plane", "--machine 1", "-n 2"],
-        ["run", "data-plane", "--az 1", "-m 2"],
-        ["run", "data-plane", "-m 1", "-n 2"],
+        ["upgrade", "data-plane", "--machine 1", "--az 2"],
+        ["upgrade", "data-plane", "--hostname 1", "-m 2"],
+        ["upgrade", "data-plane", "--availability-zone 1", "-n 2"],
+        ["upgrade", "data-plane", "--machine 1", "-n 2"],
+        ["upgrade", "data-plane", "--az 1", "-m 2"],
+        ["upgrade", "data-plane", "-m 1", "-n 2"],
     ],
 )
 def test_parse_args_dataplane_exclusive_options(args):

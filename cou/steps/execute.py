@@ -25,13 +25,13 @@ AVAILABLE_OPTIONS = ["y", "yes", "n", "no"]
 logger = logging.getLogger(__name__)
 
 
-async def _run_step(step: BaseStep, interactive: bool, overwrite_progress: bool = False) -> None:
+async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = False) -> None:
     """Run a step and all its sub-steps.
 
     :param step: Step to be executed.
     :type step: BaseStep
-    :param interactive: Whether to run upgrade step in interactive mode.
-    :type interactive: bool
+    :param prompt: Whether to run upgrade step with prompt (interactive mode).
+    :type prompt: bool
     :param overwrite_progress: Whether to overwrite the current step's progress indication message
     in CLI output. True to overwrite and False (the default) to persist.
     :type overwrite_progress: bool
@@ -51,7 +51,7 @@ async def _run_step(step: BaseStep, interactive: bool, overwrite_progress: bool 
     if step.parallel:
         logger.debug("running all sub-steps of %s step in parallel", step)
         grouped_coroutines = (
-            apply_step(sub_step, interactive, overwrite_substeps_progress)
+            apply_step(sub_step, prompt, overwrite_substeps_progress)
             for sub_step in step.sub_steps
         )
         await asyncio.gather(*grouped_coroutines)
@@ -59,7 +59,7 @@ async def _run_step(step: BaseStep, interactive: bool, overwrite_progress: bool 
         logger.debug("running all sub-steps of %s step sequentially", step)
         for sub_step in step.sub_steps:
             logger.debug("running sub-step %s of %s step", sub_step, step)
-            await apply_step(sub_step, interactive, overwrite_substeps_progress)
+            await apply_step(sub_step, prompt, overwrite_substeps_progress)
 
     # Upon completion of all sub-steps of ApplicationUpgradePlan, replace the current progress
     # indication message, if any, with a persistent application description message.
@@ -67,13 +67,13 @@ async def _run_step(step: BaseStep, interactive: bool, overwrite_progress: bool 
         progress_indicator.succeed(step.description)
 
 
-async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool = False) -> None:
+async def apply_step(step: BaseStep, prompt: bool, overwrite_progress: bool = False) -> None:
     """Apply a step to execute.
 
     :param step: Step to be executed.
     :type step: BaseStep
-    :param interactive:
-    :type interactive: bool
+    :param prompt: Whether to run upgrade step with prompt (interactive mode).
+    :type prompt: bool
     :param overwrite_progress: Whether to overwrite the current step's progress indication message
     in CLI output. True to overwrite and False (the default) to persist.
     :type overwrite_progress: bool
@@ -91,7 +91,7 @@ async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool
 
     result = ""
     while result not in AVAILABLE_OPTIONS:
-        if not interactive or not step.prompt:
+        if not prompt or not step.prompt:
             result = "y"
         else:
             result = await prompt_input([description_to_prompt, "Continue"])
@@ -99,7 +99,7 @@ async def apply_step(step: BaseStep, interactive: bool, overwrite_progress: bool
         match result:
             case "y" | "yes":
                 logger.info("Running: %s", step.description)
-                await _run_step(step, interactive, overwrite_progress)
+                await _run_step(step, prompt, overwrite_progress)
             case "n" | "no":
                 logger.info("Aborting plan")
                 sys.exit(1)

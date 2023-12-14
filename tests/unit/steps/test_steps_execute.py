@@ -360,7 +360,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             "sequential.4.0",
         ]
 
-        await apply_step(self.plan, interactive=False)
+        await apply_step(self.plan, prompt=False)
         results = self.execution_order[21:]
 
         self.assertListEqual(results, exp_results)
@@ -395,7 +395,7 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             "parallel.4.2",
         ]
 
-        await apply_step(self.plan, interactive=False)
+        await apply_step(self.plan, prompt=False)
         results = self.execution_order[:21]
 
         # checking the results without order, since they are run in parallel with

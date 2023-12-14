@@ -124,7 +124,7 @@ async def test_run_upgrade_quiet(
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(model_name=None, backup_database=True, interactive=False, quiet=quiet)
+    await cli.run_upgrade(model_name=None, backup_database=True, prompt=False, quiet=quiet)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_print_and_debug.assert_called_once_with(plan)
@@ -150,7 +150,7 @@ async def test_run_upgrade_with_prompt_continue(
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
     mock_continue_upgrade.return_value = True
 
-    await cli.run_upgrade(model_name=None, backup_database=True, interactive=True, quiet=False)
+    await cli.run_upgrade(model_name=None, backup_database=True, prompt=True, quiet=False)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_continue_upgrade.assert_awaited_once_with()
@@ -175,7 +175,7 @@ async def test_run_upgrade_with_prompt_abort(
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
     mock_continue_upgrade.return_value = False
 
-    await cli.run_upgrade(model_name=None, backup_database=True, interactive=True, quiet=False)
+    await cli.run_upgrade(model_name=None, backup_database=True, prompt=True, quiet=False)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_continue_upgrade.assert_awaited_once_with()
@@ -199,7 +199,7 @@ async def test_run_upgrade_with_no_prompt(
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(model_name=None, backup_database=True, interactive=False, quiet=False)
+    await cli.run_upgrade(model_name=None, backup_database=True, prompt=False, quiet=False)
 
     mock_analyze_and_plan.assert_awaited_once_with(None, True)
     mock_continue_upgrade.assert_not_awaited()
@@ -231,13 +231,14 @@ async def test_continue_upgrade(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("command", ["plan", "run", "other1", "other2"])
+@pytest.mark.parametrize("command", ["plan", "upgrade", "other1", "other2"])
 @patch("cou.cli.get_upgrade_plan")
 @patch("cou.cli.run_upgrade")
 async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command):
     """Test run command function."""
     args = MagicMock(spec="argparse.Namespace")()
     args.command = command
+    prompt = not args.auto_approve
 
     await cli._run_command(args)
 
@@ -247,10 +248,8 @@ async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command):
             args.backup,
         )
         mock_run_upgrade.assert_not_called()
-    elif command == "run":
-        mock_run_upgrade.assert_awaited_once_with(
-            args.model_name, args.backup, args.interactive, args.quiet
-        )
+    elif command == "upgrade":
+        mock_run_upgrade.assert_awaited_once_with(args.model_name, args.backup, prompt, args.quiet)
         mock_get_upgrade_plan.assert_not_called()
     else:
         mock_run_upgrade.assert_not_called()
@@ -266,11 +265,11 @@ def test_entrypoint(
     mock_run_command, mock_setup_logging, mock_get_log_level, mock_parse_args, mock_sys
 ):
     """Test successful entrypoint execution."""
-    mock_sys.argv = ["cou", "run"]
+    mock_sys.argv = ["cou", "upgrade"]
 
     cli.entrypoint()
 
-    mock_parse_args.assert_called_once_with(["run"])
+    mock_parse_args.assert_called_once_with(["upgrade"])
     args = mock_parse_args.return_value
     mock_get_log_level.assert_called_once_with(quiet=args.quiet, verbosity=args.verbosity)
     mock_setup_logging.assert_called_once_with(mock_get_log_level.return_value)

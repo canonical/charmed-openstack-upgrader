@@ -64,6 +64,7 @@ async def prompt_input(
     """
     if not choices:
         choices = ["y", "n"]
+
     message_str = normal(separator).join(normal(text) for text in text_list)
     choices_str = normal("/").join(
         bold(choice.upper() if choice == default.casefold() else choice) for choice in choices

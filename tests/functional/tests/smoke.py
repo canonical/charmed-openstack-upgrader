@@ -154,7 +154,7 @@ class SmokeTest(unittest.TestCase):
 
     def test_help(self) -> None:
         """Test that help command is working."""
-        help_options = itertools.product(["", "plan", "run"], ["-h", "--help"])
+        help_options = itertools.product(["", "plan", "upgrade"], ["-h", "--help"])
         for cmd, help in help_options:
             help_cmd = [cmd, help] if cmd else [help]
             with self.subTest(help_cmd):
@@ -179,15 +179,15 @@ class SmokeTest(unittest.TestCase):
         expected_plan = self.generate_expected_plan(backup=False)
         self.assertIn(expected_plan, result)
 
-    def test_run(self) -> None:
-        """Test cou run."""
+    def test_upgrade(self) -> None:
+        """Test cou upgrade."""
         # designate-bind upgrades from ussuri to victoria
         expected_msgs_before_upgrade = [
             "Upgrade plan for 'designate-bind' to victoria",
             "Upgrade plan for 'mysql-innodb-cluster' to victoria",
         ]
         result_before_upgrade = self.cou(
-            ["run", "--model", self.model_name, "--no-backup", "--no-interactive"]
+            ["upgrade", "--model", self.model_name, "--no-backup", "--auto-approve"]
         ).stdout
         for expected_msg in expected_msgs_before_upgrade:
             with self.subTest(expected_msg):
