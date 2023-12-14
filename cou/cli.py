@@ -31,7 +31,7 @@ from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
-from cou.utils import progress_indicator
+from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
 
@@ -87,6 +87,28 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     return VerbosityLevel(verbosity).name
 
 
+async def continue_upgrade() -> bool:
+    """Determine whether to continue with the upgrade based on user input.
+
+    :return: Boolean value indicate whether to continue with the upgrade.
+    :rtype: bool
+    """
+    input_value = await prompt_input(
+        ["Would you like to start the upgrade?", "Continue"], separator=" ", default="n"
+    )
+
+    match input_value:
+        case "y" | "yes":
+            logger.info("Starting the upgrade.")
+            return True
+        case "n" | "no":
+            logger.info("Exiting COU without running upgrades.")
+        case _:
+            print_and_debug("No valid input provided! Exiting COU without upgrades.")
+
+    return False
+
+
 async def analyze_and_plan(
     model_name: Optional[str], backup_database: bool
 ) -> tuple[Analysis, UpgradePlan]:
@@ -96,7 +118,7 @@ async def analyze_and_plan(
     :type model_name: Optional[str]
     :param backup_database: Whether to create database backup before upgrade.
     :type backup_database: bool
-    :return: Generated analyses and upgrade plan.
+    :return: Generated analysis and upgrade plan.
     :rtype: tuple[Analysis, UpgradePlan]
     """
     model = COUModel(model_name)
@@ -126,15 +148,18 @@ async def get_upgrade_plan(model_name: Optional[str], backup_database: bool) -> 
     :type backup_database: bool
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    logger.info(upgrade_plan)
-    print(upgrade_plan)  # print plan to console even in quiet mode
+    print_and_debug(upgrade_plan)
     manually_upgrade_data_plane(analysis_result)
+    print(
+        "Please note that the actual upgrade steps could be different if the cloud state "
+        "changes because the plan will be re-calculated at upgrade time."
+    )
 
 
 async def run_upgrade(
     model_name: Optional[str],
     backup_database: bool,
-    interactive: bool,
+    prompt: bool,
     quiet: bool,
 ) -> None:
     """Run cloud upgrade.
@@ -143,13 +168,16 @@ async def run_upgrade(
     :type model_name: Optional[str]
     :param backup_database: Whether to create database backup before upgrade.
     :type backup_database: bool
-    :param interactive: Whether to run upgrade interactively.
-    :type interactive: bool
+    :param prompt: Whether to prompt to run upgrade interactively.
+    :type prompt: bool
     :param quiet: Whether to run upgrade in quiet mode.
     :type quiet: bool
     """
     analysis_result, upgrade_plan = await analyze_and_plan(model_name, backup_database)
-    logger.info(upgrade_plan)
+    print_and_debug(upgrade_plan)
+
+    if prompt and not await continue_upgrade():
+        return
 
     # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
     loop = asyncio.get_event_loop()
@@ -158,10 +186,9 @@ async def run_upgrade(
 
     # don't print plan if in quiet mode
     if not quiet:
-        print(upgrade_plan)
         print("Running cloud upgrade...")
 
-    await apply_step(upgrade_plan, interactive)
+    await apply_step(upgrade_plan, prompt)
     manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 
@@ -175,8 +202,9 @@ async def _run_command(args: argparse.Namespace) -> None:
     match args.command:
         case "plan":
             await get_upgrade_plan(args.model_name, args.backup)
-        case "run":
-            await run_upgrade(args.model_name, args.backup, args.interactive, args.quiet)
+        case "upgrade":
+            prompt = not args.auto_approve
+            await run_upgrade(args.model_name, args.backup, prompt, args.quiet)
 
 
 def entrypoint() -> None:

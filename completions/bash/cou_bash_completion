@@ -5,13 +5,13 @@ _subcommand_args() {
             opts="--help --quiet --verbose --model --backup --no-backup"
             child_commands=""
             ;;
-        run)
-            opts="--help --quiet --verbose --parallel --model --interactive --no-interactive --backup --no-backup"
+        upgrade)
+            opts="--help --quiet --verbose --model ---auto-approve --backup --no-backup"
             child_commands=""
             ;;
         help)
             opts=""
-            child_commands="plan run"
+            child_commands="plan upgrade"
             ;;
         *)
             opts=""
@@ -28,7 +28,7 @@ _cou_bash_completion() {
     top_opts="--help --version"
 
     # Define the available subcommands
-    subcommands="plan run help"
+    subcommands="plan upgrade help"
 
     # Define completion for top-level options and subcommands
     if [ $COMP_CWORD -eq 1 ]; then
