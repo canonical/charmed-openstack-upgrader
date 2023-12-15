@@ -287,7 +287,7 @@ def test_entrypoint_highest_release(mock_run_command, mock_indicator):
 
     cli.entrypoint()
 
-    mock_indicator.stop.assert_called_once_with()
+    mock_indicator.succeed.assert_called_once_with()
     mock_indicator.stop.assert_called_once_with()
 
 
