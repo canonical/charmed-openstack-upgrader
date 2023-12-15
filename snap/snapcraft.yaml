@@ -7,7 +7,7 @@ description: |
   Snap for automatically upgrading Canonical Charmed Openstack and related
   components.
 
-grade: devel
+grade: stable
 confinement: strict
 
 apps:
