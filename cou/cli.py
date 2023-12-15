@@ -220,6 +220,7 @@ def entrypoint() -> None:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(_run_command(args))
     except HighestReleaseAchieved as exc:
+        progress_indicator.fail()
         print(exc)
         sys.exit(0)
     except TimeoutException:
