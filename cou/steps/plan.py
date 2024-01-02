@@ -194,9 +194,9 @@ def determine_upgrade_target(
     # Check if the release is the "last" supported by the series
     if str(current_os_release) == LTS_TO_OS_RELEASE[current_series][-1]:
         raise HighestReleaseAchieved(
-            f"The cloud is already at the latest OpenStack release '{current_os_release}' "
-            f"compatible with series '{current_series}', and COU does not support series "
-            "upgrade. Please manually upgrade series and run COU again."
+            f"No upgrades available for OpenStack {str(current_os_release).capitalize()} on "
+            f"Ubuntu {current_series.capitalize()}.\nNewer OpenStack releases may be available "
+            "after upgrading to a later Ubuntu series."
         )
 
     # get the next release as the target from the current cloud os release

@@ -78,7 +78,7 @@ def setup_logging(log_level: str = "INFO") -> None:
     root_logger.addHandler(log_file_handler)
     root_logger.addHandler(console_handler)
 
-    progress_indicator.stop_and_persist(text=f"Logs of this execution can be found at {file_name}")
+    progress_indicator.stop_and_persist(text=f"Full execution log: '{file_name}'")
 
 
 def filter_debug_logs(record: logging.LogRecord) -> bool:

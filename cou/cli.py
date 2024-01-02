@@ -82,9 +82,7 @@ def get_log_level(quiet: bool = False, verbosity: int = 0) -> str:
     :return: Log level.
     :rtype: str
     """
-    if quiet:
-        return "CRITICAL"
-    return VerbosityLevel(verbosity).name
+    return "CRITICAL" if quiet else VerbosityLevel(verbosity).name
 
 
 async def continue_upgrade() -> bool:
@@ -220,8 +218,8 @@ def entrypoint() -> None:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(_run_command(args))
     except HighestReleaseAchieved as exc:
+        progress_indicator.succeed()
         print(exc)
-        sys.exit(0)
     except TimeoutException:
         progress_indicator.fail()
         print("The connection was lost. Check your connection or increase the timeout.")

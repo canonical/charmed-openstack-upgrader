@@ -285,9 +285,9 @@ def test_entrypoint_highest_release(mock_run_command, mock_indicator):
     """Test TimeoutException exception during entrypoint execution."""
     mock_run_command.side_effect = HighestReleaseAchieved
 
-    with pytest.raises(SystemExit, match="0"):
-        cli.entrypoint()
+    cli.entrypoint()
 
+    mock_indicator.succeed.assert_called_once_with()
     mock_indicator.stop.assert_called_once_with()
 
 
