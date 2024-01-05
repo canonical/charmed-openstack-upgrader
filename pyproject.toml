@@ -93,7 +93,7 @@ directory = "tests/unit/report/html"
 output = "tests/unit/report/coverage.xml"
 
 [tool.codespell]
-skip = ".eggs,.tox,.git,.venv,venv,build,.build,lib,report,docs"
+skip = ".eggs,.tox,.git,.venv,venv,build,.build,lib,report"
 quiet-level = 3
 check-filenames = true
 
