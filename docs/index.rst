@@ -51,7 +51,7 @@ In this documentation
 
 .. LINKS
 .. _Charmed OpenStack Upgrader: https://snapcraft.io/charmed-openstack-upgrader
-.. _Charmed OpenStack: https://ubuntu.com/openstack/docs/overview
+.. _Charmed OpenStack: https://ubuntu.com/openstack/docs
 .. _charm-guide: https://docs.openstack.org/charm-guide/latest/admin/upgrades/overview.html
 .. _Code of conduct: https://ubuntu.com/community/ethos/code-of-conduct
 .. _GitHub: https://github.com/canonical/charmed-openstack-upgrader
