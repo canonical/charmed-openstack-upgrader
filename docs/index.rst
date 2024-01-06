@@ -1,22 +1,57 @@
-Starter pack
-============
+Charmed OpenStack Upgrader
+==========================
 
-This starter pack contains the files you need to quickly set up your Sphinx documentation.
+`Charmed OpenStack Upgrader`_ (COU) is an application (packaged as a snap) to upgrade
+a Canonical distribution of `Charmed OpenStack`_
+in an automated and frictionless manner. The application detects the version of the
+running cloud and proposes an upgrade plan to the next available OpenStack release.
 
-Before you start, see the information about `Read the Docs at Canonical`_ and the instructions for `How to publish documentation on Read the Docs`_.
+COU follows the steps defined in the `charm-guide`_ upgrades overview.
 
-Then, to start setting up your docs, check the :doc:`ReadMe <readme>` for instructions.
-The `Example product documentation`_ shows how to set up a Diátaxis structure in Sphinx.
+Notes:
 
-For quick help on reST or MyST syntax, see the :file:`doc-cheat-sheet.rst.txt` or :file:`doc-cheat-sheet-myst.md.txt` files in the repository.
-(Open the files in your text editor; the rendered output is not very useful.)
+- Currently only control plane upgrades are supported.
 
-More information is available in the `reStructuredText style guide`_.
+- The tool supports upgrades from focal-ussuri to focal-yoga.
+
+Source code available on `Github`_.
+
+In this documentation
+---------------------
+
+..  grid:: 1 1 2 2
+
+   ..  grid-item:: :doc:`Get Started <get-started/index>`
+
+      **Start here** to prepare the environment and install the application
+
+   ..  grid-item:: :doc:`How-to guides <how-to/index>`
+
+      **Step-by-step guides** covering key operations and common tasks
+
+.. grid:: 1 1 2 2
+
+   .. grid-item:: :doc:`Reference <reference/index>`
+
+      **Technical information** - available commands and environmental variables
+   
+   .. grid-item:: :doc:`Explanation <explanation/index>`
+
+      **Additional information** - details of upgrade phases and known issues
+
 
 .. toctree::
    :hidden:
    :maxdepth: 2
 
-   ReadMe <readme>
-   Inclusive language check exemptions <help-woke>
-   Setup script <setup-script>
+   get-started/index
+   how-to/index
+   reference/index
+   explanation/index
+
+.. LINKS
+.. _Charmed OpenStack Upgrader: https://snapcraft.io/charmed-openstack-upgrader
+.. _Charmed OpenStack: https://ubuntu.com/openstack/docs/overview
+.. _charm-guide: https://docs.openstack.org/charm-guide/latest/admin/upgrades/overview.html
+.. _Code of conduct: https://ubuntu.com/community/ethos/code-of-conduct
+.. _GitHub: https://github.com/canonical/charmed-openstack-upgrader
