@@ -5,7 +5,7 @@ a Canonical distribution of [Charmed OpenStack](https://ubuntu.com/openstack/doc
 in an automated and frictionless manner. The application detects the version of the
 running cloud and proposes an upgrade plan to the next available OpenStack release.
 
-For more information, please refer to [COU Documentation](https://charmed-openstack-upgrader.readthedocs-hosted.com/).
+For more information, please refer to [COU Documentation](https://canonical-charmed-openstack-upgrader.readthedocs-hosted.com/).
 
 # Setup
 
