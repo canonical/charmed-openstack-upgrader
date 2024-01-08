@@ -1,25 +1,41 @@
-# DISCLAIMER
+# Charmed OpenStack Upgrader
 
-This is a work in progress prototype. The code contained in this repository
-may not be representative of what the final approach should be.
-It is likely that the end result will live under a different name, in a
-different repository, and only use some of the code and ideas found here.
+Charmed OpenStack Upgrader (COU) is an application (packaged as a snap) to upgrade
+a Canonical distribution of [Charmed OpenStack](https://ubuntu.com/openstack/docs/overview)
+in an automated and frictionless manner. The application detects the version of the
+running cloud and proposes an upgrade plan to the next available OpenStack release.
+
+For more information, please refer to [COU Documentation](https://canonical-charmed-openstack-upgrader.readthedocs-hosted.com/).
 
 # Setup
 
+The Charmed OpenStack Upgrader snap can be installed directly from the snap store:
+
 ```bash
-# Instructions for local builds until we have automatic connections and alias
-make clean
-sudo snap remove charmed-openstack-upgrader --purge
-make build
-sudo snap install ./charmed-openstack-upgrader.snap --dangerous
-sudo snap connect charmed-openstack-upgrader:juju-client-observe snapd
-sudo snap connect charmed-openstack-upgrader:dot-local-share-cou snapd
-sudo snap connect charmed-openstack-upgrader:ssh-public-keys snapd
-sudo snap alias charmed-openstack-upgrader.cou cou
+sudo snap install charmed-openstack-upgrader
 ```
 
-Then you can use ```cou```
+An alias `cou` will be automatically enabled upon successful installation.
+
+Run `cou -h` to learn about the available commands: 
+
+```bash
+Usage: cou [options] <command>
+
+Charmed OpenStack Upgrader (cou) is an application to upgrade
+a Canonical distribution of Charmed OpenStack.
+The application auto-detects the version of the running cloud
+and will propose an upgrade to the next available version.
+
+Options:
+  -h, --help           Show this help message and exit.
+  --version, -V        Show version details.
+
+Commands:
+  {help,plan,upgrade}  For more information about a command, run 'cou help <command>'.
+    plan               Show the steps COU will take to upgrade the cloud to the next release.
+    upgrade            Run the cloud upgrade.
+```
 
 ## Environment Variables
 
@@ -38,3 +54,7 @@ Application supports:
 - Focal/Wallaby -> Focal/Yoga
 
 upgrades.
+
+# License
+Charmed OpenStack Upgrader is a free software, distributed under the Apache-2.0 license. Refer to the
+[LICENSE](https://github.com/canonical/snap-tempest/blob/main/LICENSE) file for details.
