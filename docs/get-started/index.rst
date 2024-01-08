@@ -4,8 +4,8 @@ Get started
 
 Verify Access
 -------------
-To use COU you need to have access to a `Charmed OpenStack`_ cloud, which is deployed
-using `Juju`_. COU uses Juju credentials to access the OpenStack cloud, so accessing
+To use **COU** you need to have access to a `Charmed OpenStack`_ cloud, which is deployed
+using `Juju`_. **COU** uses Juju credentials to access the OpenStack cloud, so accessing
 the cloud with Juju is mandatory. Cloud access verification can be done by simply
 calling the juju status command.
 
@@ -15,7 +15,7 @@ calling the juju status command.
 
 Installation
 ------------
-Install the COU snap from the `snap store`_:
+Install the **COU** snap from the `snap store`_:
 
 .. code:: bash
     

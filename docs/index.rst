@@ -1,12 +1,12 @@
 Charmed OpenStack Upgrader
 ==========================
 
-`Charmed OpenStack Upgrader`_ (COU) is an application (packaged as a snap) to upgrade
+`Charmed OpenStack Upgrader`_ (**COU**) is an application (packaged as a snap) to upgrade
 a Canonical distribution of `Charmed OpenStack`_
 in an automated and frictionless manner. The application detects the version of the
 running cloud and proposes an upgrade plan to the next available OpenStack release.
 
-COU follows the steps defined in the `charm-guide`_ upgrades overview.
+**COU** follows the steps defined in the `charm-guide`_ upgrades overview.
 
 Notes:
 

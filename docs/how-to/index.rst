@@ -3,7 +3,7 @@ How-to guides
 =============
 
 These How-to guides will cover a variety of operations that
-are possible with COU.
+are possible with **COU**.
 
 
 .. toctree::
@@ -14,6 +14,5 @@ are possible with COU.
    different-model
    interruption
    configure-connection
-   non-interactive
    no-backup
    verbosity

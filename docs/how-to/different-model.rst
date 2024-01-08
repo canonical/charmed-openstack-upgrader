@@ -17,7 +17,7 @@ Using CLI argument
 Using environment variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Since COU is using `python-libjuju`_, it's possible for some of the environment variables
+Since **COU** is using `python-libjuju`_, it's possible for some of the environment variables
 mentioned in the documented `Juju environment variables`_ to affect the behaviour of the
 program. For example, `JUJU_DATA`_ can be used to specify a different path for Juju
 configuration files.

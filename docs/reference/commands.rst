@@ -2,7 +2,7 @@
 Commands
 ========
 
-COU offers only two commands; bash completion further simplifies its usage.
+**COU** offers only two commands; bash completion further simplifies its usage.
 
 Plan
 ----

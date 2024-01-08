@@ -4,13 +4,13 @@ ussuri
 Github
 frictionless
 COU
+cou
+COUModel
 SIGINT
 SIGINTs
 SIGTERM
 SIGTERMs
 STDOUT
-cou
-COUModel
 juju
 libjuju
 VPN
