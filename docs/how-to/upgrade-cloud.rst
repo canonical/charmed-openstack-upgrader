@@ -110,7 +110,7 @@ Usage example
     Continue (y/n): y
     Upgrade software packages of 'keystone' from the current APT repositories \
 
-    …  # apply each step
+    ...  # apply each step
     Upgrade completed.
 
 

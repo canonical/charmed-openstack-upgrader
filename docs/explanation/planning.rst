@@ -35,8 +35,3 @@ successfully.
 
 The plan can also be obtained without the need to perform cloud upgrade using
 the **plan** command. See :doc:`Plan an upgrade <../how-to/plan-upgrade>`.
-
-Required Juju commands
-~~~~~~~~~~~~~~~~~~~~~~
-
-No Juju commands are used.

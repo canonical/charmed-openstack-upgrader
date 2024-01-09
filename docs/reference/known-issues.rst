@@ -2,8 +2,7 @@
 Known issues
 ============
 
-There are known upgrade bugs of the OpenStack that may help you troubleshoot an
-unsuccessful upgrade run: 
+Potential known upgrade bugs and non-standard procedures are listed in the OpenStack Charm Guide:
 
 - `Issues, charm procedures, and OpenStack upgrade notes`_
  

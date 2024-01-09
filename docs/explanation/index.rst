@@ -11,4 +11,3 @@ and known issues.
    analysis
    planning
    upgrade
-   known-issues

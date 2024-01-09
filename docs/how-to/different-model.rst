@@ -23,8 +23,7 @@ program. For example, `JUJU_DATA`_ can be used to specify a different path for J
 configuration files.
 
 .. code::
-    
-    $ JUJU_MODEL=openstack cou plan
+
     $ JUJU_DATA=./my-remote-cloud-juju-data cou plan
 
 .. LINKS

@@ -33,11 +33,11 @@ In this documentation
 
    .. grid-item:: :doc:`Reference <reference/index>`
 
-      **Technical information** - available commands and environmental variables
+      **Technical information** - commands, environmental variables, and known issues
    
    .. grid-item:: :doc:`Explanation <explanation/index>`
 
-      **Additional information** - details of upgrade phases and known issues
+      **Additional information** - details of upgrade phases defined in **COU**
 
 
 .. toctree::

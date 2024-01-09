@@ -13,6 +13,9 @@ calling the juju status command.
     
     juju status --model <name-of-your-openstack-model>
 
+
+**COU** requires at minimum `write` permission to the target model.
+
 Installation
 ------------
 Install the **COU** snap from the `snap store`_:

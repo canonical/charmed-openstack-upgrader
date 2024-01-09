@@ -9,3 +9,4 @@ This section explains the list of available commands and environmental variables
 
    commands
    environment-variables
+   known-issues

@@ -1,6 +1,6 @@
-=====================================
-Upgrade without cloud database backup
-=====================================
+==========================================
+Plan/Upgrade without cloud database backup
+==========================================
 
 By default, **COU** plans for and runs a backup step of the cloud database before
 proceeding to actual upgrade steps. This can be turned off with `--no-backup`  flag.
@@ -23,13 +23,13 @@ Plan:
         Control Plane principal(s) upgrade plan
         Upgrade plan for 'rabbitmq-server' to victoria
             Upgrade software packages of 'rabbitmq-server' from the current APT repositories
-        …
+        ...
 
 Upgrade:
 
 .. code:: 
 
-    $ cou plan --no-backup --no-
+    $ cou upgrade --no-backup
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔
@@ -38,7 +38,16 @@ Upgrade:
     Running cloud upgrade...
     Verify that all OpenStack applications are in idle state ✔
     # note that there's no backup step being executed
-    Upgrade software packages of 'keystone' from the current APT repositories ✔
-    Upgrade 'keystone' to the new channel: 'victoria/stable' ✔
-    ...
+
+    Upgrade plan for 'rabbitmq-server' to victoria
+        Upgrade software packages of 'rabbitmq-server' from the current APT repositories
+        Upgrade 'rabbitmq-server' to the new channel: '3.9/stable'
+        Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
+        Wait 1800s for model test-model to reach the idle state.
+        Check if the workload of 'rabbitmq-server' has been upgraded
+
+    Continue (y/n): y
+    Upgrade plan for 'rabbitmq-server' to victoria ✔
+    
+    ... # apply steps
     Upgrade completed.
