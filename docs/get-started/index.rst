@@ -6,15 +6,16 @@ Verify Access
 -------------
 To use **COU** you need to have access to a `Charmed OpenStack`_ cloud, which is deployed
 using `Juju`_. **COU** uses Juju credentials to access the OpenStack cloud, so accessing
-the cloud with Juju is mandatory. Cloud access verification can be done by simply
-calling the juju status command.
+the cloud with Juju is mandatory.
+
+**COU** requires at minimum *write* permission to the target model (see
+`User access levels`_ for more information). To verify your current
+user's model-scoped access level, simply calling the following Juju command and look for
+your OpenStack model.
 
 .. code:: bash
     
-    juju status --model <name-of-your-openstack-model>
-
-
-**COU** requires at minimum `write` permission to the target model.
+    juju models
 
 Installation
 ------------
@@ -27,4 +28,5 @@ Install the **COU** snap from the `snap store`_:
 .. LINKS
 .. _Charmed OpenStack: https://ubuntu.com/openstack/docs
 .. _Juju: https://juju.is/docs/juju
+.. _User access levels: https://juju.is/docs/juju/user-permissions
 .. _snap store: https://snapcraft.io/
