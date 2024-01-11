@@ -14,8 +14,9 @@
 
 """Upgrade planning utilities."""
 
+import argparse
 import logging
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -39,6 +40,7 @@ from cou.apps.subordinate import (  # noqa: F401
 )
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
+    DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
@@ -53,11 +55,11 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-def pre_plan_sane_checks(upgrade_group: Optional[str], analysis_result: Analysis) -> None:
+def pre_plan_sane_checks(args: argparse.Namespace, analysis_result: Analysis) -> None:
     """Pre checks to generate the upgrade plan.
 
-    :param upgrade_group: Upgrade group passed by the user using the cli.
-    :type upgrade_group: Optional[str]
+    :param args: CLI arguments
+    :type args: argparse.Namespace
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
@@ -67,8 +69,9 @@ def pre_plan_sane_checks(upgrade_group: Optional[str], analysis_result: Analysis
         is_highest_release_achieved,
         is_target_supported,
     ]
-    if upgrade_group == "data-plane":
+    if args.upgrade_group == "data-plane":
         checks.append(is_data_plane_ready_to_upgrade)
+        check_data_plane_cli_input(args, analysis_result)
     for check in checks:
         check(analysis_result)
 
@@ -177,6 +180,78 @@ def is_data_plane_ready_to_upgrade(analysis_result: Analysis) -> None:
         )
     if not is_control_plane_upgraded(analysis_result):
         raise DataPlaneCannotUpgrade("Please, upgrade control-plane before data-plane")
+
+
+def check_data_plane_cli_input(args: argparse.Namespace, analysis_result: Analysis) -> None:
+    """Sane checks from the parameters passed in the cli to upgrade data-plane.
+
+    :param args: CLI arguments
+    :type args: argparse.Namespace
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    """
+    data_plane_machines = {
+        id: machine for id, machine in analysis_result.machines.items() if machine.is_data_plane
+    }
+
+    if machines_from_cli := parametrize_cli_inputs(args.machines):
+        all_machines = set(analysis_result.machines.keys())
+        data_plane_membership_check(
+            all_machines, set(data_plane_machines.keys()), machines_from_cli, "Machines"
+        )
+
+    elif hostnames_from_cli := parametrize_cli_inputs(args.hostnames):
+        all_hostnames = {machine.hostname for machine in analysis_result.machines.values()}
+        data_plane_hostnames = {machine.hostname for machine in data_plane_machines.values()}
+        data_plane_membership_check(
+            all_hostnames, data_plane_hostnames, hostnames_from_cli, "Hostnames"
+        )
+
+    elif azs_from_cli := parametrize_cli_inputs(args.availability_zones):
+        all_azs = {machine.az for machine in analysis_result.machines.values()}
+        data_plane_azs = {machine.az for machine in data_plane_machines.values()}
+        data_plane_membership_check(all_azs, data_plane_azs, azs_from_cli, "Availability Zones")
+
+
+def parametrize_cli_inputs(cli_input: list[str]) -> Optional[set]:
+    """Parametrize the cli inputs.
+
+    :param cli_input: cli inputs.
+    :type cli_input: list[str]
+    :return: A set of elements passed in the cli.
+    :rtype: Optional[set]
+    """
+    if cli_input:
+        return {raw_item.strip() for raw_items in cli_input for raw_item in raw_items.split(",")}
+    return None
+
+
+def data_plane_membership_check(
+    all_options: set[Any],
+    data_plane_options: set[Any],
+    cli_input: Optional[set[str]],
+    parameter_type: str,
+) -> None:
+    """Check if the parameter passed are member of data-plane.
+
+    :param all_options: All possible options for a parameter.
+    :type all_options: set[Any]
+    :param data_plane_options: All data-plane possible options for a parameter.
+    :type data_plane_options: set[Any]
+    :param cli_input: The input that come from the cli
+    :type cli_input: Optional[set[str]]
+    :param parameter_type: Type of the parameter passed (az, hostname or machine).
+    :type parameter_type: str
+    :raises DataPlaneMachineFilterError: When the value passed from the user is not sane.
+    """
+    if all_options != {None} and cli_input and not cli_input.issubset(all_options):
+        raise DataPlaneMachineFilterError(
+            f"{parameter_type}: {cli_input - all_options} don't exist."
+        )
+    if cli_input and not cli_input.issubset(data_plane_options):
+        raise DataPlaneMachineFilterError(
+            f"{parameter_type}: {cli_input - data_plane_options} are not considered as data-plane."
+        )
 
 
 def is_control_plane_upgraded(analysis_result: Analysis) -> bool:

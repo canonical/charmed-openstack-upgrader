@@ -54,8 +54,36 @@ class ApplicationUnit:
 
     name: str
     os_version: OpenStackRelease
+    machine: Machine
     workload_version: str = ""
-    machine: str = ""
+
+
+@dataclass
+class Machine:
+    """Representation of a juju machine."""
+
+    machine_id: str
+    hostname: str
+    az: Optional[str]
+    is_data_plane: bool = False
+
+    def __hash__(self) -> int:
+        """Hash magic method for Machine.
+
+        :return: Unique hash identifier for Machine object.
+        :rtype: int
+        """
+        return hash(self.machine_id)
+
+    def __eq__(self, other: Any) -> bool:
+        """Equal magic method for Application.
+
+        :param other: Application object to compare.
+        :type other: Any
+        :return: True if equal False if different.
+        :rtype: bool
+        """
+        return other.machine_id == self.machine_id
 
 
 @dataclass
@@ -99,6 +127,7 @@ class OpenStackApplication:
     config: dict
     model: COUModel
     charm: str
+    machines: dict[str, Machine]
     charm_origin: str = ""
     os_origin: str = ""
     origin_setting: Optional[str] = None
@@ -169,7 +198,7 @@ class OpenStackApplication:
                         name=name,
                         workload_version=unit.workload_version,
                         os_version=compatible_os_version,
-                        machine=unit.machine,
+                        machine=self.machines[unit.machine],
                     )
                 )
 
