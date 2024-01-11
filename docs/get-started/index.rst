@@ -10,7 +10,7 @@ the cloud with Juju is mandatory.
 
 **COU** requires at minimum *write* permission to the target model (see
 `User access levels`_ for more information). To verify your current
-user's model-scoped access level, simply calling the following Juju command and look for
+user's model-scoped access level, run the following Juju command and look for
 your OpenStack model.
 
 .. code:: bash
