@@ -4,7 +4,7 @@
 
 [tool.flake8]
 ignore = ["C901", "D100", "D101", "D102", "D103", "W503", "W504"]
-exclude = ['.eggs', '.git', '.tox', '.venv', '.build', 'build', 'report']
+exclude = ['.eggs', '.git', '.tox', '.venv', '.build', 'build', 'report', 'docs']
 max-line-length = 99
 max-complexity = 10
 
@@ -19,6 +19,7 @@ exclude = '''
     | .build
     | build
     | report
+    | docs
 )/
 '''
 
@@ -31,7 +32,8 @@ skip_glob = [
     ".venv",
     ".build",
     "build",
-    "report"
+    "report",
+    "docs"
 ]
 
 [tool.pylint]
@@ -45,7 +47,8 @@ ignore-paths = [
     ".build",
     "build",
     "report",
-    "tests"
+    "tests",
+    "docs"
 ]
 no-docstring-rgx = "__.*__"
 default-docstring-type = "sphinx"
@@ -69,7 +72,8 @@ exclude = [
     "build",
     "lib",
     "report",
-    "tests"
+    "tests",
+    "docs"
 ]
 
 [tool.coverage.run]
@@ -89,7 +93,7 @@ directory = "tests/unit/report/html"
 output = "tests/unit/report/coverage.xml"
 
 [tool.codespell]
-skip = ".eggs,.tox,.git,.venv,venv,build,.build,lib,report"
+skip = ".eggs,.tox,.git,.venv,venv,build,.build,lib,report,docs"
 quiet-level = 3
 check-filenames = true
 
