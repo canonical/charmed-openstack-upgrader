@@ -17,11 +17,14 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
-from cou.apps.base import OpenStackApplication
+from juju.client._definitions import ApplicationStatus, MachineStatus
+
+from cou.apps.base import Machine, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.utils import juju_utils
+from cou.utils.juju_utils import COUModel
 from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -37,11 +40,16 @@ class Analysis:
     :type apps_control_plane:  list[OpenStackApplication]
     :param apps_data_plane: Data plane applications in the model
     :type apps_data_plane:  list[OpenStackApplication]
+    :param machines: Machines in the model
+    :type machines: dict[str, Machine]
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     model: juju_utils.COUModel
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
+    machines: dict[str, Machine]
     min_os_version_control_plane: Optional[OpenStackRelease] = None
     min_os_version_data_plane: Optional[OpenStackRelease] = None
 
@@ -56,7 +64,19 @@ class Analysis:
         self.current_cloud_series = self._get_minimum_cloud_series()
 
     @staticmethod
+    def is_data_plane(charm: str) -> bool:
+        """Check if app belong to data plane.
+
+        :param charm: charm name
+        :type charm: str
+        :return: boolean
+        :rtype: bool
+        """
+        return charm in DATA_PLANE_CHARMS
+
+    @classmethod
     def _split_apps(
+        cls,
         apps: list[OpenStackApplication],
     ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
         """Split applications to control plane and data plane apps.
@@ -66,25 +86,9 @@ class Analysis:
         :return: Control plane and data plane application lists.
         :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
         """
-
-        def is_data_plane(app: OpenStackApplication) -> bool:
-            """Check if app belong to data plane.
-
-            :param app: application
-            :type app: OpenStackApplication
-            :return: boolean
-            :rtype: bool
-            """
-            return app.charm in DATA_PLANE_CHARMS
-
         control_plane, data_plane = [], []
-        data_plane_machines = {
-            unit.machine for app in apps if is_data_plane(app) for unit in app.units
-        }
         for app in apps:
-            if is_data_plane(app):
-                data_plane.append(app)
-            elif any(unit.machine in data_plane_machines for unit in app.units):
+            if any(unit.machine.is_data_plane for unit in app.units):
                 data_plane.append(app)
             else:
                 control_plane.append(app)
@@ -101,14 +105,22 @@ class Analysis:
         :rtype: Analysis
         """
         logger.info("Analyzing the OpenStack deployment...")
-        apps = await Analysis._populate(model)
+        machines = await cls.get_machines(model)
+        apps = await Analysis._populate(model, machines)
 
         control_plane, data_plane = cls._split_apps(apps)
 
-        return Analysis(model=model, apps_data_plane=data_plane, apps_control_plane=control_plane)
+        return Analysis(
+            model=model,
+            apps_data_plane=data_plane,
+            apps_control_plane=control_plane,
+            machines=machines,
+        )
 
     @classmethod
-    async def _populate(cls, model: juju_utils.COUModel) -> list[OpenStackApplication]:
+    async def _populate(
+        cls, model: juju_utils.COUModel, machines: dict[str, Machine]
+    ) -> list[OpenStackApplication]:
         """Analyze the applications in the model.
 
         Applications that must be upgraded in a specific order will be returned first, followed
@@ -117,6 +129,8 @@ class Analysis:
 
         :param model: COUModel object
         :type model: COUModel
+        :param machines: Machines in the model
+        :type machines: dict[str, Machine]
         :return: Application objects with their respective information.
         :rtype: List[OpenStackApplication]
         """
@@ -128,6 +142,7 @@ class Analysis:
                 config=await model.get_application_config(app),
                 model=model,
                 charm=await model.get_charm_name(app),
+                machines=cls.get_app_machines(app_status, machines),
             )
             for app, app_status in juju_status.applications.items()
             if app_status
@@ -149,6 +164,63 @@ class Analysis:
             other_o7k_apps, key=lambda app: app.charm  # type: ignore
         )
         return sorted_apps_to_upgrade_in_order + other_o7k_apps_sorted_by_name  # type: ignore
+
+    @classmethod
+    async def get_machines(cls, model: COUModel) -> dict[str, Machine]:
+        """Get all the machines in the model.
+
+        :param model: COUModel object
+        :type model: _type_
+        :return: _description_
+        :rtype: dict[str, Machine]
+        """
+        juju_status = await model.get_status()
+        data_plane_machines = {
+            unit.machine
+            for app in juju_status.applications
+            if cls.is_data_plane(await model.get_charm_name(app))
+            for unit in app.units
+        }
+        machines = {}
+        for machine_id, raw_machine_data in juju_status.machines.items():
+            machine_data = cls.get_machine_data(raw_machine_data)
+            machines[machine_id] = Machine(
+                machine_id=machine_id,
+                hostname=machine_data["hostname"],
+                az=machine_data["az"],
+                is_data_plane=id in data_plane_machines,
+            )
+        return machines
+
+    @classmethod
+    def get_app_machines(
+        cls, app_status: ApplicationStatus, machines: dict[str, Machine]
+    ) -> dict[str, Machine]:
+        """Get the machines of an app.
+
+        :param app_status: Status of the application.
+        :type app_status: ApplicationStatus
+        :param machines: Machines in the model
+        :type machines: dict[str, Machine]
+        :return: Machines in the application
+        :rtype: dict[str, Machine]
+        """
+        return {
+            unit_status.machine: machines[unit_status.machine]
+            for unit_status in app_status.units.values()
+        }
+
+    @staticmethod
+    def get_machine_data(machine: MachineStatus) -> dict[str, Any]:
+        """Get the data of a machine.
+
+        :param machine: Machine status from juju
+        :type machine: MachineStatus
+        :return: Machine data formatted
+        :rtype: dict[str, Any]
+        """
+        hardware = dict(entry.split("=") for entry in machine["hardware"].split())
+        return {"az": hardware.get("availability-zone"), "hostname": machine["hostname"]}
 
     def __str__(self) -> str:
         """Dump as string.

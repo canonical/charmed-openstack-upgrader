@@ -130,7 +130,7 @@ async def analyze_and_plan(args: argparse.Namespace) -> tuple[Analysis, UpgradeP
     progress_indicator.succeed()
 
     progress_indicator.start("Making sane checks to upgrade...")
-    pre_plan_sane_checks(args.upgrade_group, analysis_result)
+    pre_plan_sane_checks(args, analysis_result)
     progress_indicator.succeed()
 
     progress_indicator.start("Generating upgrade plan...")
