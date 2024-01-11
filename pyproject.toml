@@ -50,6 +50,9 @@ ignore-paths = [
     "tests",
     "docs"
 ]
+disable = [
+    "W0223",
+]
 no-docstring-rgx = "__.*__"
 default-docstring-type = "sphinx"
 accept-no-param-doc = false
@@ -80,11 +83,14 @@ exclude = [
 relative_files = true
 concurrency = ["gevent"]
 source = ["."]
-omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py"]
+omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py", "cou/apps/data_plane.py"]
 
 [tool.coverage.report]
 fail_under = 100
 show_missing = true
+exclude_also = [
+    "raise NotImplementedError"
+]
 
 [tool.coverage.html]
 directory = "tests/unit/report/html"

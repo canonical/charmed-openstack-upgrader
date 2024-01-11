@@ -59,6 +59,16 @@ class ApplicationUnit:
 
 
 @dataclass
+class ApplicationMachine:
+    """Representation of single machine of application."""
+
+    id: str
+    hostname: str
+    az: str
+    apps: list[OpenStackApplication]
+
+
+@dataclass
 class OpenStackApplication:
     """Representation of a charmed OpenStack application in the deployment.
 
@@ -83,6 +93,12 @@ class OpenStackApplication:
     :type channel: str, defaults to ""
     :param units: Units representation of an application.
     :type units: list[ApplicationUnit]
+    :param machines: Machines representation of an application.
+    :type machines: list[ApplicationMachine]
+    :param wait_timeout: Waiting time for application/model status
+    :type wait_timeout: int
+    :param wait_for_model: Wait for app itself or for all OpenStack related applications
+    :type wait_for_model: bool
     :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version.
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
@@ -174,6 +190,11 @@ class OpenStackApplication:
                 )
 
     @property
+    def is_data_plane(self) -> bool:
+        """Check if applications belong to data plane."""
+        raise NotImplementedError
+
+    @property
     def is_subordinate(self) -> bool:
         """Check if application is subordinate.
 
@@ -224,6 +245,11 @@ class OpenStackApplication:
         :rtype: bool
         """
         return self.charm_origin == "cs"
+
+    @property
+    def machines(self) -> list[ApplicationMachine]:
+        """Return list of machines."""
+        raise NotImplementedError
 
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
@@ -389,6 +415,17 @@ class OpenStackApplication:
         :rtype: bool
         """
         return bool(self.status.can_upgrade_to)
+
+    async def populate_units(self) -> None:
+        """Populate units and filtered them.
+
+        This function is responsible for configuring the units for the application and at the same
+        time filtering them. e.g. Use only the machines that are required by user.
+
+        In specific applications such as nova-compute, it can be used to filter out non-empty
+        hypervisors.
+        """
+        raise NotImplementedError
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.

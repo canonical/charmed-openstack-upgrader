@@ -56,13 +56,22 @@ class Analysis:
         self.current_cloud_series = self._get_minimum_cloud_series()
 
     @staticmethod
+    def _sort_apps(apps: list[OpenStackApplication]) -> list[OpenStackApplication]:
+        """Sort apps in order relevant to upgrade.
+
+        :param apps: List of applications to split.
+        :type apps: list[OpenStackApplication]
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def _split_apps(
         apps: list[OpenStackApplication],
     ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
         """Split applications to control plane and data plane apps.
 
         :param apps: List of applications to split.
-        :type apps: Iterable[OpenStackApplication]
+        :type apps: list[OpenStackApplication]
         :return: Control plane and data plane application lists.
         :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
         """
