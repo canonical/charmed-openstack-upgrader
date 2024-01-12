@@ -117,9 +117,10 @@ Usage example
 Run non-interactive upgrades
 ----------------------------
 
-**COU** provides a non-interactive mode which suppresses user prompts. This option
-allows **COU** to be used by scripts or during upgrade testing. A quiet mode switch
-is also offered, which will only output error logs and a completion message to STDOUT.
+**COU** provides a non-interactive mode which suppresses user prompts and automatically
+continue executing each planned steps. This option allows **COU** to be used by scripts
+or during upgrade testing. A quiet mode switch is also offered, which will only output
+error logs and a completion message to STDOUT.
 
 Usage examples
 ~~~~~~~~~~~~~~
@@ -127,7 +128,7 @@ Usage examples
 Non-interactive mode:
 
 .. terminal:: 
-    :input: cou upgrade --no-interactive
+    :input: cou upgrade --auto-approve
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
@@ -146,6 +147,6 @@ Non-interactive mode:
 Non-interactive and quiet mode:
 
 .. terminal:: 
-    :input: cou upgrade --no-interactive --quiet
+    :input: cou upgrade --auto-approve --quiet
     
     Upgrade completed.
