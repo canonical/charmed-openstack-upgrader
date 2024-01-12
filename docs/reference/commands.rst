@@ -11,9 +11,9 @@ The **plan** command will analyse the cloud and output a human-readable represen
 of the proposed upgrade plan. It does not require any interaction. Refer to the
 output below for a description of all allowed options.
 
-.. code::
-    
-    $ cou plan --help
+.. terminal:: 
+    :input: cou plan --help
+
     Usage: cou plan [options]
 
     Show the steps COU will take to upgrade the cloud to the next release.
@@ -35,8 +35,9 @@ Upgrade
 The **upgrade** command will implicitly generate a plan before moving onto the actual
 upgrade phase. Refer to the output below for a description of all available options. 
 
-.. code:: 
-    $ cou upgrade --help
+.. terminal:: 
+    :input: cou upgrade --help
+    
     Usage: cou upgrade [options]
 
     Run the cloud upgrade.

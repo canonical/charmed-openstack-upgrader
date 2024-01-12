@@ -9,16 +9,16 @@ Use the **upgrade** command to automatically plan and execute the upgrade of you
 cloud. This command runs upgrade in interactive mode by default, requiring the user
 to confirm each step.
 
-.. code::
+.. code:: bash
     
-    $ cou upgrade
+    cou upgrade
 
 Usage example
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
-.. code::
+.. terminal:: 
+    :input: cou upgrade
 
-    $ cou upgrade
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211917.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔
@@ -122,13 +122,13 @@ allows **COU** to be used by scripts or during upgrade testing. A quiet mode swi
 is also offered, which will only output error logs and a completion message to STDOUT.
 
 Usage examples
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 Non-interactive mode:
 
-.. code:: 
+.. terminal:: 
+    :input: cou upgrade --no-interactive
 
-    $ cou upgrade --no-interactive
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔
@@ -145,7 +145,7 @@ Non-interactive mode:
 
 Non-interactive and quiet mode:
 
-.. code:: 
-
-    $ cou upgrade --no-interactive --quiet
+.. terminal:: 
+    :input: cou upgrade --no-interactive --quiet
+    
     Upgrade completed.

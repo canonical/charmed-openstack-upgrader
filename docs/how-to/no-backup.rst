@@ -6,13 +6,13 @@ By default, **COU** plans for and runs a backup step of the cloud database befor
 proceeding to actual upgrade steps. This can be turned off with `--no-backup`  flag.
 
 Usage examples
-~~~~~~~~~~~~~~
+--------------
 
 Plan:
 
-.. code:: 
+.. terminal:: 
+    :input: cou plan --no-backup
 
-    $ cou plan --no-backup
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔
@@ -27,9 +27,9 @@ Plan:
 
 Upgrade:
 
-.. code:: 
+.. terminal:: 
+    :input: cou upgrade --no-backup
 
-    $ cou upgrade --no-backup
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔

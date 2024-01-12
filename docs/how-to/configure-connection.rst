@@ -13,8 +13,8 @@ is heavily used.
 * **COU_MODEL_RETRY_BACKOFF** - sets the number of seconds in between connection retry attempts (for example, a backoff of 10 with 3 retries would wait 10s, 20s, and 30s). It’s unit-less and the number represents the number of seconds. Defaults to 2 seconds.
 
 Usage example
-~~~~~~~~~~~~~
+-------------
 
-.. code::
+.. code:: bash
 
-    $  COU_TIMEOUT=120 cou upgrade
+    COU_TIMEOUT=120 cou upgrade
