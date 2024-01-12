@@ -2,6 +2,8 @@
 Get started
 ===========
 
+This section guides you through steps to prepare the environment and install the application.
+
 Verify Access
 -------------
 To use **COU** you need to have access to a `Charmed OpenStack`_ cloud, which is deployed

@@ -14,9 +14,9 @@ the process at any prompt.
 
 Usage example:
 
-.. code:: 
+.. terminal:: 
+    :input: cou upgrade
 
-    $ cou upgrade
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔
@@ -34,7 +34,6 @@ Usage example:
         Check if the workload of 'keystone' has been upgraded
 
     Would you like to start the upgrade? Continue (y/N): n
-    $
 
 SIGINT or SIGTERM signals
 -------------------------
@@ -50,24 +49,23 @@ the cloud may be left in an inconsistent state.
 
 Exiting before running upgrade plan:
 
-.. code:: 
+.. terminal:: 
+    :input: cou upgrade - # ctrl+c is pressed while connecting to the controller
 
-    $ cou upgrade - # ctrl+c is pressed while connecting to the controller
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connecting to 'default' model... ✖
     charmed-openstack-upgrader has been terminated
-    $ cou upgrade # ctrl+c is pressed while the cloud is being analyzed
+    :input: cou upgrade # ctrl+c is pressed while the cloud is being analyzed
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connecting to 'default' model... ✔
     Analyzing cloud... ✖
     charmed-openstack-upgrader has been terminated
-    $ 
 
 Safe cancel:
 
-.. code::
+.. terminal:: 
+    :input: cou upgrade # ctrl+c is pressed once during the upgrade
 
-    $ cou upgrade # ctrl+c is pressed once during the upgrade
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔
@@ -76,13 +74,12 @@ Safe cancel:
     Running cloud upgrade...
     Canceling upgrade... (Press ctrl+c again to stop immediately) ✔
     charmed-openstack-upgrader has been stopped safely 
-    $ 
 
 Unsafe cancel:
 
-.. code::
+.. terminal:: 
+    :input: cou upgrade # ctrl+c is pressed twice during the upgrade
 
-    $ cou upgrade # ctrl+c is pressed twice during the upgrade
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔
@@ -91,4 +88,3 @@ Unsafe cancel:
     Running cloud upgrade...
     Canceling upgrade... (Press ctrl+c again to stop immediately) ✖
     charmed-openstack-upgrader has been terminated without waiting
-    $ 

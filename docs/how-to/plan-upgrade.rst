@@ -5,16 +5,16 @@ Plan an upgrade
 The **plan** command is used to generate the upgrade plan; the result will be
 printed on STDOUT.
 
-.. code::
+.. code:: bash
 
-    $ cou plan
+    cou plan
 
 Usage example
-~~~~~~~~~~~~~
+-------------
 
-.. code::
-
-    $ cou plan
+.. terminal:: 
+    :input: cou plan
+    
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
     Analyzing cloud... ✔

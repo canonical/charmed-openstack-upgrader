@@ -9,28 +9,28 @@ log level.
 The default verbosity level is **error**.
 
 Usage examples
-~~~~~~~~~~~~~~
+--------------
 
 The warning level.
 
-.. code:: 
+.. code:: bash
 
-    $ cou upgrade -v
+    cou upgrade -v
 
 The info level.
 
-.. code:: 
+.. code:: bash
     
-    $ cou upgrade -vv
+    cou upgrade -vv
 
 The debug level for all messages except **python-libjuju** and **websockets**.
 
-.. code:: 
+.. code:: bash
 
-    $ cou upgrade -vvv
+    cou upgrade -vvv
 
 The debug level for all messages including the **python-libjuju** and **websockets**.
 
-.. code:: 
+.. code:: bash
     
-    $ cou upgrade -vvvv
+    cou upgrade -vvvv

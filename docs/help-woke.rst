@@ -1,3 +1,5 @@
+:orphan:
+
 ===================================
 Inclusive language check exemptions
 ===================================
