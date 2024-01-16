@@ -21,7 +21,7 @@ import inspect
 import logging
 import os
 import warnings
-from typing import Any, Coroutine, List, Optional
+from typing import Any, Coroutine, Iterable, List, Optional
 
 from cou.exceptions import CanceledStep
 
@@ -90,7 +90,7 @@ class BaseStep:
         self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
         self.description = description
-        self.sub_steps: List[BaseStep] = []
+        self._sub_steps: List[BaseStep] = []
         self._canceled: bool = False
         self._task: Optional[asyncio.Task] = None
 
@@ -195,13 +195,36 @@ class BaseStep:
 
         return self._task.done()
 
+    @property
+    def sub_steps(self) -> List[BaseStep]:
+        """Return list of sub-steps.
+
+        :return: List of BaseStep.
+        :rtype: List[BaseStep]
+        """
+        return self._sub_steps
+
+    @sub_steps.setter
+    def sub_steps(self, steps: Iterable[BaseStep]) -> None:
+        """Set list of sub-steps.
+
+        :param steps: Iterable object containing all steps.
+        :type steps: Iterable
+        """
+        for step in steps:
+            self.add_step(step)
+
     def add_step(self, step: BaseStep) -> None:
         """Add a single step.
 
         :param step: BaseStep to be added as sub step.
         :type step: BaseStep
+        :raises TypeError: If step is not based on BaseStep.
         """
-        self.sub_steps.append(step)
+        if not isinstance(step, BaseStep):
+            raise TypeError("only steps that are derived from BaseStep are supported")
+
+        self._sub_steps.append(step)
 
     def cancel(self, safe: bool = True) -> None:
         """Cancel step and all its sub steps.
@@ -286,9 +309,24 @@ class UpgradeStep(BaseStep):
     prompt: bool = False
 
 
+class UnitUpgradeStep(UpgradeStep):
+    """Represents the upgrade step for individual unit."""
+
+
 class PreUpgradeStep(UpgradeStep):
     """Represents the pre-upgrade step."""
 
 
 class PostUpgradeStep(UpgradeStep):
     """Represents the post-upgrade step."""
+
+
+def is_unit_upgrade_step(step: BaseStep) -> bool:
+    """Check if it's unit upgrade step.
+
+    :param step: step
+    :type step: BaseStep
+    :return: True or False if it's BaseStep
+    :rtype: bool
+    """
+    return isinstance(step, UnitUpgradeStep)

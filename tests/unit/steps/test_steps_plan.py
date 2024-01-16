@@ -252,7 +252,8 @@ def test_determine_upgrade_target_release_out_of_range(current_os_release, curre
 @pytest.mark.asyncio
 async def test_create_upgrade_plan():
     """Test create_upgrade_group."""
-    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app: OpenStackApplication = MagicMock(spec_set=OpenStackApplication)
+    app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
     target = OpenStackRelease("victoria")
     description = "test"
 
