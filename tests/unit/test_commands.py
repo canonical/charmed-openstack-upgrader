@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from unittest.mock import patch
 
 import pytest
 
 from cou import commands
+from cou.commands import Namespace
 
 
 @pytest.mark.parametrize(
