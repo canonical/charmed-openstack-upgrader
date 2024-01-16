@@ -4,5 +4,3 @@ tests:
   - tests.functional.tests.backup.BackupTest
 gate_bundles:
   - smoke
-smoke_bundles:
-  - smoke
