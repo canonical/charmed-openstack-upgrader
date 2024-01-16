@@ -37,6 +37,7 @@ from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
 )
+from cou.commands import Namespace
 from cou.exceptions import (
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
@@ -52,18 +53,13 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(analysis_result: Analysis, backup_database: bool) -> UpgradePlan:
+async def generate_plan(analysis_result: Analysis, args: Namespace) -> UpgradePlan:
     """Generate plan for upgrade.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
-    :param backup_database: Whether to create database backup before upgrade.
-    :type backup_database: bool
-    :raises NoTargetError: When cannot find target to upgrade.
-    :raises HighestReleaseAchieved: When the highest possible OpenStack release is
-    already achieved.
-    :raises OutOfSupportRange: When the OpenStack release or Ubuntu series is out of the current
-    supporting range.
+    :param args: CLI arguments
+    :type args: Namespace
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """
@@ -89,7 +85,7 @@ async def generate_plan(analysis_result: Analysis, backup_database: bool) -> Upg
             ),
         )
     )
-    if backup_database:
+    if args.backup:
         plan.add_step(
             PreUpgradeStep(
                 description="Backup mysql databases",
