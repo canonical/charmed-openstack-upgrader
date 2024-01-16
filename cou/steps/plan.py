@@ -15,7 +15,7 @@
 """Upgrade planning utilities."""
 
 import logging
-from typing import Callable, Optional
+from typing import Callable
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -37,8 +37,9 @@ from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
 )
-from cou.commands import Namespace
+from cou.commands import DATA_PLANE, Namespace
 from cou.exceptions import (
+    DataPlaneCannotUpgrade,
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
@@ -53,6 +54,150 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
+def pre_plan_sane_checks(args: Namespace, analysis_result: Analysis) -> None:
+    """Pre checks to generate the upgrade plan.
+
+    :param args: CLI arguments
+    :type args: Namespace
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    """
+    is_valid_openstack_cloud(analysis_result)
+    is_supported_series(analysis_result)
+    is_highest_release_achieved(analysis_result)
+
+    if args.upgrade_group == DATA_PLANE:
+        is_data_plane_ready_to_upgrade(analysis_result)
+
+
+def is_valid_openstack_cloud(analysis_result: Analysis) -> None:
+    """Check if the model passed is a valid OpenStack cloud.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :raises NoTargetError: When cannot determine the current OS release
+        or Ubuntu series.
+    """
+    if not analysis_result.current_cloud_os_release:
+        raise NoTargetError(
+            "Cannot determine the current OS release in the cloud. "
+            "Is this a valid OpenStack cloud?"
+        )
+
+    if not analysis_result.current_cloud_series:
+        raise NoTargetError(
+            "Cannot determine the current Ubuntu series in the cloud. "
+            "Is this a valid OpenStack cloud?"
+        )
+
+
+def is_supported_series(analysis_result: Analysis) -> None:
+    """Check the Ubuntu series of the cloud to see if it is supported.
+
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    :raises OutOfSupportRange: When series is not supported.
+    """
+    supporting_lts_series = ", ".join(LTS_TO_OS_RELEASE)
+    # series already checked at is_valid_openstack_cloud
+    if (
+        current_series := analysis_result.current_cloud_series
+    ) and current_series not in LTS_TO_OS_RELEASE:
+        raise OutOfSupportRange(
+            f"Cloud series '{current_series}' is not a Ubuntu LTS series supported by COU. "
+            f"The supporting series are: {supporting_lts_series}"
+        )
+
+
+def is_highest_release_achieved(analysis_result: Analysis) -> None:
+    """Check if the highest OpenStack release is reached by the ubuntu series.
+
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    :raises HighestReleaseAchieved: When the OpenStack release is the last supported by the series.
+    """
+    if (
+        (current_os_release := analysis_result.current_cloud_os_release)
+        and (current_series := analysis_result.current_cloud_series)
+        and str(current_os_release) == LTS_TO_OS_RELEASE[current_series][-1]
+    ):
+        raise HighestReleaseAchieved(
+            f"No upgrades available for OpenStack {str(current_os_release).capitalize()} on "
+            f"Ubuntu {current_series.capitalize()}.\nNewer OpenStack releases "
+            "may be available after upgrading to a later Ubuntu series."
+        )
+
+
+def is_data_plane_ready_to_upgrade(analysis_result: Analysis) -> None:
+    """Check if data plane is ready to upgrade.
+
+    To be able to upgrade data-plane, first all control plane apps should be upgraded.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
+    """
+    if not analysis_result.min_os_version_data_plane:
+        raise DataPlaneCannotUpgrade(
+            "Cannot find data-plane apps. Is this a valid OpenStack cloud?"
+        )
+    if not is_control_plane_upgraded(analysis_result):
+        raise DataPlaneCannotUpgrade("Please, upgrade control-plane before data-plane")
+
+
+def is_control_plane_upgraded(analysis_result: Analysis) -> bool:
+    """Check if control plane is already upgraded.
+
+    Control-plane will be considered as upgraded when the OpenStack version of it
+    is bigger than the data-plane.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :return: Whether the control plane is already upgraded or not.
+    :rtype: bool
+    """
+    control_plane = analysis_result.min_os_version_control_plane
+    data_plane = analysis_result.min_os_version_data_plane
+
+    return bool(control_plane and data_plane and control_plane > data_plane)
+
+
+def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
+    """Determine the target release to upgrade to.
+
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    :raises NoTargetError: When cannot find target to upgrade
+    :raises OutOfSupportRange: When the upgrade scope is not supported
+        by the current series.
+    :return: The target OS release to upgrade the cloud to.
+    :rtype: OpenStackRelease
+    """
+    if (
+        (current_os_release := analysis_result.current_cloud_os_release)
+        and (current_series := analysis_result.current_cloud_series)
+        and not (target := current_os_release.next_release)
+    ):
+        raise NoTargetError(
+            "Cannot find target to upgrade. Current minimum OS release is "
+            f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
+        )
+
+    if (
+        current_series
+        and (supporting_os_release := ", ".join(LTS_TO_OS_RELEASE[current_series]))
+        and str(current_os_release) not in supporting_os_release
+        or str(target) not in supporting_os_release
+    ):
+        raise OutOfSupportRange(
+            f"Unable to upgrade cloud from `{current_series}` to '{target}'. "
+            "Both the from and to releases need to be supported by the current "
+            "Ubuntu series '{current_series}': {supporting_os_release}."
+        )
+
+    return target  # type: ignore
+
+
 async def generate_plan(analysis_result: Analysis, args: Namespace) -> UpgradePlan:
     """Generate plan for upgrade.
 
@@ -63,9 +208,8 @@ async def generate_plan(analysis_result: Analysis, args: Namespace) -> UpgradePl
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """
-    target = determine_upgrade_target(
-        analysis_result.current_cloud_os_release, analysis_result.current_cloud_series
-    )
+    pre_plan_sane_checks(args, analysis_result)
+    target = determine_upgrade_target(analysis_result)
 
     plan = UpgradePlan(
         f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
@@ -147,75 +291,6 @@ async def create_upgrade_group(
             raise
 
     return group_upgrade_plan
-
-
-def determine_upgrade_target(
-    current_os_release: Optional[OpenStackRelease], current_series: Optional[str]
-) -> OpenStackRelease:
-    """Determine the target release to upgrade to.
-
-    Inform user if the cloud is already at the highest supporting release of the current series.
-    :param current_os_release: The current minimum OS release in cloud.
-    :type current_os_release: Optional[OpenStackRelease]
-    :param current_series: The current minimum Ubuntu series in cloud.
-    :type current_series: Optional[str]
-    :raises NoTargetError: When cannot find target to upgrade.
-    :raises HighestReleaseAchieved: When the highest possible OpenStack release is
-    already achieved.
-    :raises OutOfSupportRange: When the OpenStack release or Ubuntu series is out of the current
-    supporting range.
-    :return: The target OS release to upgrade the cloud to.
-    :rtype: OpenStackRelease
-    """
-    if not current_os_release:
-        raise NoTargetError(
-            "Cannot determine the current OS release in the cloud. "
-            "Is this a valid OpenStack cloud?"
-        )
-
-    if not current_series:
-        raise NoTargetError(
-            "Cannot determine the current Ubuntu series in the cloud. "
-            "Is this a valid OpenStack cloud?"
-        )
-
-    # raise exception if the series is not supported
-    supporting_lts_series = ", ".join(LTS_TO_OS_RELEASE)
-    if current_series not in supporting_lts_series:
-        raise OutOfSupportRange(
-            f"Cloud series '{current_series}' is not a Ubuntu LTS series supported by COU. "
-            f"The supporting series are: {supporting_lts_series}"
-        )
-
-    # Check if the release is the "last" supported by the series
-    if str(current_os_release) == LTS_TO_OS_RELEASE[current_series][-1]:
-        raise HighestReleaseAchieved(
-            f"No upgrades available for OpenStack {str(current_os_release).capitalize()} on "
-            f"Ubuntu {current_series.capitalize()}.\nNewer OpenStack releases may be available "
-            "after upgrading to a later Ubuntu series."
-        )
-
-    # get the next release as the target from the current cloud os release
-    target = current_os_release.next_release
-    if not target:
-        raise NoTargetError(
-            "Cannot find target to upgrade. Current minimum OS release is "
-            f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
-        )
-
-    supporting_os_release = ", ".join(LTS_TO_OS_RELEASE[current_series])
-    # raise exception if the upgrade scope is not supported by the current series
-    if (
-        str(current_os_release) not in supporting_os_release
-        or str(target) not in supporting_os_release
-    ):
-        raise OutOfSupportRange(
-            f"Unable to upgrade cloud from `{current_series}` to '{target}'. Both the from and "
-            f"to releases need to be supported by the current Ubuntu series '{current_series}': "
-            f"{supporting_os_release}."
-        )
-
-    return target
 
 
 def manually_upgrade_data_plane(analysis_result: Analysis) -> None:

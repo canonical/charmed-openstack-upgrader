@@ -122,6 +122,10 @@ class WaitForApplicationsTimeout(COUException):
     """Waiting for applications hit timeout error."""
 
 
+class DataPlaneCannotUpgrade(COUException):
+    """COU exception when the cloud is inconsistent to generate a plan."""
+
+
 class InterruptError(KeyboardInterrupt):
     """COU exception when upgrade was interrupted by signal."""
 
