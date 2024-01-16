@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from unittest.mock import patch
 
 import pytest
 
 from cou import commands
+from cou.commands import Namespace
 
 
 @pytest.mark.parametrize(
@@ -349,7 +350,6 @@ def test_parse_args_plan(args, expected_namespace):
 def test_parse_args_upgrade(args, expected_namespace):
     """Test parsing 'run' subcommand and its arguments/options."""
     parsed_args = commands.parse_args(args)
-
     assert parsed_args == expected_namespace
 
 

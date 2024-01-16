@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Entrypoint for 'charmed-openstack-upgrader'."""
-import argparse
 import asyncio
 import logging
 import logging.handlers
@@ -23,17 +22,13 @@ from signal import SIGINT, SIGTERM
 
 from juju.errors import JujuError
 
-from cou.commands import parse_args
+from cou.commands import Namespace, parse_args
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
 from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
-from cou.steps.plan import (
-    generate_plan,
-    manually_upgrade_data_plane,
-    pre_plan_sane_checks,
-)
+from cou.steps.plan import generate_plan, manually_upgrade_data_plane
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import COUModel
@@ -110,11 +105,11 @@ async def continue_upgrade() -> bool:
     return False
 
 
-async def analyze_and_plan(args: argparse.Namespace) -> tuple[Analysis, UpgradePlan]:
+async def analyze_and_plan(args: Namespace) -> tuple[Analysis, UpgradePlan]:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param args: CLI arguments
-    :type args: argparse.Namespace
+    :type args: Namespace
     :return: Generated analysis and upgrade plan.
     :rtype: tuple[Analysis, UpgradePlan]
     """
@@ -129,22 +124,18 @@ async def analyze_and_plan(args: argparse.Namespace) -> tuple[Analysis, UpgradeP
     logger.info(analysis_result)
     progress_indicator.succeed()
 
-    progress_indicator.start("Making sane checks to upgrade...")
-    pre_plan_sane_checks(args.upgrade_group, analysis_result)
-    progress_indicator.succeed()
-
     progress_indicator.start("Generating upgrade plan...")
-    upgrade_plan = await generate_plan(analysis_result, args.backup)
+    upgrade_plan = await generate_plan(analysis_result, args)
     progress_indicator.succeed()
 
     return analysis_result, upgrade_plan
 
 
-async def get_upgrade_plan(args: argparse.Namespace) -> None:
+async def get_upgrade_plan(args: Namespace) -> None:
     """Get upgrade plan and print to console.
 
     :param args: CLI arguments
-    :type args: argparse.Namespace
+    :type args: Namespace
     """
     analysis_result, upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
@@ -155,11 +146,11 @@ async def get_upgrade_plan(args: argparse.Namespace) -> None:
     )
 
 
-async def run_upgrade(args: argparse.Namespace) -> None:
+async def run_upgrade(args: Namespace) -> None:
     """Run cloud upgrade.
 
     :param args: CLI arguments
-    :type args: argparse.Namespace
+    :type args: Namespace
     """
     prompt = not args.auto_approve
     analysis_result, upgrade_plan = await analyze_and_plan(args)
@@ -182,11 +173,11 @@ async def run_upgrade(args: argparse.Namespace) -> None:
     print("Upgrade completed.")
 
 
-async def _run_command(args: argparse.Namespace) -> None:
+async def _run_command(args: Namespace) -> None:
     """Run 'charmed-openstack-upgrade' command.
 
     :param args: CLI arguments
-    :type args: argparse.Namespace
+    :type args: Namespace
     """
     match args.command:
         case "plan":
