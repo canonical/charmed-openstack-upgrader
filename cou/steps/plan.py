@@ -37,7 +37,7 @@ from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
 )
-from cou.commands import Namespace
+from cou.commands import CLIargs
 from cou.exceptions import (
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
@@ -53,13 +53,13 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(analysis_result: Analysis, args: Namespace) -> UpgradePlan:
+async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
     """Generate plan for upgrade.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     :param args: CLI arguments
-    :type args: Namespace
+    :type args: CLIargs
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """

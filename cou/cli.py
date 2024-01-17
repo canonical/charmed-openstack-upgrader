@@ -22,7 +22,7 @@ from signal import SIGINT, SIGTERM
 
 from juju.errors import JujuError
 
-from cou.commands import Namespace, parse_args
+from cou.commands import CLIargs, parse_args
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
 from cou.logging import setup_logging
 from cou.steps import UpgradePlan
@@ -105,11 +105,11 @@ async def continue_upgrade() -> bool:
     return False
 
 
-async def analyze_and_plan(args: Namespace) -> tuple[Analysis, UpgradePlan]:
+async def analyze_and_plan(args: CLIargs) -> tuple[Analysis, UpgradePlan]:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param args: CLI arguments
-    :type args: Namespace
+    :type args: CLIargs
     :return: Generated analysis and upgrade plan.
     :rtype: tuple[Analysis, UpgradePlan]
     """
@@ -131,11 +131,11 @@ async def analyze_and_plan(args: Namespace) -> tuple[Analysis, UpgradePlan]:
     return analysis_result, upgrade_plan
 
 
-async def get_upgrade_plan(args: Namespace) -> None:
+async def get_upgrade_plan(args: CLIargs) -> None:
     """Get upgrade plan and print to console.
 
     :param args: CLI arguments
-    :type args: Namespace
+    :type args: CLIargs
     """
     analysis_result, upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
@@ -146,17 +146,16 @@ async def get_upgrade_plan(args: Namespace) -> None:
     )
 
 
-async def run_upgrade(args: Namespace) -> None:
+async def run_upgrade(args: CLIargs) -> None:
     """Run cloud upgrade.
 
     :param args: CLI arguments
-    :type args: Namespace
+    :type args: CLIargs
     """
-    prompt = not args.auto_approve
     analysis_result, upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if prompt and not await continue_upgrade():
+    if args.prompt and not await continue_upgrade():
         return
 
     # NOTE(rgildein): add handling upgrade plan canceling for SIGINT (ctrl+c) and SIGTERM
@@ -168,16 +167,16 @@ async def run_upgrade(args: Namespace) -> None:
     if not args.quiet:
         print("Running cloud upgrade...")
 
-    await apply_step(upgrade_plan, prompt)
+    await apply_step(upgrade_plan, args.prompt)
     manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 
 
-async def _run_command(args: Namespace) -> None:
+async def _run_command(args: CLIargs) -> None:
     """Run 'charmed-openstack-upgrade' command.
 
     :param args: CLI arguments
-    :type args: Namespace
+    :type args: CLIargs
     """
     match args.command:
         case "plan":
