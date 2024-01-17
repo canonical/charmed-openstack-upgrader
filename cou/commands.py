@@ -14,7 +14,8 @@
 
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
-from typing import Any, Iterable, NamedTuple, Optional
+from dataclasses import dataclass
+from typing import Any, Iterable, Optional
 
 import pkg_resources
 
@@ -319,11 +320,14 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
     return subparsers
 
 
-class Namespace(NamedTuple):
-    """Mock Namespace used for type hinting purposes.
+@dataclass(frozen=True)
+class CLIargs:
+    """Wrap CLI arguments instead of using argparse.Namespace.
 
-    Keep in sync with the argument parser defined in parse_args
+    Keep in sync with the argument parser defined in parse_args and check types.
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     command: str
     verbosity: int = 0
@@ -337,14 +341,23 @@ class Namespace(NamedTuple):
     hostnames: Optional[list[str]] = None
     availability_zones: Optional[list[str]] = None
 
+    @property
+    def prompt(self) -> bool:
+        """Whether if COU should prompt to the user.
 
-def parse_args(args: Any) -> Namespace:  # pylint: disable=inconsistent-return-statements
+        :return: Prompt if true, otherwise don't prompt.
+        :rtype: bool
+        """
+        return not self.auto_approve
+
+
+def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements
     """Parse cli arguments.
 
     :param args: Arguments parser.
     :type args: Any
-    :return: Namespace custom object.
-    :rtype: Namespace
+    :return: CLIargs custom object.
+    :rtype: CLIargs
     :raises argparse.ArgumentError: Unexpected arguments input.
     """
     # Configure top level argparser and its options
@@ -376,7 +389,7 @@ def parse_args(args: Any) -> Namespace:  # pylint: disable=inconsistent-return-s
         parser.exit()
 
     try:
-        parsed_args = Namespace(**vars(parser.parse_args(args)))
+        parsed_args = CLIargs(**vars(parser.parse_args(args)))
 
         # print help messages for an available sub-command
         if parsed_args.command == "help":

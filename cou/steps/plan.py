@@ -37,7 +37,7 @@ from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
 )
-from cou.commands import DATA_PLANE, Namespace
+from cou.commands import DATA_PLANE, CLIargs
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     HaltUpgradePlanGeneration,
@@ -54,7 +54,7 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-def pre_plan_sane_checks(args: Namespace, analysis_result: Analysis) -> None:
+def pre_plan_sane_checks(args: CLIargs, analysis_result: Analysis) -> None:
     """Pre checks to generate the upgrade plan.
 
     :param args: CLI arguments
@@ -198,13 +198,13 @@ def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
     return target  # type: ignore
 
 
-async def generate_plan(analysis_result: Analysis, args: Namespace) -> UpgradePlan:
+async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
     """Generate plan for upgrade.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     :param args: CLI arguments
-    :type args: Namespace
+    :type args: CLIargs
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """

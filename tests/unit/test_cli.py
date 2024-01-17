@@ -107,23 +107,27 @@ async def test_get_upgrade_plan(
         (False, 0),
     ],
 )
+@patch("cou.cli.continue_upgrade", new_callable=AsyncMock)
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("builtins.print")
 @patch("cou.cli.print_and_debug")
-async def test_run_upgrade_quiet(
+async def test_run_upgrade_quiet_no_prompt(
     mock_print_and_debug,
     mock_print,
     mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
+    mock_continue_upgrade,
     quiet,
     expected_print_count,
     cli_args,
 ):
-    """Test get_upgrade_plan function in either quiet or non-quiet mode."""
+    """Test get_upgrade_plan function in either quiet or non-quiet mode without prompt."""
+    mock_continue_upgrade.return_value = True
     cli_args.quiet = quiet
+    cli_args.prompt = False
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
@@ -151,7 +155,7 @@ async def test_run_upgrade_with_prompt_continue(
     mock_manually_upgrade,
     cli_args,
 ):
-    cli_args.auto_approve = False
+    cli_args.prompt = True
     cli_args.quiet = True
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
@@ -209,7 +213,7 @@ async def test_run_upgrade_with_no_prompt(
     mock_manually_upgrade,
     cli_args,
 ):
-    cli_args.auto_approve = True
+    cli_args.prompt = False
     cli_args.quiet = True
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
