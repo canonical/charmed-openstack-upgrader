@@ -77,10 +77,10 @@ serve: html
 clean: clean-doc
 	@test ! -e "$(VENVDIR)" -o -d "$(VENVDIR)" -a "$(abspath $(VENVDIR))" != "$(VENVDIR)"
 	rm -rf $(VENVDIR)
-	rm -rf .sphinx/.doctrees
 
 clean-doc:
 	git clean -fx "$(BUILDDIR)"
+	rm -rf .sphinx/.doctrees
 
 spelling: html
 	. $(VENV) ; python3 -m pyspelling -c .sphinx/spellingcheck.yaml
@@ -93,7 +93,7 @@ woke: woke-install
 	    -c https://github.com/canonical/Inclusive-naming/raw/main/config.yml
 
 pa11y: pa11y-install html
-	find $(BUILDDIR) -name *.html -exec $(PA11Y) {} \;
+	find $(BUILDDIR) -name *.html -print0 | xargs -n 1 -0 $(PA11Y)
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
