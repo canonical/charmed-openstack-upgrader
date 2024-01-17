@@ -1,10 +1,6 @@
 
 name: Check workflow running linter, unit and functional tests
 
-concurrency:
-  group: ${{ github.workflow }}
-
-
 on:
   workflow_call:
   pull_request:
@@ -25,7 +21,7 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       tox-version: '<4'
-    
+
   snap-build:
     name: Build snap package
     needs: lint-unit
@@ -60,7 +56,7 @@ jobs:
   func:
     name: Functional tests
     needs: snap-build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
