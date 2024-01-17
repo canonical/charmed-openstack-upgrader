@@ -37,7 +37,7 @@ from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
 )
-from cou.commands import DATA_PLANE, CLIargs
+from cou.commands import CLIargs
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     HaltUpgradePlanGeneration,
@@ -54,7 +54,7 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-def pre_plan_sane_checks(args: CLIargs, analysis_result: Analysis) -> None:
+def pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     """Pre checks to generate the upgrade plan.
 
     :param args: CLI arguments
@@ -66,7 +66,7 @@ def pre_plan_sane_checks(args: CLIargs, analysis_result: Analysis) -> None:
     is_supported_series(analysis_result)
     is_highest_release_achieved(analysis_result)
 
-    if args.upgrade_group == DATA_PLANE:
+    if args.is_data_plane_command:
         is_data_plane_ready_to_upgrade(analysis_result)
 
 
@@ -190,9 +190,9 @@ def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
         or str(target) not in supporting_os_release
     ):
         raise OutOfSupportRange(
-            f"Unable to upgrade cloud from `{current_series}` to '{target}'. "
+            f"Unable to upgrade cloud from Ubuntu series `{current_series}` to '{target}'. "
             "Both the from and to releases need to be supported by the current "
-            "Ubuntu series '{current_series}': {supporting_os_release}."
+            f"Ubuntu series '{current_series}': {supporting_os_release}."
         )
 
     return target  # type: ignore
@@ -208,7 +208,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """
-    pre_plan_sane_checks(args, analysis_result)
+    pre_plan_sanity_checks(args, analysis_result)
     target = determine_upgrade_target(analysis_result)
 
     plan = UpgradePlan(

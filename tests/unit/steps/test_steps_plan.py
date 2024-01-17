@@ -38,7 +38,7 @@ from cou.steps.plan import (
     generate_plan,
     is_control_plane_upgraded,
     manually_upgrade_data_plane,
-    pre_plan_sane_checks,
+    pre_plan_sanity_checks,
 )
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
@@ -135,6 +135,7 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 @pytest.mark.asyncio
 async def test_generate_plan(apps, model, cli_args):
+    cli_args.is_data_plane_command = False
     target = OpenStackRelease("victoria")
     app_keystone = apps["keystone_ussuri"]
     app_cinder = apps["cinder_ussuri"]
@@ -183,22 +184,21 @@ async def test_generate_plan(apps, model, cli_args):
 
 
 @pytest.mark.parametrize(
-    "upgrade_group, expected_call",
+    "is_data_plane_command, expected_call",
     [
-        (None, False),
-        ("control-plane", False),
+        (False, False),
         ("data-plane", True),
     ],
 )
 @patch("cou.steps.plan.is_data_plane_ready_to_upgrade")
-def test_pre_plan_sane_checks(
-    mock_is_data_plane_ready_to_upgrade, upgrade_group, expected_call, cli_args
+def test_pre_plan_sanity_checks(
+    mock_is_data_plane_ready_to_upgrade, is_data_plane_command, expected_call, cli_args
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
     mock_analysis_result.current_cloud_series = "focal"
-    cli_args.upgrade_group = upgrade_group
-    pre_plan_sane_checks(cli_args, mock_analysis_result)
+    cli_args.is_data_plane_command = is_data_plane_command
+    pre_plan_sanity_checks(cli_args, mock_analysis_result)
     if expected_call:
         mock_is_data_plane_ready_to_upgrade.assert_called_once_with(mock_analysis_result)
     else:
@@ -222,37 +222,53 @@ def test_pre_plan_sane_checks(
         ),  # current_series is None
     ],
 )
-def test_pre_plan_sane_checks_is_valid_openstack_cloud(
+def test_pre_plan_sanity_checks_is_valid_openstack_cloud(
     current_os_release, current_series, exp_error_msg, cli_args
 ):
     with pytest.raises(NoTargetError, match=exp_error_msg):
         mock_analysis_result = MagicMock(spec=Analysis)()
         mock_analysis_result.current_cloud_series = current_series
         mock_analysis_result.current_cloud_os_release = current_os_release
-        pre_plan_sane_checks(cli_args, mock_analysis_result)
+        pre_plan_sanity_checks(cli_args, mock_analysis_result)
 
 
 @pytest.mark.parametrize(
-    "current_os_release, current_series",
+    "current_os_release, current_series, exp_error_msg",
     [
-        (OpenStackRelease("yoga"), "jammy"),
-        (OpenStackRelease("train"), "bionic"),
+        (
+            OpenStackRelease("yoga"),
+            "jammy",
+            "Cloud series 'jammy' is not a Ubuntu LTS series supported by COU. "
+            "The supporting series are: focal",
+        ),
+        (
+            OpenStackRelease("train"),
+            "bionic",
+            "Cloud series 'bionic' is not a Ubuntu LTS series supported by COU. "
+            "The supporting series are: focal",
+        ),
     ],
 )
-def test_pre_plan_sane_checks_is_supported_series(current_os_release, current_series, cli_args):
+def test_pre_plan_sanity_checks_is_supported_series(
+    current_os_release, current_series, exp_error_msg, cli_args
+):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    with pytest.raises(OutOfSupportRange):
+    with pytest.raises(OutOfSupportRange, match=exp_error_msg):
         mock_analysis_result.current_cloud_os_release = current_os_release
         mock_analysis_result.current_cloud_series = current_series
-        pre_plan_sane_checks(cli_args, mock_analysis_result)
+        pre_plan_sanity_checks(cli_args, mock_analysis_result)
 
 
-def test_pre_plan_sane_checks_is_highest_release_achieved(cli_args):
+def test_pre_plan_sanity_checks_is_highest_release_achieved(cli_args):
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_os_release = OpenStackRelease("yoga")
     mock_analysis_result.current_cloud_series = "focal"
-    with pytest.raises(HighestReleaseAchieved):
-        pre_plan_sane_checks(cli_args, mock_analysis_result)
+    exp_error_msg = (
+        "No upgrades available for OpenStack Yoga on Ubuntu Focal.\n"
+        "Newer OpenStack releases may be available after upgrading to a later Ubuntu series."
+    )
+    with pytest.raises(HighestReleaseAchieved, match=exp_error_msg):
+        pre_plan_sanity_checks(cli_args, mock_analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -270,7 +286,7 @@ def test_pre_plan_sane_checks_is_highest_release_achieved(cli_args):
         ),
     ],
 )
-def test_pre_plan_sane_checks_is_data_plane_ready_to_upgrade_error(
+def test_pre_plan_sanity_checks_is_data_plane_ready_to_upgrade_error(
     min_os_version_control_plane, min_os_version_data_plane, exp_error_msg, cli_args
 ):
     cli_args.upgrade_group = "data-plane"
@@ -279,7 +295,7 @@ def test_pre_plan_sane_checks_is_data_plane_ready_to_upgrade_error(
     mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
     mock_analysis_result.min_os_version_data_plane = min_os_version_data_plane
     with pytest.raises(DataPlaneCannotUpgrade, match=exp_error_msg):
-        pre_plan_sane_checks(cli_args, mock_analysis_result)
+        pre_plan_sanity_checks(cli_args, mock_analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -340,7 +356,12 @@ def test_determine_upgrade_target_out_support_range():
     mock_analysis_result.current_cloud_series = "focal"
     mock_analysis_result.current_cloud_os_release = OpenStackRelease("zed")
 
-    with pytest.raises(OutOfSupportRange):
+    exp_error_msg = (
+        "Unable to upgrade cloud from Ubuntu series `focal` to 'antelope'. "
+        "Both the from and to releases need to be supported by the current "
+        "Ubuntu series 'focal': ussuri, victoria, wallaby, xena, yoga."
+    )
+    with pytest.raises(OutOfSupportRange, match=exp_error_msg):
         determine_upgrade_target(mock_analysis_result)
 
 
