@@ -74,6 +74,14 @@ class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
+    Using SUPPRESS for the subparser default keeps it from overwriting the parent parser value.
+    A SUPPRESS default is not inserted into the namespace at the start of parsing. A value is
+    written only if the user used that argument.
+
+    Without SUPPRESS a command like: "cou upgrade --force data-plane" wouldn't force the data-plan
+    to upgrade non-empty hypervisors, because the "child" argument "data-plane" would overwrite
+    with False.
+
     :return: a parser groups options commonly shared by subcommands
     :rtype: argparse.ArgumentParser
     """
@@ -81,7 +89,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     subcommand_common_opts_parser = argparse.ArgumentParser(add_help=False)
     subcommand_common_opts_parser.add_argument(
         "--model",
-        default=None,
+        default=argparse.SUPPRESS,
         dest="model_name",
         type=str,
         help="Set the model to operate on.\nIf not set, the currently active Juju model will "
@@ -92,7 +100,14 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         help="Include database backup step before cloud upgrade.\n"
         "Default to enabling database backup.",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=argparse.SUPPRESS,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--force",
+        action="store_true",
+        dest="force",
+        help="Force the plan/upgrade of non-empty hypervisors.",
+        default=argparse.SUPPRESS,
     )
 
     # quiet and verbose options are mutually exclusive
@@ -100,7 +115,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     group.add_argument(
         "--verbose",
         "-v",
-        default=0,
+        default=argparse.SUPPRESS,
         action="count",
         dest="verbosity",
         help="Increase logging verbosity in STDOUT. Multiple 'v's yield progressively "
@@ -115,6 +130,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="quiet",
         help="Disable output in STDOUT.",
+        default=argparse.SUPPRESS,
     )
 
     return subcommand_common_opts_parser
@@ -333,6 +349,7 @@ class CLIargs:
     verbosity: int = 0
     backup: bool = True
     quiet: bool = False
+    force: bool = False
     auto_approve: bool = False
     model_name: Optional[str] = None
     upgrade_group: Optional[str] = None
