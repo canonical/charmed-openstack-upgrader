@@ -345,7 +345,7 @@ class CLIargs:
     def prompt(self) -> bool:
         """Whether if COU should prompt to the user.
 
-        :return: Prompt if true, otherwise don't prompt.
+        :return: Prompt if auto_approve is True, otherwise don't prompt.
         :rtype: bool
         """
         return not self.auto_approve
