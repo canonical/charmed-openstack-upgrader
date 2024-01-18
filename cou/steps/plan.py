@@ -99,10 +99,8 @@ def is_supported_series(analysis_result: Analysis) -> None:
     :raises OutOfSupportRange: When series is not supported.
     """
     supporting_lts_series = ", ".join(LTS_TO_OS_RELEASE)
-    # series already checked at is_valid_openstack_cloud
-    if (
-        current_series := analysis_result.current_cloud_series
-    ) and current_series not in LTS_TO_OS_RELEASE:
+    current_series = analysis_result.current_cloud_series
+    if current_series not in LTS_TO_OS_RELEASE:
         raise OutOfSupportRange(
             f"Cloud series '{current_series}' is not a Ubuntu LTS series supported by COU. "
             f"The supporting series are: {supporting_lts_series}"
@@ -116,10 +114,12 @@ def is_highest_release_achieved(analysis_result: Analysis) -> None:
     :type analysis_result: Analysis
     :raises HighestReleaseAchieved: When the OpenStack release is the last supported by the series.
     """
+    current_os_release = analysis_result.current_cloud_os_release
+    current_series = analysis_result.current_cloud_series
     if (
-        (current_os_release := analysis_result.current_cloud_os_release)
-        and (current_series := analysis_result.current_cloud_series)
-        and str(current_os_release) == LTS_TO_OS_RELEASE[current_series][-1]
+        current_series
+        and current_series
+        and str(current_os_release) == LTS_TO_OS_RELEASE.get(current_series, [])[-1]
     ):
         raise HighestReleaseAchieved(
             f"No upgrades available for OpenStack {str(current_os_release).capitalize()} on "
