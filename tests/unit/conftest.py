@@ -25,6 +25,7 @@ from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplicat
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.apps.core import Keystone
 from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.commands import CLIargs
 from cou.utils.openstack import OpenStackRelease
 
 
@@ -575,3 +576,14 @@ def cou_data(tmp_path_factory):
     cou_test = tmp_path_factory.mktemp("cou_test")
     with patch("cou.utils.COU_DATA", cou_test):
         yield
+
+
+@pytest.fixture
+def cli_args() -> MagicMock:
+    """Magic Mock of the COU CLIargs.
+
+    :return: MagicMock of the COU CLIargs got from the cli.
+    :rtype: MagicMock
+    """
+    # spec_set needs an instantiated class to be strict with the fields.
+    return MagicMock(spec_set=CLIargs(command="plan"))()

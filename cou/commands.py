@@ -14,9 +14,13 @@
 
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
+from dataclasses import dataclass
 from typing import Any, Iterable, Optional
 
 import pkg_resources
+
+CONTROL_PLANE = "control-plane"
+DATA_PLANE = "data-plane"
 
 
 class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
@@ -194,7 +198,7 @@ def create_plan_subparser(
         # help="For more information about a upgrade group, run 'cou plan <upgrade-group>' -h.",
     )
     plan_subparser.add_parser(
-        "control-plane",
+        CONTROL_PLANE,
         description="Show the steps for upgrading the control-plane components.",
         help="Show the steps for upgrading the control-plane components.",
         usage="cou plan control-plane [options]",
@@ -202,7 +206,7 @@ def create_plan_subparser(
         formatter_class=CapitalizeHelpFormatter,
     )
     plan_subparser.add_parser(
-        "data-plane",
+        DATA_PLANE,
         description="Show the steps for upgrading the data-plane components.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
         help="Show the steps for upgrading the data-plane components.\nThis is possible "
@@ -316,13 +320,44 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
     return subparsers
 
 
-def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent-return-statements
+@dataclass(frozen=True)
+class CLIargs:
+    """Wrap CLI arguments instead of using argparse.Namespace.
+
+    Keep in sync with the argument parser defined in parse_args and check types.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    command: str
+    verbosity: int = 0
+    backup: bool = True
+    quiet: bool = False
+    auto_approve: bool = False
+    model_name: Optional[str] = None
+    upgrade_group: Optional[str] = None
+    subcommand: Optional[str] = None  # for help option
+    machines: Optional[list[str]] = None
+    hostnames: Optional[list[str]] = None
+    availability_zones: Optional[list[str]] = None
+
+    @property
+    def prompt(self) -> bool:
+        """Whether if COU should prompt to the user.
+
+        :return: Prompt if auto_approve is True, otherwise don't prompt.
+        :rtype: bool
+        """
+        return not self.auto_approve
+
+
+def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements
     """Parse cli arguments.
 
     :param args: Arguments parser.
     :type args: Any
-    :return: argparse.Namespace
-    :rtype: argparse.Namespace
+    :return: CLIargs custom object.
+    :rtype: CLIargs
     :raises argparse.ArgumentError: Unexpected arguments input.
     """
     # Configure top level argparser and its options
@@ -354,7 +389,7 @@ def parse_args(args: Any) -> argparse.Namespace:  # pylint: disable=inconsistent
         parser.exit()
 
     try:
-        parsed_args = parser.parse_args(args)
+        parsed_args = CLIargs(**vars(parser.parse_args(args)))
 
         # print help messages for an available sub-command
         if parsed_args.command == "help":
