@@ -58,7 +58,7 @@ def pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     """Pre checks to generate the upgrade plan.
 
     :param args: CLI arguments
-    :type args: Namespace
+    :type args: CLIargs
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
@@ -108,19 +108,16 @@ def is_supported_series(analysis_result: Analysis) -> None:
 
 
 def is_highest_release_achieved(analysis_result: Analysis) -> None:
-    """Check if the highest OpenStack release is reached by the ubuntu series.
+    """Check if the highest OpenStack release is reached for the current Ubuntu series.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     :raises HighestReleaseAchieved: When the OpenStack release is the last supported by the series.
     """
     current_os_release = analysis_result.current_cloud_os_release
-    current_series = analysis_result.current_cloud_series
-    if (
-        current_series
-        and current_series
-        and str(current_os_release) == LTS_TO_OS_RELEASE.get(current_series, [])[-1]
-    ):
+    current_series = analysis_result.current_cloud_series or ""
+    last_supported = LTS_TO_OS_RELEASE.get(current_series, [])[-1]
+    if current_os_release and current_series and str(current_os_release) == last_supported:
         raise HighestReleaseAchieved(
             f"No upgrades available for OpenStack {str(current_os_release).capitalize()} on "
             f"Ubuntu {current_series.capitalize()}.\nNewer OpenStack releases "
@@ -146,10 +143,10 @@ def is_data_plane_ready_to_upgrade(analysis_result: Analysis) -> None:
 
 
 def is_control_plane_upgraded(analysis_result: Analysis) -> bool:
-    """Check if control plane is already upgraded.
+    """Check if control plane has been fully upgraded.
 
     Control-plane will be considered as upgraded when the OpenStack version of it
-    is bigger than the data-plane.
+    is higher than the data-plane.
 
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
