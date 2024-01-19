@@ -78,9 +78,9 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     A SUPPRESS default is not inserted into the namespace at the start of parsing. A value is
     written only if the user used that argument.
 
-    Without SUPPRESS a command like: "cou upgrade --force data-plane" wouldn't force the data-plan
-    to upgrade non-empty hypervisors, because the "child" argument "data-plane" would overwrite
-    with False.
+    Without SUPPRESS a command like: "cou upgrade --force data-plane" wouldn't force the data-plane
+    to upgrade non-empty hypervisors, because the "child" argument "data-plane" would overwrite it
+    with a default value False.
 
     :return: a parser groups options commonly shared by subcommands
     :rtype: argparse.ArgumentParser
@@ -254,6 +254,7 @@ def create_upgrade_subparser(
         help="Automatically approve and continue with each upgrade step without prompt.",
         action="store_true",
         dest="auto_approve",
+        default=argparse.SUPPRESS,
     )
     upgrade_parser = subparsers.add_parser(
         "upgrade",

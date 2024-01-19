@@ -592,6 +592,22 @@ def test_parse_args_plan(args, expected_CLIargs):
             ),
         ),
         (
+            ["upgrade", "--auto-approve", "data-plane", "--hostname=1", "-n=2,3"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=True,
+                backup=True,
+                force=False,
+                machines=None,
+                hostnames=["1", "2,3"],
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
             ["upgrade", "data-plane", "--auto-approve", "--force", "--hostname=1", "-n=2,3"],
             CLIargs(
                 command="upgrade",
