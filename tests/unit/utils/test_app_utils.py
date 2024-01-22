@@ -95,9 +95,17 @@ async def test_get_instance_count(model):
 
 
 @pytest.mark.asyncio
-async def test_get_instance_count_invalid_result(model):
+@pytest.mark.parametrize(
+    "result_key, value",
+    [
+        ("not_valid", "1"),  # invalid key
+        ("instance-count", "not_valid"),  # invalid value
+        ("not_valid", "not_valid"), # invalid key and value
+    ],
+)
+async def test_get_instance_count_invalid_result(model, result_key, value):
     model.run_action.return_value = mocked_action = AsyncMock(spec_set=Action).return_value
-    mocked_action.results = {"Code": "0", "instance-count": "not_valid"}
+    mocked_action.results = {"Code": "0", result_key: value}
 
     with pytest.raises(ValueError):
         await app_utils.get_instance_count(unit="nova-compute/0", model=model)

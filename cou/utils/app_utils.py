@@ -65,7 +65,7 @@ async def get_instance_count(unit: str, model: COUModel) -> int:
     action = await model.run_action(unit_name=unit, action_name=action_name)
 
     if (
-        instance_count := action.results.get("instance-count").strip()
+        instance_count := action.results.get("instance-count", "").strip()
     ) and instance_count.isdigit():
         return int(instance_count)
 
