@@ -206,7 +206,7 @@ class BaseStep:
 
     @sub_steps.setter
     def sub_steps(self, steps: Iterable[BaseStep]) -> None:
-        """Set list of sub-steps.
+        """Set a list of sub-steps.
 
         :param steps: Iterable object containing all steps.
         :type steps: Iterable
@@ -222,7 +222,7 @@ class BaseStep:
         :raises TypeError: If step is not based on BaseStep.
         """
         if not isinstance(step, BaseStep):
-            raise TypeError("only steps that are derived from BaseStep are supported")
+            raise TypeError("Cannot add an upgrade step that is not derived from BaseStep")
 
         self._sub_steps.append(step)
 
@@ -310,7 +310,7 @@ class UpgradeStep(BaseStep):
 
 
 class UnitUpgradeStep(UpgradeStep):
-    """Represents the upgrade step for individual unit."""
+    """Represents the upgrade step for an individual unit."""
 
 
 class PreUpgradeStep(UpgradeStep):
@@ -326,7 +326,7 @@ def is_unit_upgrade_step(step: BaseStep) -> bool:
 
     :param step: step
     :type step: BaseStep
-    :return: True or False if it's BaseStep
+    :return: True if it's UnitUpgradeStep
     :rtype: bool
     """
     return isinstance(step, UnitUpgradeStep)
