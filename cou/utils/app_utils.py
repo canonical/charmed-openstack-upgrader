@@ -53,11 +53,11 @@ async def upgrade_packages(
 async def get_instance_count(unit: str, model: COUModel) -> int:
     """Get instance count on a nova-compute unit.
 
-    :param unit: Name of the unit where the action runs on.
+    :param unit: Name of the nova-compute unit where the action runs on.
     :type unit: str
     :param model: COUModel object
     :type model: COUModel
-    :return: Instance count of the unit
+    :return: Instance count of the nova-compute unit
     :rtype: int
     :raises ValueError: When the action result is not valid.
     """

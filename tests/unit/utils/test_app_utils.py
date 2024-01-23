@@ -100,7 +100,7 @@ async def test_get_instance_count(model):
     [
         ("not_valid", "1"),  # invalid key
         ("instance-count", "not_valid"),  # invalid value
-        ("not_valid", "not_valid"), # invalid key and value
+        ("not_valid", "not_valid"),  # invalid key and value
     ],
 )
 async def test_get_instance_count_invalid_result(model, result_key, value):
