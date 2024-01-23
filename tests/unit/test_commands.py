@@ -72,6 +72,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
+                force=False,
                 **{"upgrade_group": None}
             ),
         ),
@@ -83,6 +84,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=False,
+                force=False,
                 **{"upgrade_group": None}
             ),
         ),
@@ -94,6 +96,19 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=True,
                 backup=False,
+                force=False,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["plan", "--no-backup", "--quiet", "--force"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=True,
+                backup=False,
+                force=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -105,6 +120,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
+                force=False,
                 **{"upgrade_group": None}
             ),
         ),
@@ -116,6 +132,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
+                force=False,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -127,6 +144,22 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
+                force=False,
+                machines=None,
+                hostnames=None,
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["plan", "data-plane", "--force"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=True,
                 machines=None,
                 hostnames=None,
                 availability_zones=None,
@@ -141,6 +174,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=1,
                 quiet=False,
                 backup=True,
+                force=False,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -152,6 +186,22 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
+                force=False,
+                machines=["1", "2,3"],
+                hostnames=None,
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["plan", "data-plane", "--machine=1", "-m=2,3", "--force"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=True,
                 machines=["1", "2,3"],
                 hostnames=None,
                 availability_zones=None,
@@ -166,6 +216,22 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=True,
                 backup=True,
+                force=False,
+                machines=None,
+                hostnames=None,
+                availability_zones=["1", "2,3"],
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["plan", "data-plane", "--force", "--quiet", "--availability-zone=1", "--az=2,3"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=True,
+                backup=True,
+                force=True,
                 machines=None,
                 hostnames=None,
                 availability_zones=["1", "2,3"],
@@ -180,6 +246,22 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 verbosity=0,
                 quiet=False,
                 backup=True,
+                force=False,
+                machines=None,
+                hostnames=["1", "2,3"],
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["plan", "data-plane", "--hostname=1", "--force", "-n=2,3"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=True,
                 machines=None,
                 hostnames=["1", "2,3"],
                 availability_zones=None,
@@ -207,6 +289,7 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=False,
                 backup=True,
+                force=False,
                 **{"upgrade_group": None}
             ),
         ),
@@ -219,6 +302,7 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=False,
                 backup=False,
+                force=False,
                 **{"upgrade_group": None}
             ),
         ),
@@ -231,6 +315,20 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=True,
                 auto_approve=False,
                 backup=False,
+                force=False,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["upgrade", "--force", "--no-backup", "--quiet"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=True,
+                auto_approve=False,
+                backup=False,
+                force=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -243,6 +341,7 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=False,
                 backup=True,
+                force=False,
                 **{"upgrade_group": None}
             ),
         ),
@@ -255,6 +354,20 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=False,
                 backup=True,
+                force=False,
+                **{"upgrade_group": "control-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "control-plane", "--force"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=True,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -267,6 +380,57 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=False,
                 backup=True,
+                force=False,
+                machines=None,
+                hostnames=None,
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        # NOTE(gabrielcocenza) Without the argparse.SUPPRESS, this sequence
+        # wouldn't be possible.
+        (
+            ["upgrade", "--force", "data-plane"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=True,
+                machines=None,
+                hostnames=None,
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "--no-backup", "data-plane"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=False,
+                force=False,
+                machines=None,
+                hostnames=None,
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "--model", "my_model", "data-plane"],
+            CLIargs(
+                command="upgrade",
+                model_name="my_model",
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
                 machines=None,
                 hostnames=None,
                 availability_zones=None,
@@ -282,6 +446,20 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=False,
                 backup=True,
+                force=False,
+                **{"upgrade_group": "control-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "--verbose", "control-plane"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=1,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -294,6 +472,23 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=False,
                 backup=True,
+                force=False,
+                machines=["1", "2,3"],
+                hostnames=None,
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "data-plane", "--machine=1", "-m=2,3", "--force"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=True,
                 machines=["1", "2,3"],
                 hostnames=None,
                 availability_zones=None,
@@ -309,6 +504,39 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=True,
                 auto_approve=False,
                 backup=True,
+                force=False,
+                machines=None,
+                hostnames=None,
+                availability_zones=["1", "2,3"],
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "--quiet", "data-plane", "--availability-zone=1", "--az=2,3"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=True,
+                auto_approve=False,
+                backup=True,
+                force=False,
+                machines=None,
+                hostnames=None,
+                availability_zones=["1", "2,3"],
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "data-plane", "--force", "--quiet", "--availability-zone=1", "--az=2,3"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=True,
+                auto_approve=False,
+                backup=True,
+                force=True,
                 machines=None,
                 hostnames=None,
                 availability_zones=["1", "2,3"],
@@ -324,6 +552,23 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=False,
                 backup=True,
+                force=False,
+                machines=None,
+                hostnames=["1", "2,3"],
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "data-plane", "--hostname=1", "--force", "-n=2,3"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=True,
                 machines=None,
                 hostnames=["1", "2,3"],
                 availability_zones=None,
@@ -339,6 +584,39 @@ def test_parse_args_plan(args, expected_CLIargs):
                 quiet=False,
                 auto_approve=True,
                 backup=True,
+                force=False,
+                machines=None,
+                hostnames=["1", "2,3"],
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "--auto-approve", "data-plane", "--hostname=1", "-n=2,3"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=True,
+                backup=True,
+                force=False,
+                machines=None,
+                hostnames=["1", "2,3"],
+                availability_zones=None,
+                **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["upgrade", "data-plane", "--auto-approve", "--force", "--hostname=1", "-n=2,3"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=True,
+                backup=True,
+                force=True,
                 machines=None,
                 hostnames=["1", "2,3"],
                 availability_zones=None,
