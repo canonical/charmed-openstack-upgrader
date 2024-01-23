@@ -168,27 +168,27 @@ class COUModel:
         return self._name
 
     @retry(no_retry_exceptions=(ActionFailed,))
-    async def _get_action_result(self, action: Action, raise_on_failure: bool) -> Action:
-        """Get results from action.
+    async def _get_waited_action_object(self, action: Action, raise_on_failure: bool) -> Action:
+        """Get waited action object.
+
+        To access action data from the returned action object, use `action_obj.data`, which
+        contains action parameters, results, status, and metadata. Alternatively, it is possible
+        to access action results directly with `action_obj.results`.
 
         :param action: Action object
         :type: Action
         :param raise_on_failure: Whether to raise ActionFailed exception on failure, defaults
                                  to False
         :type raise_on_failure: bool
-        :return: action results
+        :return: the awaited action object
         :rtype: Action
         :raises ActionFailed: When the application status is in error (it's not 'completed').
         """
-        result = await action.wait()
-        if raise_on_failure:
-            model = await self._get_model()
-            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
-            if status != "completed":
-                output = await model.get_action_output(action.entity_id)
-                raise ActionFailed(action, output=output)
+        action_obj = await action.wait()
+        if raise_on_failure and action_obj.status != "completed":
+            raise ActionFailed(action, output=action_obj.data)
 
-        return result
+        return action_obj
 
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
@@ -319,8 +319,8 @@ class COUModel:
         action_params = action_params or {}
         unit = await self._get_unit(unit_name)
         action = await unit.run_action(action_name, **action_params)
-        result = await self._get_action_result(action, raise_on_failure)
-        return result
+        action_obj = await self._get_waited_action_object(action, raise_on_failure)
+        return action_obj
 
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run(...)` and the rest of the function is static.
