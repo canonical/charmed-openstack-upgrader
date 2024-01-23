@@ -62,37 +62,15 @@ def pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
-    is_valid_openstack_cloud(analysis_result)
-    is_supported_series(analysis_result)
-    is_highest_release_achieved(analysis_result)
+    verify_supported_series(analysis_result)
+    verify_highest_release_achieved(analysis_result)
 
     if args.is_data_plane_command:
-        is_data_plane_ready_to_upgrade(analysis_result)
+        verify_data_plane_ready_to_upgrade(analysis_result)
 
 
-def is_valid_openstack_cloud(analysis_result: Analysis) -> None:
-    """Check if the model passed is a valid OpenStack cloud.
-
-    :param analysis_result: Analysis result
-    :type analysis_result: Analysis
-    :raises NoTargetError: When cannot determine the current OS release
-        or Ubuntu series.
-    """
-    if not analysis_result.current_cloud_os_release:
-        raise NoTargetError(
-            "Cannot determine the current OS release in the cloud. "
-            "Is this a valid OpenStack cloud?"
-        )
-
-    if not analysis_result.current_cloud_series:
-        raise NoTargetError(
-            "Cannot determine the current Ubuntu series in the cloud. "
-            "Is this a valid OpenStack cloud?"
-        )
-
-
-def is_supported_series(analysis_result: Analysis) -> None:
-    """Check the Ubuntu series of the cloud to see if it is supported.
+def verify_supported_series(analysis_result: Analysis) -> None:
+    """Verify the Ubuntu series of the cloud to see if it is supported.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
@@ -107,8 +85,8 @@ def is_supported_series(analysis_result: Analysis) -> None:
         )
 
 
-def is_highest_release_achieved(analysis_result: Analysis) -> None:
-    """Check if the highest OpenStack release is reached for the current Ubuntu series.
+def verify_highest_release_achieved(analysis_result: Analysis) -> None:
+    """Verify if the highest OpenStack release is reached for the current Ubuntu series.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
@@ -125,8 +103,8 @@ def is_highest_release_achieved(analysis_result: Analysis) -> None:
         )
 
 
-def is_data_plane_ready_to_upgrade(analysis_result: Analysis) -> None:
-    """Check if data plane is ready to upgrade.
+def verify_data_plane_ready_to_upgrade(analysis_result: Analysis) -> None:
+    """Verify if data plane is ready to upgrade.
 
     To be able to upgrade data-plane, first all control plane apps should be upgraded.
 
@@ -170,11 +148,10 @@ def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
     :return: The target OS release to upgrade the cloud to.
     :rtype: OpenStackRelease
     """
-    if (
-        (current_os_release := analysis_result.current_cloud_os_release)
-        and (current_series := analysis_result.current_cloud_series)
-        and not (target := current_os_release.next_release)
-    ):
+    current_os_release, current_series = _get_os_release_and_series(analysis_result)
+
+    target = current_os_release.next_release
+    if not target:
         raise NoTargetError(
             "Cannot find target to upgrade. Current minimum OS release is "
             f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
@@ -192,7 +169,35 @@ def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
             f"Ubuntu series '{current_series}': {supporting_os_release}."
         )
 
-    return target  # type: ignore
+    return target
+
+
+def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRelease, str]:
+    """Get the current OpenStack release and series of the cloud.
+
+    This function also checks if the model passed is a valid OpenStack cloud.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :raises NoTargetError: When cannot determine the current OS release
+        or Ubuntu series.
+    :return: Current OpenStack release and series of the cloud.
+    :rtype: tuple[OpenStackRelease, str]
+    """
+    current_os_release = analysis_result.current_cloud_os_release
+    current_series = analysis_result.current_cloud_series
+    if not current_os_release:
+        raise NoTargetError(
+            "Cannot determine the current OS release in the cloud. "
+            "Is this a valid OpenStack cloud?"
+        )
+
+    if not current_series:
+        raise NoTargetError(
+            "Cannot determine the current Ubuntu series in the cloud. "
+            "Is this a valid OpenStack cloud?"
+        )
+    return current_os_release, current_series
 
 
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
