@@ -30,6 +30,7 @@ from juju.unit import Unit
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
+from cou.apps.machine import Machine
 from cou.exceptions import (
     ActionFailed,
     ApplicationError,
@@ -39,7 +40,7 @@ from cou.exceptions import (
     UnitNotFound,
     WaitForApplicationsTimeout,
 )
-from cou.utils.openstack import is_charm_supported
+from cou.utils.openstack import DATA_PLANE_CHARMS, is_charm_supported
 
 JUJU_MAX_FRAME_SIZE: int = 2**30
 DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 10))
@@ -189,6 +190,15 @@ class COUModel:
                 raise ActionFailed(action, output=output)
 
         return result
+
+    async def get_applications(self) -> dict[str, Application]:
+        """Get all applications from the model.
+
+        :return: Applications from the model connected.
+        :rtype: dict[str, Application]
+        """
+        model = await self._get_model()
+        return model.applications
 
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
@@ -499,3 +509,27 @@ class COUModel:
             apps = await self._get_supported_apps()
 
         await _wait_for_active_idle()
+
+    async def get_model_machines(self) -> dict[str, Machine]:
+        """Get all the machines in the model.
+
+        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
+        :rtype: dict[str, Machine]
+        """
+        juju_applications = await self.get_applications()
+        machines: dict[str, Machine] = {}
+        for app in juju_applications.values():
+            charm_name = app.charm_name
+            for unit in app.units:
+                unit_machine = unit.machine.data
+                machine = machines.get(
+                    unit_machine["id"],
+                    Machine(
+                        machine_id=unit_machine["id"],
+                        hostname=unit_machine["hostname"],
+                        az=unit_machine["hardware-characteristic"].get("availability-zone"),
+                        is_data_plane=charm_name in DATA_PLANE_CHARMS,
+                    ),
+                )
+                machines[unit_machine["id"]] = machine
+        return machines

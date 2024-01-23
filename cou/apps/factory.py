@@ -21,7 +21,7 @@ from typing import Optional
 
 from juju.client._definitions import ApplicationStatus
 
-from cou.apps.base import OpenStackApplication
+from cou.apps.base import Machine, OpenStackApplication
 from cou.utils.juju_utils import COUModel
 from cou.utils.openstack import is_charm_supported
 
@@ -41,6 +41,7 @@ class AppFactory:
         config: dict,
         model: COUModel,
         charm: str,
+        machines: dict[str, Machine],
     ) -> Optional[OpenStackApplication]:
         """Create the OpenStackApplication or registered subclasses.
 
@@ -48,6 +49,8 @@ class AppFactory:
         decorator can be instantiated and used with their customized methods.
         :param name: Name of the application
         :type name: str
+        :param machines: Machines in the model
+        :type machines: dict[str, Machine]
         :param status: Status of the application
         :type status: ApplicationStatus
         :param config: Configuration of the application
@@ -62,7 +65,14 @@ class AppFactory:
         # pylint: disable=too-many-arguments
         if is_charm_supported(charm):
             app_class = cls.charms.get(charm, OpenStackApplication)
-            return app_class(name=name, status=status, config=config, model=model, charm=charm)
+            return app_class(
+                name=name,
+                status=status,
+                config=config,
+                model=model,
+                charm=charm,
+                machines=machines,
+            )
         logger.debug(
             "'%s' is not a supported OpenStack related application and will be ignored.",
             name,
