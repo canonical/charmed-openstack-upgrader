@@ -25,6 +25,7 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradeStep,
 )
 from cou.utils import app_utils
@@ -389,14 +390,20 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=False,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
@@ -452,14 +459,20 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model, app
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=False,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
             parallel=False,
@@ -516,14 +529,20 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model, apps_mac
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     # no sub-step for refresh current channel or next channel
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=False,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
             parallel=False,
@@ -570,14 +589,20 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=False,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
@@ -639,14 +664,20 @@ def test_upgrade_plan_application_already_disable_action_managed(
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=False,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,

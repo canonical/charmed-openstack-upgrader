@@ -15,7 +15,6 @@
 """Application utilities."""
 import json
 import logging
-from collections.abc import Iterable
 from typing import Optional
 
 from packaging.version import Version
@@ -27,13 +26,11 @@ from cou.utils.openstack import CEPH_RELEASES
 logger = logging.getLogger(__name__)
 
 
-async def upgrade_packages(
-    units: Iterable[str], model: COUModel, packages_to_hold: Optional[list]
-) -> None:
+async def upgrade_packages(unit: str, model: COUModel, packages_to_hold: Optional[list]) -> None:
     """Run package updates and upgrades on each unit of an Application.
 
-    :param units: The list of unit names where the package upgrade runs on.
-    :type units: Iterable[str]
+    :param unit: Unit name where the package upgrade runs on.
+    :type unit: str
     :param model: COUModel object
     :type model: COUModel
     :param packages_to_hold: A list of packages to put on hold during package upgrade.
@@ -46,8 +43,7 @@ async def upgrade_packages(
         packages = " ".join(packages_to_hold)
         command = f"apt-mark hold {packages} && {command} ; apt-mark unhold {packages}"
 
-    for unit in units:
-        await model.run_on_unit(unit_name=unit, command=command, timeout=600)
+    await model.run_on_unit(unit_name=unit, command=command, timeout=600)
 
 
 async def get_instance_count(unit: str, model: COUModel) -> int:

@@ -34,6 +34,7 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
@@ -513,13 +514,21 @@ class OpenStackApplication:
         :return: Plan for upgrading software packages to the latest of the current release.
         :rtype: PreUpgradeStep
         """
-        return PreUpgradeStep(
+        step = PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
             parallel=parallel,
-            coro=upgrade_packages(self.status.units.keys(), self.model, self.packages_to_hold),
         )
+        for unit in self.units:
+            step.add_step(
+                UnitUpgradeStep(
+                    description=f"Upgrade software packages on unit {unit.name}",
+                    coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
+                )
+            )
+
+        return step
 
     def _get_refresh_charm_plan(
         self, target: OpenStackRelease, parallel: bool = False
