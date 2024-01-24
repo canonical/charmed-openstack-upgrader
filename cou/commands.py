@@ -368,6 +368,15 @@ class CLIargs:
         """
         return not self.auto_approve
 
+    @property
+    def is_data_plane_command(self) -> bool:
+        """Whether if the command passed is data-plane related.
+
+        :return: True if is data-plane, false otherwise.
+        :rtype: bool
+        """
+        return self.upgrade_group == DATA_PLANE
+
 
 def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements
     """Parse cli arguments.
