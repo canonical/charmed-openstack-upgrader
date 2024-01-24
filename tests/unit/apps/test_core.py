@@ -166,7 +166,8 @@ def test_application_different_wl(status, config, model, apps_machines):
         r"'ussuri': \['keystone\/0', 'keystone\/1'\], 'victoria': \['keystone\/2'\]. "
         "This is not currently handled."
     )
-    app_status = status["keystone_focal_ussuri_victoria"]
+    app_status = status["keystone_focal_ussuri"]
+    app_status.units["keystone/2"].workload_version = "18.1.0"
     app_config = config["openstack_ussuri"]
 
     app = Keystone(
@@ -179,7 +180,10 @@ def test_application_different_wl(status, config, model, apps_machines):
 def test_application_cs(status, config, units, model, apps_machines):
     """Test when application is from charm store."""
     target = OpenStackRelease("victoria")
-    app_status = status["keystone_focal_ussuri_cs"]
+
+    app_status = status["keystone_focal_ussuri"]
+    app_status.charm = "cs:amd64/focal/keystone-638"
+
     app_config = config["openstack_ussuri"]
     exp_os_origin = "distro"
     exp_units = units["units_ussuri"]
@@ -443,7 +447,10 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
 
 def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model, apps_machines):
     target = OpenStackRelease("victoria")
-    app_status = status["keystone_focal_ussuri_cs"]
+
+    app_status = status["keystone_focal_ussuri"]
+    app_status.charm = "cs:amd64/focal/keystone-638"
+
     app_config = config["openstack_ussuri"]
     app = Keystone(
         "my_keystone", app_status, app_config, model, "keystone", apps_machines["keystone"]

@@ -140,9 +140,9 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 @pytest.mark.asyncio
 async def test_generate_plan(apps, model):
     target = OpenStackRelease("victoria")
-    app_keystone = apps["keystone_ussuri"]
-    app_cinder = apps["cinder_ussuri"]
-    app_keystone_ldap = apps["keystone_ldap"]
+    app_keystone = apps["keystone_focal_ussuri"]
+    app_cinder = apps["cinder_focal_ussuri"]
+    app_keystone_ldap = apps["keystone_ldap_focal_ussuri"]
     analysis_result = Analysis(
         model=model,
         apps_control_plane=[app_keystone, app_cinder, app_keystone_ldap],
@@ -304,8 +304,8 @@ async def test_create_upgrade_plan_failed():
 def test_plan_print_warn_manually_upgrade(mock_print, model, apps):
     result = Analysis(
         model=model,
-        apps_control_plane=[apps["keystone_wallaby"]],
-        apps_data_plane=[apps["nova_ussuri"]],
+        apps_control_plane=[apps["keystone_focal_wallaby"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
     )
     manually_upgrade_data_plane(result)
     mock_print.assert_called_with(
@@ -317,8 +317,8 @@ def test_plan_print_warn_manually_upgrade(mock_print, model, apps):
 def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
     result = Analysis(
         model=model,
-        apps_control_plane=[apps["keystone_ussuri"]],
-        apps_data_plane=[apps["nova_ussuri"]],
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
     )
     manually_upgrade_data_plane(result)
     mock_print.assert_not_called()

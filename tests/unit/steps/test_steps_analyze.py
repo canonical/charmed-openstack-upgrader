@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.apps.machine import Machine
 from cou.steps import analyze
 from cou.steps.analyze import Analysis
 
@@ -75,9 +76,9 @@ def test_analysis_dump(apps, model):
     result = analyze.Analysis(
         model=model,
         apps_control_plane=[
-            apps["keystone_ussuri"],
-            apps["cinder_ussuri"],
-            apps["rmq_ussuri"],
+            apps["keystone_focal_ussuri"],
+            apps["cinder_focal_ussuri"],
+            apps["rmq"],
         ],
         apps_data_plane=[],
     )
@@ -85,9 +86,15 @@ def test_analysis_dump(apps, model):
 
 
 @pytest.mark.asyncio
-async def test_populate_model(full_status, config, model):
+async def test_populate_model(full_status, config, model, apps_machines):
     model.get_status = AsyncMock(return_value=full_status)
     model.get_application_config = AsyncMock(return_value=config["openstack_ussuri"])
+
+    machines = {}
+    for sub_dict in apps_machines.values():
+        machines.update(sub_dict)
+
+    model.get_model_machines = AsyncMock(return_value=machines)
 
     # Initially, 6 applications are in the status: keystone, cinder, rabbitmq-server, my-app,
     # ceph-osd and nova-compute. my-app it's not on the lookup table, so won't be instantiated.
@@ -108,7 +115,7 @@ async def test_populate_model(full_status, config, model):
 @patch.object(analyze.Analysis, "_populate", new_callable=AsyncMock)
 async def test_analysis_create(mock_populate, apps, model):
     """Test analysis object."""
-    exp_apps = [apps["keystone_ussuri"], apps["cinder_ussuri"], apps["rmq_ussuri"]]
+    exp_apps = [apps["keystone_focal_ussuri"], apps["cinder_focal_ussuri"], apps["rmq"]]
     expected_result = analyze.Analysis(
         model=model, apps_control_plane=exp_apps, apps_data_plane=[]
     )
@@ -123,7 +130,11 @@ async def test_analysis_create(mock_populate, apps, model):
 async def test_analysis_detect_current_cloud_os_release_different_releases(apps, model):
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[apps["rmq_ussuri"], apps["keystone_wallaby"], apps["cinder_ussuri"]],
+        apps_control_plane=[
+            apps["rmq"],
+            apps["keystone_focal_wallaby"],
+            apps["cinder_focal_ussuri"],
+        ],
         apps_data_plane=[],
     )
 
@@ -135,7 +146,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(apps,
 async def test_analysis_detect_current_cloud_os_release_same_release(apps, model):
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[apps["cinder_ussuri"], apps["keystone_ussuri"]],
+        apps_control_plane=[apps["cinder_focal_ussuri"], apps["keystone_focal_ussuri"]],
         apps_data_plane=[],
     )
 
@@ -147,7 +158,11 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps, model
 async def test_analysis_detect_current_cloud_series_same_series(apps, model):
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[apps["rmq_ussuri"], apps["keystone_wallaby"], apps["cinder_ussuri"]],
+        apps_control_plane=[
+            apps["rmq"],
+            apps["keystone_focal_wallaby"],
+            apps["cinder_focal_ussuri"],
+        ],
         apps_data_plane=[],
     )
 
@@ -157,9 +172,13 @@ async def test_analysis_detect_current_cloud_series_same_series(apps, model):
 
 @pytest.mark.asyncio
 async def test_analysis_detect_current_cloud_series_different_series(apps, model):
+    # change keystone to bionic
+    keystone_bionic_ussuri = apps["keystone_focal_ussuri"]
+    keystone_bionic_ussuri.status.series = "bionic"
+
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[apps["cinder_ussuri"], apps["keystone_bionic_ussuri"]],
+        apps_control_plane=[apps["cinder_focal_ussuri"], keystone_bionic_ussuri],
         apps_data_plane=[],
     )
 
@@ -174,9 +193,12 @@ def _app(name, units):
     return app
 
 
-def _unit(machine):
+def _unit(machine_id, is_data_plane):
     unit = MagicMock(spec_set=ApplicationUnit).return_value
-    unit.machine = machine
+    mock_machine = MagicMock(spec_set=Machine("1", "juju-efc45", "zone-1", False))
+    mock_machine.machine_id = machine_id
+    mock_machine.is_data_plane = is_data_plane
+    unit.machine = mock_machine
     return unit
 
 
@@ -184,22 +206,22 @@ def _unit(machine):
     "exp_control_plane, exp_data_plane",
     [
         (
-            [_app("keystone", [_unit("0"), _unit("1"), _unit("2")])],
-            [_app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")])],
+            [_app("keystone", [_unit("0", False), _unit("1", False), _unit("2", False)])],
+            [_app("ceph-osd", [_unit("3", True), _unit("4", True), _unit("5", True)])],
         ),
         (
             [],
             [
-                _app("nova-compute", [_unit("0"), _unit("1"), _unit("2")]),
-                _app("keystone", [_unit("0"), _unit("1"), _unit("2")]),
-                _app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")]),
+                _app("nova-compute", [_unit("0", True), _unit("1", True), _unit("2", True)]),
+                _app("keystone", [_unit("0", False), _unit("1", False), _unit("2", False)]),
+                _app("ceph-osd", [_unit("3", True), _unit("4", True), _unit("5", True)]),
             ],
         ),
         (
-            [_app("keystone", [_unit("6"), _unit("7"), _unit("8")])],
+            [_app("keystone", [_unit("6", False), _unit("7", False), _unit("8", False)])],
             [
-                _app("nova-compute", [_unit("0"), _unit("1"), _unit("2")]),
-                _app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")]),
+                _app("nova-compute", [_unit("0", True), _unit("1", True), _unit("2", True)]),
+                _app("ceph-osd", [_unit("3", True), _unit("4", True), _unit("5", True)]),
             ],
         ),
     ],

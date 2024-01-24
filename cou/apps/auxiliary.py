@@ -182,7 +182,7 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
         return super().pre_upgrade_steps(target)
 
 
-@AppFactory.register_application(["mysql-innodb-cluster"])
+@AppFactory.register_application(["mysql_innodb_cluster"])
 class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
     """Application for mysql-innodb-cluster charm."""
 
