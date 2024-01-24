@@ -22,71 +22,78 @@ from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
 
-def test_application_versionless(status, config, model):
+def test_application_versionless(status, config, model, apps_machines):
     app = OpenStackChannelBasedApplication(
         "glance-simplestreams-sync",
-        status["glance_simplestreams_sync_ussuri"],
+        status["glance_simplestreams_sync_focal_ussuri"],
         config["openstack_ussuri"],
         model,
         "glance-simplestreams-sync",
+        apps_machines["glance-simplestreams-sync"],
     )
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is True
 
 
-def test_application_gnocchi_ussuri(status, config, model):
+def test_application_gnocchi_ussuri(status, config, model, apps_machines):
     app = OpenStackChannelBasedApplication(
         "gnocchi",
-        status["gnocchi_ussuri"],
+        status["gnocchi_focal_ussuri"],
         config["openstack_ussuri"],
         model,
         "gnocchi",
+        apps_machines["gnocchi"],
     )
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is False
 
 
-def test_application_gnocchi_xena(status, config, model):
+def test_application_gnocchi_xena(status, config, model, apps_machines):
     # workload version is the same for xena and yoga, but current_os_release
     # is based on the channel.
     app = OpenStackChannelBasedApplication(
         "gnocchi",
-        status["gnocchi_xena"],
+        status["gnocchi_focal_xena"],
         config["openstack_xena"],
         model,
         "gnocchi",
+        apps_machines["gnocchi"],
     )
     assert app.current_os_release == "xena"
     assert app.is_versionless is False
 
 
-def test_application_designate_bind_ussuri(status, config, model):
+def test_application_designate_bind_ussuri(status, config, model, apps_machines):
     # workload version is the same from ussuri to yoga, but current_os_release
     # is based on the channel.
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"] = {"value": False}
     app = OpenStackChannelBasedApplication(
         "designate-bind",
-        status["designate_bind_ussuri"],
+        status["designate_bind_focal_ussuri"],
         app_config,
         model,
         "designate-bind",
+        apps_machines["designate-bind"],
     )
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is False
 
 
-def test_application_versionless_upgrade_plan_ussuri_to_victoria(status, config, model):
+def test_application_versionless_upgrade_plan_ussuri_to_victoria(
+    status, config, model, apps_machines
+):
     target = OpenStackRelease("victoria")
     app_config = config["openstack_ussuri"]
     # Does not have action-managed-upgrade
     app_config.pop("action-managed-upgrade")
     app = OpenStackChannelBasedApplication(
         "glance-simplestreams-sync",
-        status["glance_simplestreams_sync_ussuri"],
+        status["glance_simplestreams_sync_focal_ussuri"],
         app_config,
         model,
         "glance-simplestreams-sync",
+        apps_machines["glance-simplestreams-sync"],
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -131,17 +138,18 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(status, config,
     assert upgrade_plan == expected_plan
 
 
-def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, model):
+def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
     # Gnocchi from ussuri to victoria upgrade the workload version from 4.3.4 to 4.4.0.
     target = OpenStackRelease("victoria")
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"] = {"value": False}
     app = OpenStackChannelBasedApplication(
         "gnocchi",
-        status["gnocchi_ussuri"],
+        status["gnocchi_focal_ussuri"],
         app_config,
         model,
         "gnocchi",
+        apps_machines["gnocchi"],
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -196,16 +204,19 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
     assert upgrade_plan == expected_plan
 
 
-def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(status, config, model):
+def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
+    status, config, model, apps_machines
+):
     target = OpenStackRelease("victoria")
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"] = {"value": False}
     app = OpenStackChannelBasedApplication(
         "designate-bind",
-        status["designate_bind_ussuri"],
+        status["designate_bind_focal_ussuri"],
         app_config,
         model,
         "designate-bind",
+        apps_machines["designate-bind"],
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)
