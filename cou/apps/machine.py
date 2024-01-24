@@ -25,7 +25,6 @@ class Machine:
     machine_id: str
     hostname: str
     az: Optional[str]  # simple deployments may not have azs
-    is_data_plane: bool
 
     def __repr__(self) -> str:
         """Representation of the juju Machine.

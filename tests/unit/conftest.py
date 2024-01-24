@@ -104,34 +104,30 @@ def _generate_units(units_machines_workloads):
 @pytest.fixture
 def apps_machines():
     return {
-        **_generate_apps_machines("keystone", KEYSTONE_MACHINES, STANDARD_AZS, False),
-        **_generate_apps_machines("cinder", CINDER_MACHINES, STANDARD_AZS, False),
-        **_generate_apps_machines("nova-compute", NOVA_MACHINES, STANDARD_AZS, True),
-        **_generate_apps_machines("rmq", RMQ_MACHINES, STANDARD_AZS, False),
-        **_generate_apps_machines("ceph-mon", CEPH_MON_MACHINES, STANDARD_AZS, False),
-        **_generate_apps_machines("ovn-central", OVN_MACHINES, STANDARD_AZS, False),
-        **_generate_apps_machines("mysql-innodb-cluster", MYSQL_MACHINES, STANDARD_AZS, False),
+        **_generate_apps_machines("keystone", KEYSTONE_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("cinder", CINDER_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("nova-compute", NOVA_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("rmq", RMQ_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("ceph-mon", CEPH_MON_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("ovn-central", OVN_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("mysql-innodb-cluster", MYSQL_MACHINES, STANDARD_AZS),
         **_generate_apps_machines(
-            "glance-simplestreams-sync", GLANCE_SIMPLE_MACHINES, STANDARD_AZS, False
+            "glance-simplestreams-sync", GLANCE_SIMPLE_MACHINES, STANDARD_AZS
         ),
-        **_generate_apps_machines("gnocchi", GNOCCHI_MACHINES, STANDARD_AZS, False),
-        **_generate_apps_machines("designate-bind", DESIGNATE_MACHINES, STANDARD_AZS, False),
-        **_generate_apps_machines("ceph-osd", CEPH_OSD_MACHINES, STANDARD_AZS, True),
-        **_generate_apps_machines("my-app", MY_APP_MACHINES, STANDARD_AZS, False),
+        **_generate_apps_machines("gnocchi", GNOCCHI_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("designate-bind", DESIGNATE_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("ceph-osd", CEPH_OSD_MACHINES, STANDARD_AZS),
+        **_generate_apps_machines("my-app", MY_APP_MACHINES, STANDARD_AZS),
     }
 
 
-def _generate_apps_machines(charm, machines, azs, is_data_plane):
+def _generate_apps_machines(charm, machines, azs):
     hostnames = [f"{HOSTNAME_PREFIX}-{machine}" for machine in machines]
-    machines_hostnames_azs_is_data_plane = zip_longest(
-        machines, hostnames, azs, [is_data_plane], fillvalue=is_data_plane
-    )
+    machines_hostnames_azs = zip(machines, hostnames, azs)
     return {
         charm: {
-            machine_id: Machine(
-                machine_id=machine_id, hostname=hostname, az=az, is_data_plane=is_data_plane
-            )
-            for machine_id, hostname, az, is_data_plane in machines_hostnames_azs_is_data_plane
+            machine_id: Machine(machine_id=machine_id, hostname=hostname, az=az)
+            for machine_id, hostname, az in machines_hostnames_azs
         }
     }
 
