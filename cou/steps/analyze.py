@@ -22,7 +22,7 @@ from typing import Optional
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.utils import juju_utils
-from cou.utils.openstack import UPGRADE_ORDER, OpenStackRelease
+from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,6 @@ class Analysis:
     :param apps_data_plane: Data plane applications in the model
     :type apps_data_plane:  list[OpenStackApplication]
     """
-
-    # pylint: disable=too-many-instance-attributes
 
     model: juju_utils.COUModel
     apps_control_plane: list[OpenStackApplication]
@@ -68,9 +66,25 @@ class Analysis:
         :return: Control plane and data plane application lists.
         :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
         """
+
+        def is_data_plane(app: OpenStackApplication) -> bool:
+            """Check if app belong to data plane.
+
+            :param app: application
+            :type app: OpenStackApplication
+            :return: boolean
+            :rtype: bool
+            """
+            return app.charm in DATA_PLANE_CHARMS
+
         control_plane, data_plane = [], []
+        data_plane_machines = {
+            unit.machine for app in apps if is_data_plane(app) for unit in app.units
+        }
         for app in apps:
-            if any(unit.machine.is_data_plane for unit in app.units):
+            if is_data_plane(app):
+                data_plane.append(app)
+            elif any(unit.machine in data_plane_machines for unit in app.units):
                 data_plane.append(app)
             else:
                 control_plane.append(app)
@@ -91,11 +105,7 @@ class Analysis:
 
         control_plane, data_plane = cls._split_apps(apps)
 
-        return Analysis(
-            model=model,
-            apps_data_plane=data_plane,
-            apps_control_plane=control_plane,
-        )
+        return Analysis(model=model, apps_data_plane=data_plane, apps_control_plane=control_plane)
 
     @classmethod
     async def _populate(cls, model: juju_utils.COUModel) -> list[OpenStackApplication]:
@@ -111,15 +121,14 @@ class Analysis:
         :rtype: List[OpenStackApplication]
         """
         juju_status = await model.get_status()
-        juju_applications = await model.get_applications()
         juju_machines = await model.get_model_machines()
         apps = {
             AppFactory.create(
                 name=app,
                 status=app_status,
-                config=juju_applications[app].get_config(),
+                config=await model.get_application_config(app),
                 model=model,
-                charm=juju_applications[app].charm_name,
+                charm=await model.get_charm_name(app),
                 machines={
                     unit_status.machine: juju_machines[unit_status.machine]
                     for unit_status in app_status.units.values()

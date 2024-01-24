@@ -193,12 +193,9 @@ def _app(name, units):
     return app
 
 
-def _unit(machine_id, is_data_plane):
+def _unit(machine_id):
     unit = MagicMock(spec_set=ApplicationUnit).return_value
-    mock_machine = MagicMock(spec_set=Machine("1", "juju-efc45", "zone-1", False))
-    mock_machine.machine_id = machine_id
-    mock_machine.is_data_plane = is_data_plane
-    unit.machine = mock_machine
+    unit.machine = Machine(machine_id, "juju-efc45", "zone-1")
     return unit
 
 
@@ -206,22 +203,22 @@ def _unit(machine_id, is_data_plane):
     "exp_control_plane, exp_data_plane",
     [
         (
-            [_app("keystone", [_unit("0", False), _unit("1", False), _unit("2", False)])],
-            [_app("ceph-osd", [_unit("3", True), _unit("4", True), _unit("5", True)])],
+            [_app("keystone", [_unit("0"), _unit("1"), _unit("2")])],
+            [_app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")])],
         ),
         (
             [],
             [
-                _app("nova-compute", [_unit("0", True), _unit("1", True), _unit("2", True)]),
-                _app("keystone", [_unit("0", False), _unit("1", False), _unit("2", False)]),
-                _app("ceph-osd", [_unit("3", True), _unit("4", True), _unit("5", True)]),
+                _app("nova-compute", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("keystone", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")]),
             ],
         ),
         (
-            [_app("keystone", [_unit("6", False), _unit("7", False), _unit("8", False)])],
+            [_app("keystone", [_unit("6"), _unit("7"), _unit("8")])],
             [
-                _app("nova-compute", [_unit("0", True), _unit("1", True), _unit("2", True)]),
-                _app("ceph-osd", [_unit("3", True), _unit("4", True), _unit("5", True)]),
+                _app("nova-compute", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")]),
             ],
         ),
     ],
