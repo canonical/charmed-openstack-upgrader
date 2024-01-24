@@ -24,8 +24,11 @@ from cou.steps import (
     BaseStep,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradePlan,
+    UpgradeStep,
     compare_step_coroutines,
+    is_unit_upgrade_step,
 )
 
 
@@ -208,6 +211,15 @@ def test_step_add_step():
     assert len(plan.sub_steps) == exp_sub_steps
 
 
+def test_step_add_step_failed():
+    """Test BaseStep adding sub steps failing."""
+    exp_error_msg = "only steps that are derived from BaseStep are supported"
+    plan = BaseStep(description="plan")
+
+    with pytest.raises(TypeError, match=exp_error_msg):
+        plan.add_step(MagicMock())
+
+
 def test_step_cancel_safe():
     """Test step safe cancel."""
     plan = BaseStep(description="plan")
@@ -367,3 +379,17 @@ async def test_step_full_run(sub_steps, exp_order, parallel):
         await step_run(plan)
 
     assert steps_order == exp_order
+
+
+@pytest.mark.parametrize(
+    "step, exp_result",
+    [
+        (UnitUpgradeStep(), True),
+        (UpgradeStep(), False),
+        (PreUpgradeStep(), False),
+        (BaseStep(), False),
+    ],
+)
+def test_is_unit_upgrade_step(step, exp_result):
+    """Test helper function for checking if step is unit upgrade step."""
+    assert is_unit_upgrade_step(step) == exp_result
