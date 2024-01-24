@@ -212,7 +212,7 @@ def test_step_add_step():
 
 def test_step_add_step_failed():
     """Test BaseStep adding sub steps failing."""
-    exp_error_msg = "only steps that are derived from BaseStep are supported"
+    exp_error_msg = "Cannot add an upgrade step that is not derived from BaseStep"
     plan = BaseStep(description="plan")
 
     with pytest.raises(TypeError, match=exp_error_msg):
