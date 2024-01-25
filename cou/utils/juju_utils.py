@@ -25,11 +25,13 @@ from juju.client._definitions import FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
 from juju.errors import JujuAppError, JujuError, JujuUnitError
+from juju.machine import Machine as JujuMachine
 from juju.model import Model
 from juju.unit import Unit
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
+from cou.apps.machine import Machine
 from cou.exceptions import (
     ActionFailed,
     ApplicationError,
@@ -189,6 +191,15 @@ class COUModel:
             raise ActionFailed(action, output=action_obj.data)
 
         return action_obj
+
+    async def _get_machines(self) -> dict[str, JujuMachine]:
+        """Get all machines from the model.
+
+        :return: Machines from the model connected.
+        :rtype: dict[str, Application]
+        """
+        model = await self._get_model()
+        return model.machines
 
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
@@ -499,3 +510,19 @@ class COUModel:
             apps = await self._get_supported_apps()
 
         await _wait_for_active_idle()
+
+    async def get_model_machines(self) -> dict[str, Machine]:
+        """Get all the machines in the model.
+
+        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
+        :rtype: dict[str, Machine]
+        """
+        juju_machines = await self._get_machines()
+        return {
+            machine.id: Machine(
+                machine_id=machine.data["id"],
+                hostname=machine.data["hostname"],
+                az=machine.data["hardware-characteristics"].get("availability-zone"),
+            )
+            for machine in juju_machines.values()
+        }

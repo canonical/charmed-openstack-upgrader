@@ -24,6 +24,7 @@ from typing import Any, Optional
 from juju.client._definitions import ApplicationStatus, UnitStatus
 from ruamel.yaml import YAML
 
+from cou.apps.machine import Machine
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -54,8 +55,8 @@ class ApplicationUnit:
 
     name: str
     os_version: OpenStackRelease
+    machine: Machine
     workload_version: str = ""
-    machine: str = ""
 
 
 @dataclass
@@ -99,6 +100,7 @@ class OpenStackApplication:
     config: dict
     model: COUModel
     charm: str
+    machines: dict[str, Machine]
     charm_origin: str = ""
     os_origin: str = ""
     origin_setting: Optional[str] = None
@@ -169,7 +171,7 @@ class OpenStackApplication:
                         name=name,
                         workload_version=unit.workload_version,
                         os_version=compatible_os_version,
-                        machine=unit.machine,
+                        machine=self.machines[unit.machine],
                     )
                 )
 
@@ -370,16 +372,8 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        try:
-            # get the OpenStack release from the channel track of the application.
-            os_track_release_channel = OpenStackRelease(self._get_track_from_channel(self.channel))
-        except ValueError:
-            logger.debug(
-                "The current channel of '%s' does not exist or is unexpectedly formatted",
-                self.name,
-            )
-            os_track_release_channel = self.current_os_release
-        return os_track_release_channel
+        # get the OpenStack release from the channel track of the application.
+        return OpenStackRelease(self._get_track_from_channel(self.channel))
 
     @property
     def can_upgrade_current_channel(self) -> bool:
