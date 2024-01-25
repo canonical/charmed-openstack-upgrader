@@ -22,6 +22,7 @@ import pytest
 from cou.exceptions import CanceledStep
 from cou.steps import (
     BaseStep,
+    HypervisorUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
     UnitUpgradeStep,
@@ -392,3 +393,14 @@ async def test_step_full_run(sub_steps, exp_order, parallel):
 def test_is_unit_upgrade_step(step, exp_result):
     """Test helper function for checking if step is unit upgrade step."""
     assert is_unit_upgrade_step(step) == exp_result
+
+
+@pytest.mark.asyncio
+async def test_hypervisor_upgrade_plan_step_instances():
+    """Test setting parallel for HypervisorUpgradePlan."""
+    description = "test plan"
+    step = HypervisorUpgradePlan(description=description)
+
+    assert step._coro is None
+    assert step.parallel is True
+    assert step.prompt is False
