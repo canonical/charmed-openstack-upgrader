@@ -293,8 +293,8 @@ class UpgradePlan(BaseStep):
         logger.debug("No coroutine to run for %s", repr(self))
 
 
-class AvailabilityZoneUpgradePlan(UpgradePlan):
-    """Represents the plan for upgrading availability zone upgrade.
+class HypervisorGroupUpgradePlan(UpgradePlan):
+    """Represents the plan for group of hypervisors.
 
     This class is intended to be used as group for hypervisor upgrade steps, therefore
     doesn't accept coroutine or parallel as inputs.
@@ -317,7 +317,7 @@ class HypervisorUpgradePlan(BaseStep):
     """Represents the plan for hypervisor upgrade.
 
     This class is intended to be used as a group for unit-level upgrade steps, which are
-    grouped by single hypervisor. It doesn't accept coroutine or parallel as inputs.
+    grouped by a single hypervisor. It doesn't accept coroutine or parallel as inputs.
 
     All sub-steps will run in parallel.
     """

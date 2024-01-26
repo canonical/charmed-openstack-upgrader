@@ -29,19 +29,22 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class Hypervisor:
-    """Hypervisor containing units for multiple applications."""
+class HypervisorMachine:
+    """Hypervisor machine containing units for multiple applications."""
 
     name: str
     units: list[ApplicationUnit]
 
 
 @dataclass(frozen=True)
-class AZ:
-    """Availability Zone hypervisors in the az."""
+class HypervisorGroup:
+    """Group of hypervisors.
+
+    For example, this can represent a group of all hypervisors in a single availability zone.
+    """
 
     name: str
-    hypervisors: list[Hypervisor]
+    hypervisors: list[HypervisorMachine]
 
 
 def verify_apps(apps: list[OpenStackApplication]) -> None:
@@ -56,7 +59,7 @@ def verify_apps(apps: list[OpenStackApplication]) -> None:
 
 
 class HypervisorUpgradePlanner:
-    """Planer for all hypervisor updates.
+    """Planner for all hypervisor updates.
 
     This planner is meant to be used to upgrade machines contains the nova-compute application.
     """
@@ -72,39 +75,48 @@ class HypervisorUpgradePlanner:
 
     @property
     def apps(self) -> list[OpenStackApplication]:
-        """Return list of apps in hypervisor class."""
+        """Return a list of apps in the hypervisor class.
+
+        :return: List of OpenStack applications.
+        :rtype: list[OpenStackApplication]
+        """
         return self._apps
 
     @property
-    def azs(self) -> list[AZ]:
-        """Returns list of AZs defined in individual applications.
+    def azs(self) -> list[HypervisorGroup]:
+        """Returns a list of AZs defined in individual applications.
 
         Each AZ contains a sorted list hypervisors, where each hypervisor has sorted list of units.
         The order of units depends on the order in which they needs to be upgraded.
         eg.
         az1:
         - hypervisor0:
-          - nova-compute/0
           - cinder/0
+          - nova-compute/0
         - hypervisor1:
-          - nova-compute/1
           - cinder/1
+          - nova-compute/1
         ...
+
+        :return: List of availability zones.
+        :rtype: list[HypervisorGroup]
         """
         raise NotImplementedError
 
     def _generate_pre_upgrade_plan(self) -> PreUpgradeStep:
-        """Generate pre upgrade plan all application.
+        """Generate pre upgrade plan for all applications.
 
-        This section should create a plan with steps like changing Juju config option, etc.
+        This section should create a plan with steps like changing charm config option, etc.
 
         :return: Pre-upgrade step with all needed pre-upgrade steps.
         :rtype: PreUpgradeStep
         """
         raise NotImplementedError
 
-    def _generate_hypervisor_upgrade_plan(self, hypervisor: Hypervisor) -> HypervisorUpgradePlan:
-        """Genarete upgrade plan for single hypevisors.
+    def _generate_hypervisor_upgrade_plan(
+        self, hypervisor: HypervisorMachine
+    ) -> HypervisorUpgradePlan:
+        """Genarete upgrade plan for a single hypervisor.
 
         Each hypervisor upgrade consists of a UnitUpgradeStep, so all substeps should be based
         on UnitUpgradeStep.
@@ -117,7 +129,7 @@ class HypervisorUpgradePlanner:
         raise NotImplementedError
 
     def _generate_post_upgrade_plan(self) -> PostUpgradeStep:
-        """Generate post upgrade plan all application.
+        """Generate post upgrade plan for all applications.
 
         This section should create a plan with steps like checking versions, status of
         application, etc.
