@@ -18,6 +18,7 @@ import pytest
 from cou.apps.base import OpenStackApplication
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
+    DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
@@ -39,6 +40,10 @@ from cou.steps.plan import (
     is_control_plane_upgraded,
     manually_upgrade_data_plane,
     pre_plan_sanity_checks,
+    verify_data_plane_cli_azs,
+    verify_data_plane_cli_hostnames,
+    verify_data_plane_cli_input,
+    verify_data_plane_cli_machines,
     verify_data_plane_ready_to_upgrade,
     verify_highest_release_achieved,
     verify_supported_series,
@@ -46,6 +51,7 @@ from cou.steps.plan import (
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
+from tests.unit.conftest import KEYSTONE_MACHINES, NOVA_MACHINES
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
@@ -193,6 +199,7 @@ async def test_generate_plan(apps, model, cli_args):
         ("data-plane", True),
     ],
 )
+@patch("cou.steps.plan.verify_data_plane_cli_input")
 @patch("cou.steps.plan.verify_supported_series")
 @patch("cou.steps.plan.verify_highest_release_achieved")
 @patch("cou.steps.plan.verify_data_plane_ready_to_upgrade")
@@ -200,6 +207,7 @@ def test_pre_plan_sanity_checks(
     mock_verify_data_plane_ready_to_upgrade,
     mock_verify_highest_release_achieved,
     mock_verify_supported_series,
+    mock_verify_data_plane_cli_input,
     is_data_plane_command,
     expected_call,
     cli_args,
@@ -213,8 +221,10 @@ def test_pre_plan_sanity_checks(
     mock_verify_supported_series.assert_called_once()
     if expected_call:
         mock_verify_data_plane_ready_to_upgrade.assert_called_once_with(mock_analysis_result)
+        mock_verify_data_plane_cli_input.assert_called_once_with(cli_args, mock_analysis_result)
     else:
         mock_verify_data_plane_ready_to_upgrade.assert_not_called()
+        mock_verify_data_plane_cli_input.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -441,3 +451,191 @@ def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
     )
     manually_upgrade_data_plane(result)
     mock_print.assert_not_called()
+
+
+@patch("cou.steps.plan.verify_data_plane_cli_azs")
+@patch("cou.steps.plan.verify_data_plane_cli_hostnames")
+@patch("cou.steps.plan.verify_data_plane_cli_machines")
+def test_verify_data_plane_cli_no_input(
+    mock_verify_machines,
+    mock_verify_hostnames,
+    mock_verify_azs,
+    model,
+    apps,
+    cli_args,
+):
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = None
+    cli_args.hostnames = None
+    cli_args.availability_zones = None
+
+    assert verify_data_plane_cli_input(cli_args, result) is None
+
+    mock_verify_machines.assert_not_called()
+    mock_verify_hostnames.assert_not_called()
+    mock_verify_azs.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "cli_machines",
+    [
+        {NOVA_MACHINES[0]},
+        {NOVA_MACHINES[1]},
+        {NOVA_MACHINES[2]},
+        {NOVA_MACHINES[0], NOVA_MACHINES[1], NOVA_MACHINES[2]},
+    ],
+)
+@patch("cou.steps.plan.verify_data_plane_cli_azs")
+@patch("cou.steps.plan.verify_data_plane_cli_hostnames")
+def test_verify_data_plane_cli_input_machines(
+    mock_verify_hostnames,
+    mock_verify_azs,
+    cli_machines,
+    model,
+    apps,
+    cli_args,
+):
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = cli_machines
+    cli_args.hostnames = None
+    cli_args.availability_zones = None
+
+    assert verify_data_plane_cli_input(cli_args, result) is None
+
+    mock_verify_hostnames.assert_not_called()
+    mock_verify_azs.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "nova_unit",
+    [0, 1, 2],
+)
+@patch("cou.steps.plan.verify_data_plane_cli_azs")
+@patch("cou.steps.plan.verify_data_plane_cli_machines")
+def test_verify_data_plane_cli_input_hostnames(
+    mock_verify_machines,
+    mock_verify_azs,
+    nova_unit,
+    model,
+    apps,
+    cli_args,
+):
+    nova_machine = list(apps["nova_focal_ussuri"].machines.values())[nova_unit]
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = None
+    cli_args.hostnames = {nova_machine.hostname}
+    cli_args.availability_zones = None
+
+    assert verify_data_plane_cli_input(cli_args, result) is None
+
+    mock_verify_machines.assert_not_called()
+    mock_verify_azs.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "nova_unit",
+    [0, 1, 2],
+)
+@patch("cou.steps.plan.verify_data_plane_cli_hostnames")
+@patch("cou.steps.plan.verify_data_plane_cli_machines")
+def test_verify_data_plane_cli_input_azs(
+    mock_verify_machines,
+    mock_verify_hostnames,
+    nova_unit,
+    model,
+    apps,
+    cli_args,
+):
+    nova_machine = list(apps["nova_focal_ussuri"].machines.values())[nova_unit]
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = None
+    cli_args.hostnames = None
+    cli_args.availability_zones = {nova_machine.az}
+
+    assert verify_data_plane_cli_input(cli_args, result) is None
+
+    mock_verify_machines.assert_not_called()
+    mock_verify_hostnames.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "machine, exp_error_msg",
+    [
+        ({KEYSTONE_MACHINES[0]}, r"Machine.*are not considered as data-plane."),
+        ({"5/lxd/18"}, r"Machine.*don't exist."),
+    ],
+)
+def test_verify_data_plane_cli_machines_raise(apps, model, machine, exp_error_msg):
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
+        verify_data_plane_cli_machines(machine, result)
+
+
+@pytest.mark.parametrize(
+    "app, exp_error_msg",
+    [
+        ("keystone", r"Hostname.*are not considered as data-plane."),
+        ("cinder", r"Hostname.*don't exist."),  # cinder is not on the Analysis
+    ],
+)
+def test_verify_data_plane_cli_hostname_raise(apps, model, app, exp_error_msg):
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
+        machine = list(apps[f"{app}_focal_ussuri"].machines.values())[0]
+        verify_data_plane_cli_hostnames({machine.hostname}, result)
+
+
+@pytest.mark.parametrize(
+    "azs, exp_error_msg",
+    [
+        ({"zone-foo"}, r"Availability Zone.*don't exist."),
+        ({"zone-1", "zone-foo"}, r"Availability Zone.*don't exist."),
+    ],
+)
+def test_verify_data_plane_cli_azs_raise_dont_exist(apps, model, azs, exp_error_msg):
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
+        verify_data_plane_cli_azs(azs, result)
+
+
+def test_verify_data_plane_cli_azs_raise_cannot_find():
+    exp_error_msg = r"Cannot find Availability Zone\(s\). Is this a valid OpenStack cloud?"
+    mock_analyze = MagicMock()
+
+    mock_machine = MagicMock()
+    mock_machine.az = None
+    mock_machine.id = "1"
+    mock_machine.hostname = "juju-5e8cf8-1"
+
+    mock_analyze.machines = {"1": mock_machine}
+    mock_analyze.data_plane_machines = {"1": mock_machine}
+    with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
+        verify_data_plane_cli_azs({"zone-1"}, mock_analyze)

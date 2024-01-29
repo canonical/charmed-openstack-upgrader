@@ -15,7 +15,7 @@
 """Upgrade planning utilities."""
 
 import logging
-from typing import Callable, Optional, cast
+from typing import Callable
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -176,7 +176,7 @@ def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
 
 
 def verify_data_plane_cli_input(args: CLIargs, analysis_result: Analysis) -> None:
-    """Sane checks from the parameters passed in the cli to upgrade data-plane.
+    """Sanity checks from the parameters passed in the cli to upgrade data-plane.
 
     :param args: CLI arguments
     :type args: CLIargs
@@ -193,27 +193,27 @@ def verify_data_plane_cli_input(args: CLIargs, analysis_result: Analysis) -> Non
         verify_data_plane_cli_azs(cli_azs, analysis_result)
 
 
-def verify_data_plane_cli_machines(cli_machines: list[str], analysis_result: Analysis) -> None:
+def verify_data_plane_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:
     """Verify if the machines passed from the CLI are valid.
 
     :param cli_machines: Machines passed to the CLI as arguments
-    :type cli_machines: list[str]
+    :type cli_machines: set[str]
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    data_plane_membership_check(
+    verify_data_plane_membership(
         all_options=set(analysis_result.machines.keys()),
         data_plane_options=set(analysis_result.data_plane_machines.keys()),
-        cli_input=parametrize_cli_inputs(cli_machines),
+        cli_input=cli_machines,
         parameter_type="Machine(s)",
     )
 
 
-def verify_data_plane_cli_hostnames(cli_hostnames: list[str], analysis_result: Analysis) -> None:
+def verify_data_plane_cli_hostnames(cli_hostnames: set[str], analysis_result: Analysis) -> None:
     """Verify if the hostnames passed from the CLI are valid.
 
     :param cli_hostnames: Hostnames passed to the CLI as arguments
-    :type cli_hostnames: list[str]
+    :type cli_hostnames: set[str]
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
@@ -222,64 +222,46 @@ def verify_data_plane_cli_hostnames(cli_hostnames: list[str], analysis_result: A
         machine.hostname for machine in analysis_result.data_plane_machines.values()
     }
 
-    data_plane_membership_check(
+    verify_data_plane_membership(
         all_options=all_hostnames,
         data_plane_options=data_plane_hostnames,
-        cli_input=parametrize_cli_inputs(cli_hostnames),
+        cli_input=cli_hostnames,
         parameter_type="Hostname(s)",
     )
 
 
-def verify_data_plane_cli_azs(cli_azs: list[str], analysis_result: Analysis) -> None:
+def verify_data_plane_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> None:
     """Verify if the availability zones passed from the CLI are valid.
 
     :param cli_azs: AZs passed to the CLI as arguments
-    :type cli_azs: list[str]
+    :type cli_azs: set[str]
     :param analysis_result:  Analysis result
     :type analysis_result: Analysis
     :raises DataPlaneMachineFilterError: When the cloud does not have availability zones.
     """
-    all_azs_uncast: set[Optional[str]] = {
-        machine.az for machine in analysis_result.machines.values()
+    all_azs: set[str] = {
+        machine.az for machine in analysis_result.machines.values() if machine.az is not None
     }
-    data_plane_azs_uncast: set[Optional[str]] = {
-        machine.az for machine in analysis_result.data_plane_machines.values()
+    data_plane_azs: set[str] = {
+        machine.az
+        for machine in analysis_result.data_plane_machines.values()
+        if machine.az is not None
     }
 
-    # NOTE(gabrielcocenza) simple deployments may not have AZs. mypy does not understand
-    # that None is being removed from set, so the type goes from set[Optional[str]] to
-    # set[str]. As we can be sure of that, we can cast with the correct type to mypy.
-    all_azs_uncast.discard(None)
-    data_plane_azs_uncast.discard(None)
-
-    all_azs = cast(set[str], all_azs_uncast)
-    data_plane_azs = cast(set[str], data_plane_azs_uncast)
-
-    if data_plane_azs and all_azs:
-        data_plane_membership_check(
-            all_options=all_azs,
-            data_plane_options=data_plane_azs,
-            cli_input=parametrize_cli_inputs(cli_azs),
-            parameter_type="Availability Zone(s)",
+    if not data_plane_azs and not all_azs:
+        raise DataPlaneMachineFilterError(
+            "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
         )
 
-    raise DataPlaneMachineFilterError(
-        "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
+    verify_data_plane_membership(
+        all_options=all_azs,
+        data_plane_options=data_plane_azs,
+        cli_input=cli_azs,
+        parameter_type="Availability Zone(s)",
     )
 
 
-def parametrize_cli_inputs(cli_input: list[str]) -> set[str]:
-    """Parametrize the cli inputs.
-
-    :param cli_input: cli inputs.
-    :type cli_input: list[str]
-    :return: A set of elements passed in the cli.
-    :rtype: set[str]
-    """
-    return {raw_item.strip() for raw_items in cli_input for raw_item in raw_items.split(",")}
-
-
-def data_plane_membership_check(
+def verify_data_plane_membership(
     all_options: set[str],
     data_plane_options: set[str],
     cli_input: set[str],
