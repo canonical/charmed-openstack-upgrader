@@ -33,6 +33,7 @@ from cou.apps.auxiliary_subordinate import (  # noqa: F401
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.apps.channel_based import OpenStackChannelBasedApplication  # noqa: F401
 from cou.apps.core import Keystone, Octavia  # noqa: F401
+from cou.apps.machine import Machine
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
@@ -328,7 +329,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :rtype: UpgradePlan
     """
     pre_plan_sanity_checks(args, analysis_result)
-    hypervisors = await filter_hypervisors_units(args, analysis_result)
+    hypervisors = await filter_hypervisors_machines(args, analysis_result)
     logger.info("Hypervisors selected: %s", hypervisors)
     target = determine_upgrade_target(analysis_result)
 
@@ -378,9 +379,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     return plan
 
 
-async def filter_hypervisors_units(
-    args: CLIargs, analysis_result: Analysis
-) -> set[ApplicationUnit]:
+async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> set[Machine]:
     """Filter the hypervisors to generate plan and upgrade.
 
     :param args: CLI arguments
@@ -388,37 +387,28 @@ async def filter_hypervisors_units(
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :return: hypervisors filtered to generate plan and upgrade.
-    :rtype: list[ApplicationUnit]
+    :rtype: set[Machine]
     """
-    hypervisors_units = await _get_hypervisors_possible_to_upgrade(args.force, analysis_result)
+    hypervisors_machines = await _get_hypervisors_machines_possible_to_upgrade(
+        args.force, analysis_result
+    )
 
     if cli_machines := args.machines:
-        return {
-            unit
-            for unit in hypervisors_units
-            if unit.machine.machine_id in parametrize_cli_inputs(cli_machines)
-        }
+        return {machine for machine in hypervisors_machines if machine.machine_id in cli_machines}
 
     if cli_hostnames := args.hostnames:
-        return {
-            unit
-            for unit in hypervisors_units
-            if unit.machine.hostname in parametrize_cli_inputs(cli_hostnames)
-        }
+        print(cli_hostnames)
+        return {machine for machine in hypervisors_machines if machine.hostname in cli_hostnames}
 
     if cli_azs := args.availability_zones:
-        return {
-            unit
-            for unit in hypervisors_units
-            if unit.machine.az in parametrize_cli_inputs(cli_azs)
-        }
+        return {machine for machine in hypervisors_machines if machine.az in cli_azs}
 
-    return hypervisors_units
+    return hypervisors_machines
 
 
-async def _get_hypervisors_possible_to_upgrade(
+async def _get_hypervisors_machines_possible_to_upgrade(
     cli_force: bool, analysis_result: Analysis
-) -> set[ApplicationUnit]:
+) -> set[Machine]:
     """Get the hypervisors that are possible to upgrade.
 
     :param cli_force: If force is used, it gets all hypervisors, otherwise just the empty ones
@@ -426,16 +416,16 @@ async def _get_hypervisors_possible_to_upgrade(
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :return: Set of nova-compute units to upgrade
-    :rtype: set[ApplicationUnit]
+    :rtype: set[Machine]
     """
     hypervisors_units = _get_hypervisors_units(analysis_result.apps_data_plane)
 
     if cli_force:
-        return hypervisors_units
+        return {unit.machine for unit in hypervisors_units}
 
     hypervisors_units_name = [unit.name for unit in hypervisors_units]
     empty_hypervisors = await _get_empty_hypervisors(hypervisors_units_name, analysis_result.model)
-    return {unit for unit in hypervisors_units if unit.name in empty_hypervisors}
+    return {unit.machine for unit in hypervisors_units if unit.name in empty_hypervisors}
 
 
 def _get_hypervisors_units(data_plane_apps: list[OpenStackApplication]) -> set[ApplicationUnit]:

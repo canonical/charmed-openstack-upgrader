@@ -36,6 +36,7 @@ from cou.steps.backup import backup
 from cou.steps.plan import (
     create_upgrade_group,
     determine_upgrade_target,
+    filter_hypervisors_machines,
     generate_plan,
     is_control_plane_upgraded,
     manually_upgrade_data_plane,
@@ -639,3 +640,98 @@ def test_verify_data_plane_cli_azs_raise_cannot_find():
     mock_analyze.data_plane_machines = {"1": mock_machine}
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
         verify_data_plane_cli_azs({"zone-1"}, mock_analyze)
+
+
+@pytest.mark.parametrize(
+    "force, novas_machines_input, novas_machines_expected",
+    [
+        (False, [0, 1, 2], [0, 1]),
+        (False, [2], []),
+        (False, [0, 1], [0, 1]),
+        (False, [0], [0]),
+        (True, [0, 1, 2], [0, 1, 2]),
+        (True, [2], [2]),
+        (True, [0], [0]),
+    ],
+)
+@pytest.mark.asyncio
+@patch("cou.steps.plan._get_hypervisors_machines_possible_to_upgrade")
+async def test_filter_hypervisors_machines_by_machine_id(
+    mock_hypervisors_machines,
+    apps_machines,
+    cli_args,
+    model,
+    apps,
+    force,
+    novas_machines_input,
+    novas_machines_expected,
+):
+    expected_hypervisor = {
+        apps_machines["nova-compute"][NOVA_MACHINES[machine_id]]
+        for machine_id in novas_machines_expected
+    }
+
+    # assume that machine 2 is running a vm.
+    hypervisors_to_upgrade = {
+        apps_machines["nova-compute"][NOVA_MACHINES[0]],
+        apps_machines["nova-compute"][NOVA_MACHINES[1]],
+    }
+    if force:
+        hypervisors_to_upgrade.add(apps_machines["nova-compute"][NOVA_MACHINES[2]])
+
+    mock_hypervisors_machines.return_value = hypervisors_to_upgrade
+
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = {NOVA_MACHINES[machine_id] for machine_id in novas_machines_input}
+    cli_args.hostnames = None
+    cli_args.availability_zones = None
+    cli_args.force = force
+
+    hypervisors = await filter_hypervisors_machines(cli_args, result)
+
+    assert hypervisors == expected_hypervisor
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan._get_hypervisors_machines_possible_to_upgrade")
+async def test_filter_hypervisors_machines_by_hostname(
+    mock_hypervisors_machines, apps_machines, cli_args, model, apps
+):
+    hypervisor_machine = apps_machines["nova-compute"][NOVA_MACHINES[0]]
+    expected_hypervisor = {hypervisor_machine}
+    mock_hypervisors_machines.return_value = set(apps_machines["nova-compute"].values())
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = None
+    cli_args.hostnames = {hypervisor_machine.hostname}
+    hypervisors = await filter_hypervisors_machines(cli_args, result)
+
+    assert hypervisors == expected_hypervisor
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan._get_hypervisors_machines_possible_to_upgrade")
+async def test_filter_hypervisors_machines_by_az(
+    mock_hypervisors_machines, apps_machines, cli_args, model, apps
+):
+    hypervisor_machine = apps_machines["nova-compute"][NOVA_MACHINES[0]]
+    expected_hypervisor = {hypervisor_machine}
+    mock_hypervisors_machines.return_value = set(apps_machines["nova-compute"].values())
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = None
+    cli_args.hostnames = None
+    cli_args.availability_zones = {hypervisor_machine.az}
+    hypervisors = await filter_hypervisors_machines(cli_args, result)
+
+    assert hypervisors == expected_hypervisor
