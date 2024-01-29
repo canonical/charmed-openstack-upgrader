@@ -14,6 +14,7 @@
 
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
+import logging
 from dataclasses import dataclass
 from typing import Any, Iterable, Optional
 
@@ -21,6 +22,9 @@ import pkg_resources
 
 CONTROL_PLANE = "control-plane"
 DATA_PLANE = "data-plane"
+
+
+logger = logging.getLogger(__name__)
 
 
 class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
@@ -69,6 +73,27 @@ class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
         ):
             action.help = "Show this help message and exit."
         super().add_argument(action)
+
+
+class SplitArgs(argparse.Action):
+    """Custom COU action to split cli inputs."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Optional[str] = None,
+    ) -> None:
+        logger.debug("SplitArgs: %s %s %s %s", parser, namespace, values, option_string)
+        new_items = {item.strip() for item in values.split(",")}
+        cli_input = getattr(namespace, self.dest) or set()
+        cli_input.update(new_items)
+        setattr(
+            namespace,
+            self.dest,
+            cli_input,
+        )
 
 
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
@@ -148,30 +173,30 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
     dp_upgrade_group.add_argument(
         "--machine",
         "-m",
-        action="append",
         help="Specify machine id(s) to upgrade.\nThis option accepts a single machine id as well "
         "as a stringified comma-separated list of ids,\nand can be repeated multiple times.",
-        dest="raw_machines",
+        dest="machines",
+        action=SplitArgs,
         type=str,
     )
     dp_upgrade_group.add_argument(
         "--hostname",
         "-n",
-        action="append",
         help="Specify machine hostnames(s) to upgrade.\nThis option accepts a single hostname as "
         "well as a stringified comma-separated list of hostnames,\nand can be repeated multiple "
         "times.",
-        dest="raw_hostnames",
+        action=SplitArgs,
+        dest="hostnames",
         type=str,
     )
     dp_upgrade_group.add_argument(
         "--availability-zone",
         "--az",
-        action="append",
         help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
         "availability zone as well as a stringified comma-separated list of AZs,\n"
         "and can be repeated multiple times.",
-        dest="raw_availability_zones",
+        action=SplitArgs,
+        dest="availability_zones",
         type=str,
     )
     return dp_subparser
@@ -355,9 +380,9 @@ class CLIargs:
     model_name: Optional[str] = None
     upgrade_group: Optional[str] = None
     subcommand: Optional[str] = None  # for help option
-    raw_machines: Optional[list[str]] = None
-    raw_hostnames: Optional[list[str]] = None
-    raw_availability_zones: Optional[list[str]] = None
+    machines: Optional[set[str]] = None
+    hostnames: Optional[set[str]] = None
+    availability_zones: Optional[set[str]] = None
 
     @property
     def prompt(self) -> bool:
@@ -376,46 +401,6 @@ class CLIargs:
         :rtype: bool
         """
         return self.upgrade_group == DATA_PLANE
-
-    @property
-    def machines(self) -> Optional[set[str]]:
-        """Machines passed to the cli parametrized.
-
-        :return: Machines passed to the cli parametrized
-        :rtype: Optional[set[str]]
-        """
-        return self._parametrize_cli_inputs(self.raw_machines)
-
-    @property
-    def hostnames(self) -> Optional[set[str]]:
-        """Hostnames passed to the cli parametrized.
-
-        :return: Hostnames passed to the cli parametrized
-        :rtype: Optional[set[str]]
-        """
-        return self._parametrize_cli_inputs(self.raw_hostnames)
-
-    @property
-    def availability_zones(self) -> Optional[set[str]]:
-        """Availability zones passed to the cli parametrized.
-
-        :return: Availability zones passed to the cli parametrized
-        :rtype: Optional[set[str]]
-        """
-        return self._parametrize_cli_inputs(self.raw_availability_zones)
-
-    @staticmethod
-    def _parametrize_cli_inputs(cli_input: Optional[list[str]]) -> Optional[set[str]]:
-        """Parametrize the cli inputs.
-
-        :param cli_input: cli inputs.
-        :type cli_input: Optional[list[str]]
-        :return: A set of elements passed in the cli.
-        :rtype: Optional[set[str]]
-        """
-        if not cli_input:
-            return None
-        return {raw_item.strip() for raw_items in cli_input for raw_item in raw_items.split(",")}
 
 
 def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements

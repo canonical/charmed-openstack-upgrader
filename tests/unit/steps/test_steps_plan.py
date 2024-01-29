@@ -453,25 +453,13 @@ def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
     mock_print.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "machines, hostnames, azs",
-    [
-        ({"1", "2", "3"}, None, None),
-        (None, {"juju-cef358-1"}, None),
-        (None, None, {"zone-1"}),
-        (None, None, None),
-    ],
-)
 @patch("cou.steps.plan.verify_data_plane_cli_azs")
 @patch("cou.steps.plan.verify_data_plane_cli_hostnames")
 @patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_data_plane_cli_input(
+def test_verify_data_plane_cli_no_input(
     mock_verify_machines,
     mock_verify_hostnames,
     mock_verify_azs,
-    machines,
-    hostnames,
-    azs,
     model,
     apps,
     cli_args,
@@ -481,42 +469,109 @@ def test_verify_data_plane_cli_input(
         apps_control_plane=[apps["keystone_focal_ussuri"]],
         apps_data_plane=[apps["nova_focal_ussuri"]],
     )
-    cli_args.machines = machines
-    cli_args.hostnames = hostnames
-    cli_args.availability_zones = azs
+    cli_args.machines = None
+    cli_args.hostnames = None
+    cli_args.availability_zones = None
 
-    verify_data_plane_cli_input(cli_args, result)
+    assert verify_data_plane_cli_input(cli_args, result) is None
 
-    if machines:
-        mock_verify_machines.assert_called_once()
-        mock_verify_hostnames.assert_not_called()
-        mock_verify_azs.assert_not_called()
-
-    if hostnames:
-        mock_verify_machines.assert_not_called()
-        mock_verify_hostnames.assert_called_once()
-        mock_verify_azs.assert_not_called()
-
-    if azs:
-        mock_verify_machines.assert_not_called()
-        mock_verify_hostnames.assert_not_called()
-        mock_verify_azs.assert_called_once()
+    mock_verify_machines.assert_not_called()
+    mock_verify_hostnames.assert_not_called()
+    mock_verify_azs.assert_not_called()
 
 
 @pytest.mark.parametrize(
-    "machine",
+    "cli_machines",
     [
         {NOVA_MACHINES[0]},
+        {NOVA_MACHINES[1]},
+        {NOVA_MACHINES[2]},
         {NOVA_MACHINES[0], NOVA_MACHINES[1], NOVA_MACHINES[2]},
     ],
 )
-def test_verify_data_plane_cli_machines(apps, model, machine):
+@patch("cou.steps.plan.verify_data_plane_cli_azs")
+@patch("cou.steps.plan.verify_data_plane_cli_hostnames")
+def test_verify_data_plane_cli_input_machines(
+    mock_verify_hostnames,
+    mock_verify_azs,
+    cli_machines,
+    model,
+    apps,
+    cli_args,
+):
     result = Analysis(
         model=model,
         apps_control_plane=[apps["keystone_focal_ussuri"]],
         apps_data_plane=[apps["nova_focal_ussuri"]],
     )
-    assert verify_data_plane_cli_machines(machine, result) is None
+    cli_args.machines = cli_machines
+    cli_args.hostnames = None
+    cli_args.availability_zones = None
+
+    assert verify_data_plane_cli_input(cli_args, result) is None
+
+    mock_verify_hostnames.assert_not_called()
+    mock_verify_azs.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "nova_unit",
+    [0, 1, 2],
+)
+@patch("cou.steps.plan.verify_data_plane_cli_azs")
+@patch("cou.steps.plan.verify_data_plane_cli_machines")
+def test_verify_data_plane_cli_input_hostnames(
+    mock_verify_machines,
+    mock_verify_azs,
+    nova_unit,
+    model,
+    apps,
+    cli_args,
+):
+    nova_machine = list(apps["nova_focal_ussuri"].machines.values())[nova_unit]
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = None
+    cli_args.hostnames = {nova_machine.hostname}
+    cli_args.availability_zones = None
+
+    assert verify_data_plane_cli_input(cli_args, result) is None
+
+    mock_verify_machines.assert_not_called()
+    mock_verify_azs.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "nova_unit",
+    [0, 1, 2],
+)
+@patch("cou.steps.plan.verify_data_plane_cli_hostnames")
+@patch("cou.steps.plan.verify_data_plane_cli_machines")
+def test_verify_data_plane_cli_input_azs(
+    mock_verify_machines,
+    mock_verify_hostnames,
+    nova_unit,
+    model,
+    apps,
+    cli_args,
+):
+    nova_machine = list(apps["nova_focal_ussuri"].machines.values())[nova_unit]
+    result = Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+    cli_args.machines = None
+    cli_args.hostnames = None
+    cli_args.availability_zones = {nova_machine.az}
+
+    assert verify_data_plane_cli_input(cli_args, result) is None
+
+    mock_verify_machines.assert_not_called()
+    mock_verify_hostnames.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -536,16 +591,6 @@ def test_verify_data_plane_cli_machines_raise(apps, model, machine, exp_error_ms
         verify_data_plane_cli_machines(machine, result)
 
 
-def test_verify_data_plane_cli_hostnames(apps, model):
-    nova_machine = list(apps["nova_focal_ussuri"].machines.values())[0]
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
-    assert verify_data_plane_cli_hostnames({nova_machine.hostname}, result) is None
-
-
 @pytest.mark.parametrize(
     "app, exp_error_msg",
     [
@@ -562,16 +607,6 @@ def test_verify_data_plane_cli_hostname_raise(apps, model, app, exp_error_msg):
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
         machine = list(apps[f"{app}_focal_ussuri"].machines.values())[0]
         verify_data_plane_cli_hostnames({machine.hostname}, result)
-
-
-@pytest.mark.parametrize("azs", [{"zone-1"}, {"zone-1", "zone-2"}])
-def test_verify_data_plane_cli_azs(apps, model, azs):
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
-    assert verify_data_plane_cli_azs(azs, result) is None
 
 
 @pytest.mark.parametrize(
