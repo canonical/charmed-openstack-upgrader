@@ -21,6 +21,7 @@ from typing import Optional
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
+from cou.apps.machine import Machine
 from cou.utils import juju_utils
 from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
@@ -203,3 +204,38 @@ class Analysis:
             (app.series for app in self.apps_control_plane + self.apps_data_plane),
             default=None,
         )
+
+    @property
+    def data_plane_machines(self) -> dict[str, Machine]:
+        """Data-plane machines of the model.
+
+        :return: Data-plane machines of the model.
+        :rtype: dict[str, Machine]
+        """
+        return {
+            machine_id: app.machines[machine_id]
+            for app in self.apps_data_plane
+            for machine_id in app.machines
+        }
+
+    @property
+    def control_plane_machines(self) -> dict[str, Machine]:
+        """Control-plane machines of the model.
+
+        :return: Control-plane machines of the model.
+        :rtype: dict[str, Machine]
+        """
+        return {
+            machine_id: app.machines[machine_id]
+            for app in self.apps_control_plane
+            for machine_id in app.machines
+        }
+
+    @property
+    def machines(self) -> dict[str, Machine]:
+        """All machines of the model.
+
+        :return: All machines of the model.
+        :rtype: dict[str, Machine]
+        """
+        return {**self.data_plane_machines, **self.control_plane_machines}

@@ -40,6 +40,7 @@ from cou.apps.subordinate import (  # noqa: F401
 from cou.commands import CLIargs
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
+    DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
@@ -67,6 +68,7 @@ def pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
 
     if args.is_data_plane_command:
         verify_data_plane_ready_to_upgrade(analysis_result)
+        verify_data_plane_cli_input(args, analysis_result)
 
 
 def verify_supported_series(analysis_result: Analysis) -> None:
@@ -170,6 +172,120 @@ def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
         )
 
     return target
+
+
+def verify_data_plane_cli_input(args: CLIargs, analysis_result: Analysis) -> None:
+    """Sanity checks from the parameters passed in the cli to upgrade data-plane.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    """
+    if cli_machines := args.machines:
+        verify_data_plane_cli_machines(cli_machines, analysis_result)
+
+    elif cli_hostnames := args.hostnames:
+        verify_data_plane_cli_hostnames(cli_hostnames, analysis_result)
+
+    elif cli_azs := args.availability_zones:
+        verify_data_plane_cli_azs(cli_azs, analysis_result)
+
+
+def verify_data_plane_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:
+    """Verify if the machines passed from the CLI are valid.
+
+    :param cli_machines: Machines passed to the CLI as arguments
+    :type cli_machines: set[str]
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    """
+    verify_data_plane_membership(
+        all_options=set(analysis_result.machines.keys()),
+        data_plane_options=set(analysis_result.data_plane_machines.keys()),
+        cli_input=cli_machines,
+        parameter_type="Machine(s)",
+    )
+
+
+def verify_data_plane_cli_hostnames(cli_hostnames: set[str], analysis_result: Analysis) -> None:
+    """Verify if the hostnames passed from the CLI are valid.
+
+    :param cli_hostnames: Hostnames passed to the CLI as arguments
+    :type cli_hostnames: set[str]
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    """
+    all_hostnames = {machine.hostname for machine in analysis_result.machines.values()}
+    data_plane_hostnames = {
+        machine.hostname for machine in analysis_result.data_plane_machines.values()
+    }
+
+    verify_data_plane_membership(
+        all_options=all_hostnames,
+        data_plane_options=data_plane_hostnames,
+        cli_input=cli_hostnames,
+        parameter_type="Hostname(s)",
+    )
+
+
+def verify_data_plane_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> None:
+    """Verify if the availability zones passed from the CLI are valid.
+
+    :param cli_azs: AZs passed to the CLI as arguments
+    :type cli_azs: set[str]
+    :param analysis_result:  Analysis result
+    :type analysis_result: Analysis
+    :raises DataPlaneMachineFilterError: When the cloud does not have availability zones.
+    """
+    all_azs: set[str] = {
+        machine.az for machine in analysis_result.machines.values() if machine.az is not None
+    }
+    data_plane_azs: set[str] = {
+        machine.az
+        for machine in analysis_result.data_plane_machines.values()
+        if machine.az is not None
+    }
+
+    if not data_plane_azs and not all_azs:
+        raise DataPlaneMachineFilterError(
+            "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
+        )
+
+    verify_data_plane_membership(
+        all_options=all_azs,
+        data_plane_options=data_plane_azs,
+        cli_input=cli_azs,
+        parameter_type="Availability Zone(s)",
+    )
+
+
+def verify_data_plane_membership(
+    all_options: set[str],
+    data_plane_options: set[str],
+    cli_input: set[str],
+    parameter_type: str,
+) -> None:
+    """Check if the parameter passed are member of data-plane.
+
+    :param all_options: All possible options for a parameter.
+    :type all_options: set[str]
+    :param data_plane_options: All data-plane possible options for a parameter.
+    :type data_plane_options: set[str]
+    :param cli_input: The input that come from the cli
+    :type cli_input: set[str]
+    :param parameter_type: Type of the parameter passed (az, hostname or machine).
+    :type parameter_type: str
+    :raises DataPlaneMachineFilterError: When the value passed from the user is not sane.
+    """
+    if not cli_input.issubset(all_options):
+        raise DataPlaneMachineFilterError(
+            f"{parameter_type}: {cli_input - all_options} don't exist."
+        )
+    if not cli_input.issubset(data_plane_options):
+        raise DataPlaneMachineFilterError(
+            f"{parameter_type}: {cli_input - data_plane_options} are not considered as data-plane."
+        )
 
 
 def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRelease, str]:

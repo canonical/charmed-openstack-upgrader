@@ -439,12 +439,10 @@ def is_charm_supported(charm: str) -> bool:
     )
 
 
-def _generate_track_mapping() -> (
-    tuple[
-        defaultdict[tuple[str, str, str], list[str]],
-        defaultdict[tuple[str, str, str], list[OpenStackRelease]],
-    ]
-):
+def _generate_track_mapping() -> tuple[
+    defaultdict[tuple[str, str, str], list[str]],
+    defaultdict[tuple[str, str, str], list[OpenStackRelease]],
+]:
     """Generate the track mappings for the auxiliary charms.
 
     Those mappings should be updated periodically by adding new lines in the file

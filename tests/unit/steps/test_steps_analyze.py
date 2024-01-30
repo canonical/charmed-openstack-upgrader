@@ -228,3 +228,28 @@ def test_split_apps(exp_control_plane, exp_data_plane):
     control_plane, data_plane = Analysis._split_apps(all_apps)
     assert exp_control_plane == control_plane
     assert exp_data_plane == data_plane
+
+
+@pytest.mark.asyncio
+async def test_analysis_machines(apps, model, apps_machines):
+    result = analyze.Analysis(
+        model=model,
+        apps_control_plane=[
+            apps["rmq"],
+            apps["keystone_focal_wallaby"],
+            apps["cinder_focal_ussuri"],
+        ],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
+
+    expected_control_plane_machines = {
+        **apps_machines["rmq"],
+        **apps_machines["keystone"],
+        **apps_machines["cinder"],
+    }
+
+    expected_data_plane_machines = {**apps_machines["nova-compute"]}
+
+    assert result.control_plane_machines == expected_control_plane_machines
+    assert result.data_plane_machines == expected_data_plane_machines
+    assert result.machines == {**expected_control_plane_machines, **expected_data_plane_machines}
