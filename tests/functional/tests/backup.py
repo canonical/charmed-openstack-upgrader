@@ -1,4 +1,5 @@
 """Generic setup for functional tests."""
+
 import logging
 import os
 import unittest

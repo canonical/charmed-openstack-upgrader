@@ -1,4 +1,3 @@
-
 name: Check workflow running linter, unit and functional tests
 
 concurrency:
@@ -9,7 +8,7 @@ on:
   workflow_call:
   pull_request:
     types: [ opened, synchronize, reopened ]
-    branches: [ master, main ]
+    branches: [ master, main, "dev/data-plane" ]
     paths-ignore:
       - '**.md'
       - '**.rst'
@@ -25,7 +24,7 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       tox-version: '<4'
-    
+
   snap-build:
     name: Build snap package
     needs: lint-unit
