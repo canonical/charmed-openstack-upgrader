@@ -89,11 +89,7 @@ class SplitArgs(argparse.Action):
         new_items = {item.strip() for item in values.split(",")}
         cli_input = getattr(namespace, self.dest) or set()
         cli_input.update(new_items)
-        setattr(
-            namespace,
-            self.dest,
-            cli_input,
-        )
+        setattr(namespace, self.dest, cli_input)
 
 
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
