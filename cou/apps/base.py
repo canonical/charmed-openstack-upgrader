@@ -114,7 +114,7 @@ class OpenStackApplication:
         self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
         self._populate_units()
-        self.channel = self.status.charm_channel
+        self._validate_channel()
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -161,6 +161,23 @@ class OpenStackApplication:
             yaml.dump(summary, stream)
             return stream.getvalue()
 
+    def _validate_channel(self) -> None:
+        """Validate app channel from current data.
+
+        :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
+        """
+        if self.is_from_charm_store or self.is_valid_track(self.status.charm_channel):
+            logger.debug("%s app has proper channel %s", self.name, self.status.charm_channel)
+            return
+
+        raise ApplicationError(
+            f"Channel: {self.status.charm_channel} for charm '{self.charm}' on series "
+            f"'{self.series}' is currently not supported in this tool. Please take a look at the "
+            "documentation:"
+            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if"
+            "you are using the right track."
+        )
+
     def _populate_units(self) -> None:
         """Populate application units."""
         if not self.is_subordinate:
@@ -191,32 +208,7 @@ class OpenStackApplication:
         :return: Charm channel. E.g: ussuri/stable
         :rtype: str
         """
-        # NOTE(gabrielcocenza) Some applications current_os_release points
-        # to channel_codename without setting the channel before. In that
-        # case we set the attribute before accessing it.
-        if not hasattr(self, "_channel"):
-            self.channel = self.status.charm_channel
-        return self._channel
-
-    @channel.setter
-    def channel(self, charm_channel: str) -> None:
-        """Set charm channel of the application.
-
-        When application comes from charm store, the channel won't be OpenStack related.
-        :param charm_channel: Charm channel. E.g: ussuri/stable
-        :type charm_channel: str
-        :raises ApplicationError:  Exception raised when channel is not a valid OpenStack
-            channel.
-        """
-        if self.is_from_charm_store or self.is_valid_track(charm_channel):
-            self._channel = charm_channel
-            return
-        raise ApplicationError(
-            f"Channel: {charm_channel} for charm '{self.charm}' on series '{self.series}' "
-            "is currently not supported in this tool. Please take a look at the documentation:"
-            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see "
-            "if you are using the right track."
-        )
+        return self.status.charm_channel
 
     @property
     def is_from_charm_store(self) -> bool:
