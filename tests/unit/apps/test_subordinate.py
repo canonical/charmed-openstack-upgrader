@@ -83,13 +83,13 @@ def test_generate_upgrade_plan(status, model):
         "wallaby/edge",
     ],
 )
-def test_channel_setter_valid(status, model, channel):
+def test_channel_valid(status, model, channel):
     app_status = status["keystone-ldap"]
+    app_status.charm_channel = channel
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
-    app.channel = channel
     assert app.channel == channel
 
 
@@ -120,11 +120,12 @@ def test_channel_setter_invalid(status, model, channel):
 def test_generate_plan_ch_migration(status, model, channel):
     target = OpenStackRelease("wallaby")
     app_status = status["keystone-ldap-cs"]
+    app_status.charm = "cs:amd64/focal/keystone-ldap-437"
+    app_status.charm_channel = f"ussuri/{channel}"
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
-    app.channel = channel
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
@@ -158,11 +159,11 @@ def test_generate_plan_ch_migration(status, model, channel):
 )
 def test_generate_plan_from_to(status, model, from_os, to_os):
     app_status = status["keystone-ldap"]
+    app_status.charm_channel = f"{from_os}/stable"
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
-    app.channel = f"{from_os}/stable"
     upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(to_os))
 
     expected_plan = ApplicationUpgradePlan(description=f"Upgrade plan for '{app.name}' to {to_os}")
@@ -195,11 +196,11 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
 )
 def test_generate_plan_in_same_version(status, model, from_to):
     app_status = status["keystone-ldap"]
+    app_status.charm_channel = f"{from_to}/stable"
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap"
     )
 
-    app.channel = f"{from_to}/stable"
     upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(from_to))
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {from_to}"
