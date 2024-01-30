@@ -73,15 +73,6 @@ class OpenStackApplication:
     :type model: COUModel
     :param charm: Name of the charm.
     :type charm: str
-    :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
-    :type charm_origin: str, defaults to ""
-    :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
-    :type os_origin: str, defaults to ""
-    :param origin_setting: "source" or "openstack-origin" of the charm configuration.
-        Return None if not present
-    :type origin_setting: Optional[str], defaults to None
-    :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
-    :type channel: str, defaults to ""
     :param units: Units representation of an application.
     :type units: list[ApplicationUnit]
     :raises ApplicationError: When there are no compatible OpenStack release for the
@@ -101,8 +92,6 @@ class OpenStackApplication:
     model: COUModel
     charm: str
     machines: dict[str, Machine]
-    os_origin: str = ""
-    origin_setting: Optional[str] = None
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
     packages_to_hold: Optional[list] = field(default=None, init=False)
     wait_timeout: int = field(default=DEFAULT_WAITING_TIMEOUT, init=False)
@@ -110,9 +99,8 @@ class OpenStackApplication:
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.os_origin = self._get_os_origin()
-        self._populate_units()
         self._validate_channel()
+        self._populate_units()
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -171,8 +159,8 @@ class OpenStackApplication:
         raise ApplicationError(
             f"Channel: {self.status.charm_channel} for charm '{self.charm}' on series "
             f"'{self.series}' is currently not supported in this tool. Please take a look at the "
-            "documentation:"
-            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if"
+            "documentation: "
+            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
             "you are using the right track."
         )
 
@@ -218,6 +206,33 @@ class OpenStackApplication:
         return self.status.charm.split(":")[0]
 
     @property
+    def os_origin(self) -> str:
+        """Get application configuration for openstack-origin or source.
+
+        :return: Configuration parameter of the charm to set OpenStack origin.
+            e.g: cloud:focal-wallaby
+        :rtype: str
+        """
+        if origin := self.origin_setting:
+            return self.config[origin].get("value", "")
+
+        logger.warning("Failed to get origin for %s, no origin config found", self.name)
+        return ""
+
+    @property
+    def origin_setting(self) -> Optional[str]:
+        """Get charm origin setting name.
+
+        :return: return name of charm origin setting, e.g. "source", "openstack-origin" or None
+        :rtype: Optional[str]
+        """
+        for origin in ("openstack-origin", "source"):
+            if origin in self.config:
+                return origin
+
+        return None
+
+    @property
     def is_from_charm_store(self) -> bool:
         """Check if application comes from charm store.
 
@@ -250,15 +265,16 @@ class OpenStackApplication:
         :return: The latest compatible OpenStack release.
         :rtype: OpenStackRelease
         """
-        try:
-            return max(
-                OpenStackCodenameLookup.find_compatible_versions(self.charm, unit.workload_version)
-            )
-        except ValueError as exc:
+        compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+            self.charm, unit.workload_version
+        )
+        if not compatible_os_versions:
             raise ApplicationError(
                 f"'{self.name}' with workload version {unit.workload_version} has no "
                 "compatible OpenStack release."
-            ) from exc
+            )
+
+        return max(compatible_os_versions)
 
     @staticmethod
     def _get_track_from_channel(charm_channel: str) -> str:
@@ -392,21 +408,6 @@ class OpenStackApplication:
         :rtype: str
         """
         return f"cloud:{self.series}-{target.codename}"
-
-    def _get_os_origin(self) -> str:
-        """Get application configuration for openstack-origin or source.
-
-        :return: Configuration parameter of the charm to set OpenStack origin.
-            E.g: cloud:focal-wallaby
-        :rtype: str
-        """
-        for origin in ("openstack-origin", "source"):
-            if self.config.get(origin):
-                self.origin_setting = origin
-                return self.config[origin].get("value", "")
-
-        logger.warning("Failed to get origin for %s, no origin config found", self.name)
-        return ""
 
     async def _check_upgrade(self, target: OpenStackRelease) -> None:
         """Check if an application has upgraded its workload version.
