@@ -101,7 +101,6 @@ class OpenStackApplication:
     model: COUModel
     charm: str
     machines: dict[str, Machine]
-    charm_origin: str = ""
     os_origin: str = ""
     origin_setting: Optional[str] = None
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
@@ -111,7 +110,6 @@ class OpenStackApplication:
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.charm_origin = self.status.charm.split(":")[0]
         self.os_origin = self._get_os_origin()
         self._populate_units()
         self._validate_channel()
@@ -209,6 +207,15 @@ class OpenStackApplication:
         :rtype: str
         """
         return self.status.charm_channel
+
+    @property
+    def charm_origin(self) -> str:
+        """Get charm origin of paplication.
+
+        :return: Charm origin. E.g: cs or ch
+        :rtype: str
+        """
+        return self.status.charm.split(":")[0]
 
     @property
     def is_from_charm_store(self) -> bool:
