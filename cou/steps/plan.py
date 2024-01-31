@@ -397,7 +397,6 @@ async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) 
         return {machine for machine in hypervisors_machines if machine.machine_id in cli_machines}
 
     if cli_hostnames := args.hostnames:
-        print(cli_hostnames)
         return {machine for machine in hypervisors_machines if machine.hostname in cli_hostnames}
 
     if cli_azs := args.availability_zones:

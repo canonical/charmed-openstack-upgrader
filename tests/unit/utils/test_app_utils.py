@@ -271,3 +271,37 @@ async def test_get_current_osd_release_unsuccessful(model, osd_release_output, e
         command="ceph versions -f json",
         timeout=600,
     )
+
+
+@pytest.mark.parametrize(
+    "hypervisors_count, expected_result",
+    [
+        (
+            [("nova-compute/0", 0), ("nova-compute/1", 0), ("nova-compute/2", 0)],
+            {"nova-compute/0", "nova-compute/1", "nova-compute/2"},
+        ),
+        (
+            [("nova-compute/0", 1), ("nova-compute/1", 0), ("nova-compute/2", 0)],
+            {"nova-compute/1", "nova-compute/2"},
+        ),
+        (
+            [("nova-compute/0", 1), ("nova-compute/1", 3), ("nova-compute/2", 0)],
+            {"nova-compute/2"},
+        ),
+        (
+            [("nova-compute/0", 1), ("nova-compute/1", 3), ("nova-compute/2", 5)],
+            set(),
+        ),
+    ],
+)
+@pytest.mark.asyncio
+@patch("cou.utils.app_utils.get_instance_count")
+@patch("cou.utils.app_utils.asyncio.gather", new_callable=AsyncMock)
+async def test_get_empty_hypervisors(
+    mock_gather, mock_instance_count, hypervisors_count, expected_result, model
+):
+    mock_gather.return_value = [count for _, count in hypervisors_count]
+    result = await app_utils._get_empty_hypervisors(
+        [hypervisor for hypervisor, _ in hypervisors_count], model
+    )
+    assert result == expected_result

@@ -28,6 +28,7 @@ from cou.apps.core import Keystone
 from cou.apps.machine import Machine
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.commands import CLIargs
+from cou.steps.analyze import Analysis
 from cou.utils.openstack import OpenStackRelease
 
 STANDARD_AZS = ["zone-1", "zone-2", "zone-3"]
@@ -590,6 +591,16 @@ def model(config, apps_machines):
     model.get_model_machines = machines
 
     return model
+
+
+@pytest.fixture
+def analysis_result(model, apps):
+    """Generate a simple analysis result to be used on unit-tests."""
+    return Analysis(
+        model=model,
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
+    )
 
 
 @pytest.fixture
