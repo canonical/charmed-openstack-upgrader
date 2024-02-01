@@ -624,6 +624,58 @@ class OpenStackApplication:
             )
         return UpgradeStep()
 
+    def _get_enable_action_managed_plan(self, parallel: bool = False) -> UpgradeStep:
+        """Get plan to enable action-managed-upgrade.
+
+        This is used to upgrade as "paused-single-unit" strategy.
+
+        :param parallel: Parallel running, defaults to False
+        :type parallel: bool, optional
+        :return: Plan to enable action-managed-upgrade
+        :rtype: UpgradeStep
+        """
+        if self.config.get("action-managed-upgrade", {}).get("value", False):
+            return UpgradeStep()
+        return UpgradeStep(
+            description=(
+                f"Change charm config of '{self.name}' 'action-managed-upgrade' to True."
+            ),
+            parallel=parallel,
+            coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
+        )
+
+    def _get_pause_unit(self, unit: ApplicationUnit, parallel: bool = False) -> UpgradeStep:
+        """Get the plan to pause a unit to upgrade.
+
+        :param unit: Unit to be paused.
+        :type unit: ApplicationUnit
+        :param parallel: Parallel running, defaults to False
+        :type parallel: bool, optional
+        :return: Plan to pause a unit.
+        :rtype: UpgradeStep
+        """
+        return UpgradeStep(
+            description=f"Pause the unit: '{unit.name}'.",
+            parallel=parallel,
+            coro=self.model.run_action(unit_name=unit.name, action_name="pause"),
+        )
+
+    def _get_resume_unit(self, unit: ApplicationUnit, parallel: bool = False) -> UpgradeStep:
+        """Get the plan to resume a unit after upgrading the workload version.
+
+        :param unit: Unit to be resumed.
+        :type unit: ApplicationUnit
+        :param parallel: Parallel running, defaults to False
+        :type parallel: bool, optional
+        :return: Plan to resume a unit.
+        :rtype: UpgradeStep
+        """
+        return UpgradeStep(
+            description=(f"Resume the unit: '{unit.name}'."),
+            parallel=parallel,
+            coro=self.model.run_action(unit_name=unit.name, action_name="resume"),
+        )
+
     def _get_workload_upgrade_plan(
         self, target: OpenStackRelease, parallel: bool = False
     ) -> UpgradeStep:
