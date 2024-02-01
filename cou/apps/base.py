@@ -99,7 +99,7 @@ class OpenStackApplication:
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self._validate_channel()
+        self._verify_channel()
         self._populate_units()
 
     def __hash__(self) -> int:
@@ -147,8 +147,8 @@ class OpenStackApplication:
             yaml.dump(summary, stream)
             return stream.getvalue()
 
-    def _validate_channel(self) -> None:
-        """Validate app channel from current data.
+    def _verify_channel(self) -> None:
+        """Verify app channel from current data.
 
         :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
         """
@@ -198,7 +198,7 @@ class OpenStackApplication:
 
     @property
     def charm_origin(self) -> str:
-        """Get charm origin of paplication.
+        """Get the charm origin of application.
 
         :return: Charm origin. E.g: cs or ch
         :rtype: str

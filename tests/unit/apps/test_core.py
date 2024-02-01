@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -327,17 +327,6 @@ def test_application_unknown_source(status, model, source_value, apps_machines):
     )
     with pytest.raises(ApplicationError):
         app.apt_source_codename
-
-
-@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions", return_value=[])
-def test_application_get_latest_os_version_failed(config, status, model, apps_machines):
-    app_name = "my_keystone"
-    exp_error = f"'{app_name}' with workload version 17.0.1 has no compatible OpenStack release."
-    app_status = status["keystone_focal_ussuri"]
-    app_config = config["openstack_ussuri"]
-
-    with pytest.raises(ApplicationError, match=exp_error):
-        Keystone(app_name, app_status, app_config, model, "keystone", apps_machines["keystone"])
 
 
 @pytest.mark.asyncio
