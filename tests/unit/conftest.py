@@ -25,9 +25,9 @@ from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.apps.core import Keystone
-from cou.apps.machine import Machine
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.commands import CLIargs
+from cou.utils.juju_utils import Machine
 from cou.utils.openstack import OpenStackRelease
 
 STANDARD_AZS = ["zone-1", "zone-2", "zone-3"]

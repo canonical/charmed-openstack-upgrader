@@ -22,7 +22,6 @@ from juju.machine import Machine as JujuMachine
 from juju.model import Model
 from juju.unit import Unit
 
-from cou.apps.machine import Machine
 from cou.exceptions import (
     ActionFailed,
     ApplicationError,
@@ -33,6 +32,36 @@ from cou.exceptions import (
     WaitForApplicationsTimeout,
 )
 from cou.utils import juju_utils
+from cou.utils.juju_utils import Machine
+
+
+@pytest.mark.parametrize(
+    "machine_id, hostname, az",
+    [
+        # one field different is considered another machine
+        ("0", "juju-c307f8-my_model-0", "zone-3"),
+        ("1", "juju-c307f8-my_model-1", "zone-2"),
+    ],
+)
+def test_machine_not_eq(machine_id, hostname, az):
+    machine_0 = Machine(machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1")
+    machine_1 = Machine(machine_id=machine_id, hostname=hostname, az=az)
+
+    assert machine_0 != machine_1
+
+
+def test_machine_eq():
+    machine_0 = Machine(machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1")
+
+    machine_1 = Machine(machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1")
+
+    assert machine_0 == machine_1
+
+
+def test_machine_repr():
+    machine_0 = Machine(machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1")
+    expected_repr = "Machine[0]"
+    assert repr(machine_0) == expected_repr
 
 
 def test_normalize_action_results():

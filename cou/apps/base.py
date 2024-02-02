@@ -24,7 +24,6 @@ from typing import Any, Optional
 from juju.client._definitions import ApplicationStatus, UnitStatus
 from ruamel.yaml import YAML
 
-from cou.apps.machine import Machine
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -37,7 +36,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import COUModel, Machine, Unit
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -74,7 +73,7 @@ class OpenStackApplication:
     :param charm: Name of the charm.
     :type charm: str
     :param units: Units representation of an application.
-    :type units: list[ApplicationUnit]
+    :type units: list[Unit]
     :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version.
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
@@ -92,7 +91,7 @@ class OpenStackApplication:
     model: COUModel
     charm: str
     machines: dict[str, Machine]
-    units: list[ApplicationUnit] = field(default_factory=lambda: [])
+    units: list[Unit]
     packages_to_hold: Optional[list] = field(default=None, init=False)
     wait_timeout: int = field(default=DEFAULT_WAITING_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
@@ -100,7 +99,6 @@ class OpenStackApplication:
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
         self._verify_channel()
-        self._populate_units()
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -136,7 +134,7 @@ class OpenStackApplication:
                 "units": {
                     unit.name: {
                         "workload_version": unit.workload_version,
-                        "os_version": str(unit.os_version),
+                        "os_version": str(self._get_latest_os_version(unit)),
                     }
                     for unit in self.units
                 },
@@ -163,20 +161,6 @@ class OpenStackApplication:
             "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
             "you are using the right track."
         )
-
-    def _populate_units(self) -> None:
-        """Populate application units."""
-        if not self.is_subordinate:
-            for name, unit in self.status.units.items():
-                compatible_os_version = self._get_latest_os_version(unit)
-                self.units.append(
-                    ApplicationUnit(
-                        name=name,
-                        workload_version=unit.workload_version,
-                        os_version=compatible_os_version,
-                        machine=self.machines[unit.machine],
-                    )
-                )
 
     @property
     def is_subordinate(self) -> bool:
@@ -326,7 +310,7 @@ class OpenStackApplication:
         """
         os_versions = defaultdict(list)
         for unit in self.units:
-            os_versions[unit.os_version].append(unit.name)
+            os_versions[self._get_latest_os_version(unit)].append(unit.name)
 
         if len(os_versions.keys()) == 1:
             return next(iter(os_versions))

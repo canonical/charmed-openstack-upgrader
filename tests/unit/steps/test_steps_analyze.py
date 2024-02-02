@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cou.apps.base import ApplicationUnit, OpenStackApplication
-from cou.apps.machine import Machine
 from cou.steps import analyze
 from cou.steps.analyze import Analysis
+from cou.utils.juju_utils import Machine
 
 
 def test_analysis_dump(apps, model):

@@ -21,8 +21,8 @@ from typing import Optional
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
-from cou.apps.machine import Machine
 from cou.utils import juju_utils
+from cou.utils.juju_utils import Machine
 from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -134,6 +134,7 @@ class Analysis:
                     unit_status.machine: juju_machines[unit_status.machine]
                     for unit_status in app_status.units.values()
                 },
+                units=await model.get_app_units(app),
             )
             for app, app_status in juju_status.applications.items()
             if app_status

@@ -16,6 +16,7 @@
 import asyncio
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Optional
 
@@ -27,11 +28,10 @@ from juju.client.jujudata import FileJujuData
 from juju.errors import JujuAppError, JujuError, JujuUnitError
 from juju.machine import Machine as JujuMachine
 from juju.model import Model
-from juju.unit import Unit
+from juju.unit import Unit as JujuUnit
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
-from cou.apps.machine import Machine
 from cou.exceptions import (
     ActionFailed,
     ApplicationError,
@@ -44,7 +44,7 @@ from cou.exceptions import (
 from cou.utils.openstack import is_charm_supported
 
 JUJU_MAX_FRAME_SIZE: int = 2**30
-DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 10))
+DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 60))
 DEFAULT_MAX_WAIT: int = 5
 DEFAULT_WAIT: float = 1.1
 DEFAULT_MODEL_RETRIES: int = int(os.environ.get("COU_MODEL_RETRIES", 5))
@@ -52,6 +52,42 @@ DEFAULT_MODEL_RETRY_BACKOFF: int = int(os.environ.get("COU_MODEL_RETRY_BACKOFF",
 DEFAULT_MODEL_IDLE_PERIOD: int = 30
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class Machine:
+    """Representation of a juju machine."""
+
+    machine_id: str
+    hostname: str
+    az: Optional[str]  # simple deployments may not have azs
+
+    def __repr__(self) -> str:
+        """Representation of the juju Machine.
+
+        :return: Representation of the juju Machine
+        :rtype: str
+        """
+        return f"Machine[{self.machine_id}]"
+
+
+@dataclass(frozen=True)
+class Unit:
+    """Representation of a single unit of juju application."""
+
+    name: str
+    is_leader: bool
+    # os_version: OpenStackRelease
+    machine: Machine
+    workload_version: str = ""
+
+    def __repr__(self) -> str:
+        """Representation of the juju unit.
+
+        :return: Representation of the juju unit
+        :rtype: str
+        """
+        return f"Unit[{self.name}]"
 
 
 def _normalize_action_results(results: dict[str, str]) -> dict[str, str]:
@@ -239,7 +275,7 @@ class COUModel:
             name for name, app in model.applications.items() if is_charm_supported(app.charm_name)
         ]
 
-    async def _get_unit(self, name: str) -> Unit:
+    async def _get_unit(self, name: str) -> JujuUnit:
         """Get juju.unit.unit from model.
 
         :param name: Name of unit
@@ -526,3 +562,32 @@ class COUModel:
             )
             for machine in juju_machines.values()
         }
+
+    @retry(no_retry_exceptions=(ApplicationNotFound,))
+    async def get_app_units(self, name: str) -> list[Unit]:
+        """Get all the machines in the model.
+
+        :param name: name of application
+        :type name: str
+        :return: list of units for application
+        :rtype: list[Unit]
+        """
+        app = await self._get_application(name)
+        full_status = await self.get_status()
+
+        # Note(rgildein): Retrieving units from state so the suboridnate application returns
+        # empty lists.
+        return [
+            Unit(
+                name=unit_name,
+                is_leader=unit.leader,
+                machine=Machine(
+                    machine_id=unit.machine,
+                    hostname=app.model.machines[unit.machine].hostname,
+                    az=app.model.machines[unit.machine].hardware_characteristics.get(
+                        "availability-zone"
+                    ),
+                ),
+            )
+            for unit_name, unit in full_status.applications[app.name].units.items()
+        ]
