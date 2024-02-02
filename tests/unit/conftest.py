@@ -694,3 +694,11 @@ def cli_args() -> MagicMock:
     """
     # spec_set needs an instantiated class to be strict with the fields.
     return MagicMock(spec_set=CLIargs(command="plan"))()
+
+
+def _generate_mock_machine(machine_id, hostname, az):
+    mock_machine = MagicMock(spec_set=Machine(machine_id, hostname, az))
+    mock_machine.machine_id = machine_id
+    mock_machine.hostname = hostname
+    mock_machine.az = az
+    return mock_machine

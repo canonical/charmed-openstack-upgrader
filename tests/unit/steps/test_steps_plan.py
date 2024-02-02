@@ -37,7 +37,7 @@ from cou.steps.backup import backup
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.conftest import KEYSTONE_MACHINES, NOVA_MACHINES
+from tests.unit.conftest import KEYSTONE_MACHINES, NOVA_MACHINES, _generate_mock_machine
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
@@ -586,212 +586,117 @@ def test_verify_data_plane_cli_azs_raise_cannot_find():
 
 
 @pytest.mark.parametrize(
-    "force, novas_machines_input, novas_machines_expected",
+    "force, cli_machines, cli_hostnames, cli_azs, expected_machines",
     [
-        (False, [0, 1, 2], [0, 1]),
-        (False, [2], []),
-        (False, [0, 1], [0, 1]),
-        (False, [0], [0]),
-        (True, [0, 1, 2], [0, 1, 2]),
-        (True, [2], [2]),
-        (True, [0], [0]),
+        # machines input
+        (False, {"0", "1", "2"}, None, None, {"0", "1"}),
+        (False, {"2"}, None, None, set()),
+        (False, {"0", "1"}, None, None, {"0", "1"}),
+        (False, {"0"}, None, None, {"0"}),
+        (True, {"0", "1", "2"}, None, None, {"0", "1", "2"}),
+        (True, {"2"}, None, None, {"2"}),
+        (True, {"0"}, None, None, {"0"}),
+        # hostnames input
+        (False, None, {"juju-c307f8-0", "juju-c307f8-1", "juju-c307f8-2"}, None, {"0", "1"}),
+        (False, None, {"juju-c307f8-2"}, None, set()),
+        (False, None, {"juju-c307f8-0", "juju-c307f8-1"}, None, {"0", "1"}),
+        (False, None, {"juju-c307f8-0"}, None, {"0"}),
+        (
+            True,
+            None,
+            {"juju-c307f8-0", "juju-c307f8-1", "juju-c307f8-2"},
+            None,
+            {"0", "1", "2"},
+        ),
+        (True, None, {"juju-c307f8-2"}, None, {"2"}),
+        (True, None, {"juju-c307f8-0"}, None, {"0"}),
+        # az input
+        (False, None, None, {"zone-1", "zone-2", "zone-3"}, {"0", "1"}),
+        (False, None, None, {"zone-3"}, set()),
+        (False, None, None, {"zone-1", "zone-2"}, {"0", "1"}),
+        (False, None, None, {"zone-1"}, {"0"}),
+        (True, None, None, {"zone-1", "zone-2", "zone-3"}, {"0", "1", "2"}),
+        (True, None, None, {"zone-3"}, {"2"}),
+        (True, None, None, {"zone-1"}, {"0"}),
+        # no input
+        (False, None, None, None, {"0", "1"}),
+        (True, None, None, None, {"0", "1", "2"}),
     ],
 )
 @pytest.mark.asyncio
-@patch("cou.steps.plan._get_hypervisors_machines_possible_to_upgrade")
-async def test_filter_hypervisors_machines_by_machine_id(
-    mock_hypervisors_machines,
-    apps_machines,
-    cli_args,
-    analysis_result,
-    force,
-    novas_machines_input,
-    novas_machines_expected,
-):
-
-    expected_hypervisors, hypervisors_to_upgrade = _generate_expected_hypervisors_to_test(
-        force, novas_machines_expected, apps_machines
-    )
-    mock_hypervisors_machines.return_value = hypervisors_to_upgrade
-
-    cli_machines = {NOVA_MACHINES[machine_id] for machine_id in novas_machines_input}
-
-    cli_args = _prepare_cli_args(cli_args, cli_machines, None, None, force)
-
-    hypervisors = await cou_plan.filter_hypervisors_machines(cli_args, analysis_result)
-
-    assert hypervisors == expected_hypervisors
-
-
-@pytest.mark.parametrize(
-    "force, novas_machines_input, novas_machines_expected",
-    [
-        (False, [0, 1, 2], [0, 1]),
-        (False, [2], []),
-        (False, [0, 1], [0, 1]),
-        (False, [0], [0]),
-        (True, [0, 1, 2], [0, 1, 2]),
-        (True, [2], [2]),
-        (True, [0], [0]),
-    ],
-)
-@pytest.mark.asyncio
-@patch("cou.steps.plan._get_hypervisors_machines_possible_to_upgrade")
-async def test_filter_hypervisors_machines_by_hostname(
+@patch("cou.steps.plan._get_upgradable_hypervisors_machines")
+async def test_filter_hypervisors_machines(
     mock_hypervisors_machines,
     force,
-    novas_machines_input,
-    novas_machines_expected,
-    apps_machines,
+    cli_machines,
+    cli_hostnames,
+    cli_azs,
+    expected_machines,
     cli_args,
-    analysis_result,
 ):
-    expected_hypervisors, hypervisors_to_upgrade = _generate_expected_hypervisors_to_test(
-        force, novas_machines_expected, apps_machines
-    )
 
-    mock_hypervisors_machines.return_value = hypervisors_to_upgrade
-
-    cli_hostnames = {
-        apps_machines["nova-compute"][NOVA_MACHINES[machine_id]].hostname
-        for machine_id in novas_machines_input
+    empty_hypervisors_machines = {
+        _generate_mock_machine(
+            str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
+        )
+        for machine_id in range(2)
     }
+    # assuming that machine-2 has some VMs running
+    non_empty_hypervisor_machine = _generate_mock_machine("2", "juju-c307f8-2", "zone-3")
 
-    cli_args = _prepare_cli_args(cli_args, None, cli_hostnames, None, force)
-
-    hypervisors = await cou_plan.filter_hypervisors_machines(cli_args, analysis_result)
-
-    assert hypervisors == expected_hypervisors
-
-
-@pytest.mark.parametrize(
-    "force, novas_machines_input, novas_machines_expected",
-    [
-        (False, [0, 1, 2], [0, 1]),
-        (False, [2], []),
-        (False, [0, 1], [0, 1]),
-        (False, [0], [0]),
-        (True, [0, 1, 2], [0, 1, 2]),
-        (True, [2], [2]),
-        (True, [0], [0]),
-    ],
-)
-@pytest.mark.asyncio
-@patch("cou.steps.plan._get_hypervisors_machines_possible_to_upgrade")
-async def test_filter_hypervisors_machines_by_az(
-    mock_hypervisors_machines,
-    force,
-    novas_machines_input,
-    novas_machines_expected,
-    apps_machines,
-    cli_args,
-    analysis_result,
-):
-    expected_hypervisors, hypervisors_to_upgrade = _generate_expected_hypervisors_to_test(
-        force, novas_machines_expected, apps_machines
-    )
-    mock_hypervisors_machines.return_value = hypervisors_to_upgrade
-
-    cli_azs = {
-        apps_machines["nova-compute"][NOVA_MACHINES[machine_id]].az
-        for machine_id in novas_machines_input
-    }
-
-    cli_args = _prepare_cli_args(cli_args, None, None, cli_azs, force)
-
-    hypervisors = await cou_plan.filter_hypervisors_machines(cli_args, analysis_result)
-
-    assert hypervisors == expected_hypervisors
-
-
-@pytest.mark.parametrize(
-    "force, novas_machines_expected",
-    [
-        (False, [0, 1]),
-        (True, [0, 1, 2]),
-    ],
-)
-@pytest.mark.asyncio
-@patch("cou.steps.plan._get_hypervisors_machines_possible_to_upgrade")
-async def test_filter_hypervisors_machines_no_parameter(
-    mock_hypervisors_machines,
-    force,
-    novas_machines_expected,
-    apps_machines,
-    cli_args,
-    analysis_result,
-):
-    expected_hypervisors, hypervisors_to_upgrade = _generate_expected_hypervisors_to_test(
-        force, novas_machines_expected, apps_machines
-    )
-    mock_hypervisors_machines.return_value = hypervisors_to_upgrade
-
-    cli_args = _prepare_cli_args(cli_args, None, None, None, force)
-
-    hypervisors = await cou_plan.filter_hypervisors_machines(cli_args, analysis_result)
-
-    assert hypervisors == expected_hypervisors
-
-
-def _generate_expected_hypervisors_to_test(force, novas_machines_expected, apps_machines):
-    """Wrap the generation of the expected hypervisors to upgrade for testing."""
-    expected_hypervisors = {
-        apps_machines["nova-compute"][NOVA_MACHINES[machine_id]]
-        for machine_id in novas_machines_expected
-    }
-
-    # assume that machine 2 is running a vm.
-    hypervisors_to_upgrade = {
-        apps_machines["nova-compute"][NOVA_MACHINES[0]],
-        apps_machines["nova-compute"][NOVA_MACHINES[1]],
-    }
+    upgradable_hypervisors = empty_hypervisors_machines
     if force:
-        hypervisors_to_upgrade.add(apps_machines["nova-compute"][NOVA_MACHINES[2]])
+        upgradable_hypervisors.add(non_empty_hypervisor_machine)
 
-    return expected_hypervisors, hypervisors_to_upgrade
+    mock_hypervisors_machines.return_value = upgradable_hypervisors
 
-
-def _prepare_cli_args(cli_args, machines, hostnames, az, force):
-    """Wrap the preparation of the cli arguments for testing."""
-    cli_args.machines = machines
-    cli_args.hostnames = hostnames
-    cli_args.availability_zones = az
+    cli_args.machines = cli_machines
+    cli_args.hostnames = cli_hostnames
+    cli_args.availability_zones = cli_azs
     cli_args.force = force
-    return cli_args
+
+    machines = await cou_plan.filter_hypervisors_machines(cli_args, MagicMock())
+
+    assert {machine.machine_id for machine in machines} == expected_machines
 
 
 @pytest.mark.parametrize(
     "cli_force, empty_hypervisors, expected_result",
     [
-        (True, {"nova-compute/0", "nova-compute/1", "nova-compute/2"}, {"0", "1", "2"}),
-        (True, {"nova-compute/0", "nova-compute/1"}, {"0", "1", "2"}),
-        (True, {"nova-compute/0", "nova-compute/2"}, {"0", "1", "2"}),
-        (True, {"nova-compute/1", "nova-compute/2"}, {"0", "1", "2"}),
-        (True, {"nova-compute/0"}, {"0", "1", "2"}),
-        (True, {"nova-compute/1"}, {"0", "1", "2"}),
-        (True, {"nova-compute/2"}, {"0", "1", "2"}),
+        (True, {0, 1, 2}, {"0", "1", "2"}),
+        (True, {0, 1}, {"0", "1", "2"}),
+        (True, {0, 2}, {"0", "1", "2"}),
+        (True, {1, 2}, {"0", "1", "2"}),
+        (True, {0}, {"0", "1", "2"}),
+        (True, {1}, {"0", "1", "2"}),
+        (True, {2}, {"0", "1", "2"}),
         (True, set(), {"0", "1", "2"}),
-        (False, {"nova-compute/0", "nova-compute/1", "nova-compute/2"}, {"0", "1", "2"}),
-        (False, {"nova-compute/0", "nova-compute/1"}, {"0", "1"}),
-        (False, {"nova-compute/0", "nova-compute/2"}, {"0", "2"}),
-        (False, {"nova-compute/1", "nova-compute/2"}, {"1", "2"}),
-        (False, {"nova-compute/0"}, {"0"}),
-        (False, {"nova-compute/1"}, {"1"}),
-        (False, {"nova-compute/2"}, {"2"}),
+        (False, {0, 1, 2}, {"0", "1", "2"}),
+        (False, {0, 1}, {"0", "1"}),
+        (False, {0, 2}, {"0", "2"}),
+        (False, {1, 2}, {"1", "2"}),
+        (False, {0}, {"0"}),
+        (False, {1}, {"1"}),
+        (False, {2}, {"2"}),
         (False, set(), set()),
     ],
 )
 @pytest.mark.asyncio
-@patch("cou.steps.plan._get_empty_hypervisors")
-async def test_get_hypervisors_machines_possible_to_upgrade(
+@patch("cou.steps.plan.get_empty_hypervisors")
+async def test_get_upgradable_hypervisors_machines(
     mock_empty_hypervisors,
     cli_force,
     empty_hypervisors,
     expected_result,
     analysis_result,
 ):
-    mock_empty_hypervisors.return_value = empty_hypervisors
-    hypervisors_possible_to_upgrade = await cou_plan._get_hypervisors_machines_possible_to_upgrade(
+    mock_empty_hypervisors.return_value = {
+        _generate_mock_machine(
+            str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
+        )
+        for machine_id in empty_hypervisors
+    }
+    hypervisors_possible_to_upgrade = await cou_plan._get_upgradable_hypervisors_machines(
         cli_force, analysis_result
     )
 

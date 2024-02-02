@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Application utilities."""
-import asyncio
 import json
 import logging
 from collections.abc import Iterable
@@ -49,47 +48,6 @@ async def upgrade_packages(
 
     for unit in units:
         await model.run_on_unit(unit_name=unit, command=command, timeout=600)
-
-
-async def _get_empty_hypervisors(units: list[str], model: COUModel) -> set[str]:
-    """Get the empty hypervisors in the model.
-
-    :param units: all nova-compute units.
-    :type units: list[str]
-    :param model: COUModel object
-    :type model: COUModel
-    :return: Set with just the empty hypervisors
-    :rtype: set[str]
-    """
-    tasks = [get_instance_count(unit, model) for unit in units]
-    instances = await asyncio.gather(*tasks)
-    units_instances = zip(units, instances)
-    return {unit for unit, instances in units_instances if instances == 0}
-
-
-async def get_instance_count(unit: str, model: COUModel) -> int:
-    """Get instance count on a nova-compute unit.
-
-    :param unit: Name of the nova-compute unit where the action runs on.
-    :type unit: str
-    :param model: COUModel object
-    :type model: COUModel
-    :return: Instance count of the nova-compute unit
-    :rtype: int
-    :raises ValueError: When the action result is not valid.
-    """
-    action_name = "instance-count"
-    action = await model.run_action(unit_name=unit, action_name=action_name)
-
-    if (
-        instance_count := action.results.get("instance-count", "").strip()
-    ) and instance_count.isdigit():
-        return int(instance_count)
-
-    raise ValueError(
-        f"No valid instance count value found in the result of {action_name} action "
-        f"running on '{unit}': {action.results}"
-    )
 
 
 async def set_require_osd_release_option(unit: str, model: COUModel) -> None:

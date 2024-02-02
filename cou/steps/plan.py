@@ -30,7 +30,7 @@ from cou.apps.auxiliary_subordinate import (  # noqa: F401
     OpenStackAuxiliarySubordinateApplication,
     OvnSubordinateApplication,
 )
-from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import OpenStackChannelBasedApplication  # noqa: F401
 from cou.apps.core import Keystone, Octavia  # noqa: F401
 from cou.apps.machine import Machine
@@ -50,8 +50,8 @@ from cou.exceptions import (
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
-from cou.utils.app_utils import _get_empty_hypervisors
 from cou.utils.juju_utils import DEFAULT_TIMEOUT
+from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -389,9 +389,7 @@ async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) 
     :return: hypervisors filtered to generate plan and upgrade.
     :rtype: set[Machine]
     """
-    hypervisors_machines = await _get_hypervisors_machines_possible_to_upgrade(
-        args.force, analysis_result
-    )
+    hypervisors_machines = await _get_upgradable_hypervisors_machines(args.force, analysis_result)
 
     if cli_machines := args.machines:
         return {machine for machine in hypervisors_machines if machine.machine_id in cli_machines}
@@ -405,7 +403,7 @@ async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) 
     return hypervisors_machines
 
 
-async def _get_hypervisors_machines_possible_to_upgrade(
+async def _get_upgradable_hypervisors_machines(
     cli_force: bool, analysis_result: Analysis
 ) -> set[Machine]:
     """Get the hypervisors that are possible to upgrade.
@@ -417,25 +415,17 @@ async def _get_hypervisors_machines_possible_to_upgrade(
     :return: Set of nova-compute units to upgrade
     :rtype: set[Machine]
     """
-    hypervisors_units = _get_hypervisors_units(analysis_result.apps_data_plane)
+    nova_compute_units = {
+        unit
+        for app in analysis_result.apps_data_plane
+        for unit in app.units
+        if app.charm == "nova-compute"
+    }
 
     if cli_force:
-        return {unit.machine for unit in hypervisors_units}
+        return {unit.machine for unit in nova_compute_units}
 
-    hypervisors_units_name = [unit.name for unit in hypervisors_units]
-    empty_hypervisors = await _get_empty_hypervisors(hypervisors_units_name, analysis_result.model)
-    return {unit.machine for unit in hypervisors_units if unit.name in empty_hypervisors}
-
-
-def _get_hypervisors_units(data_plane_apps: list[OpenStackApplication]) -> set[ApplicationUnit]:
-    """Get all the hypervisors (nova-compute) units.
-
-    :param data_plane_apps: list of the data-plane applications
-    :type data_plane_apps: list[OpenStackApplication]
-    :return: set of all nova-compute units in the model.
-    :rtype: set[ApplicationUnit]
-    """
-    return {unit for app in data_plane_apps for unit in app.units if app.charm == "nova-compute"}
+    return await get_empty_hypervisors(list(nova_compute_units), analysis_result.model)
 
 
 async def create_upgrade_group(
