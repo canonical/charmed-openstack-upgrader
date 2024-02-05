@@ -61,10 +61,11 @@ class OpenStackChannelBasedApplication(OpenStackApplication):
         return not all(unit.workload_version for unit in self.status.units.values())
 
     def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
-        """Post Upgrade planning.
+        """Post Upgrade steps planning.
 
         Wait until the application reaches the idle state and then check the target workload.
         In case the application is versionless, there are no post upgrade steps to run.
+
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :return: List of post upgrade steps.

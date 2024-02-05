@@ -35,12 +35,11 @@ class SubordinateBaseClass(OpenStackApplication):
         """
         return [self._get_refresh_charm_step(target)]
 
-    def upgrade_plan_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def upgrade_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """

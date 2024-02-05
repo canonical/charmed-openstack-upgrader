@@ -446,7 +446,7 @@ class OpenStackApplication:
             self._get_refresh_charm_step(target),
         ]
 
-    def upgrade_plan_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def upgrade_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -497,7 +497,7 @@ class OpenStackApplication:
         )
         all_steps = (
             self.pre_upgrade_steps(target)
-            + self.upgrade_plan_steps(target)
+            + self.upgrade_steps(target)
             + self.post_upgrade_steps(target)
         )
         for step in all_steps:
@@ -506,9 +506,9 @@ class OpenStackApplication:
         return upgrade_steps
 
     def _get_upgrade_current_release_packages_step(self) -> PreUpgradeStep:
-        """Get Plan for upgrading software packages to the latest of the current release.
+        """Get step for upgrading software packages to the latest of the current release.
 
-        :return: Plan for upgrading software packages to the latest of the current release.
+        :return: Step for upgrading software packages to the latest of the current release.
         :rtype: PreUpgradeStep
         """
         return PreUpgradeStep(
@@ -519,14 +519,14 @@ class OpenStackApplication:
         )
 
     def _get_refresh_charm_step(self, target: OpenStackRelease) -> PreUpgradeStep:
-        """Get plan for refreshing the current channel.
+        """Get step for refreshing the current channel.
 
         This function also identifies if charm comes from charmstore and in that case,
         makes the migration.
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :raises ApplicationError: When application has unexpected channel.
-        :return: Plan for refreshing the charm.
+        :return: Step for refreshing the charm.
         :rtype: PreUpgradeStep
         """
         if not self.can_upgrade_current_channel:
@@ -573,11 +573,11 @@ class OpenStackApplication:
         )
 
     def _get_upgrade_charm_step(self, target: OpenStackRelease) -> UpgradeStep:
-        """Get plan for upgrading the charm.
+        """Get step for upgrading the charm.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan for upgrading the charm.
+        :return: Step for upgrading the charm.
         :rtype: UpgradeStep
         """
         if self.channel != self.target_channel(target):
@@ -590,11 +590,11 @@ class OpenStackApplication:
         return UpgradeStep()
 
     def _get_disable_action_managed_step(self) -> UpgradeStep:
-        """Get plan to disable action-managed-upgrade.
+        """Get step to disable action-managed-upgrade.
 
         This is used to upgrade as "all-in-one" strategy.
 
-        :return: Plan to disable action-managed-upgrade
+        :return: Step to disable action-managed-upgrade
         :rtype: UpgradeStep
         """
         if self.config.get("action-managed-upgrade", {}).get("value", False):
@@ -609,11 +609,11 @@ class OpenStackApplication:
         return UpgradeStep()
 
     def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
-        """Get workload upgrade plan by changing openstack-origin or source.
+        """Get workload upgrade step by changing openstack-origin or source.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Workload upgrade plan
+        :return: Workload upgrade step
         :rtype: UpgradeStep
         """
         if self.os_origin != self.new_origin(target) and self.origin_setting:
