@@ -139,31 +139,28 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
     wait_timeout = 30 * 60  # 30 min
     wait_for_model = True
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
-        """Pre Upgrade planning.
+    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
+        :return:  List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        return super().pre_upgrade_plan(target) + [self._get_change_require_osd_release_plan()]
+        return super().pre_upgrade_steps(target) + [self._get_change_require_osd_release_step()]
 
-    def _get_change_require_osd_release_plan(self, parallel: bool = False) -> PreUpgradeStep:
-        """Get plan to set correct value for require-osd-release option on ceph-mon.
+    def _get_change_require_osd_release_step(self) -> PreUpgradeStep:
+        """Get the ste to set correct value for require-osd-release option on ceph-mon.
 
         This step is needed as a workaround for LP#1929254. Reference:
         https://docs.openstack.org/charm-guide/latest/project/issues/upgrade-issues.html#ceph-require-osd-release
 
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
         :return: Plan to check and set correct value for require-osd-release
         :rtype: PreUpgradeStep
         """
         ceph_mon_unit, *_ = self.units
         return PreUpgradeStep(
             description="Ensure require-osd-release option matches with ceph-osd version",
-            parallel=parallel,
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )
 
@@ -172,17 +169,17 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
 class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
     """Ovn principal application class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
-        """Pre Upgrade planning.
+    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
+        :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         for unit in self.units:
             validate_ovn_support(unit.workload_version)
-        return super().pre_upgrade_plan(target)
+        return super().pre_upgrade_steps(target)
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])

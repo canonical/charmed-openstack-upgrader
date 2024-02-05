@@ -25,33 +25,33 @@ logger = logging.getLogger(__name__)
 class SubordinateBaseClass(OpenStackApplication):
     """Subordinate base class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
-        """Pre Upgrade planning.
+    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
+        :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        return [self._get_refresh_charm_plan(target)]
+        return [self._get_refresh_charm_step(target)]
 
-    def upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
-        """Upgrade planning.
+    def upgrade_plan_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+        """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
-        :return: Plan that will add upgrade as sub steps.
+        :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
-        return [self._get_upgrade_charm_plan(target)]
+        return [self._get_upgrade_charm_step(target)]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
-        """Post Upgrade planning.
+    def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
+        """Post Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add post upgrade as sub steps.
+        :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
         return []
