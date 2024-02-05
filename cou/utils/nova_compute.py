@@ -21,20 +21,20 @@ from cou.apps.machine import Machine
 from cou.utils.juju_utils import COUModel
 
 
-async def get_empty_hypervisors(units: list[ApplicationUnit], model: COUModel) -> set[Machine]:
+async def get_empty_hypervisors(units: list[ApplicationUnit], model: COUModel) -> list[Machine]:
     """Get the empty hypervisors in the model.
 
     :param units: all nova-compute units.
     :type units: list[ApplicationUnit]
     :param model: COUModel object
     :type model: COUModel
-    :return: Set with just the empty hypervisors machines.
-    :rtype: set[Machine]
+    :return: List with just the empty hypervisors machines.
+    :rtype: list[Machine]
     """
     tasks = [get_instance_count(unit.name, model) for unit in units]
     instances = await asyncio.gather(*tasks)
     units_instances = zip(units, instances)
-    return {unit.machine for unit, instances in units_instances if instances == 0}
+    return [unit.machine for unit, instances in units_instances if instances == 0]
 
 
 async def get_instance_count(unit: str, model: COUModel) -> int:

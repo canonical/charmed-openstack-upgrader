@@ -37,7 +37,7 @@ from cou.steps.backup import backup
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.conftest import KEYSTONE_MACHINES, NOVA_MACHINES, _generate_mock_machine
+from tests.unit.conftest import KEYSTONE_MACHINES, NOVA_MACHINES, generate_mock_machine
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
@@ -636,13 +636,13 @@ async def test_filter_hypervisors_machines(
 ):
 
     empty_hypervisors_machines = {
-        _generate_mock_machine(
+        generate_mock_machine(
             str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
         )
         for machine_id in range(2)
     }
     # assuming that machine-2 has some VMs running
-    non_empty_hypervisor_machine = _generate_mock_machine("2", "juju-c307f8-2", "zone-3")
+    non_empty_hypervisor_machine = generate_mock_machine("2", "juju-c307f8-2", "zone-3")
 
     upgradable_hypervisors = empty_hypervisors_machines
     if force:
@@ -691,7 +691,7 @@ async def test_get_upgradable_hypervisors_machines(
     analysis_result,
 ):
     mock_empty_hypervisors.return_value = {
-        _generate_mock_machine(
+        generate_mock_machine(
             str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
         )
         for machine_id in empty_hypervisors

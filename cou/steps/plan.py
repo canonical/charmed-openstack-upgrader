@@ -379,7 +379,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     return plan
 
 
-async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> set[Machine]:
+async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> list[Machine]:
     """Filter the hypervisors to generate plan and upgrade.
 
     :param args: CLI arguments
@@ -387,45 +387,45 @@ async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) 
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :return: hypervisors filtered to generate plan and upgrade.
-    :rtype: set[Machine]
+    :rtype: list[Machine]
     """
     hypervisors_machines = await _get_upgradable_hypervisors_machines(args.force, analysis_result)
 
     if cli_machines := args.machines:
-        return {machine for machine in hypervisors_machines if machine.machine_id in cli_machines}
+        return [machine for machine in hypervisors_machines if machine.machine_id in cli_machines]
 
     if cli_hostnames := args.hostnames:
-        return {machine for machine in hypervisors_machines if machine.hostname in cli_hostnames}
+        return [machine for machine in hypervisors_machines if machine.hostname in cli_hostnames]
 
     if cli_azs := args.availability_zones:
-        return {machine for machine in hypervisors_machines if machine.az in cli_azs}
+        return [machine for machine in hypervisors_machines if machine.az in cli_azs]
 
     return hypervisors_machines
 
 
 async def _get_upgradable_hypervisors_machines(
     cli_force: bool, analysis_result: Analysis
-) -> set[Machine]:
+) -> list[Machine]:
     """Get the hypervisors that are possible to upgrade.
 
     :param cli_force: If force is used, it gets all hypervisors, otherwise just the empty ones
     :type cli_force: bool
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
-    :return: Set of nova-compute units to upgrade
-    :rtype: set[Machine]
+    :return: List of nova-compute units to upgrade
+    :rtype: list[Machine]
     """
-    nova_compute_units = {
+    nova_compute_units = [
         unit
         for app in analysis_result.apps_data_plane
         for unit in app.units
         if app.charm == "nova-compute"
-    }
+    ]
 
     if cli_force:
-        return {unit.machine for unit in nova_compute_units}
+        return [unit.machine for unit in nova_compute_units]
 
-    return await get_empty_hypervisors(list(nova_compute_units), analysis_result.model)
+    return await get_empty_hypervisors(nova_compute_units, analysis_result.model)
 
 
 async def create_upgrade_group(

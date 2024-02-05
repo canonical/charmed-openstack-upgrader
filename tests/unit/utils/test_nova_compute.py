@@ -19,7 +19,7 @@ from juju.action import Action
 
 from cou.apps.base import ApplicationUnit
 from cou.utils import nova_compute
-from tests.unit.conftest import _generate_mock_machine
+from tests.unit.conftest import generate_mock_machine
 
 
 @pytest.mark.asyncio
@@ -65,11 +65,10 @@ async def test_get_instance_count_invalid_result(model, result_key, value):
 )
 @pytest.mark.asyncio
 @patch("cou.utils.nova_compute.get_instance_count")
-@patch("cou.utils.nova_compute.asyncio.gather", new_callable=AsyncMock)
 async def test_get_empty_hypervisors(
-    mock_gather, mock_instance_count, hypervisors_count, expected_result, model
+    mock_instance_count, hypervisors_count, expected_result, model
 ):
-    mock_gather.return_value = [count for _, count in hypervisors_count]
+    mock_instance_count.side_effect = [count for _, count in hypervisors_count]
     result = await nova_compute.get_empty_hypervisors(
         [_mock_nova_unit(nova_unit) for nova_unit, _ in hypervisors_count], model
     )
@@ -79,7 +78,7 @@ async def test_get_empty_hypervisors(
 def _mock_nova_unit(nova_unit):
     mock_nova_unit = MagicMock(spec_set=ApplicationUnit(MagicMock(), MagicMock(), MagicMock()))
     mock_nova_unit.name = f"nova-compute/{nova_unit}"
-    nova_machine = _generate_mock_machine(
+    nova_machine = generate_mock_machine(
         str(nova_unit), f"juju-c307f8-{nova_unit}", f"zone-{nova_unit + 1}"
     )
     mock_nova_unit.machine = nova_machine

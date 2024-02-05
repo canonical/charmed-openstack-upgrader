@@ -696,7 +696,7 @@ def cli_args() -> MagicMock:
     return MagicMock(spec_set=CLIargs(command="plan"))()
 
 
-def _generate_mock_machine(machine_id, hostname, az):
+def generate_mock_machine(machine_id, hostname, az):
     mock_machine = MagicMock(spec_set=Machine(machine_id, hostname, az))
     mock_machine.machine_id = machine_id
     mock_machine.hostname = hostname
