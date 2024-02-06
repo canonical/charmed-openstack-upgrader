@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
 
 
-@dataclass
+@dataclass(frozen=True)
 class ApplicationUnit:
     """Representation of a single unit of application."""
 
@@ -58,6 +58,14 @@ class ApplicationUnit:
     os_version: OpenStackRelease
     machine: Machine
     workload_version: str = ""
+
+    def __repr__(self) -> str:
+        """Representation of the application unit.
+
+        :return: Representation of the application unit
+        :rtype: str
+        """
+        return f"Unit[{self.name}]-Machine[{self.machine.machine_id}]"
 
 
 @dataclass
@@ -338,6 +346,7 @@ class OpenStackApplication:
             f"'{openstack_release.codename}': {units}"
             for openstack_release, units in os_versions.items()
         ]
+
         raise MismatchedOpenStackVersions(
             f"Units of application {self.name} are running mismatched OpenStack versions: "
             f"{', '.join(mismatched_repr)}. This is not currently handled."
