@@ -42,13 +42,13 @@ class OpenStackAuxiliarySubordinateApplication(
 class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
-        """Pre Upgrade planning.
+    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
+        :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         validate_ovn_support(self.status.workload_version)
-        return super().pre_upgrade_plan(target)
+        return super().pre_upgrade_steps(target)
