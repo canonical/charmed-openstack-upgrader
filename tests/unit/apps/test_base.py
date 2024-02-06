@@ -44,7 +44,7 @@ def test_get_enable_action_managed_plan(charm_config, model):
     assert app._get_enable_action_managed_plan() == expected_upgrade_step
 
 
-def test_get_pause_unit(model):
+def test_get_pause_unit_step(model):
     charm = "app"
     app_name = "my_app"
     status = MagicMock(spec_set=ApplicationStatus())
@@ -53,14 +53,15 @@ def test_get_pause_unit(model):
     unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
 
     expected_upgrade_step = UpgradeStep(
-        f"Pause the unit: '{unit.name}'.", False, model.run_action("my_app/0", "pause")
+        description=f"Pause the unit: '{unit.name}'.",
+        coro=model.run_action(unit_name="my_app/0", action_name="pause", raise_on_failure=True),
     )
 
     app = OpenStackApplication(app_name, status, {}, model, charm, {})
-    assert app._get_pause_unit(unit) == expected_upgrade_step
+    assert app._get_pause_unit_step(unit) == expected_upgrade_step
 
 
-def test_get_resume_unit(model):
+def test__get_resume_unit_step(model):
     charm = "app"
     app_name = "my_app"
     status = MagicMock(spec_set=ApplicationStatus())
@@ -69,8 +70,9 @@ def test_get_resume_unit(model):
     unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
 
     expected_upgrade_step = UpgradeStep(
-        f"Resume the unit: '{unit.name}'.", False, model.run_action(unit.name, "resume")
+        description=f"Resume the unit: '{unit.name}'.",
+        coro=model.run_action(unit_name=unit.name, action_name="resume", raise_on_failure=True),
     )
 
     app = OpenStackApplication(app_name, status, {}, model, charm, {})
-    assert app._get_resume_unit(unit) == expected_upgrade_step
+    assert app._get_resume_unit_step(unit) == expected_upgrade_step

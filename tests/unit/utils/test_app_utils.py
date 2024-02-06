@@ -95,34 +95,6 @@ async def test_get_instance_count(model):
 
 
 @pytest.mark.asyncio
-async def test_enable_nova_compute_scheduler(model):
-    model.run_action.return_value = mocked_action = AsyncMock(spec_set=Action).return_value
-    mocked_action.results = {}
-
-    result = await app_utils.enable_nova_compute_scheduler(unit="nova-compute/0", model=model)
-
-    model.run_action.assert_called_once_with(
-        unit_name="nova-compute/0",
-        action_name="enable",
-    )
-    assert result is None
-
-
-@pytest.mark.asyncio
-async def test_disable_nova_compute_scheduler(model):
-    model.run_action.return_value = mocked_action = AsyncMock(spec_set=Action).return_value
-    mocked_action.results = {}
-
-    result = await app_utils.disable_nova_compute_scheduler(unit="nova-compute/0", model=model)
-
-    model.run_action.assert_called_once_with(
-        unit_name="nova-compute/0",
-        action_name="disable",
-    )
-    assert result is None
-
-
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "result_key, value",
     [

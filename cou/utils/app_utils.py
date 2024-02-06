@@ -75,30 +75,6 @@ async def get_instance_count(unit: str, model: COUModel) -> int:
     )
 
 
-async def enable_nova_compute_scheduler(unit: str, model: COUModel) -> None:
-    """Enable nova-compute scheduler, so the unit can create new VMs.
-
-    :param unit: Name of the nova-compute unit where the action runs on.
-    :type unit: str
-    :param model: COUModel object
-    :type model: COUModel
-    """
-    action_name = "enable"
-    await model.run_action(unit_name=unit, action_name=action_name)
-
-
-async def disable_nova_compute_scheduler(unit: str, model: COUModel) -> None:
-    """Disable nova-compute scheduler, so the unit cannot create new VMs.
-
-    :param unit: Name of the nova-compute unit where the action runs on.
-    :type unit: str
-    :param model: COUModel object
-    :type model: COUModel
-    """
-    action_name = "disable"
-    await model.run_action(unit_name=unit, action_name=action_name)
-
-
 async def set_require_osd_release_option(unit: str, model: COUModel) -> None:
     """Check and set the correct value for require-osd-release on a ceph-mon unit.
 
