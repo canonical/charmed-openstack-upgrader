@@ -19,7 +19,7 @@ from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.exceptions import ApplicationError
-from cou.steps import UpgradeStep
+from cou.steps import UnitUpgradeStep, UpgradeStep
 
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
@@ -76,7 +76,7 @@ def test_get_pause_unit_step(model):
 
     unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
 
-    expected_upgrade_step = UpgradeStep(
+    expected_upgrade_step = UnitUpgradeStep(
         description=f"Pause the unit: '{unit.name}'.",
         coro=model.run_action(unit_name="my_app/0", action_name="pause", raise_on_failure=True),
     )
@@ -93,7 +93,7 @@ def test_get_resume_unit_step(model):
 
     unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
 
-    expected_upgrade_step = UpgradeStep(
+    expected_upgrade_step = UnitUpgradeStep(
         description=f"Resume the unit: '{unit.name}'.",
         coro=model.run_action(unit_name=unit.name, action_name="resume", raise_on_failure=True),
     )

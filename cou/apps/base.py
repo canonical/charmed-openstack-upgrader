@@ -34,6 +34,7 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
@@ -641,30 +642,30 @@ class OpenStackApplication:
             coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
         )
 
-    def _get_pause_unit_step(self, unit: ApplicationUnit) -> UpgradeStep:
-        """Get the plan to pause a unit to upgrade.
+    def _get_pause_unit_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+        """Get the step to pause a unit to upgrade.
 
         :param unit: Unit to be paused.
         :type unit: ApplicationUnit
-        :return: Plan to pause a unit.
-        :rtype: UpgradeStep
+        :return: Step to pause a unit.
+        :rtype: UnitUpgradeStep
         """
-        return UpgradeStep(
+        return UnitUpgradeStep(
             description=f"Pause the unit: '{unit.name}'.",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="pause", raise_on_failure=True
             ),
         )
 
-    def _get_resume_unit_step(self, unit: ApplicationUnit) -> UpgradeStep:
+    def _get_resume_unit_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
         """Get the step to resume a unit after upgrading the workload version.
 
         :param unit: Unit to be resumed.
         :type unit: ApplicationUnit
-        :return: Plan to resume a unit.
-        :rtype: UpgradeStep
+        :return: Step to resume a unit.
+        :rtype: UnitUpgradeStep
         """
-        return UpgradeStep(
+        return UnitUpgradeStep(
             description=(f"Resume the unit: '{unit.name}'."),
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="resume", raise_on_failure=True
