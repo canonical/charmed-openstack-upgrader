@@ -49,7 +49,7 @@ def test_application_get_latest_os_version_failed(
     "charm_config",
     [{"action-managed-upgrade": {"value": False}}, {"action-managed-upgrade": {"value": True}}],
 )
-def test_get_enable_action_managed_plan(charm_config, model):
+def test_get_enable_action_managed_step(charm_config, model):
     charm = "app"
     app_name = "my_app"
     status = MagicMock(spec_set=ApplicationStatus())
@@ -65,7 +65,7 @@ def test_get_enable_action_managed_plan(charm_config, model):
 
     app = OpenStackApplication(app_name, status, charm_config, model, charm, {})
 
-    assert app._get_enable_action_managed_plan() == expected_upgrade_step
+    assert app._get_enable_action_managed_step() == expected_upgrade_step
 
 
 def test_get_pause_unit_step(model):
@@ -85,7 +85,7 @@ def test_get_pause_unit_step(model):
     assert app._get_pause_unit_step(unit) == expected_upgrade_step
 
 
-def test__get_resume_unit_step(model):
+def test_get_resume_unit_step(model):
     charm = "app"
     app_name = "my_app"
     status = MagicMock(spec_set=ApplicationStatus())

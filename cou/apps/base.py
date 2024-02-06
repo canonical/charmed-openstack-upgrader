@@ -624,14 +624,12 @@ class OpenStackApplication:
             )
         return UpgradeStep()
 
-    def _get_enable_action_managed_plan(self, parallel: bool = False) -> UpgradeStep:
-        """Get plan to enable action-managed-upgrade.
+    def _get_enable_action_managed_step(self) -> UpgradeStep:
+        """Get step to enable action-managed-upgrade.
 
         This is used to upgrade as "paused-single-unit" strategy.
 
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Plan to enable action-managed-upgrade
+        :return: Step to enable action-managed-upgrade
         :rtype: UpgradeStep
         """
         if self.config.get("action-managed-upgrade", {}).get("value", False):
@@ -640,7 +638,6 @@ class OpenStackApplication:
             description=(
                 f"Change charm config of '{self.name}' 'action-managed-upgrade' to True."
             ),
-            parallel=parallel,
             coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
         )
 
