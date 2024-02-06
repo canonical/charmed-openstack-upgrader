@@ -31,27 +31,13 @@ from cou.steps import (
     UpgradePlan,
     UpgradeStep,
 )
+from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
-from cou.steps.plan import (
-    create_upgrade_group,
-    determine_upgrade_target,
-    generate_plan,
-    is_control_plane_upgraded,
-    manually_upgrade_data_plane,
-    pre_plan_sanity_checks,
-    verify_data_plane_cli_azs,
-    verify_data_plane_cli_hostnames,
-    verify_data_plane_cli_input,
-    verify_data_plane_cli_machines,
-    verify_data_plane_ready_to_upgrade,
-    verify_highest_release_achieved,
-    verify_supported_series,
-)
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.conftest import KEYSTONE_MACHINES, NOVA_MACHINES
+from tests.unit.conftest import KEYSTONE_MACHINES, NOVA_MACHINES, generate_mock_machine
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
@@ -155,7 +141,7 @@ async def test_generate_plan(apps, model, cli_args):
         apps_data_plane=[],
     )
 
-    upgrade_plan = await generate_plan(analysis_result, cli_args)
+    upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
 
     expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
     expected_plan.add_step(
@@ -216,7 +202,7 @@ def test_pre_plan_sanity_checks(
     mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
     mock_analysis_result.current_cloud_series = "focal"
     cli_args.is_data_plane_command = is_data_plane_command
-    pre_plan_sanity_checks(cli_args, mock_analysis_result)
+    cou_plan.pre_plan_sanity_checks(cli_args, mock_analysis_result)
     mock_verify_highest_release_achieved.assert_called_once()
     mock_verify_supported_series.assert_called_once()
     if expected_call:
@@ -249,7 +235,7 @@ def test_verify_supported_series(current_os_release, current_series, exp_error_m
     with pytest.raises(OutOfSupportRange, match=exp_error_msg):
         mock_analysis_result.current_cloud_os_release = current_os_release
         mock_analysis_result.current_cloud_series = current_series
-        verify_supported_series(mock_analysis_result)
+        cou_plan.verify_supported_series(mock_analysis_result)
 
 
 def test_verify_highest_release_achieved():
@@ -261,7 +247,7 @@ def test_verify_highest_release_achieved():
         "Newer OpenStack releases may be available after upgrading to a later Ubuntu series."
     )
     with pytest.raises(HighestReleaseAchieved, match=exp_error_msg):
-        verify_highest_release_achieved(mock_analysis_result)
+        cou_plan.verify_highest_release_achieved(mock_analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -288,7 +274,7 @@ def test_verify_data_plane_ready_to_upgrade_error(
     mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
     mock_analysis_result.min_os_version_data_plane = min_os_version_data_plane
     with pytest.raises(DataPlaneCannotUpgrade, match=exp_error_msg):
-        verify_data_plane_ready_to_upgrade(mock_analysis_result)
+        cou_plan.verify_data_plane_ready_to_upgrade(mock_analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -306,7 +292,7 @@ def test_is_control_plane_upgraded(
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
     mock_analysis_result.min_os_version_data_plane = min_os_version_data_plane
-    assert is_control_plane_upgraded(mock_analysis_result) is expected_result
+    assert cou_plan.is_control_plane_upgraded(mock_analysis_result) is expected_result
 
 
 @pytest.mark.parametrize(
@@ -321,7 +307,7 @@ def test_determine_upgrade_target(current_os_release, current_series, next_relea
     mock_analysis_result.current_cloud_os_release = current_os_release
     mock_analysis_result.current_cloud_series = current_series
 
-    target = determine_upgrade_target(mock_analysis_result)
+    target = cou_plan.determine_upgrade_target(mock_analysis_result)
 
     assert target == next_release
 
@@ -350,7 +336,7 @@ def test_determine_upgrade_target_current_os_and_series(
         mock_analysis_result = MagicMock(spec=Analysis)()
         mock_analysis_result.current_cloud_series = current_series
         mock_analysis_result.current_cloud_os_release = current_os_release
-        determine_upgrade_target(mock_analysis_result)
+        cou_plan.determine_upgrade_target(mock_analysis_result)
 
 
 def test_determine_upgrade_target_no_next_release():
@@ -368,7 +354,7 @@ def test_determine_upgrade_target_no_next_release():
             "ussuri"
         )  # instantiate OpenStackRelease with any valid codename
         mock_analysis_result.current_cloud_os_release = current_os_release
-        determine_upgrade_target(mock_analysis_result)
+        cou_plan.determine_upgrade_target(mock_analysis_result)
 
 
 def test_determine_upgrade_target_out_support_range():
@@ -382,7 +368,7 @@ def test_determine_upgrade_target_out_support_range():
         "Ubuntu series 'focal': ussuri, victoria, wallaby, xena, yoga."
     )
     with pytest.raises(OutOfSupportRange, match=exp_error_msg):
-        determine_upgrade_target(mock_analysis_result)
+        cou_plan.determine_upgrade_target(mock_analysis_result)
 
 
 @pytest.mark.asyncio
@@ -393,7 +379,7 @@ async def test_create_upgrade_plan():
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = await create_upgrade_group([app], target, description, lambda *_: True)
+    plan = await cou_plan.create_upgrade_group([app], target, description, lambda *_: True)
 
     assert plan.description == description
     assert plan.parallel is False
@@ -412,7 +398,7 @@ async def test_create_upgrade_plan_HaltUpgradePlanGeneration():
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = await create_upgrade_group([app], target, description, lambda *_: True)
+    plan = await cou_plan.create_upgrade_group([app], target, description, lambda *_: True)
 
     assert len(plan.sub_steps) == 0
     app.generate_upgrade_plan.assert_called_once_with(target)
@@ -426,7 +412,7 @@ async def test_create_upgrade_plan_failed():
     app.generate_upgrade_plan.side_effect = Exception("test")
 
     with pytest.raises(Exception, match="test"):
-        await create_upgrade_group([app], "victoria", "test", lambda *_: True)
+        await cou_plan.create_upgrade_group([app], "victoria", "test", lambda *_: True)
 
 
 @patch("builtins.print")
@@ -436,20 +422,15 @@ def test_plan_print_warn_manually_upgrade(mock_print, model, apps):
         apps_control_plane=[apps["keystone_focal_wallaby"]],
         apps_data_plane=[apps["nova_focal_ussuri"]],
     )
-    manually_upgrade_data_plane(result)
+    cou_plan.manually_upgrade_data_plane(result)
     mock_print.assert_called_with(
         "WARNING: Please upgrade manually the data plane apps: nova-compute"
     )
 
 
 @patch("builtins.print")
-def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
-    manually_upgrade_data_plane(result)
+def test_analysis_not_print_warn_manually_upgrade(mock_print, analysis_result):
+    cou_plan.manually_upgrade_data_plane(analysis_result)
     mock_print.assert_not_called()
 
 
@@ -460,20 +441,14 @@ def test_verify_data_plane_cli_no_input(
     mock_verify_machines,
     mock_verify_hostnames,
     mock_verify_azs,
-    model,
-    apps,
+    analysis_result,
     cli_args,
 ):
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
     cli_args.machines = None
     cli_args.hostnames = None
     cli_args.availability_zones = None
 
-    assert verify_data_plane_cli_input(cli_args, result) is None
+    assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
 
     mock_verify_machines.assert_not_called()
     mock_verify_hostnames.assert_not_called()
@@ -495,20 +470,14 @@ def test_verify_data_plane_cli_input_machines(
     mock_verify_hostnames,
     mock_verify_azs,
     cli_machines,
-    model,
-    apps,
+    analysis_result,
     cli_args,
 ):
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
     cli_args.machines = cli_machines
     cli_args.hostnames = None
     cli_args.availability_zones = None
 
-    assert verify_data_plane_cli_input(cli_args, result) is None
+    assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
 
     mock_verify_hostnames.assert_not_called()
     mock_verify_azs.assert_not_called()
@@ -524,21 +493,16 @@ def test_verify_data_plane_cli_input_hostnames(
     mock_verify_machines,
     mock_verify_azs,
     nova_unit,
-    model,
+    analysis_result,
     apps,
     cli_args,
 ):
     nova_machine = list(apps["nova_focal_ussuri"].machines.values())[nova_unit]
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
     cli_args.machines = None
     cli_args.hostnames = {nova_machine.hostname}
     cli_args.availability_zones = None
 
-    assert verify_data_plane_cli_input(cli_args, result) is None
+    assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
 
     mock_verify_machines.assert_not_called()
     mock_verify_azs.assert_not_called()
@@ -554,21 +518,16 @@ def test_verify_data_plane_cli_input_azs(
     mock_verify_machines,
     mock_verify_hostnames,
     nova_unit,
-    model,
+    analysis_result,
     apps,
     cli_args,
 ):
     nova_machine = list(apps["nova_focal_ussuri"].machines.values())[nova_unit]
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
     cli_args.machines = None
     cli_args.hostnames = None
     cli_args.availability_zones = {nova_machine.az}
 
-    assert verify_data_plane_cli_input(cli_args, result) is None
+    assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
 
     mock_verify_machines.assert_not_called()
     mock_verify_hostnames.assert_not_called()
@@ -581,14 +540,9 @@ def test_verify_data_plane_cli_input_azs(
         ({"5/lxd/18"}, r"Machine.*don't exist."),
     ],
 )
-def test_verify_data_plane_cli_machines_raise(apps, model, machine, exp_error_msg):
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
+def test_verify_data_plane_cli_machines_raise(analysis_result, machine, exp_error_msg):
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        verify_data_plane_cli_machines(machine, result)
+        cou_plan.verify_data_plane_cli_machines(machine, analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -598,15 +552,10 @@ def test_verify_data_plane_cli_machines_raise(apps, model, machine, exp_error_ms
         ("cinder", r"Hostname.*don't exist."),  # cinder is not on the Analysis
     ],
 )
-def test_verify_data_plane_cli_hostname_raise(apps, model, app, exp_error_msg):
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
+def test_verify_data_plane_cli_hostname_raise(apps, analysis_result, app, exp_error_msg):
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
         machine = list(apps[f"{app}_focal_ussuri"].machines.values())[0]
-        verify_data_plane_cli_hostnames({machine.hostname}, result)
+        cou_plan.verify_data_plane_cli_hostnames({machine.hostname}, analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -616,14 +565,9 @@ def test_verify_data_plane_cli_hostname_raise(apps, model, app, exp_error_msg):
         ({"zone-1", "zone-foo"}, r"Availability Zone.*don't exist."),
     ],
 )
-def test_verify_data_plane_cli_azs_raise_dont_exist(apps, model, azs, exp_error_msg):
-    result = Analysis(
-        model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
-    )
+def test_verify_data_plane_cli_azs_raise_dont_exist(analysis_result, azs, exp_error_msg):
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        verify_data_plane_cli_azs(azs, result)
+        cou_plan.verify_data_plane_cli_azs(azs, analysis_result)
 
 
 def test_verify_data_plane_cli_azs_raise_cannot_find():
@@ -638,4 +582,124 @@ def test_verify_data_plane_cli_azs_raise_cannot_find():
     mock_analyze.machines = {"1": mock_machine}
     mock_analyze.data_plane_machines = {"1": mock_machine}
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        verify_data_plane_cli_azs({"zone-1"}, mock_analyze)
+        cou_plan.verify_data_plane_cli_azs({"zone-1"}, mock_analyze)
+
+
+@pytest.mark.parametrize(
+    "force, cli_machines, cli_hostnames, cli_azs, expected_machines",
+    [
+        # machines input
+        (False, {"0", "1", "2"}, None, None, {"0", "1"}),
+        (False, {"2"}, None, None, set()),
+        (False, {"0", "1"}, None, None, {"0", "1"}),
+        (False, {"0"}, None, None, {"0"}),
+        (True, {"0", "1", "2"}, None, None, {"0", "1", "2"}),
+        (True, {"2"}, None, None, {"2"}),
+        (True, {"0"}, None, None, {"0"}),
+        # hostnames input
+        (False, None, {"juju-c307f8-0", "juju-c307f8-1", "juju-c307f8-2"}, None, {"0", "1"}),
+        (False, None, {"juju-c307f8-2"}, None, set()),
+        (False, None, {"juju-c307f8-0", "juju-c307f8-1"}, None, {"0", "1"}),
+        (False, None, {"juju-c307f8-0"}, None, {"0"}),
+        (
+            True,
+            None,
+            {"juju-c307f8-0", "juju-c307f8-1", "juju-c307f8-2"},
+            None,
+            {"0", "1", "2"},
+        ),
+        (True, None, {"juju-c307f8-2"}, None, {"2"}),
+        (True, None, {"juju-c307f8-0"}, None, {"0"}),
+        # az input
+        (False, None, None, {"zone-1", "zone-2", "zone-3"}, {"0", "1"}),
+        (False, None, None, {"zone-3"}, set()),
+        (False, None, None, {"zone-1", "zone-2"}, {"0", "1"}),
+        (False, None, None, {"zone-1"}, {"0"}),
+        (True, None, None, {"zone-1", "zone-2", "zone-3"}, {"0", "1", "2"}),
+        (True, None, None, {"zone-3"}, {"2"}),
+        (True, None, None, {"zone-1"}, {"0"}),
+        # no input
+        (False, None, None, None, {"0", "1"}),
+        (True, None, None, None, {"0", "1", "2"}),
+    ],
+)
+@pytest.mark.asyncio
+@patch("cou.steps.plan._get_upgradable_hypervisors_machines")
+async def test_filter_hypervisors_machines(
+    mock_hypervisors_machines,
+    force,
+    cli_machines,
+    cli_hostnames,
+    cli_azs,
+    expected_machines,
+    cli_args,
+):
+
+    empty_hypervisors_machines = {
+        generate_mock_machine(
+            str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
+        )
+        for machine_id in range(2)
+    }
+    # assuming that machine-2 has some VMs running
+    non_empty_hypervisor_machine = generate_mock_machine("2", "juju-c307f8-2", "zone-3")
+
+    upgradable_hypervisors = empty_hypervisors_machines
+    if force:
+        upgradable_hypervisors.add(non_empty_hypervisor_machine)
+
+    mock_hypervisors_machines.return_value = upgradable_hypervisors
+
+    cli_args.machines = cli_machines
+    cli_args.hostnames = cli_hostnames
+    cli_args.availability_zones = cli_azs
+    cli_args.force = force
+
+    machines = await cou_plan.filter_hypervisors_machines(cli_args, MagicMock())
+
+    assert {machine.machine_id for machine in machines} == expected_machines
+
+
+@pytest.mark.parametrize(
+    "cli_force, empty_hypervisors, expected_result",
+    [
+        (True, {0, 1, 2}, {"0", "1", "2"}),
+        (True, {0, 1}, {"0", "1", "2"}),
+        (True, {0, 2}, {"0", "1", "2"}),
+        (True, {1, 2}, {"0", "1", "2"}),
+        (True, {0}, {"0", "1", "2"}),
+        (True, {1}, {"0", "1", "2"}),
+        (True, {2}, {"0", "1", "2"}),
+        (True, set(), {"0", "1", "2"}),
+        (False, {0, 1, 2}, {"0", "1", "2"}),
+        (False, {0, 1}, {"0", "1"}),
+        (False, {0, 2}, {"0", "2"}),
+        (False, {1, 2}, {"1", "2"}),
+        (False, {0}, {"0"}),
+        (False, {1}, {"1"}),
+        (False, {2}, {"2"}),
+        (False, set(), set()),
+    ],
+)
+@pytest.mark.asyncio
+@patch("cou.steps.plan.get_empty_hypervisors")
+async def test_get_upgradable_hypervisors_machines(
+    mock_empty_hypervisors,
+    cli_force,
+    empty_hypervisors,
+    expected_result,
+    analysis_result,
+):
+    mock_empty_hypervisors.return_value = {
+        generate_mock_machine(
+            str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
+        )
+        for machine_id in empty_hypervisors
+    }
+    hypervisors_possible_to_upgrade = await cou_plan._get_upgradable_hypervisors_machines(
+        cli_force, analysis_result
+    )
+
+    assert {
+        hypervisor.machine_id for hypervisor in hypervisors_possible_to_upgrade
+    } == expected_result
