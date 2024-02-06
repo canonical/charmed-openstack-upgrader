@@ -29,8 +29,7 @@ from cou.steps import (
 )
 
 
-async def mock_coro(*args, **kwargs):
-    ...
+async def mock_coro(*args, **kwargs): ...
 
 
 @pytest.mark.parametrize(
