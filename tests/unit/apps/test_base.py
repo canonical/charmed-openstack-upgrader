@@ -12,13 +12,37 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from juju.client._definitions import ApplicationStatus
+from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.exceptions import ApplicationError
 from cou.steps import UpgradeStep
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
+def test_application_get_latest_os_version_failed(
+    mock_find_compatible_versions, config, status, model, apps_machines
+):
+    charm = "app"
+    app_name = "my_app"
+    unit = MagicMock(spec_set=UnitStatus())
+    unit.workload_version = "15.0.1"
+    exp_error = (
+        f"'{app_name}' with workload version {unit.workload_version} has no compatible OpenStack "
+        "release."
+    )
+    mock_find_compatible_versions.return_value = []
+
+    app = OpenStackApplication(app_name, MagicMock(), MagicMock(), MagicMock(), charm, {})
+
+    with pytest.raises(ApplicationError, match=exp_error):
+        app._get_latest_os_version(unit)
+
+    mock_find_compatible_versions.assert_called_once_with(charm, unit.workload_version)
 
 
 @pytest.mark.parametrize(
