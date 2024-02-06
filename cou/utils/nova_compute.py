@@ -18,6 +18,7 @@ import asyncio
 
 from cou.apps.base import ApplicationUnit
 from cou.apps.machine import Machine
+from cou.exceptions import HaltUpgradeExecution
 from cou.utils.juju_utils import COUModel
 
 
@@ -60,3 +61,11 @@ async def get_instance_count(unit: str, model: COUModel) -> int:
         f"No valid instance count value found in the result of {action_name} action "
         f"running on '{unit}': {action.results}"
     )
+
+
+async def _get_instance_count_to_upgrade(unit: ApplicationUnit, model: COUModel) -> None:
+    unit_instance_count = await get_instance_count(unit, model)
+    if unit_instance_count != 0:
+        model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True)
+        # log warning message
+        raise HaltUpgradeExecution(f"Unit: {unit.name} has {unit_instance_count} VMs running")
