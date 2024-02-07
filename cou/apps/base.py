@@ -665,6 +665,21 @@ class OpenStackApplication:
             ),
         )
 
+    def _get_openstack_upgrade_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+        """Get the step to upgrade a unit.
+
+        :param unit: Unit to be upgraded.
+        :type unit: ApplicationUnit
+        :return: Step to upgrade a unit.
+        :rtype: UnitUpgradeStep
+        """
+        return UnitUpgradeStep(
+            description=(f"Upgrade the unit: '{unit.name}'."),
+            coro=self.model.run_action(
+                unit_name=unit.name, action_name="openstack-upgrade", raise_on_failure=True
+            ),
+        )
+
     def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
         """Get workload upgrade step by changing openstack-origin or source.
 

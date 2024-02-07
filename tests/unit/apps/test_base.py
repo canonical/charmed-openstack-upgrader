@@ -100,3 +100,22 @@ def test_get_resume_unit_step(model):
 
     app = OpenStackApplication(app_name, status, {}, model, charm, {})
     assert app._get_resume_unit_step(unit) == expected_upgrade_step
+
+
+def test_get_openstack_upgrade_step(model):
+    charm = "app"
+    app_name = "my_app"
+    status = MagicMock(spec_set=ApplicationStatus())
+    status.charm_channel = "ussuri/stable"
+
+    unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
+
+    expected_upgrade_step = UnitUpgradeStep(
+        description=f"Upgrade the unit: '{unit.name}'.",
+        coro=model.run_action(
+            unit_name=unit.name, action_name="openstack-upgrade", raise_on_failure=True
+        ),
+    )
+
+    app = OpenStackApplication(app_name, status, {}, model, charm, {})
+    assert app._get_openstack_upgrade_step(unit) == expected_upgrade_step
