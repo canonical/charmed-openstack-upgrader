@@ -329,6 +329,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :rtype: UpgradePlan
     """
     pre_plan_sanity_checks(args, analysis_result)
+    set_upgrade_strategy(args, analysis_result)
     hypervisors = await filter_hypervisors_machines(args, analysis_result)
     logger.info("Hypervisors selected: %s", hypervisors)
     target = determine_upgrade_target(analysis_result)
@@ -426,6 +427,15 @@ async def _get_upgradable_hypervisors_machines(
         return [unit.machine for unit in nova_compute_units]
 
     return await get_empty_hypervisors(nova_compute_units, analysis_result.model)
+
+
+def set_upgrade_strategy(args: CLIargs, analysis_result: Analysis):
+    nova_compute_machines = _get_upgradable_hypervisors_machines(True, analysis_result)
+    for app in analysis_result.data_plane_apps:
+        if any(unit.machine in nova_compute_machines for unit in app.units):
+            app.upgrade_by_unit = True
+        if app.charm == "nova-compute" and args.force:
+            app.force_upgrade = args.force
 
 
 async def create_upgrade_group(

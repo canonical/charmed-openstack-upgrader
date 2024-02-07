@@ -14,7 +14,7 @@
 
 """Machine class."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -25,11 +25,6 @@ class Machine:
     machine_id: str
     hostname: str
     az: Optional[str]  # simple deployments may not have azs
-    charms_deployed: set[str] = field(default_factory=set)
-
-    @property
-    def is_hypervisor(self) -> bool:
-        return "nova-compute" in self.charms_deployed
 
     def __repr__(self) -> str:
         """Representation of the juju Machine.

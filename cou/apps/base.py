@@ -105,6 +105,7 @@ class OpenStackApplication:
     packages_to_hold: Optional[list] = field(default=None, init=False)
     wait_timeout: int = field(default=DEFAULT_WAITING_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
+    upgrade_by_unit: bool = field(default=False, init=False)
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
@@ -419,15 +420,6 @@ class OpenStackApplication:
         :rtype: bool
         """
         return bool(self.status.can_upgrade_to)
-
-    @property
-    def upgrade_by_unit(self) -> bool:
-        """Check if application should upgrade by unit, also known as "paused-single-unit" strategy.
-
-        :return: whether if application should upgrade by unit or not.
-        :rtype: bool
-        """
-        return any(machine.is_hypervisor for machine in self.machines)
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.

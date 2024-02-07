@@ -23,7 +23,7 @@ from cou.utils.nova_compute import _get_instance_count_to_upgrade
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(["keystone"])
+@AppFactory.register_application(["nova-compute"])
 class NovaCompute(OpenStackApplication):
     """Nova Compute application.
 
