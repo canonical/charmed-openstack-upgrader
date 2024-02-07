@@ -42,11 +42,24 @@ def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutin
         # compare two None or one None and one Coroutine
         return coro1 == coro2
 
+    inspection_coro1 = inspect.getcoroutinelocals(coro1)
+    inspection_coro2 = inspect.getcoroutinelocals(coro2)
+
+    args1 = list(inspection_coro1.get("args", []))
+    kwargs1_values = list(inspection_coro1.get("kwargs", {}).values())
+
+    args2 = list(inspection_coro2.get("args", []))
+    kwargs2_values = list(inspection_coro2.get("kwargs", {}).values())
     return (
         # check if same coroutine was used
         coro1.cr_code == coro2.cr_code
         # check coroutine arguments
-        and inspect.getcoroutinelocals(coro1) == inspect.getcoroutinelocals(coro2)
+        and (
+            inspection_coro1 == inspection_coro2
+            # with this we can compare for e.g:
+            # run_action("my_app/0", "pause") with run_action(unit="my_app/0", action_name="pause")
+            or args1 + kwargs1_values == args2 + kwargs2_values
+        )
     )
 
 

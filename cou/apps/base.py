@@ -34,6 +34,7 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
@@ -616,6 +617,53 @@ class OpenStackApplication:
                 ),
             )
         return UpgradeStep()
+
+    def _get_enable_action_managed_step(self) -> UpgradeStep:
+        """Get step to enable action-managed-upgrade.
+
+        This is used to upgrade as "paused-single-unit" strategy.
+
+        :return: Step to enable action-managed-upgrade
+        :rtype: UpgradeStep
+        """
+        if self.config.get("action-managed-upgrade", {}).get("value", False):
+            return UpgradeStep()
+        return UpgradeStep(
+            description=(
+                f"Change charm config of '{self.name}' 'action-managed-upgrade' to True."
+            ),
+            coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
+        )
+
+    def _get_pause_unit_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+        """Get the step to pause a unit to upgrade.
+
+        :param unit: Unit to be paused.
+        :type unit: ApplicationUnit
+        :return: Step to pause a unit.
+        :rtype: UnitUpgradeStep
+        """
+        return UnitUpgradeStep(
+            description=f"Pause the unit: '{unit.name}'.",
+            coro=self.model.run_action(
+                unit_name=unit.name, action_name="pause", raise_on_failure=True
+            ),
+        )
+
+    def _get_resume_unit_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+        """Get the step to resume a unit after upgrading the workload version.
+
+        :param unit: Unit to be resumed.
+        :type unit: ApplicationUnit
+        :return: Step to resume a unit.
+        :rtype: UnitUpgradeStep
+        """
+        return UnitUpgradeStep(
+            description=(f"Resume the unit: '{unit.name}'."),
+            coro=self.model.run_action(
+                unit_name=unit.name, action_name="resume", raise_on_failure=True
+            ),
+        )
 
     def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
         """Get workload upgrade step by changing openstack-origin or source.

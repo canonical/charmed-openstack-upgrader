@@ -45,6 +45,7 @@ async def mock_coro(*args, **kwargs): ...
         (mock_coro(), mock_coro(arg1=True), False),
         (mock_coro(), mock_coro(), True),
         (mock_coro(1, 2, 3, kwarg1=True), mock_coro(1, 2, 3, kwarg1=True), True),
+        (mock_coro(1, 2, kwarg1=3, kwarg2=True), mock_coro(1, 2, 3, True), True),
     ],
 )
 def test_compare_step_coroutines(coro1, coro2, exp_result):

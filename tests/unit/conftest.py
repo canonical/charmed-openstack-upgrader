@@ -442,8 +442,8 @@ def generate_my_app():
         "12.5/stable",
         "ch:amd64/focal/my-app-638",
         [],
-        ["my-app/0"],
-        ["0/lxd/11"],
+        MY_APP_UNITS,
+        MY_APP_MACHINES,
         "12.5",
     )
     return {"my_app": mock_my_app}
@@ -586,6 +586,7 @@ def model(config, apps_machines):
     model.get_status = AsyncMock(side_effect=get_status)
     model.get_charm_name = AsyncMock(side_effect=get_charm_name)
     model.scp_from_unit = AsyncMock()
+    model.set_application_config = AsyncMock()
     model.get_application_config = mock_get_app_config = AsyncMock()
     mock_get_app_config.side_effect = config.get
     model.get_model_machines = machines
@@ -665,6 +666,7 @@ def apps(status, config, model, apps_machines):
         "nova-compute",
         apps_machines["nova-compute"],
     )
+
     return {
         "keystone_focal_ussuri": keystone_ussuri,
         "keystone_focal_wallaby": keystone_wallaby,

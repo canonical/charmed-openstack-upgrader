@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 from unittest.mock import MagicMock, patch
 
 import pytest
-from juju.client._definitions import UnitStatus
+from juju.client._definitions import ApplicationStatus, UnitStatus
 
-from cou.apps.base import OpenStackApplication
+from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.exceptions import ApplicationError
+from cou.steps import UnitUpgradeStep, UpgradeStep
 
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
@@ -41,3 +43,60 @@ def test_application_get_latest_os_version_failed(
         app._get_latest_os_version(unit)
 
     mock_find_compatible_versions.assert_called_once_with(charm, unit.workload_version)
+
+
+@pytest.mark.parametrize(
+    "charm_config",
+    [{"action-managed-upgrade": {"value": False}}, {"action-managed-upgrade": {"value": True}}],
+)
+def test_get_enable_action_managed_step(charm_config, model):
+    charm = "app"
+    app_name = "my_app"
+    status = MagicMock(spec_set=ApplicationStatus())
+    status.charm_channel = "ussuri/stable"
+
+    expected_upgrade_step = UpgradeStep(
+        f"Change charm config of '{app_name}' 'action-managed-upgrade' to True.",
+        False,
+        model.set_application_config(app_name, {"action-managed-upgrade": True}),
+    )
+    if charm_config["action-managed-upgrade"]["value"]:
+        expected_upgrade_step = UpgradeStep()
+
+    app = OpenStackApplication(app_name, status, charm_config, model, charm, {})
+
+    assert app._get_enable_action_managed_step() == expected_upgrade_step
+
+
+def test_get_pause_unit_step(model):
+    charm = "app"
+    app_name = "my_app"
+    status = MagicMock(spec_set=ApplicationStatus())
+    status.charm_channel = "ussuri/stable"
+
+    unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
+
+    expected_upgrade_step = UnitUpgradeStep(
+        description=f"Pause the unit: '{unit.name}'.",
+        coro=model.run_action(unit_name="my_app/0", action_name="pause", raise_on_failure=True),
+    )
+
+    app = OpenStackApplication(app_name, status, {}, model, charm, {})
+    assert app._get_pause_unit_step(unit) == expected_upgrade_step
+
+
+def test_get_resume_unit_step(model):
+    charm = "app"
+    app_name = "my_app"
+    status = MagicMock(spec_set=ApplicationStatus())
+    status.charm_channel = "ussuri/stable"
+
+    unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
+
+    expected_upgrade_step = UnitUpgradeStep(
+        description=f"Resume the unit: '{unit.name}'.",
+        coro=model.run_action(unit_name=unit.name, action_name="resume", raise_on_failure=True),
+    )
+
+    app = OpenStackApplication(app_name, status, {}, model, charm, {})
+    assert app._get_resume_unit_step(unit) == expected_upgrade_step
