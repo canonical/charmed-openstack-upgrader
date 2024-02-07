@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
+from juju.client._definitions import ApplicationStatus
 
 from cou.apps.base import ApplicationUnit
-from cou.apps.core import Keystone
+from cou.apps.core import Keystone, NovaCompute
 from cou.apps.machine import Machine
 from cou.exceptions import (
     ApplicationError,
@@ -690,3 +691,44 @@ def test_upgrade_plan_application_already_disable_action_managed(
     add_steps(expected_plan, upgrade_steps)
 
     assert upgrade_plan == expected_plan
+
+
+def test_nova_compute_generate_plan_not_force(model):
+    charm = app_name = "nova-compute"
+    status = MagicMock(spec_set=ApplicationStatus())
+    status.charm_channel = "ussuri/stable"
+    target = OpenStackRelease("victoria")
+
+    units = [
+        ApplicationUnit(f"nova-compute/{unit_num}", MagicMock(), MagicMock(), MagicMock())
+        for unit_num in range(3)
+    ]
+
+    with patch(
+        "cou.apps.base.OpenStackApplication.current_os_release",
+        new_callable=PropertyMock,
+        return_value=OpenStackRelease("ussuri"),
+    ):
+        app = NovaCompute(app_name, status, {}, model, charm, {})
+        plan = app.generate_upgrade_plan(target, units)
+
+
+def test_nova_compute_generate_plan_force(model):
+    charm = app_name = "nova-compute"
+    status = MagicMock(spec_set=ApplicationStatus())
+    status.charm_channel = "ussuri/stable"
+    target = OpenStackRelease("victoria")
+
+    units = [
+        ApplicationUnit(f"nova-compute/{unit_num}", MagicMock(), MagicMock(), MagicMock())
+        for unit_num in range(3)
+    ]
+
+    with patch(
+        "cou.apps.base.OpenStackApplication.current_os_release",
+        new_callable=PropertyMock,
+        return_value=OpenStackRelease("ussuri"),
+    ):
+        app = NovaCompute(app_name, status, {}, model, charm, {})
+        app.force = True
+        plan = app.generate_upgrade_plan(target, units)

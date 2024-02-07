@@ -456,7 +456,9 @@ class OpenStackApplication:
             self._get_refresh_charm_step(target),
         ]
 
-    def upgrade_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def upgrade_steps(
+        self, target: OpenStackRelease, units: list[ApplicationUnit]
+    ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -474,9 +476,9 @@ class OpenStackApplication:
             raise HaltUpgradePlanGeneration(msg)
 
         return [
-            self._get_disable_action_managed_step(),
+            self._get_disable_or_enable_action_managed_step(units),
             self._get_upgrade_charm_step(target),
-            self._get_workload_upgrade_step(target),
+            self._get_change_install_repository_step(target),
         ]
 
     def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
@@ -494,11 +496,17 @@ class OpenStackApplication:
             self._get_reached_expected_target_step(target),
         ]
 
-    def generate_upgrade_plan(self, target: OpenStackRelease) -> ApplicationUpgradePlan:
+    def generate_upgrade_plan(
+        self, target: OpenStackRelease, units: list[ApplicationUnit] = []
+    ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
+
+        Units are passed if the application should upgrade unit by unit.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to []
+        :type units: list[ApplicationUnit], optional
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
@@ -507,7 +515,7 @@ class OpenStackApplication:
         )
         all_steps = (
             self.pre_upgrade_steps(target)
-            + self.upgrade_steps(target)
+            + self.upgrade_steps(target, units)
             + self.post_upgrade_steps(target)
         )
         for step in all_steps:
@@ -599,6 +607,23 @@ class OpenStackApplication:
             )
         return UpgradeStep()
 
+    def _get_disable_or_enable_action_managed_step(
+        self, units: list[ApplicationUnit]
+    ) -> UpgradeStep:
+        """Disable or enable action-managed-upgrade.
+
+        action-managed-upgrade will be enabled if units are passed to upgrade. Otherwise,
+        it will be disabled to run the "all-in-one" approach
+
+        :param units: Units to generate upgrade plan
+        :type units: list[ApplicationUnit]
+        :return: Step to disable or enable action-managed-upgrade
+        :rtype: UpgradeStep
+        """
+        if units:
+            return self._get_enable_action_managed_step()
+        return self._get_disable_action_managed_step()
+
     def _get_disable_action_managed_step(self) -> UpgradeStep:
         """Get step to disable action-managed-upgrade.
 
@@ -680,8 +705,8 @@ class OpenStackApplication:
             ),
         )
 
-    def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
-        """Get workload upgrade step by changing openstack-origin or source.
+    def _get_change_install_repository_step(self, target: OpenStackRelease) -> UpgradeStep:
+        """Change openstack-origin or source for the next OpenStack target.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
@@ -699,7 +724,7 @@ class OpenStackApplication:
                 ),
             )
         logger.warning(
-            "Not triggering the workload upgrade of app %s: %s already set to %s",
+            "Not changing the install repository of app %s: %s already set to %s",
             self.name,
             self.origin_setting,
             self.new_origin(target),

@@ -15,10 +15,14 @@
 """Nova Compute utilities."""
 
 import asyncio
+import logging
 
 from cou.apps.base import ApplicationUnit
 from cou.apps.machine import Machine
+from cou.exceptions import HaltUpgradeExecution
 from cou.utils.juju_utils import COUModel
+
+logger = logging.getLogger(__name__)
 
 
 async def get_empty_hypervisors(units: list[ApplicationUnit], model: COUModel) -> list[Machine]:
@@ -60,3 +64,17 @@ async def get_instance_count(unit: str, model: COUModel) -> int:
         f"No valid instance count value found in the result of {action_name} action "
         f"running on '{unit}': {action.results}"
     )
+
+
+async def get_instance_count_to_upgrade(unit: ApplicationUnit, model: COUModel) -> None:
+    unit_instance_count = await get_instance_count(unit, model)
+    if unit_instance_count != 0:
+        model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True)
+        logger.warning(
+            (
+                "VMs are running on unit %s. The upgrade on this unit cannot happen "
+                "unless it's empty or force flag is used"
+            ),
+            unit.name,
+        )
+        raise HaltUpgradeExecution(f"Unit: {unit.name} has {unit_instance_count} VMs running")

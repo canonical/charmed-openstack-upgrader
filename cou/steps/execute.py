@@ -17,6 +17,7 @@ import asyncio
 import logging
 import sys
 
+from cou.exceptions import HaltUpgradeExecution
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 
@@ -36,13 +37,17 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
     in CLI output. True to overwrite and False (the default) to persist.
     :type overwrite_progress: bool
     """
-    if isinstance(step, UpgradeStep):
-        progress_indicator.start(step.description)
-        await step.run()
-        if not overwrite_progress:
-            progress_indicator.succeed()
-    else:
-        await step.run()
+    try:
+        if isinstance(step, UpgradeStep):
+            progress_indicator.start(step.description)
+            await step.run()
+            if not overwrite_progress:
+                progress_indicator.succeed()
+        else:
+            await step.run()
+    except HaltUpgradeExecution:
+        progress_indicator.fail()
+        step.sub_steps = []
 
     # The progress indication message of ApplicationUpgradePlan's sub-steps and all their
     # sub-steps will get overwritten upon completion
