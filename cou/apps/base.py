@@ -674,7 +674,7 @@ class OpenStackApplication:
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=(f"Upgrade the unit: '{unit.name}'."),
+            description=f"Upgrade the unit: '{unit.name}'.",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="openstack-upgrade", raise_on_failure=True
             ),
