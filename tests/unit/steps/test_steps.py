@@ -24,11 +24,8 @@ from cou.steps import (
     BaseStep,
     PostUpgradeStep,
     PreUpgradeStep,
-    UnitUpgradeStep,
     UpgradePlan,
-    UpgradeStep,
     compare_step_coroutines,
-    is_unit_upgrade_step,
 )
 
 
@@ -378,17 +375,3 @@ async def test_step_full_run(sub_steps, exp_order, parallel):
         await step_run(plan)
 
     assert steps_order == exp_order
-
-
-@pytest.mark.parametrize(
-    "step, exp_result",
-    [
-        (UnitUpgradeStep(), True),
-        (UpgradeStep(), False),
-        (PreUpgradeStep(), False),
-        (BaseStep(), False),
-    ],
-)
-def test_is_unit_upgrade_step(step, exp_result):
-    """Test helper function for checking if step is unit upgrade step."""
-    assert is_unit_upgrade_step(step) == exp_result

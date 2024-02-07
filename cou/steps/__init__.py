@@ -319,14 +319,3 @@ class PreUpgradeStep(UpgradeStep):
 
 class PostUpgradeStep(UpgradeStep):
     """Represents the post-upgrade step."""
-
-
-def is_unit_upgrade_step(step: BaseStep) -> bool:
-    """Check if it's unit upgrade step.
-
-    :param step: step
-    :type step: BaseStep
-    :return: True if it's UnitUpgradeStep
-    :rtype: bool
-    """
-    return isinstance(step, UnitUpgradeStep)

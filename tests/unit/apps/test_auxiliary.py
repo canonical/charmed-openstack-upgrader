@@ -712,5 +712,4 @@ def test_mysql_innodb_cluster_upgrade(status, config, model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    print(upgrade_plan, expected_plan)
     assert upgrade_plan == expected_plan
