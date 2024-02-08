@@ -207,6 +207,15 @@ def test_step_add_step():
     assert len(plan.sub_steps) == exp_sub_steps
 
 
+def test_step_add_step_failed():
+    """Test BaseStep adding sub steps failing."""
+    exp_error_msg = "Cannot add an upgrade step that is not derived from BaseStep"
+    plan = BaseStep(description="plan")
+
+    with pytest.raises(TypeError, match=exp_error_msg):
+        plan.add_step(MagicMock())
+
+
 def test_step_cancel_safe():
     """Test step safe cancel."""
     plan = BaseStep(description="plan")

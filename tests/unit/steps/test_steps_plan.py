@@ -26,6 +26,7 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradePlan,
     UpgradeStep,
 )
@@ -60,14 +61,20 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         )
 
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=(
                 f"Refresh '{app.name}' to the latest revision of "
@@ -252,7 +259,8 @@ def test_determine_upgrade_target_release_out_of_range(current_os_release, curre
 @pytest.mark.asyncio
 async def test_create_upgrade_plan():
     """Test create_upgrade_group."""
-    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app: OpenStackApplication = MagicMock(spec_set=OpenStackApplication)
+    app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
     target = OpenStackRelease("victoria")
     description = "test"
 

@@ -26,6 +26,7 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradeStep,
 )
 from cou.utils import app_utils
@@ -104,14 +105,21 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    expected_upgrade_package_step = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.status.units.keys():
+        expected_upgrade_package_step.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit}",
+                parallel=False,
+                coro=app_utils.upgrade_packages(unit, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        expected_upgrade_package_step,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.8/stable'",
             parallel=False,
@@ -167,14 +175,20 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             parallel=False,
@@ -223,14 +237,20 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}",
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Migration of '{app.name}' from charmstore to charmhub",
             parallel=False,
@@ -399,14 +419,20 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
             parallel=False,
@@ -467,14 +493,20 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
             parallel=False,
@@ -579,14 +611,20 @@ def test_ovn_principal_upgrade_plan(status, config, model):
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
@@ -632,16 +670,20 @@ def test_mysql_innodb_cluster_upgrade(status, config, model):
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, ["mysql-server-core-8.0"]),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(
-                app.status.units.keys(), model, ["mysql-server-core-8.0"]
-            ),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
             parallel=False,
