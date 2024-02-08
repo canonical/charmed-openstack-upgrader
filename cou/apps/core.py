@@ -14,10 +14,11 @@
 
 """Core application class."""
 import logging
-from dataclasses import dataclass, field
+from typing import Optional
 
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.apps.factory import AppFactory
+from cou.exceptions import ApplicationError
 from cou.steps import UnitUpgradeStep, UpgradeStep
 from cou.utils.nova_compute import get_instance_count_to_upgrade
 from cou.utils.openstack import OpenStackRelease
@@ -47,7 +48,6 @@ class Octavia(OpenStackApplication):
 
 
 @AppFactory.register_application(["nova-compute"])
-@dataclass(kw_only=True)
 class NovaCompute(OpenStackApplication):
     """Nova Compute application.
 
@@ -56,24 +56,35 @@ class NovaCompute(OpenStackApplication):
 
     wait_timeout = 30 * 60  # 30 min
     wait_for_model = True
-    force: bool = field(default=False, init=False)
+    force: bool = False
 
     def upgrade_steps(
-        self, target: OpenStackRelease, units: list[ApplicationUnit]
+        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :param units: Units to generate upgrade steps,
+        :type units: Optional[list[ApplicationUnit]]
+        :raises ApplicationError: If no units are passed to upgrade Nova Compute
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
+        if not units:
+            raise ApplicationError("No units passed to upgrade Nova Compute.")
         app_steps = super().upgrade_steps(target, units)
         unit_steps = self._get_units_upgrade_steps(units)
         return app_steps + unit_steps
 
     def _get_units_upgrade_steps(self, units: list[ApplicationUnit]) -> list[UpgradeStep]:
+        """Get the upgrade steps for the units.
+
+        :param units: Units to generate upgrade steps
+        :type units: list[ApplicationUnit]
+        :return: List of upgrade steps
+        :rtype: list[UpgradeStep]
+        """
         units_steps = UpgradeStep(
             description=f"Upgrade plan for units: {', '.join([unit.name for unit in units])}",
             parallel=True,
@@ -82,39 +93,40 @@ class NovaCompute(OpenStackApplication):
         for unit in units:
             unit_steps = UnitUpgradeStep(description=f"Upgrade plan for unit: {unit.name}")
             unit_steps.add_step(self._get_disable_scheduler_step(unit))
-            empty_hypervisor_check_step = self._get_empty_hypervisor_check(unit)
-
-            other_steps = [
-                self._get_pause_unit_step(unit),
-                self._get_openstack_upgrade_step(unit),
-                self._get_resume_unit_step(unit),
-            ]
-
-            if empty_hypervisor_check_step:
-                [empty_hypervisor_check_step.add_step(step) for step in other_steps]
-                unit_steps.add_step(empty_hypervisor_check_step)
-            else:
-                [unit_steps.add_step(step) for step in other_steps]
-
+            unit_steps.add_step(self._get_empty_hypervisor_step(unit))
+            unit_steps.add_step(self._get_pause_unit_step(unit, self._dependency_of_steps))
+            unit_steps.add_step(self._get_openstack_upgrade_step(unit, self._dependency_of_steps))
+            unit_steps.add_step(self._get_resume_unit_step(unit, self._dependency_of_steps))
             unit_steps.add_step(self._get_enable_scheduler_step(unit))
             units_steps.add_step(unit_steps)
 
         return [units_steps]
 
-    def _get_empty_hypervisor_check(self, unit) -> UnitUpgradeStep:
+    @property
+    def _dependency_of_steps(self) -> bool:
+        """Check if it needs to show dependency on unit upgrade steps.
+
+        If force is used, there are no dependencies.
+
+        :return: True if there are dependency, False otherwise
+        :rtype: bool
+        """
+        return not self.force
+
+    def _get_empty_hypervisor_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
         """Get the step to check if the unit has no VMs running.
 
-        In case force is set to true,
+        In case force is set to true, no check is done.
 
-        :param unit: _description_
-        :type unit: _type_
-        :return: _description_
+        :param unit: Unit to check the instance-count
+        :type unit: ApplicationUnit
+        :return: Step to check if the hypervisor is empty.
         :rtype: UnitUpgradeStep
         """
         if self.force:
             return UnitUpgradeStep()
         return UnitUpgradeStep(
-            description="Run the instance-count to upgrade",
+            description=f"Check if unit {unit.name} has no VMs running to upgrade.",
             coro=get_instance_count_to_upgrade(unit, self.model),
         )
 

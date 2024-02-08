@@ -457,12 +457,14 @@ class OpenStackApplication:
         ]
 
     def upgrade_steps(
-        self, target: OpenStackRelease, units: list[ApplicationUnit]
+        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade steps
+        :type units: Optional[list[ApplicationUnit]]
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
@@ -476,7 +478,11 @@ class OpenStackApplication:
             raise HaltUpgradePlanGeneration(msg)
 
         return [
-            self._get_disable_or_enable_action_managed_step(units),
+            (
+                self._get_enable_action_managed_step()
+                if units
+                else self._get_disable_action_managed_step()
+            ),
             self._get_upgrade_charm_step(target),
             self._get_change_install_repository_step(target),
         ]
@@ -497,7 +503,7 @@ class OpenStackApplication:
         ]
 
     def generate_upgrade_plan(
-        self, target: OpenStackRelease, units: list[ApplicationUnit] = []
+        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]] = None
     ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
 
@@ -505,8 +511,8 @@ class OpenStackApplication:
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan, defaults to []
-        :type units: list[ApplicationUnit], optional
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[ApplicationUnit]], optional
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
@@ -616,23 +622,6 @@ class OpenStackApplication:
             )
         return UpgradeStep()
 
-    def _get_disable_or_enable_action_managed_step(
-        self, units: list[ApplicationUnit]
-    ) -> UpgradeStep:
-        """Disable or enable action-managed-upgrade.
-
-        action-managed-upgrade will be enabled if units are passed to upgrade. Otherwise,
-        it will be disabled to run the "all-in-one" approach
-
-        :param units: Units to generate upgrade plan
-        :type units: list[ApplicationUnit]
-        :return: Step to disable or enable action-managed-upgrade
-        :rtype: UpgradeStep
-        """
-        if units:
-            return self._get_enable_action_managed_step()
-        return self._get_disable_action_managed_step()
-
     def _get_disable_action_managed_step(self) -> UpgradeStep:
         """Get step to disable action-managed-upgrade.
 
@@ -669,11 +658,15 @@ class OpenStackApplication:
             coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
         )
 
-    def _get_pause_unit_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_pause_unit_step(
+        self, unit: ApplicationUnit, dependent: bool = False
+    ) -> UnitUpgradeStep:
         """Get the step to pause a unit to upgrade.
 
         :param unit: Unit to be paused.
         :type unit: ApplicationUnit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
         :return: Step to pause a unit.
         :rtype: UnitUpgradeStep
         """
@@ -682,13 +675,18 @@ class OpenStackApplication:
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="pause", raise_on_failure=True
             ),
+            dependent=dependent,
         )
 
-    def _get_resume_unit_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_resume_unit_step(
+        self, unit: ApplicationUnit, dependent: bool = False
+    ) -> UnitUpgradeStep:
         """Get the step to resume a unit after upgrading the workload version.
 
         :param unit: Unit to be resumed.
         :type unit: ApplicationUnit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
         :return: Step to resume a unit.
         :rtype: UnitUpgradeStep
         """
@@ -697,13 +695,18 @@ class OpenStackApplication:
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="resume", raise_on_failure=True
             ),
+            dependent=dependent,
         )
 
-    def _get_openstack_upgrade_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_openstack_upgrade_step(
+        self, unit: ApplicationUnit, dependent: bool = False
+    ) -> UnitUpgradeStep:
         """Get the step to upgrade a unit.
 
         :param unit: Unit to be upgraded.
         :type unit: ApplicationUnit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
         :return: Step to upgrade a unit.
         :rtype: UnitUpgradeStep
         """
@@ -712,6 +715,7 @@ class OpenStackApplication:
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="openstack-upgrade", raise_on_failure=True
             ),
+            dependent=dependent,
         )
 
     def _get_change_install_repository_step(self, target: OpenStackRelease) -> UpgradeStep:

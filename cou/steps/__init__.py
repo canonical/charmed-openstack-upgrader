@@ -26,6 +26,7 @@ from typing import Any, Coroutine, Iterable, List, Optional
 from cou.exceptions import CanceledStep
 
 logger = logging.getLogger(__name__)
+DEPENDENCY_DESCRIPTION_SUFFIX = "├── "
 
 
 def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutine]) -> bool:
@@ -84,6 +85,7 @@ class BaseStep:
         description: str = "",
         parallel: bool = False,
         coro: Optional[Coroutine] = None,
+        dependent: bool = False,
     ):
         """Initialize BaseStep.
 
@@ -93,6 +95,8 @@ class BaseStep:
         :type parallel: bool
         :param coro: Step coroutine
         :type coro: Optional[coroutine]
+        :param dependent: Whether the step is dependent from other step.
+        :type dependent: bool, defaults to False
         """
         if coro is not None:
             # NOTE(rgildein): We need to ignore coroutine not to be awaited if step is not run
@@ -102,7 +106,9 @@ class BaseStep:
 
         self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
-        self.description = description
+        self.description = (
+            DEPENDENCY_DESCRIPTION_SUFFIX + description if dependent else description
+        )
         self._sub_steps: List[BaseStep] = []
         self._canceled: bool = False
         self._task: Optional[asyncio.Task] = None

@@ -741,7 +741,7 @@ def test_nova_compute_generate_plan_not_force(model):
         return_value=OpenStackRelease("ussuri"),
     ):
         app = NovaCompute(app_name, status, {}, model, charm, {})
-        plan = app.generate_upgrade_plan(target, units)
+        app.generate_upgrade_plan(target, units)
 
 
 def test_nova_compute_generate_plan_force(model):
@@ -762,4 +762,4 @@ def test_nova_compute_generate_plan_force(model):
     ):
         app = NovaCompute(app_name, status, {}, model, charm, {})
         app.force = True
-        plan = app.generate_upgrade_plan(target, units)
+        app.generate_upgrade_plan(target, units)

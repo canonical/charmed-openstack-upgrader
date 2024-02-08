@@ -67,9 +67,17 @@ async def get_instance_count(unit: str, model: COUModel) -> int:
 
 
 async def get_instance_count_to_upgrade(unit: ApplicationUnit, model: COUModel) -> None:
-    unit_instance_count = await get_instance_count(unit, model)
+    """Get the instance count of a unit and enable the scheduler if it cannot upgrade.
+
+    :param unit: Unit to check if there are VMs running.
+    :type unit: ApplicationUnit
+    :param model: COUModel
+    :type model: COUModel
+    :raises HaltUpgradeExecution: When a unit has VMs running.
+    """
+    unit_instance_count = await get_instance_count(unit.name, model)
     if unit_instance_count != 0:
-        model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True)
+        await model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True)
         logger.warning(
             (
                 "VMs are running on unit %s. The upgrade on this unit cannot happen "
