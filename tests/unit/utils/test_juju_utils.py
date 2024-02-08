@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from juju.action import Action
@@ -22,7 +22,6 @@ from juju.machine import Machine as JujuMachine
 from juju.model import Model
 from juju.unit import Unit
 
-from cou.apps.machine import Machine
 from cou.exceptions import (
     ActionFailed,
     ApplicationError,
@@ -137,6 +136,42 @@ async def test_retry_failure():
         await test_model.func()
 
 
+@pytest.mark.parametrize(
+    "machine_id, hostname, az",
+    [
+        # one field different is considered another machine
+        ("0", "juju-c307f8-my_model-0", "zone-3"),
+        ("1", "juju-c307f8-my_model-1", "zone-2"),
+    ],
+)
+def test_machine_not_eq(machine_id, hostname, az):
+    machine_0 = juju_utils.COUMachine(
+        machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1"
+    )
+    machine_1 = juju_utils.COUMachine(machine_id=machine_id, hostname=hostname, az=az)
+
+    assert machine_0 != machine_1
+
+
+def test_machine_eq():
+    machine_0 = juju_utils.COUMachine(
+        machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1"
+    )
+    machine_1 = juju_utils.COUMachine(
+        machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1"
+    )
+
+    assert machine_0 == machine_1
+
+
+def test_machine_repr():
+    machine_0 = juju_utils.COUMachine(
+        machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1"
+    )
+    expected_repr = "Machine[0]"
+    assert repr(machine_0) == expected_repr
+
+
 @pytest.fixture
 def mocked_model(mocker):
     """Fixture providing mocked juju.model.Model object."""
@@ -226,18 +261,6 @@ async def test_coumodel_connect(mocked_model):
         retries=juju_utils.DEFAULT_MODEL_RETRIES,
         retry_backoff=juju_utils.DEFAULT_MODEL_RETRY_BACKOFF,
     )
-
-
-@pytest.mark.asyncio
-async def test_coumodel_get_machines(mocked_model):
-    """Test COUModel get machines."""
-    model = juju_utils.COUModel("test-model")
-    juju_machines = PropertyMock()
-    type(mocked_model).machines = juju_machines
-
-    await model._get_machines()
-
-    juju_machines.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -549,43 +572,41 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
         (
             [0, 1, 2],
             {
-                "0": Machine("0", "juju-90e5ce-0", "zone-1"),
-                "1": Machine(
+                "0": juju_utils.COUMachine("0", "juju-90e5ce-0", "zone-1"),
+                "1": juju_utils.COUMachine(
                     "1",
                     "juju-90e5ce-1",
                     "zone-2",
                 ),
-                "2": Machine("2", "juju-90e5ce-2", "zone-3"),
+                "2": juju_utils.COUMachine("2", "juju-90e5ce-2", "zone-3"),
             },
         ),
     ],
 )
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils.COUModel._get_machines")
-async def test_get_model_machines(mock_model_machines, machines_ids, expected_machines):
+async def test_get_model_machines(mocked_model, machines_ids, expected_machines):
     """Test COUModel generate the Machines class."""
     juju_machines = _generate_juju_machines_mock(machines_ids)
 
-    mock_model_machines.return_value = juju_machines
-    model = juju_utils.COUModel(None)
+    mocked_model.machines = juju_machines
+    model = juju_utils.COUModel("test-model")
     machines = await model.get_model_machines()
+
     assert machines == expected_machines
 
 
 def _generate_juju_machines_mock(machine_ids):
     juju_machines = {}
     for machine_id in machine_ids:
-        machine = MagicMock(spec=JujuMachine)
+        machine = MagicMock(set=JujuMachine)
         machine.id = str(machine_id)
-        machine.data = {
-            "id": str(machine_id),
-            "hardware-characteristics": {
-                "arch": "amd64",
-                "mem": 0,
-                "cpu-cores": 0,
-                "availability-zone": f"zone-{str(machine_id + 1)}",
-            },
-            "hostname": f"juju-90e5ce-{str(machine_id)}",
+        machine.hostname = f"juju-90e5ce-{str(machine_id)}"
+        machine.hardware_characteristics = {
+            "arch": "amd64",
+            "mem": 0,
+            "cpu-cores": 0,
+            "availability-zone": f"zone-{str(machine_id + 1)}",
         }
         juju_machines.update({machine_id: machine})
+
     return juju_machines

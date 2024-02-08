@@ -33,7 +33,6 @@ from cou.apps.auxiliary_subordinate import (  # noqa: F401
 from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import OpenStackChannelBasedApplication  # noqa: F401
 from cou.apps.core import Keystone, Octavia  # noqa: F401
-from cou.apps.machine import Machine
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
@@ -50,7 +49,7 @@ from cou.exceptions import (
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
-from cou.utils.juju_utils import DEFAULT_TIMEOUT
+from cou.utils.juju_utils import DEFAULT_TIMEOUT, COUMachine
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 
@@ -379,7 +378,9 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     return plan
 
 
-async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> list[Machine]:
+async def filter_hypervisors_machines(
+    args: CLIargs, analysis_result: Analysis
+) -> list[COUMachine]:
     """Filter the hypervisors to generate plan and upgrade.
 
     :param args: CLI arguments
@@ -387,7 +388,7 @@ async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) 
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :return: hypervisors filtered to generate plan and upgrade.
-    :rtype: list[Machine]
+    :rtype: list[COUMachine]
     """
     hypervisors_machines = await _get_upgradable_hypervisors_machines(args.force, analysis_result)
 
@@ -405,7 +406,7 @@ async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) 
 
 async def _get_upgradable_hypervisors_machines(
     cli_force: bool, analysis_result: Analysis
-) -> list[Machine]:
+) -> list[COUMachine]:
     """Get the hypervisors that are possible to upgrade.
 
     :param cli_force: If force is used, it gets all hypervisors, otherwise just the empty ones
@@ -413,7 +414,7 @@ async def _get_upgradable_hypervisors_machines(
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :return: List of nova-compute units to upgrade
-    :rtype: list[Machine]
+    :rtype: list[COUMachine]
     """
     nova_compute_units = [
         unit

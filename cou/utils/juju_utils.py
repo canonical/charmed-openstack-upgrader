@@ -13,9 +13,13 @@
 # limitations under the License.
 
 """Juju utilities for charmed-openstack-upgrader."""
+
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Optional
 
@@ -25,13 +29,11 @@ from juju.client._definitions import FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
 from juju.errors import JujuAppError, JujuError, JujuUnitError
-from juju.machine import Machine as JujuMachine
 from juju.model import Model
 from juju.unit import Unit
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
-from cou.apps.machine import Machine
 from cou.exceptions import (
     ActionFailed,
     ApplicationError,
@@ -131,6 +133,60 @@ def retry(
     return _wrapper
 
 
+@dataclass(frozen=True)
+class COUMachine:
+    """Representation of a juju machine."""
+
+    machine_id: str
+    hostname: str
+    az: Optional[str]  # simple deployments may not have azs
+
+    def __repr__(self) -> str:
+        """Representation of the juju Machine.
+
+        :return: Representation of the juju Machine
+        :rtype: str
+        """
+        return f"Machine[{self.machine_id}]"
+
+
+@dataclass(frozen=True)
+class COUUnit:
+    """Representation of a single unit of application."""
+
+    name: str
+    # os_version: OpenStackRelease
+    machine: COUMachine
+    workload_version: str = ""
+
+    def __repr__(self) -> str:
+        """Representation of the application unit.
+
+        :return: Representation of the application unit
+        :rtype: str
+        """
+        return f"Unit[{self.name}]"
+
+
+@dataclass(frozen=True)
+class COUApplication:
+    """Representation of an single application."""
+
+    # pylint: disable=too-many-instance-attributes
+
+    name: str
+    can_upgrade_to: str
+    charm: str
+    charm_channel: str
+    config: dict
+    machines: dict[str, COUMachine]
+    model: COUModel
+    series: str
+    subordinate_to: list[str]
+    units: dict[str, COUUnit]
+    workload_version: str
+
+
 class COUModel:
     """COU model object.
 
@@ -191,15 +247,6 @@ class COUModel:
             raise ActionFailed(action, output=action_obj.data)
 
         return action_obj
-
-    async def _get_machines(self) -> dict[str, JujuMachine]:
-        """Get all machines from the model.
-
-        :return: Machines from the model connected.
-        :rtype: dict[str, Application]
-        """
-        model = await self._get_model()
-        return model.machines
 
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
@@ -266,6 +313,38 @@ class COUModel:
         )
 
     @retry
+    async def get_applications(self) -> dict[str, COUApplication]:
+        """Return list of applications with all relevant information.
+
+        :returns: list of application with all information
+        :rtype: list[COUApplication]
+        """
+        # note(rgildein): We get the applications from the Juju status, since we can get more
+        #                 information the status than from objects. e.g. workload_version for unit
+        full_status = await self.get_status()
+        machines = await self.get_model_machines()
+
+        return {
+            app: COUApplication(
+                name=app,
+                can_upgrade_to=status.can_upgrade_to,
+                charm=status.charm,
+                charm_channel=status.charm_channel,
+                config=await self.get_application_config(app),
+                machines={unit.machine: machines[unit.machine] for unit in status.units.values()},
+                model=self,
+                series=status.series,
+                subordinate_to=status.subordinate_to,
+                units={
+                    name: COUUnit(name, machines[unit.machine], unit.workload_version)
+                    for name, unit in status.units.items()
+                },
+                workload_version=status.workload_version,
+            )
+            for app, status in full_status.applications.items()
+        }
+
+    @retry(no_retry_exceptions=(ApplicationNotFound,))
     async def get_application_config(self, name: str) -> dict:
         """Return application configuration.
 
@@ -292,6 +371,23 @@ class COUModel:
             raise ApplicationError(f"Cannot obtain charm_name for {application_name}")
 
         return app.charm_name
+
+    async def get_model_machines(self) -> dict[str, COUMachine]:
+        """Get all the machines in the model.
+
+        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
+        :rtype: dict[str, Machine]
+        """
+        model = await self._get_model()
+
+        return {
+            machine.id: COUMachine(
+                machine_id=machine.id,
+                hostname=machine.hostname,
+                az=machine.hardware_characteristics.get("availability-zone"),
+            )
+            for machine in model.machines.values()
+        }
 
     @retry
     async def get_status(self) -> FullStatus:
@@ -510,19 +606,3 @@ class COUModel:
             apps = await self._get_supported_apps()
 
         await _wait_for_active_idle()
-
-    async def get_model_machines(self) -> dict[str, Machine]:
-        """Get all the machines in the model.
-
-        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
-        :rtype: dict[str, Machine]
-        """
-        juju_machines = await self._get_machines()
-        return {
-            machine.id: Machine(
-                machine_id=machine.data["id"],
-                hostname=machine.data["hostname"],
-                az=machine.data["hardware-characteristics"].get("availability-zone"),
-            )
-            for machine in juju_machines.values()
-        }

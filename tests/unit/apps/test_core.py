@@ -17,7 +17,6 @@ import pytest
 
 from cou.apps.base import ApplicationUnit
 from cou.apps.core import Keystone
-from cou.apps.machine import Machine
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -31,13 +30,17 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils import app_utils
+from cou.utils.juju_utils import COUMachine
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
 
 def test_repr_ApplicationUnit():
     app_unit = ApplicationUnit(
-        "keystone/0", OpenStackRelease("ussuri"), Machine("0", "juju-cef38-0", "zone-1"), "17.0.1"
+        "keystone/0",
+        OpenStackRelease("ussuri"),
+        COUMachine("0", "juju-cef38-0", "zone-1"),
+        "17.0.1",
     )
     assert repr(app_unit) == "Unit[keystone/0]-Machine[0]"
 

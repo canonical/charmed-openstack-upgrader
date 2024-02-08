@@ -21,8 +21,8 @@ from typing import Optional
 
 from juju.client._definitions import ApplicationStatus
 
-from cou.apps.base import Machine, OpenStackApplication
-from cou.utils.juju_utils import COUModel
+from cou.apps.base import OpenStackApplication
+from cou.utils.juju_utils import COUMachine, COUModel
 from cou.utils.openstack import is_charm_supported
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class AppFactory:
         config: dict,
         model: COUModel,
         charm: str,
-        machines: dict[str, Machine],
+        machines: dict[str, COUMachine],
     ) -> Optional[OpenStackApplication]:
         """Create the OpenStackApplication or registered subclasses.
 
@@ -50,7 +50,7 @@ class AppFactory:
         :param name: Name of the application
         :type name: str
         :param machines: Machines in the model
-        :type machines: dict[str, Machine]
+        :type machines: dict[str, COUMachine]
         :param status: Status of the application
         :type status: ApplicationStatus
         :param config: Configuration of the application
