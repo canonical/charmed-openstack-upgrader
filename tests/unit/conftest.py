@@ -589,7 +589,7 @@ def model(config, apps_machines):
     model.set_application_config = AsyncMock()
     model.get_application_config = mock_get_app_config = AsyncMock()
     mock_get_app_config.side_effect = config.get
-    model.get_model_machines = machines
+    model.get_machines = machines
 
     return model
 

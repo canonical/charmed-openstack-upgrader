@@ -139,7 +139,7 @@ class COUMachine:
 
     machine_id: str
     hostname: str
-    az: Optional[str]  # simple deployments may not have azs
+    az: Optional[str] = None  # simple deployments may not have azs
 
     def __repr__(self) -> str:
         """Representation of the juju Machine.
@@ -155,9 +155,8 @@ class COUUnit:
     """Representation of a single unit of application."""
 
     name: str
-    # os_version: OpenStackRelease
     machine: COUMachine
-    workload_version: str = ""
+    workload_version: str
 
     def __repr__(self) -> str:
         """Representation of the application unit.
@@ -185,6 +184,14 @@ class COUApplication:
     subordinate_to: list[str]
     units: dict[str, COUUnit]
     workload_version: str
+
+    def __repr__(self) -> str:
+        """Representation of the application unit.
+
+        :return: Representation of the application unit
+        :rtype: str
+        """
+        return f"Application[{self.name}]"
 
 
 class COUModel:
@@ -319,18 +326,19 @@ class COUModel:
         :returns: list of application with all information
         :rtype: list[COUApplication]
         """
+        model = await self._get_model()
         # note(rgildein): We get the applications from the Juju status, since we can get more
         #                 information the status than from objects. e.g. workload_version for unit
         full_status = await self.get_status()
-        machines = await self.get_model_machines()
+        machines = await self.get_machines()
 
         return {
             app: COUApplication(
                 name=app,
                 can_upgrade_to=status.can_upgrade_to,
-                charm=status.charm,
+                charm=model.applications[app].charm_name,
                 charm_channel=status.charm_channel,
-                config=await self.get_application_config(app),
+                config=await model.applications[app].get_config(),
                 machines={unit.machine: machines[unit.machine] for unit in status.units.values()},
                 model=self,
                 series=status.series,
@@ -372,7 +380,7 @@ class COUModel:
 
         return app.charm_name
 
-    async def get_model_machines(self) -> dict[str, COUMachine]:
+    async def get_machines(self) -> dict[str, COUMachine]:
         """Get all the machines in the model.
 
         :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
