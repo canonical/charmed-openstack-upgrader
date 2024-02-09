@@ -21,7 +21,6 @@ from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any, Optional
 
-from juju.client._definitions import ApplicationStatus, UnitStatus
 from ruamel.yaml import YAML
 
 from cou.exceptions import (
@@ -37,7 +36,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import COUMachine, COUModel
+from cou.utils.juju_utils import COUApplication, COUUnit
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -50,39 +49,9 @@ DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
 
 
 @dataclass(frozen=True)
-class ApplicationUnit:
-    """Representation of a single unit of application."""
-
-    name: str
-    os_version: OpenStackRelease
-    machine: COUMachine
-    workload_version: str = ""
-
-    def __repr__(self) -> str:
-        """Representation of the application unit.
-
-        :return: Representation of the application unit
-        :rtype: str
-        """
-        return f"Unit[{self.name}]-Machine[{self.machine.machine_id}]"
-
-
-@dataclass
-class OpenStackApplication:
+class OpenStackApplication(COUApplication):
     """Representation of a charmed OpenStack application in the deployment.
 
-    :param name: Name of the application
-    :type name: str
-    :param status: Status of the application.
-    :type status: ApplicationStatus
-    :param config: Configuration of the application.
-    :type config: dict
-    :param model: COUModel object
-    :type model: COUModel
-    :param charm: Name of the charm.
-    :type charm: str
-    :param units: Units representation of an application.
-    :type units: list[ApplicationUnit]
     :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version.
     :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
@@ -92,15 +61,6 @@ class OpenStackApplication:
     :raises RunUpgradeError: When an upgrade fails.
     """
 
-    # pylint: disable=too-many-instance-attributes
-
-    name: str
-    status: ApplicationStatus
-    config: dict
-    model: COUModel
-    charm: str
-    machines: dict[str, COUMachine]
-    units: list[ApplicationUnit] = field(default_factory=lambda: [])
     packages_to_hold: Optional[list] = field(default=None, init=False)
     wait_timeout: int = field(default=DEFAULT_WAITING_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
@@ -108,7 +68,6 @@ class OpenStackApplication:
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
         self._verify_channel()
-        self._populate_units()
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -144,9 +103,9 @@ class OpenStackApplication:
                 "units": {
                     unit.name: {
                         "workload_version": unit.workload_version,
-                        "os_version": str(unit.os_version),
+                        "os_version": self._get_latest_os_version(unit),
                     }
-                    for unit in self.units
+                    for unit in self.units.values()
                 },
             }
         }
@@ -160,31 +119,17 @@ class OpenStackApplication:
 
         :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
         """
-        if self.is_from_charm_store or self.is_valid_track(self.status.charm_channel):
-            logger.debug("%s app has proper channel %s", self.name, self.status.charm_channel)
+        if self.is_from_charm_store or self.is_valid_track(self.charm_channel):
+            logger.debug("%s app has proper channel %s", self.name, self.charm_channel)
             return
 
         raise ApplicationError(
-            f"Channel: {self.status.charm_channel} for charm '{self.charm}' on series "
+            f"Channel: {self.charm_channel} for charm '{self.charm}' on series "
             f"'{self.series}' is currently not supported in this tool. Please take a look at the "
             "documentation: "
             "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
             "you are using the right track."
         )
-
-    def _populate_units(self) -> None:
-        """Populate application units."""
-        if not self.is_subordinate:
-            for name, unit in self.status.units.items():
-                compatible_os_version = self._get_latest_os_version(unit)
-                self.units.append(
-                    ApplicationUnit(
-                        name=name,
-                        workload_version=unit.workload_version,
-                        os_version=compatible_os_version,
-                        machine=self.machines[unit.machine],
-                    )
-                )
 
     @property
     def is_subordinate(self) -> bool:
@@ -193,7 +138,7 @@ class OpenStackApplication:
         :return: True if subordinate, False otherwise.
         :rtype: bool
         """
-        return bool(self.status.subordinate_to)
+        return bool(self.subordinate_to)
 
     @property
     def channel(self) -> str:
@@ -202,7 +147,7 @@ class OpenStackApplication:
         :return: Charm channel. E.g: ussuri/stable
         :rtype: str
         """
-        return self.status.charm_channel
+        return self.charm_channel
 
     @property
     def charm_origin(self) -> str:
@@ -211,7 +156,7 @@ class OpenStackApplication:
         :return: Charm origin. E.g: cs or ch
         :rtype: str
         """
-        return self.status.charm.split(":")[0]
+        return self.charm.split(":")[0]
 
     @property
     def os_origin(self) -> str:
@@ -263,11 +208,11 @@ class OpenStackApplication:
         except ValueError:
             return self.is_from_charm_store
 
-    def _get_latest_os_version(self, unit: UnitStatus) -> OpenStackRelease:
+    def _get_latest_os_version(self, unit: COUUnit) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
 
         :param unit: Application Unit
-        :type unit: UnitStatus
+        :type unit: COUUnit
         :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version.
         :return: The latest compatible OpenStack release.
@@ -315,15 +260,6 @@ class OpenStackApplication:
         return f"{target.codename}/stable"
 
     @property
-    def series(self) -> str:
-        """Ubuntu series of the application.
-
-        :return: Ubuntu series of application. E.g: focal
-        :rtype: str
-        """
-        return self.status.series
-
-    @property
     def current_os_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
@@ -333,8 +269,9 @@ class OpenStackApplication:
         :rtype: OpenStackRelease
         """
         os_versions = defaultdict(list)
-        for unit in self.units:
-            os_versions[unit.os_version].append(unit.name)
+        for unit in self.units.values():
+            os_version = self._get_latest_os_version(unit)
+            os_versions[os_version].append(unit.name)
 
         if len(os_versions.keys()) == 1:
             return next(iter(os_versions))
@@ -406,7 +343,7 @@ class OpenStackApplication:
         :return: True if can upgrade, False otherwise.
         :rtype: bool
         """
-        return bool(self.status.can_upgrade_to)
+        return bool(self.can_upgrade_to)
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -529,8 +466,8 @@ class OpenStackApplication:
         for unit in self.units:
             step.add_step(
                 UnitUpgradeStep(
-                    description=f"Upgrade software packages on unit {unit.name}",
-                    coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
+                    description=f"Upgrade software packages on unit {unit}",
+                    coro=upgrade_packages(unit, self.model, self.packages_to_hold),
                 )
             )
 
@@ -643,7 +580,7 @@ class OpenStackApplication:
             coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
         )
 
-    def _get_pause_unit_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_pause_unit_step(self, unit: COUUnit) -> UnitUpgradeStep:
         """Get the step to pause a unit to upgrade.
 
         :param unit: Unit to be paused.
@@ -658,7 +595,7 @@ class OpenStackApplication:
             ),
         )
 
-    def _get_resume_unit_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_resume_unit_step(self, unit: COUUnit) -> UnitUpgradeStep:
         """Get the step to resume a unit after upgrading the workload version.
 
         :param unit: Unit to be resumed.
@@ -673,7 +610,7 @@ class OpenStackApplication:
             ),
         )
 
-    def _get_openstack_upgrade_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_openstack_upgrade_step(self, unit: COUUnit) -> UnitUpgradeStep:
         """Get the step to upgrade a unit.
 
         :param unit: Unit to be upgraded.
