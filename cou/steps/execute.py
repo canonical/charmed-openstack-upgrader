@@ -68,9 +68,13 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
                     sub_step.description for sub_step in step.sub_steps[sub_step_index + 1 :]
                 ]
                 logger.warning(
-                    "Step: '%s' failed to complete execution. Steps '%s' will be skipped.",
+                    (
+                        "Step: '%s' from '%s' failed to complete execution. "
+                        "The following steps will be skipped:\n %s"
+                    ),
                     sub_step.description,
-                    ", ".join(non_executed_sub_steps),
+                    step.description,
+                    "\n".join(non_executed_sub_steps),
                 )
                 progress_indicator.fail()
                 break

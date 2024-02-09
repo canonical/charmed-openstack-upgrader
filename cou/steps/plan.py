@@ -32,7 +32,7 @@ from cou.apps.auxiliary_subordinate import (  # noqa: F401
 )
 from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import OpenStackChannelBasedApplication  # noqa: F401
-from cou.apps.core import Keystone, NovaCompute, Octavia  # noqa: F401
+from cou.apps.core import Keystone, Octavia  # noqa: F401
 from cou.apps.machine import Machine
 from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,

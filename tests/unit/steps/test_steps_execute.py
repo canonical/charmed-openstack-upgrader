@@ -20,10 +20,12 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
+from cou.exceptions import HaltUpgradeExecution
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradePlan,
     UpgradeStep,
 )
@@ -95,6 +97,41 @@ async def test_run_step_no_progress_indicator(mock_progress_indicator, plan):
     await _run_step(upgrade_plan, False)
     mock_progress_indicator.start.assert_not_called()
     mock_progress_indicator.succeed.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.logger")
+@patch("cou.steps.execute.progress_indicator")
+async def test_run_step_HaltUpgradeExecution(mock_progress_indicator, mock_logger):
+    upgrade_plan = AsyncMock(spec_set=ApplicationUpgradePlan(""))
+    upgrade_plan.description = "My upgrade plan"
+    upgrade_plan.parallel = False
+
+    unit_step_1 = AsyncMock(spec_set=UnitUpgradeStep())
+    unit_step_1.description = "My step 1"
+    unit_step_1.parallel = False
+    unit_step_1.run.side_effect = HaltUpgradeExecution
+
+    unit_step_2 = AsyncMock(spec_set=UnitUpgradeStep())
+    unit_step_2.description = "My step 2"
+    unit_step_2.run.return_value = None
+    unit_step_2.parallel = False
+
+    upgrade_plan.sub_steps = [unit_step_1, unit_step_2]
+    await _run_step(upgrade_plan, False)
+    upgrade_plan.run.assert_awaited_once()
+    unit_step_1.run.assert_awaited_once()
+    unit_step_2.run.assert_not_awaited()
+    mock_progress_indicator.fail.assert_called_once()
+    mock_logger.warning.assert_called_once_with(
+        (
+            "Step: '%s' from '%s' failed to complete execution. "
+            "The following steps will be skipped:\n %s"
+        ),
+        unit_step_1.description,
+        upgrade_plan.description,
+        "\n".join([unit_step_2.description]),
+    )
 
 
 @pytest.mark.asyncio

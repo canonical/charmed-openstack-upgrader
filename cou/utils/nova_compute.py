@@ -19,7 +19,7 @@ import logging
 
 from cou.apps.base import ApplicationUnit
 from cou.apps.machine import Machine
-from cou.exceptions import HaltUpgradeExecution
+from cou.exceptions import ActionFailed, HaltUpgradeExecution
 from cou.utils.juju_utils import COUModel
 
 logger = logging.getLogger(__name__)
@@ -66,9 +66,11 @@ async def get_instance_count(unit: str, model: COUModel) -> int:
     )
 
 
-async def get_instance_count_to_upgrade(unit: ApplicationUnit, model: COUModel) -> None:
-    """Get the instance count of a unit and enable the scheduler if it cannot upgrade.
+async def verify_empty_hypervisor_before_upgrade(unit: ApplicationUnit, model: COUModel) -> None:
+    """Verify if there are no VMs running in a nova-compute unit before upgrading.
 
+    If there are VMs running, it will enable the scheduler again to leave the cloud
+    in the same state before upgrading.
     :param unit: Unit to check if there are VMs running.
     :type unit: ApplicationUnit
     :param model: COUModel
@@ -77,12 +79,19 @@ async def get_instance_count_to_upgrade(unit: ApplicationUnit, model: COUModel) 
     """
     unit_instance_count = await get_instance_count(unit.name, model)
     if unit_instance_count != 0:
-        await model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True)
+        try:
+            await model.run_action(
+                unit_name=unit.name, action_name="enable", raise_on_failure=True
+            )
+            logger.info("Successfully enabled nova-compute scheduler from unit %s.", unit.name)
+        except ActionFailed:
+            logger.error("Failed to enable nova-compute scheduler from unit %s.", unit.name)
         logger.warning(
             (
-                "VMs are running on unit %s. The upgrade on this unit cannot happen "
+                "Unit: %s has %s VMs running. The upgrade on this unit cannot happen "
                 "unless it's empty or force flag is used"
             ),
             unit.name,
+            unit_instance_count,
         )
         raise HaltUpgradeExecution(f"Unit: {unit.name} has {unit_instance_count} VMs running")

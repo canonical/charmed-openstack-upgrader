@@ -503,7 +503,9 @@ class OpenStackApplication:
         ]
 
     def generate_upgrade_plan(
-        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]] = None
+        self,
+        target: OpenStackRelease,
+        units: Optional[list[ApplicationUnit]] = None,
     ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
 

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
 from juju.client._definitions import ApplicationStatus
@@ -32,6 +32,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils import app_utils
+from cou.utils import nova_compute as nova_compute_utils
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
@@ -724,42 +725,112 @@ def test_upgrade_plan_application_already_disable_action_managed(
     assert upgrade_plan == expected_plan
 
 
-def test_nova_compute_generate_plan_not_force(model):
-    charm = app_name = "nova-compute"
-    status = MagicMock(spec_set=ApplicationStatus())
-    status.charm_channel = "ussuri/stable"
+@patch("cou.apps.core.NovaCompute._get_units_upgrade_steps")
+def test_nova_compute_upgrade_steps(mock_units_upgrade_steps, model):
+    app, units = _generate_nova_compute_app_and_units(model)
     target = OpenStackRelease("victoria")
-
-    units = [
-        ApplicationUnit(f"nova-compute/{unit_num}", MagicMock(), MagicMock(), MagicMock())
-        for unit_num in range(3)
-    ]
-
     with patch(
         "cou.apps.base.OpenStackApplication.current_os_release",
         new_callable=PropertyMock,
         return_value=OpenStackRelease("ussuri"),
     ):
-        app = NovaCompute(app_name, status, {}, model, charm, {})
-        app.generate_upgrade_plan(target, units)
+        app.upgrade_steps(target, units)
+        mock_units_upgrade_steps.assert_called_once_with(units)
 
 
-def test_nova_compute_generate_plan_force(model):
-    charm = app_name = "nova-compute"
-    status = MagicMock(spec_set=ApplicationStatus())
-    status.charm_channel = "ussuri/stable"
+@patch("cou.apps.core.NovaCompute._get_units_upgrade_steps")
+def test_nova_compute_upgrade_steps_no_units(mock_units_upgrade_steps, model):
+    app, units = _generate_nova_compute_app_and_units(model)
     target = OpenStackRelease("victoria")
-
-    units = [
-        ApplicationUnit(f"nova-compute/{unit_num}", MagicMock(), MagicMock(), MagicMock())
-        for unit_num in range(3)
-    ]
-
     with patch(
         "cou.apps.base.OpenStackApplication.current_os_release",
         new_callable=PropertyMock,
         return_value=OpenStackRelease("ussuri"),
     ):
-        app = NovaCompute(app_name, status, {}, model, charm, {})
-        app.force = True
-        app.generate_upgrade_plan(target, units)
+        app.upgrade_steps(target, [])
+        mock_units_upgrade_steps.assert_called_once_with(units)
+
+
+@pytest.mark.parametrize("upgrade_units_running_vms", [True, False])
+# add_step check if the step added is from BaseStep, so the return is an empty UnitUpgradeStep
+@patch("cou.apps.core.NovaCompute._get_enable_scheduler_step", return_value=UnitUpgradeStep())
+@patch("cou.apps.core.NovaCompute._get_resume_unit_step", return_value=UnitUpgradeStep())
+@patch("cou.apps.core.NovaCompute._get_openstack_upgrade_step", return_value=UnitUpgradeStep())
+@patch("cou.apps.core.NovaCompute._get_pause_unit_step", return_value=UnitUpgradeStep())
+@patch("cou.apps.core.NovaCompute._get_empty_hypervisor_step", return_value=UnitUpgradeStep())
+@patch("cou.apps.core.NovaCompute._get_disable_scheduler_step", return_value=UnitUpgradeStep())
+def test_nova_compute_get_units_upgrade_steps(
+    mock_disable,
+    mock_empty,
+    mock_pause,
+    mock_upgrade,
+    mock_resume,
+    mock_enable,
+    model,
+    upgrade_units_running_vms,
+):
+    app, units = _generate_nova_compute_app_and_units(model)
+    app.upgrade_units_running_vms = upgrade_units_running_vms
+
+    calls_without_dependency = [call(unit) for unit in units]
+    calls_with_dependency = [call(unit, not upgrade_units_running_vms) for unit in units]
+    app._get_units_upgrade_steps(units)
+    mock_disable.assert_has_calls(calls_without_dependency)
+    mock_enable.assert_has_calls(calls_without_dependency)
+    mock_pause.assert_has_calls(calls_with_dependency)
+    mock_upgrade.assert_has_calls(calls_with_dependency)
+    mock_resume.assert_has_calls(calls_with_dependency)
+
+    if upgrade_units_running_vms:
+        mock_empty.assert_not_called()
+    else:
+        mock_empty.assert_has_calls(calls_without_dependency)
+
+
+def test_nova_compute_get_empty_hypervisor_step(model):
+    app, units = _generate_nova_compute_app_and_units(model)
+    unit = units[0]
+
+    expected_step = UpgradeStep(
+        description=f"Check if unit {unit.name} has no VMs running before upgrading.",
+        coro=nova_compute_utils.verify_empty_hypervisor_before_upgrade(unit, model),
+    )
+    assert app._get_empty_hypervisor_step(unit) == expected_step
+
+
+def test_nova_compute_get_enable_scheduler_step(model):
+    app, units = _generate_nova_compute_app_and_units(model)
+    unit = units[0]
+
+    expected_step = UpgradeStep(
+        description=f"Enable nova-compute scheduler from unit: '{unit.name}'.",
+        coro=model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True),
+    )
+    assert app._get_enable_scheduler_step(unit) == expected_step
+
+
+def test_nova_compute_get_disable_scheduler_step(model):
+    app, units = _generate_nova_compute_app_and_units(model)
+    unit = units[0]
+
+    expected_step = UpgradeStep(
+        description=f"Disable nova-compute scheduler from unit: '{unit.name}'.",
+        coro=model.run_action(unit_name=unit.name, action_name="disable", raise_on_failure=True),
+    )
+    assert app._get_disable_scheduler_step(unit) == expected_step
+
+
+def _generate_nova_compute_app_and_units(model):
+    """Generate NovaCompute class and units."""
+    charm = app_name = "nova-compute"
+    status = MagicMock(spec_set=ApplicationStatus())
+    status.charm_channel = "ussuri/stable"
+
+    units = [
+        ApplicationUnit(f"nova-compute/{unit_num}", MagicMock(), MagicMock(), MagicMock())
+        for unit_num in range(3)
+    ]
+    app = NovaCompute(app_name, status, {}, model, charm, {})
+
+    app.units = units
+    return app, units
