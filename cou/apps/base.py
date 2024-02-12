@@ -97,7 +97,7 @@ class OpenStackApplication(COUApplication):
             self.name: {
                 "model_name": self.model.name,
                 "charm": self.charm,
-                "charm_origin": self.charm_origin,
+                "charm_origin": self.origin,
                 "os_origin": self.os_origin,
                 "channel": self.channel,
                 "units": {
@@ -119,44 +119,17 @@ class OpenStackApplication(COUApplication):
 
         :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
         """
-        if self.is_from_charm_store or self.is_valid_track(self.charm_channel):
-            logger.debug("%s app has proper channel %s", self.name, self.charm_channel)
+        if self.is_from_charm_store or self.is_valid_track(self.channel):
+            logger.debug("%s app has proper channel %s", self.name, self.channel)
             return
 
         raise ApplicationError(
-            f"Channel: {self.charm_channel} for charm '{self.charm}' on series "
+            f"Channel: {self.channel} for charm '{self.charm}' on series "
             f"'{self.series}' is currently not supported in this tool. Please take a look at the "
             "documentation: "
             "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
             "you are using the right track."
         )
-
-    @property
-    def is_subordinate(self) -> bool:
-        """Check if application is subordinate.
-
-        :return: True if subordinate, False otherwise.
-        :rtype: bool
-        """
-        return bool(self.subordinate_to)
-
-    @property
-    def channel(self) -> str:
-        """Get charm channel of the application.
-
-        :return: Charm channel. E.g: ussuri/stable
-        :rtype: str
-        """
-        return self.charm_channel
-
-    @property
-    def charm_origin(self) -> str:
-        """Get the charm origin of application.
-
-        :return: Charm origin. E.g: cs or ch
-        :rtype: str
-        """
-        return self.charm.split(":")[0]
 
     @property
     def os_origin(self) -> str:
@@ -184,15 +157,6 @@ class OpenStackApplication(COUApplication):
                 return origin
 
         return None
-
-    @property
-    def is_from_charm_store(self) -> bool:
-        """Check if application comes from charm store.
-
-        :return: True if comes, False otherwise.
-        :rtype: bool
-        """
-        return self.charm_origin == "cs"
 
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
@@ -502,7 +466,7 @@ class OpenStackApplication(COUApplication):
                 channel,
             )
 
-        if self.charm_origin == "cs":
+        if self.origin == "cs":
             description = f"Migration of '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
         elif self.channel in self.possible_current_channels:
