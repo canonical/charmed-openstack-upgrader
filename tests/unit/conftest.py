@@ -25,10 +25,10 @@ from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.apps.core import Keystone
-from cou.apps.machine import Machine
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.commands import CLIargs
 from cou.steps.analyze import Analysis
+from cou.utils.juju_utils import COUMachine
 from cou.utils.openstack import OpenStackRelease
 
 STANDARD_AZS = ["zone-1", "zone-2", "zone-3"]
@@ -128,7 +128,7 @@ def _generate_apps_machines(charm, machines, azs):
     machines_hostnames_azs = zip(machines, hostnames, azs)
     return {
         charm: {
-            machine_id: Machine(machine_id=machine_id, hostname=hostname, az=az)
+            machine_id: COUMachine(machine_id=machine_id, hostname=hostname, az=az)
             for machine_id, hostname, az in machines_hostnames_azs
         }
     }
@@ -589,7 +589,7 @@ def model(config, apps_machines):
     model.set_application_config = AsyncMock()
     model.get_application_config = mock_get_app_config = AsyncMock()
     mock_get_app_config.side_effect = config.get
-    model.get_model_machines = machines
+    model.get_machines = machines
 
     return model
 
@@ -698,7 +698,7 @@ def cli_args() -> MagicMock:
 
 
 def generate_mock_machine(machine_id, hostname, az):
-    mock_machine = MagicMock(spec_set=Machine(machine_id, hostname, az))
+    mock_machine = MagicMock(spec_set=COUMachine(machine_id, hostname, az))
     mock_machine.machine_id = machine_id
     mock_machine.hostname = hostname
     mock_machine.az = az
