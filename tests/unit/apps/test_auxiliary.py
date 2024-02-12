@@ -20,7 +20,6 @@ from cou.apps.auxiliary import (
     OvnPrincipalApplication,
     RabbitMQServer,
 )
-from cou.apps.base import ApplicationUnit
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -30,6 +29,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils import app_utils
+from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
@@ -37,7 +37,7 @@ from tests.unit.apps.utils import add_steps
 def test_auxiliary_app(status, config, model, apps_machines):
     # version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be set as yoga.
     expected_units = [
-        ApplicationUnit(
+        COUUnit(
             name="rabbitmq-server/0",
             os_version=OpenStackRelease("yoga"),
             workload_version="3.8",
@@ -65,7 +65,7 @@ def test_auxiliary_app(status, config, model, apps_machines):
 
 def test_auxiliary_app_cs(status, config, model, apps_machines):
     expected_units = [
-        ApplicationUnit(
+        COUUnit(
             name="rabbitmq-server/0",
             os_version=OpenStackRelease("yoga"),
             workload_version="3.8",
@@ -405,7 +405,7 @@ def test_ceph_mon_app(status, config, model, apps_machines):
     assert app.channel == "pacific/stable"
     assert app.os_origin == "cloud:focal-xena"
     assert app.units == [
-        ApplicationUnit(
+        COUUnit(
             name="ceph-mon/0",
             os_version=OpenStackRelease("xena"),
             workload_version="16.2.0",

@@ -23,12 +23,12 @@ from juju.client.client import FullStatus
 
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
-from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone
 from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.commands import CLIargs
 from cou.steps.analyze import Analysis
-from cou.utils.juju_utils import COUMachine
+from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 
 STANDARD_AZS = ["zone-1", "zone-2", "zone-3"]
@@ -490,7 +490,7 @@ def units(apps_machines):
     units_ussuri = []
     units_wallaby = []
     units_ussuri.append(
-        ApplicationUnit(
+        COUUnit(
             name="keystone/0",
             os_version=OpenStackRelease("ussuri"),
             workload_version="17.0.1",
@@ -498,7 +498,7 @@ def units(apps_machines):
         )
     )
     units_ussuri.append(
-        ApplicationUnit(
+        COUUnit(
             name="keystone/1",
             os_version=OpenStackRelease("ussuri"),
             workload_version="17.0.1",
@@ -506,7 +506,7 @@ def units(apps_machines):
         )
     )
     units_ussuri.append(
-        ApplicationUnit(
+        COUUnit(
             name="keystone/2",
             os_version=OpenStackRelease("ussuri"),
             workload_version="17.0.1",
@@ -514,7 +514,7 @@ def units(apps_machines):
         )
     )
     units_wallaby.append(
-        ApplicationUnit(
+        COUUnit(
             name="keystone/0",
             os_version=OpenStackRelease("wallaby"),
             workload_version="19.1.0",
@@ -522,7 +522,7 @@ def units(apps_machines):
         )
     )
     units_wallaby.append(
-        ApplicationUnit(
+        COUUnit(
             name="keystone/1",
             os_version=OpenStackRelease("wallaby"),
             workload_version="19.1.0",
@@ -530,7 +530,7 @@ def units(apps_machines):
         )
     )
     units_wallaby.append(
-        ApplicationUnit(
+        COUUnit(
             name="keystone/2",
             os_version=OpenStackRelease("wallaby"),
             workload_version="19.1.0",

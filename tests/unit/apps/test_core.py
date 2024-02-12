@@ -15,7 +15,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cou.apps.base import ApplicationUnit
 from cou.apps.core import Keystone
 from cou.exceptions import (
     ApplicationError,
@@ -30,13 +29,13 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils import app_utils
-from cou.utils.juju_utils import COUMachine
+from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 
 
-def test_repr_ApplicationUnit():
-    app_unit = ApplicationUnit(
+def test_repr_COUUnit():
+    app_unit = COUUnit(
         "keystone/0",
         OpenStackRelease("ussuri"),
         COUMachine("0", "juju-cef38-0", "zone-1"),

@@ -548,7 +548,7 @@ class OpenStackApplication(COUApplication):
         """Get the step to pause a unit to upgrade.
 
         :param unit: Unit to be paused.
-        :type unit: ApplicationUnit
+        :type unit: COUUnit
         :return: Step to pause a unit.
         :rtype: UnitUpgradeStep
         """
@@ -563,7 +563,7 @@ class OpenStackApplication(COUApplication):
         """Get the step to resume a unit after upgrading the workload version.
 
         :param unit: Unit to be resumed.
-        :type unit: ApplicationUnit
+        :type unit: COUUnit
         :return: Step to resume a unit.
         :rtype: UnitUpgradeStep
         """
@@ -578,7 +578,7 @@ class OpenStackApplication(COUApplication):
         """Get the step to upgrade a unit.
 
         :param unit: Unit to be upgraded.
-        :type unit: ApplicationUnit
+        :type unit: COUUnit
         :return: Step to upgrade a unit.
         :rtype: UnitUpgradeStep
         """

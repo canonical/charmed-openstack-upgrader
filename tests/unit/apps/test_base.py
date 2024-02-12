@@ -17,9 +17,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
-from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.exceptions import ApplicationError
 from cou.steps import UnitUpgradeStep, UpgradeStep
+from cou.utils.juju_utils import COUUnit
 
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
@@ -74,7 +75,7 @@ def test_get_pause_unit_step(model):
     status = MagicMock(spec_set=ApplicationStatus())
     status.charm_channel = "ussuri/stable"
 
-    unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
+    unit = COUUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
 
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Pause the unit: '{unit.name}'.",
@@ -91,7 +92,7 @@ def test_get_resume_unit_step(model):
     status = MagicMock(spec_set=ApplicationStatus())
     status.charm_channel = "ussuri/stable"
 
-    unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
+    unit = COUUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
 
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Resume the unit: '{unit.name}'.",
@@ -108,7 +109,7 @@ def test_get_openstack_upgrade_step(model):
     status = MagicMock(spec_set=ApplicationStatus())
     status.charm_channel = "ussuri/stable"
 
-    unit = ApplicationUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
+    unit = COUUnit("my_app/0", MagicMock(), MagicMock(), MagicMock())
 
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Upgrade the unit: '{unit.name}'.",
