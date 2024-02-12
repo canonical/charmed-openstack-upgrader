@@ -169,17 +169,18 @@ class COUUnit:
 
 @dataclass(frozen=True)
 class COUApplication:
-    """Representation of an single application."""
+    """Representation of a single application."""
 
     # pylint: disable=too-many-instance-attributes
 
     name: str
     can_upgrade_to: str
     charm: str
-    charm_channel: str
-    config: dict
+    channel: str
+    config: dict[str, Any]
     machines: dict[str, COUMachine]
     model: COUModel
+    origin: str
     series: str
     subordinate_to: list[str]
     units: dict[str, COUUnit]
@@ -192,6 +193,24 @@ class COUApplication:
         :rtype: str
         """
         return f"Application[{self.name}]"
+
+    @property
+    def is_subordinate(self) -> bool:
+        """Check if application is subordinate.
+
+        :return: True if subordinate, False otherwise.
+        :rtype: bool
+        """
+        return bool(self.subordinate_to)
+
+    @property
+    def is_from_charm_store(self) -> bool:
+        """Check if application comes from charm store.
+
+        :return: True if comes, False otherwise.
+        :rtype: bool
+        """
+        return self.origin == "cs"
 
 
 class COUModel:
@@ -337,10 +356,11 @@ class COUModel:
                 name=app,
                 can_upgrade_to=status.can_upgrade_to,
                 charm=model.applications[app].charm_name,
-                charm_channel=status.charm_channel,
+                channel=status.charm_channel,
                 config=await model.applications[app].get_config(),
                 machines={unit.machine: machines[unit.machine] for unit in status.units.values()},
                 model=self,
+                origin=status.charm.split(":")[0],
                 series=status.series,
                 subordinate_to=status.subordinate_to,
                 units={

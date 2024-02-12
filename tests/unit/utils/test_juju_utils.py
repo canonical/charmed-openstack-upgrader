@@ -196,10 +196,11 @@ def test_application_repr(mocked_model):
         name="app1",
         can_upgrade_to="124",
         charm="app",
-        charm_channel="edge",
+        channel="edge",
         config={},
         machines={},
         model=mocked_model,
+        origin="ch",
         series="jammy",
         subordinate_to=[],
         units={},
@@ -207,6 +208,8 @@ def test_application_repr(mocked_model):
     )
     expected_repr = "Application[app1]"
     assert repr(application_0) == expected_repr
+    assert application_0.is_subordinate is False
+    assert application_0.is_from_charm_store is False
 
 
 @patch("cou.utils.juju_utils.FileJujuData")
@@ -707,12 +710,13 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             name=app,
             can_upgrade_to=status.can_upgrade_to,
             charm=mocked_model.applications[app].charm_name,
-            charm_channel=status.charm_channel,
+            channel=status.charm_channel,
             config=mocked_model.applications[app].get_config.return_value,
             machines={
                 unit.machine: exp_machines[unit.machine] for unit in exp_units[app].values()
             },
             model=model,
+            origin=status.charm.split(":")[0],
             series=status.series,
             subordinate_to=status.subordinate_to,
             units={

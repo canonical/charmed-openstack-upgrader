@@ -209,7 +209,7 @@ class Analysis:
         """Data-plane machines of the model.
 
         :return: Data-plane machines of the model.
-        :rtype: dict[str, Machine]
+        :rtype: dict[str, COUMachine]
         """
         return {
             machine_id: app.machines[machine_id]
@@ -222,7 +222,7 @@ class Analysis:
         """Control-plane machines of the model.
 
         :return: Control-plane machines of the model.
-        :rtype: dict[str, Machine]
+        :rtype: dict[str, COUMachine]
         """
         return {
             machine_id: app.machines[machine_id]
@@ -235,6 +235,6 @@ class Analysis:
         """All machines of the model.
 
         :return: All machines of the model.
-        :rtype: dict[str, Machine]
+        :rtype: dict[str, COUMachine]
         """
         return {**self.data_plane_machines, **self.control_plane_machines}
