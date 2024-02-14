@@ -30,6 +30,13 @@ from tests.unit.utils import assert_steps
 def test_application_versionless(model):
     """Test application without version."""
     machines = {"0": MagicMock(spec_set=COUMachine)}
+    units = {
+        "glance-simplestreams-sync/0": COUUnit(
+            name="glance-simplestreams-sync/0",
+            workload_version="",
+            machine=machines["0"],
+        )
+    }
     app = OpenStackChannelBasedApplication(
         name="glance-simplestreams-sync",
         can_upgrade_to=[],
@@ -44,18 +51,13 @@ def test_application_versionless(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "glance-simplestreams-sync/0": COUUnit(
-                name="glance-simplestreams-sync/0",
-                workload_version="",
-                machine=machines["0"],
-            )
-        },
+        units=units,
         workload_version="",
     )
 
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is True
+    assert app._get_latest_os_version(units["glance-simplestreams-sync/0"]) == app.channel_codename
 
 
 def test_application_gnocchi_ussuri(model):

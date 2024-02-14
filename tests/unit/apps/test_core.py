@@ -473,7 +473,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=[],
+        can_upgrade_to=["victoria/stable"],
         charm="keystone",
         channel="victoria/stable",
         config={
@@ -482,7 +482,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
         },
         machines=machines,
         model=model,
-        origin="cs",
+        origin="ch",
         series="focal",
         subordinate_to=[],
         units={

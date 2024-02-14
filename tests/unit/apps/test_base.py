@@ -24,6 +24,29 @@ from tests.unit.utils import assert_steps
 
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+def test_openstack_application_magic_functions(model):
+    """Test OpenStackApplication magic functions, like __hash__, __eq__."""
+    app = OpenStackApplication(
+        name="test-app",
+        can_upgrade_to=[],
+        charm="app",
+        channel="stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+
+    assert hash(app) == hash("test-app(app)")
+    assert app == app
+    assert app is not None
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
 def test_application_get_latest_os_version_failed(mock_find_compatible_versions, model):
     charm = "app"
