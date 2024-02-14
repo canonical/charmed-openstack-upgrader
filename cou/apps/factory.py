@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import asdict
 from typing import Optional
 
 from cou.apps.base import OpenStackApplication
@@ -46,7 +45,20 @@ class AppFactory:
         # pylint: disable=too-many-arguments
         if is_charm_supported(app.charm):
             app_class = cls.charms.get(app.charm, OpenStackApplication)
-            return app_class(**asdict(app))
+            return app_class(
+                name=app.name,
+                can_upgrade_to=app.can_upgrade_to,
+                charm=app.charm,
+                channel=app.channel,
+                config=app.config,
+                machines=app.machines,
+                model=app.model,
+                origin=app.origin,
+                series=app.series,
+                subordinate_to=app.subordinate_to,
+                units=app.units,
+                workload_version=app.workload_version,
+            )
 
         logger.debug(
             "'%s' is not a supported OpenStack related application and will be ignored.",

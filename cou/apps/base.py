@@ -473,7 +473,6 @@ class OpenStackApplication(COUApplication):
             channel = self.channel
             description = f"Refresh '{self.name}' to the latest revision of '{channel}'"
         elif self.channel_codename >= target:
-            print("here")
             logger.info(
                 "Skipping charm refresh for %s, its channel is already set to %s.",
                 self.name,

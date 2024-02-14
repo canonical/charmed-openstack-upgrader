@@ -28,8 +28,7 @@ def test_app_factory_not_supported_openstack_charm(mock_is_charm_supported):
 
 
 @patch.object(factory, "is_charm_supported", return_value=True)
-@patch.object(factory, "asdict")
-def test_app_factory_register(mock_asdict, mock_is_charm_supported):
+def test_app_factory_register(mock_is_charm_supported):
     charm = "foo"
     app = MagicMock(spec_set=COUApplication)()
     app.charm = charm
@@ -43,6 +42,6 @@ def test_app_factory_register(mock_asdict, mock_is_charm_supported):
     foo = factory.AppFactory.create(app)
 
     mock_is_charm_supported.assert_called_once_with(charm)
-    mock_asdict.assert_called_once_with(app)
+
     assert foo is not None
     assert isinstance(foo, Foo)
