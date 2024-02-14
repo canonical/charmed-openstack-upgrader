@@ -121,7 +121,7 @@ class Analysis:
         :rtype: List[OpenStackApplication]
         """
         juju_applications = await model.get_applications()
-        apps = {AppFactory.create(app) for app in juju_applications.applications.values()}
+        apps = {AppFactory.create(app) for app in juju_applications.values()}
 
         # remove non-supported charms that return None on AppFactory.create
         apps.discard(None)

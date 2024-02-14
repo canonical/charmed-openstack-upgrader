@@ -103,7 +103,7 @@ class OpenStackApplication(COUApplication):
                 "units": {
                     unit.name: {
                         "workload_version": unit.workload_version,
-                        "os_version": self._get_latest_os_version(unit),
+                        "os_version": str(self._get_latest_os_version(unit)),
                     }
                     for unit in self.units.values()
                 },

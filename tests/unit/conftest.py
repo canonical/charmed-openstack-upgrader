@@ -608,7 +608,16 @@ def analysis_result(model, apps):
 def apps(status, config, model, apps_machines):
     keystone_focal_ussuri_status = status["keystone_focal_ussuri"]
     keystone_focal_wallaby_status = status["keystone_focal_wallaby"]
-    cinder_focal_ussuri_status = status["cinder_focal_ussuri"]
+    cinder_focal_ussuri_status = status["keystone_focal_ussuri"]
+    c_key, s_key = "openstack_ussuri", "cinder_focal_ussuri"
+    print("config: ", config[c_key])
+    print("status: ", status[s_key].can_upgrade_to)
+    print("status: ", status[s_key].charm_channel)
+    print("status: ", status[s_key].charm)
+    print("status: ", status[s_key].series)
+    for unit in status[s_key].units.values():
+        print(unit.workload_version)
+    print("status: ", status[s_key].workload_version)
     rmq_status = status["rabbitmq_server"]
     keystone_ldap_focal_ussuri_status = status["keystone_ldap_focal_ussuri"]
 
