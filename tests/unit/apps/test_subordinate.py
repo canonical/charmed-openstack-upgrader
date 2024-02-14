@@ -55,7 +55,7 @@ def test_current_os_release(model):
     assert app.current_os_release == OpenStackRelease("ussuri")
 
 
-def test_generate_upgrade_plan(status, model):
+def test_generate_upgrade_plan(model):
     """Test generate upgrade plan for OpenStackSubordinateApplication."""
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=COUMachine)}
@@ -236,7 +236,7 @@ def test_generate_plan_ch_migration(model, channel):
         (["xena", "yoga"]),
     ],
 )
-def test_generate_plan_from_to(status, model, from_os, to_os):
+def test_generate_plan_from_to(model, from_os, to_os):
     """Test generate upgrade plan for OpenStackSubordinateApplication from to version."""
     target = OpenStackRelease(to_os)
     machines = {"0": MagicMock(spec_set=COUMachine)}
@@ -289,7 +289,7 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
         "yoga",
     ],
 )
-def test_generate_plan_in_same_version(status, model, from_to):
+def test_generate_plan_in_same_version(model, from_to):
     """Test generate upgrade plan for OpenStackSubordinateApplication in same version."""
     target = OpenStackRelease(from_to)
     machines = {"0": MagicMock(spec_set=COUMachine)}

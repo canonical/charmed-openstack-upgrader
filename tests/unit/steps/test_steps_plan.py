@@ -41,7 +41,6 @@ from cou.utils import app_utils
 from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.conftest import generate_mock_machine
 from tests.unit.utils import assert_steps
 
 
@@ -745,13 +744,11 @@ async def test_filter_hypervisors_machines(
 ):
 
     empty_hypervisors_machines = {
-        generate_mock_machine(
-            str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
-        )
+        COUMachine(str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}")
         for machine_id in range(2)
     }
     # assuming that machine-2 has some VMs running
-    non_empty_hypervisor_machine = generate_mock_machine("2", "juju-c307f8-2", "zone-3")
+    non_empty_hypervisor_machine = COUMachine("2", "juju-c307f8-2", "zone-3")
 
     upgradable_hypervisors = empty_hypervisors_machines
     if force:
