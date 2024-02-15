@@ -58,7 +58,10 @@ class NovaCompute(OpenStackApplication):
     upgrade_units_running_vms = False
 
     def upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
+        self,
+        target: OpenStackRelease,
+        units: Optional[list[ApplicationUnit]],
+        force: bool,
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
@@ -66,20 +69,26 @@ class NovaCompute(OpenStackApplication):
         :type target: OpenStackRelease
         :param units: Units to generate upgrade steps,
         :type units: Optional[list[ApplicationUnit]]
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
         if not units:
             units = self.units
-        app_steps = super().upgrade_steps(target, units)
-        unit_steps = self._get_units_upgrade_steps(units)
+        app_steps = super().upgrade_steps(target, units, force)
+        unit_steps = self._get_units_upgrade_steps(units, force)
         return app_steps + unit_steps
 
-    def _get_units_upgrade_steps(self, units: list[ApplicationUnit]) -> list[UpgradeStep]:
+    def _get_units_upgrade_steps(
+        self, units: list[ApplicationUnit], force: bool
+    ) -> list[UpgradeStep]:
         """Get the upgrade steps for the units.
 
         :param units: Units to generate upgrade steps
         :type units: list[ApplicationUnit]
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :return: List of upgrade steps
         :rtype: list[UpgradeStep]
         """
@@ -92,10 +101,10 @@ class NovaCompute(OpenStackApplication):
             unit_steps = UnitUpgradeStep(description=f"Upgrade plan for unit: {unit.name}")
             unit_steps.add_step(self._get_disable_scheduler_step(unit))
 
-            if not self.upgrade_units_running_vms:
+            if not force:
                 unit_steps.add_step(self._get_empty_hypervisor_step(unit))
 
-            is_dependent = not self.upgrade_units_running_vms
+            is_dependent = not force
             unit_steps.add_step(self._get_pause_unit_step(unit, is_dependent))
             unit_steps.add_step(self._get_openstack_upgrade_step(unit, is_dependent))
             unit_steps.add_step(self._get_resume_unit_step(unit, is_dependent))

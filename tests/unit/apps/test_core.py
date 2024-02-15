@@ -728,8 +728,9 @@ def test_upgrade_plan_application_already_disable_action_managed(
     assert upgrade_plan == expected_plan
 
 
+@pytest.mark.parametrize("force", [True, False])
 @patch("cou.apps.core.NovaCompute._get_units_upgrade_steps")
-def test_nova_compute_upgrade_steps(mock_units_upgrade_steps, model):
+def test_nova_compute_upgrade_steps(mock_units_upgrade_steps, model, force):
     app, units = _generate_nova_compute_app_and_units(model)
     target = OpenStackRelease("victoria")
     with patch(
@@ -737,12 +738,13 @@ def test_nova_compute_upgrade_steps(mock_units_upgrade_steps, model):
         new_callable=PropertyMock,
         return_value=OpenStackRelease("ussuri"),
     ):
-        app.upgrade_steps(target, units)
-        mock_units_upgrade_steps.assert_called_once_with(units)
+        app.upgrade_steps(target, units, force)
+        mock_units_upgrade_steps.assert_called_once_with(units, force)
 
 
+@pytest.mark.parametrize("force", [True, False])
 @patch("cou.apps.core.NovaCompute._get_units_upgrade_steps")
-def test_nova_compute_upgrade_steps_no_units(mock_units_upgrade_steps, model):
+def test_nova_compute_upgrade_steps_no_units(mock_units_upgrade_steps, force, model):
     app, units = _generate_nova_compute_app_and_units(model)
     target = OpenStackRelease("victoria")
     with patch(
@@ -750,11 +752,11 @@ def test_nova_compute_upgrade_steps_no_units(mock_units_upgrade_steps, model):
         new_callable=PropertyMock,
         return_value=OpenStackRelease("ussuri"),
     ):
-        app.upgrade_steps(target, [])
-        mock_units_upgrade_steps.assert_called_once_with(units)
+        app.upgrade_steps(target, [], force)
+        mock_units_upgrade_steps.assert_called_once_with(units, force)
 
 
-@pytest.mark.parametrize("upgrade_units_running_vms", [True, False])
+@pytest.mark.parametrize("force", [True, False])
 # add_step check if the step added is from BaseStep, so the return is an empty UnitUpgradeStep
 @patch("cou.apps.core.NovaCompute._get_enable_scheduler_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_resume_unit_step", return_value=UnitUpgradeStep())
@@ -770,21 +772,20 @@ def test_nova_compute_get_units_upgrade_steps(
     mock_resume,
     mock_enable,
     model,
-    upgrade_units_running_vms,
+    force,
 ):
     app, units = _generate_nova_compute_app_and_units(model)
-    app.upgrade_units_running_vms = upgrade_units_running_vms
 
     calls_without_dependency = [call(unit) for unit in units]
-    calls_with_dependency = [call(unit, not upgrade_units_running_vms) for unit in units]
-    app._get_units_upgrade_steps(units)
+    calls_with_dependency = [call(unit, not force) for unit in units]
+    app._get_units_upgrade_steps(units, force)
     mock_disable.assert_has_calls(calls_without_dependency)
     mock_enable.assert_has_calls(calls_without_dependency)
     mock_pause.assert_has_calls(calls_with_dependency)
     mock_upgrade.assert_has_calls(calls_with_dependency)
     mock_resume.assert_has_calls(calls_with_dependency)
 
-    if upgrade_units_running_vms:
+    if force:
         mock_empty.assert_not_called()
     else:
         mock_empty.assert_has_calls(calls_without_dependency)

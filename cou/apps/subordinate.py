@@ -37,7 +37,7 @@ class SubordinateBaseClass(OpenStackApplication):
         return [self._get_refresh_charm_step(target)]
 
     def upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
+        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]], force: bool
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
@@ -45,6 +45,8 @@ class SubordinateBaseClass(OpenStackApplication):
         :type target: OpenStackRelease
         :param units: Units to generate upgrade steps
         :type units: Optional[list[ApplicationUnit]]
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """

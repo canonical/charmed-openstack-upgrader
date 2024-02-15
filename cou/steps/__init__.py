@@ -26,7 +26,7 @@ from typing import Any, Coroutine, Iterable, List, Optional
 from cou.exceptions import CanceledStep
 
 logger = logging.getLogger(__name__)
-DEPENDENCY_DESCRIPTION_SUFFIX = "├── "
+DEPENDENCY_DESCRIPTION_PREFIX = "├── "
 
 
 def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutine]) -> bool:
@@ -107,7 +107,7 @@ class BaseStep:
         self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
         self.description = (
-            DEPENDENCY_DESCRIPTION_SUFFIX + description if dependent else description
+            DEPENDENCY_DESCRIPTION_PREFIX + description if dependent else description
         )
         self._sub_steps: List[BaseStep] = []
         self._canceled: bool = False

@@ -456,7 +456,10 @@ class OpenStackApplication:
         ]
 
     def upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
+        self,
+        target: OpenStackRelease,
+        units: Optional[list[ApplicationUnit]],
+        force: bool,
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
@@ -464,10 +467,13 @@ class OpenStackApplication:
         :type target: OpenStackRelease
         :param units: Units to generate upgrade steps
         :type units: Optional[list[ApplicationUnit]]
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
+        # pylint: disable=unused-argument
         if self.current_os_release >= target and self.apt_source_codename >= target:
             msg = (
                 f"Application '{self.name}' already configured for release equal or greater "
@@ -505,6 +511,7 @@ class OpenStackApplication:
         self,
         target: OpenStackRelease,
         units: Optional[list[ApplicationUnit]] = None,
+        force: bool = False,
     ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
 
@@ -514,6 +521,8 @@ class OpenStackApplication:
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[ApplicationUnit]], optional
+        :param force: Whether the plan generation should be forced,defaults to False
+        :type force: bool, optional
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
@@ -522,7 +531,7 @@ class OpenStackApplication:
         )
         all_steps = (
             self.pre_upgrade_steps(target)
-            + self.upgrade_steps(target, units)
+            + self.upgrade_steps(target, units, force)
             + self.post_upgrade_steps(target)
         )
         for step in all_steps:
