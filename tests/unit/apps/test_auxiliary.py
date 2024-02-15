@@ -74,7 +74,7 @@ def test_auxiliary_app(model):
 
 
 def test_auxiliary_app_cs(model):
-    """Test aucilary application from charm store."""
+    """Test auxiliary application from charm store."""
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
