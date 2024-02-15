@@ -158,7 +158,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :return: Step to check and set correct value for require-osd-release
         :rtype: PreUpgradeStep
         """
-        ceph_mon_unit, *_ = self.units
+        ceph_mon_unit, *_ = self.units.values()
         return PreUpgradeStep(
             description="Ensure require-osd-release option matches with ceph-osd version",
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
@@ -177,7 +177,7 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        for unit in self.units:
+        for unit in self.units.values():
             validate_ovn_support(unit.workload_version)
         return super().pre_upgrade_steps(target)
 

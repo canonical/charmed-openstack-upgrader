@@ -50,5 +50,5 @@ class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        validate_ovn_support(self.status.workload_version)
+        validate_ovn_support(self.workload_version)
         return super().pre_upgrade_steps(target)

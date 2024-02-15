@@ -16,6 +16,8 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 
 from cou.apps.base import OpenStackApplication
+from cou.apps.core import Keystone
+from cou.apps.subordinate import OpenStackSubordinateApplication
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -36,12 +38,14 @@ from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.utils import app_utils
+from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.conftest import KEYSTONE_MACHINES, NOVA_MACHINES, generate_mock_machine
+from tests.unit.utils import assert_steps
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
+    """Generate expected upgrade plan for principal charms."""
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target.codename}"
     )
@@ -63,7 +67,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units:
+    for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -113,6 +117,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
 
 
 def generate_expected_upgrade_plan_subordinate(app, target, model):
+    """Generate expected upgrade plan for subordiante charms."""
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
@@ -136,19 +141,84 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 
 @pytest.mark.asyncio
-async def test_generate_plan(apps, model, cli_args):
+async def test_generate_plan(model, cli_args):
+    """Test generation of upgrade plan."""
     cli_args.is_data_plane_command = False
     target = OpenStackRelease("victoria")
-    app_keystone = apps["keystone_focal_ussuri"]
-    app_cinder = apps["cinder_focal_ussuri"]
-    app_keystone_ldap = apps["keystone_ldap_focal_ussuri"]
-    analysis_result = Analysis(
+    # keystone = Keystone()
+    machines = {"0": MagicMock(spec_set=COUMachine)}
+    keystone = Keystone(
+        name="keystone",
+        can_upgrade_to=["ussuri/stable"],
+        charm="keystone",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines={},
         model=model,
-        apps_control_plane=[app_keystone, app_cinder, app_keystone_ldap],
-        apps_data_plane=[],
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "keystone/0": COUUnit(
+                name="keystone/0",
+                workload_version="17.0.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="17.0.1",
+    )
+    keystone_ldap = OpenStackSubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to=["ussuri/stable"],
+        charm="keystone-ldap",
+        channel="ussuri/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={
+            "keystone-ldap/0": COUUnit(
+                name="keystone-ldap/0",
+                workload_version="17.0.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="17.0.1",
+    )
+    cinder = OpenStackApplication(
+        name="cinder",
+        can_upgrade_to=["ussuri/stable"],
+        charm="cinder",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "cinder/0": COUUnit(
+                name="cinder/0",
+                workload_version="16.4.2",
+                machine=machines["0"],
+            )
+        },
+        workload_version="16.4.2",
     )
 
-    upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
+    analysis_result = Analysis(
+        model=model,
+        apps_control_plane=[keystone, cinder, keystone_ldap],
+        apps_data_plane=[],
+    )
 
     expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
     expected_plan.add_step(
@@ -169,20 +239,20 @@ async def test_generate_plan(apps, model, cli_args):
     )
 
     control_plane_principals = UpgradePlan("Control Plane principal(s) upgrade plan")
-    keystone_plan = generate_expected_upgrade_plan_principal(app_keystone, target, model)
-    cinder_plan = generate_expected_upgrade_plan_principal(app_cinder, target, model)
+    keystone_plan = generate_expected_upgrade_plan_principal(keystone, target, model)
+    cinder_plan = generate_expected_upgrade_plan_principal(cinder, target, model)
     control_plane_principals.add_step(keystone_plan)
     control_plane_principals.add_step(cinder_plan)
 
     control_plane_subordinates = UpgradePlan("Control Plane subordinate(s) upgrade plan")
-    keystone_ldap_plan = generate_expected_upgrade_plan_subordinate(
-        app_keystone_ldap, target, model
-    )
+    keystone_ldap_plan = generate_expected_upgrade_plan_subordinate(keystone_ldap, target, model)
     control_plane_subordinates.add_step(keystone_ldap_plan)
 
     expected_plan.add_step(control_plane_principals)
     expected_plan.add_step(control_plane_subordinates)
-    assert upgrade_plan == expected_plan
+
+    upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
+    assert_steps(upgrade_plan, expected_plan)
 
 
 @pytest.mark.parametrize(
@@ -423,21 +493,40 @@ async def test_create_upgrade_plan_failed():
 
 
 @patch("builtins.print")
-def test_plan_print_warn_manually_upgrade(mock_print, model, apps):
+def test_plan_print_warn_manually_upgrade(mock_print, model):
+    nova_compute = MagicMock(spec_set=OpenStackApplication)()
+    nova_compute.name = "nova-compute"
+    nova_compute.current_os_release = OpenStackRelease("victoria")
+    nova_compute.series = "focal"
+    keystone = MagicMock(spec_set=OpenStackApplication)()
+    keystone.name = "keystone"
+    keystone.current_os_release = OpenStackRelease("wallaby")
+    keystone.series = "focal"
+
     result = Analysis(
         model=model,
-        apps_control_plane=[apps["keystone_focal_wallaby"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
+        apps_control_plane=[keystone],
+        apps_data_plane=[nova_compute],
     )
     cou_plan.manually_upgrade_data_plane(result)
     mock_print.assert_called_with(
-        "WARNING: Please upgrade manually the data plane apps: nova-compute"
+        f"WARNING: Please upgrade manually the data plane apps: {nova_compute.name}"
     )
 
 
 @patch("builtins.print")
-def test_analysis_not_print_warn_manually_upgrade(mock_print, analysis_result):
-    cou_plan.manually_upgrade_data_plane(analysis_result)
+def test_analysis_not_print_warn_manually_upgrade(mock_print, model):
+    keystone = MagicMock(spec_set=OpenStackApplication)()
+    keystone.name = "keystone"
+    keystone.current_os_release = OpenStackRelease("wallaby")
+    keystone.series = "focal"
+
+    result = Analysis(
+        model=model,
+        apps_control_plane=[keystone],
+        apps_data_plane=[],
+    )
+    cou_plan.manually_upgrade_data_plane(result)
     mock_print.assert_not_called()
 
 
@@ -448,14 +537,13 @@ def test_verify_data_plane_cli_no_input(
     mock_verify_machines,
     mock_verify_hostnames,
     mock_verify_azs,
-    analysis_result,
     cli_args,
 ):
     cli_args.machines = None
     cli_args.hostnames = None
     cli_args.availability_zones = None
 
-    assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
+    assert cou_plan.verify_data_plane_cli_input(cli_args, MagicMock(spec_set=Analysis)()) is None
 
     mock_verify_machines.assert_not_called()
     mock_verify_hostnames.assert_not_called()
@@ -465,10 +553,10 @@ def test_verify_data_plane_cli_no_input(
 @pytest.mark.parametrize(
     "cli_machines",
     [
-        {NOVA_MACHINES[0]},
-        {NOVA_MACHINES[1]},
-        {NOVA_MACHINES[2]},
-        {NOVA_MACHINES[0], NOVA_MACHINES[1], NOVA_MACHINES[2]},
+        {"0"},
+        {"1"},
+        {"2"},
+        {"0", "1", "2"},
     ],
 )
 @patch("cou.steps.plan.verify_data_plane_cli_azs")
@@ -477,12 +565,15 @@ def test_verify_data_plane_cli_input_machines(
     mock_verify_hostnames,
     mock_verify_azs,
     cli_machines,
-    analysis_result,
     cli_args,
 ):
     cli_args.machines = cli_machines
     cli_args.hostnames = None
     cli_args.availability_zones = None
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.data_plane_machines = analysis_result.machines = {
+        f"{i}": MagicMock(spec_set=COUMachine)() for i in range(3)
+    }
 
     assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
 
@@ -490,23 +581,16 @@ def test_verify_data_plane_cli_input_machines(
     mock_verify_azs.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "nova_unit",
-    [0, 1, 2],
-)
 @patch("cou.steps.plan.verify_data_plane_cli_azs")
 @patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_data_plane_cli_input_hostnames(
-    mock_verify_machines,
-    mock_verify_azs,
-    nova_unit,
-    analysis_result,
-    apps,
-    cli_args,
-):
-    nova_machine = list(apps["nova_focal_ussuri"].machines.values())[nova_unit]
+def test_verify_data_plane_cli_input_hostnames(mock_verify_machines, mock_verify_azs, cli_args):
+    hostname = "test-host-machine"
+    machine = MagicMock(spec_set=COUMachine)()
+    machine.hostname = hostname
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.data_plane_machines = analysis_result.machines = {"0": machine}
     cli_args.machines = None
-    cli_args.hostnames = {nova_machine.hostname}
+    cli_args.hostnames = {hostname}
     cli_args.availability_zones = None
 
     assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
@@ -515,24 +599,17 @@ def test_verify_data_plane_cli_input_hostnames(
     mock_verify_azs.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "nova_unit",
-    [0, 1, 2],
-)
 @patch("cou.steps.plan.verify_data_plane_cli_hostnames")
 @patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_data_plane_cli_input_azs(
-    mock_verify_machines,
-    mock_verify_hostnames,
-    nova_unit,
-    analysis_result,
-    apps,
-    cli_args,
-):
-    nova_machine = list(apps["nova_focal_ussuri"].machines.values())[nova_unit]
+def test_verify_data_plane_cli_input_azs(mock_verify_machines, mock_verify_hostnames, cli_args):
+    az = "test-az-0"
+    machine = MagicMock(spec_set=COUMachine)()
+    machine.az = az
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.data_plane_machines = analysis_result.machines = {"0": machine}
     cli_args.machines = None
     cli_args.hostnames = None
-    cli_args.availability_zones = {nova_machine.az}
+    cli_args.availability_zones = {az}
 
     assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
 
@@ -541,40 +618,64 @@ def test_verify_data_plane_cli_input_azs(
 
 
 @pytest.mark.parametrize(
-    "machine, exp_error_msg",
+    "cli_machines, exp_error_msg",
     [
-        ({KEYSTONE_MACHINES[0]}, r"Machine.*are not considered as data-plane."),
+        ({"1"}, r"Machine.*are not considered as data-plane."),
         ({"5/lxd/18"}, r"Machine.*don't exist."),
     ],
 )
-def test_verify_data_plane_cli_machines_raise(analysis_result, machine, exp_error_msg):
+def test_verify_data_plane_cli_machines_raise(cli_machines, exp_error_msg):
+    machine0 = MagicMock(spec_set=COUMachine)()
+    machine1 = MagicMock(spec_set=COUMachine)()
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.machines = {"0": machine0, "1": machine1}
+    analysis_result.data_plane_machines = {"0": machine0}
+    analysis_result.control_plane_machines = {"1": machine1}
+
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_data_plane_cli_machines(machine, analysis_result)
+        cou_plan.verify_data_plane_cli_machines(cli_machines, analysis_result)
 
 
 @pytest.mark.parametrize(
-    "app, exp_error_msg",
+    "cli_hostnames, exp_error_msg",
     [
-        ("keystone", r"Hostname.*are not considered as data-plane."),
-        ("cinder", r"Hostname.*don't exist."),  # cinder is not on the Analysis
+        ({"juju-c307f8-1"}, r"Hostname.*are not considered as data-plane."),
+        ({"juju-not-existing"}, r"Hostname.*don't exist."),
     ],
 )
-def test_verify_data_plane_cli_hostname_raise(apps, analysis_result, app, exp_error_msg):
+def test_verify_data_plane_cli_hostname_raise(cli_hostnames, exp_error_msg):
+    machine0 = MagicMock(spec_set=COUMachine)()
+    machine0.hostname = "juju-c307f8-0"
+    machine1 = MagicMock(spec_set=COUMachine)()
+    machine1.hostname = "juju-c307f8-1"
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.machines = {"0": machine0, "1": machine1}
+    analysis_result.data_plane_machines = {"0": machine0}
+    analysis_result.control_plane_machines = {"1": machine1}
+
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        machine = list(apps[f"{app}_focal_ussuri"].machines.values())[0]
-        cou_plan.verify_data_plane_cli_hostnames({machine.hostname}, analysis_result)
+        cou_plan.verify_data_plane_cli_hostnames(cli_hostnames, analysis_result)
 
 
 @pytest.mark.parametrize(
-    "azs, exp_error_msg",
+    "cli_azs, exp_error_msg",
     [
-        ({"zone-foo"}, r"Availability Zone.*don't exist."),
-        ({"zone-1", "zone-foo"}, r"Availability Zone.*don't exist."),
+        ({"zone-1"}, r"Availability Zone.* are not considered as data-plane."),
+        ({"zone-test", "zone-foo"}, r"Availability Zone.*don't exist."),
     ],
 )
-def test_verify_data_plane_cli_azs_raise_dont_exist(analysis_result, azs, exp_error_msg):
+def test_verify_data_plane_cli_azs_raise_dont_exist(cli_azs, exp_error_msg):
+    machine0 = MagicMock(spec_set=COUMachine)()
+    machine0.az = "zone-0"
+    machine1 = MagicMock(spec_set=COUMachine)()
+    machine1.az = "zone-1"
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.machines = {"0": machine0, "1": machine1}
+    analysis_result.data_plane_machines = {"0": machine0}
+    analysis_result.control_plane_machines = {"1": machine1}
+
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_data_plane_cli_azs(azs, analysis_result)
+        cou_plan.verify_data_plane_cli_azs(cli_azs, analysis_result)
 
 
 def test_verify_data_plane_cli_azs_raise_cannot_find():
@@ -643,13 +744,11 @@ async def test_filter_hypervisors_machines(
 ):
 
     empty_hypervisors_machines = {
-        generate_mock_machine(
-            str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
-        )
+        COUMachine(str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}")
         for machine_id in range(2)
     }
     # assuming that machine-2 has some VMs running
-    non_empty_hypervisor_machine = generate_mock_machine("2", "juju-c307f8-2", "zone-3")
+    non_empty_hypervisor_machine = COUMachine("2", "juju-c307f8-2", "zone-3")
 
     upgradable_hypervisors = empty_hypervisors_machines
     if force:
@@ -691,21 +790,35 @@ async def test_filter_hypervisors_machines(
 @pytest.mark.asyncio
 @patch("cou.steps.plan.get_empty_hypervisors")
 async def test_get_upgradable_hypervisors_machines(
-    mock_empty_hypervisors,
-    cli_force,
-    empty_hypervisors,
-    expected_result,
-    analysis_result,
+    mock_empty_hypervisors, cli_force, empty_hypervisors, expected_result
 ):
-    mock_empty_hypervisors.return_value = {
-        generate_mock_machine(
-            str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}"
+    machines = {f"{i}": COUMachine(f"{i}", f"juju-c307f8-{i}", f"zone-{i + 1}") for i in range(3)}
+    nova_compute = MagicMock(spec_set=OpenStackApplication)()
+    nova_compute.charm = "nova-compute"
+    nova_compute.units = {
+        f"nova-compute/{i}": COUUnit(
+            name=f"nova-compute/{i}",
+            workload_version="21.0.0",
+            machine=machines[f"{i}"],
         )
-        for machine_id in empty_hypervisors
+        for i in range(3)
+    }
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.data_plane_machines = analysis_result.machines = machines
+    analysis_result.apps_data_plane = [nova_compute]
+    mock_empty_hypervisors.return_value = {
+        machines[f"{machine_id}"] for machine_id in empty_hypervisors
     }
     hypervisors_possible_to_upgrade = await cou_plan._get_upgradable_hypervisors_machines(
         cli_force, analysis_result
     )
+
+    if not cli_force:
+        mock_empty_hypervisors.assert_called_once_with(
+            [unit for unit in nova_compute.units.values()], analysis_result.model
+        )
+    else:
+        mock_empty_hypervisors.assert_not_called()
 
     assert {
         hypervisor.machine_id for hypervisor in hypervisors_possible_to_upgrade

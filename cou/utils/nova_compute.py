@@ -16,15 +16,14 @@
 
 import asyncio
 
-from cou.apps.base import ApplicationUnit
-from cou.utils.juju_utils import COUMachine, COUModel
+from cou.utils.juju_utils import COUMachine, COUModel, COUUnit
 
 
-async def get_empty_hypervisors(units: list[ApplicationUnit], model: COUModel) -> list[COUMachine]:
+async def get_empty_hypervisors(units: list[COUUnit], model: COUModel) -> list[COUMachine]:
     """Get the empty hypervisors in the model.
 
     :param units: all nova-compute units.
-    :type units: list[ApplicationUnit]
+    :type units: list[COUUnit]
     :param model: COUModel object
     :type model: COUModel
     :return: List with just the empty hypervisors machines.
