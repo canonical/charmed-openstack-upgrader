@@ -324,7 +324,7 @@ def test_application_unexpected_channel(status, config, model, apps_machines):
         apps_machines["keystone"],
     )
     with pytest.raises(ApplicationError):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 @pytest.mark.parametrize(
@@ -400,7 +400,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
         "keystone",
         machines=apps_machines["keystone"],
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
@@ -469,7 +469,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model, app
     app = Keystone(
         "my_keystone", app_status, app_config, model, "keystone", apps_machines["keystone"]
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
@@ -537,7 +537,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model, apps_mac
     app = Keystone(
         "my_keystone", app_status, app_config, model, "keystone", apps_machines["keystone"]
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -599,7 +599,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(
     app = Keystone(
         "my_keystone", app_status, app_config, model, "keystone", apps_machines["keystone"]
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
@@ -661,7 +661,7 @@ def test_upgrade_plan_application_already_upgraded(status, config, model, apps_m
     )
     # victoria is lesser than wallaby, so application should not generate a plan.
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 def test_upgrade_plan_application_already_disable_action_managed(
@@ -674,7 +674,7 @@ def test_upgrade_plan_application_already_disable_action_managed(
     app = Keystone(
         "my_keystone", app_status, app_config, model, "keystone", apps_machines["keystone"]
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )

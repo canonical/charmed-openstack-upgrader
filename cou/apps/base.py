@@ -510,8 +510,8 @@ class OpenStackApplication:
     def generate_upgrade_plan(
         self,
         target: OpenStackRelease,
+        force: bool,
         units: Optional[list[ApplicationUnit]] = None,
-        force: bool = False,
     ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
 
@@ -519,10 +519,10 @@ class OpenStackApplication:
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[ApplicationUnit]], optional
-        :param force: Whether the plan generation should be forced,defaults to False
-        :type force: bool, optional
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """

@@ -40,7 +40,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
     target = OpenStackRelease("victoria")
     app = apps["keystone_mysql_router"]
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}",
     )
@@ -87,7 +87,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
     )
 
     with pytest.raises(ApplicationError, match=exp_error_msg_ovn_upgrade):
-        app_ovn_chassis.generate_upgrade_plan(target)
+        app_ovn_chassis.generate_upgrade_plan(target, False)
 
 
 def test_ovn_subordinate_upgrade_plan(status, model):
@@ -101,7 +101,7 @@ def test_ovn_subordinate_upgrade_plan(status, model):
         {},
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -138,7 +138,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert upgrade_plan == expected_plan
     assert str(upgrade_plan) == ""
 
@@ -155,7 +155,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
         {},
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -185,7 +185,7 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
         {},
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"

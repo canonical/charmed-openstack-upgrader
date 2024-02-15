@@ -50,7 +50,7 @@ def test_generate_upgrade_plan(status, model):
     app = OpenStackSubordinateApplication(
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -128,7 +128,7 @@ def test_generate_plan_ch_migration(status, model, channel):
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -166,7 +166,7 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
     )
 
-    upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(to_os))
+    upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(to_os), False)
 
     expected_plan = ApplicationUpgradePlan(description=f"Upgrade plan for '{app.name}' to {to_os}")
     upgrade_steps = [
@@ -203,7 +203,7 @@ def test_generate_plan_in_same_version(status, model, from_to):
         "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
     )
 
-    upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(from_to))
+    upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(from_to), False)
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {from_to}"
     )

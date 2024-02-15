@@ -105,7 +105,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(
         apps_machines["rmq"],
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -176,7 +176,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model, apps_m
         apps_machines["rmq"],
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -242,7 +242,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(
         "rabbitmq-server",
         apps_machines["rmq"],
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}",
     )
@@ -372,7 +372,7 @@ def test_auxiliary_raise_halt_upgrade(status, config, model, apps_machines):
         apps_machines["rmq"],
     )
     with pytest.raises(HaltUpgradePlanGeneration):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 def test_auxiliary_no_suitable_channel(status, config, model, apps_machines):
@@ -429,7 +429,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model, apps_machines
         apps_machines["ceph-mon"],
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -505,7 +505,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
         "ceph-mon",
         apps_machines["ceph-mon"],
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -597,7 +597,7 @@ def test_ovn_workload_ver_lower_than_22_principal(status, config, model, apps_ma
     )
 
     with pytest.raises(ApplicationError, match=exp_error_msg_ovn_upgrade):
-        app_ovn_central.generate_upgrade_plan(target)
+        app_ovn_central.generate_upgrade_plan(target, False)
 
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])
@@ -626,7 +626,7 @@ def test_ovn_principal_upgrade_plan(status, config, model, apps_machines):
         apps_machines["ovn-central"],
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -688,7 +688,7 @@ def test_mysql_innodb_cluster_upgrade(status, config, model, apps_machines):
         "mysql-innodb-cluster",
         apps_machines["mysql-innodb-cluster"],
     )
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )

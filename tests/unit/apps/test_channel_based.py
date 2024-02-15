@@ -97,7 +97,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(
         apps_machines["glance-simplestreams-sync"],
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -159,7 +159,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
         apps_machines["gnocchi"],
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -232,7 +232,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
         apps_machines["designate-bind"],
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"

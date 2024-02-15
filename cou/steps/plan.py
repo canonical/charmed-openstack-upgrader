@@ -363,6 +363,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
         apps=analysis_result.apps_control_plane,
         description="Control Plane principal(s) upgrade plan",
         target=target,
+        force=args.force,
         filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
     )
     plan.add_step(control_plane_principal_upgrade_plan)
@@ -371,6 +372,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
         apps=analysis_result.apps_control_plane,
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
+        force=args.force,
         filter_function=lambda app: isinstance(app, SubordinateBaseClass),
     )
     plan.add_step(control_plane_subordinate_upgrade_plan)
@@ -433,6 +435,7 @@ async def create_upgrade_group(
     apps: list[OpenStackApplication],
     target: OpenStackRelease,
     description: str,
+    force: bool,
     filter_function: Callable[[OpenStackApplication], bool],
 ) -> UpgradePlan:
     """Create upgrade group.
@@ -443,6 +446,8 @@ async def create_upgrade_group(
     :type target: OpenStackRelease
     :param description: Description of the upgrade step.
     :type description: str
+    :param force: Whether the plan generation should be forced
+    :type force: bool
     :param filter_function: Function to filter applications.
     :type filter_function: Callable[[OpenStackApplication], bool]
     :raises Exception: When cannot generate upgrade plan.
@@ -452,7 +457,7 @@ async def create_upgrade_group(
     group_upgrade_plan = UpgradePlan(description)
     for app in filter(filter_function, apps):
         try:
-            app_upgrade_plan = app.generate_upgrade_plan(target)
+            app_upgrade_plan = app.generate_upgrade_plan(target, force)
             group_upgrade_plan.add_step(app_upgrade_plan)
         except HaltUpgradePlanGeneration as exc:
             # we do not care if applications halt the upgrade plan generation
