@@ -104,7 +104,10 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(
     )
 
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -166,7 +169,10 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
     )
 
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -239,7 +245,10 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
     )
 
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:

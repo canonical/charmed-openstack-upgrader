@@ -111,7 +111,10 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     expected_upgrade_package_step = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.status.units.keys():
@@ -182,7 +185,10 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model, apps_m
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -247,7 +253,10 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(
         description=f"Upgrade plan for '{app.name}' to {target}",
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -435,7 +444,10 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model, apps_machines
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -511,7 +523,10 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -633,7 +648,10 @@ def test_ovn_principal_upgrade_plan(status, config, model, apps_machines):
     )
 
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -693,7 +711,10 @@ def test_mysql_innodb_cluster_upgrade(status, config, model, apps_machines):
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:

@@ -442,16 +442,20 @@ class OpenStackApplication:
                 f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
             )
 
-    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[ApplicationUnit]]
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         return [
-            self._get_upgrade_current_release_packages_step(),
+            self._get_upgrade_current_release_packages_step(units),
             self._get_refresh_charm_step(target),
         ]
 
@@ -530,7 +534,7 @@ class OpenStackApplication:
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
         all_steps = (
-            self.pre_upgrade_steps(target)
+            self.pre_upgrade_steps(target, units)
             + self.upgrade_steps(target, units, force)
             + self.post_upgrade_steps(target)
         )
@@ -539,19 +543,26 @@ class OpenStackApplication:
                 upgrade_steps.add_step(step)
         return upgrade_steps
 
-    def _get_upgrade_current_release_packages_step(self) -> PreUpgradeStep:
+    def _get_upgrade_current_release_packages_step(
+        self, units: Optional[list[ApplicationUnit]]
+    ) -> PreUpgradeStep:
         """Get step for upgrading software packages to the latest of the current release.
 
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[ApplicationUnit]]
         :return: Step for upgrading software packages to the latest of the current release.
         :rtype: PreUpgradeStep
         """
+        if not units:
+            units = self.units
         step = PreUpgradeStep(
             description=(
-                f"Upgrade software packages of '{self.name}' from the current APT repositories"
+                f"Upgrade software packages of '{self.name}' on units "
+                f"'{', '.join([unit.name for unit in units])}' from the current APT repositories."
             ),
             parallel=True,
         )
-        for unit in self.units:
+        for unit in units:
             step.add_step(
                 UnitUpgradeStep(
                     description=f"Upgrade software packages on unit {unit.name}",

@@ -405,7 +405,10 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -474,7 +477,10 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model, app
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -544,7 +550,10 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model, apps_mac
     )
     # no sub-step for refresh current channel or next channel
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -604,7 +613,10 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
@@ -679,7 +691,10 @@ def test_upgrade_plan_application_already_disable_action_managed(
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:

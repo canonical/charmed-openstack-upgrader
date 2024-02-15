@@ -60,7 +60,10 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         )
 
     upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        description=(
+            f"Upgrade software packages of '{app.name}' on units "
+            f"'{', '.join([unit.name for unit in app.units])}' from the current APT repositories."
+        ),
         parallel=True,
     )
     for unit in app.units:
