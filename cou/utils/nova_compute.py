@@ -18,14 +18,13 @@ import asyncio
 import logging
 
 from cou.apps.base import ApplicationUnit
-from cou.apps.machine import Machine
 from cou.exceptions import ActionFailed, HaltUpgradeExecution
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import COUMachine, COUModel
 
 logger = logging.getLogger(__name__)
 
 
-async def get_empty_hypervisors(units: list[ApplicationUnit], model: COUModel) -> list[Machine]:
+async def get_empty_hypervisors(units: list[ApplicationUnit], model: COUModel) -> list[COUMachine]:
     """Get the empty hypervisors in the model.
 
     :param units: all nova-compute units.
@@ -33,7 +32,7 @@ async def get_empty_hypervisors(units: list[ApplicationUnit], model: COUModel) -
     :param model: COUModel object
     :type model: COUModel
     :return: List with just the empty hypervisors machines.
-    :rtype: list[Machine]
+    :rtype: list[COUMachine]
     """
     tasks = [get_instance_count(unit.name, model) for unit in units]
     instances = await asyncio.gather(*tasks)

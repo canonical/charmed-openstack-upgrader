@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cou.apps.base import ApplicationUnit, OpenStackApplication
-from cou.apps.machine import Machine
 from cou.steps import analyze
 from cou.steps.analyze import Analysis
+from cou.utils.juju_utils import COUMachine
 
 
 def test_analysis_dump(apps, model):
@@ -94,7 +94,7 @@ async def test_populate_model(full_status, config, model, apps_machines):
     for sub_dict in apps_machines.values():
         machines.update(sub_dict)
 
-    model.get_model_machines = AsyncMock(return_value=machines)
+    model.get_machines = AsyncMock(return_value=machines)
 
     # Initially, 6 applications are in the status: keystone, cinder, rabbitmq-server, my-app,
     # ceph-osd and nova-compute. my-app it's not on the lookup table, so won't be instantiated.
@@ -195,7 +195,7 @@ def _app(name, units):
 
 def _unit(machine_id):
     unit = MagicMock(spec_set=ApplicationUnit).return_value
-    unit.machine = Machine(machine_id, "juju-efc45", "zone-1")
+    unit.machine = COUMachine(machine_id, "juju-efc45", "zone-1")
     return unit
 
 
