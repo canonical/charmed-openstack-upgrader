@@ -15,8 +15,10 @@
 """Hypervisor planner."""
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 from cou.apps.base import OpenStackApplication
+from cou.exceptions import ApplicationError
 from cou.steps import (
     HypervisorUpgradePlan,
     PostUpgradeStep,
@@ -29,15 +31,7 @@ from cou.utils.openstack import OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class HypervisorMachine:
-    """Hypervisor machine containing units for multiple applications."""
-
-    name: str
-    units: list[COUUnit]
-
-
-@dataclass(frozen=True)
+@dataclass
 class HypervisorGroup:
     """Group of hypervisors.
 
@@ -45,7 +39,17 @@ class HypervisorGroup:
     """
 
     name: str
-    hypervisors: list[HypervisorMachine]
+    apps: dict[str, list[COUUnit]]
+
+    def __eq__(self, other: Any) -> bool:
+        """Equal magic method for HypervisorGroup.
+
+        :param other: HypervisorGroup object to compare.
+        :type other: any
+        :return: True if equal False if different.
+        :rtype: bool
+        """
+        return other.name == self.name
 
 
 def verify_apps(apps: list[OpenStackApplication]) -> None:
@@ -68,10 +72,12 @@ class HypervisorUpgradePlanner:
     def __init__(self, apps: list[OpenStackApplication]) -> None:
         """Initialize the Hypervisor class.
 
-        :param apps: list of OpenStack applications
+        The application should be sorted by upgrade order.
+
+        :param apps: sorted list of OpenStack applications
         :type apps: list[OpenStackApplication]
         """
-        verify_apps(apps)
+        # verify_apps(apps)
         self._apps = apps
 
     @property
@@ -84,25 +90,52 @@ class HypervisorUpgradePlanner:
         return self._apps
 
     @property
-    def azs(self) -> list[HypervisorGroup]:
+    def azs(self) -> dict[str, HypervisorGroup]:
         """Returns a list of AZs defined in individual applications.
 
-        Each AZ contains a sorted list hypervisors, where each hypervisor has sorted list of units.
-        The order of units depends on the order in which they needs to be upgraded.
+        Each AZ contains a dictionary of application name and all units in the AZ.
         eg.
         az1:
-        - hypervisor0:
+        - cinder:
           - cinder/0
-          - nova-compute/0
-        - hypervisor1:
           - cinder/1
+          - cinder/2
+        - nova-compute
+          - nova-compute/0
           - nova-compute/1
+          - nova-compute/2
+        ...
+        az2
+        - cinder
+          -cinder/3
+        ...
         ...
 
-        :return: List of availability zones.
-        :rtype: list[HypervisorGroup]
+        :return: dictionary with key as az name and value as HypervisorGroup
+        :rtype: dict[str, HypervisorGroup]
+        :raises ApplicationError: if there is unit without az defined
         """
-        raise NotImplementedError
+        azs = {}
+        for app in self.apps:
+            for unit in app.units.values():
+                az = unit.machine.az
+
+                if az is None:
+                    raise ApplicationError(
+                        f"The application {app.name} has a machine {unit.machine} without az"
+                    )
+
+                if az not in azs:
+                    # define empty hypervisor group for az
+                    azs[az] = HypervisorGroup(name=az, apps={})
+
+                if app.name not in azs[az].apps:
+                    # define empty list of units for each app, so unit can be added
+                    azs[az].apps[app.name] = []
+
+                azs[az].apps[app.name].append(unit)
+
+        return azs
 
     def _generate_pre_upgrade_plan(self) -> PreUpgradeStep:
         """Generate pre upgrade plan for all applications.
@@ -114,20 +147,33 @@ class HypervisorUpgradePlanner:
         """
         raise NotImplementedError
 
-    def _generate_hypervisor_upgrade_plan(
-        self, hypervisor: HypervisorMachine
+    def _generate_hypervisor_group_upgrade_plan(
+        self, target: OpenStackRelease, group: HypervisorGroup
     ) -> HypervisorUpgradePlan:
-        """Genarete upgrade plan for a single hypervisor.
+        """Genarete upgrade plan for a single hypervisor group.
 
-        Each hypervisor upgrade consists of a UnitUpgradeStep, so all substeps should be based
-        on UnitUpgradeStep.
-
-        :param hypervisor: hypervisor object
-        :type hypervisor: Hypervisor
-        :return: Upgrade plan for hypervisor.
+        :param target: OpenStack codename to upgrade.
+        :type target: OpenStackRelease
+        :param group: HypervisorGroup object
+        :type group: HypervisorGroup
+        :return: Upgrade plan for hypervisor group.
         :rtype: HypervisorUpgradePlan
         """
-        raise NotImplementedError
+        plan = HypervisorUpgradePlan(description=f"Upgrade plan for '{group.name}' to {target}")
+        for app in self.apps:
+            if app.name not in group.apps:
+                logger.debug(
+                    "skipping application %s because it is not part of group %s",
+                    app.name,
+                    group.name,
+                )
+                continue
+
+            units = group.apps[app.name]
+            logger.info("generating upgrade steps for %s app and %s units", app.name, units)
+            plan.sub_steps = app.upgrade_steps(target, units)  # type: ignore[call-arg, assignment]
+
+        return plan
 
     def _generate_post_upgrade_plan(self) -> PostUpgradeStep:
         """Generate post upgrade plan for all applications.
@@ -152,13 +198,17 @@ class HypervisorUpgradePlanner:
         :rtype: UpgradePlan
         """
         plan = UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
+
+        # pre upgrade steps
         logger.debug("generating pre upgrade steps")
         plan.add_step(self._generate_pre_upgrade_plan())
-        for az in self.azs:
-            for hypervisor in az.hypervisors:
-                logger.debug("generating upgrade steps for %s in %s AZ", hypervisor.name, az.name)
-                plan.add_step(self._generate_hypervisor_upgrade_plan(hypervisor))
 
+        # upgrade steps
+        for az, group in self.azs.items():
+            logger.debug("generating upgrade steps for %s AZ", az)
+            plan.add_step(self._generate_hypervisor_group_upgrade_plan(target, group))
+
+        # post upgrade steps
         logger.debug("generating post upgrade steps")
         plan.add_step(self._generate_post_upgrade_plan())
 
