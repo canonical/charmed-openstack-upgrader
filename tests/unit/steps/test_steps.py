@@ -21,6 +21,7 @@ import pytest
 
 from cou.exceptions import CanceledStep
 from cou.steps import (
+    DEPENDENCY_DESCRIPTION_PREFIX,
     BaseStep,
     HypervisorUpgradePlan,
     PostUpgradeStep,
@@ -133,6 +134,23 @@ def test_step_str():
     sub_step.sub_steps = [
         BaseStep(description="a.a.a", coro=mock_coro("a.a.a")),
         BaseStep(description="a.a.b", coro=mock_coro("a.a.b")),
+    ]
+    plan.sub_steps = [sub_step, BaseStep(description="a.b", coro=mock_coro("a.b"))]
+
+    assert str(plan) == expected
+
+
+def test_step_str_dependent():
+    """Test BaseStep string representation."""
+    expected = (
+        f"a\n\ta.a\n\t\t{DEPENDENCY_DESCRIPTION_PREFIX}a.a.a\n"
+        f"\t\t{DEPENDENCY_DESCRIPTION_PREFIX}a.a.b\n\ta.b\n"
+    )
+    plan = BaseStep(description="a")
+    sub_step = BaseStep(description="a.a")
+    sub_step.sub_steps = [
+        BaseStep(description="a.a.a", coro=mock_coro("a.a.a"), dependent=True),
+        BaseStep(description="a.a.b", coro=mock_coro("a.a.b"), dependent=True),
     ]
     plan.sub_steps = [sub_step, BaseStep(description="a.b", coro=mock_coro("a.b"))]
 
