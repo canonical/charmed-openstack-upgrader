@@ -744,11 +744,11 @@ async def test_filter_hypervisors_machines(
 ):
 
     empty_hypervisors_machines = {
-        COUMachine(str(machine_id), f"juju-c307f8-{machine_id}", f"zone-{machine_id + 1}")
+        COUMachine(str(machine_id), f"juju-c307f8-{machine_id}", (), f"zone-{machine_id + 1}")
         for machine_id in range(2)
     }
     # assuming that machine-2 has some VMs running
-    non_empty_hypervisor_machine = COUMachine("2", "juju-c307f8-2", "zone-3")
+    non_empty_hypervisor_machine = COUMachine("2", "juju-c307f8-2", (), "zone-3")
 
     upgradable_hypervisors = empty_hypervisors_machines
     if force:
@@ -792,7 +792,9 @@ async def test_filter_hypervisors_machines(
 async def test_get_upgradable_hypervisors_machines(
     mock_empty_hypervisors, cli_force, empty_hypervisors, expected_result
 ):
-    machines = {f"{i}": COUMachine(f"{i}", f"juju-c307f8-{i}", f"zone-{i + 1}") for i in range(3)}
+    machines = {
+        f"{i}": COUMachine(f"{i}", f"juju-c307f8-{i}", (), f"zone-{i + 1}") for i in range(3)
+    }
     nova_compute = MagicMock(spec_set=OpenStackApplication)()
     nova_compute.charm = "nova-compute"
     nova_compute.units = {

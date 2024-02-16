@@ -139,6 +139,7 @@ class COUMachine:
 
     machine_id: str
     hostname: str
+    apps: tuple[str]
     az: Optional[str] = None  # simple deployments may not have azs
 
     def __repr__(self) -> str:
@@ -412,6 +413,11 @@ class COUModel:
             machine.id: COUMachine(
                 machine_id=machine.id,
                 hostname=machine.hostname,
+                apps=tuple(
+                    unit.application
+                    for unit in model.units.values()
+                    if unit.machine.id == machine.id
+                ),
                 az=machine.hardware_characteristics.get("availability-zone"),
             )
             for machine in model.machines.values()

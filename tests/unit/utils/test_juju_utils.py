@@ -156,29 +156,21 @@ async def test_retry_failure():
     ],
 )
 def test_machine_not_eq(machine_id, hostname, az):
-    machine_0 = juju_utils.COUMachine(
-        machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1"
-    )
-    machine_1 = juju_utils.COUMachine(machine_id=machine_id, hostname=hostname, az=az)
+    machine_0 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
+    machine_1 = juju_utils.COUMachine(machine_id, hostname, (), az)
 
     assert machine_0 != machine_1
 
 
 def test_machine_eq():
-    machine_0 = juju_utils.COUMachine(
-        machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1"
-    )
-    machine_1 = juju_utils.COUMachine(
-        machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1"
-    )
+    machine_0 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
+    machine_1 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
 
     assert machine_0 == machine_1
 
 
 def test_machine_repr():
-    machine_0 = juju_utils.COUMachine(
-        machine_id="0", hostname="juju-c307f8-my_model-0", az="zone-1"
-    )
+    machine_0 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
     expected_repr = "Machine[0]"
     assert repr(machine_0) == expected_repr
 
@@ -602,13 +594,33 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
         (
             ["0", "1", "2"],
             {
-                "0": juju_utils.COUMachine("0", "juju-90e5ce-0", "zone-1"),
+                "0": juju_utils.COUMachine(
+                    "0",
+                    "juju-90e5ce-0",
+                    (
+                        "app1",
+                        "app2",
+                    ),
+                    "zone-1",
+                ),
                 "1": juju_utils.COUMachine(
                     "1",
                     "juju-90e5ce-1",
+                    (
+                        "app1",
+                        "app2",
+                    ),
                     "zone-2",
                 ),
-                "2": juju_utils.COUMachine("2", "juju-90e5ce-2", "zone-3"),
+                "2": juju_utils.COUMachine(
+                    "2",
+                    "juju-90e5ce-2",
+                    (
+                        "app1",
+                        "app2",
+                    ),
+                    "zone-3",
+                ),
             },
         ),
     ],
@@ -691,9 +703,9 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
         mocked_model.applications[app].get_config = AsyncMock()
 
     exp_machines = {
-        "0": juju_utils.COUMachine("0", "juju-90e5ce-0"),
-        "1": juju_utils.COUMachine("1", "juju-90e5ce-1"),
-        "2": juju_utils.COUMachine("2", "juju-90e5ce-2"),
+        "0": juju_utils.COUMachine("0", "juju-90e5ce-0", ()),
+        "1": juju_utils.COUMachine("1", "juju-90e5ce-1", ()),
+        "2": juju_utils.COUMachine("2", "juju-90e5ce-2", ()),
     }
     exp_units = {
         "app1": dict([_generate_unit_status("app1", i, f"{i}") for i in range(3)]),
