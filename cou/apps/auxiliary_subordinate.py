@@ -15,11 +15,11 @@
 from typing import Optional
 
 from cou.apps.auxiliary import OpenStackAuxiliaryApplication
-from cou.apps.base import ApplicationUnit
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBaseClass
 from cou.steps import PreUpgradeStep
 from cou.utils.app_utils import validate_ovn_support
+from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
 
@@ -46,16 +46,16 @@ class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
 
     def pre_upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
     ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan
-        :type units: Optional[list[ApplicationUnit]]
+        :type units: Optional[list[COUUnit]]
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        validate_ovn_support(self.status.workload_version)
+        validate_ovn_support(self.workload_version)
         return super().pre_upgrade_steps(target, units)

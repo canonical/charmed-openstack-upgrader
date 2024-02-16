@@ -16,13 +16,14 @@
 import logging
 from dataclasses import dataclass
 
-from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.steps import (
     HypervisorUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
     UpgradePlan,
 )
+from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class HypervisorMachine:
     """Hypervisor machine containing units for multiple applications."""
 
     name: str
-    units: list[ApplicationUnit]
+    units: list[COUUnit]
 
 
 @dataclass(frozen=True)

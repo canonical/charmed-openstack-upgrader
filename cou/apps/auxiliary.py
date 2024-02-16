@@ -15,11 +15,12 @@
 import logging
 from typing import Optional
 
-from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import PreUpgradeStep
 from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
+from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
@@ -140,14 +141,14 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
     wait_for_model = True
 
     def pre_upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
     ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan
-        :type units: Optional[list[ApplicationUnit]]
+        :type units: Optional[list[COUUnit]]
         :return:  List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
@@ -164,7 +165,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
         :return: Step to check and set correct value for require-osd-release
         :rtype: PreUpgradeStep
         """
-        ceph_mon_unit, *_ = self.units
+        ceph_mon_unit, *_ = self.units.values()
         return PreUpgradeStep(
             description="Ensure require-osd-release option matches with ceph-osd version",
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
@@ -176,18 +177,18 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
     """Ovn principal application class."""
 
     def pre_upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]]
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
     ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan
-        :type units: Optional[list[ApplicationUnit]]
+        :type units: Optional[list[COUUnit]]
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        for unit in self.units:
+        for unit in self.units.values():
             validate_ovn_support(unit.workload_version)
         return super().pre_upgrade_steps(target, units)
 
