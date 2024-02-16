@@ -448,15 +448,14 @@ def test_determine_upgrade_target_out_support_range():
         cou_plan.determine_upgrade_target(mock_analysis_result)
 
 
-@pytest.mark.asyncio
-async def test_create_upgrade_plan():
+def test_create_upgrade_plan():
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec_set=OpenStackApplication)
     app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = await cou_plan.create_upgrade_group([app], target, description, lambda *_: True)
+    plan = cou_plan.create_upgrade_group([app], target, description, lambda *_: True)
 
     assert plan.description == description
     assert plan.parallel is False
@@ -466,8 +465,7 @@ async def test_create_upgrade_plan():
     app.generate_upgrade_plan.assert_called_once_with(target)
 
 
-@pytest.mark.asyncio
-async def test_create_upgrade_plan_HaltUpgradePlanGeneration():
+def test_create_upgrade_plan_HaltUpgradePlanGeneration():
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
@@ -475,21 +473,20 @@ async def test_create_upgrade_plan_HaltUpgradePlanGeneration():
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = await cou_plan.create_upgrade_group([app], target, description, lambda *_: True)
+    plan = cou_plan.create_upgrade_group([app], target, description, lambda *_: True)
 
     assert len(plan.sub_steps) == 0
     app.generate_upgrade_plan.assert_called_once_with(target)
 
 
-@pytest.mark.asyncio
-async def test_create_upgrade_plan_failed():
+def test_create_upgrade_plan_failed():
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
     app.generate_upgrade_plan.side_effect = Exception("test")
 
     with pytest.raises(Exception, match="test"):
-        await cou_plan.create_upgrade_group([app], "victoria", "test", lambda *_: True)
+        cou_plan.create_upgrade_group([app], "victoria", "test", lambda *_: True)
 
 
 @patch("builtins.print")
