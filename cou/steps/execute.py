@@ -65,7 +65,9 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
             except HaltUpgradeExecution:
                 sub_step_index = step.sub_steps.index(sub_step)
                 non_executed_sub_steps = [
-                    sub_step.description for sub_step in step.sub_steps[sub_step_index + 1 :]
+                    sub_step.description
+                    for sub_step in step.sub_steps[sub_step_index + 1 :]
+                    if sub_step.dependent
                 ]
                 logger.warning(
                     (

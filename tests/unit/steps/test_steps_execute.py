@@ -111,18 +111,28 @@ async def test_run_step_HaltUpgradeExecution(mock_progress_indicator, mock_logge
     unit_step_1.description = "My step 1"
     unit_step_1.parallel = False
     unit_step_1.run.side_effect = HaltUpgradeExecution
+    unit_step_1.dependent = True
 
     unit_step_2 = AsyncMock(spec_set=UnitUpgradeStep())
     unit_step_2.description = "My step 2"
     unit_step_2.run.return_value = None
     unit_step_2.parallel = False
+    unit_step_1.dependent = True
 
-    upgrade_plan.sub_steps = [unit_step_1, unit_step_2]
+    unit_step_3 = AsyncMock(spec_set=UnitUpgradeStep())
+    unit_step_3.description = "My step 3"
+    unit_step_3.run.return_value = None
+    unit_step_3.parallel = False
+    unit_step_3.dependent = False
+
+    upgrade_plan.sub_steps = [unit_step_1, unit_step_2, unit_step_3]
     await _run_step(upgrade_plan, False)
     upgrade_plan.run.assert_awaited_once()
     unit_step_1.run.assert_awaited_once()
     unit_step_2.run.assert_not_awaited()
+    unit_step_3.run.assert_not_awaited()
     mock_progress_indicator.fail.assert_called_once()
+    # My step 3 is independent so it does not show in the log
     mock_logger.warning.assert_called_once_with(
         (
             "Step: '%s' from '%s' failed to complete execution. "
