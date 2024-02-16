@@ -49,6 +49,7 @@ from cou.exceptions import (
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, COUMachine
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
@@ -327,7 +328,7 @@ def _generate_control_plane_plan(
     :param apps: List of control plane applications.
     :type apps: list[OpenStackApplication]
     :return: Principal and Subordiante upgrade plan.
-    :rtype: tuple[UpgradePlan, UpgradePlan]
+    :rtype: list[UpgradePlan]
     """
     principal_upgrade_plan = create_upgrade_group(
         apps=apps,
@@ -345,6 +346,38 @@ def _generate_control_plane_plan(
 
     logger.debug("generating of control plan upgrade plan finished")
     return [principal_upgrade_plan, subordinate_upgrade_plan]
+
+
+def _generate_data_plane_plan(
+    target: OpenStackRelease, apps: list[OpenStackApplication]
+) -> list[UpgradePlan]:  # pragma: no cover
+    """Generate upgrade plan for data plane.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param apps: List of data plane applications.
+    :type apps: list[OpenStackApplication]
+    :return: Hypervisors plans and other
+    :rtype: list[UpgradePlan]
+    """
+    nova_compute_machines = [
+        unit.machine.machine_id
+        for app in apps
+        for unit in app.units.values()
+        if app.charm == "nova-compute"
+    ]
+    hypervisor_apps = []
+    for app in apps:
+        for machine in app.machines:
+            if machine in nova_compute_machines:
+                hypervisor_apps.append(app)
+                break  # exiting machine for loop, since
+
+    hyperviro_plans = HypervisorUpgradePlanner(hypervisor_apps).generate_upgrade_plan(target)
+    logger.debug("generating of hypervisors upgrade plan finished")
+
+    # generating rest
+    return [hyperviro_plans]
 
 
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
@@ -389,6 +422,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
         )
 
     plan.sub_steps.extend(_generate_control_plane_plan(target, analysis_result.apps_control_plane))
+    # plan.sub_steps.extend(_generate_data_plane_plan(target, analysis_result.apps_data_plane))
 
     return plan
 
