@@ -17,18 +17,19 @@
 import asyncio
 import logging
 
-from cou.apps.base import ApplicationUnit
 from cou.exceptions import ActionFailed, HaltUpgradeExecution
-from cou.utils.juju_utils import COUMachine, COUModel
+from cou.utils.juju_utils import COUMachine, COUModel, COUUnit
+
+logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 
 
-async def get_empty_hypervisors(units: list[ApplicationUnit], model: COUModel) -> list[COUMachine]:
+async def get_empty_hypervisors(units: list[COUUnit], model: COUModel) -> list[COUMachine]:
     """Get the empty hypervisors in the model.
 
     :param units: all nova-compute units.
-    :type units: list[ApplicationUnit]
+    :type units: list[COUUnit]
     :param model: COUModel object
     :type model: COUModel
     :return: List with just the empty hypervisors machines.
@@ -65,13 +66,13 @@ async def get_instance_count(unit: str, model: COUModel) -> int:
     )
 
 
-async def verify_empty_hypervisor_before_upgrade(unit: ApplicationUnit, model: COUModel) -> None:
+async def verify_empty_hypervisor_before_upgrade(unit: COUUnit, model: COUModel) -> None:
     """Verify if there are no VMs running in a nova-compute unit before upgrading.
 
     If there are VMs running, it will enable the scheduler again to leave the cloud
     in the same state before upgrading.
     :param unit: Unit to check if there are VMs running.
-    :type unit: ApplicationUnit
+    :type unit: COUUnit
     :param model: COUModel
     :type model: COUModel
     :raises HaltUpgradeExecution: When a unit has VMs running.

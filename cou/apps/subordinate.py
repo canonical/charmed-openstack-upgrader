@@ -15,9 +15,10 @@
 import logging
 from typing import Optional
 
-from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradeStep
+from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -37,14 +38,14 @@ class SubordinateBaseClass(OpenStackApplication):
         return [self._get_refresh_charm_step(target)]
 
     def upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[ApplicationUnit]], force: bool
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]], force: bool
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to generate upgrade steps
-        :type units: Optional[list[ApplicationUnit]]
+        :type units: Optional[list[COUUnit]]
         :param force: Whether the plan generation should be forced
         :type force: bool
         :return: List of upgrade steps.

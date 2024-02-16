@@ -421,7 +421,7 @@ async def _get_upgradable_hypervisors_machines(
     nova_compute_units = [
         unit
         for app in analysis_result.apps_data_plane
-        for unit in app.units
+        for unit in app.units.values()
         if app.charm == "nova-compute"
     ]
 

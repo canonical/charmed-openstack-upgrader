@@ -106,6 +106,7 @@ class BaseStep:
 
         self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
+        self.dependent = dependent
         self.description = (
             DEPENDENCY_DESCRIPTION_PREFIX + description if dependent else description
         )
