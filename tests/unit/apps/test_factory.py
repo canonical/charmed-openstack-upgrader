@@ -14,19 +14,15 @@
 from unittest.mock import MagicMock, patch
 
 from cou.apps import factory
+from cou.utils.juju_utils import COUApplication
 
 
 @patch.object(factory, "is_charm_supported", return_value=False)
 def test_app_factory_not_supported_openstack_charm(mock_is_charm_supported):
-    charm = "my-app"
-    my_app = factory.AppFactory.create(
-        name=charm,
-        status=MagicMock(),
-        config=MagicMock(),
-        model=MagicMock(),
-        charm=charm,
-        machines=MagicMock(),
-    )
+    app = MagicMock(spec_set=COUApplication)()
+    app.charm = charm = "my_app"
+    my_app = factory.AppFactory.create(app)
+
     assert my_app is None
     mock_is_charm_supported.assert_called_once_with(charm)
 
@@ -34,6 +30,8 @@ def test_app_factory_not_supported_openstack_charm(mock_is_charm_supported):
 @patch.object(factory, "is_charm_supported", return_value=True)
 def test_app_factory_register(mock_is_charm_supported):
     charm = "foo"
+    app = MagicMock(spec_set=COUApplication)()
+    app.charm = charm
 
     @factory.AppFactory.register_application([charm])
     class Foo:
@@ -41,7 +39,9 @@ def test_app_factory_register(mock_is_charm_supported):
             pass
 
     assert charm in factory.AppFactory.charms
-    foo = factory.AppFactory.create("my-foo", MagicMock(), {}, MagicMock(), charm, MagicMock())
+    foo = factory.AppFactory.create(app)
+
     mock_is_charm_supported.assert_called_once_with(charm)
+
     assert foo is not None
     assert isinstance(foo, Foo)

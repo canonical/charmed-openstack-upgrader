@@ -16,9 +16,10 @@
 import logging
 from typing import Optional
 
-from cou.apps.base import ApplicationUnit, OpenStackApplication
+from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.steps import UnitUpgradeStep, UpgradeStep
+from cou.utils.juju_utils import COUUnit
 from cou.utils.nova_compute import verify_empty_hypervisor_before_upgrade
 from cou.utils.openstack import OpenStackRelease
 
@@ -60,7 +61,7 @@ class NovaCompute(OpenStackApplication):
     def upgrade_steps(
         self,
         target: OpenStackRelease,
-        units: Optional[list[ApplicationUnit]],
+        units: Optional[list[COUUnit]],
         force: bool,
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
@@ -68,25 +69,23 @@ class NovaCompute(OpenStackApplication):
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to generate upgrade steps,
-        :type units: Optional[list[ApplicationUnit]]
+        :type units: Optional[list[COUUnit]]
         :param force: Whether the plan generation should be forced
         :type force: bool
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
         if not units:
-            units = self.units
+            units = list(self.units.values())
         app_steps = super().upgrade_steps(target, units, force)
         unit_steps = self._get_units_upgrade_steps(units, force)
         return app_steps + unit_steps
 
-    def _get_units_upgrade_steps(
-        self, units: list[ApplicationUnit], force: bool
-    ) -> list[UpgradeStep]:
+    def _get_units_upgrade_steps(self, units: list[COUUnit], force: bool) -> list[UpgradeStep]:
         """Get the upgrade steps for the units.
 
         :param units: Units to generate upgrade steps
-        :type units: list[ApplicationUnit]
+        :type units: list[COUUnit]
         :param force: Whether the plan generation should be forced
         :type force: bool
         :return: List of upgrade steps
@@ -113,13 +112,13 @@ class NovaCompute(OpenStackApplication):
 
         return [units_steps]
 
-    def _get_empty_hypervisor_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_empty_hypervisor_step(self, unit: COUUnit) -> UnitUpgradeStep:
         """Get the step to check if the unit has no VMs running.
 
         In case force is set to true, no check is done.
 
         :param unit: Unit to check the instance-count
-        :type unit: ApplicationUnit
+        :type unit: COUUnit
         :return: Step to check if the hypervisor is empty.
         :rtype: UnitUpgradeStep
         """
@@ -128,11 +127,11 @@ class NovaCompute(OpenStackApplication):
             coro=verify_empty_hypervisor_before_upgrade(unit, self.model),
         )
 
-    def _get_enable_scheduler_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_enable_scheduler_step(self, unit: COUUnit) -> UnitUpgradeStep:
         """Get the step to enable the scheduler, so the unit can create new VMs.
 
         :param unit: Unit to be enabled.
-        :type unit: ApplicationUnit
+        :type unit: COUUnit
         :return: Step to enable the scheduler
         :rtype: UnitUpgradeStep
         """
@@ -143,11 +142,11 @@ class NovaCompute(OpenStackApplication):
             ),
         )
 
-    def _get_disable_scheduler_step(self, unit: ApplicationUnit) -> UnitUpgradeStep:
+    def _get_disable_scheduler_step(self, unit: COUUnit) -> UnitUpgradeStep:
         """Get the step to disable the scheduler,  so the unit cannot create new VMs.
 
         :param unit: Unit to be disabled.
-        :type unit: ApplicationUnit
+        :type unit: COUUnit
         :return: Step to disable the scheduler
         :rtype: UnitUpgradeStep
         """
