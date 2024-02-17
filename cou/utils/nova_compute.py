@@ -22,8 +22,6 @@ from cou.utils.juju_utils import COUMachine, COUModel, COUUnit
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
-
 
 async def get_empty_hypervisors(units: list[COUUnit], model: COUModel) -> list[COUMachine]:
     """Get the empty hypervisors in the model.
