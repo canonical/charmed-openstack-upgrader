@@ -175,9 +175,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -250,9 +253,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -331,9 +337,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -657,9 +666,12 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -738,9 +750,12 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -918,9 +933,12 @@ def test_ovn_principal_upgrade_plan(model):
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -994,9 +1012,12 @@ def test_mysql_innodb_cluster_upgrade(model):
             coro=model.wait_for_active_idle(1800, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

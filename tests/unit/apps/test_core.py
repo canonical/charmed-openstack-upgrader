@@ -208,7 +208,7 @@ def test_application_unknown_source(source_value, model):
 
 
 @pytest.mark.asyncio
-async def test_application_check_upgrade(model):
+async def test_application_verify_workload_upgrade(model):
     """Test Kyestone application check successful upgrade."""
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=COUMachine)}
@@ -245,11 +245,11 @@ async def test_application_check_upgrade(model):
     mock_status.return_value.applications = {"keystone": mock_app_status}
     model.get_status = mock_status
 
-    await app._check_upgrade(target)
+    assert await app._verify_workload_upgrade(target, app.units.values()) is None
 
 
 @pytest.mark.asyncio
-async def test_application_check_upgrade_fail(model):
+async def test_application_verify_workload_upgrade_fail(model):
     """Test Kyestone application check unsuccessful upgrade."""
     target = OpenStackRelease("victoria")
     exp_msg = "Cannot upgrade units 'keystone/0' to victoria."
@@ -288,7 +288,7 @@ async def test_application_check_upgrade_fail(model):
     model.get_status = mock_status
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        await app._check_upgrade(target)
+        await app._verify_workload_upgrade(target, app.units.values())
 
 
 def test_upgrade_plan_ussuri_to_victoria(model):
@@ -367,9 +367,12 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -454,9 +457,12 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -535,9 +541,12 @@ def test_upgrade_plan_channel_on_next_os_release(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -615,9 +624,12 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -735,9 +747,12 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Subordinate application class."""
 import logging
-from typing import Optional
+from typing import Iterable, Optional
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
@@ -53,11 +53,15 @@ class SubordinateBaseClass(OpenStackApplication):
         """
         return [self._get_upgrade_charm_step(target)]
 
-    def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
+    def post_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[Iterable[COUUnit]]
+    ) -> list[PostUpgradeStep]:
         """Post Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[Iterable[COUUnit]]
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
