@@ -171,7 +171,7 @@ def test_application_unexpected_channel(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 @pytest.mark.parametrize(
@@ -374,7 +374,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -461,7 +461,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -542,7 +542,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -622,7 +622,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -661,7 +661,7 @@ def test_upgrade_plan_application_already_upgraded(model):
 
     # victoria is lesser than wallaby, so application should not generate a plan.
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 def test_upgrade_plan_application_already_disable_action_managed(model):
@@ -742,7 +742,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
