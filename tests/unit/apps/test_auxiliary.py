@@ -46,7 +46,7 @@ def test_auxiliary_app(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -78,7 +78,7 @@ def test_auxiliary_app_cs(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="rabbitmq-server",
         channel="stable",
         config={"source": {"value": "distro"}},
@@ -111,7 +111,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=["3.9/stable"],
+        can_upgrade_to="3.9/stable",
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -192,7 +192,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=["3.9/stable"],
+        can_upgrade_to="3.9/stable",
         charm="rabbitmq-server",
         channel="3.9/stable",
         config={"source": {"value": "distro"}},
@@ -268,7 +268,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=["3.9/stable"],
+        can_upgrade_to="3.9/stable",
         charm="rabbitmq-server",
         channel="stable",
         config={"source": {"value": "distro"}},
@@ -356,7 +356,7 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
     with pytest.raises(ApplicationError, match=exp_msg):
         RabbitMQServer(
             name="rabbitmq-server",
-            can_upgrade_to=["3.9/stable"],
+            can_upgrade_to="3.9/stable",
             charm="rabbitmq-server",
             channel=channel,
             config={"source": {"value": "distro"}},
@@ -385,7 +385,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name=charm,
-        can_upgrade_to=["3.8/stable"],
+        can_upgrade_to="3.8/stable",
         charm=charm,
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -421,7 +421,7 @@ def test_auxiliary_raise_error_unknown_series(model):
     with pytest.raises(ApplicationError, match=exp_msg):
         RabbitMQServer(
             name="rabbitmq-server",
-            can_upgrade_to=["3.9/stable"],
+            can_upgrade_to="3.9/stable",
             charm="rabbitmq-server",
             channel=channel,
             config={"source": {"value": "distro"}},
@@ -452,7 +452,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -489,7 +489,7 @@ def test_auxiliary_raise_halt_upgrade(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name=charm,
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm=charm,
         channel="3.8/stable",
         config={"source": {"value": "cloud:focal-wallaby"}},
@@ -527,7 +527,7 @@ def test_auxiliary_no_suitable_channel(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = RabbitMQServer(
         name=charm,
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm=charm,
         channel="3.8/stable",
         config={"source": {"value": "cloud:focal-wallaby"}},
@@ -556,7 +556,7 @@ def test_ceph_mon_app(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = CephMonApplication(
         name=charm,
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm=charm,
         channel="pacific/stable",
         config={"source": {"value": "cloud:focal-xena"}},
@@ -590,7 +590,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = CephMonApplication(
         name=charm,
-        can_upgrade_to=["quincy/stable"],
+        can_upgrade_to="quincy/stable",
         charm=charm,
         channel="pacific/stable",
         config={"source": {"value": "cloud:focal-xena"}},
@@ -676,7 +676,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = CephMonApplication(
         name=charm,
-        can_upgrade_to=["quincy/stable"],
+        can_upgrade_to="quincy/stable",
         charm=charm,
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
@@ -756,7 +756,7 @@ def test_ovn_principal(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OvnPrincipalApplication(
         name=charm,
-        can_upgrade_to=["22.06/stable"],
+        can_upgrade_to="22.06/stable",
         charm=charm,
         channel="22.03/stable",
         config={"source": {"value": "distro"}},
@@ -795,7 +795,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OvnPrincipalApplication(
         name=charm,
-        can_upgrade_to=["22.03/stable"],
+        can_upgrade_to="22.03/stable",
         charm=charm,
         channel="20.03/stable",
         config={"source": {"value": "distro"}},
@@ -833,7 +833,7 @@ def test_ovn_no_compatible_os_release(channel, model):
     with pytest.raises(ApplicationError, match=exp_msg):
         OvnPrincipalApplication(
             name=charm,
-            can_upgrade_to=["quincy/stable"],
+            can_upgrade_to="quincy/stable",
             charm=charm,
             channel=channel,
             config={"source": {"value": "distro"}},
@@ -860,7 +860,7 @@ def test_ovn_principal_upgrade_plan(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OvnPrincipalApplication(
         name=charm,
-        can_upgrade_to=["22.06/stable"],
+        can_upgrade_to="22.06/stable",
         charm=charm,
         channel="22.03/stable",
         config={"source": {"value": "distro"}},
@@ -937,7 +937,7 @@ def test_mysql_innodb_cluster_upgrade(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = MysqlInnodbClusterApplication(
         name=charm,
-        can_upgrade_to=["9.0"],
+        can_upgrade_to="9.0",
         charm=charm,
         channel="8.0/stable",
         config={"source": {"value": "distro"}},

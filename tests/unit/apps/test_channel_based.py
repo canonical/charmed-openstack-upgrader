@@ -39,7 +39,7 @@ def test_application_versionless(model):
     }
     app = OpenStackChannelBasedApplication(
         name="glance-simplestreams-sync",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="glance-simplestreams-sync",
         channel="ussuri/stable",
         config={
@@ -65,7 +65,7 @@ def test_application_gnocchi_ussuri(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackChannelBasedApplication(
         name="gnocchi",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="gnocchi",
         channel="ussuri/stable",
         config={
@@ -100,7 +100,7 @@ def test_application_gnocchi_xena(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackChannelBasedApplication(
         name="gnocchi",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="gnocchi",
         channel="xena/stable",
         config={"openstack-origin": {"value": "cloud:focal-xena"}},
@@ -132,7 +132,7 @@ def test_application_designate_bind_ussuri(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackChannelBasedApplication(
         name="designate-bind",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="designate-bind",
         channel="ussuri/stable",
         config={
@@ -164,7 +164,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackChannelBasedApplication(
         name="glance-simplestreams-sync",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="glance-simplestreams-sync",
         channel="ussuri/stable",
         config={"openstack-origin": {"value": "distro"}},
@@ -240,7 +240,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackChannelBasedApplication(
         name="gnocchi",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="gnocchi",
         channel="ussuri/stable",
         config={
@@ -326,7 +326,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackChannelBasedApplication(
         name="designate-bind",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="designate-bind",
         channel="ussuri/stable",
         config={

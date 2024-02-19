@@ -69,7 +69,7 @@ def test_application_different_wl(model):
     }
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -91,7 +91,7 @@ def test_application_no_origin_config(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={},
@@ -119,7 +119,7 @@ def test_application_empty_origin_config(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": ""}},
@@ -151,7 +151,7 @@ def test_application_unexpected_channel(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": ""}},
@@ -184,7 +184,7 @@ def test_application_unknown_source(source_value, model):
     exp_msg = f"'keystone' has an invalid 'source': {source_value}"
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": source_value}},
@@ -214,7 +214,7 @@ async def test_application_check_upgrade(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={
@@ -256,7 +256,7 @@ async def test_application_check_upgrade_fail(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={
@@ -297,7 +297,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={
@@ -384,7 +384,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={
@@ -474,7 +474,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["victoria/stable"],
+        can_upgrade_to="victoria/stable",
         charm="keystone",
         channel="victoria/stable",
         config={
@@ -555,7 +555,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={
@@ -636,7 +636,7 @@ def test_upgrade_plan_application_already_upgraded(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="keystone",
         channel="wallaby/stable",
         config={
@@ -670,7 +670,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={
