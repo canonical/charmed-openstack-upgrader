@@ -27,11 +27,15 @@ logger = logging.getLogger(__name__)
 class SubordinateBaseClass(OpenStackApplication):
     """Subordinate base class."""
 
-    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
