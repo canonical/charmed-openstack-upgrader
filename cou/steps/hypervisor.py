@@ -14,11 +14,11 @@
 
 """Hypervisor planner."""
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
 from cou.apps.base import OpenStackApplication
-from cou.exceptions import ApplicationError
 from cou.steps import (
     HypervisorUpgradePlan,
     PostUpgradeStep,
@@ -45,11 +45,35 @@ class HypervisorGroup:
         """Equal magic method for HypervisorGroup.
 
         :param other: HypervisorGroup object to compare.
-        :type other: any
+        :type other: Any
         :return: True if equal False if different.
         :rtype: bool
         """
+        if not isinstance(other, HypervisorGroup):
+            return NotImplemented
+
         return other.name == self.name
+
+
+class AZs(defaultdict):
+    """AZs dictionary object with default value HypervisorGroup."""
+
+    def __init__(self) -> None:
+        """Initialize the Hypervisor class.
+
+        The AZs represent default dict, with predefined HypervisorGroup as default value.
+        """
+        super().__init__(default_factory=None)
+
+    def __missing__(self, key: str) -> HypervisorGroup:
+        """Handle missing key in AZs.
+
+        If key is missing in the AZs dict, the default value
+        HypervisorGroup(name=key, apps=defaultdict(list) will be used. Like this we can always
+        access the az["my-az"].name == "my-az" or az["my-az"].apps["my-app"].
+        """
+        self[key] = HypervisorGroup(name=key, apps=defaultdict(list))
+        return self[key]
 
 
 def verify_apps(apps: list[OpenStackApplication]) -> None:
@@ -90,7 +114,7 @@ class HypervisorUpgradePlanner:
         return self._apps
 
     @property
-    def azs(self) -> dict[str, HypervisorGroup]:
+    def azs(self) -> AZs:
         """Returns a list of AZs defined in individual applications.
 
         Each AZ contains a dictionary of application name and all units in the AZ.
@@ -115,24 +139,12 @@ class HypervisorUpgradePlanner:
         :rtype: dict[str, HypervisorGroup]
         :raises ApplicationError: if there is unit without az defined
         """
-        azs = {}
+        azs = AZs()
         for app in self.apps:
             for unit in app.units.values():
-                az = unit.machine.az
-
-                if az is None:
-                    raise ApplicationError(
-                        f"The application {app.name} has a machine {unit.machine} without az"
-                    )
-
-                if az not in azs:
-                    # define empty hypervisor group for az
-                    azs[az] = HypervisorGroup(name=az, apps={})
-
-                if app.name not in azs[az].apps:
-                    # define empty list of units for each app, so unit can be added
-                    azs[az].apps[app.name] = []
-
+                # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
+                #                 belong to a single group.
+                az = unit.machine.az or ""
                 azs[az].apps[app.name].append(unit)
 
         return azs
@@ -150,7 +162,7 @@ class HypervisorUpgradePlanner:
     def _generate_hypervisor_group_upgrade_plan(
         self, target: OpenStackRelease, group: HypervisorGroup
     ) -> HypervisorUpgradePlan:
-        """Genarete upgrade plan for a single hypervisor group.
+        """Generate upgrade plan for a single hypervisor group.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease

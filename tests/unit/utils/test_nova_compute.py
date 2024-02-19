@@ -112,6 +112,7 @@ async def test_verify_empty_hypervisor_before_upgrade_ActionFailed(
     mock_logger.warning.assert_called_once()
 
 
+@pytest.mark.asyncio
 @patch("cou.utils.nova_compute.get_instance_count", return_value=0)
 async def test_verify_empty_hypervisor_before_upgrade(mock_instance_count, model):
     nova_unit = _mock_nova_unit(1)

@@ -85,6 +85,9 @@ class OpenStackApplication(COUApplication):
         :return: True if equal False if different.
         :rtype: bool
         """
+        if not isinstance(other, OpenStackApplication):
+            return NotImplemented
+
         return other.name == self.name and other.charm == self.charm
 
     def __str__(self) -> str:

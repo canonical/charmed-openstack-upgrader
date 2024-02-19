@@ -16,8 +16,32 @@
 
 from unittest.mock import MagicMock
 
-from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
+from cou.steps.hypervisor import AZs, HypervisorGroup, HypervisorUpgradePlanner
 from cou.utils.juju_utils import COUApplication, COUMachine, COUUnit
+
+
+def test_hypervisor_group():
+    """Test base logic of HypervisorGroup object."""
+    group1 = HypervisorGroup("test", {"app1": []})
+    group2 = HypervisorGroup("test", {"app2": []})
+
+    assert group1 == group2
+    assert group1 is not None
+    assert group1 != "test"
+
+
+def test_azs():
+    """Test AZs as custom defaultdict object."""
+    azs = AZs()
+    test_unit = COUUnit("my-unit", MagicMock(spec_set=COUMachine)(), "")
+
+    # test accessing parts of AZs
+    assert azs["my-app"].name == "my-app"
+    assert azs["my-app"].apps["my-app"] == []
+
+    # append unit to the HypervisorGroup
+    azs["my-app"].apps["my-app"].append(test_unit)
+    assert azs["my-app"].apps["my-app"] == [test_unit]
 
 
 def test_hypervisor_azs_grouping():
@@ -74,30 +98,14 @@ def test_hypervisor_azs_grouping():
     app2.name = "app2"
     app1.units = {name: app for name, app in units.items() if name.startswith("app2")}
 
-    exp_azs = {
-        "az0": HypervisorGroup(
-            name="az0",
-            apps={
-                "app1": [units["app1/0"], units["app1/1"]],
-                "app2": [units["app2/0"]],
-            },
-        ),
-        "az1": HypervisorGroup(
-            name="az1",
-            apps={
-                "app1": [units["app1/2"], units["app1/3"]],
-                "app2": [units["app2/1"]],
-            },
-        ),
-        "az2": HypervisorGroup(
-            name="az2",
-            apps={
-                "app1": [units["app1/4"], units["app1/5"]],
-                "app2": [units["app2/2"]],
-            },
-        ),
-    }
+    exp_azs = AZs()
+    exp_azs["az0"].apps["app1"] = [units["app1/0"], units["app1/1"]]
+    exp_azs["az0"].apps["app2"] = [units["app2/0"]]
+    exp_azs["az1"].apps["app1"] = [units["app1/2"], units["app1/3"]]
+    exp_azs["az1"].apps["app2"] = [units["app2/1"]]
+    exp_azs["az2"].apps["app1"] = [units["app1/4"], units["app1/5"]]
+    exp_azs["az2"].apps["app2"] = [units["app2/2"]]
 
     hypervisor_planner = HypervisorUpgradePlanner([app1, app2])
 
-    assert hypervisor_planner.azs == exp_azs
+    assert dict(hypervisor_planner.azs) == exp_azs

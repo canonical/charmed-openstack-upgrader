@@ -44,6 +44,7 @@ def test_openstack_application_magic_functions(model):
     assert hash(app) == hash("test-app(app)")
     assert app == app
     assert app is not None
+    assert app != "test-app"
 
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
