@@ -149,7 +149,7 @@ async def test_generate_plan(model, cli_args):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     keystone = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={
@@ -172,7 +172,7 @@ async def test_generate_plan(model, cli_args):
     )
     keystone_ldap = OpenStackSubordinateApplication(
         name="keystone-ldap",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone-ldap",
         channel="ussuri/stable",
         config={},
@@ -192,7 +192,7 @@ async def test_generate_plan(model, cli_args):
     )
     cinder = OpenStackApplication(
         name="cinder",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="cinder",
         channel="ussuri/stable",
         config={

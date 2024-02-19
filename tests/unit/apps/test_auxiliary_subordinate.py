@@ -34,7 +34,7 @@ def test_auxiliary_subordinate(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackAuxiliarySubordinateApplication(
         name="keystone-mysql-router",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="mysql-router",
         channel="8.0/stable",
         config={},
@@ -68,7 +68,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackAuxiliarySubordinateApplication(
         name="keystone-mysql-router",
-        can_upgrade_to=["8.0/stable"],
+        can_upgrade_to="8.0/stable",
         charm="mysql-router",
         channel="8.0/stable",
         config={"source": {"value": "distro"}},
@@ -108,7 +108,7 @@ def test_ovn_subordinate(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OvnSubordinateApplication(
         name="ovn-chassis",
-        can_upgrade_to=["22.03/stable"],
+        can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
         channel="22.03/stable",
         config={},
@@ -147,7 +147,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
     )
     app = OvnSubordinateApplication(
         name="ovn-chassis",
-        can_upgrade_to=["22.03/stable"],
+        can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
         channel="20.03/stable",
         config={"source": {"value": "distro"}},
@@ -176,7 +176,7 @@ def test_ovn_subordinate_upgrade_plan(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OvnSubordinateApplication(
         name="ovn-chassis",
-        can_upgrade_to=["22.03/stable"],
+        can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
         channel="22.03/stable",
         config={"source": {"value": "distro"}},
@@ -223,7 +223,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OvnSubordinateApplication(
         name="ovn-chassis",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="ovn-chassis",
         channel="22.03/stable",
         config={"source": {"value": "distro"}},
@@ -258,7 +258,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackAuxiliarySubordinateApplication(
         name="ceph-dashboard",
-        can_upgrade_to=["octopus/stable"],
+        can_upgrade_to="octopus/stable",
         charm="ceph-dashboard",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
@@ -301,7 +301,7 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackAuxiliarySubordinateApplication(
         name="ceph-dashboard",
-        can_upgrade_to=["pacific/stable"],
+        can_upgrade_to="pacific/stable",
         charm="ceph-dashboard",
         channel="pacific/stable",
         config={"source": {"value": "distro"}},
