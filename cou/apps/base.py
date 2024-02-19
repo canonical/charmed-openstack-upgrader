@@ -343,28 +343,42 @@ class OpenStackApplication(COUApplication):
                 f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
             )
 
-    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         return [
-            self._get_upgrade_current_release_packages_step(),
+            self._get_upgrade_current_release_packages_step(units),
             self._get_refresh_charm_step(target),
         ]
 
-    def upgrade_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def upgrade_steps(
+        self,
+        target: OpenStackRelease,
+        units: Optional[list[COUUnit]],
+        force: bool,
+    ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade steps
+        :type units: Optional[list[COUUnit]]
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
+        # pylint: disable=unused-argument
         if self.current_os_release >= target and self.apt_source_codename >= target:
             msg = (
                 f"Application '{self.name}' already configured for release equal or greater "
@@ -374,9 +388,13 @@ class OpenStackApplication(COUApplication):
             raise HaltUpgradePlanGeneration(msg)
 
         return [
-            self._get_disable_action_managed_step(),
+            (
+                self._get_enable_action_managed_step()
+                if units
+                else self._get_disable_action_managed_step()
+            ),
             self._get_upgrade_charm_step(target),
-            self._get_workload_upgrade_step(target),
+            self._get_change_install_repository_step(target),
         ]
 
     def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
@@ -394,11 +412,22 @@ class OpenStackApplication(COUApplication):
             self._get_reached_expected_target_step(target),
         ]
 
-    def generate_upgrade_plan(self, target: OpenStackRelease) -> ApplicationUpgradePlan:
+    def generate_upgrade_plan(
+        self,
+        target: OpenStackRelease,
+        force: bool,
+        units: Optional[list[COUUnit]] = None,
+    ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
+
+        Units are passed if the application should upgrade unit by unit.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
+        :param force: Whether the plan generation should be forced
+        :type force: bool
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[COUUnit]], optional
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
@@ -406,8 +435,8 @@ class OpenStackApplication(COUApplication):
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
         all_steps = (
-            self.pre_upgrade_steps(target)
-            + self.upgrade_steps(target)
+            self.pre_upgrade_steps(target, units)
+            + self.upgrade_steps(target, units, force)
             + self.post_upgrade_steps(target)
         )
         for step in all_steps:
@@ -415,23 +444,29 @@ class OpenStackApplication(COUApplication):
                 upgrade_steps.add_step(step)
         return upgrade_steps
 
-    def _get_upgrade_current_release_packages_step(self) -> PreUpgradeStep:
+    def _get_upgrade_current_release_packages_step(
+        self, units: Optional[list[COUUnit]]
+    ) -> PreUpgradeStep:
         """Get step for upgrading software packages to the latest of the current release.
 
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
         :return: Step for upgrading software packages to the latest of the current release.
         :rtype: PreUpgradeStep
         """
+        if not units:
+            units = list(self.units.values())
         step = PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
             parallel=True,
         )
-        for unit in self.units:
+        for unit in units:
             step.add_step(
                 UnitUpgradeStep(
-                    description=f"Upgrade software packages on unit {unit}",
-                    coro=upgrade_packages(unit, self.model, self.packages_to_hold),
+                    description=f"Upgrade software packages on unit {unit.name}",
+                    coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
                 )
             )
 
@@ -544,11 +579,13 @@ class OpenStackApplication(COUApplication):
             coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
         )
 
-    def _get_pause_unit_step(self, unit: COUUnit) -> UnitUpgradeStep:
+    def _get_pause_unit_step(self, unit: COUUnit, dependent: bool = False) -> UnitUpgradeStep:
         """Get the step to pause a unit to upgrade.
 
         :param unit: Unit to be paused.
         :type unit: COUUnit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
         :return: Step to pause a unit.
         :rtype: UnitUpgradeStep
         """
@@ -557,13 +594,16 @@ class OpenStackApplication(COUApplication):
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="pause", raise_on_failure=True
             ),
+            dependent=dependent,
         )
 
-    def _get_resume_unit_step(self, unit: COUUnit) -> UnitUpgradeStep:
+    def _get_resume_unit_step(self, unit: COUUnit, dependent: bool = False) -> UnitUpgradeStep:
         """Get the step to resume a unit after upgrading the workload version.
 
         :param unit: Unit to be resumed.
         :type unit: COUUnit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
         :return: Step to resume a unit.
         :rtype: UnitUpgradeStep
         """
@@ -572,13 +612,18 @@ class OpenStackApplication(COUApplication):
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="resume", raise_on_failure=True
             ),
+            dependent=dependent,
         )
 
-    def _get_openstack_upgrade_step(self, unit: COUUnit) -> UnitUpgradeStep:
+    def _get_openstack_upgrade_step(
+        self, unit: COUUnit, dependent: bool = False
+    ) -> UnitUpgradeStep:
         """Get the step to upgrade a unit.
 
         :param unit: Unit to be upgraded.
         :type unit: COUUnit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
         :return: Step to upgrade a unit.
         :rtype: UnitUpgradeStep
         """
@@ -587,10 +632,11 @@ class OpenStackApplication(COUApplication):
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="openstack-upgrade", raise_on_failure=True
             ),
+            dependent=dependent,
         )
 
-    def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
-        """Get workload upgrade step by changing openstack-origin or source.
+    def _get_change_install_repository_step(self, target: OpenStackRelease) -> UpgradeStep:
+        """Change openstack-origin or source for the next OpenStack target.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
@@ -608,7 +654,7 @@ class OpenStackApplication(COUApplication):
                 ),
             )
         logger.warning(
-            "Not triggering the workload upgrade of app %s: %s already set to %s",
+            "Not changing the install repository of app %s: %s already set to %s",
             self.name,
             self.origin_setting,
             self.new_origin(target),

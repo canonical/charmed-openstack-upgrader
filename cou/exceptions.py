@@ -56,6 +56,10 @@ class NoTargetError(COUException):
 
 
 class HaltUpgradePlanGeneration(COUException):
+    """Exception to halt the application plan generation at any moment."""
+
+
+class HaltUpgradeExecution(COUException):
     """Exception to halt the application upgrade at any moment."""
 
 

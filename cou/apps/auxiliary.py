@@ -20,6 +20,7 @@ from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import PreUpgradeStep
 from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
+from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
@@ -139,15 +140,21 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
     wait_timeout = 30 * 60  # 30 min
     wait_for_model = True
 
-    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
         :return:  List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        return super().pre_upgrade_steps(target) + [self._get_change_require_osd_release_step()]
+        return super().pre_upgrade_steps(target, units) + [
+            self._get_change_require_osd_release_step()
+        ]
 
     def _get_change_require_osd_release_step(self) -> PreUpgradeStep:
         """Get the step to set correct value for require-osd-release option on ceph-mon.
@@ -169,17 +176,21 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
 class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
     """Ovn principal application class."""
 
-    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         for unit in self.units.values():
             validate_ovn_support(unit.workload_version)
-        return super().pre_upgrade_steps(target)
+        return super().pre_upgrade_steps(target, units)
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])

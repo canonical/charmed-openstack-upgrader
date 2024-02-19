@@ -17,6 +17,7 @@ import asyncio
 import logging
 import sys
 
+from cou.exceptions import HaltUpgradeExecution
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 
@@ -59,7 +60,26 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
         logger.debug("running all sub-steps of %s step sequentially", step)
         for sub_step in step.sub_steps:
             logger.debug("running sub-step %s of %s step", sub_step, step)
-            await apply_step(sub_step, prompt, overwrite_substeps_progress)
+            try:
+                await apply_step(sub_step, prompt, overwrite_substeps_progress)
+            except HaltUpgradeExecution:
+                sub_step_index = step.sub_steps.index(sub_step)
+                non_executed_sub_steps = [
+                    sub_step.description
+                    for sub_step in step.sub_steps[sub_step_index + 1 :]
+                    if sub_step.dependent
+                ]
+                logger.warning(
+                    (
+                        "Step: '%s' from '%s' failed to complete execution. "
+                        "The following steps will be skipped:\n %s"
+                    ),
+                    sub_step.description,
+                    step.description,
+                    "\n".join(non_executed_sub_steps),
+                )
+                progress_indicator.fail()
+                break
 
     # Upon completion of all sub-steps of ApplicationUpgradePlan, replace the current progress
     # indication message, if any, with a persistent application description message.
