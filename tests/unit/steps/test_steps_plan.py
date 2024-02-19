@@ -147,6 +147,7 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 async def test_generate_plan(model, cli_args):
     """Test generation of upgrade plan."""
     cli_args.is_data_plane_command = False
+    cli_args.force = False
     target = OpenStackRelease("victoria")
     # keystone = Keystone()
     machines = {"0": MagicMock(spec_set=COUMachine)}
@@ -451,26 +452,28 @@ def test_determine_upgrade_target_out_support_range():
         cou_plan.determine_upgrade_target(mock_analysis_result)
 
 
+@pytest.mark.parametrize("force", [True, False])
 @pytest.mark.asyncio
-async def test_create_upgrade_plan():
+async def test_create_upgrade_plan(force):
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec_set=OpenStackApplication)
     app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = await cou_plan.create_upgrade_group([app], target, description, lambda *_: True)
+    plan = await cou_plan.create_upgrade_group([app], target, description, force, lambda *_: True)
 
     assert plan.description == description
     assert plan.parallel is False
     assert plan._coro is None
     assert len(plan.sub_steps) == 1
     assert plan.sub_steps[0] == app.generate_upgrade_plan.return_value
-    app.generate_upgrade_plan.assert_called_once_with(target)
+    app.generate_upgrade_plan.assert_called_once_with(target, force)
 
 
+@pytest.mark.parametrize("force", [True, False])
 @pytest.mark.asyncio
-async def test_create_upgrade_plan_HaltUpgradePlanGeneration():
+async def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
@@ -478,21 +481,22 @@ async def test_create_upgrade_plan_HaltUpgradePlanGeneration():
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = await cou_plan.create_upgrade_group([app], target, description, lambda *_: True)
+    plan = await cou_plan.create_upgrade_group([app], target, description, force, lambda *_: True)
 
     assert len(plan.sub_steps) == 0
-    app.generate_upgrade_plan.assert_called_once_with(target)
+    app.generate_upgrade_plan.assert_called_once_with(target, force)
 
 
+@pytest.mark.parametrize("force", [True, False])
 @pytest.mark.asyncio
-async def test_create_upgrade_plan_failed():
+async def test_create_upgrade_plan_failed(force):
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
     app.generate_upgrade_plan.side_effect = Exception("test")
 
     with pytest.raises(Exception, match="test"):
-        await cou_plan.create_upgrade_group([app], "victoria", "test", lambda *_: True)
+        await cou_plan.create_upgrade_group([app], "victoria", "test", force, lambda *_: True)
 
 
 @patch("builtins.print")

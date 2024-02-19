@@ -319,16 +319,20 @@ class OpenStackApplication(COUApplication):
         """
         return f"cloud:{self.series}-{target.codename}"
 
-    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         return [
-            self._get_upgrade_current_release_packages_step(),
+            self._get_upgrade_current_release_packages_step(units),
             self._get_refresh_charm_step(target),
         ]
 
@@ -391,8 +395,8 @@ class OpenStackApplication(COUApplication):
     def generate_upgrade_plan(
         self,
         target: OpenStackRelease,
+        force: bool,
         units: Optional[list[COUUnit]] = None,
-        force: bool = False,
     ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
 
@@ -400,10 +404,10 @@ class OpenStackApplication(COUApplication):
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[COUUnit]], optional
-        :param force: Whether the plan generation should be forced,defaults to False
-        :type force: bool, optional
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
@@ -411,7 +415,7 @@ class OpenStackApplication(COUApplication):
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
         all_steps = (
-            self.pre_upgrade_steps(target)
+            self.pre_upgrade_steps(target, units)
             + self.upgrade_steps(target, units, force)
             + self.post_upgrade_steps(target, units)
         )
@@ -420,23 +424,29 @@ class OpenStackApplication(COUApplication):
                 upgrade_steps.add_step(step)
         return upgrade_steps
 
-    def _get_upgrade_current_release_packages_step(self) -> PreUpgradeStep:
+    def _get_upgrade_current_release_packages_step(
+        self, units: Optional[list[COUUnit]]
+    ) -> PreUpgradeStep:
         """Get step for upgrading software packages to the latest of the current release.
 
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
         :return: Step for upgrading software packages to the latest of the current release.
         :rtype: PreUpgradeStep
         """
+        if not units:
+            units = list(self.units.values())
         step = PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
             parallel=True,
         )
-        for unit in self.units:
+        for unit in units:
             step.add_step(
                 UnitUpgradeStep(
-                    description=f"Upgrade software packages on unit {unit}",
-                    coro=upgrade_packages(unit, self.model, self.packages_to_hold),
+                    description=f"Upgrade software packages on unit {unit.name}",
+                    coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
                 )
             )
 

@@ -185,7 +185,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -263,7 +263,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -347,7 +347,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -518,7 +518,7 @@ def test_auxiliary_raise_halt_upgrade(model):
     )
 
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 def test_auxiliary_no_suitable_channel(model):
@@ -676,7 +676,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -760,7 +760,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -830,7 +830,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])
@@ -943,7 +943,7 @@ def test_ovn_principal_upgrade_plan(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -1022,6 +1022,6 @@ def test_mysql_innodb_cluster_upgrade(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
