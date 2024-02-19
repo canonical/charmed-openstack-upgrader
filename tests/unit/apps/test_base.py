@@ -28,7 +28,7 @@ def test_openstack_application_magic_functions(model):
     """Test OpenStackApplication magic functions, like __hash__, __eq__."""
     app = OpenStackApplication(
         name="test-app",
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm="app",
         channel="stable",
         config={},
@@ -63,7 +63,7 @@ def test_application_get_latest_os_version_failed(mock_find_compatible_versions,
     mock_find_compatible_versions.return_value = []
     app = OpenStackApplication(
         name=app_name,
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm=charm,
         channel="stable",
         config={},
@@ -101,7 +101,7 @@ def test_get_enable_action_managed_step(charm_config, model):
 
     app = OpenStackApplication(
         name=app_name,
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm=charm,
         channel=channel,
         config=charm_config,
@@ -136,7 +136,7 @@ def test_get_pause_unit_step(model):
     )
     app = OpenStackApplication(
         name=app_name,
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm=charm,
         channel=channel,
         config={},
@@ -169,7 +169,7 @@ def test_get_resume_unit_step(model):
     )
     app = OpenStackApplication(
         name=app_name,
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm=charm,
         channel=channel,
         config={},
@@ -204,7 +204,7 @@ def test_get_openstack_upgrade_step(model):
     )
     app = OpenStackApplication(
         name=app_name,
-        can_upgrade_to=[],
+        can_upgrade_to="",
         charm=charm,
         channel=channel,
         config={},

@@ -33,7 +33,7 @@ def test_current_os_release(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackSubordinateApplication(
         name="keystone-ldap",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone-ldap",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -61,7 +61,7 @@ def test_generate_upgrade_plan(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackSubordinateApplication(
         name="keystone-ldap",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone-ldap",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -116,7 +116,7 @@ def test_channel_valid(model, channel):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackSubordinateApplication(
         name="keystone-ldap",
-        can_upgrade_to=[channel],
+        can_upgrade_to=channel,
         charm="keystone-ldap",
         channel=channel,
         config={"source": {"value": "distro"}},
@@ -154,7 +154,7 @@ def test_channel_setter_invalid(model, channel):
     with pytest.raises(ApplicationError):
         OpenStackSubordinateApplication(
             name="keystone-ldap",
-            can_upgrade_to=[channel],
+            can_upgrade_to=channel,
             charm="keystone-ldap",
             channel=channel,
             config={"source": {"value": "distro"}},
@@ -188,7 +188,7 @@ def test_generate_plan_ch_migration(model, channel):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackSubordinateApplication(
         name="keystone-ldap",
-        can_upgrade_to=["wallaby/stable"],
+        can_upgrade_to="wallaby/stable",
         charm="keystone-ldap",
         channel=f"ussuri/{channel}",
         config={"source": {"value": "distro"}},
@@ -242,7 +242,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackSubordinateApplication(
         name="keystone-ldap",
-        can_upgrade_to=[f"{to_os}/stable"],
+        can_upgrade_to=f"{to_os}/stable",
         charm="keystone-ldap",
         channel=f"{from_os}/stable",
         config={"source": {"value": "distro"}},
@@ -295,7 +295,7 @@ def test_generate_plan_in_same_version(model, from_to):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackSubordinateApplication(
         name="keystone-ldap",
-        can_upgrade_to=[f"{from_to}/stable"],
+        can_upgrade_to=f"{from_to}/stable",
         charm="keystone-ldap",
         channel=f"{from_to}/stable",
         config={"source": {"value": "distro"}},
