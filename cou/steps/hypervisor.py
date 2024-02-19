@@ -141,13 +141,15 @@ class HypervisorUpgradePlanner:
         raise NotImplementedError
 
     # pylint: disable=unused-argument
-    def generate_upgrade_plan(self, target: OpenStackRelease) -> UpgradePlan:
+    def generate_upgrade_plan(self, target: OpenStackRelease, force: bool) -> UpgradePlan:
         """Generate full upgrade plan for all hypervisors.
 
         This plan will be based on multiple HypervisorUpgradePlan.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :return: Full upgrade plan
         :rtype: UpgradePlan
         """

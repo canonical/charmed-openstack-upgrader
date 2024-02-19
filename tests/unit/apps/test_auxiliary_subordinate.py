@@ -98,7 +98,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
         ),
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -167,7 +167,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 def test_ovn_subordinate_upgrade_plan(model):
@@ -208,7 +208,7 @@ def test_ovn_subordinate_upgrade_plan(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -246,7 +246,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
         description=f"Upgrade plan for '{app.name}' to {target}"
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
     assert not upgrade_plan
@@ -290,7 +290,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -338,6 +338,6 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
     ]
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)

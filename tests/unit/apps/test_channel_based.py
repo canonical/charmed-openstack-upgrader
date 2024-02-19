@@ -226,7 +226,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
 
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -315,7 +315,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
 
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -401,6 +401,6 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
 
     add_steps(expected_plan, upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)

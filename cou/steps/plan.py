@@ -319,7 +319,7 @@ def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRele
 
 
 def _generate_control_plane_plan(
-    target: OpenStackRelease, apps: list[OpenStackApplication]
+    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
 ) -> list[UpgradePlan]:
     """Generate upgrade plan for control plane.
 
@@ -327,6 +327,8 @@ def _generate_control_plane_plan(
     :type target: OpenStackRelease
     :param apps: List of control plane applications.
     :type apps: list[OpenStackApplication]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
     :return: Principal and Subordiante upgrade plan.
     :rtype: list[UpgradePlan]
     """
@@ -334,6 +336,7 @@ def _generate_control_plane_plan(
         apps=apps,
         description="Control Plane principal(s) upgrade plan",
         target=target,
+        force=force,
         filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
     )
 
@@ -341,6 +344,7 @@ def _generate_control_plane_plan(
         apps=apps,
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
+        force=force,
         filter_function=lambda app: isinstance(app, SubordinateBaseClass),
     )
 
@@ -349,7 +353,7 @@ def _generate_control_plane_plan(
 
 
 def _generate_data_plane_plan(
-    target: OpenStackRelease, apps: list[OpenStackApplication]
+    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
 ) -> list[UpgradePlan]:  # pragma: no cover
     """Generate upgrade plan for data plane.
 
@@ -357,6 +361,8 @@ def _generate_data_plane_plan(
     :type target: OpenStackRelease
     :param apps: List of data plane applications.
     :type apps: list[OpenStackApplication]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
     :return: Hypervisors plans and other
     :rtype: list[UpgradePlan]
     """
@@ -373,11 +379,12 @@ def _generate_data_plane_plan(
                 hypervisor_apps.append(app)
                 break  # exiting machine for loop, since
 
-    hyperviro_plans = HypervisorUpgradePlanner(hypervisor_apps).generate_upgrade_plan(target)
+    hypervisor_planner = HypervisorUpgradePlanner(hypervisor_apps)
+    hypervisor_plans = hypervisor_planner.generate_upgrade_plan(target, force)
     logger.debug("generating of hypervisors upgrade plan finished")
 
     # generating rest
-    return [hyperviro_plans]
+    return [hypervisor_plans]
 
 
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
@@ -421,8 +428,12 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
             )
         )
 
-    plan.sub_steps.extend(_generate_control_plane_plan(target, analysis_result.apps_control_plane))
-    # plan.sub_steps.extend(_generate_data_plane_plan(target, analysis_result.apps_data_plane))
+    plan.sub_steps.extend(
+        _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
+    )
+    # plan.sub_steps.extend(
+    #     _generate_data_plane_plan(target, analysis_result.apps_data_plane, args.force)
+    # )
 
     return plan
 
@@ -482,6 +493,7 @@ def create_upgrade_group(
     apps: list[OpenStackApplication],
     target: OpenStackRelease,
     description: str,
+    force: bool,
     filter_function: Callable[[OpenStackApplication], bool],
 ) -> UpgradePlan:
     """Create upgrade group.
@@ -492,6 +504,8 @@ def create_upgrade_group(
     :type target: OpenStackRelease
     :param description: Description of the upgrade step.
     :type description: str
+    :param force: Whether the plan generation should be forced
+    :type force: bool
     :param filter_function: Function to filter applications.
     :type filter_function: Callable[[OpenStackApplication], bool]
     :raises Exception: When cannot generate upgrade plan.
@@ -501,7 +515,7 @@ def create_upgrade_group(
     group_upgrade_plan = UpgradePlan(description)
     for app in filter(filter_function, apps):
         try:
-            app_upgrade_plan = app.generate_upgrade_plan(target)
+            app_upgrade_plan = app.generate_upgrade_plan(target, force)
             group_upgrade_plan.add_step(app_upgrade_plan)
         except HaltUpgradePlanGeneration as exc:
             # we do not care if applications halt the upgrade plan generation
