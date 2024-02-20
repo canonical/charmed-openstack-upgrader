@@ -186,9 +186,6 @@ def verify_data_plane_cli_input(args: CLIargs, analysis_result: Analysis) -> Non
     if cli_machines := args.machines:
         verify_data_plane_cli_machines(cli_machines, analysis_result)
 
-    elif cli_hostnames := args.hostnames:
-        verify_data_plane_cli_hostnames(cli_hostnames, analysis_result)
-
     elif cli_azs := args.availability_zones:
         verify_data_plane_cli_azs(cli_azs, analysis_result)
 
@@ -206,27 +203,6 @@ def verify_data_plane_cli_machines(cli_machines: set[str], analysis_result: Anal
         data_plane_options=set(analysis_result.data_plane_machines.keys()),
         cli_input=cli_machines,
         parameter_type="Machine(s)",
-    )
-
-
-def verify_data_plane_cli_hostnames(cli_hostnames: set[str], analysis_result: Analysis) -> None:
-    """Verify if the hostnames passed from the CLI are valid.
-
-    :param cli_hostnames: Hostnames passed to the CLI as arguments
-    :type cli_hostnames: set[str]
-    :param analysis_result: Analysis result
-    :type analysis_result: Analysis
-    """
-    all_hostnames = {machine.hostname for machine in analysis_result.machines.values()}
-    data_plane_hostnames = {
-        machine.hostname for machine in analysis_result.data_plane_machines.values()
-    }
-
-    verify_data_plane_membership(
-        all_options=all_hostnames,
-        data_plane_options=data_plane_hostnames,
-        cli_input=cli_hostnames,
-        parameter_type="Hostname(s)",
     )
 
 
@@ -275,7 +251,7 @@ def verify_data_plane_membership(
     :type data_plane_options: set[str]
     :param cli_input: The input that come from the cli
     :type cli_input: set[str]
-    :param parameter_type: Type of the parameter passed (az, hostname or machine).
+    :param parameter_type: Type of the parameter passed (az or machine).
     :type parameter_type: str
     :raises DataPlaneMachineFilterError: When the value passed from the user is not sane.
     """
@@ -396,9 +372,6 @@ async def filter_hypervisors_machines(
 
     if cli_machines := args.machines:
         return [machine for machine in hypervisors_machines if machine.machine_id in cli_machines]
-
-    if cli_hostnames := args.hostnames:
-        return [machine for machine in hypervisors_machines if machine.hostname in cli_hostnames]
 
     if cli_azs := args.availability_zones:
         return [machine for machine in hypervisors_machines if machine.az in cli_azs]

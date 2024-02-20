@@ -176,16 +176,6 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         type=str,
     )
     dp_upgrade_group.add_argument(
-        "--hostname",
-        "-n",
-        help="Specify machine hostnames(s) to upgrade.\nThis option accepts a single hostname as "
-        "well as a stringified comma-separated list of hostnames,\nand can be repeated multiple "
-        "times.",
-        action=SplitArgs,
-        dest="hostnames",
-        type=str,
-    )
-    dp_upgrade_group.add_argument(
         "--availability-zone",
         "--az",
         help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
@@ -377,7 +367,6 @@ class CLIargs:
     upgrade_group: Optional[str] = None
     subcommand: Optional[str] = None  # for help option
     machines: Optional[set[str]] = None
-    hostnames: Optional[set[str]] = None
     availability_zones: Optional[set[str]] = None
 
     @property
