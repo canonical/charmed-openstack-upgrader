@@ -20,6 +20,7 @@ from cou.apps.base import OpenStackApplication
 from cou.exceptions import ApplicationError
 from cou.steps import UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import COUMachine, COUUnit
+from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps
 
 
@@ -251,3 +252,31 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
 
     app._get_upgrade_current_release_packages_step(units)
     mock_upgrade_packages.assert_has_calls(expected_calls)
+
+
+@pytest.mark.parametrize(
+    "units",
+    [
+        [],
+        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(1)],
+        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(2)],
+        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(3)],
+    ],
+)
+@patch("cou.apps.base.OpenStackApplication._verify_workload_upgrade")
+def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
+    target = OpenStackRelease("victoria")
+    mock = MagicMock()
+    charm = "app"
+    app_name = "my_app"
+    channel = "ussuri/stable"
+    app_units = {f"my_app/{unit}": COUUnit(f"my_app/{unit}", mock, mock) for unit in range(3)}
+
+    app = OpenStackApplication(
+        app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
+    )
+
+    expected_calls = [call(target, units)] if units else [call(target, list(app.units.values()))]
+
+    app._get_reached_expected_target_step(target, units)
+    mock_workload_upgrade.assert_has_calls(expected_calls)

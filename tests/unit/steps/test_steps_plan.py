@@ -107,9 +107,12 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         ),
         wait_step,
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
