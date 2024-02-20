@@ -348,7 +348,7 @@ def _generate_control_plane_plan(
         filter_function=lambda app: isinstance(app, SubordinateBaseClass),
     )
 
-    logger.debug("generating of control plan upgrade plan finished")
+    logger.debug("generating of control plane upgrade plan finished")
     return [principal_upgrade_plan, subordinate_upgrade_plan]
 
 
