@@ -71,7 +71,6 @@ class HypervisorUpgradePlanner:
         :param apps: list of OpenStack applications
         :type apps: list[OpenStackApplication]
         """
-        verify_apps(apps)
         self._apps = apps
 
     @property
@@ -104,15 +103,22 @@ class HypervisorUpgradePlanner:
         """
         raise NotImplementedError
 
-    def _generate_pre_upgrade_plan(self) -> PreUpgradeStep:
+    def _generate_pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
         """Generate pre upgrade plan for all applications.
 
-        This section should create a plan with steps like changing charm config option, etc.
+        This section should create a list of steps like changing charm config option, etc.
 
-        :return: Pre-upgrade step with all needed pre-upgrade steps.
-        :rtype: PreUpgradeStep
+        :param target: OpenStack codename to upgrade.
+        :type target: OpenStackRelease
+        :return: List of pre-upgrade steps.
+        :rtype: list[PreUpgradeStep]
         """
-        raise NotImplementedError
+        steps = []
+        for app in self.apps:
+            steps.extend(app.pre_upgrade_steps(target, units=None))
+            logger.info("generating pre-upgrade steps for %s app", app.name)
+
+        return steps
 
     def _generate_hypervisor_upgrade_plan(
         self, hypervisor: HypervisorMachine
@@ -129,16 +135,25 @@ class HypervisorUpgradePlanner:
         """
         raise NotImplementedError
 
-    def _generate_post_upgrade_plan(self) -> PostUpgradeStep:
+    def _generate_post_upgrade_plan(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
         """Generate post upgrade plan for all applications.
 
-        This section should create a plan with steps like checking versions, status of
+        This section should create a list of steps like checking versions, status of
         application, etc.
 
-        :return: Post-upgrade step with all needed post-upgrade steps.
-        :rtype: PostUpgradeStep
+        :param target: OpenStack codename to upgrade.
+        :type target: OpenStackRelease
+        :return: List of post-upgrade steps.
+        :rtype: list[PostUpgradeStep]
         """
-        raise NotImplementedError
+        steps = []
+        # NOTE(rgildein): Using the reverse order of post-upgrade steps, so these steps starts from
+        #                 subordinate or colocated apps and not nova-compute.
+        for app in self.apps[::-1]:
+            steps.extend(app.post_upgrade_steps(target, units=None))
+            logger.info("generating post-upgrade steps for %s app", app.name)
+
+        return steps
 
     # pylint: disable=unused-argument
     def generate_upgrade_plan(self, target: OpenStackRelease) -> UpgradePlan:
@@ -153,13 +168,9 @@ class HypervisorUpgradePlanner:
         """
         plan = UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
         logger.debug("generating pre upgrade steps")
-        plan.add_step(self._generate_pre_upgrade_plan())
-        for az in self.azs:
-            for hypervisor in az.hypervisors:
-                logger.debug("generating upgrade steps for %s in %s AZ", hypervisor.name, az.name)
-                plan.add_step(self._generate_hypervisor_upgrade_plan(hypervisor))
+        plan.sub_steps.extend(self._generate_pre_upgrade_plan(target))
 
         logger.debug("generating post upgrade steps")
-        plan.add_step(self._generate_post_upgrade_plan())
+        plan.sub_steps.extend(self._generate_post_upgrade_plan(target))
 
         return plan
