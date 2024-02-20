@@ -39,7 +39,7 @@ class HypervisorGroup:
     """
 
     name: str
-    apps: dict[str, list[COUUnit]]
+    app_units: dict[str, list[COUUnit]]
 
     def __eq__(self, other: Any) -> bool:
         """Equal magic method for HypervisorGroup.
@@ -72,7 +72,7 @@ class AZs(defaultdict):
         HypervisorGroup(name=key, apps=defaultdict(list) will be used. Like this we can always
         access the az["my-az"].name == "my-az" or az["my-az"].apps["my-app"].
         """
-        self[key] = HypervisorGroup(name=key, apps=defaultdict(list))
+        self[key] = HypervisorGroup(name=key, app_units=defaultdict(list))
         return self[key]
 
 
@@ -101,7 +101,6 @@ class HypervisorUpgradePlanner:
         :param apps: sorted list of OpenStack applications
         :type apps: list[OpenStackApplication]
         """
-        # verify_apps(apps)
         self._apps = apps
 
     @property
@@ -145,7 +144,7 @@ class HypervisorUpgradePlanner:
                 # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
                 #                 belong to a single group.
                 az = unit.machine.az or ""
-                azs[az].apps[app.name].append(unit)
+                azs[az].app_units[app.name].append(unit)
 
         return azs
 
@@ -173,7 +172,7 @@ class HypervisorUpgradePlanner:
         """
         plan = HypervisorUpgradePlan(description=f"Upgrade plan for '{group.name}' to {target}")
         for app in self.apps:
-            if app.name not in group.apps:
+            if app.name not in group.app_units:
                 logger.debug(
                     "skipping application %s because it is not part of group %s",
                     app.name,
@@ -181,7 +180,7 @@ class HypervisorUpgradePlanner:
                 )
                 continue
 
-            units = group.apps[app.name]
+            units = group.app_units[app.name]
             logger.info("generating upgrade steps for %s app and %s units", app.name, units)
             plan.sub_steps = app.upgrade_steps(target, units)  # type: ignore[call-arg, assignment]
 

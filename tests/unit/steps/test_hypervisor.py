@@ -37,11 +37,11 @@ def test_azs():
 
     # test accessing parts of AZs
     assert azs["my-app"].name == "my-app"
-    assert azs["my-app"].apps["my-app"] == []
+    assert azs["my-app"].app_units["my-app"] == []
 
     # append unit to the HypervisorGroup
-    azs["my-app"].apps["my-app"].append(test_unit)
-    assert azs["my-app"].apps["my-app"] == [test_unit]
+    azs["my-app"].app_units["my-app"].append(test_unit)
+    assert azs["my-app"].app_units["my-app"] == [test_unit]
 
 
 def test_hypervisor_azs_grouping():
@@ -93,18 +93,18 @@ def test_hypervisor_azs_grouping():
 
     app1 = MagicMock(spec_set=COUApplication)()
     app1.name = "app1"
-    app1.units = {name: app for name, app in units.items() if name.startswith("app1")}
+    app1.units = {name: unit for name, unit in units.items() if name.startswith("app1")}
     app2 = MagicMock(spec_set=COUApplication)()
     app2.name = "app2"
-    app1.units = {name: app for name, app in units.items() if name.startswith("app2")}
+    app1.units = {name: unit for name, unit in units.items() if name.startswith("app2")}
 
     exp_azs = AZs()
-    exp_azs["az0"].apps["app1"] = [units["app1/0"], units["app1/1"]]
-    exp_azs["az0"].apps["app2"] = [units["app2/0"]]
-    exp_azs["az1"].apps["app1"] = [units["app1/2"], units["app1/3"]]
-    exp_azs["az1"].apps["app2"] = [units["app2/1"]]
-    exp_azs["az2"].apps["app1"] = [units["app1/4"], units["app1/5"]]
-    exp_azs["az2"].apps["app2"] = [units["app2/2"]]
+    exp_azs["az0"].app_units["app1"] = [units["app1/0"], units["app1/1"]]
+    exp_azs["az0"].app_units["app2"] = [units["app2/0"]]
+    exp_azs["az1"].app_units["app1"] = [units["app1/2"], units["app1/3"]]
+    exp_azs["az1"].app_units["app2"] = [units["app2/1"]]
+    exp_azs["az2"].app_units["app1"] = [units["app1/4"], units["app1/5"]]
+    exp_azs["az2"].app_units["app2"] = [units["app2/2"]]
 
     hypervisor_planner = HypervisorUpgradePlanner([app1, app2])
 
