@@ -139,16 +139,8 @@ class COUMachine:
 
     machine_id: str
     hostname: str
-    apps: tuple[str]
+    apps: tuple[tuple[str, str], ...]
     az: Optional[str] = None  # simple deployments may not have azs
-
-    def __repr__(self) -> str:
-        """Representation of the juju Machine.
-
-        :return: Representation of the juju Machine
-        :rtype: str
-        """
-        return f"Machine[{self.machine_id}]"
 
 
 @dataclass(frozen=True)
@@ -158,14 +150,6 @@ class COUUnit:
     name: str
     machine: COUMachine
     workload_version: str
-
-    def __repr__(self) -> str:
-        """Representation of the application unit.
-
-        :return: Representation of the application unit
-        :rtype: str
-        """
-        return f"Unit[{self.name}]"
 
 
 @dataclass(frozen=True)
@@ -186,14 +170,6 @@ class COUApplication:
     subordinate_to: list[str]
     units: dict[str, COUUnit]
     workload_version: str
-
-    def __repr__(self) -> str:
-        """Representation of the application unit.
-
-        :return: Representation of the application unit
-        :rtype: str
-        """
-        return f"Application[{self.name}]"
 
     @property
     def is_subordinate(self) -> bool:
@@ -290,6 +266,20 @@ class COUModel:
             raise ApplicationNotFound(f"Application {name} was not found in model {model.name}.")
 
         return app
+
+    def _get_machine_apps(self, machine_id: int) -> tuple[tuple[str, str], ...]:
+        """Get machine apps.
+
+        :param machine_id: Machine id.
+        :type machine_id: int
+        :return: Tuple of tuple contains app name and charm name.
+        :rtype: tuple[tuple[str, str], ...]
+        """
+        return tuple(
+            (str(unit.application), str(self._model.applications[unit.application].charm_name))
+            for unit in self._model.units.values()
+            if unit.machine.id == machine_id
+        )
 
     async def _get_model(self) -> Model:
         """Get juju.model.Model and make sure that it is connected.
@@ -413,11 +403,7 @@ class COUModel:
             machine.id: COUMachine(
                 machine_id=machine.id,
                 hostname=machine.hostname,
-                apps=tuple(
-                    unit.application
-                    for unit in model.units.values()
-                    if unit.machine.id == machine.id
-                ),
+                apps=self._get_machine_apps(machine.id),
                 az=machine.hardware_characteristics.get("availability-zone"),
             )
             for machine in model.machines.values()

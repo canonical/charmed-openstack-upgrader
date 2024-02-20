@@ -19,7 +19,7 @@ from juju.action import Action
 from juju.application import Application
 from juju.client._definitions import ApplicationStatus, UnitStatus
 from juju.client.connector import NoConnectionException
-from juju.machine import Machine as JujuMachine
+from juju.machine import Machine
 from juju.model import Model
 from juju.unit import Unit
 
@@ -167,41 +167,6 @@ def test_machine_eq():
     machine_1 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
 
     assert machine_0 == machine_1
-
-
-def test_machine_repr():
-    machine_0 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
-    expected_repr = "Machine[0]"
-    assert repr(machine_0) == expected_repr
-
-
-def test_unit_repr():
-    unit_0 = juju_utils.COUUnit(
-        name="app1/0", machine=MagicMock(spec_set=juju_utils.COUMachine), workload_version="123"
-    )
-    expected_repr = "Unit[app1/0]"
-    assert repr(unit_0) == expected_repr
-
-
-def test_application_repr(mocked_model):
-    application_0 = juju_utils.COUApplication(
-        name="app1",
-        can_upgrade_to="124",
-        charm="app",
-        channel="edge",
-        config={},
-        machines={},
-        model=mocked_model,
-        origin="ch",
-        series="jammy",
-        subordinate_to=[],
-        units={},
-        workload_version="123",
-    )
-    expected_repr = "Application[app1]"
-    assert repr(application_0) == expected_repr
-    assert application_0.is_subordinate is False
-    assert application_0.is_from_charm_store is False
 
 
 @patch("cou.utils.juju_utils.FileJujuData")
@@ -588,70 +553,64 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
     mock_get_supported_apps.assert_not_awaited()
 
 
-@pytest.mark.parametrize(
-    "machines_ids, expected_machines",
-    [
-        (
-            ["0", "1", "2"],
-            {
-                "0": juju_utils.COUMachine(
-                    "0",
-                    "juju-90e5ce-0",
-                    (
-                        "app1",
-                        "app2",
-                    ),
-                    "zone-1",
-                ),
-                "1": juju_utils.COUMachine(
-                    "1",
-                    "juju-90e5ce-1",
-                    (
-                        "app1",
-                        "app2",
-                    ),
-                    "zone-2",
-                ),
-                "2": juju_utils.COUMachine(
-                    "2",
-                    "juju-90e5ce-2",
-                    (
-                        "app1",
-                        "app2",
-                    ),
-                    "zone-3",
-                ),
-            },
-        ),
-    ],
-)
 @pytest.mark.asyncio
-async def test_get_machines(mocked_model, machines_ids, expected_machines):
+async def test_get_machines(mocked_model):
     """Test COUModel getting machines from model."""
-    juju_machines = _generate_juju_machines_mock(machines_ids)
+    expected_machines = {
+        "0": juju_utils.COUMachine(
+            "0",
+            "juju-90e5ce-0",
+            (
+                ("app1", "app"),
+                ("app2", "app"),
+            ),
+            "zone-1",
+        ),
+        "1": juju_utils.COUMachine("1", "juju-90e5ce-1", (("app1", "app"),), "zone-2"),
+        "2": juju_utils.COUMachine("2", "juju-90e5ce-2", (("app1", "app"),), "zone-3"),
+    }
+    mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
+    mocked_model.units = {
+        "app1/0": _generate_juju_unit("app1", "0"),
+        "app1/1": _generate_juju_unit("app1", "1"),
+        "app1/2": _generate_juju_unit("app1", "2"),
+        "app2/0": _generate_juju_unit("app2", "0"),
+    }
+    mocked_model.applications = {
+        "app1": _generate_juju_application("app"),
+        "app2": _generate_juju_application("app"),
+    }
 
-    mocked_model.machines = juju_machines
     model = juju_utils.COUModel("test-model")
     machines = await model.get_machines()
 
     assert machines == expected_machines
 
 
-def _generate_juju_machines_mock(machine_ids: list[str]):
-    juju_machines = {}
-    for machine_id in machine_ids:
-        machine = MagicMock(set=JujuMachine)
-        machine.id = machine_id
-        machine.hostname = f"juju-90e5ce-{machine_id}"
-        machine.hardware_characteristics = {
-            "arch": "amd64",
-            "mem": 0,
-            "cpu-cores": 0,
-            "availability-zone": f"zone-{int(machine_id) + 1}",
-        }
-        juju_machines.update({machine_id: machine})
+def _generate_juju_application(charm_name: str) -> MagicMock:
+    app = MagicMock(spec_set=Application)()
+    app.charm_name = charm_name
+    return app
 
-    return juju_machines
+
+def _generate_juju_unit(app: str, machine_id: str) -> MagicMock:
+    unit = MagicMock(set=Unit)()
+    unit.application = app
+    unit.machine.id = machine_id
+    return unit
+
+
+def _generate_juju_machine(machine_id: str) -> MagicMock:
+    machine = MagicMock(set=Machine)()
+    machine.id = machine_id
+    machine.hostname = f"juju-90e5ce-{machine_id}"
+    machine.hardware_characteristics = {
+        "arch": "amd64",
+        "mem": 0,
+        "cpu-cores": 0,
+        "availability-zone": f"zone-{int(machine_id) + 1}",
+    }
+    return machine
 
 
 def _generate_unit_status(app: str, unit_id: int, machine_id: str) -> tuple[str, MagicMock]:
