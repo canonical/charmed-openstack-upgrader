@@ -268,7 +268,7 @@ class COUModel:
         return app
 
     def _get_machine_apps(self, machine_id: int) -> tuple[tuple[str, str], ...]:
-        """Get machine apps.
+        """Get the applications and charm names deployed in a machine.
 
         :param machine_id: Machine id.
         :type machine_id: int
