@@ -18,7 +18,16 @@ from unittest.mock import patch
 import pytest
 
 from cou import commands
-from cou.commands import CLIargs
+from cou.commands import CONTROL_PLANE, DATA_PLANE, CLIargs
+
+
+@pytest.mark.parametrize(
+    "upgrade_group, expected_result",
+    [(CONTROL_PLANE, True), (DATA_PLANE, False), ("foo", True)],
+)
+def test_CLIargs_is_control_plane_command(upgrade_group, expected_result):
+    args = CLIargs("plan", upgrade_group=upgrade_group)
+    assert args.is_control_plane_command is expected_result
 
 
 @pytest.mark.parametrize(
