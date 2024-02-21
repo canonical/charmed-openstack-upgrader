@@ -107,9 +107,12 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         ),
         wait_step,
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, app.units.values()),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -150,7 +153,7 @@ async def test_generate_plan(model, cli_args):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     keystone = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={
@@ -173,7 +176,7 @@ async def test_generate_plan(model, cli_args):
     )
     keystone_ldap = OpenStackSubordinateApplication(
         name="keystone-ldap",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone-ldap",
         channel="ussuri/stable",
         config={},
@@ -193,7 +196,7 @@ async def test_generate_plan(model, cli_args):
     )
     cinder = OpenStackApplication(
         name="cinder",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="cinder",
         channel="ussuri/stable",
         config={

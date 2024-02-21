@@ -143,7 +143,8 @@ class SmokeTest(unittest.TestCase):
             "\t\t\t\tUpgrade software packages on unit designate-bind/0\n"
             "\t\t\tUpgrade 'designate-bind' to the new channel: 'victoria/stable'\n"
             "\t\t\tWait 300s for app designate-bind to reach the idle state.\n"
-            "\t\t\tCheck if the workload of 'designate-bind' has been upgraded\n"
+            "\t\t\tCheck if the workload of 'designate-bind' has been upgraded on units:"
+            " designate-bind/0\n"
             "\t\tUpgrade plan for 'mysql-innodb-cluster' to victoria\n"
             "\t\t\tUpgrade software packages of 'mysql-innodb-cluster' "
             "from the current APT repositories\n"
@@ -153,7 +154,8 @@ class SmokeTest(unittest.TestCase):
             "\t\t\tChange charm config of 'mysql-innodb-cluster' 'source' to "
             "'cloud:focal-victoria'\n"
             "\t\t\tWait 1800s for app mysql-innodb-cluster to reach the idle state.\n"
-            "\t\t\tCheck if the workload of 'mysql-innodb-cluster' has been upgraded\n"
+            "\t\t\tCheck if the workload of 'mysql-innodb-cluster' has been upgraded on units: "
+            "mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2\n"
         )
 
     def test_help(self) -> None:

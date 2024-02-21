@@ -19,7 +19,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any, Optional
+from typing import Any, Iterable, Optional
 
 from ruamel.yaml import YAML
 
@@ -85,6 +85,9 @@ class OpenStackApplication(COUApplication):
         :return: True if equal False if different.
         :rtype: bool
         """
+        if not isinstance(other, OpenStackApplication):
+            return NotImplemented
+
         return other.name == self.name and other.charm == self.charm
 
     def __str__(self) -> str:
@@ -319,30 +322,6 @@ class OpenStackApplication(COUApplication):
         """
         return f"cloud:{self.series}-{target.codename}"
 
-    async def _check_upgrade(self, target: OpenStackRelease) -> None:
-        """Check if an application has upgraded its workload version.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :raises ApplicationError: When the workload version of the charm doesn't upgrade.
-        """
-        status = await self.model.get_status()
-        app_status = status.applications.get(self.name)
-        units_not_upgraded = []
-        for unit in app_status.units.keys():
-            workload_version = app_status.units[unit].workload_version
-            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
-                self.charm, workload_version
-            )
-            if target not in compatible_os_versions:
-                units_not_upgraded.append(unit)
-
-        if units_not_upgraded:
-            units_not_upgraded_string = ", ".join(units_not_upgraded)
-            raise ApplicationError(
-                f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
-            )
-
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[COUUnit]]
     ) -> list[PreUpgradeStep]:
@@ -397,19 +376,23 @@ class OpenStackApplication(COUApplication):
             self._get_change_install_repository_step(target),
         ]
 
-    def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
+    def post_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[Iterable[COUUnit]]
+    ) -> list[PostUpgradeStep]:
         """Post Upgrade steps planning.
 
         Wait until the application reaches the idle state and then check the target workload.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[Iterable[COUUnit]]
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
         return [
             self._get_wait_step(),
-            self._get_reached_expected_target_step(target),
+            self._get_reached_expected_target_step(target, units),
         ]
 
     def generate_upgrade_plan(
@@ -437,7 +420,7 @@ class OpenStackApplication(COUApplication):
         all_steps = (
             self.pre_upgrade_steps(target, units)
             + self.upgrade_steps(target, units, force)
-            + self.post_upgrade_steps(target)
+            + self.post_upgrade_steps(target, units)
         )
         for step in all_steps:
             if step:
@@ -661,18 +644,54 @@ class OpenStackApplication(COUApplication):
         )
         return UpgradeStep()
 
-    def _get_reached_expected_target_step(self, target: OpenStackRelease) -> PostUpgradeStep:
+    def _get_reached_expected_target_step(
+        self, target: OpenStackRelease, units: Optional[Iterable[COUUnit]]
+    ) -> PostUpgradeStep:
         """Get post upgrade step to check if application workload has been upgraded.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[Iterable[COUUnit]]
         :return: Post Upgrade step to check if application workload has been upgraded.
         :rtype: PostUpgradeStep
         """
+        if not units:
+            units = list(self.units.values())
         return PostUpgradeStep(
-            description=f"Check if the workload of '{self.name}' has been upgraded",
-            coro=self._check_upgrade(target),
+            description=(
+                f"Check if the workload of '{self.name}' has been upgraded on units: "
+                f"{', '.join([unit.name for unit in units])}"
+            ),
+            coro=self._verify_workload_upgrade(target, units),
         )
+
+    async def _verify_workload_upgrade(
+        self, target: OpenStackRelease, units: Iterable[COUUnit]
+    ) -> None:
+        """Check if an application has upgraded its workload version.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to check if got upgraded
+        :type units: Iterable[COUUnit]
+        :raises ApplicationError: When the workload version of the charm doesn't upgrade.
+        """
+        status = await self.model.get_status()
+        app_status = status.applications.get(self.name)
+        units_not_upgraded = []
+        for unit in units:
+            workload_version = app_status.units[unit.name].workload_version
+            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+                self.charm, workload_version
+            )
+            if target not in compatible_os_versions:
+                units_not_upgraded.append(unit.name)
+
+        if units_not_upgraded:
+            raise ApplicationError(
+                f"Cannot upgrade units '{', '.join(units_not_upgraded)}' to {target}."
+            )
 
     def _get_wait_step(self) -> PostUpgradeStep:
         """Get wait step for entire model or application.

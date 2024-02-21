@@ -79,7 +79,7 @@ def test_analysis_dump(model):
     machines = {f"{i}": MagicMock(spec_set=COUMachine) for i in range(3)}
     keystone = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -98,7 +98,7 @@ def test_analysis_dump(model):
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=["3.8/stable"],
+        can_upgrade_to="3.8/stable",
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -118,7 +118,7 @@ def test_analysis_dump(model):
     )
     cinder = OpenStackApplication(
         name="cinder",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="cinder",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -184,7 +184,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     keystone = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -204,7 +204,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=["3.8/stable"],
+        can_upgrade_to="3.8/stable",
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -224,7 +224,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
     )
     cinder = OpenStackApplication(
         name="cinder",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="cinder",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -262,7 +262,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
     machines = {"0": MagicMock(spec_set=COUMachine)}
     keystone = Keystone(
         name="keystone",
-        can_upgrade_to=["wallaby/stable"],
+        can_upgrade_to="wallaby/stable",
         charm="keystone",
         channel="wallaby/stable",
         config={"source": {"value": "distro"}},
@@ -282,7 +282,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=["3.8/stable"],
+        can_upgrade_to="3.8/stable",
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -302,7 +302,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
     )
     cinder = OpenStackApplication(
         name="cinder",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="cinder",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -336,7 +336,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     keystone = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -356,7 +356,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=["3.8/stable"],
+        can_upgrade_to="3.8/stable",
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -376,7 +376,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
     )
     cinder = OpenStackApplication(
         name="cinder",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="cinder",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -461,7 +461,7 @@ async def test_analysis_machines(model):
     }
     keystone = Keystone(
         name="keystone",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -481,7 +481,7 @@ async def test_analysis_machines(model):
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to=["3.8/stable"],
+        can_upgrade_to="3.8/stable",
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
@@ -501,7 +501,7 @@ async def test_analysis_machines(model):
     )
     cinder = OpenStackApplication(
         name="cinder",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="cinder",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
@@ -521,7 +521,7 @@ async def test_analysis_machines(model):
     )
     nova_compute = OpenStackApplication(
         name="nova-compute",
-        can_upgrade_to=["ussuri/stable"],
+        can_upgrade_to="ussuri/stable",
         charm="nova-compute",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
