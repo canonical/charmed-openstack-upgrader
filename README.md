@@ -1,4 +1,4 @@
-# Charmed OpenStack Upgrader
+# TEST
 
 Charmed OpenStack Upgrader (COU) is an application (packaged as a snap) to upgrade
 a Canonical distribution of [Charmed OpenStack](https://ubuntu.com/openstack/docs/overview)
@@ -17,7 +17,7 @@ sudo snap install charmed-openstack-upgrader
 
 An alias `cou` will be automatically enabled upon successful installation.
 
-Run `cou -h` to learn about the available commands: 
+Run `cou -h` to learn about the available commands:
 
 ```bash
 Usage: cou [options] <command>
