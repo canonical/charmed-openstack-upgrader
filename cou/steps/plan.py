@@ -304,10 +304,34 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :rtype: UpgradePlan
     """
     pre_plan_sanity_checks(args, analysis_result)
-    hypervisors = await filter_hypervisors_machines(args, analysis_result)
-    logger.info("Hypervisors selected: %s", hypervisors)
     target = determine_upgrade_target(analysis_result)
 
+    plan = generate_common_plan(analysis_result, args, target)
+
+    control_plane_plan = await generate_control_plane_plan(analysis_result, args, target)
+    data_plane_plan = await generate_data_plane_plan(analysis_result, args)
+
+    for group in control_plane_plan + data_plane_plan:
+        if group:
+            plan.add_step(group)
+
+    return plan
+
+
+def generate_common_plan(
+    analysis_result: Analysis, args: CLIargs, target: OpenStackRelease
+) -> UpgradePlan:
+    """_summary_.
+
+    :param analysis_result: _description_
+    :type analysis_result: Analysis
+    :param args: _description_
+    :type args: CLIargs
+    :param target: _description_
+    :type target: OpenStackRelease
+    :return: _description_
+    :rtype: UpgradePlan
+    """
     plan = UpgradePlan(
         f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
     )
@@ -334,26 +358,59 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
                 coro=backup(analysis_result.model),
             )
         )
-
-    control_plane_principal_upgrade_plan = await create_upgrade_group(
-        apps=analysis_result.apps_control_plane,
-        description="Control Plane principal(s) upgrade plan",
-        target=target,
-        force=args.force,
-        filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
-    )
-    plan.add_step(control_plane_principal_upgrade_plan)
-
-    control_plane_subordinate_upgrade_plan = await create_upgrade_group(
-        apps=analysis_result.apps_control_plane,
-        description="Control Plane subordinate(s) upgrade plan",
-        target=target,
-        force=args.force,
-        filter_function=lambda app: isinstance(app, SubordinateBaseClass),
-    )
-    plan.add_step(control_plane_subordinate_upgrade_plan)
-
     return plan
+
+
+async def generate_control_plane_plan(
+    analysis_result: Analysis, args: CLIargs, target: OpenStackRelease
+) -> tuple[UpgradePlan, UpgradePlan]:
+    """_summary_.
+
+    :param analysis_result: _description_
+    :type analysis_result: Analysis
+    :param args: _description_
+    :type args: CLIargs
+    :param target: _description_
+    :type target: OpenStackRelease
+    :return: _description_
+    :rtype: tuple[UpgradePlan, UpgradePlan]
+    """
+    principal_plan = subordinate_plan = UpgradePlan("")
+    if args.is_control_plane_command:
+        principal_plan = await create_upgrade_group(
+            apps=analysis_result.apps_control_plane,
+            description="Control Plane principal(s) upgrade plan",
+            target=target,
+            force=args.force,
+            filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
+        )
+        subordinate_plan = await create_upgrade_group(
+            apps=analysis_result.apps_control_plane,
+            description="Control Plane subordinate(s) upgrade plan",
+            target=target,
+            force=args.force,
+            filter_function=lambda app: isinstance(app, SubordinateBaseClass),
+        )
+    return principal_plan, subordinate_plan
+
+
+async def generate_data_plane_plan(
+    analysis_result: Analysis, args: CLIargs
+) -> tuple[UpgradePlan, UpgradePlan]:
+    """_summary_.
+
+    :param analysis_result: _description_
+    :type analysis_result: Analysis
+    :param args: _description_
+    :type args: CLIargs
+    :return: _description_
+    :rtype: tuple[UpgradePlan, UpgradePlan]
+    """
+    principal_plan = subordinate_plan = UpgradePlan("")
+    if args.is_data_plane_command:
+        hypervisors = await filter_hypervisors_machines(args, analysis_result)
+        logger.info("Hypervisors selected: %s", hypervisors)
+    return principal_plan, subordinate_plan
 
 
 async def filter_hypervisors_machines(

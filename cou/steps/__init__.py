@@ -243,7 +243,6 @@ class BaseStep:
         """
         if not isinstance(step, BaseStep):
             raise TypeError("Cannot add an upgrade step that is not derived from BaseStep")
-
         self._sub_steps.append(step)
 
     def cancel(self, safe: bool = True) -> None:

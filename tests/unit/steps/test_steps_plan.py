@@ -758,3 +758,60 @@ async def test_get_upgradable_hypervisors_machines(
     assert {
         hypervisor.machine_id for hypervisor in hypervisors_possible_to_upgrade
     } == expected_result
+
+
+@pytest.mark.parametrize("backup", [True, False])
+@patch("cou.steps.plan.UpgradePlan")
+@patch("cou.steps.plan.PreUpgradeStep")
+def test_generate_common_plan(mock_PreUpgradeStep, mock_UpgradePlan, backup, cli_args):
+    target = OpenStackRelease("victoria")
+    nova_compute = MagicMock(spec_set=OpenStackApplication)()
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.apps_control_plane = [nova_compute]
+
+    cli_args.backup = backup
+
+    cou_plan.generate_common_plan(mock_analysis_result, cli_args, target)
+
+    if backup:
+        assert mock_PreUpgradeStep.call_count == 2
+    else:
+        mock_PreUpgradeStep.call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("is_control_plane_command", [True, False])
+@patch("cou.steps.plan.create_upgrade_group")
+async def test_generate_control_plane_plan(
+    mock_create_upgrade_group, is_control_plane_command, cli_args
+):
+    target = OpenStackRelease("victoria")
+    nova_compute = MagicMock(spec_set=OpenStackApplication)()
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.apps_control_plane = [nova_compute]
+
+    cli_args.is_control_plane_command = is_control_plane_command
+
+    await cou_plan.generate_control_plane_plan(mock_analysis_result, cli_args, target)
+
+    if is_control_plane_command:
+        assert mock_create_upgrade_group.await_count == 2
+    else:
+        mock_create_upgrade_group.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("is_data_plane_command", [True, False])
+@patch("cou.steps.plan.filter_hypervisors_machines")
+async def test_generate_data_plane_plan(
+    mock_filtered_hypervisors, is_data_plane_command, cli_args
+):
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    cli_args.is_data_plane_command = is_data_plane_command
+
+    await cou_plan.generate_data_plane_plan(mock_analysis_result, cli_args)
+
+    if is_data_plane_command:
+        mock_filtered_hypervisors.assert_awaited_with(cli_args, mock_analysis_result)
+    else:
+        mock_filtered_hypervisors.assert_not_awaited()
