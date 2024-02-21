@@ -138,7 +138,6 @@ class COUMachine:
     """Representation of a juju machine."""
 
     machine_id: str
-    hostname: str
     az: Optional[str] = None  # simple deployments may not have azs
 
     def __repr__(self) -> str:
@@ -411,7 +410,6 @@ class COUModel:
         return {
             machine.id: COUMachine(
                 machine_id=machine.id,
-                hostname=machine.hostname,
                 az=machine.hardware_characteristics.get("availability-zone"),
             )
             for machine in model.machines.values()
