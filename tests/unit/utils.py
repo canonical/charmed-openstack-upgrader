@@ -17,8 +17,10 @@ import contextlib
 import io
 import unittest
 from unittest import mock
+from unittest.mock import MagicMock
 
 from cou.steps import BaseStep
+from cou.utils.juju_utils import COUMachine
 
 
 @contextlib.contextmanager
@@ -97,3 +99,10 @@ def assert_steps(step_1: BaseStep, step_2: BaseStep) -> None:
     """Compare two steps and raise exception if they are different."""
     msg = f"\n{step_1}!=\n{step_2}"
     assert step_1 == step_2, msg
+
+
+def generate_cou_machine(machine_id: str, az: str | None = None) -> MagicMock:
+    machine = MagicMock(spec_set=COUMachine)()
+    machine.machine_id = machine_id
+    machine.az = az
+    return machine

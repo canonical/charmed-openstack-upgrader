@@ -64,7 +64,8 @@ class AZs(defaultdict):
 
         The AZs represent default dict, with predefined HypervisorGroup as default value.
         """
-        super().__init__(default_factory=None)
+        super().__init__()
+        self.default_factory = None
 
     def __missing__(self, key: str) -> HypervisorGroup:
         """Handle missing key in AZs.
@@ -255,7 +256,6 @@ class HypervisorUpgradePlanner:
         :rtype: UpgradePlan
         """
         plan = UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
-
         for az, group in self.azs.items():
             hypervisor_plan = HypervisorUpgradePlan(f"Upgrade plan for '{group.name}' to {target}")
 

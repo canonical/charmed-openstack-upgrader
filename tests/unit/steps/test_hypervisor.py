@@ -14,6 +14,7 @@
 
 """Test hypervisor package."""
 
+from textwrap import dedent
 from unittest.mock import MagicMock
 
 from cou.apps.base import OpenStackApplication
@@ -21,6 +22,7 @@ from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradeStep
 from cou.steps.hypervisor import AZs, HypervisorGroup, HypervisorUpgradePlanner
 from cou.utils.juju_utils import COUApplication, COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.utils import generate_cou_machine
 
 
 def _generate_app() -> MagicMock:
@@ -151,3 +153,100 @@ def test_hypervisor_azs_grouping():
     hypervisor_planner = HypervisorUpgradePlanner([app1, app2])
 
     assert dict(hypervisor_planner.azs) == exp_azs
+
+
+def test_hypervisor_upgrade_plan(model):
+    """Testing generating hypervisors upgrade plan."""
+    target = OpenStackRelease("victoria")
+    exp_plan = dedent(
+        """
+    Upgrading all applications deployed on machines with hypervisor.
+        Upgrade plan for 'az-0' to victoria
+            Upgrade software packages of 'cinder' from the current APT repositories
+                Upgrade software packages on unit cinder/0
+            Refresh 'cinder' to the latest revision of 'ussuri/stable'
+            Upgrade software packages of 'nova-compute' from the current APT repositories
+                Upgrade software packages on unit nova-compute/0
+            Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+            Upgrade 'cinder' to the new channel: 'victoria/stable'
+            Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
+            Change charm config of 'nova-compute' 'action-managed-upgrade' to True.
+            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
+            Wait 300s for app nova-compute to reach the idle state.
+            Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0
+            Wait 300s for app cinder to reach the idle state.
+            Check if the workload of 'cinder' has been upgraded on units: cinder/0
+        Upgrade plan for 'az-1' to victoria
+            Upgrade software packages of 'nova-compute' from the current APT repositories
+                Upgrade software packages on unit nova-compute/1
+            Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+            Change charm config of 'nova-compute' 'action-managed-upgrade' to True.
+            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
+            Wait 300s for app nova-compute to reach the idle state.
+            Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/1
+        Upgrade plan for 'az-2' to victoria
+            Upgrade software packages of 'nova-compute' from the current APT repositories
+                Upgrade software packages on unit nova-compute/2
+            Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+            Change charm config of 'nova-compute' 'action-managed-upgrade' to True.
+            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
+            Wait 300s for app nova-compute to reach the idle state.
+            Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/2
+    """
+    )
+    exp_plan = exp_plan[1:]  # skip first new line
+    exp_plan = exp_plan.replace("    ", "\t")  # replace 4 spaces with tap
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    cinder = OpenStackApplication(
+        name="cinder",
+        can_upgrade_to="ussuri/stable",
+        charm="cinder",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines={"0": machines["0"]},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "cinder/0": COUUnit(
+                name="cinder/0",
+                workload_version="16.4.2",
+                machine=machines["0"],
+            )
+        },
+        workload_version="16.4.2",
+    )
+    nova_compute = OpenStackApplication(
+        name="nova-compute",
+        can_upgrade_to="ussuri/stable",
+        charm="nova-compute",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"nova-compute/{unit}": COUUnit(
+                name=f"nova-compute/{unit}",
+                workload_version="21.0.0",
+                machine=machines[f"{unit}"],
+            )
+            for unit in range(3)
+        },
+        workload_version="21.0.0",
+    )
+
+    planner = HypervisorUpgradePlanner([cinder, nova_compute])
+    plan = planner.generate_upgrade_plan(target, False)
+
+    print(plan)
+    assert str(plan) == exp_plan
