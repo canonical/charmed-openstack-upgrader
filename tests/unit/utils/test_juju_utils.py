@@ -148,23 +148,23 @@ async def test_retry_failure():
 
 
 @pytest.mark.parametrize(
-    "machine_id, hostname, az",
+    "machine_id, az",
     [
         # one field different is considered another machine
-        ("0", "juju-c307f8-my_model-0", "zone-3"),
-        ("1", "juju-c307f8-my_model-1", "zone-2"),
+        ("0", "zone-3"),
+        ("1", "zone-2"),
     ],
 )
-def test_machine_not_eq(machine_id, hostname, az):
-    machine_0 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
-    machine_1 = juju_utils.COUMachine(machine_id, hostname, (), az)
+def test_machine_not_eq(machine_id, az):
+    machine_0 = juju_utils.COUMachine("0", (), "zone-1")
+    machine_1 = juju_utils.COUMachine(machine_id, (), az)
 
     assert machine_0 != machine_1
 
 
 def test_machine_eq():
-    machine_0 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
-    machine_1 = juju_utils.COUMachine("0", "juju-c307f8-my_model-0", (), "zone-1")
+    machine_0 = juju_utils.COUMachine("0", (), "zone-1")
+    machine_1 = juju_utils.COUMachine("0", (), "zone-1")
 
     assert machine_0 == machine_1
 
@@ -559,15 +559,14 @@ async def test_get_machines(mocked_model):
     expected_machines = {
         "0": juju_utils.COUMachine(
             "0",
-            "juju-90e5ce-0",
             (
                 ("app1", "app"),
                 ("app2", "app"),
             ),
             "zone-1",
         ),
-        "1": juju_utils.COUMachine("1", "juju-90e5ce-1", (("app1", "app"),), "zone-2"),
-        "2": juju_utils.COUMachine("2", "juju-90e5ce-2", (("app1", "app"),), "zone-3"),
+        "1": juju_utils.COUMachine("1", (("app1", "app"),), "zone-2"),
+        "2": juju_utils.COUMachine("2", (("app1", "app"),), "zone-3"),
     }
     mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
     mocked_model.units = {
@@ -603,7 +602,6 @@ def _generate_juju_unit(app: str, machine_id: str) -> MagicMock:
 def _generate_juju_machine(machine_id: str) -> MagicMock:
     machine = MagicMock(set=Machine)()
     machine.id = machine_id
-    machine.hostname = f"juju-90e5ce-{machine_id}"
     machine.hardware_characteristics = {
         "arch": "amd64",
         "mem": 0,
@@ -662,9 +660,9 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
         mocked_model.applications[app].get_config = AsyncMock()
 
     exp_machines = {
-        "0": juju_utils.COUMachine("0", "juju-90e5ce-0", ()),
-        "1": juju_utils.COUMachine("1", "juju-90e5ce-1", ()),
-        "2": juju_utils.COUMachine("2", "juju-90e5ce-2", ()),
+        "0": juju_utils.COUMachine("0", ()),
+        "1": juju_utils.COUMachine("1", ()),
+        "2": juju_utils.COUMachine("2", ()),
     }
     exp_units = {
         "app1": dict([_generate_unit_status("app1", i, f"{i}") for i in range(3)]),

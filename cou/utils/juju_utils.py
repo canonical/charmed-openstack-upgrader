@@ -138,7 +138,6 @@ class COUMachine:
     """Representation of a juju machine."""
 
     machine_id: str
-    hostname: str
     apps_charms: tuple[tuple[str, str], ...]
     az: Optional[str] = None  # simple deployments may not have azs
 
@@ -402,7 +401,6 @@ class COUModel:
         return {
             machine.id: COUMachine(
                 machine_id=machine.id,
-                hostname=machine.hostname,
                 apps_charms=self._get_machine_apps(machine.id),
                 az=machine.hardware_characteristics.get("availability-zone"),
             )

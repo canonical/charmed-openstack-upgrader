@@ -538,22 +538,18 @@ def test_analysis_not_print_warn_manually_upgrade(mock_print, model):
 
 
 @patch("cou.steps.plan.verify_data_plane_cli_azs")
-@patch("cou.steps.plan.verify_data_plane_cli_hostnames")
 @patch("cou.steps.plan.verify_data_plane_cli_machines")
 def test_verify_data_plane_cli_no_input(
     mock_verify_machines,
-    mock_verify_hostnames,
     mock_verify_azs,
     cli_args,
 ):
     cli_args.machines = None
-    cli_args.hostnames = None
     cli_args.availability_zones = None
 
     assert cou_plan.verify_data_plane_cli_input(cli_args, MagicMock(spec_set=Analysis)()) is None
 
     mock_verify_machines.assert_not_called()
-    mock_verify_hostnames.assert_not_called()
     mock_verify_azs.assert_not_called()
 
 
@@ -567,15 +563,8 @@ def test_verify_data_plane_cli_no_input(
     ],
 )
 @patch("cou.steps.plan.verify_data_plane_cli_azs")
-@patch("cou.steps.plan.verify_data_plane_cli_hostnames")
-def test_verify_data_plane_cli_input_machines(
-    mock_verify_hostnames,
-    mock_verify_azs,
-    cli_machines,
-    cli_args,
-):
+def test_verify_data_plane_cli_input_machines(mock_verify_azs, cli_machines, cli_args):
     cli_args.machines = cli_machines
-    cli_args.hostnames = None
     cli_args.availability_zones = None
     analysis_result = MagicMock(spec_set=Analysis)()
     analysis_result.data_plane_machines = analysis_result.machines = {
@@ -584,44 +573,22 @@ def test_verify_data_plane_cli_input_machines(
 
     assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
 
-    mock_verify_hostnames.assert_not_called()
     mock_verify_azs.assert_not_called()
 
 
-@patch("cou.steps.plan.verify_data_plane_cli_azs")
 @patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_data_plane_cli_input_hostnames(mock_verify_machines, mock_verify_azs, cli_args):
-    hostname = "test-host-machine"
-    machine = MagicMock(spec_set=COUMachine)()
-    machine.hostname = hostname
-    analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.data_plane_machines = analysis_result.machines = {"0": machine}
-    cli_args.machines = None
-    cli_args.hostnames = {hostname}
-    cli_args.availability_zones = None
-
-    assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
-
-    mock_verify_machines.assert_not_called()
-    mock_verify_azs.assert_not_called()
-
-
-@patch("cou.steps.plan.verify_data_plane_cli_hostnames")
-@patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_data_plane_cli_input_azs(mock_verify_machines, mock_verify_hostnames, cli_args):
+def test_verify_data_plane_cli_input_azs(mock_verify_machines, cli_args):
     az = "test-az-0"
     machine = MagicMock(spec_set=COUMachine)()
     machine.az = az
     analysis_result = MagicMock(spec_set=Analysis)()
     analysis_result.data_plane_machines = analysis_result.machines = {"0": machine}
     cli_args.machines = None
-    cli_args.hostnames = None
     cli_args.availability_zones = {az}
 
     assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
 
     mock_verify_machines.assert_not_called()
-    mock_verify_hostnames.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -641,27 +608,6 @@ def test_verify_data_plane_cli_machines_raise(cli_machines, exp_error_msg):
 
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
         cou_plan.verify_data_plane_cli_machines(cli_machines, analysis_result)
-
-
-@pytest.mark.parametrize(
-    "cli_hostnames, exp_error_msg",
-    [
-        ({"juju-c307f8-1"}, r"Hostname.*are not considered as data-plane."),
-        ({"juju-not-existing"}, r"Hostname.*don't exist."),
-    ],
-)
-def test_verify_data_plane_cli_hostname_raise(cli_hostnames, exp_error_msg):
-    machine0 = MagicMock(spec_set=COUMachine)()
-    machine0.hostname = "juju-c307f8-0"
-    machine1 = MagicMock(spec_set=COUMachine)()
-    machine1.hostname = "juju-c307f8-1"
-    analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.machines = {"0": machine0, "1": machine1}
-    analysis_result.data_plane_machines = {"0": machine0}
-    analysis_result.control_plane_machines = {"1": machine1}
-
-    with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_data_plane_cli_hostnames(cli_hostnames, analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -692,7 +638,6 @@ def test_verify_data_plane_cli_azs_raise_cannot_find():
     mock_machine = MagicMock()
     mock_machine.az = None
     mock_machine.id = "1"
-    mock_machine.hostname = "juju-5e8cf8-1"
 
     mock_analyze.machines = {"1": mock_machine}
     mock_analyze.data_plane_machines = {"1": mock_machine}
@@ -701,41 +646,27 @@ def test_verify_data_plane_cli_azs_raise_cannot_find():
 
 
 @pytest.mark.parametrize(
-    "force, cli_machines, cli_hostnames, cli_azs, expected_machines",
+    "force, cli_machines, cli_azs, expected_machines",
     [
         # machines input
-        (False, {"0", "1", "2"}, None, None, {"0", "1"}),
-        (False, {"2"}, None, None, set()),
-        (False, {"0", "1"}, None, None, {"0", "1"}),
-        (False, {"0"}, None, None, {"0"}),
-        (True, {"0", "1", "2"}, None, None, {"0", "1", "2"}),
-        (True, {"2"}, None, None, {"2"}),
-        (True, {"0"}, None, None, {"0"}),
-        # hostnames input
-        (False, None, {"juju-c307f8-0", "juju-c307f8-1", "juju-c307f8-2"}, None, {"0", "1"}),
-        (False, None, {"juju-c307f8-2"}, None, set()),
-        (False, None, {"juju-c307f8-0", "juju-c307f8-1"}, None, {"0", "1"}),
-        (False, None, {"juju-c307f8-0"}, None, {"0"}),
-        (
-            True,
-            None,
-            {"juju-c307f8-0", "juju-c307f8-1", "juju-c307f8-2"},
-            None,
-            {"0", "1", "2"},
-        ),
-        (True, None, {"juju-c307f8-2"}, None, {"2"}),
-        (True, None, {"juju-c307f8-0"}, None, {"0"}),
+        (False, {"0", "1", "2"}, None, {"0", "1"}),
+        (False, {"2"}, None, set()),
+        (False, {"0", "1"}, None, {"0", "1"}),
+        (False, {"0"}, None, {"0"}),
+        (True, {"0", "1", "2"}, None, {"0", "1", "2"}),
+        (True, {"2"}, None, {"2"}),
+        (True, {"0"}, None, {"0"}),
         # az input
-        (False, None, None, {"zone-1", "zone-2", "zone-3"}, {"0", "1"}),
-        (False, None, None, {"zone-3"}, set()),
-        (False, None, None, {"zone-1", "zone-2"}, {"0", "1"}),
-        (False, None, None, {"zone-1"}, {"0"}),
-        (True, None, None, {"zone-1", "zone-2", "zone-3"}, {"0", "1", "2"}),
-        (True, None, None, {"zone-3"}, {"2"}),
-        (True, None, None, {"zone-1"}, {"0"}),
+        (False, None, {"zone-1", "zone-2", "zone-3"}, {"0", "1"}),
+        (False, None, {"zone-3"}, set()),
+        (False, None, {"zone-1", "zone-2"}, {"0", "1"}),
+        (False, None, {"zone-1"}, {"0"}),
+        (True, None, {"zone-1", "zone-2", "zone-3"}, {"0", "1", "2"}),
+        (True, None, {"zone-3"}, {"2"}),
+        (True, None, {"zone-1"}, {"0"}),
         # no input
-        (False, None, None, None, {"0", "1"}),
-        (True, None, None, None, {"0", "1", "2"}),
+        (False, None, None, {"0", "1"}),
+        (True, None, None, {"0", "1", "2"}),
     ],
 )
 @pytest.mark.asyncio
@@ -744,18 +675,16 @@ async def test_filter_hypervisors_machines(
     mock_hypervisors_machines,
     force,
     cli_machines,
-    cli_hostnames,
     cli_azs,
     expected_machines,
     cli_args,
 ):
 
     empty_hypervisors_machines = {
-        COUMachine(str(machine_id), f"juju-c307f8-{machine_id}", (), f"zone-{machine_id + 1}")
-        for machine_id in range(2)
+        COUMachine(str(machine_id), (), f"zone-{machine_id + 1}") for machine_id in range(2)
     }
     # assuming that machine-2 has some VMs running
-    non_empty_hypervisor_machine = COUMachine("2", "juju-c307f8-2", (), "zone-3")
+    non_empty_hypervisor_machine = COUMachine("2", (), "zone-3")
 
     upgradable_hypervisors = empty_hypervisors_machines
     if force:
@@ -764,7 +693,6 @@ async def test_filter_hypervisors_machines(
     mock_hypervisors_machines.return_value = upgradable_hypervisors
 
     cli_args.machines = cli_machines
-    cli_args.hostnames = cli_hostnames
     cli_args.availability_zones = cli_azs
     cli_args.force = force
 
@@ -799,9 +727,7 @@ async def test_filter_hypervisors_machines(
 async def test_get_upgradable_hypervisors_machines(
     mock_empty_hypervisors, cli_force, empty_hypervisors, expected_result
 ):
-    machines = {
-        f"{i}": COUMachine(f"{i}", f"juju-c307f8-{i}", (), f"zone-{i + 1}") for i in range(3)
-    }
+    machines = {f"{i}": COUMachine(f"{i}", (), f"zone-{i + 1}") for i in range(3)}
     nova_compute = MagicMock(spec_set=OpenStackApplication)()
     nova_compute.charm = "nova-compute"
     nova_compute.units = {
