@@ -139,7 +139,7 @@ class COUMachine:
 
     machine_id: str
     hostname: str
-    apps: tuple[tuple[str, str], ...]
+    apps_charms: tuple[tuple[str, str], ...]
     az: Optional[str] = None  # simple deployments may not have azs
 
 
@@ -403,7 +403,7 @@ class COUModel:
             machine.id: COUMachine(
                 machine_id=machine.id,
                 hostname=machine.hostname,
-                apps=self._get_machine_apps(machine.id),
+                apps_charms=self._get_machine_apps(machine.id),
                 az=machine.hardware_characteristics.get("availability-zone"),
             )
             for machine in model.machines.values()

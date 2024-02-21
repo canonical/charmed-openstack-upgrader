@@ -76,7 +76,7 @@ def test_hypervisor_azs_grouping():
     5        started  10.10.10.6   host5          ubuntu@22.04  az2 Running
     ```
     """
-    machines = {f"{i}": COUMachine(f"{i}", f"host{i}", f"az{i//2}") for i in range(6)}
+    machines = {f"{i}": COUMachine(f"{i}", f"host{i}", (), f"az{i//2}") for i in range(6)}
     units = {
         # app1
         "app1/0": COUUnit("app1/0", machines["0"], ""),
