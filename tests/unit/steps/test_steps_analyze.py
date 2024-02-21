@@ -413,7 +413,7 @@ def _app(name, units):
 
 def _unit(machine_id):
     unit = MagicMock(spec_set=COUUnit).return_value
-    unit.machine = COUMachine(machine_id, "juju-efc45", "zone-1")
+    unit.machine = COUMachine(machine_id, "zone-1")
     return unit
 
 

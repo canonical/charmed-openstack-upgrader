@@ -36,12 +36,12 @@ def test_azs():
     test_unit = COUUnit("my-unit", MagicMock(spec_set=COUMachine)(), "")
 
     # test accessing parts of AZs
-    assert azs["my-app"].name == "my-app"
-    assert azs["my-app"].app_units["my-app"] == []
+    assert azs["my-az"].name == "my-az"
+    assert azs["my-az"].app_units["my-app"] == []
 
     # append unit to the HypervisorGroup
-    azs["my-app"].app_units["my-app"].append(test_unit)
-    assert azs["my-app"].app_units["my-app"] == [test_unit]
+    azs["my-az"].app_units["my-app"].append(test_unit)
+    assert azs["my-az"].app_units["my-app"] == [test_unit]
 
 
 def test_hypervisor_azs_grouping():
@@ -76,7 +76,7 @@ def test_hypervisor_azs_grouping():
     5        started  10.10.10.6   host5          ubuntu@22.04  az2 Running
     ```
     """
-    machines = {f"{i}": COUMachine(f"{i}", f"host{i}", f"az{i//2}") for i in range(6)}
+    machines = {f"{i}": COUMachine(f"{i}", f"az{i//2}") for i in range(6)}
     units = {
         # app1
         "app1/0": COUUnit("app1/0", machines["0"], ""),
