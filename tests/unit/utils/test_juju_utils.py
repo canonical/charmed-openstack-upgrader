@@ -560,13 +560,13 @@ async def test_get_machines(mocked_model):
         "0": juju_utils.COUMachine(
             "0",
             (
-                ("app1", "app"),
-                ("app2", "app"),
+                "app1",
+                "app2",
             ),
             "zone-1",
         ),
-        "1": juju_utils.COUMachine("1", (("app1", "app"),), "zone-2"),
-        "2": juju_utils.COUMachine("2", (("app1", "app"),), "zone-3"),
+        "1": juju_utils.COUMachine("1", ("app1",), "zone-2"),
+        "2": juju_utils.COUMachine("2", ("app1",), "zone-3"),
     }
     mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
     mocked_model.units = {
@@ -576,20 +576,14 @@ async def test_get_machines(mocked_model):
         "app2/0": _generate_juju_unit("app2", "0"),
     }
     mocked_model.applications = {
-        "app1": _generate_juju_application("app"),
-        "app2": _generate_juju_application("app"),
+        "app1": MagicMock(spec_set=Application)(),
+        "app2": MagicMock(spec_set=Application)(),
     }
 
     model = juju_utils.COUModel("test-model")
     machines = await model.get_machines()
 
     assert machines == expected_machines
-
-
-def _generate_juju_application(charm_name: str) -> MagicMock:
-    app = MagicMock(spec_set=Application)()
-    app.charm_name = charm_name
-    return app
 
 
 def _generate_juju_unit(app: str, machine_id: str) -> MagicMock:

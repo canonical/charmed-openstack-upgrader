@@ -138,7 +138,7 @@ class COUMachine:
     """Representation of a juju machine."""
 
     machine_id: str
-    apps_charms: tuple[tuple[str, str], ...]
+    apps: tuple[str]
     az: Optional[str] = None  # simple deployments may not have azs
 
 
@@ -266,20 +266,6 @@ class COUModel:
 
         return app
 
-    def _get_machine_apps(self, machine_id: int) -> tuple[tuple[str, str], ...]:
-        """Get the applications and charm names deployed in a machine.
-
-        :param machine_id: Machine id.
-        :type machine_id: int
-        :return: Tuple of tuple contains app name and charm name.
-        :rtype: tuple[tuple[str, str], ...]
-        """
-        return tuple(
-            (str(unit.application), str(self._model.applications[unit.application].charm_name))
-            for unit in self._model.units.values()
-            if unit.machine.id == machine_id
-        )
-
     async def _get_model(self) -> Model:
         """Get juju.model.Model and make sure that it is connected.
 
@@ -401,7 +387,11 @@ class COUModel:
         return {
             machine.id: COUMachine(
                 machine_id=machine.id,
-                apps_charms=self._get_machine_apps(machine.id),
+                apps=tuple(
+                    unit.application
+                    for unit in self._model.units.values()
+                    if unit.machine.id == machine.id
+                ),
                 az=machine.hardware_characteristics.get("availability-zone"),
             )
             for machine in model.machines.values()
