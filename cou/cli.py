@@ -189,6 +189,7 @@ def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     try:
         args = parse_args(sys.argv[1:])
+        logger.info("TEST")
 
         # disable progress indicator when in quiet mode to suppress its console output
         progress_indicator.enabled = not args.quiet
