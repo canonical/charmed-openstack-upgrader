@@ -66,10 +66,8 @@ def pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     """
     verify_supported_series(analysis_result)
     verify_highest_release_achieved(analysis_result)
-
-    if args.is_data_plane_command:
-        verify_data_plane_ready_to_upgrade(analysis_result)
-        verify_data_plane_cli_input(args, analysis_result)
+    verify_data_plane_ready_to_upgrade(args, analysis_result)
+    verify_hypervisors_cli_input(args, analysis_result)
 
 
 def verify_supported_series(analysis_result: Analysis) -> None:
@@ -106,21 +104,24 @@ def verify_highest_release_achieved(analysis_result: Analysis) -> None:
         )
 
 
-def verify_data_plane_ready_to_upgrade(analysis_result: Analysis) -> None:
+def verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis) -> None:
     """Verify if data plane is ready to upgrade.
 
     To be able to upgrade data-plane, first all control plane apps should be upgraded.
 
+    :param args: CLI arguments
+    :type args: CLIargs
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
-    if not analysis_result.min_os_version_data_plane:
-        raise DataPlaneCannotUpgrade(
-            "Cannot find data-plane apps. Is this a valid OpenStack cloud?"
-        )
-    if not is_control_plane_upgraded(analysis_result):
-        raise DataPlaneCannotUpgrade("Please, upgrade control-plane before data-plane")
+    if args.is_data_plane_command:
+        if not analysis_result.min_os_version_data_plane:
+            raise DataPlaneCannotUpgrade(
+                "Cannot find data-plane apps. Is this a valid OpenStack cloud?"
+            )
+        if not is_control_plane_upgraded(analysis_result):
+            raise DataPlaneCannotUpgrade("Please, upgrade control-plane before data-plane")
 
 
 def is_control_plane_upgraded(analysis_result: Analysis) -> bool:
@@ -175,7 +176,7 @@ def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
     return target
 
 
-def verify_data_plane_cli_input(args: CLIargs, analysis_result: Analysis) -> None:
+def verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> None:
     """Sanity checks from the parameters passed in the cli to upgrade data-plane.
 
     :param args: CLI arguments
@@ -183,11 +184,12 @@ def verify_data_plane_cli_input(args: CLIargs, analysis_result: Analysis) -> Non
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    if cli_machines := args.machines:
-        verify_data_plane_cli_machines(cli_machines, analysis_result)
+    if args.is_hypervisors_command:
+        if cli_machines := args.machines:
+            verify_data_plane_cli_machines(cli_machines, analysis_result)
 
-    elif cli_azs := args.availability_zones:
-        verify_data_plane_cli_azs(cli_azs, analysis_result)
+        elif cli_azs := args.availability_zones:
+            verify_data_plane_cli_azs(cli_azs, analysis_result)
 
 
 def verify_data_plane_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:

@@ -18,7 +18,31 @@ from unittest.mock import patch
 import pytest
 
 from cou import commands
-from cou.commands import CLIargs
+from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
+
+
+@pytest.mark.parametrize("auto_approve, expected_result", [(True, False), (False, True)])
+def test_CLIargs_prompt(auto_approve, expected_result):
+    args = CLIargs("plan", auto_approve=auto_approve)
+    assert args.prompt is expected_result
+
+
+@pytest.mark.parametrize(
+    "upgrade_group, expected_result",
+    [(CONTROL_PLANE, False), (DATA_PLANE, False), (HYPERVISORS, True), ("foo", False)],
+)
+def test_CLIargs_is_hypervisors_command(upgrade_group, expected_result):
+    args = CLIargs("plan", upgrade_group=upgrade_group)
+    assert args.is_hypervisors_command is expected_result
+
+
+@pytest.mark.parametrize(
+    "upgrade_group, expected_result",
+    [(CONTROL_PLANE, False), (DATA_PLANE, True), (HYPERVISORS, True), ("foo", False)],
+)
+def test_CLIargs_is_data_plane_command(upgrade_group, expected_result):
+    args = CLIargs("plan", upgrade_group=upgrade_group)
+    assert args.is_data_plane_command is expected_result
 
 
 @pytest.mark.parametrize(
@@ -34,8 +58,10 @@ from cou.commands import CLIargs
         ["upgrade", "-h"],
         ["plan", "control-plane", "-h"],
         ["plan", "data-plane", "-h"],
+        ["plan", "hypervisors", "-h"],
         ["upgrade", "control-plane", "-h"],
         ["upgrade", "data-plane", "-h"],
+        ["upgrade", "hypervisors", "-h"],
     ],
 )
 def test_parse_args_help(args):
@@ -151,6 +177,20 @@ def test_parse_args_quiet_verbose_exclusive(args):
             ),
         ),
         (
+            ["plan", "hypervisors"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=False,
+                machines=None,
+                availability_zones=None,
+                **{"upgrade_group": "hypervisors"}
+            ),
+        ),
+        (
             ["plan", "data-plane", "--force"],
             CLIargs(
                 command="plan",
@@ -162,6 +202,20 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "data-plane"}
+            ),
+        ),
+        (
+            ["plan", "hypervisors", "--force"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=True,
+                machines=None,
+                availability_zones=None,
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
@@ -177,7 +231,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
             ),
         ),
         (
-            ["plan", "data-plane", "--machine=1", "-m=2,3"],
+            ["plan", "hypervisors", "--machine=1", "-m=2,3"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -187,11 +241,11 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 force=False,
                 machines={"1", "2", "3"},
                 availability_zones=None,
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
-            ["plan", "data-plane", "--machine=1", "-m=2,3", "--force"],
+            ["plan", "hypervisors", "--machine=1", "-m=2,3", "--force"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -201,11 +255,11 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 force=True,
                 machines={"1", "2", "3"},
                 availability_zones=None,
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
-            ["plan", "data-plane", "--quiet", "--availability-zone=1", "--az=2,3"],
+            ["plan", "hypervisors", "--quiet", "--availability-zone=1", "--az=2,3"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -215,11 +269,11 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 force=False,
                 machines=None,
                 availability_zones={"1", "2", "3"},
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
-            ["plan", "data-plane", "--force", "--quiet", "--availability-zone=1", "--az=2,3"],
+            ["plan", "hypervisors", "--force", "--quiet", "--availability-zone=1", "--az=2,3"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -229,12 +283,12 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 force=True,
                 machines=None,
                 availability_zones={"1", "2", "3"},
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
             # repetitive machine 3
-            ["plan", "data-plane", "--machine=1,2,3", "--force", "-m=3,4"],
+            ["plan", "hypervisors", "--machine=1,2,3", "--force", "-m=3,4"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -244,7 +298,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 force=True,
                 machines={"1", "2", "3", "4"},
                 availability_zones=None,
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
     ],
@@ -439,7 +493,7 @@ def test_parse_args_plan(args, expected_CLIargs):
             ),
         ),
         (
-            ["upgrade", "data-plane", "--machine=1", "-m=2,3"],
+            ["upgrade", "hypervisors", "--machine=1", "-m=2,3"],
             CLIargs(
                 command="upgrade",
                 model_name=None,
@@ -450,11 +504,11 @@ def test_parse_args_plan(args, expected_CLIargs):
                 force=False,
                 machines={"1", "2", "3"},
                 availability_zones=None,
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
-            ["upgrade", "data-plane", "--machine=1", "-m=2,3", "--force"],
+            ["upgrade", "hypervisors", "--machine=1", "-m=2,3", "--force"],
             CLIargs(
                 command="upgrade",
                 model_name=None,
@@ -465,11 +519,11 @@ def test_parse_args_plan(args, expected_CLIargs):
                 force=True,
                 machines={"1", "2", "3"},
                 availability_zones=None,
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
-            ["upgrade", "data-plane", "--quiet", "--availability-zone=1", "--az=2,3"],
+            ["upgrade", "hypervisors", "--quiet", "--availability-zone=1", "--az=2,3"],
             CLIargs(
                 command="upgrade",
                 model_name=None,
@@ -480,11 +534,11 @@ def test_parse_args_plan(args, expected_CLIargs):
                 force=False,
                 machines=None,
                 availability_zones={"1", "2", "3"},
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
-            ["upgrade", "--quiet", "data-plane", "--availability-zone=1", "--az=2,3"],
+            ["upgrade", "--quiet", "hypervisors", "--availability-zone=1", "--az=2,3"],
             CLIargs(
                 command="upgrade",
                 model_name=None,
@@ -495,11 +549,11 @@ def test_parse_args_plan(args, expected_CLIargs):
                 force=False,
                 machines=None,
                 availability_zones={"1", "2", "3"},
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
-            ["upgrade", "data-plane", "--force", "--quiet", "--availability-zone=1", "--az=2,3"],
+            ["upgrade", "hypervisors", "--force", "--quiet", "--availability-zone=1", "--az=2,3"],
             CLIargs(
                 command="upgrade",
                 model_name=None,
@@ -510,14 +564,14 @@ def test_parse_args_plan(args, expected_CLIargs):
                 force=True,
                 machines=None,
                 availability_zones={"1", "2", "3"},
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
         (
             # repetitive machine 3
             [
                 "upgrade",
-                "data-plane",
+                "hypervisors",
                 "--auto-approve",
                 "--force",
                 "--machine=1, 2, 3",
@@ -533,7 +587,7 @@ def test_parse_args_plan(args, expected_CLIargs):
                 force=True,
                 machines={"1", "2", "3", "4"},
                 availability_zones=None,
-                **{"upgrade_group": "data-plane"}
+                **{"upgrade_group": "hypervisors"}
             ),
         ),
     ],
@@ -548,17 +602,27 @@ def test_parse_args_upgrade(args, expected_CLIargs):
 @pytest.mark.parametrize(
     "args",
     [
-        ["upgrade", "data-plane", "--machine 1", "--az 2"],
-        ["upgrade", "data-plane", "--az 1", "-m 2"],
+        ["upgrade", "hypervisors", "--machine 1", "--az 2"],
+        ["upgrade", "hypervisors", "--az 1", "-m 2"],
     ],
 )
-def test_parse_args_dataplane_exclusive_options(args):
-    """Test parsing mutually exclusive data-plane specific options."""
+def test_parse_args_hypervisors_exclusive_options(args):
+    """Test parsing mutually exclusive hypervisors specific options."""
     with pytest.raises(SystemExit, match="2"):
         commands.parse_args(args)
 
 
-@pytest.mark.parametrize("args", [["foo"], ["--bar"]])
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["foo"],
+        ["--bar"],
+        ["plan", "data-plane", "--machine 1"],
+        ["plan", "data-plane", "--availability-zone zone-1"],
+        ["upgrade", "data-plane", "--machine 1"],
+        ["upgrade", "data-plane", "--availability-zone zone-1"],
+    ],
+)
 def test_parse_args_raise_exception(args):
     """Test parsing unknown arguments."""
     with pytest.raises(SystemExit, match="2"):

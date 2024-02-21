@@ -22,6 +22,7 @@ import pkg_resources
 
 CONTROL_PLANE = "control-plane"
 DATA_PLANE = "data-plane"
+HYPERVISORS = "hypervisors"
 
 
 logger = logging.getLogger(__name__)
@@ -157,16 +158,16 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     return subcommand_common_opts_parser
 
 
-def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
-    """Create a shared parser for options specific to data-plane.
+def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
+    """Create a shared parser for options specific to hypervisors child command.
 
-    :return: a parser groups options specific to data-plane
+    :return: a parser groups options specific to hypervisors
     :rtype: argparse.ArgumentParser
     """
-    # Define options specific to data-plane child command and make them mutually exclusive
-    dp_subparser = argparse.ArgumentParser(add_help=False)
-    dp_upgrade_group = dp_subparser.add_mutually_exclusive_group()
-    dp_upgrade_group.add_argument(
+    # Define options specific to hypervisors child command and make them mutually exclusive
+    hypervisors_subparser = argparse.ArgumentParser(add_help=False)
+    hypervisors_filters = hypervisors_subparser.add_mutually_exclusive_group()
+    hypervisors_filters.add_argument(
         "--machine",
         "-m",
         help="Specify machine id(s) to upgrade.\nThis option accepts a single machine id as well "
@@ -175,7 +176,7 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         action=SplitArgs,
         type=str,
     )
-    dp_upgrade_group.add_argument(
+    hypervisors_filters.add_argument(
         "--availability-zone",
         "--az",
         help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
@@ -185,13 +186,13 @@ def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
         dest="availability_zones",
         type=str,
     )
-    return dp_subparser
+    return hypervisors_subparser
 
 
 def create_plan_subparser(
     subparsers: argparse._SubParsersAction,
     subcommand_common_opts_parser: argparse.ArgumentParser,
-    dp_parser: argparse.ArgumentParser,
+    hypervisors_parser: argparse.ArgumentParser,
 ) -> None:
     """Create and configure 'plan' subcommand parser.
 
@@ -199,8 +200,8 @@ def create_plan_subparser(
     :type subparsers: argparse.ArgumentParser
     :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
     :type subcommand_common_opts_parser: argparse.ArgumentParser
-    :param dp_parser: a parser groups options specific to data-plane
-    :type dp_parser: argparse.ArgumentParser
+    :param hypervisors_parser: a parser groups options specific to hypervisors
+    :type hypervisors_parser: argparse.ArgumentParser
     """
     # Arg parser for "cou plan" sub-command
     plan_parser = subparsers.add_parser(
@@ -239,7 +240,20 @@ def create_plan_subparser(
         help="Show the steps for upgrading the data-plane components.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
         usage="cou plan data-plane [options]",
-        parents=[subcommand_common_opts_parser, dp_parser],
+        parents=[subcommand_common_opts_parser],
+        formatter_class=CapitalizeHelpFormatter,
+    )
+    plan_subparser.add_parser(
+        HYPERVISORS,
+        description="Show the steps for upgrading nova-compute machines.\nThis is possible "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n"
+        "This command is specific for nova-compute machines, meaning that no plan or upgrade "
+        "happens for other data-plane applications that cannot upgrade using the unit by unit "
+        "strategy like ceph-osd for example.",
+        help="Show the steps for upgrading hypervisors.\nThis is possible "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
+        usage="cou plan hypervisors [options]",
+        parents=[subcommand_common_opts_parser, hypervisors_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
 
@@ -247,7 +261,7 @@ def create_plan_subparser(
 def create_upgrade_subparser(
     subparsers: argparse._SubParsersAction,
     subcommand_common_opts_parser: argparse.ArgumentParser,
-    dp_parser: argparse.ArgumentParser,
+    hypervisors_parser: argparse.ArgumentParser,
 ) -> None:
     """Create and configure 'upgrade' subcommand parser.
 
@@ -255,8 +269,8 @@ def create_upgrade_subparser(
     :type subparsers: argparse.ArgumentParser
     :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
     :type subcommand_common_opts_parser: argparse.ArgumentParser
-    :param dp_parser: a parser groups options specific to data-plane
-    :type dp_parser: argparse.ArgumentParser
+    :param hypervisors_parser: a parser groups options specific to data-plane
+    :type hypervisors_parser: argparse.ArgumentParser
     """
     # Arg parser for "cou upgrade" sub-command and set up common options
     upgrade_args_parser = argparse.ArgumentParser(add_help=False)
@@ -303,9 +317,22 @@ def create_upgrade_subparser(
         help="Run upgrade for the data-plane components.\nThis is possible only if "
         "control-plane has been fully upgraded,\notherwise an error will be thrown.",
         usage="cou plan data-plane [options]",
+        parents=[subcommand_common_opts_parser, upgrade_args_parser],
+        formatter_class=CapitalizeHelpFormatter,
+    )
+    upgrade_subparser.add_parser(
+        HYPERVISORS,
+        description="Run upgrade for the nova-compute machines.\nThis is possible "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n"
+        "This command is specific for nova-compute machines, meaning that no upgrade "
+        "happens for other data-plane applications that cannot upgrade using the unit by unit "
+        "strategy like ceph-osd for example.",
+        help="Run upgrade for the hypervisors.\nThis is possible "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
+        usage="cou upgrade hypervisors [options]",
         parents=[
             subcommand_common_opts_parser,
-            dp_parser,
+            hypervisors_parser,
             upgrade_args_parser,
         ],
         formatter_class=CapitalizeHelpFormatter,
@@ -341,9 +368,9 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
     )
 
     subcommand_common_opts_parser = get_subcommand_common_opts_parser()
-    dp_parser = get_dataplane_common_opts_parser()
-    create_plan_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
-    create_upgrade_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
+    hypervisors_parser = get_hypervisors_common_opts_parser()
+    create_plan_subparser(subparsers, subcommand_common_opts_parser, hypervisors_parser)
+    create_upgrade_subparser(subparsers, subcommand_common_opts_parser, hypervisors_parser)
 
     return subparsers
 
@@ -379,13 +406,22 @@ class CLIargs:
         return not self.auto_approve
 
     @property
+    def is_hypervisors_command(self) -> bool:
+        """Whether if the command passed is specific to hypervisors.
+
+        :return: True if is hypervisors, false otherwise.
+        :rtype: bool
+        """
+        return self.upgrade_group == HYPERVISORS
+
+    @property
     def is_data_plane_command(self) -> bool:
         """Whether if the command passed is data-plane related.
 
         :return: True if is data-plane, false otherwise.
         :rtype: bool
         """
-        return self.upgrade_group == DATA_PLANE
+        return self.is_hypervisors_command or self.upgrade_group == DATA_PLANE
 
 
 def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements
