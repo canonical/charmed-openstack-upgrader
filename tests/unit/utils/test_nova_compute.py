@@ -122,7 +122,7 @@ async def test_verify_empty_hypervisor_before_upgrade(mock_instance_count, model
 def _mock_nova_unit(nova_unit):
     mock_nova_unit = MagicMock(spec_set=COUUnit(MagicMock(), MagicMock(), MagicMock()))
     mock_nova_unit.name = f"nova-compute/{nova_unit}"
-    nova_machine = COUMachine(str(nova_unit), f"juju-c307f8-{nova_unit}", f"zone-{nova_unit + 1}")
+    nova_machine = COUMachine(str(nova_unit), f"zone-{nova_unit + 1}")
     mock_nova_unit.machine = nova_machine
 
     return mock_nova_unit
