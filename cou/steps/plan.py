@@ -324,12 +324,15 @@ def _generate_control_plane_plan(
         filter_function=lambda app: isinstance(app, SubordinateBaseClass),
     )
 
-    logger.debug("generating of control plane upgrade plan finished")
+    logger.debug("Generation of the control plane upgrade plan complete")
     return [principal_upgrade_plan, subordinate_upgrade_plan]
 
 
 def _generate_data_plane_plan(
-    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
+    target: OpenStackRelease,
+    apps: list[OpenStackApplication],
+    hypervisors: list[COUMachine],
+    force: bool,
 ) -> list[UpgradePlan]:  # pragma: no cover
     """Generate upgrade plan for data plane.
 
@@ -337,9 +340,11 @@ def _generate_data_plane_plan(
     :type target: OpenStackRelease
     :param apps: List of data plane applications.
     :type apps: list[OpenStackApplication]
+    :param hypervisors: hypervisors filtered to generate plan and upgrade.
+    :type: list[COUMachine]
     :param force: Whether the plan generation should be forced
     :type force: bool
-    :return: Hypervisors plans and other
+    :return: Hypervisors plans and other data plane applications, e.g. ceph-osd
     :rtype: list[UpgradePlan]
     """
     nova_compute_machines = [
@@ -347,19 +352,24 @@ def _generate_data_plane_plan(
         for app in apps
         for unit in app.units.values()
         if app.charm == "nova-compute"
+        if unit.machine.machine_id not in hypervisors
     ]
     hypervisor_apps = []
     for app in apps:
+        if app.charm == "ceph-osd":
+            # ceph-osd will not be handled by hypervisor planner
+            continue
+
         for machine in app.machines:
             if machine in nova_compute_machines:
                 hypervisor_apps.append(app)
-                break  # exiting machine for loop, since
+                break  # exiting machine for loop
 
     hypervisor_planner = HypervisorUpgradePlanner(hypervisor_apps)
     hypervisor_plans = hypervisor_planner.generate_upgrade_plan(target, force)
-    logger.debug("generating of hypervisors upgrade plan finished")
+    logger.debug("Generation of the hypervisors upgrade plan complete")
 
-    # generating rest
+    # generate the plan for the remaining data-plane apps
     return [hypervisor_plans]
 
 
@@ -408,7 +418,9 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
         _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
     )
     # plan.sub_steps.extend(
-    #     _generate_data_plane_plan(target, analysis_result.apps_data_plane, args.force)
+    #     _generate_data_plane_plan(
+    #         target, analysis_result.apps_data_plane, hypervisors, args.force
+    #     )
     # )
 
     return plan
