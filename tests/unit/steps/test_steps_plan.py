@@ -541,9 +541,9 @@ def test_analysis_not_print_warn_manually_upgrade(mock_print, model):
 @pytest.mark.parametrize("is_hypervisors_command", [True, False])
 @patch("cou.steps.plan.verify_data_plane_cli_azs")
 @patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_hypervisors_cli_no_input(
-    mock_verify_machines,
-    mock_verify_azs,
+def test_verify_hypervisors_cli_input(
+    mock_cli_machines,
+    mock_cli_azs,
     cli_args,
     is_hypervisors_command,
 ):
@@ -551,50 +551,22 @@ def test_verify_hypervisors_cli_no_input(
     cli_args.machines = None
     cli_args.availability_zones = None
 
-    assert cou_plan.verify_hypervisors_cli_input(cli_args, MagicMock(spec_set=Analysis)()) is None
-
-    mock_verify_machines.assert_not_called()
-    mock_verify_azs.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "cli_machines",
-    [
-        {"0"},
-        {"1"},
-        {"2"},
-        {"0", "1", "2"},
-    ],
-)
-@patch("cou.steps.plan.verify_data_plane_cli_azs")
-def test_verify_hypervisors_cli_input_machines(mock_verify_azs, cli_machines, cli_args):
-    cli_args.is_hypervisors_command = True
-    cli_args.machines = cli_machines
-    cli_args.availability_zones = None
     analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.data_plane_machines = analysis_result.machines = {
-        f"{i}": MagicMock(spec_set=COUMachine)() for i in range(3)
-    }
 
     assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
 
-    mock_verify_azs.assert_not_called()
+    if is_hypervisors_command:
+        mock_cli_machines.assert_called_once_with(cli_args.machines, analysis_result)
+        mock_cli_azs.assert_called_once_with(cli_args.availability_zones, analysis_result)
+    else:
+        mock_cli_machines.assert_not_called()
+        mock_cli_azs.assert_not_called()
 
 
-@patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_hypervisors_cli_input_azs(mock_verify_machines, cli_args):
-    cli_args.is_hypervisors_command = True
-    az = "test-az-0"
-    machine = MagicMock(spec_set=COUMachine)()
-    machine.az = az
+def test_verify_data_plane_cli_machines_no_input():
+    cli_machines = None
     analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.data_plane_machines = analysis_result.machines = {"0": machine}
-    cli_args.machines = None
-    cli_args.availability_zones = {az}
-
-    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
-
-    mock_verify_machines.assert_not_called()
+    assert cou_plan.verify_data_plane_cli_machines(cli_machines, analysis_result) is None
 
 
 @pytest.mark.parametrize(
@@ -614,6 +586,12 @@ def test_verify_data_plane_cli_machines_raise(cli_machines, exp_error_msg):
 
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
         cou_plan.verify_data_plane_cli_machines(cli_machines, analysis_result)
+
+
+def test_verify_data_plane_cli_azs_no_input():
+    cli_azs = None
+    analysis_result = MagicMock(spec_set=Analysis)()
+    assert cou_plan.verify_data_plane_cli_azs(cli_azs, analysis_result) is None
 
 
 @pytest.mark.parametrize(

@@ -23,7 +23,7 @@ from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 
 @pytest.mark.parametrize("auto_approve, expected_result", [(True, False), (False, True)])
 def test_CLIargs_prompt(auto_approve, expected_result):
-    args = CLIargs("plan", auto_approve=auto_approve)
+    args = CLIargs(command="foo", auto_approve=auto_approve)
     assert args.prompt is expected_result
 
 
@@ -32,7 +32,7 @@ def test_CLIargs_prompt(auto_approve, expected_result):
     [(CONTROL_PLANE, False), (DATA_PLANE, False), (HYPERVISORS, True), ("foo", False)],
 )
 def test_CLIargs_is_hypervisors_command(upgrade_group, expected_result):
-    args = CLIargs("plan", upgrade_group=upgrade_group)
+    args = CLIargs(command="foo", upgrade_group=upgrade_group)
     assert args.is_hypervisors_command is expected_result
 
 
@@ -41,7 +41,7 @@ def test_CLIargs_is_hypervisors_command(upgrade_group, expected_result):
     [(CONTROL_PLANE, False), (DATA_PLANE, True), (HYPERVISORS, True), ("foo", False)],
 )
 def test_CLIargs_is_data_plane_command(upgrade_group, expected_result):
-    args = CLIargs("plan", upgrade_group=upgrade_group)
+    args = CLIargs(command="foo", upgrade_group=upgrade_group)
     assert args.is_data_plane_command is expected_result
 
 

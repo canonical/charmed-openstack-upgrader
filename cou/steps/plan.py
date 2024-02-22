@@ -15,7 +15,7 @@
 """Upgrade planning utilities."""
 
 import logging
-from typing import Callable
+from typing import Callable, Optional
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -185,14 +185,13 @@ def verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> No
     :type analysis_result: Analysis
     """
     if args.is_hypervisors_command:
-        if cli_machines := args.machines:
-            verify_data_plane_cli_machines(cli_machines, analysis_result)
-
-        elif cli_azs := args.availability_zones:
-            verify_data_plane_cli_azs(cli_azs, analysis_result)
+        verify_data_plane_cli_machines(args.machines, analysis_result)
+        verify_data_plane_cli_azs(args.availability_zones, analysis_result)
 
 
-def verify_data_plane_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:
+def verify_data_plane_cli_machines(
+    cli_machines: Optional[set[str]], analysis_result: Analysis
+) -> None:
     """Verify if the machines passed from the CLI are valid.
 
     :param cli_machines: Machines passed to the CLI as arguments
@@ -200,15 +199,16 @@ def verify_data_plane_cli_machines(cli_machines: set[str], analysis_result: Anal
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    verify_data_plane_membership(
-        all_options=set(analysis_result.machines.keys()),
-        data_plane_options=set(analysis_result.data_plane_machines.keys()),
-        cli_input=cli_machines,
-        parameter_type="Machine(s)",
-    )
+    if cli_machines:
+        verify_data_plane_membership(
+            all_options=set(analysis_result.machines.keys()),
+            data_plane_options=set(analysis_result.data_plane_machines.keys()),
+            cli_input=cli_machines,
+            parameter_type="Machine(s)",
+        )
 
 
-def verify_data_plane_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> None:
+def verify_data_plane_cli_azs(cli_azs: Optional[set[str]], analysis_result: Analysis) -> None:
     """Verify if the availability zones passed from the CLI are valid.
 
     :param cli_azs: AZs passed to the CLI as arguments
@@ -217,26 +217,27 @@ def verify_data_plane_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> N
     :type analysis_result: Analysis
     :raises DataPlaneMachineFilterError: When the cloud does not have availability zones.
     """
-    all_azs: set[str] = {
-        machine.az for machine in analysis_result.machines.values() if machine.az is not None
-    }
-    data_plane_azs: set[str] = {
-        machine.az
-        for machine in analysis_result.data_plane_machines.values()
-        if machine.az is not None
-    }
+    if cli_azs:
+        all_azs: set[str] = {
+            machine.az for machine in analysis_result.machines.values() if machine.az is not None
+        }
+        data_plane_azs: set[str] = {
+            machine.az
+            for machine in analysis_result.data_plane_machines.values()
+            if machine.az is not None
+        }
 
-    if not data_plane_azs and not all_azs:
-        raise DataPlaneMachineFilterError(
-            "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
+        if not data_plane_azs and not all_azs:
+            raise DataPlaneMachineFilterError(
+                "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
+            )
+
+        verify_data_plane_membership(
+            all_options=all_azs,
+            data_plane_options=data_plane_azs,
+            cli_input=cli_azs,
+            parameter_type="Availability Zone(s)",
         )
-
-    verify_data_plane_membership(
-        all_options=all_azs,
-        data_plane_options=data_plane_azs,
-        cli_input=cli_azs,
-        parameter_type="Availability Zone(s)",
-    )
 
 
 def verify_data_plane_membership(
