@@ -394,7 +394,22 @@ class CLIargs:
         :return: True if is control-plane, false otherwise.
         :rtype: bool
         """
-        return self.upgrade_group == CONTROL_PLANE or not self.is_data_plane_command
+        return self.upgrade_group == CONTROL_PLANE
+
+    @property
+    def is_generic_command(self) -> bool:
+        """Whether the command has no specific group for upgrading.
+
+        When this happens both control-plane and data-plane should generate
+        plans.
+        E.g of generic commands:
+            - cou upgrade
+            - cou plan
+
+        :return: True if upgrade_group is None, false otherwise.
+        :rtype: bool
+        """
+        return self.upgrade_group is None
 
 
 def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements

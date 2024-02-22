@@ -23,11 +23,20 @@ from cou.commands import CONTROL_PLANE, DATA_PLANE, CLIargs
 
 @pytest.mark.parametrize(
     "upgrade_group, expected_result",
-    [(CONTROL_PLANE, True), (DATA_PLANE, False), ("foo", True)],
+    [(CONTROL_PLANE, True), (DATA_PLANE, False), (None, False)],
 )
 def test_CLIargs_is_control_plane_command(upgrade_group, expected_result):
-    args = CLIargs("plan", upgrade_group=upgrade_group)
+    args = CLIargs(command="foo", upgrade_group=upgrade_group)
     assert args.is_control_plane_command is expected_result
+
+
+@pytest.mark.parametrize(
+    "upgrade_group, expected_result",
+    [(CONTROL_PLANE, False), (DATA_PLANE, False), (None, True)],
+)
+def test_CLIargs_is_generic_command(upgrade_group, expected_result):
+    args = CLIargs(command="foo", upgrade_group=upgrade_group)
+    assert args.is_generic_command is expected_result
 
 
 @pytest.mark.parametrize(

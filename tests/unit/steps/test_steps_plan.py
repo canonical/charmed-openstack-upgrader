@@ -761,29 +761,37 @@ async def test_get_upgradable_hypervisors_machines(
 
 
 @pytest.mark.parametrize("backup", [True, False])
-@patch("cou.steps.plan.UpgradePlan")
-@patch("cou.steps.plan.PreUpgradeStep")
-def test_generate_common_plan(mock_PreUpgradeStep, mock_UpgradePlan, backup, cli_args):
+def test_generate_common_plan(backup, cli_args):
     target = OpenStackRelease("victoria")
     nova_compute = MagicMock(spec_set=OpenStackApplication)()
-    mock_analysis_result = MagicMock(spec=Analysis)()
+
+    # analysis_result.model.wait_for_active_idle() should have __name__
+    # to not raise an error.
+    class AnalysisResult(MagicMock):
+        __name__ = "wait_for_active_idle"
+
+    mock_analysis_result = AnalysisResult(spec=Analysis)()
     mock_analysis_result.apps_control_plane = [nova_compute]
 
     cli_args.backup = backup
 
-    cou_plan.generate_common_plan(mock_analysis_result, cli_args, target)
+    plan = cou_plan.generate_common_plan(mock_analysis_result, cli_args, target)
 
     if backup:
-        assert mock_PreUpgradeStep.call_count == 2
+        assert len(plan.sub_steps) == 2
+        assert plan.sub_steps[1].description == "Backup mysql databases"
     else:
-        mock_PreUpgradeStep.call_count == 1
+        assert len(plan.sub_steps) == 1
+        assert plan.sub_steps[0].description != "Backup mysql databases"
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("is_control_plane_command", [True, False])
+@pytest.mark.parametrize(
+    "is_control_plane_command, is_generic_command", [(True, False), (False, False), (False, True)]
+)
 @patch("cou.steps.plan.create_upgrade_group")
 async def test_generate_control_plane_plan(
-    mock_create_upgrade_group, is_control_plane_command, cli_args
+    mock_create_upgrade_group, is_control_plane_command, is_generic_command, cli_args
 ):
     target = OpenStackRelease("victoria")
     nova_compute = MagicMock(spec_set=OpenStackApplication)()
@@ -791,27 +799,31 @@ async def test_generate_control_plane_plan(
     mock_analysis_result.apps_control_plane = [nova_compute]
 
     cli_args.is_control_plane_command = is_control_plane_command
+    cli_args.is_generic_command = is_generic_command
 
     await cou_plan.generate_control_plane_plan(mock_analysis_result, cli_args, target)
 
-    if is_control_plane_command:
+    if is_control_plane_command or is_generic_command:
         assert mock_create_upgrade_group.await_count == 2
     else:
         mock_create_upgrade_group.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("is_data_plane_command", [True, False])
+@pytest.mark.parametrize(
+    "is_data_plane_command, is_generic_command", [(True, False), (False, False), (False, True)]
+)
 @patch("cou.steps.plan.filter_hypervisors_machines")
 async def test_generate_data_plane_plan(
-    mock_filtered_hypervisors, is_data_plane_command, cli_args
+    mock_filtered_hypervisors, is_data_plane_command, is_generic_command, cli_args
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
     cli_args.is_data_plane_command = is_data_plane_command
+    cli_args.is_generic_command = is_generic_command
 
     await cou_plan.generate_data_plane_plan(mock_analysis_result, cli_args)
 
-    if is_data_plane_command:
+    if is_data_plane_command or is_generic_command:
         mock_filtered_hypervisors.assert_awaited_with(cli_args, mock_analysis_result)
     else:
         mock_filtered_hypervisors.assert_not_awaited()

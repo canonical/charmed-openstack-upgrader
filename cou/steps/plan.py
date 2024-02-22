@@ -376,7 +376,7 @@ async def generate_control_plane_plan(
     :rtype: tuple[UpgradePlan, UpgradePlan]
     """
     principal_plan = subordinate_plan = UpgradePlan("")
-    if args.is_control_plane_command:
+    if args.is_control_plane_command or args.is_generic_command:
         principal_plan = await create_upgrade_group(
             apps=analysis_result.apps_control_plane,
             description="Control Plane principal(s) upgrade plan",
@@ -407,7 +407,7 @@ async def generate_data_plane_plan(
     :rtype: tuple[UpgradePlan, UpgradePlan]
     """
     principal_plan = subordinate_plan = UpgradePlan("")
-    if args.is_data_plane_command:
+    if args.is_data_plane_command or args.is_generic_command:
         hypervisors = await filter_hypervisors_machines(args, analysis_result)
         logger.info("Hypervisors selected: %s", hypervisors)
     return principal_plan, subordinate_plan
