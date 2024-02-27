@@ -86,9 +86,8 @@ async def test_get_upgrade_plan(mock_print_and_debug, mock_analyze_and_plan, cli
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
-    mock_analysis_result = MagicMock()
 
-    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
+    mock_analyze_and_plan.return_value = plan
     await cli.get_upgrade_plan(cli_args)
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
@@ -125,8 +124,7 @@ async def test_run_upgrade_quiet_no_prompt(
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
-    mock_analysis_result = MagicMock()
-    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
+    mock_analyze_and_plan.return_value = plan
 
     await cli.run_upgrade(cli_args)
 
@@ -151,8 +149,7 @@ async def test_run_upgrade_with_prompt_continue(
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
-    mock_analysis_result = MagicMock()
-    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
+    mock_analyze_and_plan.return_value = plan
     mock_continue_upgrade.return_value = True
 
     await cli.run_upgrade(cli_args)
@@ -177,8 +174,7 @@ async def test_run_upgrade_with_prompt_abort(
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
-    mock_analysis_result = MagicMock()
-    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
+    mock_analyze_and_plan.return_value = plan
     mock_continue_upgrade.return_value = False
 
     await cli.run_upgrade(cli_args)
@@ -203,8 +199,7 @@ async def test_run_upgrade_with_no_prompt(
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
-    mock_analysis_result = MagicMock()
-    mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
+    mock_analyze_and_plan.return_value = plan
 
     await cli.run_upgrade(cli_args)
 

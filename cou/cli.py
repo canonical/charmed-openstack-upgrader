@@ -105,7 +105,7 @@ async def continue_upgrade() -> bool:
     return False
 
 
-async def analyze_and_plan(args: CLIargs) -> tuple[Analysis, UpgradePlan]:
+async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param args: CLI arguments
@@ -128,7 +128,7 @@ async def analyze_and_plan(args: CLIargs) -> tuple[Analysis, UpgradePlan]:
     upgrade_plan = await generate_plan(analysis_result, args)
     progress_indicator.succeed()
 
-    return analysis_result, upgrade_plan
+    return upgrade_plan
 
 
 async def get_upgrade_plan(args: CLIargs) -> None:
@@ -137,7 +137,7 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    _, upgrade_plan = await analyze_and_plan(args)
+    upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
     print(
         "Please note that the actual upgrade steps could be different if the cloud state "
@@ -151,7 +151,7 @@ async def run_upgrade(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    _, upgrade_plan = await analyze_and_plan(args)
+    upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
     if args.prompt and not await continue_upgrade():
