@@ -109,12 +109,14 @@ def test_step_bool():
     sub_step = BaseStep(description="a.a")
     assert bool(sub_step) is False
 
-    plan.sub_steps = [sub_step]
+    plan.add_step(sub_step)
     assert bool(plan) is False
 
     # coroutine in the plan sub_steps tree
     sub_sub_step = BaseStep(description="a.a.a", coro=mock_coro("a.a.a"))
-    sub_step.sub_steps = [sub_sub_step]
+    sub_step.add_step(sub_sub_step)
+    plan.add_step(sub_step)
+
     assert bool(sub_sub_step) is True
     assert bool(sub_step) is True
     assert bool(plan) is True
@@ -202,6 +204,16 @@ def test_step_add_step():
     exp_sub_steps = 3
     plan = BaseStep(description="plan")
     for i in range(exp_sub_steps):
+        plan.add_step(BaseStep(description=f"sub-step-{i}", coro=mock_coro()))
+
+    assert len(plan.sub_steps) == exp_sub_steps
+
+
+def test_step_add_step_skiiping_empty():
+    """Test BaseStep akiiping to add empty sub steps."""
+    exp_sub_steps = 0
+    plan = BaseStep(description="plan")
+    for i in range(exp_sub_steps):
         plan.add_step(BaseStep(description=f"sub-step-{i}"))
 
     assert len(plan.sub_steps) == exp_sub_steps
@@ -219,9 +231,13 @@ def test_step_add_step_failed():
 def test_step_cancel_safe():
     """Test step safe cancel."""
     plan = BaseStep(description="plan")
-    plan.sub_steps = sub_steps = [BaseStep(description=f"sub-{i}") for i in range(10)]
+    plan.sub_steps = sub_steps = [
+        BaseStep(description=f"sub-{i}", coro=mock_coro()) for i in range(10)
+    ]
     # add sub-sub-steps to one sub-step
-    sub_steps[0].sub_steps = [BaseStep(description=f"sub-0.{i}") for i in range(3)]
+    sub_steps[0].sub_steps = [
+        BaseStep(description=f"sub-0.{i}", coro=mock_coro()) for i in range(3)
+    ]
 
     plan.cancel()
 

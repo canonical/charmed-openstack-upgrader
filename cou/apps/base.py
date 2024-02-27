@@ -499,18 +499,16 @@ class OpenStackApplication:
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
-        upgrade_steps = ApplicationUpgradePlan(
+        upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
-        all_steps = (
-            self.pre_upgrade_steps(target)
-            + self.upgrade_steps(target)
-            + self.post_upgrade_steps(target)
-        )
-        for step in all_steps:
-            if step:
-                upgrade_steps.add_step(step)
-        return upgrade_steps
+        upgrade_plan.sub_steps = [
+            *self.pre_upgrade_steps(target),
+            *self.upgrade_steps(target),
+            *self.post_upgrade_steps(target),
+        ]
+
+        return upgrade_plan
 
     def _get_upgrade_current_release_packages_step(self) -> PreUpgradeStep:
         """Get step for upgrading software packages to the latest of the current release.
