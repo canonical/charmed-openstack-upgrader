@@ -12,12 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, PropertyMock, call, patch
 
 import pytest
 
 from cou.apps.base import OpenStackApplication
-from cou.exceptions import ApplicationError
+from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
@@ -281,3 +281,68 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
 
     app._get_reached_expected_target_step(target, units)
     mock_workload_upgrade.assert_has_calls(expected_calls)
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+def test_check_auto_restarts(_):
+    """Test function to verify that enable-auto-restarts is disabled."""
+    app_name = "app"
+    config = {}
+    app = OpenStackApplication(
+        app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
+    )
+
+    app._check_auto_restarts()
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+def test_check_auto_restarts_error(_):
+    """Test function to verify that enable-auto-restarts is disabled raising error."""
+    app_name = "app"
+    exp_error_msg = (
+        f"It is not safe to continue upgrading '{app_name}' application when the "
+        "'enable-auto-restart' is disabled. Please enable it before running COU again."
+    )
+    config = {"enable-auto-restarts": False}
+    app = OpenStackApplication(
+        app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
+    )
+
+    with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
+        app._check_auto_restarts()
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_check_application_target(current_os_release, apt_source_codename, _):
+    """Test function to verify target."""
+    target = OpenStackRelease("victoria")
+    release = OpenStackRelease("ussuri")
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
+    )
+    current_os_release.return_value = apt_source_codename.return_value = release
+
+    app._check_application_target(target)
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_check_application_target_error(current_os_release, apt_source_codename, _):
+    """Test function to verify target raising error."""
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    exp_error_msg = (
+        f"Application '{app_name}' already configured for release equal or greater than {target}. "
+        "Ignoring."
+    )
+    app = OpenStackApplication(
+        app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
+    )
+    current_os_release.return_value = apt_source_codename.return_value = target
+
+    with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
+        app._check_application_target(target)

@@ -358,14 +358,6 @@ class OpenStackApplication(COUApplication):
         :rtype: list[UpgradeStep]
         """
         # pylint: disable=unused-argument
-        if self.current_os_release >= target and self.apt_source_codename >= target:
-            msg = (
-                f"Application '{self.name}' already configured for release equal or greater "
-                f"than {target}. Ignoring."
-            )
-            logger.info(msg)
-            raise HaltUpgradePlanGeneration(msg)
-
         return [
             (
                 self._get_enable_action_managed_step()
@@ -395,6 +387,16 @@ class OpenStackApplication(COUApplication):
             self._get_reached_expected_target_step(target, units),
         ]
 
+    def upgrade_plan_sanity_checks(self, target: OpenStackRelease) -> None:
+        """Run sanity checks before generating upgrade plan.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        """
+        self._check_application_target(target)
+        self._check_auto_restarts()
+        logger.info("%s application met all the necessary prerequisites", self.name)
+
     def generate_upgrade_plan(
         self,
         target: OpenStackRelease,
@@ -414,7 +416,9 @@ class OpenStackApplication(COUApplication):
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
-        upgrade_steps = ApplicationUpgradePlan(
+        self.upgrade_plan_sanity_checks(target)
+
+        upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
         all_steps = (
@@ -424,8 +428,8 @@ class OpenStackApplication(COUApplication):
         )
         for step in all_steps:
             if step:
-                upgrade_steps.add_step(step)
-        return upgrade_steps
+                upgrade_plan.add_step(step)
+        return upgrade_plan
 
     def _get_upgrade_current_release_packages_step(
         self, units: Optional[list[COUUnit]]
@@ -713,3 +717,40 @@ class OpenStackApplication(COUApplication):
             parallel=False,
             coro=self.model.wait_for_active_idle(self.wait_timeout, apps=apps),
         )
+
+    def _check_auto_restarts(self) -> None:
+        """Check if enable-auto-restarts is enabled.
+
+        If the enable-auto-restart is not enabled, this check will raise an exception.
+
+        :raises HaltUpgradePlanGeneration: When enable-auto-restarts is not enabled.
+        """
+        if "enable-auto-restarts" not in self.config:
+            logger.debug("%s application has not enable-auto-restarts config option", self.name)
+            return
+
+        if self.config.get("enable-auto-restarts") is False:
+            raise HaltUpgradePlanGeneration(
+                f"It is not safe to continue upgrading '{self.name}' application when the "
+                "'enable-auto-restart' is disabled. Please enable it before running COU again."
+            )
+
+    def _check_application_target(self, target: OpenStackRelease) -> None:
+        """Check if application release is not lower or equal to target.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        """
+        logger.debug(
+            "%s application current os_relase is %s and apt source is %s",
+            self.name,
+            self.current_os_release,
+            self.apt_source_codename,
+        )
+
+        if self.current_os_release >= target and self.apt_source_codename >= target:
+            raise HaltUpgradePlanGeneration(
+                f"Application '{self.name}' already configured for release equal or greater "
+                f"than {target}. Ignoring."
+            )

@@ -282,15 +282,19 @@ def test_generate_plan_from_to(model, from_os, to_os):
 @pytest.mark.parametrize(
     "from_to",
     [
-        "ussuri",
         "victoria",
         "wallaby",
         "xena",
         "yoga",
     ],
 )
-def test_generate_plan_in_same_version(model, from_to):
-    """Test generate upgrade plan for OpenStackSubordinateApplication in same version."""
+def test_generate_plan_in_same_channel(model, from_to):
+    """Test generate upgrade plan for OpenStackSubordinateApplication in same channel.
+
+    The version based on apt_source_codename is ussuri because the app series is central
+    and current os_release is defined as targeted version. Because of this, we couldn't
+    use from_to=ussuri because it will raise HaltUpgradePlanGeneration.
+    """
     target = OpenStackRelease(from_to)
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackSubordinateApplication(
