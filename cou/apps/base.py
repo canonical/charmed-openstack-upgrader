@@ -729,7 +729,7 @@ class OpenStackApplication(COUApplication):
             logger.debug("%s application has not enable-auto-restarts config option", self.name)
             return
 
-        if self.config.get("enable-auto-restarts") is False:
+        if self.config["enable-auto-restarts"].get("value") is False:
             raise HaltUpgradePlanGeneration(
                 f"It is not safe to continue upgrading '{self.name}' application when the "
                 "'enable-auto-restart' is disabled. Please enable it before running COU again."

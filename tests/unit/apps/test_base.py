@@ -303,7 +303,7 @@ def test_check_auto_restarts_error(_):
         f"It is not safe to continue upgrading '{app_name}' application when the "
         "'enable-auto-restart' is disabled. Please enable it before running COU again."
     )
-    config = {"enable-auto-restarts": False}
+    config = {"enable-auto-restarts": {"value": False}}
     app = OpenStackApplication(
         app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
