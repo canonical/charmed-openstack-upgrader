@@ -14,15 +14,15 @@
 
 """Test hypervisor package."""
 
-from textwrap import dedent
 from unittest.mock import MagicMock
 
 from cou.apps.base import OpenStackApplication
+from cou.apps.core import NovaCompute
 from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradeStep
 from cou.steps.hypervisor import AZs, HypervisorGroup, HypervisorUpgradePlanner
 from cou.utils.juju_utils import COUApplication, COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import generate_cou_machine
+from tests.unit.utils import dedent_plan, generate_cou_machine
 
 
 def _generate_app() -> MagicMock:
@@ -158,7 +158,7 @@ def test_hypervisor_azs_grouping():
 def test_hypervisor_upgrade_plan(model):
     """Testing generating hypervisors upgrade plan."""
     target = OpenStackRelease("victoria")
-    exp_plan = dedent(
+    exp_plan = dedent_plan(
         """
     Upgrading all applications deployed on machines with hypervisor.
         Upgrade plan for 'az-0' to victoria
@@ -173,7 +173,15 @@ def test_hypervisor_upgrade_plan(model):
             Change charm config of 'nova-compute' 'action-managed-upgrade' to True.
             Upgrade 'nova-compute' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
-            Wait 300s for app nova-compute to reach the idle state.
+            Upgrade plan for units: nova-compute/0
+                Upgrade plan for unit: nova-compute/0
+                    Disable nova-compute scheduler from unit: 'nova-compute/0'.
+                    Check if unit nova-compute/0 has no VMs running before upgrading.
+                    ├── Pause the unit: 'nova-compute/0'.
+                    ├── Upgrade the unit: 'nova-compute/0'.
+                    ├── Resume the unit: 'nova-compute/0'.
+                    Enable nova-compute scheduler from unit: 'nova-compute/0'.
+            Wait 1800s for model test_model to reach the idle state.
             Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0
             Wait 300s for app cinder to reach the idle state.
             Check if the workload of 'cinder' has been upgraded on units: cinder/0
@@ -184,7 +192,15 @@ def test_hypervisor_upgrade_plan(model):
             Change charm config of 'nova-compute' 'action-managed-upgrade' to True.
             Upgrade 'nova-compute' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
-            Wait 300s for app nova-compute to reach the idle state.
+            Upgrade plan for units: nova-compute/1
+                Upgrade plan for unit: nova-compute/1
+                    Disable nova-compute scheduler from unit: 'nova-compute/1'.
+                    Check if unit nova-compute/1 has no VMs running before upgrading.
+                    ├── Pause the unit: 'nova-compute/1'.
+                    ├── Upgrade the unit: 'nova-compute/1'.
+                    ├── Resume the unit: 'nova-compute/1'.
+                    Enable nova-compute scheduler from unit: 'nova-compute/1'.
+            Wait 1800s for model test_model to reach the idle state.
             Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/1
         Upgrade plan for 'az-2' to victoria
             Upgrade software packages of 'nova-compute' from the current APT repositories
@@ -193,12 +209,18 @@ def test_hypervisor_upgrade_plan(model):
             Change charm config of 'nova-compute' 'action-managed-upgrade' to True.
             Upgrade 'nova-compute' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
-            Wait 300s for app nova-compute to reach the idle state.
+            Upgrade plan for units: nova-compute/2
+                Upgrade plan for unit: nova-compute/2
+                    Disable nova-compute scheduler from unit: 'nova-compute/2'.
+                    Check if unit nova-compute/2 has no VMs running before upgrading.
+                    ├── Pause the unit: 'nova-compute/2'.
+                    ├── Upgrade the unit: 'nova-compute/2'.
+                    ├── Resume the unit: 'nova-compute/2'.
+                    Enable nova-compute scheduler from unit: 'nova-compute/2'.
+            Wait 1800s for model test_model to reach the idle state.
             Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/2
     """
     )
-    exp_plan = exp_plan[1:]  # skip first new line
-    exp_plan = exp_plan.replace("    ", "\t")  # replace 4 spaces with tap
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     cinder = OpenStackApplication(
         name="cinder",
@@ -223,7 +245,7 @@ def test_hypervisor_upgrade_plan(model):
         },
         workload_version="16.4.2",
     )
-    nova_compute = OpenStackApplication(
+    nova_compute = NovaCompute(
         name="nova-compute",
         can_upgrade_to="ussuri/stable",
         charm="nova-compute",
@@ -248,5 +270,4 @@ def test_hypervisor_upgrade_plan(model):
     planner = HypervisorUpgradePlanner([cinder, nova_compute])
     plan = planner.generate_upgrade_plan(target, False)
 
-    print(plan)
     assert str(plan) == exp_plan

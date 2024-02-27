@@ -175,7 +175,7 @@ class HypervisorUpgradePlanner:
                 continue
 
             units = group.app_units[app.name]
-            logger.info("generating pre-upgrade steps for %s app and %s units", app.name, units)
+            logger.info("generating pre-upgrade steps for %s units of %s app", app.name, units)
             steps.extend(app.pre_upgrade_steps(target, units))
 
         return steps
@@ -205,7 +205,7 @@ class HypervisorUpgradePlanner:
                 continue
 
             units = group.app_units[app.name]
-            logger.info("generating upgrade steps for %s app and %s units", app.name, units)
+            logger.info("generating upgrade steps for %s units of %s app", app.name, units)
             steps.extend(app.upgrade_steps(target, units, force))
 
         return steps
@@ -238,7 +238,7 @@ class HypervisorUpgradePlanner:
                 continue
 
             units = group.app_units[app.name]
-            logger.info("generating post-upgrade steps for %s app and %s units", app.name, units)
+            logger.info("generating post-upgrade steps for %s units of %s app", app.name, units)
             steps.extend(app.post_upgrade_steps(target, units=units))
 
         return steps
