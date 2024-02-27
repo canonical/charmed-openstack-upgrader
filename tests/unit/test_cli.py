@@ -80,12 +80,9 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli
 
 
 @pytest.mark.asyncio
-@patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.print_and_debug")
-async def test_get_upgrade_plan(
-    mock_print_and_debug, mock_analyze_and_plan, mock_manually_upgrade, cli_args
-):
+async def test_get_upgrade_plan(mock_print_and_debug, mock_analyze_and_plan, cli_args):
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
@@ -96,7 +93,6 @@ async def test_get_upgrade_plan(
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_print_and_debug.assert_called_once_with(plan)
-    mock_manually_upgrade.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -108,7 +104,6 @@ async def test_get_upgrade_plan(
     ],
 )
 @patch("cou.cli.continue_upgrade", new_callable=AsyncMock)
-@patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("builtins.print")
@@ -118,7 +113,6 @@ async def test_run_upgrade_quiet_no_prompt(
     mock_print,
     mock_apply_step,
     mock_analyze_and_plan,
-    mock_manually_upgrade,
     mock_continue_upgrade,
     quiet,
     expected_print_count,
@@ -140,11 +134,9 @@ async def test_run_upgrade_quiet_no_prompt(
     mock_print_and_debug.assert_called_once_with(plan)
     mock_apply_step.assert_called_once_with(plan, False)
     mock_print.call_count == expected_print_count
-    mock_manually_upgrade.assert_called_once()
 
 
 @pytest.mark.asyncio
-@patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("cou.cli.continue_upgrade")
@@ -152,7 +144,6 @@ async def test_run_upgrade_with_prompt_continue(
     mock_continue_upgrade,
     mock_apply_step,
     mock_analyze_and_plan,
-    mock_manually_upgrade,
     cli_args,
 ):
     cli_args.prompt = True
@@ -169,11 +160,9 @@ async def test_run_upgrade_with_prompt_continue(
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_continue_upgrade.assert_awaited_once_with()
     mock_apply_step.assert_called_once_with(plan, True)
-    mock_manually_upgrade.assert_called_once()
 
 
 @pytest.mark.asyncio
-@patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("cou.cli.continue_upgrade")
@@ -181,7 +170,6 @@ async def test_run_upgrade_with_prompt_abort(
     mock_continue_upgrade,
     mock_apply_step,
     mock_analyze_and_plan,
-    mock_manually_upgrade,
     cli_args,
 ):
     cli_args.auto_approve = False
@@ -198,11 +186,9 @@ async def test_run_upgrade_with_prompt_abort(
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_continue_upgrade.assert_awaited_once_with()
     mock_apply_step.assert_not_awaited()
-    mock_manually_upgrade.assert_not_called()
 
 
 @pytest.mark.asyncio
-@patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("cou.cli.continue_upgrade", new_callable=AsyncMock)
@@ -210,7 +196,6 @@ async def test_run_upgrade_with_no_prompt(
     mock_continue_upgrade,
     mock_apply_step,
     mock_analyze_and_plan,
-    mock_manually_upgrade,
     cli_args,
 ):
     cli_args.prompt = False
@@ -226,7 +211,6 @@ async def test_run_upgrade_with_no_prompt(
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_continue_upgrade.assert_not_awaited()
     mock_apply_step.assert_called_once_with(plan, False)
-    mock_manually_upgrade.assert_called_once()
 
 
 @pytest.mark.asyncio
