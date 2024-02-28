@@ -260,7 +260,7 @@ class HypervisorUpgradePlanner:
             hypervisor_plan = HypervisorUpgradePlan(f"Upgrade plan for '{group.name}' to {target}")
 
             # pre upgrade steps
-            logger.debug("generating pre upgrade steps")
+            logger.debug("generating pre-upgrade steps for %s AZ", az)
             hypervisor_plan.sub_steps.extend(self._generate_pre_upgrade_steps(target, group))
 
             # upgrade steps
@@ -268,7 +268,7 @@ class HypervisorUpgradePlanner:
             hypervisor_plan.sub_steps.extend(self._generate_upgrade_steps(target, force, group))
 
             # post upgrade steps
-            logger.debug("generating post upgrade steps")
+            logger.debug("generating post-upgrade steps for %s AZ", az)
             hypervisor_plan.sub_steps.extend(self._generate_post_upgrade_steps(target, group))
 
             plan.add_step(hypervisor_plan)
