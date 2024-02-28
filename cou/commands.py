@@ -159,9 +159,9 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
 
 
 def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
-    """Create a shared parser for options specific to hypervisors child command.
+    """Create a shared parser for options specific to the hypervisors child command.
 
-    :return: a parser groups options specific to hypervisors
+    :return: a parser groups options specific to the hypervisors
     :rtype: argparse.ArgumentParser
     """
     # Define options specific to hypervisors child command and make them mutually exclusive
@@ -251,7 +251,7 @@ def create_plan_subparser(
         "action-managed upgrades are within the scope of this command. Other principal "
         "applications (e.g. ceph-osd) and subordinates can be upgraded via the data-plane "
         "subcommand.",
-        help="Show the steps for upgrading nova-compute machines..\nThis is possible "
+        help="Show the steps for upgrading nova-compute machines.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
         usage="cou plan hypervisors [options]",
         parents=[subcommand_common_opts_parser, hypervisors_parser],

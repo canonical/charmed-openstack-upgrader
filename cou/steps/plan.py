@@ -186,11 +186,11 @@ def verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> No
     :type analysis_result: Analysis
     """
     if args.is_hypervisors_command:
-        verify_data_plane_cli_machines(args.machines, analysis_result)
-        verify_data_plane_cli_azs(args.availability_zones, analysis_result)
+        verify_hypervisors_cli_machines(args.machines, analysis_result)
+        verify_hypervisors_cli_azs(args.availability_zones, analysis_result)
 
 
-def verify_data_plane_cli_machines(
+def verify_hypervisors_cli_machines(
     cli_machines: Optional[set[str]], analysis_result: Analysis
 ) -> None:
     """Verify if the machines passed from the CLI are valid.
@@ -200,16 +200,17 @@ def verify_data_plane_cli_machines(
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    if cli_machines:
-        verify_data_plane_membership(
-            all_options=set(analysis_result.machines.keys()),
-            data_plane_options=set(analysis_result.data_plane_machines.keys()),
-            cli_input=cli_machines,
-            parameter_type="Machine(s)",
-        )
+    if not cli_machines:
+        return
+    verify_data_plane_membership(
+        all_options=set(analysis_result.machines.keys()),
+        data_plane_options=set(analysis_result.data_plane_machines.keys()),
+        cli_input=cli_machines,
+        parameter_type="Machine(s)",
+    )
 
 
-def verify_data_plane_cli_azs(cli_azs: Optional[set[str]], analysis_result: Analysis) -> None:
+def verify_hypervisors_cli_azs(cli_azs: Optional[set[str]], analysis_result: Analysis) -> None:
     """Verify if the availability zones passed from the CLI are valid.
 
     :param cli_azs: AZs passed to the CLI as arguments
@@ -218,27 +219,28 @@ def verify_data_plane_cli_azs(cli_azs: Optional[set[str]], analysis_result: Anal
     :type analysis_result: Analysis
     :raises DataPlaneMachineFilterError: When the cloud does not have availability zones.
     """
-    if cli_azs:
-        all_azs: set[str] = {
-            machine.az for machine in analysis_result.machines.values() if machine.az is not None
-        }
-        data_plane_azs: set[str] = {
-            machine.az
-            for machine in analysis_result.data_plane_machines.values()
-            if machine.az is not None
-        }
+    if not cli_azs:
+        return
+    all_azs: set[str] = {
+        machine.az for machine in analysis_result.machines.values() if machine.az is not None
+    }
+    data_plane_azs: set[str] = {
+        machine.az
+        for machine in analysis_result.data_plane_machines.values()
+        if machine.az is not None
+    }
 
-        if not data_plane_azs and not all_azs:
-            raise DataPlaneMachineFilterError(
-                "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
-            )
-
-        verify_data_plane_membership(
-            all_options=all_azs,
-            data_plane_options=data_plane_azs,
-            cli_input=cli_azs,
-            parameter_type="Availability Zone(s)",
+    if not data_plane_azs and not all_azs:
+        raise DataPlaneMachineFilterError(
+            "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
         )
+
+    verify_data_plane_membership(
+        all_options=all_azs,
+        data_plane_options=data_plane_azs,
+        cli_input=cli_azs,
+        parameter_type="Availability Zone(s)",
+    )
 
 
 def verify_data_plane_membership(
