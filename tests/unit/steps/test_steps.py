@@ -213,7 +213,7 @@ def test_step_add_step_skipping_empty():
     """Test BaseStep skipping to add empty sub steps."""
     exp_sub_steps = 0
     plan = BaseStep(description="plan")
-    for i in range(exp_sub_steps):
+    for i in range(3):
         plan.add_step(BaseStep(description=f"sub-step-{i}"))
 
     assert len(plan.sub_steps) == exp_sub_steps
