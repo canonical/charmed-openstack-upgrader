@@ -84,6 +84,7 @@ async def verify_empty_hypervisor_before_upgrade(unit: COUUnit, model: COUModel)
             logger.info("Successfully enabled nova-compute scheduler from unit %s.", unit.name)
         except ActionFailed:
             logger.error("Failed to enable nova-compute scheduler from unit %s.", unit.name)
+
         logger.warning(
             (
                 "Unit: %s has %s VMs running. The upgrade on this unit cannot happen "

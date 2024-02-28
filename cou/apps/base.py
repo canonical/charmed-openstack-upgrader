@@ -99,16 +99,30 @@ class OpenStackApplication(COUApplication):
         summary = {
             self.name: {
                 "model_name": self.model.name,
+                "can_upgrade_to": self.can_upgrade_to,
                 "charm": self.charm,
-                "charm_origin": self.origin,
-                "os_origin": self.os_origin,
                 "channel": self.channel,
+                "config": self.config,
+                "origin": self.origin,
+                "series": self.series,
+                "subordinate_to": self.subordinate_to,
+                "workload_version": self.workload_version,
                 "units": {
                     unit.name: {
+                        "name": unit.name,
+                        "machine": unit.machine.machine_id,
                         "workload_version": unit.workload_version,
                         "os_version": str(self._get_latest_os_version(unit)),
                     }
                     for unit in self.units.values()
+                },
+                "machines": {
+                    machine.machine_id: {
+                        "id": machine.machine_id,
+                        "apps": machine.apps,
+                        "az": machine.az,
+                    }
+                    for machine in self.machines.values()
                 },
             }
         }

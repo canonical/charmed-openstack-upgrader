@@ -179,8 +179,11 @@ async def _run_command(args: CLIargs) -> None:
     match args.command:
         case "plan":
             await get_upgrade_plan(args)
-        case "upgrade":
-            await run_upgrade(args)
+
+        # Note (rgildein): Since this version of COU will be used only for testing, this is just to
+        #                  prevent running any upgrade with it.
+        # case "upgrade":
+        #     await run_upgrade(args)
 
 
 def entrypoint() -> None:
