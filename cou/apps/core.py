@@ -77,6 +77,7 @@ class NovaCompute(OpenStackApplication):
         """
         if not units:
             units = list(self.units.values())
+
         app_steps = super().upgrade_steps(target, units, force)
         unit_steps = self._get_units_upgrade_steps(units, force)
         return app_steps + unit_steps
