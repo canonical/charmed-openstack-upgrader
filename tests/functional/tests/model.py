@@ -58,7 +58,8 @@ class COUModelTest(unittest.TestCase):
         test_file = "test.txt"
         path = f"/tmp/{test_file}"
         exp_path = os.path.join(tmp_dir, test_file)
-        zaza.model.run_on_unit(unit_name=TESTED_UNIT, command=f"echo 'test' > {path}")
+        zaza.sync_wrapper(self.model.connect)()
+        zaza.sync_wrapper(self.model._model.units[TESTED_UNIT].run)(f"echo 'test' > {path}")
 
         zaza.sync_wrapper(self.model.scp_from_unit)(TESTED_UNIT, path, tmp_dir)
         self.assertTrue(os.path.exists(exp_path))

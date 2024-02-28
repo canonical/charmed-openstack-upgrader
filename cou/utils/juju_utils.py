@@ -138,15 +138,8 @@ class COUMachine:
     """Representation of a juju machine."""
 
     machine_id: str
+    apps: tuple[str]
     az: Optional[str] = None  # simple deployments may not have azs
-
-    def __repr__(self) -> str:
-        """Representation of the juju Machine.
-
-        :return: Representation of the juju Machine
-        :rtype: str
-        """
-        return f"Machine[{self.machine_id}]"
 
 
 @dataclass(frozen=True)
@@ -156,14 +149,6 @@ class COUUnit:
     name: str
     machine: COUMachine
     workload_version: str
-
-    def __repr__(self) -> str:
-        """Representation of the application unit.
-
-        :return: Representation of the application unit
-        :rtype: str
-        """
-        return f"Unit[{self.name}]"
 
 
 @dataclass(frozen=True)
@@ -184,14 +169,6 @@ class COUApplication:
     subordinate_to: list[str]
     units: dict[str, COUUnit]
     workload_version: str
-
-    def __repr__(self) -> str:
-        """Representation of the application unit.
-
-        :return: Representation of the application unit
-        :rtype: str
-        """
-        return f"Application[{self.name}]"
 
     @property
     def is_subordinate(self) -> bool:
@@ -410,6 +387,11 @@ class COUModel:
         return {
             machine.id: COUMachine(
                 machine_id=machine.id,
+                apps=tuple(
+                    unit.application
+                    for unit in self._model.units.values()
+                    if unit.machine.id == machine.id
+                ),
                 az=machine.hardware_characteristics.get("availability-zone"),
             )
             for machine in model.machines.values()
