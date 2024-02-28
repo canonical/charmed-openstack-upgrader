@@ -110,8 +110,8 @@ async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
 
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Generated analysis and upgrade plan.
-    :rtype: tuple[Analysis, UpgradePlan]
+    :return: Generated upgrade plan.
+    :rtype: UpgradePlan
     """
     model = COUModel(args.model_name)
     progress_indicator.start(f"Connecting to '{model.name}' model...")
