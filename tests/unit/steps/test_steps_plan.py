@@ -259,14 +259,7 @@ async def test_generate_plan(model, cli_args):
     assert_steps(upgrade_plan, expected_plan)
 
 
-@pytest.mark.parametrize(
-    "is_data_plane_command, expected_call",
-    [
-        (False, False),
-        ("data-plane", True),
-    ],
-)
-@patch("cou.steps.plan.verify_data_plane_cli_input")
+@patch("cou.steps.plan.verify_hypervisors_cli_input")
 @patch("cou.steps.plan.verify_supported_series")
 @patch("cou.steps.plan.verify_highest_release_achieved")
 @patch("cou.steps.plan.verify_data_plane_ready_to_upgrade")
@@ -274,24 +267,17 @@ def test_pre_plan_sanity_checks(
     mock_verify_data_plane_ready_to_upgrade,
     mock_verify_highest_release_achieved,
     mock_verify_supported_series,
-    mock_verify_data_plane_cli_input,
-    is_data_plane_command,
-    expected_call,
+    mock_verify_hypervisors_cli_input,
     cli_args,
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
     mock_analysis_result.current_cloud_series = "focal"
-    cli_args.is_data_plane_command = is_data_plane_command
     cou_plan.pre_plan_sanity_checks(cli_args, mock_analysis_result)
-    mock_verify_highest_release_achieved.assert_called_once()
-    mock_verify_supported_series.assert_called_once()
-    if expected_call:
-        mock_verify_data_plane_ready_to_upgrade.assert_called_once_with(mock_analysis_result)
-        mock_verify_data_plane_cli_input.assert_called_once_with(cli_args, mock_analysis_result)
-    else:
-        mock_verify_data_plane_ready_to_upgrade.assert_not_called()
-        mock_verify_data_plane_cli_input.assert_not_called()
+    mock_verify_highest_release_achieved.assert_called_once_with(mock_analysis_result)
+    mock_verify_supported_series.assert_called_once_with(mock_analysis_result)
+    mock_verify_data_plane_ready_to_upgrade.assert_called_once_with(cli_args, mock_analysis_result)
+    mock_verify_hypervisors_cli_input.assert_called_once_with(cli_args, mock_analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -349,13 +335,28 @@ def test_verify_highest_release_achieved():
 def test_verify_data_plane_ready_to_upgrade_error(
     min_os_version_control_plane, min_os_version_data_plane, exp_error_msg, cli_args
 ):
-    cli_args.upgrade_group = "data-plane"
+    cli_args.is_data_plane_command = True
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_series = "focal"
     mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
     mock_analysis_result.min_os_version_data_plane = min_os_version_data_plane
     with pytest.raises(DataPlaneCannotUpgrade, match=exp_error_msg):
-        cou_plan.verify_data_plane_ready_to_upgrade(mock_analysis_result)
+        cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
+
+
+@pytest.mark.parametrize("is_data_plane_command", [True, False])
+@patch("cou.steps.plan.is_control_plane_upgraded")
+def test_verify_data_plane_ready_to_upgrade_data_plane_cmd(
+    mock_control_plane_upgraded, cli_args, is_data_plane_command
+):
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.min_os_version_data_plane = OpenStackRelease("ussuri")
+    cli_args.is_data_plane_command = is_data_plane_command
+    cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
+    if is_data_plane_command:
+        mock_control_plane_upgraded.assert_called_once_with(mock_analysis_result)
+    else:
+        mock_control_plane_upgraded.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -496,58 +497,35 @@ def test_create_upgrade_plan_failed(force):
         cou_plan.create_upgrade_group([app], "victoria", "test", force, lambda *_: True)
 
 
-@patch("cou.steps.plan.verify_data_plane_cli_azs")
-@patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_data_plane_cli_no_input(
-    mock_verify_machines,
-    mock_verify_azs,
+@pytest.mark.parametrize("is_hypervisors_command", [True, False])
+@patch("cou.steps.plan.verify_hypervisors_cli_azs")
+@patch("cou.steps.plan.verify_hypervisors_cli_machines")
+def test_verify_hypervisors_cli_input(
+    mock_cli_machines,
+    mock_cli_azs,
     cli_args,
+    is_hypervisors_command,
 ):
+    cli_args.is_hypervisors_command = is_hypervisors_command
     cli_args.machines = None
     cli_args.availability_zones = None
 
-    assert cou_plan.verify_data_plane_cli_input(cli_args, MagicMock(spec_set=Analysis)()) is None
-
-    mock_verify_machines.assert_not_called()
-    mock_verify_azs.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "cli_machines",
-    [
-        {"0"},
-        {"1"},
-        {"2"},
-        {"0", "1", "2"},
-    ],
-)
-@patch("cou.steps.plan.verify_data_plane_cli_azs")
-def test_verify_data_plane_cli_input_machines(mock_verify_azs, cli_machines, cli_args):
-    cli_args.machines = cli_machines
-    cli_args.availability_zones = None
     analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.data_plane_machines = analysis_result.machines = {
-        f"{i}": MagicMock(spec_set=COUMachine)() for i in range(3)
-    }
 
-    assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
+    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
 
-    mock_verify_azs.assert_not_called()
+    if is_hypervisors_command:
+        mock_cli_machines.assert_called_once_with(cli_args.machines, analysis_result)
+        mock_cli_azs.assert_called_once_with(cli_args.availability_zones, analysis_result)
+    else:
+        mock_cli_machines.assert_not_called()
+        mock_cli_azs.assert_not_called()
 
 
-@patch("cou.steps.plan.verify_data_plane_cli_machines")
-def test_verify_data_plane_cli_input_azs(mock_verify_machines, cli_args):
-    az = "test-az-0"
-    machine = MagicMock(spec_set=COUMachine)()
-    machine.az = az
+def test_verify_hypervisors_cli_machines_no_input():
+    cli_machines = None
     analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.data_plane_machines = analysis_result.machines = {"0": machine}
-    cli_args.machines = None
-    cli_args.availability_zones = {az}
-
-    assert cou_plan.verify_data_plane_cli_input(cli_args, analysis_result) is None
-
-    mock_verify_machines.assert_not_called()
+    assert cou_plan.verify_hypervisors_cli_machines(cli_machines, analysis_result) is None
 
 
 @pytest.mark.parametrize(
@@ -557,7 +535,7 @@ def test_verify_data_plane_cli_input_azs(mock_verify_machines, cli_args):
         ({"5/lxd/18"}, r"Machine.*don't exist."),
     ],
 )
-def test_verify_data_plane_cli_machines_raise(cli_machines, exp_error_msg):
+def test_verify_hypervisors_cli_machines_raise(cli_machines, exp_error_msg):
     machine0 = MagicMock(spec_set=COUMachine)()
     machine1 = MagicMock(spec_set=COUMachine)()
     analysis_result = MagicMock(spec_set=Analysis)()
@@ -566,7 +544,13 @@ def test_verify_data_plane_cli_machines_raise(cli_machines, exp_error_msg):
     analysis_result.control_plane_machines = {"1": machine1}
 
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_data_plane_cli_machines(cli_machines, analysis_result)
+        cou_plan.verify_hypervisors_cli_machines(cli_machines, analysis_result)
+
+
+def test_verify_hypervisors_cli_azs_no_input():
+    cli_azs = None
+    analysis_result = MagicMock(spec_set=Analysis)()
+    assert cou_plan.verify_hypervisors_cli_azs(cli_azs, analysis_result) is None
 
 
 @pytest.mark.parametrize(
@@ -576,7 +560,7 @@ def test_verify_data_plane_cli_machines_raise(cli_machines, exp_error_msg):
         ({"zone-test", "zone-foo"}, r"Availability Zone.*don't exist."),
     ],
 )
-def test_verify_data_plane_cli_azs_raise_dont_exist(cli_azs, exp_error_msg):
+def test_verify_hypervisors_cli_azs_raise_dont_exist(cli_azs, exp_error_msg):
     machine0 = MagicMock(spec_set=COUMachine)()
     machine0.az = "zone-0"
     machine1 = MagicMock(spec_set=COUMachine)()
@@ -587,10 +571,10 @@ def test_verify_data_plane_cli_azs_raise_dont_exist(cli_azs, exp_error_msg):
     analysis_result.control_plane_machines = {"1": machine1}
 
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_data_plane_cli_azs(cli_azs, analysis_result)
+        cou_plan.verify_hypervisors_cli_azs(cli_azs, analysis_result)
 
 
-def test_verify_data_plane_cli_azs_raise_cannot_find():
+def test_verify_hypervisors_cli_azs_raise_cannot_find():
     exp_error_msg = r"Cannot find Availability Zone\(s\). Is this a valid OpenStack cloud?"
     mock_analyze = MagicMock()
 
@@ -601,7 +585,7 @@ def test_verify_data_plane_cli_azs_raise_cannot_find():
     mock_analyze.machines = {"1": mock_machine}
     mock_analyze.data_plane_machines = {"1": mock_machine}
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_data_plane_cli_azs({"zone-1"}, mock_analyze)
+        cou_plan.verify_hypervisors_cli_azs({"zone-1"}, mock_analyze)
 
 
 @pytest.mark.parametrize(
