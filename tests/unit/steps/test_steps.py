@@ -209,8 +209,8 @@ def test_step_add_step():
     assert len(plan.sub_steps) == exp_sub_steps
 
 
-def test_step_add_step_skiiping_empty():
-    """Test BaseStep akiiping to add empty sub steps."""
+def test_step_add_step_skipping_empty():
+    """Test BaseStep skipping to add empty sub steps."""
     exp_sub_steps = 0
     plan = BaseStep(description="plan")
     for i in range(exp_sub_steps):
