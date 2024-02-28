@@ -300,8 +300,9 @@ def test_check_auto_restarts_error(_):
     """Test function to verify that enable-auto-restarts is disabled raising error."""
     app_name = "app"
     exp_error_msg = (
-        f"It is not safe to continue upgrading '{app_name}' application when the "
-        "'enable-auto-restart' is disabled. Please enable it before running COU again."
+        "COU does not currently support upgrading applications that disable service restarts. "
+        f"Please enable charm option enable-auto-restart and rerun COU to upgrade the {app_name} "
+        "application."
     )
     config = {"enable-auto-restarts": {"value": False}}
     app = OpenStackApplication(
