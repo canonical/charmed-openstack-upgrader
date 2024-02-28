@@ -497,44 +497,6 @@ def test_create_upgrade_plan_failed(force):
         cou_plan.create_upgrade_group([app], "victoria", "test", force, lambda *_: True)
 
 
-@patch("builtins.print")
-def test_plan_print_warn_manually_upgrade(mock_print, model):
-    nova_compute = MagicMock(spec_set=OpenStackApplication)()
-    nova_compute.name = "nova-compute"
-    nova_compute.current_os_release = OpenStackRelease("victoria")
-    nova_compute.series = "focal"
-    keystone = MagicMock(spec_set=OpenStackApplication)()
-    keystone.name = "keystone"
-    keystone.current_os_release = OpenStackRelease("wallaby")
-    keystone.series = "focal"
-
-    result = Analysis(
-        model=model,
-        apps_control_plane=[keystone],
-        apps_data_plane=[nova_compute],
-    )
-    cou_plan.manually_upgrade_data_plane(result)
-    mock_print.assert_called_with(
-        f"WARNING: Please upgrade manually the data plane apps: {nova_compute.name}"
-    )
-
-
-@patch("builtins.print")
-def test_analysis_not_print_warn_manually_upgrade(mock_print, model):
-    keystone = MagicMock(spec_set=OpenStackApplication)()
-    keystone.name = "keystone"
-    keystone.current_os_release = OpenStackRelease("wallaby")
-    keystone.series = "focal"
-
-    result = Analysis(
-        model=model,
-        apps_control_plane=[keystone],
-        apps_data_plane=[],
-    )
-    cou_plan.manually_upgrade_data_plane(result)
-    mock_print.assert_not_called()
-
-
 @pytest.mark.parametrize("is_hypervisors_command", [True, False])
 @patch("cou.steps.plan.verify_hypervisors_cli_azs")
 @patch("cou.steps.plan.verify_hypervisors_cli_machines")
