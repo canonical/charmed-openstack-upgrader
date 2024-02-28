@@ -49,6 +49,7 @@ from cou.exceptions import (
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, COUMachine
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
@@ -296,6 +297,85 @@ def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRele
     return current_os_release, current_series
 
 
+def _generate_control_plane_plan(
+    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for control plane.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param apps: List of control plane applications.
+    :type apps: list[OpenStackApplication]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :return: Principal and Subordiante upgrade plan.
+    :rtype: list[UpgradePlan]
+    """
+    principal_upgrade_plan = create_upgrade_group(
+        apps=apps,
+        description="Control Plane principal(s) upgrade plan",
+        target=target,
+        force=force,
+        filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
+    )
+
+    subordinate_upgrade_plan = create_upgrade_group(
+        apps=apps,
+        description="Control Plane subordinate(s) upgrade plan",
+        target=target,
+        force=force,
+        filter_function=lambda app: isinstance(app, SubordinateBaseClass),
+    )
+
+    logger.debug("Generation of the control plane upgrade plan complete")
+    return [principal_upgrade_plan, subordinate_upgrade_plan]
+
+
+def _generate_data_plane_plan(
+    target: OpenStackRelease,
+    apps: list[OpenStackApplication],
+    hypervisors: list[COUMachine],
+    force: bool,
+) -> list[UpgradePlan]:  # pragma: no cover
+    """Generate upgrade plan for data plane.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param apps: List of data plane applications.
+    :type apps: list[OpenStackApplication]
+    :param hypervisors: hypervisors filtered to generate plan and upgrade.
+    :type: list[COUMachine]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :return: Hypervisors plans and other data plane applications, e.g. ceph-osd
+    :rtype: list[UpgradePlan]
+    """
+    nova_compute_machines = [
+        unit.machine.machine_id
+        for app in apps
+        for unit in app.units.values()
+        if app.charm == "nova-compute"
+        if unit.machine.machine_id not in hypervisors
+    ]
+    hypervisor_apps = []
+    for app in apps:
+        if app.charm == "ceph-osd":
+            # ceph-osd will not be handled by hypervisor planner
+            continue
+
+        for machine in app.machines:
+            if machine in nova_compute_machines:
+                hypervisor_apps.append(app)
+                break  # exiting machine for loop
+
+    hypervisor_planner = HypervisorUpgradePlanner(hypervisor_apps)
+    hypervisor_plans = hypervisor_planner.generate_upgrade_plan(target, force)
+    logger.debug("Generation of the hypervisors upgrade plan complete")
+
+    # generate the plan for the remaining data-plane apps
+    return [hypervisor_plans]
+
+
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
     """Generate plan for upgrade.
 
@@ -333,28 +413,18 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
         plan.add_step(
             PreUpgradeStep(
                 description="Backup mysql databases",
-                parallel=False,
                 coro=backup(analysis_result.model),
             )
         )
 
-    control_plane_principal_upgrade_plan = await create_upgrade_group(
-        apps=analysis_result.apps_control_plane,
-        description="Control Plane principal(s) upgrade plan",
-        target=target,
-        force=args.force,
-        filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
+    plan.sub_steps.extend(
+        _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
     )
-    plan.add_step(control_plane_principal_upgrade_plan)
-
-    control_plane_subordinate_upgrade_plan = await create_upgrade_group(
-        apps=analysis_result.apps_control_plane,
-        description="Control Plane subordinate(s) upgrade plan",
-        target=target,
-        force=args.force,
-        filter_function=lambda app: isinstance(app, SubordinateBaseClass),
-    )
-    plan.add_step(control_plane_subordinate_upgrade_plan)
+    # plan.sub_steps.extend(
+    #     _generate_data_plane_plan(
+    #         target, analysis_result.apps_data_plane, hypervisors, args.force
+    #     )
+    # )
 
     return plan
 
@@ -407,7 +477,7 @@ async def _get_upgradable_hypervisors_machines(
     return await get_empty_hypervisors(nova_compute_units, analysis_result.model)
 
 
-async def create_upgrade_group(
+def create_upgrade_group(
     apps: list[OpenStackApplication],
     target: OpenStackRelease,
     description: str,

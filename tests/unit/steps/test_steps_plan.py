@@ -454,15 +454,14 @@ def test_determine_upgrade_target_out_support_range():
 
 
 @pytest.mark.parametrize("force", [True, False])
-@pytest.mark.asyncio
-async def test_create_upgrade_plan(force):
+def test_create_upgrade_plan(force):
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec_set=OpenStackApplication)
     app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = await cou_plan.create_upgrade_group([app], target, description, force, lambda *_: True)
+    plan = cou_plan.create_upgrade_group([app], target, description, force, lambda *_: True)
 
     assert plan.description == description
     assert plan.parallel is False
@@ -473,8 +472,7 @@ async def test_create_upgrade_plan(force):
 
 
 @pytest.mark.parametrize("force", [True, False])
-@pytest.mark.asyncio
-async def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
+def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
@@ -482,22 +480,21 @@ async def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = await cou_plan.create_upgrade_group([app], target, description, force, lambda *_: True)
+    plan = cou_plan.create_upgrade_group([app], target, description, force, lambda *_: True)
 
     assert len(plan.sub_steps) == 0
     app.generate_upgrade_plan.assert_called_once_with(target, force)
 
 
 @pytest.mark.parametrize("force", [True, False])
-@pytest.mark.asyncio
-async def test_create_upgrade_plan_failed(force):
+def test_create_upgrade_plan_failed(force):
     """Test create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
     app.generate_upgrade_plan.side_effect = Exception("test")
 
     with pytest.raises(Exception, match="test"):
-        await cou_plan.create_upgrade_group([app], "victoria", "test", force, lambda *_: True)
+        cou_plan.create_upgrade_group([app], "victoria", "test", force, lambda *_: True)
 
 
 @patch("builtins.print")
@@ -665,10 +662,10 @@ async def test_filter_hypervisors_machines(
 ):
 
     empty_hypervisors_machines = {
-        COUMachine(str(machine_id), f"zone-{machine_id + 1}") for machine_id in range(2)
+        COUMachine(str(machine_id), (), f"zone-{machine_id + 1}") for machine_id in range(2)
     }
     # assuming that machine-2 has some VMs running
-    non_empty_hypervisor_machine = COUMachine("2", "zone-3")
+    non_empty_hypervisor_machine = COUMachine("2", (), "zone-3")
 
     upgradable_hypervisors = empty_hypervisors_machines
     if force:
@@ -711,7 +708,7 @@ async def test_filter_hypervisors_machines(
 async def test_get_upgradable_hypervisors_machines(
     mock_empty_hypervisors, cli_force, empty_hypervisors, expected_result
 ):
-    machines = {f"{i}": COUMachine(f"{i}", f"zone-{i + 1}") for i in range(3)}
+    machines = {f"{i}": COUMachine(f"{i}", (), f"zone-{i + 1}") for i in range(3)}
     nova_compute = MagicMock(spec_set=OpenStackApplication)()
     nova_compute.charm = "nova-compute"
     nova_compute.units = {
