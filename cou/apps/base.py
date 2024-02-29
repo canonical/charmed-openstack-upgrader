@@ -340,10 +340,7 @@ class OpenStackApplication(COUApplication):
         ]
 
     def upgrade_steps(
-        self,
-        target: OpenStackRelease,
-        units: Optional[list[COUUnit]],
-        force: bool,
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]], force: bool
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
@@ -370,6 +367,7 @@ class OpenStackApplication(COUApplication):
             self._set_action_managed_upgrade(enable=bool(units)),
             self._get_upgrade_charm_step(target),
             self._get_change_install_repository_step(target),
+            self._get_units_upgrade_steps(units, force),
         ]
 
     def post_upgrade_steps(
@@ -423,6 +421,44 @@ class OpenStackApplication(COUApplication):
                 upgrade_steps.add_step(step)
         return upgrade_steps
 
+    def _get_unit_upgrade_steps(self, unit: COUUnit, force: bool) -> UnitUpgradeStep:
+        """Get the upgrade steps for single unit.
+
+        :param unit: Unit to generate upgrade steps
+        :type unit: COUUnit
+        :param force: Whether the unit step generation should be forced
+        :type force: bool
+        :return: Unit upgrade step
+        :rtype: UnitUpgradeStep
+        """
+        # pylint: disable=unused-argument
+        unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit: {unit.name}")
+        unit_plan.add_step(self._get_pause_unit_step(unit))
+        unit_plan.add_step(self._get_openstack_upgrade_step(unit))
+        unit_plan.add_step(self._get_resume_unit_step(unit))
+        return unit_plan
+
+    def _get_units_upgrade_steps(self, units: Optional[list[COUUnit]], force: bool) -> UpgradeStep:
+        """Get the upgrade steps for the units.
+
+        :param units: Units to generate upgrade steps
+        :type units: list[COUUnit]
+        :param force: Whether the plan generation should be forced
+        :type force: bool
+        :return: Upgrade step
+        :rtype: UpgradeStep
+        """
+        if not units:
+            logger.debug("units were not provided, skipping")
+            return UpgradeStep()
+
+        units_plan = UpgradeStep(
+            description=f"Upgrade plan for units: {', '.join([unit.name for unit in units])}",
+            parallel=True,
+        )
+        units_plan.sub_steps = [self._get_unit_upgrade_steps(unit, force) for unit in units]
+        return units_plan
+
     def _get_upgrade_current_release_packages_step(
         self, units: Optional[list[COUUnit]]
     ) -> PreUpgradeStep:
@@ -435,19 +471,18 @@ class OpenStackApplication(COUApplication):
         """
         if not units:
             units = list(self.units.values())
+
         step = PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{self.name}' from the current APT repositories"
-            ),
+            f"Upgrade software packages of '{self.name}' from the current APT repositories",
             parallel=True,
         )
-        for unit in units:
-            step.add_step(
-                UnitUpgradeStep(
-                    description=f"Upgrade software packages on unit {unit.name}",
-                    coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
-                )
+        step.sub_steps = [
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
             )
+            for unit in units
+        ]
 
         return step
 
