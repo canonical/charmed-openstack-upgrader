@@ -2,11 +2,11 @@ _subcommand_args() {
     local cmd=$1
     case "${cmd}" in
         plan)
-            opts="--help --quiet --verbose --model --backup --no-backup"
+            opts="--help --quiet --verbose --model --backup --no-backup control-plane data-plane hypervisors"
             child_commands=""
             ;;
         upgrade)
-            opts="--help --quiet --verbose --model ---auto-approve --backup --no-backup"
+            opts="--help --quiet --verbose --model ---auto-approve --backup --no-backup control-plane data-plane hypervisors"
             child_commands=""
             ;;
         help)
@@ -15,6 +15,16 @@ _subcommand_args() {
             ;;
         *)
             opts=""
+            child_commands=""
+            ;;
+    esac
+}
+
+_sub_subcommand_args() {
+    local cmd=$1
+    case "${cmd}" in
+        hypervisors)
+            opts="--machine --availability-zone"
             child_commands=""
             ;;
     esac
@@ -39,6 +49,9 @@ _cou_bash_completion() {
     # Define subcommand-specific options and children commands
     cmd="${COMP_WORDS[1]}"
     _subcommand_args ${cmd}
+
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    _sub_subcommand_args ${prev}
 
     COMPREPLY=( $(compgen -W "${child_commands} ${opts}" -- "${cur}") )
 }
