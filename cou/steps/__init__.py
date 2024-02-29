@@ -168,6 +168,7 @@ class BaseStep:
         """
         if not description and self._coro:
             raise ValueError("Every coroutine should have a description")
+
         self._description = description
 
     @property
@@ -223,6 +224,10 @@ class BaseStep:
         """
         if not isinstance(step, BaseStep):
             raise TypeError("Cannot add an upgrade step that is not derived from BaseStep")
+
+        if not step:
+            logger.debug("skipping adding empty step")
+            return
 
         self._sub_steps.append(step)
 
