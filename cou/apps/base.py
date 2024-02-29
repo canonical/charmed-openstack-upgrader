@@ -367,11 +367,7 @@ class OpenStackApplication(COUApplication):
             raise HaltUpgradePlanGeneration(msg)
 
         return [
-            (
-                self._get_enable_action_managed_step()
-                if units
-                else self._get_disable_action_managed_step()
-            ),
+            self._set_action_managed_upgrade(enable=bool(units)),
             self._get_upgrade_charm_step(target),
             self._get_change_install_repository_step(target),
         ]
@@ -517,50 +513,37 @@ class OpenStackApplication(COUApplication):
         :return: Step for upgrading the charm.
         :rtype: UpgradeStep
         """
-        if self.channel != self.target_channel(target):
-            return UpgradeStep(
-                description=(
-                    f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
-                ),
-                coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
-            )
-        return UpgradeStep()
-
-    def _get_disable_action_managed_step(self) -> UpgradeStep:
-        """Get step to disable action-managed-upgrade.
-
-        This is used to upgrade as "all-in-one" strategy.
-
-        :return: Step to disable action-managed-upgrade
-        :rtype: UpgradeStep
-        """
-        if self.config.get("action-managed-upgrade", {}).get("value", False):
-            return UpgradeStep(
-                description=(
-                    f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
-                ),
-                coro=self.model.set_application_config(
-                    self.name, {"action-managed-upgrade": False}
-                ),
-            )
-        return UpgradeStep()
-
-    def _get_enable_action_managed_step(self) -> UpgradeStep:
-        """Get step to enable action-managed-upgrade.
-
-        This is used to upgrade as "paused-single-unit" strategy.
-
-        :return: Step to enable action-managed-upgrade
-        :rtype: UpgradeStep
-        """
-        if self.config.get("action-managed-upgrade", {}).get("value", False):
+        if self.channel == self.target_channel(target):
             return UpgradeStep()
+
         return UpgradeStep(
-            description=(
-                f"Change charm config of '{self.name}' 'action-managed-upgrade' to True."
-            ),
-            coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
+            f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'",
+            coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
         )
+
+    def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:
+        """Set action-managed-upgrade config option.
+
+        :param enable: enable or disable option
+        :type enable: bool
+        :return: Step to change action-managed-upgrade config option, if option exist.
+        :rtype: UnitUpgradeStep
+        """
+        if "action-managed-upgrade" not in self.config:
+            logger.debug(
+                "%s application doesn't have an action-managed-upgrade config option", self.name
+            )
+            return UpgradeStep()
+
+        if self.config["action-managed-upgrade"].get("value") != enable:
+            return UpgradeStep(
+                f"Change charm config of '{self.name}' 'action-managed-upgrade' to {enable}",
+                coro=self.model.set_application_config(
+                    self.name, {"action-managed-upgrade": enable}
+                ),
+            )
+
+        return UpgradeStep()
 
     def _get_pause_unit_step(self, unit: COUUnit, dependent: bool = False) -> UnitUpgradeStep:
         """Get the step to pause a unit to upgrade.
