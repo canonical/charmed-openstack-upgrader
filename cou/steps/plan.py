@@ -15,7 +15,7 @@
 """Upgrade planning utilities."""
 
 import logging
-from typing import Callable, Optional
+from typing import Callable
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -37,7 +37,7 @@ from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
 )
-from cou.commands import CLIargs
+from cou.commands import CLIargs, UpgradeScope
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -116,7 +116,7 @@ def verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis)
     :type analysis_result: Analysis
     :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
-    if args.is_data_plane_command:
+    if args.scope is UpgradeScope.DATA_PLANE:
         if not analysis_result.min_os_version_data_plane:
             raise DataPlaneCannotUpgrade(
                 "Cannot find data-plane apps. Is this a valid OpenStack cloud?"
@@ -185,14 +185,13 @@ def verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> No
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    if args.is_hypervisors_command:
+    if args.machines:
         verify_hypervisors_cli_machines(args.machines, analysis_result)
+    elif args.availability_zones:
         verify_hypervisors_cli_azs(args.availability_zones, analysis_result)
 
 
-def verify_hypervisors_cli_machines(
-    cli_machines: Optional[set[str]], analysis_result: Analysis
-) -> None:
+def verify_hypervisors_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:
     """Verify if the machines passed from the CLI are valid.
 
     :param cli_machines: Machines passed to the CLI as arguments
@@ -200,8 +199,6 @@ def verify_hypervisors_cli_machines(
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    if not cli_machines:
-        return
     verify_data_plane_membership(
         all_options=set(analysis_result.machines.keys()),
         data_plane_options=set(analysis_result.data_plane_machines.keys()),
@@ -210,7 +207,7 @@ def verify_hypervisors_cli_machines(
     )
 
 
-def verify_hypervisors_cli_azs(cli_azs: Optional[set[str]], analysis_result: Analysis) -> None:
+def verify_hypervisors_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> None:
     """Verify if the availability zones passed from the CLI are valid.
 
     :param cli_azs: AZs passed to the CLI as arguments
@@ -219,8 +216,6 @@ def verify_hypervisors_cli_azs(cli_azs: Optional[set[str]], analysis_result: Ana
     :type analysis_result: Analysis
     :raises DataPlaneMachineFilterError: When the cloud does not have availability zones.
     """
-    if not cli_azs:
-        return
     all_azs: set[str] = {
         machine.az for machine in analysis_result.machines.values() if machine.az is not None
     }
@@ -314,11 +309,11 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
 
     plan = generate_common_plan(target, analysis_result, args)
 
-    if args.is_generic_command or args.is_control_plane_command:
+    if args.scope in {UpgradeScope.CONTROL_PLANE, UpgradeScope.WHOLE_CLOUD}:
         plan.sub_steps.extend(
             _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
         )
-    if args.is_generic_command or args.is_data_plane_command:
+    if args.scope in {UpgradeScope.DATA_PLANE, UpgradeScope.WHOLE_CLOUD}:
         plan.sub_steps.extend(await _generate_data_plane_plan(target, analysis_result, args))
 
     return plan

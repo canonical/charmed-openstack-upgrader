@@ -13,9 +13,12 @@
 # limitations under the License.
 
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
+from __future__ import annotations
+
 import argparse
 import logging
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Iterable, Optional
 
 import pkg_resources
@@ -408,46 +411,31 @@ class CLIargs:
         return not self.auto_approve
 
     @property
-    def is_hypervisors_command(self) -> bool:
-        """Whether if the command passed is specific to hypervisors.
+    def scope(self) -> UpgradeScope:
+        """Define which is the scope to upgrade.
 
-        :return: True if is hypervisors, false otherwise.
-        :rtype: bool
+        Scopes can be control-plane, data-plane or the whole cloud.
+
+        :return: Scope to upgrade
+        :rtype: UpgradeScope
         """
-        return self.upgrade_group == HYPERVISORS
+        return UpgradeScope(self.upgrade_group)
 
-    @property
-    def is_data_plane_command(self) -> bool:
-        """Whether if the command passed is data-plane related.
 
-        :return: True if is data-plane, false otherwise.
-        :rtype: bool
-        """
-        return self.is_hypervisors_command or self.upgrade_group == DATA_PLANE
+class UpgradeScope(Enum):
+    """Possible upgrade scopes."""
 
-    @property
-    def is_control_plane_command(self) -> bool:
-        """Whether if the command passed is control-plane related.
+    CONTROL_PLANE = CONTROL_PLANE
+    DATA_PLANE = DATA_PLANE, HYPERVISORS
+    WHOLE_CLOUD = None
 
-        :return: True if is control-plane, false otherwise.
-        :rtype: bool
-        """
-        return self.upgrade_group == CONTROL_PLANE
-
-    @property
-    def is_generic_command(self) -> bool:
-        """Whether the command has no specific group for upgrading.
-
-        When this happens both control-plane and data-plane should generate
-        plans.
-        E.g of generic commands:
-            - cou upgrade
-            - cou plan
-
-        :return: True if upgrade_group is None, false otherwise.
-        :rtype: bool
-        """
-        return self.upgrade_group is None
+    def __new__(cls, *values: Any) -> UpgradeScope:
+        obj = object.__new__(cls)
+        # first value is canonical value
+        obj._value_ = values[0]
+        for other_value in values[1:]:
+            cls._value2member_map_[other_value] = obj
+        return obj
 
 
 def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements
