@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -22,61 +23,129 @@ from cou.steps import analyze
 from cou.steps.analyze import Analysis
 from cou.utils.juju_utils import COUApplication, COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.utils import generate_cou_machine
 
 
 def test_analysis_dump(model):
     """Test analysis dump."""
-    expected_result = (
-        "Control Plane:\n"
-        "keystone:\n"
-        "  model_name: test_model\n"
-        "  charm: keystone\n"
-        "  charm_origin: ch\n"
-        "  os_origin: distro\n"
-        "  channel: ussuri/stable\n"
-        "  units:\n"
-        "    keystone/0:\n"
-        "      workload_version: 17.0.1\n"
-        "      os_version: ussuri\n"
-        "    keystone/1:\n"
-        "      workload_version: 17.0.1\n"
-        "      os_version: ussuri\n"
-        "    keystone/2:\n"
-        "      workload_version: 17.0.1\n"
-        "      os_version: ussuri\n"
-        "\n"
-        "cinder:\n"
-        "  model_name: test_model\n"
-        "  charm: cinder\n"
-        "  charm_origin: ch\n"
-        "  os_origin: distro\n"
-        "  channel: ussuri/stable\n"
-        "  units:\n"
-        "    cinder/0:\n"
-        "      workload_version: 16.4.2\n"
-        "      os_version: ussuri\n"
-        "    cinder/1:\n"
-        "      workload_version: 16.4.2\n"
-        "      os_version: ussuri\n"
-        "    cinder/2:\n"
-        "      workload_version: 16.4.2\n"
-        "      os_version: ussuri\n"
-        "\n"
-        "rabbitmq-server:\n"
-        "  model_name: test_model\n"
-        "  charm: rabbitmq-server\n"
-        "  charm_origin: ch\n"
-        "  os_origin: distro\n"
-        "  channel: 3.8/stable\n"
-        "  units:\n"
-        "    rabbitmq-server/0:\n"
-        "      workload_version: '3.8'\n"
-        "      os_version: yoga\n"
-        "Data Plane:\n"
-        "\nCurrent minimum OS release in the cloud: ussuri\n"
-        "\nCurrent minimum Ubuntu series in the cloud: focal\n"
+    expected_result = dedent(
+        """\
+        Control Plane:
+        keystone:
+          model_name: test_model
+          can_upgrade_to: ussuri/stable
+          charm: keystone
+          channel: ussuri/stable
+          config:
+            source:
+              value: distro
+          origin: ch
+          series: focal
+          subordinate_to: []
+          workload_version: 17.0.1
+          units:
+            keystone/0:
+              name: keystone/0
+              machine: '0'
+              workload_version: 17.0.1
+              os_version: ussuri
+            keystone/1:
+              name: keystone/1
+              machine: '1'
+              workload_version: 17.0.1
+              os_version: ussuri
+            keystone/2:
+              name: keystone/2
+              machine: '2'
+              workload_version: 17.0.1
+              os_version: ussuri
+          machines:
+            '0':
+              id: '0'
+              apps: !!python/tuple []
+              az: null
+            '1':
+              id: '1'
+              apps: !!python/tuple []
+              az: null
+            '2':
+              id: '2'
+              apps: !!python/tuple []
+              az: null
+
+        cinder:
+          model_name: test_model
+          can_upgrade_to: ussuri/stable
+          charm: cinder
+          channel: ussuri/stable
+          config:
+            source:
+              value: distro
+          origin: ch
+          series: focal
+          subordinate_to: []
+          workload_version: 16.4.2
+          units:
+            cinder/0:
+              name: cinder/0
+              machine: '0'
+              workload_version: 16.4.2
+              os_version: ussuri
+            cinder/1:
+              name: cinder/1
+              machine: '1'
+              workload_version: 16.4.2
+              os_version: ussuri
+            cinder/2:
+              name: cinder/2
+              machine: '2'
+              workload_version: 16.4.2
+              os_version: ussuri
+          machines:
+            '0':
+              id: '0'
+              apps: !!python/tuple []
+              az: null
+            '1':
+              id: '1'
+              apps: !!python/tuple []
+              az: null
+            '2':
+              id: '2'
+              apps: !!python/tuple []
+              az: null
+
+        rabbitmq-server:
+          model_name: test_model
+          can_upgrade_to: 3.8/stable
+          charm: rabbitmq-server
+          channel: 3.8/stable
+          config:
+            source:
+              value: distro
+          origin: ch
+          series: focal
+          subordinate_to: []
+          workload_version: '3.8'
+          units:
+            rabbitmq-server/0:
+              name: rabbitmq-server/0
+              machine: '0'
+              workload_version: '3.8'
+              os_version: yoga
+          machines:
+            '0':
+              id: '0'
+              apps: !!python/tuple []
+              az: null
+        Data Plane:
+
+        Current minimum OS release in the cloud: ussuri
+
+        Current minimum Ubuntu series in the cloud: focal
+        """
     )
-    machines = {f"{i}": MagicMock(spec_set=COUMachine) for i in range(3)}
+    machines = {f"{i}": generate_cou_machine(f"{i}") for i in range(3)}
     keystone = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -142,6 +211,7 @@ def test_analysis_dump(model):
         apps_control_plane=[keystone, cinder, rabbitmq_server],
         apps_data_plane=[],
     )
+
     assert str(result) == expected_result
 
 
