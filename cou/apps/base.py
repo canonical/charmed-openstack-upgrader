@@ -392,6 +392,8 @@ class OpenStackApplication(COUApplication):
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         """
         self._check_application_target(target)
         self._check_auto_restarts()
@@ -723,7 +725,7 @@ class OpenStackApplication(COUApplication):
 
         If the enable-auto-restart is not enabled, this check will raise an exception.
 
-        :raises HaltUpgradePlanGeneration: When enable-auto-restarts is not enabled.
+        :raises ApplicationError: When enable-auto-restarts is not enabled.
         """
         if "enable-auto-restarts" not in self.config:
             logger.debug(
@@ -732,7 +734,7 @@ class OpenStackApplication(COUApplication):
             return
 
         if self.config["enable-auto-restarts"].get("value") is False:
-            raise HaltUpgradePlanGeneration(
+            raise ApplicationError(
                 "COU does not currently support upgrading applications that disable service "
                 "restarts. Please enable charm option enable-auto-restart and rerun COU to "
                 f"upgrade the {self.name} application."

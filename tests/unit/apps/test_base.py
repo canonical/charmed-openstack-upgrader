@@ -309,7 +309,7 @@ def test_check_auto_restarts_error(_):
         app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
 
-    with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
+    with pytest.raises(ApplicationError, match=exp_error_msg):
         app._check_auto_restarts()
 
 
