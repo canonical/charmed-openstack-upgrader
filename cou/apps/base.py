@@ -487,10 +487,8 @@ class OpenStackApplication(COUApplication):
         # corner case for rabbitmq and hacluster.
         if len(self.possible_current_channels) > 1:
             logger.info(
-                (
-                    "'%s' has more than one channel compatible with the current OpenStack "
-                    "release: '%s'. '%s' will be used"
-                ),
+                "'%s' has more than one channel compatible with the current OpenStack release: "
+                "'%s'. '%s' will be used",
                 self.name,
                 self.current_os_release.codename,
                 channel,
@@ -590,7 +588,7 @@ class OpenStackApplication(COUApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=(f"Resume the unit: '{unit.name}'."),
+            description=f"Resume the unit: '{unit.name}'.",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="resume", raise_on_failure=True
             ),
