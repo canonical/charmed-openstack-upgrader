@@ -312,7 +312,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     pre_plan_sanity_checks(args, analysis_result)
     target = determine_upgrade_target(analysis_result)
 
-    plan = generate_common_plan(analysis_result, args, target)
+    plan = generate_common_plan(target, analysis_result, args)
 
     if args.is_generic_command or args.is_control_plane_command:
         plan.sub_steps.extend(
@@ -325,16 +325,16 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
 
 
 def generate_common_plan(
-    analysis_result: Analysis, args: CLIargs, target: OpenStackRelease
+    target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
 ) -> UpgradePlan:
     """Generate the common upgrade plan.
 
+    :param target: Target OpenStack release
+    :type target: OpenStackRelease
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :param target: Target OpenStack release
-    :type target: OpenStackRelease
     :return: Common upgrade plan
     :rtype: UpgradePlan
     """

@@ -727,7 +727,7 @@ def test_generate_common_plan(cli_backup, cli_args, model):
         )
     )
 
-    common_plan = cou_plan.generate_common_plan(mock_analysis_result, cli_args, target)
+    common_plan = cou_plan.generate_common_plan(target, mock_analysis_result, cli_args)
 
     if cli_backup:
         expected_plan.add_step(
