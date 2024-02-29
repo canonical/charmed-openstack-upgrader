@@ -144,12 +144,16 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 
 @pytest.mark.asyncio
-async def test_generate_plan(model, cli_args):
+@patch("cou.steps.plan._generate_data_plane_plan")
+async def test_generate_plan(mock_generate_data_plane, model, cli_args):
     """Test generation of upgrade plan."""
+    # TODO add data-plane apps once it's ready to properly generate the upgrade plan
+    mock_generate_data_plane.return_value = []
+    cli_args.is_generic_command = True
+    cli_args.is_control_plane_command = False
     cli_args.is_data_plane_command = False
     cli_args.force = False
     target = OpenStackRelease("victoria")
-    # keystone = Keystone()
     machines = {"0": MagicMock(spec_set=COUMachine)}
     keystone = Keystone(
         name="keystone",
@@ -703,70 +707,91 @@ async def test_get_upgradable_hypervisors_machines(
     } == expected_result
 
 
-@pytest.mark.parametrize("backup", [True, False])
-def test_generate_common_plan(backup, cli_args):
+@pytest.mark.parametrize("cli_backup", [True, False])
+def test_generate_common_plan(cli_backup, cli_args, model):
+    cli_args.backup = cli_backup
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
+    mock_analysis_result.model = model
+
     target = OpenStackRelease("victoria")
-    nova_compute = MagicMock(spec_set=OpenStackApplication)()
 
-    # analysis_result.model.wait_for_active_idle() should have __name__
-    # to not raise an error.
-    class AnalysisResult(MagicMock):
-        __name__ = "wait_for_active_idle"
+    expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
+    expected_plan.add_step(
+        PreUpgradeStep(
+            description="Verify that all OpenStack applications are in idle state",
+            parallel=False,
+            coro=mock_analysis_result.model.wait_for_active_idle(
+                timeout=11, idle_period=10, raise_on_blocked=True
+            ),
+        )
+    )
 
-    mock_analysis_result = AnalysisResult(spec=Analysis)()
-    mock_analysis_result.apps_control_plane = [nova_compute]
+    common_plan = cou_plan.generate_common_plan(mock_analysis_result, cli_args, target)
 
-    cli_args.backup = backup
+    if cli_backup:
+        expected_plan.add_step(
+            PreUpgradeStep(
+                description="Backup mysql databases",
+                parallel=False,
+                coro=backup(model),
+            )
+        )
 
-    plan = cou_plan.generate_common_plan(mock_analysis_result, cli_args, target)
-
-    if backup:
-        assert len(plan.sub_steps) == 2
-        assert plan.sub_steps[1].description == "Backup mysql databases"
-    else:
-        assert len(plan.sub_steps) == 1
-        assert plan.sub_steps[0].description != "Backup mysql databases"
+    assert common_plan == expected_plan
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "is_control_plane_command, is_generic_command", [(True, False), (False, False), (False, True)]
-)
 @patch("cou.steps.plan.create_upgrade_group")
-async def test_generate_control_plane_plan(
-    mock_create_upgrade_group, is_control_plane_command, is_generic_command, cli_args
-):
+def test_generate_control_plane_plan(mock_create_upgrade_group):
     target = OpenStackRelease("victoria")
-    nova_compute = MagicMock(spec_set=OpenStackApplication)()
-    mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.apps_control_plane = [nova_compute]
+    keystone = MagicMock(spec_set=OpenStackApplication)()
 
-    cli_args.is_control_plane_command = is_control_plane_command
-    cli_args.is_generic_command = is_generic_command
+    cou_plan._generate_control_plane_plan(target, keystone, False)
 
-    await cou_plan.generate_control_plane_plan(mock_analysis_result, cli_args, target)
-
-    if is_control_plane_command or is_generic_command:
-        assert mock_create_upgrade_group.await_count == 2
-    else:
-        mock_create_upgrade_group.assert_not_awaited()
+    assert mock_create_upgrade_group.call_count == 2
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "is_data_plane_command, is_generic_command", [(True, False), (False, False), (False, True)]
+    "is_control_plane_command, is_data_plane_command, is_generic_command",
+    [(True, False, False), (False, False, True), (False, True, False)],
 )
-@patch("cou.steps.plan.filter_hypervisors_machines")
-async def test_generate_data_plane_plan(
-    mock_filtered_hypervisors, is_data_plane_command, is_generic_command, cli_args
+@patch("cou.steps.plan.generate_common_plan")
+@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan.pre_plan_sanity_checks")
+@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan._generate_control_plane_plan")
+async def test_generate_plan_control_and_data_plane(
+    mock_control_plane,
+    mock_data_plane,
+    mock_pre_plan_sanity_checks,
+    mock_determine_upgrade_target,
+    mock_generate_common_plan,
+    cli_args,
+    is_control_plane_command,
+    is_data_plane_command,
+    is_generic_command,
 ):
-    mock_analysis_result = MagicMock(spec=Analysis)()
+    cli_args.is_control_plane_command = is_control_plane_command
     cli_args.is_data_plane_command = is_data_plane_command
     cli_args.is_generic_command = is_generic_command
 
-    await cou_plan.generate_data_plane_plan(mock_analysis_result, cli_args)
+    mock_analysis_result = MagicMock(spec=Analysis)()
 
-    if is_data_plane_command or is_generic_command:
-        mock_filtered_hypervisors.assert_awaited_with(cli_args, mock_analysis_result)
-    else:
-        mock_filtered_hypervisors.assert_not_awaited()
+    await cou_plan.generate_plan(mock_analysis_result, cli_args)
+
+    mock_pre_plan_sanity_checks.assert_called_once()
+    mock_determine_upgrade_target.assert_called_once()
+    mock_generate_common_plan.assert_called_once()
+
+    if is_generic_command:
+        mock_control_plane.assert_called_once()
+        mock_data_plane.assert_called_once()
+
+    if is_control_plane_command:
+        mock_control_plane.assert_called_once()
+        mock_data_plane.assert_not_called()
+
+    if is_data_plane_command:
+        mock_control_plane.assert_not_called()
+        mock_data_plane.assert_called_once()

@@ -55,6 +55,7 @@ def test_CLIargs_is_generic_command(upgrade_group, expected_result):
 
 
 @pytest.mark.parametrize(
+    "upgrade_group, expected_result",
     [(CONTROL_PLANE, False), (DATA_PLANE, True), (HYPERVISORS, True), ("foo", False)],
 )
 def test_CLIargs_is_data_plane_command(upgrade_group, expected_result):

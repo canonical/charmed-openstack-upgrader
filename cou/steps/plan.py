@@ -314,10 +314,12 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
 
     plan = generate_common_plan(analysis_result, args, target)
 
-    plan.sub_steps.extend(
-        _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
-    )
-    plan.sub_steps.extend(await _generate_data_plane_plan(target, analysis_result, args))
+    if args.is_generic_command or args.is_control_plane_command:
+        plan.sub_steps.extend(
+            _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
+        )
+    if args.is_generic_command or args.is_data_plane_command:
+        plan.sub_steps.extend(await _generate_data_plane_plan(target, analysis_result, args))
 
     return plan
 
@@ -325,15 +327,15 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
 def generate_common_plan(
     analysis_result: Analysis, args: CLIargs, target: OpenStackRelease
 ) -> UpgradePlan:
-    """_summary_.
+    """Generate the common upgrade plan.
 
-    :param analysis_result: _description_
+    :param analysis_result: Analysis result
     :type analysis_result: Analysis
-    :param args: _description_
+    :param args: CLI arguments
     :type args: CLIargs
-    :param target: _description_
+    :param target: Target OpenStack release
     :type target: OpenStackRelease
-    :return: _description_
+    :return: Common upgrade plan
     :rtype: UpgradePlan
     """
     plan = UpgradePlan(
@@ -402,7 +404,7 @@ async def _generate_data_plane_plan(
     target: OpenStackRelease,
     analysis_result: Analysis,
     args: CLIargs,
-) -> list[UpgradePlan]:
+) -> list[UpgradePlan]:  # pragma: no cover
     """Generate upgrade plan for data plane.
 
     :param target: Target OpenStack release.
