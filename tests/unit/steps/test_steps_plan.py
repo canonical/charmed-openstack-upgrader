@@ -746,7 +746,7 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
     target = OpenStackRelease("victoria")
     keystone = MagicMock(spec_set=OpenStackApplication)()
 
-    cou_plan._generate_control_plane_plan(target, keystone, False)
+    cou_plan._generate_control_plane_plan(target, [keystone], False)
 
     assert mock_create_upgrade_group.call_count == 2
 
