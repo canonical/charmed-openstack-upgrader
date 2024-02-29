@@ -18,10 +18,9 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from io import StringIO
 from typing import Any, Iterable, Optional
 
-from ruamel.yaml import YAML
+import yaml
 
 from cou.exceptions import (
     ApplicationError,
@@ -46,6 +45,8 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
+ORIGIN_SETTINGS = ("openstack-origin", "source")
+REQUIRED_SETTINGS = ("enable-auto-restarts", "action-managed-upgrade", *ORIGIN_SETTINGS)
 
 
 @dataclass(frozen=True)
@@ -99,23 +100,38 @@ class OpenStackApplication(COUApplication):
         summary = {
             self.name: {
                 "model_name": self.model.name,
+                "can_upgrade_to": self.can_upgrade_to,
                 "charm": self.charm,
-                "charm_origin": self.origin,
-                "os_origin": self.os_origin,
                 "channel": self.channel,
+                # Note (rgildein): sanitized the config
+                "config": {
+                    key: self.config[key] for key in self.config if key in REQUIRED_SETTINGS
+                },
+                "origin": self.origin,
+                "series": self.series,
+                "subordinate_to": self.subordinate_to,
+                "workload_version": self.workload_version,
                 "units": {
                     unit.name: {
+                        "name": unit.name,
+                        "machine": unit.machine.machine_id,
                         "workload_version": unit.workload_version,
                         "os_version": str(self._get_latest_os_version(unit)),
                     }
                     for unit in self.units.values()
                 },
+                "machines": {
+                    machine.machine_id: {
+                        "id": machine.machine_id,
+                        "apps": machine.apps,
+                        "az": machine.az,
+                    }
+                    for machine in self.machines.values()
+                },
             }
         }
-        yaml = YAML()
-        with StringIO() as stream:
-            yaml.dump(summary, stream)
-            return stream.getvalue()
+
+        return yaml.dump(summary, sort_keys=False)
 
     def _verify_channel(self) -> None:
         """Verify app channel from current data.
@@ -155,7 +171,7 @@ class OpenStackApplication(COUApplication):
         :return: return name of charm origin setting, e.g. "source", "openstack-origin" or None
         :rtype: Optional[str]
         """
-        for origin in ("openstack-origin", "source"):
+        for origin in ORIGIN_SETTINGS:
             if origin in self.config:
                 return origin
 
