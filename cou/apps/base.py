@@ -410,18 +410,17 @@ class OpenStackApplication(COUApplication):
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
-        upgrade_steps = ApplicationUpgradePlan(
+        upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
-        all_steps = (
-            self.pre_upgrade_steps(target, units)
-            + self.upgrade_steps(target, units, force)
-            + self.post_upgrade_steps(target, units)
-        )
-        for step in all_steps:
-            if step:
-                upgrade_steps.add_step(step)
-        return upgrade_steps
+
+        upgrade_plan.sub_steps = [
+            *self.pre_upgrade_steps(target, units),
+            *self.upgrade_steps(target, units, force),
+            *self.post_upgrade_steps(target, units),
+        ]
+
+        return upgrade_plan
 
     def _get_upgrade_current_release_packages_step(
         self, units: Optional[list[COUUnit]]
