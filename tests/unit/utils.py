@@ -29,6 +29,7 @@ def generate_cou_machine(machine_id: str, az: str | None = None) -> MagicMock:
     machine = MagicMock(spec_set=COUMachine)()
     machine.machine_id = machine_id
     machine.az = az
+    machine.apps = tuple()
     return machine
 
 

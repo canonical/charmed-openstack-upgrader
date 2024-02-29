@@ -890,7 +890,7 @@ def test_nova_compute_upgrade_plan(model):
             Upgrade software packages on unit nova-compute/1
             Upgrade software packages on unit nova-compute/2
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-        Change charm config of 'nova-compute' 'action-managed-upgrade' to True.
+        Change charm config of 'nova-compute' 'action-managed-upgrade' to True
         Upgrade 'nova-compute' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
@@ -933,7 +933,7 @@ def test_nova_compute_upgrade_plan(model):
         can_upgrade_to="ussuri/stable",
         charm="nova-compute",
         channel="ussuri/stable",
-        config={"source": {"value": "distro"}},
+        config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
         machines=machines,
         model=model,
         origin="ch",
@@ -957,7 +957,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Upgrade software packages on unit nova-compute/0
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-        Change charm config of 'nova-compute' 'action-managed-upgrade' to True.
+        Change charm config of 'nova-compute' 'action-managed-upgrade' to True
         Upgrade 'nova-compute' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0
@@ -986,7 +986,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         can_upgrade_to="ussuri/stable",
         charm="nova-compute",
         channel="ussuri/stable",
-        config={"source": {"value": "distro"}},
+        config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
         machines=machines,
         model=model,
         origin="ch",
