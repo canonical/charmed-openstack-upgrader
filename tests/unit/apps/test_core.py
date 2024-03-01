@@ -34,7 +34,7 @@ from cou.utils import nova_compute as nova_compute_utils
 from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.utils import assert_steps
+from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
 
 def test_application_different_wl(model):
@@ -342,7 +342,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
@@ -432,7 +432,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone"),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
@@ -521,7 +521,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     upgrade_steps = [
         upgrade_packages,
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
@@ -609,7 +609,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
@@ -877,3 +877,125 @@ def _generate_nova_compute_app(model):
     )
 
     return app
+
+
+def test_nova_compute_upgrade_plan(model):
+    """Testing generating nova-compute upgrade plan."""
+    target = OpenStackRelease("victoria")
+    exp_plan = dedent_plan(
+        """
+    Upgrade plan for 'nova-compute' to victoria
+        Upgrade software packages of 'nova-compute' from the current APT repositories
+            Upgrade software packages on unit nova-compute/0
+            Upgrade software packages on unit nova-compute/1
+            Upgrade software packages on unit nova-compute/2
+        Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+        Change charm config of 'nova-compute' 'action-managed-upgrade' to True
+        Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+        Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
+        Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
+            Upgrade plan for unit: nova-compute/0
+                Disable nova-compute scheduler from unit: 'nova-compute/0'.
+                Check if unit nova-compute/0 has no VMs running before upgrading.
+                ├── Pause the unit: 'nova-compute/0'.
+                ├── Upgrade the unit: 'nova-compute/0'.
+                ├── Resume the unit: 'nova-compute/0'.
+                Enable nova-compute scheduler from unit: 'nova-compute/0'.
+            Upgrade plan for unit: nova-compute/1
+                Disable nova-compute scheduler from unit: 'nova-compute/1'.
+                Check if unit nova-compute/1 has no VMs running before upgrading.
+                ├── Pause the unit: 'nova-compute/1'.
+                ├── Upgrade the unit: 'nova-compute/1'.
+                ├── Resume the unit: 'nova-compute/1'.
+                Enable nova-compute scheduler from unit: 'nova-compute/1'.
+            Upgrade plan for unit: nova-compute/2
+                Disable nova-compute scheduler from unit: 'nova-compute/2'.
+                Check if unit nova-compute/2 has no VMs running before upgrading.
+                ├── Pause the unit: 'nova-compute/2'.
+                ├── Upgrade the unit: 'nova-compute/2'.
+                ├── Resume the unit: 'nova-compute/2'.
+                Enable nova-compute scheduler from unit: 'nova-compute/2'.
+        Wait 1800s for model test_model to reach the idle state.
+        Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
+    """  # noqa: E501 line too long
+    )
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    units = {
+        f"nova-compute/{unit}": COUUnit(
+            name=f"nova-compute/{unit}",
+            workload_version="21.0.0",
+            machine=machines[f"{unit}"],
+        )
+        for unit in range(3)
+    }
+    nova_compute = NovaCompute(
+        name="nova-compute",
+        can_upgrade_to="ussuri/stable",
+        charm="nova-compute",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="21.0.0",
+    )
+
+    plan = nova_compute.generate_upgrade_plan(target, False)
+
+    assert str(plan) == exp_plan
+
+
+def test_nova_compute_upgrade_plan_single_unit(model):
+    """Testing generating nova-compute upgrade plan for single unit."""
+    target = OpenStackRelease("victoria")
+    exp_plan = dedent_plan(
+        """
+    Upgrade plan for 'nova-compute' to victoria
+        Upgrade software packages of 'nova-compute' from the current APT repositories
+            Upgrade software packages on unit nova-compute/0
+        Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+        Change charm config of 'nova-compute' 'action-managed-upgrade' to True
+        Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+        Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
+        Upgrade plan for units: nova-compute/0
+            Upgrade plan for unit: nova-compute/0
+                Disable nova-compute scheduler from unit: 'nova-compute/0'.
+                Check if unit nova-compute/0 has no VMs running before upgrading.
+                ├── Pause the unit: 'nova-compute/0'.
+                ├── Upgrade the unit: 'nova-compute/0'.
+                ├── Resume the unit: 'nova-compute/0'.
+                Enable nova-compute scheduler from unit: 'nova-compute/0'.
+        Wait 1800s for model test_model to reach the idle state.
+        Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0
+    """
+    )
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    units = {
+        f"nova-compute/{unit}": COUUnit(
+            name=f"nova-compute/{unit}",
+            workload_version="21.0.0",
+            machine=machines[f"{unit}"],
+        )
+        for unit in range(3)
+    }
+    nova_compute = NovaCompute(
+        name="nova-compute",
+        can_upgrade_to="ussuri/stable",
+        charm="nova-compute",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="21.0.0",
+    )
+
+    plan = nova_compute.generate_upgrade_plan(target, False, units=[units["nova-compute/0"]])
+
+    assert str(plan) == exp_plan
