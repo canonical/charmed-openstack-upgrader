@@ -24,6 +24,7 @@ from cou.steps import (
     PostUpgradeStep,
     PreUpgradeStep,
     UpgradePlan,
+    UpgradeStep,
 )
 from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import OpenStackRelease
@@ -63,7 +64,8 @@ class AZs(defaultdict):
 
         The AZs represent default dict, with predefined HypervisorGroup as default value.
         """
-        super().__init__(default_factory=None)
+        super().__init__()
+        self.default_factory = None
 
     def __missing__(self, key: str) -> HypervisorGroup:
         """Handle missing key in AZs.
@@ -148,29 +150,21 @@ class HypervisorUpgradePlanner:
 
         return azs
 
-    def _generate_pre_upgrade_plan(self) -> PreUpgradeStep:
+    def _generate_pre_upgrade_steps(
+        self, target: OpenStackRelease, group: HypervisorGroup
+    ) -> list[PreUpgradeStep]:
         """Generate pre upgrade plan for all applications.
 
-        This section should create a plan with steps like changing charm config option, etc.
-
-        :return: Pre-upgrade step with all needed pre-upgrade steps.
-        :rtype: PreUpgradeStep
-        """
-        raise NotImplementedError
-
-    def _generate_hypervisor_group_upgrade_plan(
-        self, target: OpenStackRelease, group: HypervisorGroup
-    ) -> HypervisorUpgradePlan:
-        """Generate upgrade plan for a single hypervisor group.
+        This section should create a list of steps like changing charm config option, etc.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
         :param group: HypervisorGroup object
         :type group: HypervisorGroup
-        :return: Upgrade plan for hypervisor group.
-        :rtype: HypervisorUpgradePlan
+        :return: List of pre-upgrade steps.
+        :rtype: list[PreUpgradeStep]
         """
-        plan = HypervisorUpgradePlan(description=f"Upgrade plan for '{group.name}' to {target}")
+        steps = []
         for app in self.apps:
             if app.name not in group.app_units:
                 logger.debug(
@@ -181,23 +175,74 @@ class HypervisorUpgradePlanner:
                 continue
 
             units = group.app_units[app.name]
-            logger.info("generating upgrade steps for %s app and %s units", app.name, units)
-            plan.sub_steps = app.upgrade_steps(target, units)  # type: ignore[call-arg, assignment]
+            logger.info("generating pre-upgrade steps for %s units of %s app", app.name, units)
+            steps.extend(app.pre_upgrade_steps(target, units))
 
-        return plan
+        return steps
 
-    def _generate_post_upgrade_plan(self) -> PostUpgradeStep:
-        """Generate post upgrade plan for all applications.
+    def _generate_upgrade_steps(
+        self, target: OpenStackRelease, force: bool, group: HypervisorGroup
+    ) -> list[UpgradeStep]:
+        """Generate upgrade plan for a single hypervisor group.
 
-        This section should create a plan with steps like checking versions, status of
+        :param target: OpenStack codename to upgrade.
+        :type target: OpenStackRelease
+        :param force: Whether the plan generation should be forced
+        :type force: bool
+        :param group: HypervisorGroup object
+        :type group: HypervisorGroup
+        :return: Upgrade plan for hypervisor group.
+        :rtype: HypervisorUpgradePlan
+        """
+        steps = []
+        for app in self.apps:
+            if app.name not in group.app_units:
+                logger.debug(
+                    "skipping application %s because it is not part of group %s",
+                    app.name,
+                    group.name,
+                )
+                continue
+
+            units = group.app_units[app.name]
+            logger.info("generating upgrade steps for %s units of %s app", app.name, units)
+            steps.extend(app.upgrade_steps(target, units, force))
+
+        return steps
+
+    def _generate_post_upgrade_steps(
+        self, target: OpenStackRelease, group: HypervisorGroup
+    ) -> list[PostUpgradeStep]:
+        """Generate post upgrade plan for hypervisor group.
+
+        This section should create a list of steps like checking versions, status of
         application, etc.
 
-        :return: Post-upgrade step with all needed post-upgrade steps.
-        :rtype: PostUpgradeStep
+        :param target: OpenStack codename to upgrade.
+        :type target: OpenStackRelease
+        :param group: HypervisorGroup object
+        :type group: HypervisorGroup
+        :return: List of post-upgrade steps.
+        :rtype: list[PostUpgradeStep]
         """
-        raise NotImplementedError
+        steps = []
+        # NOTE(rgildein): Using the reverse order of post-upgrade steps, so these steps starts from
+        #                 subordinate or colocated apps and not nova-compute.
+        for app in self.apps[::-1]:
+            if app.name not in group.app_units:
+                logger.debug(
+                    "skipping application %s because it is not part of group %s",
+                    app.name,
+                    group.name,
+                )
+                continue
 
-    # pylint: disable=unused-argument
+            units = group.app_units[app.name]
+            logger.info("generating post-upgrade steps for %s units of %s app", app.name, units)
+            steps.extend(app.post_upgrade_steps(target, units=units))
+
+        return steps
+
     def generate_upgrade_plan(self, target: OpenStackRelease, force: bool) -> UpgradePlan:
         """Generate full upgrade plan for all hypervisors.
 
@@ -211,18 +256,21 @@ class HypervisorUpgradePlanner:
         :rtype: UpgradePlan
         """
         plan = UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
-
-        # pre upgrade steps
-        logger.debug("generating pre upgrade steps")
-        plan.add_step(self._generate_pre_upgrade_plan())
-
-        # upgrade steps
         for az, group in self.azs.items():
-            logger.debug("generating upgrade steps for %s AZ", az)
-            plan.add_step(self._generate_hypervisor_group_upgrade_plan(target, group))
+            hypervisor_plan = HypervisorUpgradePlan(f"Upgrade plan for '{group.name}' to {target}")
 
-        # post upgrade steps
-        logger.debug("generating post upgrade steps")
-        plan.add_step(self._generate_post_upgrade_plan())
+            # pre upgrade steps
+            logger.debug("generating pre-upgrade steps for %s AZ", az)
+            hypervisor_plan.sub_steps.extend(self._generate_pre_upgrade_steps(target, group))
+
+            # upgrade steps
+            logger.debug("generating upgrade steps for %s AZ", az)
+            hypervisor_plan.sub_steps.extend(self._generate_upgrade_steps(target, force, group))
+
+            # post upgrade steps
+            logger.debug("generating post-upgrade steps for %s AZ", az)
+            hypervisor_plan.sub_steps.extend(self._generate_post_upgrade_steps(target, group))
+
+            plan.add_step(hypervisor_plan)
 
         return plan
