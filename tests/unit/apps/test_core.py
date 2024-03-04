@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
+from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone, NovaCompute
 from cou.exceptions import (
     ApplicationError,
@@ -762,36 +763,6 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
 
 
 @pytest.mark.parametrize("force", [True, False])
-@patch("cou.apps.core.NovaCompute._get_units_upgrade_steps")
-def test_nova_compute_upgrade_steps(mock_units_upgrade_steps, model, force):
-    app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
-    target = OpenStackRelease("victoria")
-    with patch(
-        "cou.apps.base.OpenStackApplication.current_os_release",
-        new_callable=PropertyMock,
-        return_value=OpenStackRelease("ussuri"),
-    ):
-        app.upgrade_steps(target, units, force)
-        mock_units_upgrade_steps.assert_called_once_with(units, force)
-
-
-@pytest.mark.parametrize("force", [True, False])
-@patch("cou.apps.core.NovaCompute._get_units_upgrade_steps")
-def test_nova_compute_upgrade_steps_no_units(mock_units_upgrade_steps, force, model):
-    app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
-    target = OpenStackRelease("victoria")
-    with patch(
-        "cou.apps.base.OpenStackApplication.current_os_release",
-        new_callable=PropertyMock,
-        return_value=OpenStackRelease("ussuri"),
-    ):
-        app.upgrade_steps(target, [], force)
-        mock_units_upgrade_steps.assert_called_once_with(units, force)
-
-
-@pytest.mark.parametrize("force", [True, False])
 # add_step check if the step added is from BaseStep, so the return is an empty UnitUpgradeStep
 @patch("cou.apps.core.NovaCompute._get_enable_scheduler_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_resume_unit_step", return_value=UnitUpgradeStep())
@@ -799,7 +770,7 @@ def test_nova_compute_upgrade_steps_no_units(mock_units_upgrade_steps, force, mo
 @patch("cou.apps.core.NovaCompute._get_pause_unit_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_empty_hypervisor_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_disable_scheduler_step", return_value=UnitUpgradeStep())
-def test_nova_compute_get_units_upgrade_steps(
+def test_nova_compute_get_unit_upgrade_steps(
     mock_disable,
     mock_empty,
     mock_pause,
@@ -810,21 +781,20 @@ def test_nova_compute_get_units_upgrade_steps(
     force,
 ):
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
+    unit = app.units["nova-compute/0"]
 
-    calls_without_dependency = [call(unit) for unit in units]
-    calls_with_dependency = [call(unit, not force) for unit in units]
-    app._get_units_upgrade_steps(units, force)
-    mock_disable.assert_has_calls(calls_without_dependency)
-    mock_enable.assert_has_calls(calls_without_dependency)
-    mock_pause.assert_has_calls(calls_with_dependency)
-    mock_upgrade.assert_has_calls(calls_with_dependency)
-    mock_resume.assert_has_calls(calls_with_dependency)
+    app._get_unit_upgrade_steps(unit, force)
 
+    mock_disable.assert_called_once_with(unit)
     if force:
         mock_empty.assert_not_called()
     else:
-        mock_empty.assert_has_calls(calls_without_dependency)
+        mock_empty.assert_called_once_with(unit)
+
+    mock_pause.assert_called_once_with(unit, not force)
+    mock_upgrade.assert_called_once_with(unit, not force)
+    mock_resume.assert_called_once_with(unit, not force)
+    mock_enable.assert_called_once_with(unit)
 
 
 def test_nova_compute_get_empty_hypervisor_step(model):
@@ -997,5 +967,107 @@ def test_nova_compute_upgrade_plan_single_unit(model):
     )
 
     plan = nova_compute.generate_upgrade_plan(target, False, units=[units["nova-compute/0"]])
+
+    assert str(plan) == exp_plan
+
+
+def test_cinder_upgrade_plan(model):
+    """Testing generating cinder upgrade plan."""
+    target = OpenStackRelease("victoria")
+    exp_plan = dedent_plan(
+        """
+    Upgrade plan for 'cinder' to victoria
+        Upgrade software packages of 'cinder' from the current APT repositories
+            Upgrade software packages on unit cinder/0
+            Upgrade software packages on unit cinder/1
+            Upgrade software packages on unit cinder/2
+        Refresh 'cinder' to the latest revision of 'ussuri/stable'
+        Upgrade 'cinder' to the new channel: 'victoria/stable'
+        Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
+        Wait 300s for app cinder to reach the idle state.
+        Check if the workload of 'cinder' has been upgraded on units: cinder/0, cinder/1, cinder/2
+    """
+    )
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    units = {
+        f"cinder/{i}": COUUnit(
+            name=f"cinder/{i}",
+            workload_version="16.4.2",
+            machine=machines[f"{i}"],
+        )
+        for i in range(3)
+    }
+    cinder = OpenStackApplication(
+        name="cinder",
+        can_upgrade_to="ussuri/stable",
+        charm="cinder",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": False},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="16.4.2",
+    )
+
+    plan = cinder.generate_upgrade_plan(target, False)
+
+    assert str(plan) == exp_plan
+
+
+def test_cinder_upgrade_plan_single_unit(model):
+    """Testing generating cinder upgrade plan."""
+    target = OpenStackRelease("victoria")
+    exp_plan = dedent_plan(
+        """
+    Upgrade plan for 'cinder' to victoria
+        Upgrade software packages of 'cinder' from the current APT repositories
+            Upgrade software packages on unit cinder/0
+        Refresh 'cinder' to the latest revision of 'ussuri/stable'
+        Change charm config of 'cinder' 'action-managed-upgrade' to True
+        Upgrade 'cinder' to the new channel: 'victoria/stable'
+        Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
+        Upgrade plan for units: cinder/0
+            Upgrade plan for unit: cinder/0
+                Pause the unit: 'cinder/0'.
+                Upgrade the unit: 'cinder/0'.
+                Resume the unit: 'cinder/0'.
+        Wait 300s for app cinder to reach the idle state.
+        Check if the workload of 'cinder' has been upgraded on units: cinder/0
+    """
+    )
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    units = {
+        f"cinder/{i}": COUUnit(
+            name=f"cinder/{i}",
+            workload_version="16.4.2",
+            machine=machines[f"{i}"],
+        )
+        for i in range(3)
+    }
+    cinder = OpenStackApplication(
+        name="cinder",
+        can_upgrade_to="ussuri/stable",
+        charm="cinder",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": False},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="16.4.2",
+    )
+
+    plan = cinder.generate_upgrade_plan(target, False, [units["cinder/0"]])
 
     assert str(plan) == exp_plan
