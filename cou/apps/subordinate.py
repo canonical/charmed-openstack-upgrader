@@ -22,7 +22,7 @@ from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-class SubordinateBaseClass(OpenStackApplication):
+class SubordinateBase(OpenStackApplication):
     """Subordinate base class."""
 
     def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
@@ -57,7 +57,7 @@ class SubordinateBaseClass(OpenStackApplication):
 
 
 @AppFactory.register_application(SUBORDINATES)
-class OpenStackSubordinateApplication(SubordinateBaseClass):
+class SubordinateApplication(SubordinateBase):
     """Subordinate application class."""
 
     @property

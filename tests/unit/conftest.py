@@ -20,11 +20,11 @@ import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 from juju.client.client import FullStatus
 
-from cou.apps.auxiliary import OpenStackAuxiliaryApplication
-from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
+from cou.apps.auxiliary import AuxiliaryApplication
+from cou.apps.auxiliary_subordinate import AuxiliarySubordinateApplication
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.apps.core import Keystone
-from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.apps.subordinate import SubordinateApplication
 from cou.utils.openstack import OpenStackRelease
 
 
@@ -542,16 +542,16 @@ def apps(status, config, model):
     cinder_ussuri = OpenStackApplication(
         "cinder", cinder_ussuri_status, config["openstack_ussuri"], model, "cinder"
     )
-    rmq_ussuri = OpenStackAuxiliaryApplication(
+    rmq_ussuri = AuxiliaryApplication(
         "rabbitmq-server", rmq_status, config["auxiliary_ussuri"], model, "rabbitmq-server"
     )
-    rmq_wallaby = OpenStackAuxiliaryApplication(
+    rmq_wallaby = AuxiliaryApplication(
         "rabbitmq-server", rmq_status, config["auxiliary_wallaby"], model, "rabbitmq-server"
     )
-    keystone_ldap = OpenStackSubordinateApplication(
+    keystone_ldap = SubordinateApplication(
         "keystone-ldap", keystone_ldap_status, {}, model, "keystone-ldap"
     )
-    keystone_mysql_router = OpenStackAuxiliarySubordinateApplication(
+    keystone_mysql_router = AuxiliarySubordinateApplication(
         "keystone-mysql-router", status["mysql_router"], {}, model, "mysql-router"
     )
     nova_ussuri = OpenStackApplication(

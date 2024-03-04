@@ -9,8 +9,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-from cou.apps.channel_based import OpenStackChannelBasedApplication
+from cou.apps.channel_based import ChannelBasedApplication
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -24,7 +23,7 @@ from tests.unit.apps.utils import add_steps
 
 
 def test_application_versionless(status, config, model):
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         "glance-simplestreams-sync",
         status["glance_simplestreams_sync_ussuri"],
         config["openstack_ussuri"],
@@ -36,7 +35,7 @@ def test_application_versionless(status, config, model):
 
 
 def test_application_gnocchi_ussuri(status, config, model):
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         "gnocchi",
         status["gnocchi_ussuri"],
         config["openstack_ussuri"],
@@ -50,7 +49,7 @@ def test_application_gnocchi_ussuri(status, config, model):
 def test_application_gnocchi_xena(status, config, model):
     # workload version is the same for xena and yoga, but current_os_release
     # is based on the channel.
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         "gnocchi",
         status["gnocchi_xena"],
         config["openstack_xena"],
@@ -66,7 +65,7 @@ def test_application_designate_bind_ussuri(status, config, model):
     # is based on the channel.
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"] = {"value": False}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         "designate-bind",
         status["designate_bind_ussuri"],
         app_config,
@@ -82,7 +81,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(status, config,
     app_config = config["openstack_ussuri"]
     # Does not have action-managed-upgrade
     app_config.pop("action-managed-upgrade")
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         "glance-simplestreams-sync",
         status["glance_simplestreams_sync_ussuri"],
         app_config,
@@ -143,7 +142,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
     target = OpenStackRelease("victoria")
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"] = {"value": False}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         "gnocchi",
         status["gnocchi_ussuri"],
         app_config,
@@ -213,7 +212,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(status, conf
     target = OpenStackRelease("victoria")
     app_config = config["openstack_ussuri"]
     app_config["action-managed-upgrade"] = {"value": False}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         "designate-bind",
         status["designate_bind_ussuri"],
         app_config,
