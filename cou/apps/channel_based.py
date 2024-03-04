@@ -13,7 +13,7 @@
 # limitations under the License.
 """Channel based application class."""
 import logging
-from typing import Iterable, Optional
+from typing import Optional
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
@@ -61,7 +61,7 @@ class OpenStackChannelBasedApplication(OpenStackApplication):
         return not all(unit.workload_version for unit in self.units)
 
     def post_upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[Iterable[COUUnit]]
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
     ) -> list[PostUpgradeStep]:
         """Post Upgrade steps planning.
 
@@ -71,7 +71,7 @@ class OpenStackChannelBasedApplication(OpenStackApplication):
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to generate post upgrade plan
-        :type units: Optional[Iterable[COUUnit]]
+        :type units: Optional[list[COUUnit]]
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """

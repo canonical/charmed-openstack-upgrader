@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Optional
+from typing import Any, Optional
 
 import yaml
 
@@ -389,7 +389,7 @@ class OpenStackApplication(COUApplication):
         ]
 
     def post_upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[Iterable[COUUnit]]
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
     ) -> list[PostUpgradeStep]:
         """Post Upgrade steps planning.
 
@@ -398,7 +398,7 @@ class OpenStackApplication(COUApplication):
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to generate post upgrade plan
-        :type units: Optional[Iterable[COUUnit]]
+        :type units: Optional[list[COUUnit]]
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
@@ -642,14 +642,14 @@ class OpenStackApplication(COUApplication):
         return UpgradeStep()
 
     def _get_reached_expected_target_step(
-        self, target: OpenStackRelease, units: Optional[Iterable[COUUnit]]
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
     ) -> PostUpgradeStep:
         """Get post upgrade step to check if application workload has been upgraded.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to generate post upgrade plan
-        :type units: Optional[Iterable[COUUnit]]
+        :type units: Optional[list[COUUnit]]
         :return: Post Upgrade step to check if application workload has been upgraded.
         :rtype: PostUpgradeStep
         """
@@ -665,14 +665,14 @@ class OpenStackApplication(COUApplication):
         )
 
     async def _verify_workload_upgrade(
-        self, target: OpenStackRelease, units: Iterable[COUUnit]
+        self, target: OpenStackRelease, units: list[COUUnit]
     ) -> None:
         """Check if an application has upgraded its workload version.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :param units: Units to check if got upgraded
-        :type units: Iterable[COUUnit]
+        :type units: list[COUUnit]
         :raises ApplicationError: When the workload version of the charm doesn't upgrade.
         """
         status = await self.model.get_status()
