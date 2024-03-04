@@ -22,11 +22,7 @@ from typing import Any, Iterable, Optional
 
 import yaml
 
-from cou.exceptions import (
-    ApplicationError,
-    HaltUpgradePlanGeneration,
-    MismatchedOpenStackVersions,
-)
+from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -243,33 +239,26 @@ class OpenStackApplication(COUApplication):
         return f"{target.codename}/stable"
 
     @property
-    def current_os_release(self) -> OpenStackRelease:
-        """Current OpenStack Release of the application.
+    def os_release_units(self) -> defaultdict[OpenStackRelease, list[str]]:
+        """Get the OpenStack release versions from the units.
 
-        :raises MismatchedOpenStackVersions: When units part of this application are
-        running mismatched OpenStack versions.
-        :return: OpenStackRelease object
-        :rtype: OpenStackRelease
+        :return: OpenStack release versions from the units.
+        :rtype: defaultdict[OpenStackRelease, list[str]]
         """
         os_versions = defaultdict(list)
         for unit in self.units.values():
             os_version = self._get_latest_os_version(unit)
             os_versions[os_version].append(unit.name)
+        return os_versions
 
-        if len(os_versions.keys()) == 1:
-            return next(iter(os_versions))
+    @property
+    def current_os_release(self) -> OpenStackRelease:
+        """Current OpenStack Release of the application.
 
-        # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
-        # upgrade methods, more than one version can be found.
-        mismatched_repr = [
-            f"'{openstack_release.codename}': {units}"
-            for openstack_release, units in os_versions.items()
-        ]
-
-        raise MismatchedOpenStackVersions(
-            f"Units of application {self.name} are running mismatched OpenStack versions: "
-            f"{', '.join(mismatched_repr)}. This is not currently handled."
-        )
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        return min(self.os_release_units.keys())
 
     @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
