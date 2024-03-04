@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 @AppFactory.register_application(CHANNEL_BASED_CHARMS)
-class OpenStackChannelBasedApplication(OpenStackApplication):
+class ChannelBasedApplication(OpenStackApplication):
     """Application for charms that are channel based."""
 
     def _get_latest_os_version(self, unit: COUUnit) -> OpenStackRelease:

@@ -17,7 +17,7 @@ import pytest
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone
-from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.apps.subordinate import SubordinateApplication
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -175,7 +175,7 @@ async def test_generate_plan(model, cli_args):
         },
         workload_version="17.0.1",
     )
-    keystone_ldap = OpenStackSubordinateApplication(
+    keystone_ldap = SubordinateApplication(
         name="keystone-ldap",
         can_upgrade_to="ussuri/stable",
         charm="keystone-ldap",
