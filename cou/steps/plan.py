@@ -98,7 +98,7 @@ def verify_os_versions_control_plane(apps: list[OpenStackApplication]) -> None:
         different OpenStack versions
     """
     for app in apps:
-        if isinstance(app, SubordinateBaseClass):
+        if isinstance(app, SubordinateBase):
             continue
         os_versions = app.os_release_units
         if len(os_versions.keys()) > 1:
