@@ -16,13 +16,13 @@
 from __future__ import annotations
 
 import logging
-import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Optional
 
 import yaml
 
+from cou.apps import STANDARD_IDLE_TIMEOUT
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -45,10 +45,6 @@ from cou.utils.openstack import (
 
 logger = logging.getLogger(__name__)
 
-STANDARD_IDLE_TIMEOUT: int = int(
-    os.environ.get("COU_STANDARD_IDLE_TIMEOUT", 5 * 60)
-)  # default of 5 min
-LONG_IDLE_TIMEOUT: int = int(os.environ.get("COU_LONG_IDLE_TIMEOUT", 30 * 60))  # default of 30 min
 ORIGIN_SETTINGS = ("openstack-origin", "source")
 REQUIRED_SETTINGS = ("enable-auto-restarts", "action-managed-upgrade", *ORIGIN_SETTINGS)
 

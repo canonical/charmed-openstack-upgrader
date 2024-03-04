@@ -16,7 +16,8 @@
 import logging
 from typing import Optional
 
-from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
+from cou.apps import LONG_IDLE_TIMEOUT
+from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.steps import UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import COUUnit

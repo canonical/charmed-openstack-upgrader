@@ -12,3 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Applications for charmed-openstack-upgrader."""
+import os
+
+STANDARD_IDLE_TIMEOUT: int = int(
+    os.environ.get("COU_STANDARD_IDLE_TIMEOUT", 5 * 60)
+)  # default of 5 min
+LONG_IDLE_TIMEOUT: int = int(os.environ.get("COU_LONG_IDLE_TIMEOUT", 30 * 60))  # default of 30 min
