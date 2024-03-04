@@ -37,7 +37,7 @@ def test_generate_pre_upgrade_steps():
     """Test generating of pre-upgrade steps."""
     target = OpenStackRelease("victoria")
     units = ["1", "2", "3"]
-    machines = [COUMachine(f"{i}", (), f"az{i//2}") for i in range(3)]
+    machines = [COUMachine(f"{i}", (), f"az{i}") for i in range(3)]
     apps = [_generate_app() for _ in range(3)]
     planner = HypervisorUpgradePlanner(apps, machines)
     group = HypervisorGroup("test", {app.name.return_value: units for app in apps})
@@ -54,7 +54,7 @@ def test_generate_post_upgrade_steps():
     """Test generating of post-upgrade steps."""
     target = OpenStackRelease("victoria")
     units = ["1", "2", "3"]
-    machines = [COUMachine(f"{i}", (), f"az{i//2}") for i in range(3)]
+    machines = [COUMachine(f"{i}", (), f"az{i}") for i in range(3)]
     apps = [_generate_app() for _ in range(3)]
     group = HypervisorGroup("test", {app.name.return_value: units for app in apps})
 
@@ -70,8 +70,10 @@ def test_hypervisor_group():
     """Test base logic of HypervisorGroup object."""
     group1 = HypervisorGroup("test", {"app1": []})
     group2 = HypervisorGroup("test", {"app2": []})
+    group3 = HypervisorGroup("test", {"app1": []})
 
     assert group1 != group2
+    assert group1 == group3
     assert group1 is not None
     assert group1 != "test"
 
@@ -292,7 +294,7 @@ def test_hypervisor_upgrade_plan(model):
     assert str(plan) == exp_plan
 
 
-def test_hypervisor_upgrade_plan_filtered(model):
+def test_hypervisor_upgrade_plan_single_machine(model):
     """Testing generating hypervisors upgrade plan for just a single machine.
 
     This test simulate the plan generation if the user uses cou plan hypervisors --machine 0

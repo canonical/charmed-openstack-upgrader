@@ -358,10 +358,7 @@ async def _generate_data_plane_plan(
             # ceph-osd will not be handled by hypervisor planner
             continue
 
-        for machine in app.machines:
-            if machine in hypervisors_machines:
-                hypervisor_apps.append(app)
-                break  # exiting machine for loop
+        hypervisor_apps.append(app)
 
     hypervisor_planner = HypervisorUpgradePlanner(hypervisor_apps, hypervisors_machines)
     hypervisor_plans = hypervisor_planner.generate_upgrade_plan(target, args.force)
