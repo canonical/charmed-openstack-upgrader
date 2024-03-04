@@ -14,9 +14,9 @@
 """Auxiliary subordinate application class."""
 from typing import Optional
 
-from cou.apps.auxiliary import OpenStackAuxiliaryApplication
+from cou.apps.auxiliary import AuxiliaryApplication
 from cou.apps.factory import AppFactory
-from cou.apps.subordinate import SubordinateBaseClass
+from cou.apps.subordinate import SubordinateBase
 from cou.steps import PreUpgradeStep
 from cou.utils.app_utils import validate_ovn_support
 from cou.utils.juju_utils import COUUnit
@@ -24,9 +24,7 @@ from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
 
 @AppFactory.register_application(AUXILIARY_SUBORDINATES)
-class OpenStackAuxiliarySubordinateApplication(
-    SubordinateBaseClass, OpenStackAuxiliaryApplication
-):
+class AuxiliarySubordinateApplication(SubordinateBase, AuxiliaryApplication):
     """Auxiliary subordinate application class."""
 
     @property
@@ -42,7 +40,7 @@ class OpenStackAuxiliarySubordinateApplication(
 
 
 @AppFactory.register_application(["ovn-chassis"])
-class OvnSubordinateApplication(OpenStackAuxiliarySubordinateApplication):
+class OvnSubordinate(AuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
 
     def pre_upgrade_steps(

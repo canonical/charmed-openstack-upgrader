@@ -21,22 +21,19 @@ from typing import Callable, Optional
 # decorator
 # pylint: disable=unused-import
 from cou.apps.auxiliary import (  # noqa: F401
-    CephMonApplication,
-    OpenStackAuxiliaryApplication,
-    OvnPrincipalApplication,
+    AuxiliaryApplication,
+    CephMon,
+    OvnPrincipal,
     RabbitMQServer,
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
-    OpenStackAuxiliarySubordinateApplication,
-    OvnSubordinateApplication,
+    AuxiliarySubordinateApplication,
+    OvnSubordinate,
 )
 from cou.apps.base import OpenStackApplication
-from cou.apps.channel_based import OpenStackChannelBasedApplication  # noqa: F401
+from cou.apps.channel_based import ChannelBasedApplication  # noqa: F401
 from cou.apps.core import Keystone, Octavia  # noqa: F401
-from cou.apps.subordinate import (  # noqa: F401
-    OpenStackSubordinateApplication,
-    SubordinateBaseClass,
-)
+from cou.apps.subordinate import SubordinateApplication, SubordinateBase  # noqa: F401
 from cou.commands import CLIargs
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
@@ -318,7 +315,7 @@ def _generate_control_plane_plan(
         description="Control Plane principal(s) upgrade plan",
         target=target,
         force=force,
-        filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
+        filter_function=lambda app: not isinstance(app, SubordinateBase),
     )
 
     subordinate_upgrade_plan = create_upgrade_group(
@@ -326,7 +323,7 @@ def _generate_control_plane_plan(
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
         force=force,
-        filter_function=lambda app: isinstance(app, SubordinateBaseClass),
+        filter_function=lambda app: isinstance(app, SubordinateBase),
     )
 
     logger.debug("Generation of the control plane upgrade plan complete")

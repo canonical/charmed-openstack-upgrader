@@ -12,7 +12,7 @@
 
 from unittest.mock import MagicMock
 
-from cou.apps.channel_based import OpenStackChannelBasedApplication
+from cou.apps.channel_based import ChannelBasedApplication
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -37,7 +37,7 @@ def test_application_versionless(model):
             machine=machines["0"],
         )
     }
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         name="glance-simplestreams-sync",
         can_upgrade_to="",
         charm="glance-simplestreams-sync",
@@ -61,9 +61,9 @@ def test_application_versionless(model):
 
 
 def test_application_gnocchi_ussuri(model):
-    """Test the Gnocchi OpenStackChannelBasedApplication with Ussuri."""
+    """Test the Gnocchi ChannelBasedApplication with Ussuri."""
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="",
         charm="gnocchi",
@@ -92,13 +92,13 @@ def test_application_gnocchi_ussuri(model):
 
 
 def test_application_gnocchi_xena(model):
-    """Test the Gnocchi OpenStackChannelBasedApplication with Xena.
+    """Test the Gnocchi ChannelBasedApplication with Xena.
 
     The workload version is the same for xena and yoga, but current_os_release is based on
     the channel.
     """
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="",
         charm="gnocchi",
@@ -124,13 +124,13 @@ def test_application_gnocchi_xena(model):
 
 
 def test_application_designate_bind_ussuri(model):
-    """Test the Designate-bind OpenStackChannelBasedApplication with Ussuri.
+    """Test the Designate-bind ChannelBasedApplication with Ussuri.
 
     The workload version is the same from ussuri to yoga, but current_os_release is based on
     the channel.
     """
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         name="designate-bind",
         can_upgrade_to="",
         charm="designate-bind",
@@ -159,10 +159,10 @@ def test_application_designate_bind_ussuri(model):
 
 
 def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
-    """Test generating plan for glance-simplestreams-sync (OpenStackChannelBasedApplication)."""
+    """Test generating plan for glance-simplestreams-sync (ChannelBasedApplication)."""
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         name="glance-simplestreams-sync",
         can_upgrade_to="ussuri/stable",
         charm="glance-simplestreams-sync",
@@ -232,13 +232,13 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
 
 
 def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
-    """Test generating plan for Gnocchi (OpenStackChannelBasedApplication).
+    """Test generating plan for Gnocchi (ChannelBasedApplication).
 
     Updating Gnocchi from ussuri to victoria increases the workload version from 4.3.4 to 4.4.0.
     """
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="ussuri/stable",
         charm="gnocchi",
@@ -324,10 +324,10 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
 
 
 def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
-    """Test generating plan for Designate-bind (OpenStackChannelBasedApplication)."""
+    """Test generating plan for Designate-bind (ChannelBasedApplication)."""
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OpenStackChannelBasedApplication(
+    app = ChannelBasedApplication(
         name="designate-bind",
         can_upgrade_to="ussuri/stable",
         charm="designate-bind",

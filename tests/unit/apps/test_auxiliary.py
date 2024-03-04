@@ -16,12 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cou.apps.auxiliary import (
-    CephMonApplication,
-    MysqlInnodbClusterApplication,
-    OvnPrincipalApplication,
-    RabbitMQServer,
-)
+from cou.apps.auxiliary import CephMon, MysqlInnodbCluster, OvnPrincipal, RabbitMQServer
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -560,10 +555,10 @@ def test_auxiliary_no_suitable_channel(model):
 
 
 def test_ceph_mon_app(model):
-    """Test the correctness of instantiating CephMonApplication."""
+    """Test the correctness of instantiating CephMon."""
     charm = "ceph-mon"
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = CephMonApplication(
+    app = CephMon(
         name=charm,
         can_upgrade_to="",
         charm=charm,
@@ -597,7 +592,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
     target = OpenStackRelease("yoga")
     charm = "ceph-mon"
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = CephMonApplication(
+    app = CephMon(
         name=charm,
         can_upgrade_to="quincy/stable",
         charm=charm,
@@ -686,7 +681,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     target = OpenStackRelease("victoria")
     charm = "ceph-mon"
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = CephMonApplication(
+    app = CephMon(
         name=charm,
         can_upgrade_to="quincy/stable",
         charm=charm,
@@ -766,10 +761,10 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
 
 
 def test_ovn_principal(model):
-    """Test the correctness of instantiating OvnPrincipalApplication."""
+    """Test the correctness of instantiating OvnPrincipal."""
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OvnPrincipalApplication(
+    app = OvnPrincipal(
         name=charm,
         can_upgrade_to="22.06/stable",
         charm=charm,
@@ -798,7 +793,7 @@ def test_ovn_principal(model):
 
 
 def test_ovn_workload_ver_lower_than_22_principal(model):
-    """Test the OvnPrincipalApplication with lower version than 22."""
+    """Test the OvnPrincipal with lower version than 22."""
     target = OpenStackRelease("victoria")
     charm = "ovn-central"
     exp_msg = (
@@ -808,7 +803,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
         "ovn-upgrade-2203.html"
     )
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OvnPrincipalApplication(
+    app = OvnPrincipal(
         name=charm,
         can_upgrade_to="22.03/stable",
         charm=charm,
@@ -835,7 +830,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])
 def test_ovn_no_compatible_os_release(channel, model):
-    """Test the OvnPrincipalApplication with not compatible os release."""
+    """Test the OvnPrincipal with not compatible os release."""
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=COUMachine)}
     exp_msg = (
@@ -846,7 +841,7 @@ def test_ovn_no_compatible_os_release(channel, model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        OvnPrincipalApplication(
+        OvnPrincipal(
             name=charm,
             can_upgrade_to="quincy/stable",
             charm=charm,
@@ -869,11 +864,11 @@ def test_ovn_no_compatible_os_release(channel, model):
 
 
 def test_ovn_principal_upgrade_plan(model):
-    """Test generating plan for OvnPrincipalApplication."""
+    """Test generating plan for OvnPrincipal."""
     target = OpenStackRelease("victoria")
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = OvnPrincipalApplication(
+    app = OvnPrincipal(
         name=charm,
         can_upgrade_to="22.06/stable",
         charm=charm,
@@ -949,11 +944,11 @@ def test_ovn_principal_upgrade_plan(model):
 
 
 def test_mysql_innodb_cluster_upgrade(model):
-    """Test generating plan for MysqlInnodbClusterApplication."""
+    """Test generating plan for MysqlInnodbCluster."""
     target = OpenStackRelease("victoria")
     charm = "mysql-innodb-cluster"
     machines = {"0": MagicMock(spec_set=COUMachine)}
-    app = MysqlInnodbClusterApplication(
+    app = MysqlInnodbCluster(
         name=charm,
         can_upgrade_to="9.0",
         charm=charm,
