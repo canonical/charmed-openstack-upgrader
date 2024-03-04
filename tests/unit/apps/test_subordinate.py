@@ -292,8 +292,8 @@ def test_generate_plan_in_same_channel(model, from_to):
     """Test generate upgrade plan for OpenStackSubordinateApplication in same channel.
 
     The version based on apt_source_codename is ussuri because the app series is central
-    and current os_release is defined as targeted version. Because of this, we couldn't
-    use from_to=ussuri because it will raise HaltUpgradePlanGeneration.
+    and current os_release is defined as targeted version. Therefore using
+    from_to=ussuri, which will raise HaltUpgradePlanGeneratio, is not possible.
     """
     target = OpenStackRelease(from_to)
     machines = {"0": MagicMock(spec_set=COUMachine)}

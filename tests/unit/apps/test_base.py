@@ -283,11 +283,11 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
     mock_workload_upgrade.assert_has_calls(expected_calls)
 
 
+@pytest.mark.parametrize("config", ({}, {"enable-auto-restarts": {"value": True}}))
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-def test_check_auto_restarts(_):
+def test_check_auto_restarts(_, config):
     """Test function to verify that enable-auto-restarts is disabled."""
     app_name = "app"
-    config = {}
     app = OpenStackApplication(
         app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
@@ -337,8 +337,8 @@ def test_check_application_target_error(current_os_release, apt_source_codename,
     target = OpenStackRelease("victoria")
     app_name = "app"
     exp_error_msg = (
-        f"Application '{app_name}' already configured for release equal or greater than {target}. "
-        "Ignoring."
+        f"Application '{app_name}' already configured for release equal to or greater than "
+        f"{target}. Ignoring."
     )
     app = OpenStackApplication(
         app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"

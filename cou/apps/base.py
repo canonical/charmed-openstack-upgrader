@@ -397,7 +397,10 @@ class OpenStackApplication(COUApplication):
         """
         self._check_application_target(target)
         self._check_auto_restarts()
-        logger.info("%s application met all the necessary prerequisites", self.name)
+        logger.info(
+            "%s application met all the necessary prerequisites to generate the upgrade plan",
+            self.name,
+        )
 
     def generate_upgrade_plan(
         self,
@@ -723,7 +726,7 @@ class OpenStackApplication(COUApplication):
     def _check_auto_restarts(self) -> None:
         """Check if enable-auto-restarts is enabled.
 
-        If the enable-auto-restart is not enabled, this check will raise an exception.
+        If the enable-auto-restart option is not enabled, this check will raise an exception.
 
         :raises ApplicationError: When enable-auto-restarts is not enabled.
         """
@@ -741,7 +744,7 @@ class OpenStackApplication(COUApplication):
             )
 
     def _check_application_target(self, target: OpenStackRelease) -> None:
-        """Check if application release is not lower or equal to target.
+        """Check if application release is not lower than or equal to target.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
@@ -756,6 +759,6 @@ class OpenStackApplication(COUApplication):
 
         if self.current_os_release >= target and self.apt_source_codename >= target:
             raise HaltUpgradePlanGeneration(
-                f"Application '{self.name}' already configured for release equal or greater "
+                f"Application '{self.name}' already configured for release equal to or greater "
                 f"than {target}. Ignoring."
             )
