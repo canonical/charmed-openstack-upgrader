@@ -45,6 +45,10 @@ from cou.utils.openstack import (
 
 logger = logging.getLogger(__name__)
 
+STANDARD_IDLE_TIMEOUT: int = int(
+    os.environ.get("COU_STANDARD_IDLE_TIMEOUT", 5 * 60)
+)  # default of 5 min
+LONG_IDLE_TIMEOUT: int = int(os.environ.get("COU_LONG_IDLE_TIMEOUT", 30 * 60))  # default of 30 min
 ORIGIN_SETTINGS = ("openstack-origin", "source")
 REQUIRED_SETTINGS = ("enable-auto-restarts", "action-managed-upgrade", *ORIGIN_SETTINGS)
 
@@ -63,9 +67,7 @@ class OpenStackApplication(COUApplication):
     """
 
     packages_to_hold: Optional[list] = field(default=None, init=False)
-    wait_timeout: int = field(
-        default=int(os.environ.get("COU_STANDARD_IDLE_TIMEOUT", 5 * 60)), init=False
-    )
+    wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
 
     def __post_init__(self) -> None:
