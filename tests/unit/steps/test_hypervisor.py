@@ -171,6 +171,11 @@ def test_hypervisor_upgrade_plan(model):
             Change charm config of 'cinder' 'action-managed-upgrade' to True
             Upgrade 'cinder' to the new channel: 'victoria/stable'
             Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
+            Upgrade plan for units: cinder/0
+                Upgrade plan for unit: cinder/0
+                    Pause the unit: 'cinder/0'.
+                    Upgrade the unit: 'cinder/0'.
+                    Resume the unit: 'cinder/0'.
             Change charm config of 'nova-compute' 'action-managed-upgrade' to True
             Upgrade 'nova-compute' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'

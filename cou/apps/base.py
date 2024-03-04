@@ -437,7 +437,7 @@ class OpenStackApplication(COUApplication):
         return upgrade_plan
 
     def _get_unit_upgrade_steps(self, unit: COUUnit, force: bool) -> UnitUpgradeStep:
-        """Get the upgrade steps for single unit.
+        """Get the upgrade steps for a single unit.
 
         :param unit: Unit to generate upgrade steps
         :type unit: COUUnit

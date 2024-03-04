@@ -16,7 +16,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
-from cou.apps.core import Cinder, Keystone, NovaCompute
+from cou.apps.base import OpenStackApplication
+from cou.apps.core import Keystone, NovaCompute
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -996,7 +997,7 @@ def test_cinder_upgrade_plan(model):
         )
         for i in range(3)
     }
-    cinder = Cinder(
+    cinder = OpenStackApplication(
         name="cinder",
         can_upgrade_to="ussuri/stable",
         charm="cinder",
@@ -1049,7 +1050,7 @@ def test_cinder_upgrade_plan_single_unit(model):
         )
         for i in range(3)
     }
-    cinder = Cinder(
+    cinder = OpenStackApplication(
         name="cinder",
         can_upgrade_to="ussuri/stable",
         charm="cinder",

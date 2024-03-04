@@ -78,7 +78,7 @@ class NovaCompute(OpenStackApplication):
         return super().upgrade_steps(target, units, force)
 
     def _get_unit_upgrade_steps(self, unit: COUUnit, force: bool) -> UnitUpgradeStep:
-        """Get the upgrade steps for single unit.
+        """Get the upgrade steps for a single unit.
 
         :param unit: Unit to generate upgrade steps
         :type unit: COUUnit
@@ -145,8 +145,3 @@ class NovaCompute(OpenStackApplication):
                 unit_name=unit.name, action_name="disable", raise_on_failure=True
             ),
         )
-
-
-@AppFactory.register_application(["cinder"])
-class Cinder(OpenStackApplication):
-    """Cinder application."""
