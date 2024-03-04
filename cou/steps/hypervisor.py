@@ -155,12 +155,12 @@ class HypervisorUpgradePlanner:
         azs = AZs()
         for app in self.apps:
             for unit in app.units.values():
-                # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
-                #                 belong to a single group.
                 if unit.machine not in self.machines:
                     logger.debug("skipping machine %s", unit.machine.machine_id)
                     continue
 
+                # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
+                #                 belong to a single group.
                 az = unit.machine.az or ""
                 azs[az].app_units[app.name].append(unit)
 
