@@ -36,7 +36,7 @@ def test_current_os_release(model):
         can_upgrade_to="ussuri/stable",
         charm="keystone-ldap",
         channel="ussuri/stable",
-        config={"source": {"value": "distro"}},
+        config={},
         machines=machines,
         model=model,
         origin="ch",
@@ -64,7 +64,7 @@ def test_generate_upgrade_plan(model):
         can_upgrade_to="ussuri/stable",
         charm="keystone-ldap",
         channel="ussuri/stable",
-        config={"source": {"value": "distro"}},
+        config={},
         machines=machines,
         model=model,
         origin="ch",
@@ -119,7 +119,7 @@ def test_channel_valid(model, channel):
         can_upgrade_to=channel,
         charm="keystone-ldap",
         channel=channel,
-        config={"source": {"value": "distro"}},
+        config={},
         machines=machines,
         model=model,
         origin="ch",
@@ -157,7 +157,7 @@ def test_channel_setter_invalid(model, channel):
             can_upgrade_to=channel,
             charm="keystone-ldap",
             channel=channel,
-            config={"source": {"value": "distro"}},
+            config={},
             machines=machines,
             model=model,
             origin="ch",
@@ -191,7 +191,7 @@ def test_generate_plan_ch_migration(model, channel):
         can_upgrade_to="wallaby/stable",
         charm="keystone-ldap",
         channel=f"ussuri/{channel}",
-        config={"source": {"value": "distro"}},
+        config={},
         machines=machines,
         model=model,
         origin="cs",
@@ -245,7 +245,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
         can_upgrade_to=f"{to_os}/stable",
         charm="keystone-ldap",
         channel=f"{from_os}/stable",
-        config={"source": {"value": "distro"}},
+        config={},
         machines=machines,
         model=model,
         origin="ch",
@@ -282,6 +282,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
 @pytest.mark.parametrize(
     "from_to",
     [
+        "ussuri",
         "victoria",
         "wallaby",
         "xena",
@@ -289,12 +290,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
     ],
 )
 def test_generate_plan_in_same_channel(model, from_to):
-    """Test generate upgrade plan for OpenStackSubordinateApplication in same channel.
-
-    The version based on apt_source_codename is ussuri because the app series is central
-    and current os_release is defined as targeted version. Therefore using
-    from_to=ussuri, which will raise HaltUpgradePlanGeneratio, is not possible.
-    """
+    """Test generate upgrade plan for OpenStackSubordinateApplication in same channel."""
     target = OpenStackRelease(from_to)
     machines = {"0": MagicMock(spec_set=COUMachine)}
     app = OpenStackSubordinateApplication(
@@ -302,7 +298,7 @@ def test_generate_plan_in_same_channel(model, from_to):
         can_upgrade_to=f"{from_to}/stable",
         charm="keystone-ldap",
         channel=f"{from_to}/stable",
-        config={"source": {"value": "distro"}},
+        config={},
         machines=machines,
         model=model,
         origin="ch",
