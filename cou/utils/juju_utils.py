@@ -162,7 +162,7 @@ class COUApplication:
     charm: str
     channel: str
     config: dict[str, Any]
-    machines: dict[str, COUMachine]
+    machines: list[COUMachine]
     model: COUModel
     origin: str
     series: str
@@ -314,7 +314,7 @@ class COUModel:
             retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
         )
 
-    @retry
+    # @retry
     async def get_applications(self) -> dict[str, COUApplication]:
         """Return list of applications with all relevant information.
 
@@ -334,7 +334,7 @@ class COUModel:
                 charm=model.applications[app].charm_name,
                 channel=status.charm_channel,
                 config=await model.applications[app].get_config(),
-                machines={unit.machine: machines[unit.machine] for unit in status.units.values()},
+                machines=[machines[unit.machine] for unit in status.units.values()],
                 model=self,
                 origin=status.charm.split(":")[0],
                 series=status.series,

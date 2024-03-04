@@ -45,26 +45,26 @@ def test_application_different_wl(model):
         "This is not currently handled."
     )
 
-    machines = {
-        "0": MagicMock(spec_set=COUMachine),
-        "1": MagicMock(spec_set=COUMachine),
-        "2": MagicMock(spec_set=COUMachine),
-    }
+    machines = [
+        MagicMock(spec_set=COUMachine),
+        MagicMock(spec_set=COUMachine),
+        MagicMock(spec_set=COUMachine),
+    ]
     units = {
         "keystone/0": COUUnit(
             name="keystone/0",
             workload_version="17.0.1",
-            machine=machines["0"],
+            machine=machines[0],
         ),
         "keystone/1": COUUnit(
             name="keystone/1",
             workload_version="17.0.1",
-            machine=machines["1"],
+            machine=machines[1],
         ),
         "keystone/2": COUUnit(
             name="keystone/2",
             workload_version="18.1.0",
-            machine=machines["2"],
+            machine=machines[2],
         ),
     }
     app = Keystone(
@@ -88,7 +88,7 @@ def test_application_different_wl(model):
 
 def test_application_no_origin_config(model):
     """Test Keystone application without origin."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -104,7 +104,7 @@ def test_application_no_origin_config(model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="18.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="18.1.0",
@@ -116,7 +116,7 @@ def test_application_no_origin_config(model):
 
 def test_application_empty_origin_config(model):
     """Test Keystone application with empty origin."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -132,7 +132,7 @@ def test_application_empty_origin_config(model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="18.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="18.1.0",
@@ -148,7 +148,7 @@ def test_application_unexpected_channel(model):
         "'keystone' has unexpected channel: 'ussuri/stable' for the current workload version "
         "and OpenStack release: 'wallaby'. Possible channels are: wallaby/stable"
     )
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -164,7 +164,7 @@ def test_application_unexpected_channel(model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="19.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="19.1.0",
@@ -180,7 +180,7 @@ def test_application_unexpected_channel(model):
 )
 def test_application_unknown_source(source_value, model):
     """Test Keystone application with unknown source."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     exp_msg = f"'keystone' has an invalid 'source': {source_value}"
     app = Keystone(
         name="keystone",
@@ -197,7 +197,7 @@ def test_application_unknown_source(source_value, model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="19.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="19.1.0",
@@ -211,7 +211,7 @@ def test_application_unknown_source(source_value, model):
 async def test_application_verify_workload_upgrade(model):
     """Test Kyestone application check successful upgrade."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -230,7 +230,7 @@ async def test_application_verify_workload_upgrade(model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="17.1.0",
@@ -253,7 +253,7 @@ async def test_application_verify_workload_upgrade_fail(model):
     """Test Kyestone application check unsuccessful upgrade."""
     target = OpenStackRelease("victoria")
     exp_msg = "Cannot upgrade units 'keystone/0' to victoria."
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -272,7 +272,7 @@ async def test_application_verify_workload_upgrade_fail(model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="17.1.0",
@@ -294,7 +294,7 @@ async def test_application_verify_workload_upgrade_fail(model):
 def test_upgrade_plan_ussuri_to_victoria(model):
     """Test generate plan to upgrade Keystone from Ussuri to Victoria."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -313,7 +313,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
             for unit in range(3)
         },
@@ -384,7 +384,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
 def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     """Test generate plan to upgrade Keystone from Ussuri to Victoria with charmhub migration."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -403,7 +403,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
             for unit in range(3)
         },
@@ -477,7 +477,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     The app channel it's already on next OpenStack release.
     """
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="victoria/stable",
@@ -496,7 +496,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
             for unit in range(3)
         },
@@ -561,7 +561,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
     The app config option openstack-origin it's already on next OpenStack release.
     """
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -580,7 +580,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
             for unit in range(3)
         },
@@ -645,7 +645,7 @@ def test_upgrade_plan_application_already_upgraded(model):
         "than victoria. Ignoring."
     )
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="",
@@ -664,7 +664,7 @@ def test_upgrade_plan_application_already_upgraded(model):
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
                 workload_version="19.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
             for unit in range(3)
         },
@@ -679,7 +679,7 @@ def test_upgrade_plan_application_already_upgraded(model):
 def test_upgrade_plan_application_already_disable_action_managed(model):
     """Test generate plan to upgrade Keystone with managed upgrade disabled."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -698,7 +698,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
             for unit in range(3)
         },
@@ -919,12 +919,12 @@ def test_nova_compute_upgrade_plan(model):
         Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
     )
-    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    machines = [generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)]
     units = {
         f"nova-compute/{unit}": COUUnit(
             name=f"nova-compute/{unit}",
             workload_version="21.0.0",
-            machine=machines[f"{unit}"],
+            machine=machines[unit],
         )
         for unit in range(3)
     }
@@ -972,12 +972,12 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
     )
-    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    machines = [generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)]
     units = {
         f"nova-compute/{unit}": COUUnit(
             name=f"nova-compute/{unit}",
             workload_version="21.0.0",
-            machine=machines[f"{unit}"],
+            machine=machines[unit],
         )
         for unit in range(3)
     }

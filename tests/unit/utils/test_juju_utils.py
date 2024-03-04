@@ -675,9 +675,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             charm=mocked_model.applications[app].charm_name,
             channel=status.charm_channel,
             config=mocked_model.applications[app].get_config.return_value,
-            machines={
-                unit.machine: exp_machines[unit.machine] for unit in exp_units[app].values()
-            },
+            machines=[exp_machines[unit.machine] for unit in exp_units[app].values()],
             model=model,
             origin=status.charm.split(":")[0],
             series=status.series,

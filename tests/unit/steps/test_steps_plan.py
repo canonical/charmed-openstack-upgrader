@@ -41,7 +41,7 @@ from cou.utils import app_utils
 from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.utils import assert_steps
+from tests.unit.utils import assert_steps, generate_cou_machine
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
@@ -150,7 +150,7 @@ async def test_generate_plan(model, cli_args):
     cli_args.force = False
     target = OpenStackRelease("victoria")
     # keystone = Keystone()
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [generate_cou_machine("0", "az-1")]
     keystone = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -160,7 +160,7 @@ async def test_generate_plan(model, cli_args):
             "openstack-origin": {"value": "distro"},
             "action-managed-upgrade": {"value": True},
         },
-        machines={},
+        machines=machines,
         model=model,
         origin="ch",
         series="focal",
@@ -169,7 +169,7 @@ async def test_generate_plan(model, cli_args):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="17.0.1",
@@ -189,7 +189,7 @@ async def test_generate_plan(model, cli_args):
             "keystone-ldap/0": COUUnit(
                 name="keystone-ldap/0",
                 workload_version="17.0.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="17.0.1",
@@ -212,7 +212,7 @@ async def test_generate_plan(model, cli_args):
             "cinder/0": COUUnit(
                 name="cinder/0",
                 workload_version="16.4.2",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="16.4.2",

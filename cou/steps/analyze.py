@@ -197,9 +197,7 @@ class Analysis:
         :rtype: dict[str, COUMachine]
         """
         return {
-            machine_id: app.machines[machine_id]
-            for app in self.apps_data_plane
-            for machine_id in app.machines
+            machine.machine_id: machine for app in self.apps_data_plane for machine in app.machines
         }
 
     @property
@@ -210,9 +208,9 @@ class Analysis:
         :rtype: dict[str, COUMachine]
         """
         return {
-            machine_id: app.machines[machine_id]
+            machine.machine_id: machine
             for app in self.apps_control_plane
-            for machine_id in app.machines
+            for machine in app.machines
         }
 
     @property

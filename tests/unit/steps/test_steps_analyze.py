@@ -145,7 +145,7 @@ def test_analysis_dump(model):
         Current minimum Ubuntu series in the cloud: focal
         """
     )
-    machines = {f"{i}": generate_cou_machine(f"{i}") for i in range(3)}
+    machines = [generate_cou_machine(f"{i}") for i in range(3)]
     keystone = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -159,7 +159,7 @@ def test_analysis_dump(model):
         subordinate_to=[],
         units={
             f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[f"{unit}"]
+                name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[unit]
             )
             for unit in range(3)
         },
@@ -171,7 +171,7 @@ def test_analysis_dump(model):
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
-        machines={"0": machines["0"]},
+        machines=machines[:1],
         model=model,
         origin="ch",
         series="focal",
@@ -180,7 +180,7 @@ def test_analysis_dump(model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -200,7 +200,7 @@ def test_analysis_dump(model):
             f"cinder/{unit}": COUUnit(
                 name=f"cinder/{unit}",
                 workload_version="16.4.2",
-                machine=machines[f"{unit}"],
+                machine=machines[unit],
             )
             for unit in range(3)
         },
@@ -251,7 +251,7 @@ async def test_populate_model(mock_create, model):
 )
 async def test_analysis_create(mock_split_apps, mock_populate, model):
     """Test analysis object creation."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     keystone = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -267,7 +267,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="17.1.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="17.1.0",
@@ -287,7 +287,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -307,7 +307,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
             "cinder/0": COUUnit(
                 name="cinder/0",
                 workload_version="16.4.2",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="16.4.2",
@@ -329,7 +329,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
 
 @pytest.mark.asyncio
 async def test_analysis_detect_current_cloud_os_release_different_releases(model):
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     keystone = Keystone(
         name="keystone",
         can_upgrade_to="wallaby/stable",
@@ -345,7 +345,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="19.1.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="19.1.0",
@@ -365,7 +365,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -385,7 +385,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
             "cinder/0": COUUnit(
                 name="cinder/0",
                 workload_version="16.4.2",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="16.4.2",
@@ -403,7 +403,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
 @pytest.mark.asyncio
 async def test_analysis_detect_current_cloud_series_different_series(model):
     """Check current_cloud_series getting lowest series in apps."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     keystone = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -419,7 +419,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="17.1.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="17.1.0",
@@ -439,7 +439,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -459,7 +459,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
             "cinder/0": COUUnit(
                 name="cinder/0",
                 workload_version="16.4.2",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="16.4.2",
@@ -521,21 +521,14 @@ def test_split_apps(exp_control_plane, exp_data_plane):
 @pytest.mark.asyncio
 async def test_analysis_machines(model):
     """Test splitting of dataplane and control plane machines."""
-    machines = {
-        "0": MagicMock(spec_set=COUMachine),
-        "1": MagicMock(spec_set=COUMachine),
-        "2": MagicMock(spec_set=COUMachine),
-        "3": MagicMock(spec_set=COUMachine),
-        "4": MagicMock(spec_set=COUMachine),
-        "5": MagicMock(spec_set=COUMachine),
-    }
+    machines = [generate_cou_machine(f"{i}", f"az-{i}") for i in range(6)]
     keystone = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
         charm="keystone",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
-        machines={"3": machines["3"]},
+        machines=[machines[3]],
         model=model,
         origin="ch",
         series="focal",
@@ -544,7 +537,7 @@ async def test_analysis_machines(model):
             "keystone/0": COUUnit(
                 name="keystone/0",
                 workload_version="17.1.0",
-                machine=machines["3"],
+                machine=machines[3],
             )
         },
         workload_version="17.1.0",
@@ -555,7 +548,7 @@ async def test_analysis_machines(model):
         charm="rabbitmq-server",
         channel="3.8/stable",
         config={"source": {"value": "distro"}},
-        machines={"4": machines["4"]},
+        machines=[machines[4]],
         model=model,
         origin="ch",
         series="focal",
@@ -564,7 +557,7 @@ async def test_analysis_machines(model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["4"],
+                machine=machines[4],
             )
         },
         workload_version="3.8",
@@ -575,7 +568,7 @@ async def test_analysis_machines(model):
         charm="cinder",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
-        machines={"5": machines["5"]},
+        machines=[machines[5]],
         model=model,
         origin="ch",
         series="focal",
@@ -584,7 +577,7 @@ async def test_analysis_machines(model):
             "cinder/0": COUUnit(
                 name="cinder/0",
                 workload_version="16.4.2",
-                machine=machines["5"],
+                machine=machines[5],
             )
         },
         workload_version="16.4.2",
@@ -595,7 +588,7 @@ async def test_analysis_machines(model):
         charm="nova-compute",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
-        machines={f"{i}": machines[f"{i}"] for i in range(3)},
+        machines=machines[:3],
         model=model,
         origin="ch",
         series="focal",
@@ -604,7 +597,7 @@ async def test_analysis_machines(model):
             f"nova-compute/{unit}": COUUnit(
                 name=f"nova-compute/{unit}",
                 workload_version="21.0.0",
-                machine=machines[f"{unit}"],
+                machine=machines[unit],
             )
             for unit in range(3)
         },
@@ -617,8 +610,8 @@ async def test_analysis_machines(model):
         apps_data_plane=[nova_compute],
     )
 
-    expected_control_plane_machines = {f"{i}": machines[f"{i}"] for i in range(3, 6)}  # 3, 4, 5
-    expected_data_plane_machines = {f"{i}": machines[f"{i}"] for i in range(3)}  # 0, 1, 2
+    expected_control_plane_machines = {f"{i}": machines[i] for i in range(3, 6)}  # 3, 4, 5
+    expected_data_plane_machines = {f"{i}": machines[i] for i in range(3)}  # 0, 1, 2
 
     assert result.control_plane_machines == expected_control_plane_machines
     assert result.data_plane_machines == expected_data_plane_machines

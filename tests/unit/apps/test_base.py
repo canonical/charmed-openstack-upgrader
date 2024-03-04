@@ -139,11 +139,11 @@ def test_get_pause_unit_step(model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     unit = COUUnit(
         name=f"{app_name}/0",
         workload_version="1",
-        machine=machines["0"],
+        machine=machines[0],
     )
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Pause the unit: '{unit.name}'.",
@@ -174,11 +174,11 @@ def test_get_resume_unit_step(model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     unit = COUUnit(
         name=f"{app_name}/0",
         workload_version="1",
-        machine=machines["0"],
+        machine=machines[0],
     )
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Resume the unit: '{unit.name}'.",
@@ -207,11 +207,11 @@ def test_get_openstack_upgrade_step(model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     unit = COUUnit(
         name=f"{app_name}/0",
         workload_version="1",
-        machine=machines["0"],
+        machine=machines[0],
     )
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Upgrade the unit: '{unit.name}'.",

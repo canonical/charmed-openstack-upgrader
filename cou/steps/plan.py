@@ -366,7 +366,7 @@ def _generate_data_plane_plan(
             continue
 
         for machine in app.machines:
-            if machine in nova_compute_machines:
+            if machine.machine_id in nova_compute_machines:
                 hypervisor_apps.append(app)
                 break  # exiting machine for loop
 

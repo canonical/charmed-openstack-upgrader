@@ -31,7 +31,7 @@ from tests.unit.utils import assert_steps
 
 def test_auxiliary_subordinate(model):
     """Test auxiliary subordinate application."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackAuxiliarySubordinateApplication(
         name="keystone-mysql-router",
         can_upgrade_to="",
@@ -47,7 +47,7 @@ def test_auxiliary_subordinate(model):
             "keystone-mysql-router/0": COUUnit(
                 name="keystone-mysql-router/0",
                 workload_version="8.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="8.0",
@@ -65,7 +65,7 @@ def test_auxiliary_subordinate(model):
 def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
     """Test auxiliary subordinate application upgrade plan to victoria."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackAuxiliarySubordinateApplication(
         name="keystone-mysql-router",
         can_upgrade_to="8.0/stable",
@@ -81,7 +81,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
             "keystone-mysql-router/0": COUUnit(
                 name="keystone-mysql-router/0",
                 workload_version="8.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="8.0",
@@ -105,7 +105,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
 
 def test_ovn_subordinate(model):
     """Test the correctness of instantiating OvnSubordinateApplication."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OvnSubordinateApplication(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
@@ -121,7 +121,7 @@ def test_ovn_subordinate(model):
             "ovn-chassis/0": COUUnit(
                 name="ovn-chassis/0",
                 workload_version="22.03",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="22.3",
@@ -138,7 +138,7 @@ def test_ovn_subordinate(model):
 def test_ovn_workload_ver_lower_than_22_subordinate(model):
     """Test the OvnSubordinateApplication with lower version than 22."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     exp_msg = (
         "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
         "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
@@ -160,7 +160,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
             "ovn-chassis/0": COUUnit(
                 name="ovn-chassis/0",
                 workload_version="20.03",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="20.3",
@@ -173,7 +173,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
 def test_ovn_subordinate_upgrade_plan(model):
     """Test generating plan for OvnSubordinateApplication."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OvnSubordinateApplication(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
@@ -189,7 +189,7 @@ def test_ovn_subordinate_upgrade_plan(model):
             "ovn-chassis/0": COUUnit(
                 name="ovn-chassis/0",
                 workload_version="22.03",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="22.3",
@@ -220,7 +220,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
     there is no steps to upgrade.
     """
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OvnSubordinateApplication(
         name="ovn-chassis",
         can_upgrade_to="",
@@ -236,7 +236,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
             "ovn-chassis/0": COUUnit(
                 name="ovn-chassis/0",
                 workload_version="22.03",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="22.3",
@@ -255,7 +255,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
 def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
     """Test when ceph version remains the same between os releases."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackAuxiliarySubordinateApplication(
         name="ceph-dashboard",
         can_upgrade_to="octopus/stable",
@@ -271,7 +271,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
             "ceph-dashboard/0": COUUnit(
                 name="ceph-dashboard/0",
                 workload_version="15.2.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="15.2.0",
@@ -298,7 +298,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
 def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
     """Test when ceph version changes between os releases."""
     target = OpenStackRelease("yoga")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackAuxiliarySubordinateApplication(
         name="ceph-dashboard",
         can_upgrade_to="pacific/stable",
@@ -314,7 +314,7 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
             "ceph-dashboard/0": COUUnit(
                 name="ceph-dashboard/0",
                 workload_version="16.2.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="16.2.0",

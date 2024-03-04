@@ -43,7 +43,7 @@ def test_auxiliary_app(model):
     The version 3.8 on rabbitmq can be from ussuri to yoga. In that case it will be
     set as yoga.
     """
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name="rabbitmq-server",
         can_upgrade_to="",
@@ -59,7 +59,7 @@ def test_auxiliary_app(model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -75,7 +75,7 @@ def test_auxiliary_app(model):
 
 def test_auxiliary_app_cs(model):
     """Test auxiliary application from charm store."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name="rabbitmq-server",
         can_upgrade_to="",
@@ -91,7 +91,7 @@ def test_auxiliary_app_cs(model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -108,7 +108,7 @@ def test_auxiliary_app_cs(model):
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     """Test auxiliary upgrade plan from Ussuri to Victoria with change of channel."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name="rabbitmq-server",
         can_upgrade_to="3.9/stable",
@@ -124,7 +124,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -192,7 +192,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
 def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
     """Test auxiliary upgrade plan from Ussuri to Victoria."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name="rabbitmq-server",
         can_upgrade_to="3.9/stable",
@@ -208,7 +208,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.9",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.9",
@@ -271,7 +271,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     """Test auxiliary upgrade plan from Ussuri to Victoria with migration to charmhub."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name="rabbitmq-server",
         can_upgrade_to="3.9/stable",
@@ -287,7 +287,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -361,7 +361,7 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     with pytest.raises(ApplicationError, match=exp_msg):
         RabbitMQServer(
             name="rabbitmq-server",
@@ -378,7 +378,7 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
                 "rabbitmq-server/0": COUUnit(
                     name="rabbitmq-server/0",
                     workload_version="3.8",
-                    machine=machines["0"],
+                    machine=machines[0],
                 )
             },
             workload_version="3.8",
@@ -391,7 +391,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
     charm = "rabbitmq-server"
     exp_msg = f"'{charm}' with workload version {version} has no compatible OpenStack release."
 
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name=charm,
         can_upgrade_to="3.8/stable",
@@ -407,7 +407,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version=version,
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version=version,
@@ -426,7 +426,7 @@ def test_auxiliary_raise_error_unknown_series(model):
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     with pytest.raises(ApplicationError, match=exp_msg):
         RabbitMQServer(
             name="rabbitmq-server",
@@ -443,7 +443,7 @@ def test_auxiliary_raise_error_unknown_series(model):
                 "rabbitmq-server/0": COUUnit(
                     name="rabbitmq-server/0",
                     workload_version="3.8",
-                    machine=machines["0"],
+                    machine=machines[0],
                 )
             },
             workload_version="3.8",
@@ -458,7 +458,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
     """
     current_os_release.return_value = OpenStackRelease("diablo")
 
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name="rabbitmq-server",
         can_upgrade_to="",
@@ -474,7 +474,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -495,7 +495,7 @@ def test_auxiliary_raise_halt_upgrade(model):
         f"Application '{charm}' already configured for release equal or greater than {target}. "
         "Ignoring."
     )
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name=charm,
         can_upgrade_to="",
@@ -511,7 +511,7 @@ def test_auxiliary_raise_halt_upgrade(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -533,7 +533,7 @@ def test_auxiliary_no_suitable_channel(model):
         "Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
     )
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = RabbitMQServer(
         name=charm,
         can_upgrade_to="",
@@ -549,7 +549,7 @@ def test_auxiliary_no_suitable_channel(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="3.8",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="3.8",
@@ -562,7 +562,7 @@ def test_auxiliary_no_suitable_channel(model):
 def test_ceph_mon_app(model):
     """Test the correctness of instantiating CephMonApplication."""
     charm = "ceph-mon"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = CephMonApplication(
         name=charm,
         can_upgrade_to="",
@@ -578,7 +578,7 @@ def test_ceph_mon_app(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="16.2.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="16.2.0",
@@ -596,7 +596,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
     """Test when ceph version changes between os releases."""
     target = OpenStackRelease("yoga")
     charm = "ceph-mon"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = CephMonApplication(
         name=charm,
         can_upgrade_to="quincy/stable",
@@ -612,7 +612,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="16.2.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="16.2.0",
@@ -685,7 +685,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     """Test when ceph version remains the same between os releases."""
     target = OpenStackRelease("victoria")
     charm = "ceph-mon"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = CephMonApplication(
         name=charm,
         can_upgrade_to="quincy/stable",
@@ -701,7 +701,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="15.2.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="15.2.0",
@@ -768,7 +768,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
 def test_ovn_principal(model):
     """Test the correctness of instantiating OvnPrincipalApplication."""
     charm = "ovn-central"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OvnPrincipalApplication(
         name=charm,
         can_upgrade_to="22.06/stable",
@@ -784,7 +784,7 @@ def test_ovn_principal(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="22.03",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="22.03",
@@ -807,7 +807,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
         "https://docs.openstack.org/charm-guide/latest/project/procedures/"
         "ovn-upgrade-2203.html"
     )
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OvnPrincipalApplication(
         name=charm,
         can_upgrade_to="22.03/stable",
@@ -823,7 +823,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="20.03.2",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="20.03.2",
@@ -837,7 +837,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
 def test_ovn_no_compatible_os_release(channel, model):
     """Test the OvnPrincipalApplication with not compatible os release."""
     charm = "ovn-central"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     exp_msg = (
         f"Channel: {channel} for charm '{charm}' on series 'focal' is currently "
         "not supported in this tool. Please take a look at the documentation: "
@@ -861,7 +861,7 @@ def test_ovn_no_compatible_os_release(channel, model):
                 f"{charm}/0": COUUnit(
                     name=f"{charm}/0",
                     workload_version="22.03",
-                    machine=machines["0"],
+                    machine=machines[0],
                 )
             },
             workload_version="22.03",
@@ -872,7 +872,7 @@ def test_ovn_principal_upgrade_plan(model):
     """Test generating plan for OvnPrincipalApplication."""
     target = OpenStackRelease("victoria")
     charm = "ovn-central"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OvnPrincipalApplication(
         name=charm,
         can_upgrade_to="22.06/stable",
@@ -888,7 +888,7 @@ def test_ovn_principal_upgrade_plan(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="22.03",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="22.03",
@@ -952,7 +952,7 @@ def test_mysql_innodb_cluster_upgrade(model):
     """Test generating plan for MysqlInnodbClusterApplication."""
     target = OpenStackRelease("victoria")
     charm = "mysql-innodb-cluster"
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = MysqlInnodbClusterApplication(
         name=charm,
         can_upgrade_to="9.0",
@@ -968,7 +968,7 @@ def test_mysql_innodb_cluster_upgrade(model):
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
                 workload_version="8.0",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="8.0",

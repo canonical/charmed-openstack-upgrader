@@ -120,19 +120,19 @@ def test_hypervisor_azs_grouping():
     5        started  10.10.10.6   host5          ubuntu@22.04  az2 Running
     ```
     """
-    machines = {f"{i}": COUMachine(f"{i}", (), f"az{i//2}") for i in range(6)}
+    machines = [COUMachine(f"{i}", (), f"az{i//2}") for i in range(6)]
     units = {
         # app1
-        "app1/0": COUUnit("app1/0", machines["0"], ""),
-        "app1/1": COUUnit("app1/1", machines["1"], ""),
-        "app1/2": COUUnit("app1/2", machines["2"], ""),
-        "app1/3": COUUnit("app1/3", machines["3"], ""),
-        "app1/4": COUUnit("app1/4", machines["4"], ""),
-        "app1/5": COUUnit("app1/5", machines["5"], ""),
+        "app1/0": COUUnit("app1/0", machines[0], ""),
+        "app1/1": COUUnit("app1/1", machines[1], ""),
+        "app1/2": COUUnit("app1/2", machines[2], ""),
+        "app1/3": COUUnit("app1/3", machines[3], ""),
+        "app1/4": COUUnit("app1/4", machines[4], ""),
+        "app1/5": COUUnit("app1/5", machines[5], ""),
         # app2
-        "app2/0": COUUnit("app2/0", machines["0"], ""),
-        "app2/1": COUUnit("app2/1", machines["2"], ""),
-        "app2/2": COUUnit("app2/2", machines["4"], ""),
+        "app2/0": COUUnit("app2/0", machines[0], ""),
+        "app2/1": COUUnit("app2/1", machines[2], ""),
+        "app2/2": COUUnit("app2/2", machines[4], ""),
     }
 
     app1 = MagicMock(spec_set=COUApplication)()
@@ -222,7 +222,7 @@ def test_hypervisor_upgrade_plan(model):
             Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/2
     """
     )
-    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    machines = [generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)]
     cinder = OpenStackApplication(
         name="cinder",
         can_upgrade_to="ussuri/stable",
@@ -232,7 +232,7 @@ def test_hypervisor_upgrade_plan(model):
             "openstack-origin": {"value": "distro"},
             "action-managed-upgrade": {"value": False},
         },
-        machines={"0": machines["0"]},
+        machines=machines[:1],
         model=model,
         origin="ch",
         series="focal",
@@ -241,7 +241,7 @@ def test_hypervisor_upgrade_plan(model):
             "cinder/0": COUUnit(
                 name="cinder/0",
                 workload_version="16.4.2",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="16.4.2",
@@ -261,7 +261,7 @@ def test_hypervisor_upgrade_plan(model):
             f"nova-compute/{unit}": COUUnit(
                 name=f"nova-compute/{unit}",
                 workload_version="21.0.0",
-                machine=machines[f"{unit}"],
+                machine=machines[unit],
             )
             for unit in range(3)
         },

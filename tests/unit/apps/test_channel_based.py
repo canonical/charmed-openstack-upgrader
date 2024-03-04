@@ -29,12 +29,12 @@ from tests.unit.utils import assert_steps
 
 def test_application_versionless(model):
     """Test application without version."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     units = {
         "glance-simplestreams-sync/0": COUUnit(
             name="glance-simplestreams-sync/0",
             workload_version="",
-            machine=machines["0"],
+            machine=machines[0],
         )
     }
     app = OpenStackChannelBasedApplication(
@@ -62,7 +62,7 @@ def test_application_versionless(model):
 
 def test_application_gnocchi_ussuri(model):
     """Test the Gnocchi OpenStackChannelBasedApplication with Ussuri."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="",
@@ -81,7 +81,7 @@ def test_application_gnocchi_ussuri(model):
             "gnocchi/0": COUUnit(
                 name="gnocchi/0",
                 workload_version="4.3.4",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="4.3.4",
@@ -97,7 +97,7 @@ def test_application_gnocchi_xena(model):
     The workload version is the same for xena and yoga, but current_os_release is based on
     the channel.
     """
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="",
@@ -113,7 +113,7 @@ def test_application_gnocchi_xena(model):
             "gnocchi/0": COUUnit(
                 name="gnocchi/0",
                 workload_version="4.4.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="4.4.1",
@@ -129,7 +129,7 @@ def test_application_designate_bind_ussuri(model):
     The workload version is the same from ussuri to yoga, but current_os_release is based on
     the channel.
     """
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackChannelBasedApplication(
         name="designate-bind",
         can_upgrade_to="",
@@ -148,7 +148,7 @@ def test_application_designate_bind_ussuri(model):
             "designate-bind/0": COUUnit(
                 name="designate-bind/0",
                 workload_version="9.16.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="9.16.1",
@@ -161,7 +161,7 @@ def test_application_designate_bind_ussuri(model):
 def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
     """Test generating plan for glance-simplestreams-sync (OpenStackChannelBasedApplication)."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackChannelBasedApplication(
         name="glance-simplestreams-sync",
         can_upgrade_to="ussuri/stable",
@@ -177,7 +177,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
             "glance-simplestreams-sync/0": COUUnit(
                 name="glance-simplestreams-sync/0",
                 workload_version="",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="",
@@ -237,7 +237,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
     Updating Gnocchi from ussuri to victoria increases the workload version from 4.3.4 to 4.4.0.
     """
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="ussuri/stable",
@@ -256,7 +256,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
             "gnocchi/0": COUUnit(
                 name="gnocchi/0",
                 workload_version="4.3.4",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="4.3.4",
@@ -326,7 +326,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
 def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
     """Test generating plan for Designate-bind (OpenStackChannelBasedApplication)."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=COUMachine)}
+    machines = [MagicMock(spec_set=COUMachine)]
     app = OpenStackChannelBasedApplication(
         name="designate-bind",
         can_upgrade_to="ussuri/stable",
@@ -345,7 +345,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
             "designate-bind/0": COUUnit(
                 name="designate-bind/0",
                 workload_version="9.16.1",
-                machine=machines["0"],
+                machine=machines[0],
             )
         },
         workload_version="9.16.1",

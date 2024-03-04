@@ -126,7 +126,7 @@ class OpenStackApplication(COUApplication):
                         "apps": machine.apps,
                         "az": machine.az,
                     }
-                    for machine in self.machines.values()
+                    for machine in self.machines
                 },
             }
         }
