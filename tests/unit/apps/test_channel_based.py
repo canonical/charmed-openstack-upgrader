@@ -54,6 +54,34 @@ def test_application_versionless(model):
     assert app._get_latest_os_version(units[0]) == app.channel_codename
 
 
+def test_versionless_post_upgrade_steps(model):
+    """Test application without version generating post-upgrade steps."""
+    target = OpenStackRelease("victoria")
+    machines = [MagicMock(spec_set=COUMachine)]
+    units = [COUUnit("glance-simplestreams-sync/0", machines[0], "")]
+    app = OpenStackChannelBasedApplication(
+        name="glance-simplestreams-sync",
+        can_upgrade_to="",
+        charm="glance-simplestreams-sync",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="",
+    )
+
+    assert (
+        app.post_upgrade_steps(target, None) == []
+    ), "versionless app should not generate post-upgrade stpes"
+
+
 def test_application_gnocchi_ussuri(model):
     """Test the Gnocchi OpenStackChannelBasedApplication with Ussuri."""
     machines = [MagicMock(spec_set=COUMachine)]
