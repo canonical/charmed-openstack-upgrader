@@ -118,7 +118,7 @@ class OpenStackApplication(COUApplication):
                         "workload_version": unit.workload_version,
                         "os_version": str(self._get_latest_os_version(unit)),
                     }
-                    for unit in self.units.values()
+                    for unit in self.units
                 },
                 "machines": {
                     machine.machine_id: {
@@ -252,7 +252,7 @@ class OpenStackApplication(COUApplication):
         :rtype: OpenStackRelease
         """
         os_versions = defaultdict(list)
-        for unit in self.units.values():
+        for unit in self.units:
             os_version = self._get_latest_os_version(unit)
             os_versions[os_version].append(unit.name)
 
@@ -449,7 +449,8 @@ class OpenStackApplication(COUApplication):
         :rtype: PreUpgradeStep
         """
         if not units:
-            units = list(self.units.values())
+            units = self.units
+
         step = PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
@@ -653,7 +654,8 @@ class OpenStackApplication(COUApplication):
         :rtype: PostUpgradeStep
         """
         if not units:
-            units = list(self.units.values())
+            units = self.units
+
         return PostUpgradeStep(
             description=(
                 f"Check if the workload of '{self.name}' has been upgraded on units: "

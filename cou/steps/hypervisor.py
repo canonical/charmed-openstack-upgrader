@@ -142,7 +142,7 @@ class HypervisorUpgradePlanner:
         """
         azs = AZs()
         for app in self.apps:
-            for unit in app.units.values():
+            for unit in app.units:
                 # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
                 #                 belong to a single group.
                 az = unit.machine.az or ""

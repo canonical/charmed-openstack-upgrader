@@ -355,7 +355,7 @@ def _generate_data_plane_plan(
     nova_compute_machines = [
         unit.machine.machine_id
         for app in apps
-        for unit in app.units.values()
+        for unit in app.units
         if app.charm == "nova-compute"
         if unit.machine.machine_id not in hypervisors
     ]
@@ -469,7 +469,7 @@ async def _get_upgradable_hypervisors_machines(
     nova_compute_units = [
         unit
         for app in analysis_result.apps_data_plane
-        for unit in app.units.values()
+        for unit in app.units
         if app.charm == "nova-compute"
     ]
 

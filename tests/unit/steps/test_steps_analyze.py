@@ -157,12 +157,10 @@ def test_analysis_dump(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[unit]
-            )
-            for unit in range(3)
-        },
+        units=[
+            COUUnit(name=f"keystone/{i}", workload_version="17.0.1", machine=machines[i])
+            for i in range(3)
+        ],
         workload_version="17.0.1",
     )
     rabbitmq_server = RabbitMQServer(
@@ -176,13 +174,7 @@ def test_analysis_dump(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
-                name="rabbitmq-server/0",
-                workload_version="3.8",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="rabbitmq-server/0", workload_version="3.8", machine=machines[0])],
         workload_version="3.8",
     )
     cinder = OpenStackApplication(
@@ -196,14 +188,10 @@ def test_analysis_dump(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"cinder/{unit}": COUUnit(
-                name=f"cinder/{unit}",
-                workload_version="16.4.2",
-                machine=machines[unit],
-            )
-            for unit in range(3)
-        },
+        units=[
+            COUUnit(name=f"cinder/{i}", workload_version="16.4.2", machine=machines[i])
+            for i in range(3)
+        ],
         workload_version="16.4.2",
     )
     result = analyze.Analysis(
@@ -263,13 +251,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="17.1.0",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="17.1.0", machine=machines[0])],
         workload_version="17.1.0",
     )
     rabbitmq_server = RabbitMQServer(
@@ -283,13 +265,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
-                name="rabbitmq-server/0",
-                workload_version="3.8",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="rabbitmq-server/0", workload_version="3.8", machine=machines[0])],
         workload_version="3.8",
     )
     cinder = OpenStackApplication(
@@ -303,13 +279,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "cinder/0": COUUnit(
-                name="cinder/0",
-                workload_version="16.4.2",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="cinder/0", workload_version="16.4.2", machine=machines[0])],
         workload_version="16.4.2",
     )
     exp_apps = [keystone, rabbitmq_server, cinder]
@@ -341,13 +311,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="19.1.0",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="19.1.0", machine=machines[0])],
         workload_version="19.1.0",
     )
     rabbitmq_server = RabbitMQServer(
@@ -361,13 +325,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
-                name="rabbitmq-server/0",
-                workload_version="3.8",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="rabbitmq-server/0", workload_version="3.8", machine=machines[0])],
         workload_version="3.8",
     )
     cinder = OpenStackApplication(
@@ -381,13 +339,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "cinder/0": COUUnit(
-                name="cinder/0",
-                workload_version="16.4.2",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="cinder/0", workload_version="16.4.2", machine=machines[0])],
         workload_version="16.4.2",
     )
     result = analyze.Analysis(
@@ -415,13 +367,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="17.1.0",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="17.1.0", machine=machines[0])],
         workload_version="17.1.0",
     )
     rabbitmq_server = RabbitMQServer(
@@ -435,13 +381,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
-                name="rabbitmq-server/0",
-                workload_version="3.8",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="rabbitmq-server/0", workload_version="3.8", machine=machines[0])],
         workload_version="3.8",
     )
     cinder = OpenStackApplication(
@@ -455,13 +395,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         origin="ch",
         series="bionic",  # change cinder to Bionic series
         subordinate_to=[],
-        units={
-            "cinder/0": COUUnit(
-                name="cinder/0",
-                workload_version="16.4.2",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="cinder/0", workload_version="16.4.2", machine=machines[0])],
         workload_version="16.4.2",
     )
     result = analyze.Analysis(
@@ -491,22 +425,22 @@ def _unit(machine_id):
     "exp_control_plane, exp_data_plane",
     [
         (
-            [_app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")})],
-            [_app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")})],
+            [_app("keystone", [_unit("0"), _unit("1"), _unit("2")])],
+            [_app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")])],
         ),
         (
             [],
             [
-                _app("nova-compute", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
-                _app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
-                _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
+                _app("nova-compute", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("keystone", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")]),
             ],
         ),
         (
-            [_app("keystone", {"6": _unit("6"), "7": _unit("7"), "8": _unit("8")})],
+            [_app("keystone", [_unit("6"), _unit("7"), _unit("8")])],
             [
-                _app("nova-compute", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
-                _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
+                _app("nova-compute", [_unit("0"), _unit("1"), _unit("2")]),
+                _app("ceph-osd", [_unit("3"), _unit("4"), _unit("5")]),
             ],
         ),
     ],
@@ -533,13 +467,7 @@ async def test_analysis_machines(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="17.1.0",
-                machine=machines[3],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="17.1.0", machine=machines[3])],
         workload_version="17.1.0",
     )
     rabbitmq_server = RabbitMQServer(
@@ -553,13 +481,7 @@ async def test_analysis_machines(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
-                name="rabbitmq-server/0",
-                workload_version="3.8",
-                machine=machines[4],
-            )
-        },
+        units=[COUUnit(name="rabbitmq-server/0", workload_version="3.8", machine=machines[4])],
         workload_version="3.8",
     )
     cinder = OpenStackApplication(
@@ -573,13 +495,7 @@ async def test_analysis_machines(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "cinder/0": COUUnit(
-                name="cinder/0",
-                workload_version="16.4.2",
-                machine=machines[5],
-            )
-        },
+        units=[COUUnit(name="cinder/0", workload_version="16.4.2", machine=machines[5])],
         workload_version="16.4.2",
     )
     nova_compute = OpenStackApplication(
@@ -593,14 +509,10 @@ async def test_analysis_machines(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"nova-compute/{unit}": COUUnit(
-                name=f"nova-compute/{unit}",
-                workload_version="21.0.0",
-                machine=machines[unit],
-            )
-            for unit in range(3)
-        },
+        units=[
+            COUUnit(name=f"nova-compute/{i}", workload_version="21.0.0", machine=machines[i])
+            for i in range(3)
+        ],
         workload_version="21.0.0",
     )
 

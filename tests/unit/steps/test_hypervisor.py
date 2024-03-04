@@ -137,10 +137,10 @@ def test_hypervisor_azs_grouping():
 
     app1 = MagicMock(spec_set=COUApplication)()
     app1.name = "app1"
-    app1.units = {name: unit for name, unit in units.items() if name.startswith("app1")}
+    app1.units = [unit for name, unit in units.items() if name.startswith("app1")]
     app2 = MagicMock(spec_set=COUApplication)()
     app2.name = "app2"
-    app1.units = {name: unit for name, unit in units.items() if name.startswith("app2")}
+    app2.units = [unit for name, unit in units.items() if name.startswith("app2")]
 
     exp_azs = AZs()
     exp_azs["az0"].app_units["app1"] = [units["app1/0"], units["app1/1"]]
@@ -237,13 +237,7 @@ def test_hypervisor_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "cinder/0": COUUnit(
-                name="cinder/0",
-                workload_version="16.4.2",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="cinder/0", workload_version="16.4.2", machine=machines[0])],
         workload_version="16.4.2",
     )
     nova_compute = NovaCompute(
@@ -257,14 +251,10 @@ def test_hypervisor_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"nova-compute/{unit}": COUUnit(
-                name=f"nova-compute/{unit}",
-                workload_version="21.0.0",
-                machine=machines[unit],
-            )
-            for unit in range(3)
-        },
+        units=[
+            COUUnit(name=f"nova-compute/{i}", workload_version="21.0.0", machine=machines[i])
+            for i in range(3)
+        ],
         workload_version="21.0.0",
     )
 

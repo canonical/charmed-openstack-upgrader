@@ -680,10 +680,10 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             origin=status.charm.split(":")[0],
             series=status.series,
             subordinate_to=status.subordinate_to,
-            units={
-                name: juju_utils.COUUnit(name, exp_machines[unit.machine], unit.workload_version)
+            units=[
+                juju_utils.COUUnit(name, exp_machines[unit.machine], unit.workload_version)
                 for name, unit in exp_units[app].items()
-            },
+            ],
             workload_version=status.workload_version,
         )
         for app, status in full_status_apps.items()

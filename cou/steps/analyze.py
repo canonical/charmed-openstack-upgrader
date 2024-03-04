@@ -79,12 +79,12 @@ class Analysis:
 
         control_plane, data_plane = [], []
         data_plane_machines = {
-            unit.machine for app in apps if is_data_plane(app) for unit in app.units.values()
+            unit.machine for app in apps if is_data_plane(app) for unit in app.units
         }
         for app in apps:
             if is_data_plane(app):
                 data_plane.append(app)
-            elif any(unit.machine in data_plane_machines for unit in app.units.values()):
+            elif any(unit.machine in data_plane_machines for unit in app.units):
                 data_plane.append(app)
             else:
                 control_plane.append(app)

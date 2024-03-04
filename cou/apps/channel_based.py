@@ -58,7 +58,7 @@ class OpenStackChannelBasedApplication(OpenStackApplication):
         :return: True if is versionless, False otherwise.
         :rtype: bool
         """
-        return not all(unit.workload_version for unit in self.units.values())
+        return not all(unit.workload_version for unit in self.units)
 
     def post_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[Iterable[COUUnit]]
@@ -77,4 +77,5 @@ class OpenStackChannelBasedApplication(OpenStackApplication):
         """
         if self.is_versionless:
             return []
+
         return super().post_upgrade_steps(target, units)

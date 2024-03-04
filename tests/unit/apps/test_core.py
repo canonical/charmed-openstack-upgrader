@@ -50,23 +50,11 @@ def test_application_different_wl(model):
         MagicMock(spec_set=COUMachine),
         MagicMock(spec_set=COUMachine),
     ]
-    units = {
-        "keystone/0": COUUnit(
-            name="keystone/0",
-            workload_version="17.0.1",
-            machine=machines[0],
-        ),
-        "keystone/1": COUUnit(
-            name="keystone/1",
-            workload_version="17.0.1",
-            machine=machines[1],
-        ),
-        "keystone/2": COUUnit(
-            name="keystone/2",
-            workload_version="18.1.0",
-            machine=machines[2],
-        ),
-    }
+    units = [
+        COUUnit(name="keystone/0", workload_version="17.0.1", machine=machines[0]),
+        COUUnit(name="keystone/1", workload_version="17.0.1", machine=machines[1]),
+        COUUnit(name="keystone/2", workload_version="18.1.0", machine=machines[2]),
+    ]
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -100,13 +88,7 @@ def test_application_no_origin_config(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="18.0.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="18.0.1", machine=machines[0])],
         workload_version="18.1.0",
     )
 
@@ -128,13 +110,7 @@ def test_application_empty_origin_config(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="18.0.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="18.0.1", machine=machines[0])],
         workload_version="18.1.0",
     )
 
@@ -160,13 +136,7 @@ def test_application_unexpected_channel(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="19.0.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="19.0.1", machine=machines[0])],
         workload_version="19.1.0",
     )
 
@@ -193,13 +163,7 @@ def test_application_unknown_source(source_value, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="19.0.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="19.0.1", machine=machines[0])],
         workload_version="19.1.0",
     )
 
@@ -226,13 +190,7 @@ async def test_application_verify_workload_upgrade(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="17.0.1", machine=machines[0])],
         workload_version="17.1.0",
     )
 
@@ -245,7 +203,7 @@ async def test_application_verify_workload_upgrade(model):
     mock_status.return_value.applications = {"keystone": mock_app_status}
     model.get_status = mock_status
 
-    assert await app._verify_workload_upgrade(target, app.units.values()) is None
+    assert await app._verify_workload_upgrade(target, app.units) is None
 
 
 @pytest.mark.asyncio
@@ -268,13 +226,7 @@ async def test_application_verify_workload_upgrade_fail(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="17.0.1", machine=machines[0])],
         workload_version="17.1.0",
     )
 
@@ -288,7 +240,7 @@ async def test_application_verify_workload_upgrade_fail(model):
     model.get_status = mock_status
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        await app._verify_workload_upgrade(target, app.units.values())
+        await app._verify_workload_upgrade(target, app.units)
 
 
 def test_upgrade_plan_ussuri_to_victoria(model):
@@ -309,14 +261,10 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
+        units=[
+            COUUnit(name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[0])
             for unit in range(3)
-        },
+        ],
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
@@ -326,7 +274,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -369,10 +317,10 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -399,14 +347,10 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         origin="cs",
         series="focal",
         subordinate_to=[],
-        units={
-            f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
+        units=[
+            COUUnit(name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[0])
             for unit in range(3)
-        },
+        ],
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
@@ -416,7 +360,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -459,10 +403,10 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -492,14 +436,10 @@ def test_upgrade_plan_channel_on_next_os_release(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
+        units=[
+            COUUnit(name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[0])
             for unit in range(3)
-        },
+        ],
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
@@ -510,7 +450,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -543,10 +483,10 @@ def test_upgrade_plan_channel_on_next_os_release(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -576,14 +516,10 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
+        units=[
+            COUUnit(name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[0])
             for unit in range(3)
-        },
+        ],
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
@@ -593,7 +529,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -626,10 +562,10 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -660,14 +596,10 @@ def test_upgrade_plan_application_already_upgraded(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}",
-                workload_version="19.0.1",
-                machine=machines[0],
-            )
+        units=[
+            COUUnit(name=f"keystone/{unit}", workload_version="19.0.1", machine=machines[0])
             for unit in range(3)
-        },
+        ],
         workload_version="19.1.0",
     )
 
@@ -694,14 +626,10 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
+        units=[
+            COUUnit(name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[0])
             for unit in range(3)
-        },
+        ],
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
@@ -711,7 +639,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -749,10 +677,10 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -765,22 +693,20 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
 @patch("cou.apps.core.NovaCompute._get_units_upgrade_steps")
 def test_nova_compute_upgrade_steps(mock_units_upgrade_steps, model, force):
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
     target = OpenStackRelease("victoria")
     with patch(
         "cou.apps.base.OpenStackApplication.current_os_release",
         new_callable=PropertyMock,
         return_value=OpenStackRelease("ussuri"),
     ):
-        app.upgrade_steps(target, units, force)
-        mock_units_upgrade_steps.assert_called_once_with(units, force)
+        app.upgrade_steps(target, app.units, force)
+        mock_units_upgrade_steps.assert_called_once_with(app.units, force)
 
 
 @pytest.mark.parametrize("force", [True, False])
 @patch("cou.apps.core.NovaCompute._get_units_upgrade_steps")
 def test_nova_compute_upgrade_steps_no_units(mock_units_upgrade_steps, force, model):
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
     target = OpenStackRelease("victoria")
     with patch(
         "cou.apps.base.OpenStackApplication.current_os_release",
@@ -788,7 +714,7 @@ def test_nova_compute_upgrade_steps_no_units(mock_units_upgrade_steps, force, mo
         return_value=OpenStackRelease("ussuri"),
     ):
         app.upgrade_steps(target, [], force)
-        mock_units_upgrade_steps.assert_called_once_with(units, force)
+        mock_units_upgrade_steps.assert_called_once_with(app.units, force)
 
 
 @pytest.mark.parametrize("force", [True, False])
@@ -810,11 +736,10 @@ def test_nova_compute_get_units_upgrade_steps(
     force,
 ):
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
 
-    calls_without_dependency = [call(unit) for unit in units]
-    calls_with_dependency = [call(unit, not force) for unit in units]
-    app._get_units_upgrade_steps(units, force)
+    calls_without_dependency = [call(unit) for unit in app.units]
+    calls_with_dependency = [call(unit, not force) for unit in app.units]
+    app._get_units_upgrade_steps(app.units, force)
     mock_disable.assert_has_calls(calls_without_dependency)
     mock_enable.assert_has_calls(calls_without_dependency)
     mock_pause.assert_has_calls(calls_with_dependency)
@@ -829,7 +754,7 @@ def test_nova_compute_get_units_upgrade_steps(
 
 def test_nova_compute_get_empty_hypervisor_step(model):
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
+    units = list(app.units)
     unit = units[0]
 
     expected_step = UpgradeStep(
@@ -841,8 +766,7 @@ def test_nova_compute_get_empty_hypervisor_step(model):
 
 def test_nova_compute_get_enable_scheduler_step(model):
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
-    unit = units[0]
+    unit = app.units[0]
 
     expected_step = UpgradeStep(
         description=f"Enable nova-compute scheduler from unit: '{unit.name}'.",
@@ -853,8 +777,7 @@ def test_nova_compute_get_enable_scheduler_step(model):
 
 def test_nova_compute_get_disable_scheduler_step(model):
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
-    unit = units[0]
+    unit = app.units[0]
 
     expected_step = UpgradeStep(
         description=f"Disable nova-compute scheduler from unit: '{unit.name}'.",
@@ -868,10 +791,9 @@ def _generate_nova_compute_app(model):
     charm = app_name = "nova-compute"
     channel = "ussuri/stable"
 
-    units = {
-        f"nova-compute/{unit_num}": COUUnit(f"nova-compute/{unit_num}", MagicMock(), MagicMock())
-        for unit_num in range(3)
-    }
+    units = [
+        COUUnit(f"nova-compute/{unit_num}", MagicMock(), MagicMock()) for unit_num in range(3)
+    ]
     app = NovaCompute(
         app_name, "", charm, channel, {}, {}, model, "cs", "focal", [], units, "21.0.1"
     )
@@ -920,14 +842,10 @@ def test_nova_compute_upgrade_plan(model):
     """  # noqa: E501 line too long
     )
     machines = [generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)]
-    units = {
-        f"nova-compute/{unit}": COUUnit(
-            name=f"nova-compute/{unit}",
-            workload_version="21.0.0",
-            machine=machines[unit],
-        )
+    units = [
+        COUUnit(name=f"nova-compute/{unit}", workload_version="21.0.0", machine=machines[unit])
         for unit in range(3)
-    }
+    ]
     nova_compute = NovaCompute(
         name="nova-compute",
         can_upgrade_to="ussuri/stable",
@@ -973,14 +891,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
     """
     )
     machines = [generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)]
-    units = {
-        f"nova-compute/{unit}": COUUnit(
-            name=f"nova-compute/{unit}",
-            workload_version="21.0.0",
-            machine=machines[unit],
-        )
-        for unit in range(3)
-    }
+    units = [COUUnit(name="nova-compute/0", workload_version="21.0.0", machine=machines[0])]
     nova_compute = NovaCompute(
         name="nova-compute",
         can_upgrade_to="ussuri/stable",
@@ -996,6 +907,6 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         workload_version="21.0.0",
     )
 
-    plan = nova_compute.generate_upgrade_plan(target, False, units=[units["nova-compute/0"]])
+    plan = nova_compute.generate_upgrade_plan(target, False, units=units)
 
     assert str(plan) == exp_plan

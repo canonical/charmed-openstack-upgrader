@@ -33,12 +33,12 @@ def test_openstack_application_magic_functions(model):
         charm="app",
         channel="stable",
         config={},
-        machines={},
+        machines=[],
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={},
+        units=[],
         workload_version="1",
     )
 
@@ -69,12 +69,12 @@ def test_application_get_latest_os_version_failed(mock_find_compatible_versions,
         charm=charm,
         channel="stable",
         config={},
-        machines={},
+        machines=[],
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={f"{app_name}/0": unit},
+        units=[unit],
         workload_version=unit.workload_version,
     )
 
@@ -122,12 +122,12 @@ def test_set_action_managed_upgrade(charm_config, enable, exp_description, model
         charm=charm,
         channel=channel,
         config=charm_config,
-        machines={},
+        machines=[],
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={},
+        units=[],
         workload_version="1",
     )
 
@@ -139,11 +139,11 @@ def test_get_pause_unit_step(model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    machines = [MagicMock(spec_set=COUMachine)]
+    machine = MagicMock(spec_set=COUMachine)
     unit = COUUnit(
         name=f"{app_name}/0",
         workload_version="1",
-        machine=machines[0],
+        machine=machine,
     )
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Pause the unit: '{unit.name}'.",
@@ -157,12 +157,12 @@ def test_get_pause_unit_step(model):
         charm=charm,
         channel=channel,
         config={},
-        machines=machines,
+        machines=[machine],
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={f"{unit.name}": unit},
+        units=[unit],
         workload_version="1",
     )
 
@@ -174,11 +174,11 @@ def test_get_resume_unit_step(model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    machines = [MagicMock(spec_set=COUMachine)]
+    machine = MagicMock(spec_set=COUMachine)
     unit = COUUnit(
         name=f"{app_name}/0",
         workload_version="1",
-        machine=machines[0],
+        machine=machine,
     )
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Resume the unit: '{unit.name}'.",
@@ -190,12 +190,12 @@ def test_get_resume_unit_step(model):
         charm=charm,
         channel=channel,
         config={},
-        machines=machines,
+        machines=[machine],
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={f"{app_name}/0": unit},
+        units=[unit],
         workload_version="1",
     )
 
@@ -207,11 +207,11 @@ def test_get_openstack_upgrade_step(model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    machines = [MagicMock(spec_set=COUMachine)]
+    machine = MagicMock(spec_set=COUMachine)
     unit = COUUnit(
         name=f"{app_name}/0",
         workload_version="1",
-        machine=machines[0],
+        machine=machine,
     )
     expected_upgrade_step = UnitUpgradeStep(
         description=f"Upgrade the unit: '{unit.name}'.",
@@ -225,12 +225,12 @@ def test_get_openstack_upgrade_step(model):
         charm=charm,
         channel=channel,
         config={},
-        machines=machines,
+        machines=[machine],
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={f"{app_name}/0": unit},
+        units=[unit],
         workload_version="1",
     )
 
@@ -252,9 +252,7 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    app_units = {
-        f"my_app/{unit}": COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(3)
-    }
+    app_units = [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(3)]
 
     app = OpenStackApplication(
         app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
@@ -263,7 +261,7 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
     expected_calls = (
         [call(unit.name, model, None) for unit in units]
         if units
-        else [call(unit.name, model, None) for unit in app_units.values()]
+        else [call(unit.name, model, None) for unit in app_units]
     )
 
     app._get_upgrade_current_release_packages_step(units)
@@ -286,13 +284,13 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    app_units = {f"my_app/{unit}": COUUnit(f"my_app/{unit}", mock, mock) for unit in range(3)}
+    app_units = [COUUnit(f"my_app/{unit}", mock, mock) for unit in range(3)]
 
     app = OpenStackApplication(
         app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
     )
 
-    expected_calls = [call(target, units)] if units else [call(target, list(app.units.values()))]
+    expected_calls = [call(target, units)] if units else [call(target, app.units)]
 
     app._get_reached_expected_target_step(target, units)
     mock_workload_upgrade.assert_has_calls(expected_calls)

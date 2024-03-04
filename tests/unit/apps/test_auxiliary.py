@@ -55,13 +55,13 @@ def test_auxiliary_app(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
+        units=[
+            COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="3.8",
     )
     assert app.channel == "3.8/stable"
@@ -87,13 +87,13 @@ def test_auxiliary_app_cs(model):
         origin="cs",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
+        units=[
+            COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="3.8",
     )
 
@@ -120,13 +120,13 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
+        units=[
+            COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="3.8",
     )
 
@@ -137,12 +137,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.keys():
+    for unit in app.units:
         expected_upgrade_package_step.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit}",
+                description=f"Upgrade software packages on unit {unit.name}",
                 parallel=False,
-                coro=app_utils.upgrade_packages(unit, model, None),
+                coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
 
@@ -177,10 +177,10 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -204,13 +204,13 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
+        units=[
+            COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.9",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="3.9",
     )
 
@@ -221,7 +221,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -255,10 +255,10 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -283,13 +283,13 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         origin="cs",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
+        units=[
+            COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="3.8",
     )
 
@@ -300,7 +300,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -339,10 +339,10 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -374,13 +374,13 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
             origin="ch",
             series="focal",
             subordinate_to=[],
-            units={
-                "rabbitmq-server/0": COUUnit(
+            units=[
+                COUUnit(
                     name="rabbitmq-server/0",
                     workload_version="3.8",
                     machine=machines[0],
                 )
-            },
+            ],
             workload_version="3.8",
         )
 
@@ -403,17 +403,17 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version=version,
                 machine=machines[0],
             )
-        },
+        ],
         workload_version=version,
     )
     with pytest.raises(ApplicationError, match=exp_msg):
-        app._get_latest_os_version(app.units[f"{charm}/0"])
+        app._get_latest_os_version(app.units[0])
 
 
 def test_auxiliary_raise_error_unknown_series(model):
@@ -439,13 +439,13 @@ def test_auxiliary_raise_error_unknown_series(model):
             origin="ch",
             series=series,
             subordinate_to=[],
-            units={
-                "rabbitmq-server/0": COUUnit(
+            units=[
+                COUUnit(
                     name="rabbitmq-server/0",
                     workload_version="3.8",
                     machine=machines[0],
                 )
-            },
+            ],
             workload_version="3.8",
         )
 
@@ -470,13 +470,13 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "rabbitmq-server/0": COUUnit(
+        units=[
+            COUUnit(
                 name="rabbitmq-server/0",
                 workload_version="3.8",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="3.8",
     )
 
@@ -507,13 +507,13 @@ def test_auxiliary_raise_halt_upgrade(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="3.8",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="3.8",
     )
 
@@ -545,13 +545,13 @@ def test_auxiliary_no_suitable_channel(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="3.8",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="3.8",
     )
 
@@ -574,19 +574,19 @@ def test_ceph_mon_app(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="16.2.0",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="16.2.0",
     )
 
     assert app.channel == "pacific/stable"
     assert app.os_origin == "cloud:focal-xena"
-    assert app._get_latest_os_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
+    assert app._get_latest_os_version(app.units[0]) == OpenStackRelease("xena")
     assert app.apt_source_codename == "xena"
     assert app.channel_codename == "xena"
     assert app.is_subordinate is False
@@ -608,13 +608,13 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="16.2.0",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="16.2.0",
     )
 
@@ -625,7 +625,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -668,10 +668,10 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -697,13 +697,13 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="15.2.0",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="15.2.0",
     )
 
@@ -714,7 +714,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -752,10 +752,10 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -780,13 +780,13 @@ def test_ovn_principal(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="22.03",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="22.03",
     )
     assert app.channel == "22.03/stable"
@@ -819,13 +819,13 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="20.03.2",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="20.03.2",
     )
 
@@ -857,13 +857,13 @@ def test_ovn_no_compatible_os_release(channel, model):
             origin="ch",
             series="focal",
             subordinate_to=[],
-            units={
-                f"{charm}/0": COUUnit(
+            units=[
+                COUUnit(
                     name=f"{charm}/0",
                     workload_version="22.03",
                     machine=machines[0],
                 )
-            },
+            ],
             workload_version="22.03",
         )
 
@@ -884,13 +884,13 @@ def test_ovn_principal_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="22.03",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="22.03",
     )
 
@@ -902,7 +902,7 @@ def test_ovn_principal_upgrade_plan(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -935,10 +935,10 @@ def test_ovn_principal_upgrade_plan(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -964,13 +964,13 @@ def test_mysql_innodb_cluster_upgrade(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": COUUnit(
+        units=[
+            COUUnit(
                 name=f"{charm}/0",
                 workload_version="8.0",
                 machine=machines[0],
             )
-        },
+        ],
         workload_version="8.0",
     )
 
@@ -981,7 +981,7 @@ def test_mysql_innodb_cluster_upgrade(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -1014,10 +1014,10 @@ def test_mysql_innodb_cluster_upgrade(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)

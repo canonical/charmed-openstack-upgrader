@@ -167,7 +167,7 @@ class COUApplication:
     origin: str
     series: str
     subordinate_to: list[str]
-    units: dict[str, COUUnit]
+    units: list[COUUnit]
     workload_version: str
 
     @property
@@ -339,10 +339,10 @@ class COUModel:
                 origin=status.charm.split(":")[0],
                 series=status.series,
                 subordinate_to=status.subordinate_to,
-                units={
-                    name: COUUnit(name, machines[unit.machine], unit.workload_version)
+                units=[
+                    COUUnit(name, machines[unit.machine], unit.workload_version)
                     for name, unit in status.units.items()
-                },
+                ],
                 workload_version=status.workload_version,
             )
             for app, status in full_status.applications.items()

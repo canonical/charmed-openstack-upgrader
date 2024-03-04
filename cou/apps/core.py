@@ -76,7 +76,7 @@ class NovaCompute(OpenStackApplication):
         :rtype: list[UpgradeStep]
         """
         if not units:
-            units = list(self.units.values())
+            units = self.units
 
         app_steps = super().upgrade_steps(target, units, force)
         unit_steps = self._get_units_upgrade_steps(units, force)

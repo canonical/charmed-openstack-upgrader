@@ -30,13 +30,7 @@ from tests.unit.utils import assert_steps
 def test_application_versionless(model):
     """Test application without version."""
     machines = [MagicMock(spec_set=COUMachine)]
-    units = {
-        "glance-simplestreams-sync/0": COUUnit(
-            name="glance-simplestreams-sync/0",
-            workload_version="",
-            machine=machines[0],
-        )
-    }
+    units = [COUUnit("glance-simplestreams-sync/0", machines[0], "")]
     app = OpenStackChannelBasedApplication(
         name="glance-simplestreams-sync",
         can_upgrade_to="",
@@ -57,7 +51,7 @@ def test_application_versionless(model):
 
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is True
-    assert app._get_latest_os_version(units["glance-simplestreams-sync/0"]) == app.channel_codename
+    assert app._get_latest_os_version(units[0]) == app.channel_codename
 
 
 def test_application_gnocchi_ussuri(model):
@@ -77,13 +71,7 @@ def test_application_gnocchi_ussuri(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "gnocchi/0": COUUnit(
-                name="gnocchi/0",
-                workload_version="4.3.4",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="gnocchi/0", workload_version="4.3.4", machine=machines[0])],
         workload_version="4.3.4",
     )
 
@@ -109,13 +97,7 @@ def test_application_gnocchi_xena(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "gnocchi/0": COUUnit(
-                name="gnocchi/0",
-                workload_version="4.4.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="gnocchi/0", workload_version="4.4.1", machine=machines[0])],
         workload_version="4.4.1",
     )
 
@@ -144,13 +126,7 @@ def test_application_designate_bind_ussuri(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "designate-bind/0": COUUnit(
-                name="designate-bind/0",
-                workload_version="9.16.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="designate-bind/0", workload_version="9.16.1", machine=machines[0])],
         workload_version="9.16.1",
     )
 
@@ -173,13 +149,11 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "glance-simplestreams-sync/0": COUUnit(
-                name="glance-simplestreams-sync/0",
-                workload_version="",
-                machine=machines[0],
+        units=[
+            COUUnit(
+                name="glance-simplestreams-sync/0", workload_version="9.16.1", machine=machines[0]
             )
-        },
+        ],
         workload_version="",
     )
 
@@ -191,7 +165,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -221,6 +195,19 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
                 app.name,
                 {f"{app.origin_setting}": "cloud:focal-victoria"},
             ),
+        ),
+        PostUpgradeStep(
+            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_active_idle(300, apps=[app.name]),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join(unit.name for unit in app.units)}"
+            ),
+            parallel=False,
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
 
@@ -252,13 +239,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "gnocchi/0": COUUnit(
-                name="gnocchi/0",
-                workload_version="4.3.4",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="gnocchi/0", workload_version="4.3.4", machine=machines[0])],
         workload_version="4.3.4",
     )
 
@@ -270,7 +251,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -309,10 +290,10 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
 
@@ -341,13 +322,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "designate-bind/0": COUUnit(
-                name="designate-bind/0",
-                workload_version="9.16.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="designate-bind/0", workload_version="9.16.1", machine=machines[0])],
         workload_version="9.16.1",
     )
 
@@ -359,7 +334,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -398,10 +373,10 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
 

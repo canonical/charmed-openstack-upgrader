@@ -67,7 +67,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units.values():
+    for unit in app.units:
         upgrade_packages.add_step(
             UnitUpgradeStep(
                 description=f"Upgrade software packages on unit {unit.name}",
@@ -109,10 +109,10 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         PostUpgradeStep(
             description=(
                 f"Check if the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"{', '.join(unit.name for unit in app.units)}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, app.units),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -165,13 +165,7 @@ async def test_generate_plan(model, cli_args):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "keystone/0": COUUnit(
-                name="keystone/0",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone/0", workload_version="17.0.1", machine=machines[0])],
         workload_version="17.0.1",
     )
     keystone_ldap = OpenStackSubordinateApplication(
@@ -185,13 +179,7 @@ async def test_generate_plan(model, cli_args):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="17.0.1",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="keystone-ldap/0", workload_version="17.0.1", machine=machines[0])],
         workload_version="17.0.1",
     )
     cinder = OpenStackApplication(
@@ -208,13 +196,7 @@ async def test_generate_plan(model, cli_args):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            "cinder/0": COUUnit(
-                name="cinder/0",
-                workload_version="16.4.2",
-                machine=machines[0],
-            )
-        },
+        units=[COUUnit(name="cinder/0", workload_version="16.4.2", machine=machines[0])],
         workload_version="16.4.2",
     )
 
@@ -673,14 +655,10 @@ async def test_get_upgradable_hypervisors_machines(
     machines = {f"{i}": COUMachine(f"{i}", (), f"zone-{i + 1}") for i in range(3)}
     nova_compute = MagicMock(spec_set=OpenStackApplication)()
     nova_compute.charm = "nova-compute"
-    nova_compute.units = {
-        f"nova-compute/{i}": COUUnit(
-            name=f"nova-compute/{i}",
-            workload_version="21.0.0",
-            machine=machines[f"{i}"],
-        )
+    nova_compute.units = [
+        COUUnit(name=f"nova-compute/{i}", workload_version="21.0.0", machine=machines[f"{i}"])
         for i in range(3)
-    }
+    ]
     analysis_result = MagicMock(spec_set=Analysis)()
     analysis_result.data_plane_machines = analysis_result.machines = machines
     analysis_result.apps_data_plane = [nova_compute]
@@ -693,7 +671,7 @@ async def test_get_upgradable_hypervisors_machines(
 
     if not cli_force:
         mock_empty_hypervisors.assert_called_once_with(
-            [unit for unit in nova_compute.units.values()], analysis_result.model
+            [unit for unit in nova_compute.units], analysis_result.model
         )
     else:
         mock_empty_hypervisors.assert_not_called()
