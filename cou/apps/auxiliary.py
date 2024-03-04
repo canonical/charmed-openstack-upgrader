@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @AppFactory.register_application(["vault", "ceph-fs", "ceph-radosgw"])
-class OpenStackAuxiliaryApplication(OpenStackApplication):
+class AuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
     def is_valid_track(self, charm_channel: str) -> bool:
@@ -123,7 +123,7 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
 
 
 @AppFactory.register_application(["rabbitmq-server"])
-class RabbitMQServer(OpenStackAuxiliaryApplication):
+class RabbitMQServer(AuxiliaryApplication):
     """RabbitMQ application.
 
     RabbitMQ must wait for the entire model to be idle before declaring the upgrade complete.
@@ -134,7 +134,7 @@ class RabbitMQServer(OpenStackAuxiliaryApplication):
 
 
 @AppFactory.register_application(["ceph-mon"])
-class CephMonApplication(OpenStackAuxiliaryApplication):
+class CephMon(AuxiliaryApplication):
     """Application for Ceph Monitor charm."""
 
     wait_timeout = 30 * 60  # 30 min
@@ -173,7 +173,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
 
 
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
-class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
+class OvnPrincipal(AuxiliaryApplication):
     """Ovn principal application class."""
 
     def pre_upgrade_steps(
@@ -194,7 +194,7 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])
-class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
+class MysqlInnodbCluster(AuxiliaryApplication):
     """Application for mysql-innodb-cluster charm."""
 
     # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
@@ -205,8 +205,8 @@ class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
 
 # NOTE (gabrielcocenza): Although CephOSD class is empty now, it will be
 # necessary to add post upgrade plan to set require-osd-release. Registering on
-# OpenStackAuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
+# AuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
 # as a normal OpenStackApplication.
 @AppFactory.register_application(["ceph-osd"])
-class CephOSD(OpenStackAuxiliaryApplication):
+class CephOSD(AuxiliaryApplication):
     """Application for ceph-osd."""
