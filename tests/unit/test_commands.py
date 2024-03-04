@@ -18,21 +18,7 @@ from unittest.mock import patch
 import pytest
 
 from cou import commands
-from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs, UpgradeScope
-
-
-@pytest.mark.parametrize(
-    "upgrade_group, expected_result",
-    [
-        (CONTROL_PLANE, UpgradeScope.CONTROL_PLANE),
-        (DATA_PLANE, UpgradeScope.DATA_PLANE),
-        (HYPERVISORS, UpgradeScope.DATA_PLANE),
-        (None, UpgradeScope.WHOLE_CLOUD),
-    ],
-)
-def test_upgrade_scope(upgrade_group, expected_result):
-    args = CLIargs(command="plan/upgrade", upgrade_group=upgrade_group)
-    assert args.scope is expected_result
+from cou.commands import CLIargs
 
 
 @pytest.mark.parametrize("auto_approve, expected_result", [(True, False), (False, True)])

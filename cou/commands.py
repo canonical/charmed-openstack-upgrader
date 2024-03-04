@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import logging
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Iterable, Optional
 
 import pkg_resources
@@ -399,33 +398,6 @@ class CLIargs:
         :rtype: bool
         """
         return not self.auto_approve
-
-    @property
-    def scope(self) -> UpgradeScope:
-        """Define which is the scope to upgrade.
-
-        Scopes can be control-plane, data-plane or the whole cloud.
-
-        :return: Scope to upgrade
-        :rtype: UpgradeScope
-        """
-        return UpgradeScope(self.upgrade_group)
-
-
-class UpgradeScope(Enum):
-    """Possible upgrade scopes."""
-
-    CONTROL_PLANE = CONTROL_PLANE
-    DATA_PLANE = DATA_PLANE, HYPERVISORS
-    WHOLE_CLOUD = None
-
-    def __new__(cls, *values: Any) -> UpgradeScope:
-        obj = object.__new__(cls)
-        # first value is canonical value
-        obj._value_ = values[0]
-        for other_value in values[1:]:
-            cls._value2member_map_[other_value] = obj
-        return obj
 
 
 def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements

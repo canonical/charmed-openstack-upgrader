@@ -37,7 +37,7 @@ from cou.apps.subordinate import (  # noqa: F401
     OpenStackSubordinateApplication,
     SubordinateBaseClass,
 )
-from cou.commands import CLIargs, UpgradeScope
+from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -116,7 +116,7 @@ def verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis)
     :type analysis_result: Analysis
     :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
-    if args.scope is UpgradeScope.DATA_PLANE:
+    if args.upgrade_group in {DATA_PLANE, HYPERVISORS}:
         if not analysis_result.min_os_version_data_plane:
             raise DataPlaneCannotUpgrade(
                 "Cannot find data-plane apps. Is this a valid OpenStack cloud?"
@@ -309,11 +309,13 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
 
     plan = generate_common_plan(target, analysis_result, args)
 
-    if args.scope in {UpgradeScope.CONTROL_PLANE, UpgradeScope.WHOLE_CLOUD}:
+    # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
+    #  the whole cloud.
+    if args.upgrade_group in {CONTROL_PLANE, None}:
         plan.sub_steps.extend(
             _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
         )
-    if args.scope in {UpgradeScope.DATA_PLANE, UpgradeScope.WHOLE_CLOUD}:
+    if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
         plan.sub_steps.extend(await _generate_data_plane_plan(target, analysis_result, args))
 
     return plan

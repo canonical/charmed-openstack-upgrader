@@ -18,7 +18,7 @@ import pytest
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone
 from cou.apps.subordinate import OpenStackSubordinateApplication
-from cou.commands import UpgradeScope
+from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -150,7 +150,7 @@ async def test_generate_plan(mock_generate_data_plane, model, cli_args):
     """Test generation of upgrade plan."""
     # TODO add data-plane apps once it's ready to properly generate the upgrade plan
     mock_generate_data_plane.return_value = []
-    cli_args.scope = UpgradeScope.WHOLE_CLOUD
+    cli_args.upgrade_group = None
     cli_args.force = False
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=COUMachine)}
@@ -338,7 +338,7 @@ def test_verify_highest_release_achieved():
 def test_verify_data_plane_ready_to_upgrade_error(
     min_os_version_control_plane, min_os_version_data_plane, exp_error_msg, cli_args
 ):
-    cli_args.scope = UpgradeScope.DATA_PLANE
+    cli_args.upgrade_group = DATA_PLANE
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_series = "focal"
     mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
@@ -347,18 +347,16 @@ def test_verify_data_plane_ready_to_upgrade_error(
         cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
 
 
-@pytest.mark.parametrize(
-    "scope", [UpgradeScope.DATA_PLANE, UpgradeScope.CONTROL_PLANE, UpgradeScope.WHOLE_CLOUD]
-)
+@pytest.mark.parametrize("upgrade_group", [DATA_PLANE, CONTROL_PLANE, HYPERVISORS, None])
 @patch("cou.steps.plan.is_control_plane_upgraded")
 def test_verify_data_plane_ready_to_upgrade_data_plane_cmd(
-    mock_control_plane_upgraded, cli_args, scope
+    mock_control_plane_upgraded, cli_args, upgrade_group
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.min_os_version_data_plane = OpenStackRelease("ussuri")
-    cli_args.scope = scope
+    cli_args.upgrade_group = upgrade_group
     cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
-    if scope is UpgradeScope.DATA_PLANE:
+    if upgrade_group in {DATA_PLANE, HYPERVISORS}:
         mock_control_plane_upgraded.assert_called_once_with(mock_analysis_result)
     else:
         mock_control_plane_upgraded.assert_not_called()
@@ -739,8 +737,8 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "scope",
-    [(UpgradeScope.CONTROL_PLANE, UpgradeScope.DATA_PLANE, UpgradeScope.WHOLE_CLOUD)],
+    "upgrade_group",
+    [(CONTROL_PLANE, DATA_PLANE, HYPERVISORS, None)],
 )
 @patch("cou.steps.plan.generate_common_plan")
 @patch("cou.steps.plan.determine_upgrade_target")
@@ -754,9 +752,9 @@ async def test_generate_plan_control_and_data_plane(
     mock_determine_upgrade_target,
     mock_generate_common_plan,
     cli_args,
-    scope,
+    upgrade_group,
 ):
-    cli_args.scope = scope
+    cli_args.upgrade_group = upgrade_group
 
     mock_analysis_result = MagicMock(spec=Analysis)()
 
@@ -766,14 +764,14 @@ async def test_generate_plan_control_and_data_plane(
     mock_determine_upgrade_target.assert_called_once()
     mock_generate_common_plan.assert_called_once()
 
-    if scope is UpgradeScope.WHOLE_CLOUD:
+    if upgrade_group is None:
         mock_control_plane.assert_called_once()
         mock_data_plane.assert_called_once()
 
-    if scope is UpgradeScope.CONTROL_PLANE:
+    if upgrade_group == CONTROL_PLANE:
         mock_control_plane.assert_called_once()
         mock_data_plane.assert_not_called()
 
-    if scope is UpgradeScope.DATA_PLANE:
+    if upgrade_group in {DATA_PLANE, HYPERVISORS}:
         mock_control_plane.assert_not_called()
         mock_data_plane.assert_called_once()
