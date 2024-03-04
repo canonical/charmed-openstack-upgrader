@@ -85,21 +85,36 @@ def test_application_get_latest_os_version_failed(mock_find_compatible_versions,
 
 
 @pytest.mark.parametrize(
-    "charm_config",
-    [{"action-managed-upgrade": {"value": False}}, {"action-managed-upgrade": {"value": True}}],
+    "charm_config, enable, exp_description",
+    [
+        ({}, True, None),
+        ({}, False, None),
+        (
+            {"action-managed-upgrade": {"value": False}},
+            True,
+            "Change charm config of 'my_app' 'action-managed-upgrade' to True",
+        ),
+        ({"action-managed-upgrade": {"value": False}}, False, None),
+        ({"action-managed-upgrade": {"value": True}}, True, None),
+        (
+            {"action-managed-upgrade": {"value": True}},
+            False,
+            "Change charm config of 'my_app' 'action-managed-upgrade' to False",
+        ),
+    ],
 )
-def test_get_enable_action_managed_step(charm_config, model):
+def test_set_action_managed_upgrade(charm_config, enable, exp_description, model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    if charm_config["action-managed-upgrade"]["value"] is False:
-        expected_upgrade_step = UpgradeStep(
-            f"Change charm config of '{app_name}' 'action-managed-upgrade' to True.",
-            False,
-            model.set_application_config(app_name, {"action-managed-upgrade": True}),
+    if exp_description:
+        # Note (rgildein): we need to set exp_step here, since we need to use model fixture
+        exp_step = UpgradeStep(
+            description=exp_description,
+            coro=model.set_application_config(app_name, {"action-managed-upgrade": enable}),
         )
     else:
-        expected_upgrade_step = UpgradeStep()
+        exp_step = UpgradeStep()
 
     app = OpenStackApplication(
         name=app_name,
@@ -116,8 +131,8 @@ def test_get_enable_action_managed_step(charm_config, model):
         workload_version="1",
     )
 
-    step = app._get_enable_action_managed_step()
-    assert_steps(step, expected_upgrade_step)
+    step = app._set_action_managed_upgrade(enable)
+    assert_steps(step, exp_step)
 
 
 def test_get_pause_unit_step(model):

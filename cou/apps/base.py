@@ -18,10 +18,9 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from io import StringIO
 from typing import Any, Iterable, Optional
 
-from ruamel.yaml import YAML
+import yaml
 
 from cou.exceptions import (
     ApplicationError,
@@ -46,6 +45,8 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
+ORIGIN_SETTINGS = ("openstack-origin", "source")
+REQUIRED_SETTINGS = ("enable-auto-restarts", "action-managed-upgrade", *ORIGIN_SETTINGS)
 
 
 @dataclass(frozen=True)
@@ -99,23 +100,38 @@ class OpenStackApplication(COUApplication):
         summary = {
             self.name: {
                 "model_name": self.model.name,
+                "can_upgrade_to": self.can_upgrade_to,
                 "charm": self.charm,
-                "charm_origin": self.origin,
-                "os_origin": self.os_origin,
                 "channel": self.channel,
+                # Note (rgildein): sanitized the config
+                "config": {
+                    key: self.config[key] for key in self.config if key in REQUIRED_SETTINGS
+                },
+                "origin": self.origin,
+                "series": self.series,
+                "subordinate_to": self.subordinate_to,
+                "workload_version": self.workload_version,
                 "units": {
                     unit.name: {
+                        "name": unit.name,
+                        "machine": unit.machine.machine_id,
                         "workload_version": unit.workload_version,
                         "os_version": str(self._get_latest_os_version(unit)),
                     }
                     for unit in self.units.values()
                 },
+                "machines": {
+                    machine.machine_id: {
+                        "id": machine.machine_id,
+                        "apps": machine.apps,
+                        "az": machine.az,
+                    }
+                    for machine in self.machines.values()
+                },
             }
         }
-        yaml = YAML()
-        with StringIO() as stream:
-            yaml.dump(summary, stream)
-            return stream.getvalue()
+
+        return yaml.dump(summary, sort_keys=False)
 
     def _verify_channel(self) -> None:
         """Verify app channel from current data.
@@ -155,7 +171,7 @@ class OpenStackApplication(COUApplication):
         :return: return name of charm origin setting, e.g. "source", "openstack-origin" or None
         :rtype: Optional[str]
         """
-        for origin in ("openstack-origin", "source"):
+        for origin in ORIGIN_SETTINGS:
             if origin in self.config:
                 return origin
 
@@ -359,11 +375,7 @@ class OpenStackApplication(COUApplication):
         """
         # pylint: disable=unused-argument
         return [
-            (
-                self._get_enable_action_managed_step()
-                if units
-                else self._get_disable_action_managed_step()
-            ),
+            self._set_action_managed_upgrade(enable=bool(units)),
             self._get_upgrade_charm_step(target),
             self._get_change_install_repository_step(target),
         ]
@@ -426,14 +438,13 @@ class OpenStackApplication(COUApplication):
         upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
-        all_steps = (
-            self.pre_upgrade_steps(target, units)
-            + self.upgrade_steps(target, units, force)
-            + self.post_upgrade_steps(target, units)
-        )
-        for step in all_steps:
-            if step:
-                upgrade_plan.add_step(step)
+
+        upgrade_plan.sub_steps = [
+            *self.pre_upgrade_steps(target, units),
+            *self.upgrade_steps(target, units, force),
+            *self.post_upgrade_steps(target, units),
+        ]
+
         return upgrade_plan
 
     def _get_upgrade_current_release_packages_step(
@@ -484,10 +495,8 @@ class OpenStackApplication(COUApplication):
         # corner case for rabbitmq and hacluster.
         if len(self.possible_current_channels) > 1:
             logger.info(
-                (
-                    "'%s' has more than one channel compatible with the current OpenStack "
-                    "release: '%s'. '%s' will be used"
-                ),
+                "'%s' has more than one channel compatible with the current OpenStack release: "
+                "'%s'. '%s' will be used",
                 self.name,
                 self.current_os_release.codename,
                 channel,
@@ -526,50 +535,37 @@ class OpenStackApplication(COUApplication):
         :return: Step for upgrading the charm.
         :rtype: UpgradeStep
         """
-        if self.channel != self.target_channel(target):
-            return UpgradeStep(
-                description=(
-                    f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
-                ),
-                coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
-            )
-        return UpgradeStep()
-
-    def _get_disable_action_managed_step(self) -> UpgradeStep:
-        """Get step to disable action-managed-upgrade.
-
-        This is used to upgrade as "all-in-one" strategy.
-
-        :return: Step to disable action-managed-upgrade
-        :rtype: UpgradeStep
-        """
-        if self.config.get("action-managed-upgrade", {}).get("value", False):
-            return UpgradeStep(
-                description=(
-                    f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
-                ),
-                coro=self.model.set_application_config(
-                    self.name, {"action-managed-upgrade": False}
-                ),
-            )
-        return UpgradeStep()
-
-    def _get_enable_action_managed_step(self) -> UpgradeStep:
-        """Get step to enable action-managed-upgrade.
-
-        This is used to upgrade as "paused-single-unit" strategy.
-
-        :return: Step to enable action-managed-upgrade
-        :rtype: UpgradeStep
-        """
-        if self.config.get("action-managed-upgrade", {}).get("value", False):
+        if self.channel == self.target_channel(target):
             return UpgradeStep()
+
         return UpgradeStep(
-            description=(
-                f"Change charm config of '{self.name}' 'action-managed-upgrade' to True."
-            ),
-            coro=self.model.set_application_config(self.name, {"action-managed-upgrade": True}),
+            f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'",
+            coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
         )
+
+    def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:
+        """Set action-managed-upgrade config option.
+
+        :param enable: enable or disable option
+        :type enable: bool
+        :return: Step to change action-managed-upgrade config option, if option exist.
+        :rtype: UnitUpgradeStep
+        """
+        if "action-managed-upgrade" not in self.config:
+            logger.debug(
+                "%s application doesn't have an action-managed-upgrade config option", self.name
+            )
+            return UpgradeStep()
+
+        if self.config["action-managed-upgrade"].get("value") != enable:
+            return UpgradeStep(
+                f"Change charm config of '{self.name}' 'action-managed-upgrade' to {enable}",
+                coro=self.model.set_application_config(
+                    self.name, {"action-managed-upgrade": enable}
+                ),
+            )
+
+        return UpgradeStep()
 
     def _get_pause_unit_step(self, unit: COUUnit, dependent: bool = False) -> UnitUpgradeStep:
         """Get the step to pause a unit to upgrade.
@@ -600,7 +596,7 @@ class OpenStackApplication(COUApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=(f"Resume the unit: '{unit.name}'."),
+            description=f"Resume the unit: '{unit.name}'.",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="resume", raise_on_failure=True
             ),
