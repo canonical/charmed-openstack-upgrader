@@ -3,11 +3,11 @@ _subcommand_args() {
     case "${cmd}" in
         plan)
             opts="--help --quiet --verbose --model --backup --no-backup"
-            child_commands=""
+            child_commands="control-plane data-plane hypervisors"
             ;;
         upgrade)
             opts="--help --quiet --verbose --model ---auto-approve --backup --no-backup"
-            child_commands=""
+            child_commands="control-plane data-plane hypervisors"
             ;;
         help)
             opts=""
@@ -40,7 +40,27 @@ _cou_bash_completion() {
     cmd="${COMP_WORDS[1]}"
     _subcommand_args ${cmd}
 
-    COMPREPLY=( $(compgen -W "${child_commands} ${opts}" -- "${cur}") )
+    if [ $COMP_CWORD -eq 2 ]; then
+        COMPREPLY=( $(compgen -W "${child_commands} ${opts}" -- "${cur}") )
+        return 0
+    fi
+
+    # Define options specific to children commands
+    upgrade_group="${COMP_WORDS[2]}"
+    case "${upgrade_group}" in
+        hypervisors)
+            opts="${opts} --machine --availability-zone"
+            ;;
+        control-plane)
+            ;;
+        data-plane)
+            ;;
+        *)
+            opts=""
+            ;;
+    esac
+
+    COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
 }
 
 # Register the completion function
