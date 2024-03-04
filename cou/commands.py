@@ -13,8 +13,6 @@
 # limitations under the License.
 
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
-from __future__ import annotations
-
 import argparse
 import logging
 from dataclasses import dataclass
