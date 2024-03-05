@@ -53,6 +53,7 @@ def test_application_versionless(model):
         subordinate_to=[],
         units=units,
         workload_version="",
+        relations={},
     )
 
     assert app.current_os_release == "ussuri"
@@ -85,6 +86,7 @@ def test_application_gnocchi_ussuri(model):
             )
         },
         workload_version="4.3.4",
+        relations={},
     )
 
     assert app.current_os_release == "ussuri"
@@ -117,6 +119,7 @@ def test_application_gnocchi_xena(model):
             )
         },
         workload_version="4.4.1",
+        relations={},
     )
 
     assert app.current_os_release == "xena"
@@ -152,6 +155,7 @@ def test_application_designate_bind_ussuri(model):
             )
         },
         workload_version="9.16.1",
+        relations={},
     )
 
     assert app.current_os_release == "ussuri"
@@ -181,6 +185,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
             )
         },
         workload_version="",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -260,6 +265,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
             )
         },
         workload_version="4.3.4",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -349,6 +355,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
             )
         },
         workload_version="9.16.1",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(

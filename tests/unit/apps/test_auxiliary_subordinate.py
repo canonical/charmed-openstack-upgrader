@@ -51,6 +51,7 @@ def test_auxiliary_subordinate(model):
             )
         },
         workload_version="8.0",
+        relations={},
     )
 
     assert app.channel == "8.0/stable"
@@ -85,6 +86,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
             )
         },
         workload_version="8.0",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -125,6 +127,7 @@ def test_ovn_subordinate(model):
             )
         },
         workload_version="22.3",
+        relations={},
     )
 
     assert app.channel == "22.03/stable"
@@ -164,6 +167,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
             )
         },
         workload_version="20.3",
+        relations={},
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
@@ -193,6 +197,7 @@ def test_ovn_subordinate_upgrade_plan(model):
             )
         },
         workload_version="22.3",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -240,6 +245,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
             )
         },
         workload_version="22.3",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -275,6 +281,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
             )
         },
         workload_version="15.2.0",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -318,6 +325,7 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
             )
         },
         workload_version="16.2.0",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(

@@ -58,6 +58,7 @@ def test_auxiliary_app(model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
     assert app.channel == "3.8/stable"
     assert app.is_valid_track(app.channel) is True
@@ -90,6 +91,7 @@ def test_auxiliary_app_cs(model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
 
     assert app.channel == "stable"
@@ -123,6 +125,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -207,6 +210,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             )
         },
         workload_version="3.9",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -286,6 +290,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -377,6 +382,7 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
                 )
             },
             workload_version="3.8",
+            relations={},
         )
 
 
@@ -406,6 +412,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
             )
         },
         workload_version=version,
+        relations={},
     )
     with pytest.raises(ApplicationError, match=exp_msg):
         app._get_latest_os_version(app.units[f"{charm}/0"])
@@ -442,6 +449,7 @@ def test_auxiliary_raise_error_unknown_series(model):
                 )
             },
             workload_version="3.8",
+            relations={},
         )
 
 
@@ -473,6 +481,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
 
     with pytest.raises(ApplicationError):
@@ -510,6 +519,7 @@ def test_auxiliary_raise_halt_upgrade(model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
 
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
@@ -548,6 +558,7 @@ def test_auxiliary_no_suitable_channel(model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
@@ -577,6 +588,7 @@ def test_ceph_mon_app(model):
             )
         },
         workload_version="16.2.0",
+        relations={},
     )
 
     assert app.channel == "pacific/stable"
@@ -611,6 +623,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             )
         },
         workload_version="16.2.0",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -700,6 +713,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             )
         },
         workload_version="15.2.0",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -783,6 +797,7 @@ def test_ovn_principal(model):
             )
         },
         workload_version="22.03",
+        relations={},
     )
     assert app.channel == "22.03/stable"
     assert app.os_origin == "distro"
@@ -822,6 +837,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
             )
         },
         workload_version="20.03.2",
+        relations={},
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
@@ -860,6 +876,7 @@ def test_ovn_no_compatible_os_release(channel, model):
                 )
             },
             workload_version="22.03",
+            relations={},
         )
 
 
@@ -887,6 +904,7 @@ def test_ovn_principal_upgrade_plan(model):
             )
         },
         workload_version="22.03",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -967,6 +985,7 @@ def test_mysql_innodb_cluster_upgrade(model):
             )
         },
         workload_version="8.0",
+        relations={},
     )
 
     expected_plan = ApplicationUpgradePlan(

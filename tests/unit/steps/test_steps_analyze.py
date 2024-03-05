@@ -72,6 +72,11 @@ def test_analysis_dump(model):
               id: '2'
               apps: !!python/tuple []
               az: null
+          relations:
+            cluster:
+            - keystone
+            identity-service:
+            - cinder
 
         cinder:
           model_name: test_model
@@ -114,6 +119,13 @@ def test_analysis_dump(model):
               id: '2'
               apps: !!python/tuple []
               az: null
+          relations:
+            amqp:
+            - rabbitmq-server
+            cluster:
+            - cinder
+            identity-service:
+            - keystone
 
         rabbitmq-server:
           model_name: test_model
@@ -138,6 +150,11 @@ def test_analysis_dump(model):
               id: '0'
               apps: !!python/tuple []
               az: null
+          relations:
+            amqp:
+            - cinder
+            cluster:
+            - rabbitmq-server
         Data Plane:
 
         Current minimum OS release in the cloud: ussuri
@@ -164,6 +181,7 @@ def test_analysis_dump(model):
             for unit in range(3)
         },
         workload_version="17.0.1",
+        relations={"cluster": ["keystone"], "identity-service": ["cinder"]},
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
@@ -184,6 +202,7 @@ def test_analysis_dump(model):
             )
         },
         workload_version="3.8",
+        relations={"amqp": ["cinder"], "cluster": ["rabbitmq-server"]},
     )
     cinder = OpenStackApplication(
         name="cinder",
@@ -205,6 +224,11 @@ def test_analysis_dump(model):
             for unit in range(3)
         },
         workload_version="16.4.2",
+        relations={
+            "amqp": ["rabbitmq-server"],
+            "cluster": ["cinder"],
+            "identity-service": ["keystone"],
+        },
     )
     result = analyze.Analysis(
         model=model,
@@ -271,6 +295,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
             )
         },
         workload_version="17.1.0",
+        relations={},
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
@@ -291,6 +316,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
     cinder = OpenStackApplication(
         name="cinder",
@@ -311,6 +337,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
             )
         },
         workload_version="16.4.2",
+        relations={},
     )
     exp_apps = [keystone, rabbitmq_server, cinder]
     mock_populate.return_value = exp_apps
@@ -349,6 +376,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
             )
         },
         workload_version="19.1.0",
+        relations={},
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
@@ -369,6 +397,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
             )
         },
         workload_version="3.8",
+        relations={},
     )
     cinder = OpenStackApplication(
         name="cinder",
@@ -389,6 +418,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
             )
         },
         workload_version="16.4.2",
+        relations={},
     )
     result = analyze.Analysis(
         model=model,
@@ -423,6 +453,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
             )
         },
         workload_version="17.1.0",
+        relations={},
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
@@ -443,6 +474,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
     cinder = OpenStackApplication(
         name="cinder",
@@ -463,6 +495,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
             )
         },
         workload_version="16.4.2",
+        relations={},
     )
     result = analyze.Analysis(
         model=model,
@@ -548,6 +581,7 @@ async def test_analysis_machines(model):
             )
         },
         workload_version="17.1.0",
+        relations={},
     )
     rabbitmq_server = RabbitMQServer(
         name="rabbitmq-server",
@@ -568,6 +602,7 @@ async def test_analysis_machines(model):
             )
         },
         workload_version="3.8",
+        relations={},
     )
     cinder = OpenStackApplication(
         name="cinder",
@@ -588,6 +623,7 @@ async def test_analysis_machines(model):
             )
         },
         workload_version="16.4.2",
+        relations={},
     )
     nova_compute = OpenStackApplication(
         name="nova-compute",
@@ -609,6 +645,7 @@ async def test_analysis_machines(model):
             for unit in range(3)
         },
         workload_version="21.0.0",
+        relations={},
     )
 
     result = analyze.Analysis(

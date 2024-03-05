@@ -173,6 +173,7 @@ async def test_generate_plan(model, cli_args):
             )
         },
         workload_version="17.0.1",
+        relations={},
     )
     keystone_ldap = SubordinateApplication(
         name="keystone-ldap",
@@ -193,6 +194,7 @@ async def test_generate_plan(model, cli_args):
             )
         },
         workload_version="17.0.1",
+        relations={},
     )
     cinder = OpenStackApplication(
         name="cinder",
@@ -216,6 +218,7 @@ async def test_generate_plan(model, cli_args):
             )
         },
         workload_version="16.4.2",
+        relations={},
     )
 
     analysis_result = Analysis(

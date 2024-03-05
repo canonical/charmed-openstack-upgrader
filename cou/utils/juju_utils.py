@@ -169,6 +169,7 @@ class COUApplication:
     subordinate_to: list[str]
     units: dict[str, COUUnit]
     workload_version: str
+    relations: dict[str, list[str]]
 
     @property
     def is_subordinate(self) -> bool:
@@ -344,6 +345,7 @@ class COUModel:
                     for name, unit in status.units.items()
                 },
                 workload_version=status.workload_version,
+                relations=status.relations,
             )
             for app, status in full_status.applications.items()
         }

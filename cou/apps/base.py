@@ -128,6 +128,7 @@ class OpenStackApplication(COUApplication):
                     }
                     for machine in self.machines.values()
                 },
+                "relations": self.relations,
             }
         }
 

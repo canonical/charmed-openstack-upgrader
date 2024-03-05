@@ -50,6 +50,7 @@ def test_current_os_release(model):
             )
         },
         workload_version="18.1.0",
+        relations={},
     )
 
     assert app.current_os_release == OpenStackRelease("ussuri")
@@ -78,6 +79,7 @@ def test_generate_upgrade_plan(model):
             )
         },
         workload_version="18.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -133,6 +135,7 @@ def test_channel_valid(model, channel):
             )
         },
         workload_version="18.1.0",
+        relations={},
     )
 
     assert app.channel == channel
@@ -171,6 +174,7 @@ def test_channel_setter_invalid(model, channel):
                 )
             },
             workload_version="18.1.0",
+            relations={},
         )
 
 
@@ -205,6 +209,7 @@ def test_generate_plan_ch_migration(model, channel):
             )
         },
         workload_version="18.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -259,6 +264,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
             )
         },
         workload_version="18.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(description=f"Upgrade plan for '{app.name}' to {to_os}")
     upgrade_steps = [
@@ -312,6 +318,7 @@ def test_generate_plan_in_same_version(model, from_to):
             )
         },
         workload_version="18.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {from_to}"

@@ -40,6 +40,7 @@ def test_openstack_application_magic_functions(model):
         subordinate_to=[],
         units={},
         workload_version="1",
+        relations={},
     )
 
     assert hash(app) == hash("test-app(app)")
@@ -76,6 +77,7 @@ def test_application_get_latest_os_version_failed(mock_find_compatible_versions,
         subordinate_to=[],
         units={f"{app_name}/0": unit},
         workload_version=unit.workload_version,
+        relations={},
     )
 
     with pytest.raises(ApplicationError, match=exp_error):
@@ -129,6 +131,7 @@ def test_set_action_managed_upgrade(charm_config, enable, exp_description, model
         subordinate_to=[],
         units={},
         workload_version="1",
+        relations={},
     )
 
     step = app._set_action_managed_upgrade(enable)
@@ -164,6 +167,7 @@ def test_get_pause_unit_step(model):
         subordinate_to=[],
         units={f"{unit.name}": unit},
         workload_version="1",
+        relations={},
     )
 
     step = app._get_pause_unit_step(unit)
@@ -197,6 +201,7 @@ def test_get_resume_unit_step(model):
         subordinate_to=[],
         units={f"{app_name}/0": unit},
         workload_version="1",
+        relations={},
     )
 
     step = app._get_resume_unit_step(unit)
@@ -232,6 +237,7 @@ def test_get_openstack_upgrade_step(model):
         subordinate_to=[],
         units={f"{app_name}/0": unit},
         workload_version="1",
+        relations={},
     )
 
     step = app._get_openstack_upgrade_step(unit)
@@ -257,7 +263,19 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
     }
 
     app = OpenStackApplication(
-        app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=charm,
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=app_units,
+        workload_version="21.0.1",
+        relations={},
     )
 
     expected_calls = (
@@ -289,7 +307,19 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
     app_units = {f"my_app/{unit}": COUUnit(f"my_app/{unit}", mock, mock) for unit in range(3)}
 
     app = OpenStackApplication(
-        app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=charm,
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=app_units,
+        workload_version="21.0.1",
+        relations={},
     )
 
     expected_calls = [call(target, units)] if units else [call(target, list(app.units.values()))]
@@ -304,7 +334,19 @@ def test_check_auto_restarts(_, config):
     """Test function to verify that enable-auto-restarts is disabled."""
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="stable",
+        config=config,
+        machines={},
+        model=MagicMock(),
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+        relations={},
     )
 
     app._check_auto_restarts()
@@ -321,7 +363,19 @@ def test_check_auto_restarts_error(_):
     )
     config = {"enable-auto-restarts": {"value": False}}
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="stable",
+        config=config,
+        machines={},
+        model=MagicMock(),
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+        relations={},
     )
 
     with pytest.raises(ApplicationError, match=exp_error_msg):
@@ -337,7 +391,19 @@ def test_check_application_target(current_os_release, apt_source_codename, _):
     release = OpenStackRelease("ussuri")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="stable",
+        config={},
+        machines={},
+        model=MagicMock(),
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+        relations={},
     )
     current_os_release.return_value = apt_source_codename.return_value = release
 
@@ -356,7 +422,19 @@ def test_check_application_target_error(current_os_release, apt_source_codename,
         f"{target}. Ignoring."
     )
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="stable",
+        config={},
+        machines={},
+        model=MagicMock(),
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+        relations={},
     )
     current_os_release.return_value = apt_source_codename.return_value = target
 

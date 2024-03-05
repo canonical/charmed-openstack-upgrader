@@ -250,6 +250,7 @@ def test_hypervisor_upgrade_plan(model):
             )
         },
         workload_version="16.4.2",
+        relations={},
     )
     nova_compute = NovaCompute(
         name="nova-compute",
@@ -271,6 +272,7 @@ def test_hypervisor_upgrade_plan(model):
             for unit in range(3)
         },
         workload_version="21.0.0",
+        relations={},
     )
 
     planner = HypervisorUpgradePlanner([cinder, nova_compute])

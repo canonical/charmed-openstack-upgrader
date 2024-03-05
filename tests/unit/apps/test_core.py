@@ -81,6 +81,7 @@ def test_application_different_wl(model):
         subordinate_to=[],
         units=units,
         workload_version="18.1.0",
+        relations={},
     )
 
     with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
@@ -109,6 +110,7 @@ def test_application_no_origin_config(model):
             )
         },
         workload_version="18.1.0",
+        relations={},
     )
 
     assert app.os_origin == ""
@@ -137,6 +139,7 @@ def test_application_empty_origin_config(model):
             )
         },
         workload_version="18.1.0",
+        relations={},
     )
 
     assert app.apt_source_codename is None
@@ -169,6 +172,7 @@ def test_application_unexpected_channel(model):
             )
         },
         workload_version="19.1.0",
+        relations={},
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
@@ -202,6 +206,7 @@ def test_application_unknown_source(source_value, model):
             )
         },
         workload_version="19.1.0",
+        relations={},
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
@@ -235,6 +240,7 @@ async def test_application_verify_workload_upgrade(model):
             )
         },
         workload_version="17.1.0",
+        relations={},
     )
 
     # workload version changed from ussuri to victoria
@@ -277,6 +283,7 @@ async def test_application_verify_workload_upgrade_fail(model):
             )
         },
         workload_version="17.1.0",
+        relations={},
     )
 
     # workload version didn't change from ussuri to victoria
@@ -319,6 +326,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             for unit in range(3)
         },
         workload_version="17.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -409,6 +417,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             for unit in range(3)
         },
         workload_version="17.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -502,6 +511,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
             for unit in range(3)
         },
         workload_version="17.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -586,6 +596,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             for unit in range(3)
         },
         workload_version="17.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -670,6 +681,7 @@ def test_upgrade_plan_application_already_upgraded(model):
             for unit in range(3)
         },
         workload_version="19.1.0",
+        relations={},
     )
 
     # victoria is lesser than wallaby, so application should not generate a plan.
@@ -704,6 +716,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             for unit in range(3)
         },
         workload_version="17.1.0",
+        relations={},
     )
     expected_plan = ApplicationUpgradePlan(
         description=f"Upgrade plan for '{app.name}' to {target}"
@@ -843,7 +856,19 @@ def _generate_nova_compute_app(model):
         for unit_num in range(3)
     }
     app = NovaCompute(
-        app_name, "", charm, channel, {}, {}, model, "cs", "focal", [], units, "21.0.1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=charm,
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin="cs",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="21.0.1",
+        relations={},
     )
 
     return app
@@ -911,6 +936,7 @@ def test_nova_compute_upgrade_plan(model):
         subordinate_to=[],
         units=units,
         workload_version="21.0.0",
+        relations={},
     )
 
     plan = nova_compute.generate_upgrade_plan(target, False)
@@ -964,6 +990,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         subordinate_to=[],
         units=units,
         workload_version="21.0.0",
+        relations={},
     )
 
     plan = nova_compute.generate_upgrade_plan(target, False, units=[units["nova-compute/0"]])
@@ -1013,6 +1040,7 @@ def test_cinder_upgrade_plan(model):
         subordinate_to=[],
         units=units,
         workload_version="16.4.2",
+        relations={},
     )
 
     plan = cinder.generate_upgrade_plan(target, False)
@@ -1066,6 +1094,7 @@ def test_cinder_upgrade_plan_single_unit(model):
         subordinate_to=[],
         units=units,
         workload_version="16.4.2",
+        relations={},
     )
 
     plan = cinder.generate_upgrade_plan(target, False, [units["cinder/0"]])

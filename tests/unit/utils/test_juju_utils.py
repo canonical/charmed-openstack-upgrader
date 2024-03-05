@@ -687,6 +687,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
                 for name, unit in exp_units[app].items()
             },
             workload_version=status.workload_version,
+            relations=status.relations,
         )
         for app, status in full_status_apps.items()
     }

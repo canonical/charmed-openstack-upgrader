@@ -45,6 +45,8 @@ class AppFactory:
         # pylint: disable=too-many-arguments
         if is_charm_supported(app.charm):
             app_class = cls.charms.get(app.charm, OpenStackApplication)
+            # Note (rgildein): We cannot use dataclasses.asdict because of the libjuju model
+            #                  defined in COUModel.
             return app_class(
                 name=app.name,
                 can_upgrade_to=app.can_upgrade_to,
@@ -58,6 +60,7 @@ class AppFactory:
                 subordinate_to=app.subordinate_to,
                 units=app.units,
                 workload_version=app.workload_version,
+                relations=app.relations,
             )
 
         logger.debug(
