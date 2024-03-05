@@ -22,6 +22,7 @@ from typing import Any, Iterable, Optional
 
 import yaml
 
+from cou.apps import STANDARD_IDLE_TIMEOUT
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -44,7 +45,6 @@ from cou.utils.openstack import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
 ORIGIN_SETTINGS = ("openstack-origin", "source")
 REQUIRED_SETTINGS = ("enable-auto-restarts", "action-managed-upgrade", *ORIGIN_SETTINGS)
 
@@ -63,7 +63,7 @@ class OpenStackApplication(COUApplication):
     """
 
     packages_to_hold: Optional[list] = field(default=None, init=False)
-    wait_timeout: int = field(default=DEFAULT_WAITING_TIMEOUT, init=False)
+    wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
 
     def __post_init__(self) -> None:
