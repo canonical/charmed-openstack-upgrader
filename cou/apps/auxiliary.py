@@ -15,6 +15,7 @@
 import logging
 from typing import Optional
 
+from cou.apps import LONG_IDLE_TIMEOUT
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 @AppFactory.register_application(["vault", "ceph-fs", "ceph-radosgw"])
-class OpenStackAuxiliaryApplication(OpenStackApplication):
+class AuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
     def is_valid_track(self, charm_channel: str) -> bool:
@@ -123,21 +124,21 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
 
 
 @AppFactory.register_application(["rabbitmq-server"])
-class RabbitMQServer(OpenStackAuxiliaryApplication):
+class RabbitMQServer(AuxiliaryApplication):
     """RabbitMQ application.
 
     RabbitMQ must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
 
 @AppFactory.register_application(["ceph-mon"])
-class CephMonApplication(OpenStackAuxiliaryApplication):
+class CephMon(AuxiliaryApplication):
     """Application for Ceph Monitor charm."""
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
     def pre_upgrade_steps(
@@ -173,7 +174,7 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
 
 
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
-class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
+class OvnPrincipal(AuxiliaryApplication):
     """Ovn principal application class."""
 
     def pre_upgrade_steps(
@@ -194,19 +195,19 @@ class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])
-class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
+class MysqlInnodbCluster(AuxiliaryApplication):
     """Application for mysql-innodb-cluster charm."""
 
     # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
     # mysqld processes from restarting, which lead to outages
     packages_to_hold: Optional[list] = ["mysql-server-core-8.0"]
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
 
 
 # NOTE (gabrielcocenza): Although CephOSD class is empty now, it will be
 # necessary to add post upgrade plan to set require-osd-release. Registering on
-# OpenStackAuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
+# AuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
 # as a normal OpenStackApplication.
 @AppFactory.register_application(["ceph-osd"])
-class CephOSD(OpenStackAuxiliaryApplication):
+class CephOSD(AuxiliaryApplication):
     """Application for ceph-osd."""

@@ -16,6 +16,7 @@
 import logging
 from typing import Optional
 
+from cou.apps import LONG_IDLE_TIMEOUT
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.steps import UnitUpgradeStep, UpgradeStep
@@ -33,7 +34,7 @@ class Keystone(OpenStackApplication):
     Keystone must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
 
@@ -44,7 +45,7 @@ class Octavia(OpenStackApplication):
     Octavia required more time to settle before COU can continue.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
 
 
 @AppFactory.register_application(["nova-compute"])
@@ -54,15 +55,12 @@ class NovaCompute(OpenStackApplication):
     Nova Compute must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
     upgrade_units_running_vms = False
 
     def upgrade_steps(
-        self,
-        target: OpenStackRelease,
-        units: Optional[list[COUUnit]],
-        force: bool,
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]], force: bool
     ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
@@ -78,40 +76,31 @@ class NovaCompute(OpenStackApplication):
         if not units:
             units = list(self.units.values())
 
-        app_steps = super().upgrade_steps(target, units, force)
-        unit_steps = self._get_units_upgrade_steps(units, force)
-        return app_steps + unit_steps
+        return super().upgrade_steps(target, units, force)
 
-    def _get_units_upgrade_steps(self, units: list[COUUnit], force: bool) -> list[UpgradeStep]:
-        """Get the upgrade steps for the units.
+    def _get_unit_upgrade_steps(self, unit: COUUnit, force: bool) -> UnitUpgradeStep:
+        """Get the upgrade steps for a single unit.
 
-        :param units: Units to generate upgrade steps
-        :type units: list[COUUnit]
-        :param force: Whether the plan generation should be forced
+        :param unit: Unit to generate upgrade steps
+        :type unit: COUUnit
+        :param force: Whether the unit step generation should be forced
         :type force: bool
-        :return: List of upgrade steps
-        :rtype: list[UpgradeStep]
+        :return: Unit upgrade step
+        :rtype: UnitUpgradeStep
         """
-        units_steps = UpgradeStep(
-            description=f"Upgrade plan for units: {', '.join([unit.name for unit in units])}",
-            parallel=True,
-        )
+        unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit: {unit.name}")
+        unit_plan.add_step(self._get_disable_scheduler_step(unit))
 
-        for unit in units:
-            unit_steps = UnitUpgradeStep(description=f"Upgrade plan for unit: {unit.name}")
-            unit_steps.add_step(self._get_disable_scheduler_step(unit))
+        if not force:
+            unit_plan.add_step(self._get_empty_hypervisor_step(unit))
 
-            if not force:
-                unit_steps.add_step(self._get_empty_hypervisor_step(unit))
+        is_dependent = not force
+        unit_plan.add_step(self._get_pause_unit_step(unit, is_dependent))
+        unit_plan.add_step(self._get_openstack_upgrade_step(unit, is_dependent))
+        unit_plan.add_step(self._get_resume_unit_step(unit, is_dependent))
+        unit_plan.add_step(self._get_enable_scheduler_step(unit))
 
-            is_dependent = not force
-            unit_steps.add_step(self._get_pause_unit_step(unit, is_dependent))
-            unit_steps.add_step(self._get_openstack_upgrade_step(unit, is_dependent))
-            unit_steps.add_step(self._get_resume_unit_step(unit, is_dependent))
-            unit_steps.add_step(self._get_enable_scheduler_step(unit))
-            units_steps.add_step(unit_steps)
-
-        return [units_steps]
+        return unit_plan
 
     def _get_empty_hypervisor_step(self, unit: COUUnit) -> UnitUpgradeStep:
         """Get the step to check if the unit has no VMs running.

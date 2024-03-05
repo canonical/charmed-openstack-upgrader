@@ -17,7 +17,8 @@ import pytest
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone
-from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.apps.subordinate import SubordinateApplication
+from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -144,12 +145,14 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 
 @pytest.mark.asyncio
-async def test_generate_plan(model, cli_args):
+@patch("cou.steps.plan._generate_data_plane_plan")
+async def test_generate_plan(mock_generate_data_plane, model, cli_args):
     """Test generation of upgrade plan."""
-    cli_args.is_data_plane_command = False
+    # TODO add data-plane apps once it's ready to properly generate the upgrade plan
+    mock_generate_data_plane.return_value = []
+    cli_args.upgrade_group = None
     cli_args.force = False
     target = OpenStackRelease("victoria")
-    # keystone = Keystone()
     machines = {"0": MagicMock(spec_set=COUMachine)}
     keystone = Keystone(
         name="keystone",
@@ -174,7 +177,7 @@ async def test_generate_plan(model, cli_args):
         },
         workload_version="17.0.1",
     )
-    keystone_ldap = OpenStackSubordinateApplication(
+    keystone_ldap = SubordinateApplication(
         name="keystone-ldap",
         can_upgrade_to="ussuri/stable",
         charm="keystone-ldap",
@@ -335,7 +338,7 @@ def test_verify_highest_release_achieved():
 def test_verify_data_plane_ready_to_upgrade_error(
     min_os_version_control_plane, min_os_version_data_plane, exp_error_msg, cli_args
 ):
-    cli_args.is_data_plane_command = True
+    cli_args.upgrade_group = DATA_PLANE
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_series = "focal"
     mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
@@ -344,19 +347,32 @@ def test_verify_data_plane_ready_to_upgrade_error(
         cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
 
 
-@pytest.mark.parametrize("is_data_plane_command", [True, False])
+@pytest.mark.parametrize("upgrade_group", [DATA_PLANE, HYPERVISORS])
 @patch("cou.steps.plan.is_control_plane_upgraded")
 def test_verify_data_plane_ready_to_upgrade_data_plane_cmd(
-    mock_control_plane_upgraded, cli_args, is_data_plane_command
+    mock_control_plane_upgraded, cli_args, upgrade_group
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.min_os_version_data_plane = OpenStackRelease("ussuri")
-    cli_args.is_data_plane_command = is_data_plane_command
+    cli_args.upgrade_group = upgrade_group
+
     cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
-    if is_data_plane_command:
-        mock_control_plane_upgraded.assert_called_once_with(mock_analysis_result)
-    else:
-        mock_control_plane_upgraded.assert_not_called()
+
+    mock_control_plane_upgraded.assert_called_once_with(mock_analysis_result)
+
+
+@pytest.mark.parametrize("upgrade_group", [CONTROL_PLANE, None])
+@patch("cou.steps.plan.is_control_plane_upgraded")
+def test_verify_data_plane_ready_to_upgrade_non_data_plane_cmd(
+    mock_control_plane_upgraded, cli_args, upgrade_group
+):
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.min_os_version_data_plane = OpenStackRelease("ussuri")
+    cli_args.upgrade_group = upgrade_group
+
+    cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
+
+    mock_control_plane_upgraded.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -497,16 +513,37 @@ def test_create_upgrade_plan_failed(force):
         cou_plan.create_upgrade_group([app], "victoria", "test", force, lambda *_: True)
 
 
-@pytest.mark.parametrize("is_hypervisors_command", [True, False])
 @patch("cou.steps.plan.verify_hypervisors_cli_azs")
 @patch("cou.steps.plan.verify_hypervisors_cli_machines")
-def test_verify_hypervisors_cli_input(
-    mock_cli_machines,
-    mock_cli_azs,
-    cli_args,
-    is_hypervisors_command,
-):
-    cli_args.is_hypervisors_command = is_hypervisors_command
+def test_verify_hypervisors_cli_input_machines(mock_cli_machines, mock_cli_azs, cli_args):
+    cli_args.machines = {"1"}
+    cli_args.availability_zones = None
+
+    analysis_result = MagicMock(spec_set=Analysis)()
+
+    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
+
+    mock_cli_machines.assert_called_once_with(cli_args.machines, analysis_result)
+    mock_cli_azs.assert_not_called()
+
+
+@patch("cou.steps.plan.verify_hypervisors_cli_azs")
+@patch("cou.steps.plan.verify_hypervisors_cli_machines")
+def test_verify_hypervisors_cli_input_azs(mock_cli_machines, mock_cli_azs, cli_args):
+    cli_args.machines = None
+    cli_args.availability_zones = {"zone-1"}
+
+    analysis_result = MagicMock(spec_set=Analysis)()
+
+    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
+
+    mock_cli_machines.assert_not_called()
+    mock_cli_azs.assert_called_once_with(cli_args.availability_zones, analysis_result)
+
+
+@patch("cou.steps.plan.verify_hypervisors_cli_azs")
+@patch("cou.steps.plan.verify_hypervisors_cli_machines")
+def test_verify_hypervisors_cli_input_None(mock_cli_machines, mock_cli_azs, cli_args):
     cli_args.machines = None
     cli_args.availability_zones = None
 
@@ -514,18 +551,8 @@ def test_verify_hypervisors_cli_input(
 
     assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
 
-    if is_hypervisors_command:
-        mock_cli_machines.assert_called_once_with(cli_args.machines, analysis_result)
-        mock_cli_azs.assert_called_once_with(cli_args.availability_zones, analysis_result)
-    else:
-        mock_cli_machines.assert_not_called()
-        mock_cli_azs.assert_not_called()
-
-
-def test_verify_hypervisors_cli_machines_no_input():
-    cli_machines = None
-    analysis_result = MagicMock(spec_set=Analysis)()
-    assert cou_plan.verify_hypervisors_cli_machines(cli_machines, analysis_result) is None
+    mock_cli_machines.assert_not_called()
+    mock_cli_azs.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -545,12 +572,6 @@ def test_verify_hypervisors_cli_machines_raise(cli_machines, exp_error_msg):
 
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
         cou_plan.verify_hypervisors_cli_machines(cli_machines, analysis_result)
-
-
-def test_verify_hypervisors_cli_azs_no_input():
-    cli_azs = None
-    analysis_result = MagicMock(spec_set=Analysis)()
-    assert cou_plan.verify_hypervisors_cli_azs(cli_azs, analysis_result) is None
 
 
 @pytest.mark.parametrize(
@@ -701,3 +722,130 @@ async def test_get_upgradable_hypervisors_machines(
     assert {
         hypervisor.machine_id for hypervisor in hypervisors_possible_to_upgrade
     } == expected_result
+
+
+@pytest.mark.parametrize("cli_backup", [True, False])
+def test_generate_common_plan(cli_backup, cli_args, model):
+    cli_args.backup = cli_backup
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
+    mock_analysis_result.model = model
+
+    target = OpenStackRelease("victoria")
+
+    expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
+    expected_plan.add_step(
+        PreUpgradeStep(
+            description="Verify that all OpenStack applications are in idle state",
+            parallel=False,
+            coro=mock_analysis_result.model.wait_for_active_idle(
+                timeout=11, idle_period=10, raise_on_blocked=True
+            ),
+        )
+    )
+
+    common_plan = cou_plan.generate_common_plan(target, mock_analysis_result, cli_args)
+
+    if cli_backup:
+        expected_plan.add_step(
+            PreUpgradeStep(
+                description="Backup mysql databases",
+                parallel=False,
+                coro=backup(model),
+            )
+        )
+
+    assert common_plan == expected_plan
+
+
+@patch("cou.steps.plan.create_upgrade_group")
+def test_generate_control_plane_plan(mock_create_upgrade_group):
+    target = OpenStackRelease("victoria")
+    keystone = MagicMock(spec_set=OpenStackApplication)()
+
+    cou_plan._generate_control_plane_plan(target, [keystone], False)
+
+    assert mock_create_upgrade_group.call_count == 2
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.generate_common_plan")
+@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan.pre_plan_sanity_checks")
+@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan._generate_control_plane_plan")
+async def test_generate_plan_upgrade_group_None(
+    mock_control_plane,
+    mock_data_plane,
+    mock_pre_plan_sanity_checks,
+    mock_determine_upgrade_target,
+    mock_generate_common_plan,
+    cli_args,
+):
+    cli_args.upgrade_group = None
+    mock_analysis_result = MagicMock(spec=Analysis)()
+
+    await cou_plan.generate_plan(mock_analysis_result, cli_args)
+
+    mock_pre_plan_sanity_checks.assert_called_once()
+    mock_determine_upgrade_target.assert_called_once()
+    mock_generate_common_plan.assert_called_once()
+
+    mock_control_plane.assert_called_once()
+    mock_data_plane.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.generate_common_plan")
+@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan.pre_plan_sanity_checks")
+@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan._generate_control_plane_plan")
+async def test_generate_plan_upgrade_group_control_plane(
+    mock_control_plane,
+    mock_data_plane,
+    mock_pre_plan_sanity_checks,
+    mock_determine_upgrade_target,
+    mock_generate_common_plan,
+    cli_args,
+):
+    cli_args.upgrade_group = CONTROL_PLANE
+    mock_analysis_result = MagicMock(spec=Analysis)()
+
+    await cou_plan.generate_plan(mock_analysis_result, cli_args)
+
+    mock_pre_plan_sanity_checks.assert_called_once()
+    mock_determine_upgrade_target.assert_called_once()
+    mock_generate_common_plan.assert_called_once()
+
+    mock_control_plane.assert_called_once()
+    mock_data_plane.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("upgrade_group", [DATA_PLANE, HYPERVISORS])
+@patch("cou.steps.plan.generate_common_plan")
+@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan.pre_plan_sanity_checks")
+@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan._generate_control_plane_plan")
+async def test_generate_plan_upgrade_group_data_plane(
+    mock_control_plane,
+    mock_data_plane,
+    mock_pre_plan_sanity_checks,
+    mock_determine_upgrade_target,
+    mock_generate_common_plan,
+    upgrade_group,
+    cli_args,
+):
+    cli_args.upgrade_group = upgrade_group
+    mock_analysis_result = MagicMock(spec=Analysis)()
+
+    await cou_plan.generate_plan(mock_analysis_result, cli_args)
+
+    mock_pre_plan_sanity_checks.assert_called_once()
+    mock_determine_upgrade_target.assert_called_once()
+    mock_generate_common_plan.assert_called_once()
+
+    mock_control_plane.assert_not_called()
+    mock_data_plane.assert_called_once()
