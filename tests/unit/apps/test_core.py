@@ -642,7 +642,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
 def test_upgrade_plan_application_already_upgraded(model):
     """Test generate plan to upgrade Keystone from Victoria to Victoria."""
     exp_error_msg = (
-        "Application 'keystone' already configured for release equal or greater "
+        "Application 'keystone' already configured for release equal to or greater "
         "than victoria. Ignoring."
     )
     target = OpenStackRelease("victoria")

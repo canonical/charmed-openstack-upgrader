@@ -487,7 +487,7 @@ def test_auxiliary_raise_halt_upgrade(model):
     target = OpenStackRelease("victoria")
     charm = "rabbitmq-server"
     exp_msg = (
-        f"Application '{charm}' already configured for release equal or greater than {target}. "
+        f"Application '{charm}' already configured for release equal to or greater than {target}. "
         "Ignoring."
     )
     machines = {"0": MagicMock(spec_set=COUMachine)}
