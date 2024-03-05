@@ -70,13 +70,7 @@ def test_generate_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="18.1.0",
-                machine=machines["0"],
-            )
-        },
+        units={},
         workload_version="18.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
@@ -197,13 +191,7 @@ def test_generate_plan_ch_migration(model, channel):
         origin="cs",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="18.1.0",
-                machine=machines["0"],
-            )
-        },
+        units={},
         workload_version="18.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
@@ -251,13 +239,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="18.1.0",
-                machine=machines["0"],
-            )
-        },
+        units={},
         workload_version="18.1.0",
     )
     expected_plan = ApplicationUpgradePlan(description=f"Upgrade plan for '{app.name}' to {to_os}")
@@ -304,13 +286,7 @@ def test_generate_plan_in_same_version(model, from_to):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="18.1.0",
-                machine=machines["0"],
-            )
-        },
+        units={},
         workload_version="18.1.0",
     )
     expected_plan = ApplicationUpgradePlan(

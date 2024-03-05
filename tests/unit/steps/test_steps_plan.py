@@ -23,7 +23,6 @@ from cou.exceptions import (
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
-    MismatchedOpenStackVersions,
     NoTargetError,
     OutOfSupportRange,
 )
@@ -150,7 +149,6 @@ async def test_generate_plan(model, cli_args):
     cli_args.is_data_plane_command = False
     cli_args.force = False
     target = OpenStackRelease("victoria")
-    # keystone = Keystone()
     machines = {"0": MagicMock(spec_set=COUMachine)}
     keystone = Keystone(
         name="keystone",
@@ -186,13 +184,7 @@ async def test_generate_plan(model, cli_args):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="17.0.1",
-                machine=machines["0"],
-            )
-        },
+        units={},
         workload_version="17.0.1",
     )
     cinder = OpenStackApplication(
@@ -702,85 +694,3 @@ async def test_get_upgradable_hypervisors_machines(
     assert {
         hypervisor.machine_id for hypervisor in hypervisors_possible_to_upgrade
     } == expected_result
-
-
-def test_verify_os_versions_control_plane_exception(model):
-    """Raise exception if workload version is different on units of a control-plane application."""
-    exp_error_msg = (
-        "Units of application keystone are running mismatched OpenStack versions: "
-        r"'ussuri': \['keystone\/0', 'keystone\/1'\], 'victoria': \['keystone\/2'\]. "
-        "This is not currently handled."
-    )
-
-    machines = {
-        "0": MagicMock(spec_set=COUMachine),
-        "1": MagicMock(spec_set=COUMachine),
-        "2": MagicMock(spec_set=COUMachine),
-    }
-    units = {
-        "keystone/0": COUUnit(
-            name="keystone/0",
-            workload_version="17.0.1",
-            machine=machines["0"],
-        ),
-        "keystone/1": COUUnit(
-            name="keystone/1",
-            workload_version="17.0.1",
-            machine=machines["1"],
-        ),
-        "keystone/2": COUUnit(
-            name="keystone/2",
-            workload_version="18.1.0",
-            machine=machines["2"],
-        ),
-    }
-    app = Keystone(
-        name="keystone",
-        can_upgrade_to="ussuri/stable",
-        charm="keystone",
-        channel="ussuri/stable",
-        config={"source": {"value": "distro"}},
-        machines=machines,
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units=units,
-        workload_version="18.1.0",
-    )
-
-    with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
-        cou_plan.verify_os_versions_control_plane([app])
-
-
-def test_verify_os_versions_control_plane(model):
-    """Test that no exceptions is raised if units of the app have the same OpenStack version."""
-    machines = {
-        "0": MagicMock(spec_set=COUMachine),
-        "1": MagicMock(spec_set=COUMachine),
-        "2": MagicMock(spec_set=COUMachine),
-    }
-    units = {
-        f"keystone/{unit}": COUUnit(
-            name=f"keystone/{unit}",
-            workload_version="17.0.1",
-            machine=machines[f"{unit}"],
-        )
-        for unit in range(3)
-    }
-    app = Keystone(
-        name="keystone",
-        can_upgrade_to="ussuri/stable",
-        charm="keystone",
-        channel="ussuri/stable",
-        config={"source": {"value": "distro"}},
-        machines=machines,
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units=units,
-        workload_version="17.1.0",
-    )
-
-    assert cou_plan.verify_os_versions_control_plane([app]) is None

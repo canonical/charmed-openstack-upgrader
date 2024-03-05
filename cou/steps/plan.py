@@ -40,7 +40,6 @@ from cou.exceptions import (
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
-    MismatchedOpenStackVersions,
     NoTargetError,
     OutOfSupportRange,
 )
@@ -64,7 +63,6 @@ def pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     :type analysis_result: Analysis
     """
     verify_supported_series(analysis_result)
-    verify_os_versions_control_plane(analysis_result.apps_control_plane)
     verify_highest_release_achieved(analysis_result)
     verify_data_plane_ready_to_upgrade(args, analysis_result)
     verify_hypervisors_cli_input(args, analysis_result)
@@ -84,33 +82,6 @@ def verify_supported_series(analysis_result: Analysis) -> None:
             f"Cloud series '{current_series}' is not a Ubuntu LTS series supported by COU. "
             f"The supporting series are: {supporting_lts_series}"
         )
-
-
-def verify_os_versions_control_plane(apps: list[OpenStackApplication]) -> None:
-    """Verify that there are no mismatched versions on control-plane apps.
-
-    Control-plane apps are upgraded using the all-in-one strategy, so it's not
-    suppose to have units running different OpenStack versions.
-
-    :param apps: Control plane apps
-    :type apps: list[OpenStackApplication]
-    :raises MismatchedOpenStackVersions: When the units of a control-plane app are running
-        different OpenStack versions
-    """
-    for app in apps:
-        if isinstance(app, SubordinateBase):
-            continue
-        os_versions = app.os_release_units
-        if len(os_versions.keys()) > 1:
-            mismatched_repr = [
-                f"'{openstack_release.codename}': {units}"
-                for openstack_release, units in os_versions.items()
-            ]
-
-            raise MismatchedOpenStackVersions(
-                f"Units of application {app.name} are running mismatched OpenStack versions: "
-                f"{', '.join(mismatched_repr)}. This is not currently handled."
-            )
 
 
 def verify_highest_release_achieved(analysis_result: Analysis) -> None:
