@@ -15,7 +15,7 @@
 """Upgrade planning utilities."""
 
 import logging
-from typing import Callable, Optional
+from typing import Callable
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -34,7 +34,7 @@ from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import ChannelBasedApplication  # noqa: F401
 from cou.apps.core import Keystone, Octavia  # noqa: F401
 from cou.apps.subordinate import SubordinateApplication, SubordinateBase  # noqa: F401
-from cou.commands import CLIargs
+from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -113,7 +113,7 @@ def verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis)
     :type analysis_result: Analysis
     :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
-    if args.is_data_plane_command:
+    if args.upgrade_group in {DATA_PLANE, HYPERVISORS}:
         if not analysis_result.min_os_version_data_plane:
             raise DataPlaneCannotUpgrade(
                 "Cannot find data-plane apps. Is this a valid OpenStack cloud?"
@@ -182,14 +182,13 @@ def verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> No
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    if args.is_hypervisors_command:
+    if args.machines:
         verify_hypervisors_cli_machines(args.machines, analysis_result)
+    elif args.availability_zones:
         verify_hypervisors_cli_azs(args.availability_zones, analysis_result)
 
 
-def verify_hypervisors_cli_machines(
-    cli_machines: Optional[set[str]], analysis_result: Analysis
-) -> None:
+def verify_hypervisors_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:
     """Verify if the machines passed from the CLI are valid.
 
     :param cli_machines: Machines passed to the CLI as arguments
@@ -197,8 +196,6 @@ def verify_hypervisors_cli_machines(
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    if not cli_machines:
-        return
     verify_data_plane_membership(
         all_options=set(analysis_result.machines.keys()),
         data_plane_options=set(analysis_result.data_plane_machines.keys()),
@@ -207,7 +204,7 @@ def verify_hypervisors_cli_machines(
     )
 
 
-def verify_hypervisors_cli_azs(cli_azs: Optional[set[str]], analysis_result: Analysis) -> None:
+def verify_hypervisors_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> None:
     """Verify if the availability zones passed from the CLI are valid.
 
     :param cli_azs: AZs passed to the CLI as arguments
@@ -216,8 +213,6 @@ def verify_hypervisors_cli_azs(cli_azs: Optional[set[str]], analysis_result: Ana
     :type analysis_result: Analysis
     :raises DataPlaneMachineFilterError: When the cloud does not have availability zones.
     """
-    if not cli_azs:
-        return
     all_azs: set[str] = {
         machine.az for machine in analysis_result.machines.values() if machine.az is not None
     }
@@ -296,85 +291,6 @@ def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRele
     return current_os_release, current_series
 
 
-def _generate_control_plane_plan(
-    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
-) -> list[UpgradePlan]:
-    """Generate upgrade plan for control plane.
-
-    :param target: Target OpenStack release.
-    :type target: OpenStackRelease
-    :param apps: List of control plane applications.
-    :type apps: list[OpenStackApplication]
-    :param force: Whether the plan generation should be forced
-    :type force: bool
-    :return: Principal and Subordiante upgrade plan.
-    :rtype: list[UpgradePlan]
-    """
-    principal_upgrade_plan = create_upgrade_group(
-        apps=apps,
-        description="Control Plane principal(s) upgrade plan",
-        target=target,
-        force=force,
-        filter_function=lambda app: not isinstance(app, SubordinateBase),
-    )
-
-    subordinate_upgrade_plan = create_upgrade_group(
-        apps=apps,
-        description="Control Plane subordinate(s) upgrade plan",
-        target=target,
-        force=force,
-        filter_function=lambda app: isinstance(app, SubordinateBase),
-    )
-
-    logger.debug("Generation of the control plane upgrade plan complete")
-    return [principal_upgrade_plan, subordinate_upgrade_plan]
-
-
-def _generate_data_plane_plan(
-    target: OpenStackRelease,
-    apps: list[OpenStackApplication],
-    hypervisors: list[COUMachine],
-    force: bool,
-) -> list[UpgradePlan]:  # pragma: no cover
-    """Generate upgrade plan for data plane.
-
-    :param target: Target OpenStack release.
-    :type target: OpenStackRelease
-    :param apps: List of data plane applications.
-    :type apps: list[OpenStackApplication]
-    :param hypervisors: hypervisors filtered to generate plan and upgrade.
-    :type: list[COUMachine]
-    :param force: Whether the plan generation should be forced
-    :type force: bool
-    :return: Hypervisors plans and other data plane applications, e.g. ceph-osd
-    :rtype: list[UpgradePlan]
-    """
-    nova_compute_machines = [
-        unit.machine.machine_id
-        for app in apps
-        for unit in app.units.values()
-        if app.charm == "nova-compute"
-        if unit.machine.machine_id not in hypervisors
-    ]
-    hypervisor_apps = []
-    for app in apps:
-        if app.charm == "ceph-osd":
-            # ceph-osd will not be handled by hypervisor planner
-            continue
-
-        for machine in app.machines:
-            if machine in nova_compute_machines:
-                hypervisor_apps.append(app)
-                break  # exiting machine for loop
-
-    hypervisor_planner = HypervisorUpgradePlanner(hypervisor_apps)
-    hypervisor_plans = hypervisor_planner.generate_upgrade_plan(target, force)
-    logger.debug("Generation of the hypervisors upgrade plan complete")
-
-    # generate the plan for the remaining data-plane apps
-    return [hypervisor_plans]
-
-
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
     """Generate plan for upgrade.
 
@@ -386,10 +302,36 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :rtype: UpgradePlan
     """
     pre_plan_sanity_checks(args, analysis_result)
-    hypervisors = await filter_hypervisors_machines(args, analysis_result)
-    logger.info("Hypervisors selected: %s", hypervisors)
     target = determine_upgrade_target(analysis_result)
 
+    plan = generate_common_plan(target, analysis_result, args)
+
+    # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
+    #  the whole cloud.
+    if args.upgrade_group in {CONTROL_PLANE, None}:
+        plan.sub_steps.extend(
+            _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
+        )
+    if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
+        plan.sub_steps.extend(await _generate_data_plane_plan(target, analysis_result, args))
+
+    return plan
+
+
+def generate_common_plan(
+    target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
+) -> UpgradePlan:
+    """Generate the common upgrade plan.
+
+    :param target: Target OpenStack release
+    :type target: OpenStackRelease
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: Common upgrade plan
+    :rtype: UpgradePlan
+    """
     plan = UpgradePlan(
         f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
     )
@@ -415,17 +357,79 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
                 coro=backup(analysis_result.model),
             )
         )
-
-    plan.sub_steps.extend(
-        _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
-    )
-    # plan.sub_steps.extend(
-    #     _generate_data_plane_plan(
-    #         target, analysis_result.apps_data_plane, hypervisors, args.force
-    #     )
-    # )
-
     return plan
+
+
+def _generate_control_plane_plan(
+    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for control plane.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param apps: List of control plane applications.
+    :type apps: list[OpenStackApplication]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :return: Principal and Subordinate upgrade plan.
+    :rtype: list[UpgradePlan]
+    """
+    principal_upgrade_plan = create_upgrade_group(
+        apps=apps,
+        description="Control Plane principal(s) upgrade plan",
+        target=target,
+        force=force,
+        filter_function=lambda app: not isinstance(app, SubordinateBase),
+    )
+
+    subordinate_upgrade_plan = create_upgrade_group(
+        apps=apps,
+        description="Control Plane subordinate(s) upgrade plan",
+        target=target,
+        force=force,
+        filter_function=lambda app: isinstance(app, SubordinateBase),
+    )
+
+    logger.debug("Generation of the control plane upgrade plan complete")
+    return [principal_upgrade_plan, subordinate_upgrade_plan]
+
+
+async def _generate_data_plane_plan(
+    target: OpenStackRelease,
+    analysis_result: Analysis,
+    args: CLIargs,
+) -> list[UpgradePlan]:  # pragma: no cover
+    """Generate upgrade plan for data plane.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: Hypervisors plans and other data plane applications, e.g. ceph-osd
+    :rtype: list[UpgradePlan]
+    """
+    hypervisors_machines = await filter_hypervisors_machines(args, analysis_result)
+    logger.info("Hypervisors selected: %s", hypervisors_machines)
+
+    hypervisor_apps = []
+    for app in analysis_result.apps_data_plane:
+        if app.charm == "ceph-osd":
+            # ceph-osd will not be handled by hypervisor planner
+            continue
+
+        for machine in app.machines:
+            if machine in hypervisors_machines:
+                hypervisor_apps.append(app)
+                break  # exiting machine for loop
+
+    hypervisor_planner = HypervisorUpgradePlanner(hypervisor_apps)
+    hypervisor_plans = hypervisor_planner.generate_upgrade_plan(target, args.force)
+    logger.debug("Generation of the hypervisors upgrade plan complete")
+
+    # generate the plan for the remaining data-plane apps
+    return [hypervisor_plans]
 
 
 async def filter_hypervisors_machines(
