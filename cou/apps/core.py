@@ -16,6 +16,7 @@
 import logging
 from typing import Optional
 
+from cou.apps import LONG_IDLE_TIMEOUT
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.steps import UnitUpgradeStep, UpgradeStep
@@ -33,7 +34,7 @@ class Keystone(OpenStackApplication):
     Keystone must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
 
@@ -44,7 +45,7 @@ class Octavia(OpenStackApplication):
     Octavia required more time to settle before COU can continue.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
 
 
 @AppFactory.register_application(["nova-compute"])
@@ -54,7 +55,7 @@ class NovaCompute(OpenStackApplication):
     Nova Compute must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
     upgrade_units_running_vms = False
 
