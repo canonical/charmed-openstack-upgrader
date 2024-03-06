@@ -26,6 +26,9 @@ from cou.utils.openstack import CEPH_RELEASES
 logger = logging.getLogger(__name__)
 
 
+RUN_TIMEOUT: int = 600
+
+
 async def upgrade_packages(unit: str, model: COUModel, packages_to_hold: Optional[list]) -> None:
     """Run package updates and upgrades on each unit of an Application.
 
@@ -43,7 +46,7 @@ async def upgrade_packages(unit: str, model: COUModel, packages_to_hold: Optiona
         packages = " ".join(packages_to_hold)
         command = f"apt-mark hold {packages} && {command} ; apt-mark unhold {packages}"
 
-    await model.run_on_unit(unit_name=unit, command=command, timeout=600)
+    await model.run_on_unit(unit_name=unit, command=command, timeout=RUN_TIMEOUT)
 
 
 async def set_require_osd_release_option(unit: str, model: COUModel) -> None:
@@ -65,7 +68,7 @@ async def set_require_osd_release_option(unit: str, model: COUModel) -> None:
 
     if current_require_osd_release != current_running_osd_release:
         set_command = f"ceph osd require-osd-release {current_running_osd_release}"
-        await model.run_on_unit(unit_name=unit, command=set_command, timeout=600)
+        await model.run_on_unit(unit_name=unit, command=set_command, timeout=RUN_TIMEOUT)
 
 
 def validate_ovn_support(version: str) -> None:
@@ -88,7 +91,6 @@ def validate_ovn_support(version: str) -> None:
         )
 
 
-# Private functions
 async def _get_required_osd_release(unit: str, model: COUModel) -> str:
     """Get the value of require-osd-release option on a ceph-mon unit.
 
@@ -103,7 +105,7 @@ async def _get_required_osd_release(unit: str, model: COUModel) -> str:
     check_command = "ceph osd dump -f json"
 
     check_option_result = await model.run_on_unit(
-        unit_name=unit, command=check_command, timeout=600
+        unit_name=unit, command=check_command, timeout=RUN_TIMEOUT
     )
     current_require_osd_release = json.loads(check_option_result["Stdout"]).get(
         "require_osd_release", ""
@@ -129,7 +131,9 @@ async def _get_current_osd_release(unit: str, model: COUModel) -> str:
     """
     check_command = "ceph versions -f json"
 
-    check_osd_result = await model.run_on_unit(unit_name=unit, command=check_command, timeout=600)
+    check_osd_result = await model.run_on_unit(
+        unit_name=unit, command=check_command, timeout=RUN_TIMEOUT
+    )
 
     osd_release_output = json.loads(check_osd_result["Stdout"]).get("osd", None)
     # throw exception if ceph-mon doesn't contain osd release information in `ceph`
