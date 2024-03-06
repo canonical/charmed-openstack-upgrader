@@ -126,6 +126,10 @@ class OutOfSupportRange(COUException):
     """COU exception when the release or series is out of the current supporting range."""
 
 
+class NotSupported(COUException):
+    """COU exception when upgrading a deployment is not supported."""
+
+
 class WaitForApplicationsTimeout(COUException):
     """Waiting for applications hit timeout error."""
 

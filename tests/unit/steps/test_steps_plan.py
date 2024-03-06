@@ -15,16 +15,18 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
+from cou.apps.auxiliary import CephMon
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone
 from cou.apps.subordinate import SubordinateApplication
-from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS
+from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
+    NotSupported,
     OutOfSupportRange,
 )
 from cou.steps import (
@@ -725,16 +727,14 @@ async def test_get_upgradable_hypervisors_machines(
 
 
 @pytest.mark.parametrize("cli_backup", [True, False])
-def test_generate_common_plan(cli_backup, cli_args, model):
+def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
     cli_args.backup = cli_backup
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
     mock_analysis_result.model = model
 
-    target = OpenStackRelease("victoria")
-
-    expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
-    expected_plan.add_step(
+    expected_steps = []
+    expected_steps.append(
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
@@ -743,11 +743,8 @@ def test_generate_common_plan(cli_backup, cli_args, model):
             ),
         )
     )
-
-    common_plan = cou_plan.generate_common_plan(target, mock_analysis_result, cli_args)
-
     if cli_backup:
-        expected_plan.add_step(
+        expected_steps.append(
             PreUpgradeStep(
                 description="Backup mysql databases",
                 parallel=False,
@@ -755,7 +752,113 @@ def test_generate_common_plan(cli_backup, cli_args, model):
             )
         )
 
-    assert common_plan == expected_plan
+    pre_upgrade_steps = cou_plan._get_pre_upgrade_steps(mock_analysis_result, cli_args)
+
+    assert pre_upgrade_steps == expected_steps
+
+
+@pytest.mark.parametrize("upgrade_group", ["control-plane", "hypervisor"])
+@patch("cou.steps.plan._get_ceph_mon_post_upgrade_step")
+def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_step, upgrade_group):
+    """Test get post upgrad steps for not common plan or data-plane."""
+    args = MagicMock(spec_set=CLIargs)()
+    args.upgrade_group = upgrade_group
+
+    pre_upgrade_steps = cou_plan._get_post_upgrade_steps(MagicMock(), args)
+
+    assert pre_upgrade_steps == []
+    mock_get_ceph_mon_post_upgrade_step.assert_not_called()
+
+
+@pytest.mark.parametrize("upgrade_group", ["data-plane", None])
+@patch("cou.steps.plan._get_ceph_mon_post_upgrade_step")
+def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_step, upgrade_group):
+    """Test get post upgrad steps including ceph-mon."""
+    args = MagicMock(spec_set=CLIargs)()
+    args.upgrade_group = upgrade_group
+    analysis_result = MagicMock(spec_set=Analysis)()
+
+    pre_upgrade_steps = cou_plan._get_post_upgrade_steps(analysis_result, args)
+
+    assert pre_upgrade_steps == [mock_get_ceph_mon_post_upgrade_step.return_value]
+    mock_get_ceph_mon_post_upgrade_step.assert_called_with(analysis_result)
+
+
+def test_get_ceph_mon_post_upgrade_step_zero(model):
+    """Test get post upgrade step for ceph-mon without any ceph-mon."""
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.apps_control_plane = []
+
+    step = cou_plan._get_ceph_mon_post_upgrade_step(analysis_result)
+
+    assert bool(step) is False
+
+
+def test_get_ceph_mon_post_upgrade_step_single(model):
+    """Test get post upgrade step for ceph-mon with single ceph-mon."""
+    machines = {"0": MagicMock(spec_set=COUMachine)}
+    units = {
+        "ceph-mon/0": COUUnit(
+            name="ceph-mon/0",
+            workload_version="17.0.1",
+            machine=machines["0"],
+        )
+    }
+    ceph_mon = CephMon(
+        name="ceph-mon",
+        can_upgrade_to="",
+        charm="ceph-mon",
+        channel="quincy/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="17.0.1",
+    )
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.apps_control_plane = [ceph_mon]
+    exp_step = PostUpgradeStep(
+        "Ensure require-osd-release option matches with ceph-osd version",
+        coro=app_utils.set_require_osd_release_option("cpeh-mon/0", model),
+    )
+
+    step = cou_plan._get_ceph_mon_post_upgrade_step(analysis_result)
+
+    assert step == exp_step
+
+
+def test_get_ceph_mon_post_upgrade_step_multiple(model):
+    """Test get post upgrade step for ceph-mon with multiple ceph-mon."""
+    machines = {"0": MagicMock(spec_set=COUMachine)}
+    units = {
+        "ceph-mon/0": COUUnit(
+            name="ceph-mon/0",
+            workload_version="17.0.1",
+            machine=machines["0"],
+        )
+    }
+    ceph_mon = CephMon(
+        name="ceph-mon",
+        can_upgrade_to="",
+        charm="ceph-mon",
+        channel="quincy/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="17.0.1",
+    )
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.apps_control_plane = [ceph_mon, ceph_mon, ceph_mon]
+
+    with pytest.raises(NotSupported):
+        cou_plan._get_ceph_mon_post_upgrade_step(analysis_result)
 
 
 @patch("cou.steps.plan.create_upgrade_group")
@@ -769,17 +872,19 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.generate_common_plan")
-@patch("cou.steps.plan.determine_upgrade_target")
 @patch("cou.steps.plan.pre_plan_sanity_checks")
-@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
+@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_None(
-    mock_control_plane,
+    mock_post_upgrade_steps,
     mock_data_plane,
-    mock_pre_plan_sanity_checks,
+    mock_control_plane,
+    mock_pre_upgrade_steps,
     mock_determine_upgrade_target,
-    mock_generate_common_plan,
+    mock_pre_plan_sanity_checks,
     cli_args,
 ):
     cli_args.upgrade_group = None
@@ -789,24 +894,26 @@ async def test_generate_plan_upgrade_group_None(
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
-    mock_generate_common_plan.assert_called_once()
-
+    mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_called_once()
     mock_data_plane.assert_called_once()
+    mock_post_upgrade_steps.assert_called_once()
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.generate_common_plan")
-@patch("cou.steps.plan.determine_upgrade_target")
 @patch("cou.steps.plan.pre_plan_sanity_checks")
-@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
+@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_control_plane(
-    mock_control_plane,
+    mock_post_upgrade_steps,
     mock_data_plane,
-    mock_pre_plan_sanity_checks,
+    mock_control_plane,
+    mock_pre_upgrade_steps,
     mock_determine_upgrade_target,
-    mock_generate_common_plan,
+    mock_pre_plan_sanity_checks,
     cli_args,
 ):
     cli_args.upgrade_group = CONTROL_PLANE
@@ -816,25 +923,27 @@ async def test_generate_plan_upgrade_group_control_plane(
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
-    mock_generate_common_plan.assert_called_once()
-
+    mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_called_once()
     mock_data_plane.assert_not_called()
+    mock_post_upgrade_steps.assert_called_once()
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("upgrade_group", [DATA_PLANE, HYPERVISORS])
-@patch("cou.steps.plan.generate_common_plan")
-@patch("cou.steps.plan.determine_upgrade_target")
 @patch("cou.steps.plan.pre_plan_sanity_checks")
-@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
+@patch("cou.steps.plan._generate_data_plane_plan")
+@patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_data_plane(
-    mock_control_plane,
+    mock_post_upgrade_steps,
     mock_data_plane,
-    mock_pre_plan_sanity_checks,
+    mock_control_plane,
+    mock_pre_upgrade_steps,
     mock_determine_upgrade_target,
-    mock_generate_common_plan,
+    mock_pre_plan_sanity_checks,
     upgrade_group,
     cli_args,
 ):
@@ -845,7 +954,7 @@ async def test_generate_plan_upgrade_group_data_plane(
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
-    mock_generate_common_plan.assert_called_once()
-
+    mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_not_called()
     mock_data_plane.assert_called_once()
+    mock_post_upgrade_steps.assert_called_once()

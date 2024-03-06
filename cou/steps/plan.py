@@ -41,12 +41,14 @@ from cou.exceptions import (
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
+    NotSupported,
     OutOfSupportRange,
 )
-from cou.steps import PreUpgradeStep, UpgradePlan
+from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
+from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, COUMachine
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
@@ -304,7 +306,10 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     pre_plan_sanity_checks(args, analysis_result)
     target = determine_upgrade_target(analysis_result)
 
-    plan = generate_common_plan(target, analysis_result, args)
+    plan = UpgradePlan(
+        f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
+    )
+    plan.add_steps(_get_pre_upgrade_steps(analysis_result, args))
 
     # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
     #  the whole cloud.
@@ -315,27 +320,22 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
         plan.sub_steps.extend(await _generate_data_plane_plan(target, analysis_result, args))
 
+    plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
+
     return plan
 
 
-def generate_common_plan(
-    target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
-) -> UpgradePlan:
-    """Generate the common upgrade plan.
+def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get the pre-upgrade steps.
 
-    :param target: Target OpenStack release
-    :type target: OpenStackRelease
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Common upgrade plan
-    :rtype: UpgradePlan
+    :return: List of pre-upgrade steps.
+    :rtype: list[PreUpgradeStep]
     """
-    plan = UpgradePlan(
-        f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
-    )
-    plan.add_step(
+    steps = [
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
@@ -349,15 +349,61 @@ def generate_common_plan(
                 raise_on_blocked=True,
             ),
         )
-    )
+    ]
     if args.backup:
-        plan.add_step(
+        steps.append(
             PreUpgradeStep(
                 description="Backup mysql databases",
                 coro=backup(analysis_result.model),
             )
         )
-    return plan
+
+    return steps
+
+
+def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[PostUpgradeStep]:
+    """Get the post-upgrade steps.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of post-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
+    steps = []
+    if args.upgrade_group in {DATA_PLANE, None}:
+        steps.append(_get_ceph_mon_post_upgrade_step(analysis_result))
+
+    return steps
+
+
+def _get_ceph_mon_post_upgrade_step(analysis_result: Analysis) -> PostUpgradeStep:
+    """Get the post-upgrade step for ceph-mon, where we check the require-osd-release option.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :return: The post-upgrade step.
+    :rtype: PreUpgradeStep
+    :raises NotSupported: When two ceph-mon are found at the model.
+    """
+    ceph_mons_apps = [
+        app for app in analysis_result.apps_control_plane if isinstance(app, CephMon)
+    ]
+    match num_ceph_mon_apps := len(ceph_mons_apps):
+        case 0:
+            return PostUpgradeStep()
+        case 1:
+            app = ceph_mons_apps[0]  # getting first and only one ceph-mon app
+            unit = list(app.units.values())[0]  # getting first unit, sice we do not care which one
+            return PostUpgradeStep(
+                "Ensure require-osd-release option matches with ceph-osd version",
+                coro=set_require_osd_release_option(unit.name, app.model),
+            )
+        case _:
+            raise NotSupported(
+                f"Deployment with {num_ceph_mon_apps} ceph-mon applications is not supported."
+            )
 
 
 def _generate_control_plane_plan(

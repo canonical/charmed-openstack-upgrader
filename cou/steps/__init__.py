@@ -251,6 +251,15 @@ class BaseStep:
 
         self._sub_steps.append(step)
 
+    def add_steps(self, steps: Iterable[BaseStep]) -> None:
+        """Add multiple steps.
+
+        :param steps: Sequence of BaseStep to be added as sub step.
+        :type steps: Iterable[BaseStep]
+        """
+        for step in steps:
+            self.add_step(step)
+
     def cancel(self, safe: bool = True) -> None:
         """Cancel step and all its sub steps.
 
