@@ -25,6 +25,7 @@ from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
+    OpenStackCodenameLookup,
     OpenStackRelease,
 )
 
@@ -204,10 +205,74 @@ class MysqlInnodbCluster(AuxiliaryApplication):
     wait_timeout = LONG_IDLE_TIMEOUT
 
 
-# NOTE (gabrielcocenza): Although CephOSD class is empty now, it will be
-# necessary to add post upgrade plan to set require-osd-release. Registering on
-# AuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
-# as a normal OpenStackApplication.
 @AppFactory.register_application(["ceph-osd"])
 class CephOSD(AuxiliaryApplication):
     """Application for ceph-osd."""
+
+    def _are_collocated(self, units: list[COUUnit], charm: str) -> bool:
+        """Check if ceph-osd units are collocated with charm.
+
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
+        :param charm: Name of charm
+        :type charm: str
+        :return: Boolean if ceph-osd is colocated with charm.
+        :rtype: bool
+        """
+        return any(
+            # pylint: disable=no-member
+            self.model.applications[app].charm == charm  # type: ignore[attr-defined]
+            for unit in units
+            for app in unit.machine.apps
+        )
+
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
+        :return: List of pre upgrade steps.
+        :rtype: list[PreUpgradeStep]
+        """
+        steps = super().pre_upgrade_steps(target, units)
+        if units is not None and self._are_collocated(units, "nova-compute"):
+            steps.append(
+                PreUpgradeStep(
+                    description="Check if colocated nova-compute units had been upgraded.",
+                    coro=self._verify_nova_compute(target, units),
+                )
+            )
+        return steps
+
+    async def _verify_nova_compute(self, target: OpenStackRelease, units: list[COUUnit]) -> None:
+        """Check if a nova-compute application has upgraded its workload version.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to check if got upgraded
+        :type units: list[COUUnit]
+        :raises ApplicationError: When collocated nova-compute apps workload version isn't reached.
+        """
+        units_not_upgraded = []
+        apps = await self.model.get_applications()  # reload all applications information
+
+        for unit in units:
+            for name in unit.machine.apps:
+                app = apps[name]
+                if app.charm == "nova-compute":
+                    for nova_unit in app.units:
+                        compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+                            app.charm, nova_unit.workload_version
+                        )
+
+                        if target not in compatible_os_versions:
+                            units_not_upgraded.append(unit.name)
+
+        if units_not_upgraded:
+            raise ApplicationError(
+                f"Units '{', '.join(units_not_upgraded)}' did not reach {target}."
+            )
