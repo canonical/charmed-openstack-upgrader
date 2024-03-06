@@ -26,7 +26,7 @@ from cou.steps import (
     UpgradePlan,
     UpgradeStep,
 )
-from cou.utils.juju_utils import COUUnit
+from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class HypervisorGroup:
         if not isinstance(other, HypervisorGroup):
             return NotImplemented
 
-        return other.name == self.name
+        return other.name == self.name and other.app_units == self.app_units
 
 
 class AZs(defaultdict):
@@ -95,15 +95,18 @@ class HypervisorUpgradePlanner:
     This planner is meant to be used to upgrade machines contains the nova-compute application.
     """
 
-    def __init__(self, apps: list[OpenStackApplication]) -> None:
+    def __init__(self, apps: list[OpenStackApplication], machines: list[COUMachine]) -> None:
         """Initialize the Hypervisor class.
 
         The application should be sorted by upgrade order.
 
         :param apps: sorted list of OpenStack applications
         :type apps: list[OpenStackApplication]
+        :param machines: Hypervisor machines to generate upgrade plan.
+        :type machines: list[COUMachine]
         """
         self._apps = apps
+        self._machines = machines
 
     @property
     def apps(self) -> list[OpenStackApplication]:
@@ -113,6 +116,15 @@ class HypervisorUpgradePlanner:
         :rtype: list[OpenStackApplication]
         """
         return self._apps
+
+    @property
+    def machines(self) -> list[COUMachine]:
+        """Return a list of hypervisor machines to upgrade.
+
+        :return: List of hypervisor machines.
+        :rtype: list[COUMachine]
+        """
+        return self._machines
 
     @property
     def azs(self) -> AZs:
@@ -143,6 +155,10 @@ class HypervisorUpgradePlanner:
         azs = AZs()
         for app in self.apps:
             for unit in app.units.values():
+                if unit.machine not in self.machines:
+                    logger.debug("skipping machine %s", unit.machine.machine_id)
+                    continue
+
                 # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
                 #                 belong to a single group.
                 az = unit.machine.az or ""
