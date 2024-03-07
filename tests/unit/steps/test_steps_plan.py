@@ -757,9 +757,9 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
     assert pre_upgrade_steps == expected_steps
 
 
-@pytest.mark.parametrize("upgrade_group", ["control-plane", "hypervisor"])
-@patch("cou.steps.plan._get_ceph_mon_post_upgrade_step")
-def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_step, upgrade_group):
+@pytest.mark.parametrize("upgrade_group", [CONTROL_PLANE, HYPERVISORS])
+@patch("cou.steps.plan._get_ceph_mon_post_upgrade_steps")
+def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
     """Test get post upgrad steps for not common plan or data-plane."""
     args = MagicMock(spec_set=CLIargs)()
     args.upgrade_group = upgrade_group
@@ -767,34 +767,35 @@ def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_step, upgra
     pre_upgrade_steps = cou_plan._get_post_upgrade_steps(MagicMock(), args)
 
     assert pre_upgrade_steps == []
-    mock_get_ceph_mon_post_upgrade_step.assert_not_called()
+    mock_get_ceph_mon_post_upgrade_steps.assert_not_called()
 
 
-@pytest.mark.parametrize("upgrade_group", ["data-plane", None])
-@patch("cou.steps.plan._get_ceph_mon_post_upgrade_step")
-def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_step, upgrade_group):
+@pytest.mark.parametrize("upgrade_group", [DATA_PLANE, None])
+@patch("cou.steps.plan._get_ceph_mon_post_upgrade_steps")
+def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
     """Test get post upgrad steps including ceph-mon."""
     args = MagicMock(spec_set=CLIargs)()
     args.upgrade_group = upgrade_group
     analysis_result = MagicMock(spec_set=Analysis)()
+    mock_get_ceph_mon_post_upgrade_steps.return_value = [MagicMock()]
 
     pre_upgrade_steps = cou_plan._get_post_upgrade_steps(analysis_result, args)
 
-    assert pre_upgrade_steps == [mock_get_ceph_mon_post_upgrade_step.return_value]
-    mock_get_ceph_mon_post_upgrade_step.assert_called_with(analysis_result)
+    assert pre_upgrade_steps == mock_get_ceph_mon_post_upgrade_steps.return_value
+    mock_get_ceph_mon_post_upgrade_steps.assert_called_with(analysis_result.apps_data_plane)
 
 
-def test_get_ceph_mon_post_upgrade_step_zero(model):
+def test_get_ceph_mon_post_upgrade_steps_zero(model):
     """Test get post upgrade step for ceph-mon without any ceph-mon."""
     analysis_result = MagicMock(spec_set=Analysis)()
     analysis_result.apps_control_plane = []
 
-    step = cou_plan._get_ceph_mon_post_upgrade_step(analysis_result)
+    step = cou_plan._get_ceph_mon_post_upgrade_steps(analysis_result)
 
     assert bool(step) is False
 
 
-def test_get_ceph_mon_post_upgrade_step_single(model):
+def test_get_ceph_mon_post_upgrade_steps_single(model):
     """Test get post upgrade step for ceph-mon with single ceph-mon."""
     machines = {"0": MagicMock(spec_set=COUMachine)}
     units = {
@@ -818,19 +819,19 @@ def test_get_ceph_mon_post_upgrade_step_single(model):
         units=units,
         workload_version="17.0.1",
     )
-    analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.apps_control_plane = [ceph_mon]
-    exp_step = PostUpgradeStep(
-        "Ensure require-osd-release option matches with ceph-osd version",
-        coro=app_utils.set_require_osd_release_option("cpeh-mon/0", model),
-    )
+    exp_steps = [
+        PostUpgradeStep(
+            "Ensure require-osd-release option matches with ceph-osd version",
+            coro=app_utils.set_require_osd_release_option("cpeh-mon/0", model),
+        )
+    ]
 
-    step = cou_plan._get_ceph_mon_post_upgrade_step(analysis_result)
+    step = cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon])
 
-    assert step == exp_step
+    assert step == exp_steps
 
 
-def test_get_ceph_mon_post_upgrade_step_multiple(model):
+def test_get_ceph_mon_post_upgrade_steps_multiple(model):
     """Test get post upgrade step for ceph-mon with multiple ceph-mon."""
     machines = {"0": MagicMock(spec_set=COUMachine)}
     units = {
@@ -854,11 +855,9 @@ def test_get_ceph_mon_post_upgrade_step_multiple(model):
         units=units,
         workload_version="17.0.1",
     )
-    analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.apps_control_plane = [ceph_mon, ceph_mon, ceph_mon]
 
     with pytest.raises(NotSupported):
-        cou_plan._get_ceph_mon_post_upgrade_step(analysis_result)
+        cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon, ceph_mon, ceph_mon])
 
 
 @patch("cou.steps.plan.create_upgrade_group")

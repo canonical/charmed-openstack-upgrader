@@ -373,37 +373,38 @@ def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Po
     """
     steps = []
     if args.upgrade_group in {DATA_PLANE, None}:
-        steps.append(_get_ceph_mon_post_upgrade_step(analysis_result))
+        print("here")
+        steps.extend(_get_ceph_mon_post_upgrade_steps(analysis_result.apps_data_plane))
 
     return steps
 
 
-def _get_ceph_mon_post_upgrade_step(analysis_result: Analysis) -> PostUpgradeStep:
+def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[PostUpgradeStep]:
     """Get the post-upgrade step for ceph-mon, where we check the require-osd-release option.
 
-    :param analysis_result: Analysis result
-    :type analysis_result: Analysis
+    :param apps: List of OpenStackApplication.
+    :type apps: list[OpenStackApplication]
     :return: The post-upgrade step.
-    :rtype: PreUpgradeStep
+    :rtype: list[PreUpgradeStep]
     :raises NotSupported: When two ceph-mon are found at the model.
     """
-    ceph_mons_apps = [
-        app for app in analysis_result.apps_control_plane if isinstance(app, CephMon)
-    ]
-    match num_ceph_mon_apps := len(ceph_mons_apps):
-        case 0:
-            return PostUpgradeStep()
-        case 1:
-            app = ceph_mons_apps[0]  # getting first and only one ceph-mon app
-            unit = list(app.units.values())[0]  # getting first unit, sice we do not care which one
-            return PostUpgradeStep(
+    ceph_mons_apps = [app for app in apps if isinstance(app, CephMon)]
+    if num_ceph_mon_apps := len(ceph_mons_apps) > 1:
+        raise NotSupported(
+            f"Deployment with {num_ceph_mon_apps} ceph-mon applications is not supported."
+        )
+
+    steps = []
+    for app in ceph_mons_apps:
+        unit = list(app.units.values())[0]  # getting first unit, sice we do not care which one
+        steps.append(
+            PostUpgradeStep(
                 "Ensure require-osd-release option matches with ceph-osd version",
                 coro=set_require_osd_release_option(unit.name, app.model),
             )
-        case _:
-            raise NotSupported(
-                f"Deployment with {num_ceph_mon_apps} ceph-mon applications is not supported."
-            )
+        )
+
+    return steps
 
 
 def _generate_control_plane_plan(
