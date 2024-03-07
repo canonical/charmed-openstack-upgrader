@@ -636,7 +636,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
@@ -725,7 +725,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),

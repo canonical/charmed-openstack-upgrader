@@ -257,7 +257,7 @@ def test_step_add_steps():
     plan = BaseStep(description="plan")
     plan.add_steps(
         [BaseStep(description=f"sub-step-{i}", coro=mock_coro()) for i in range(exp_sub_steps)]
-        + [BaseStep(description="empty-step")]  # we also check that empty step will be not added
+        + [BaseStep(description="empty-step")]  # we also check that empty step will not be added
     )
 
     assert len(plan.sub_steps) == exp_sub_steps

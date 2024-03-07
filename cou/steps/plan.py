@@ -41,7 +41,6 @@ from cou.exceptions import (
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
-    NotSupported,
     OutOfSupportRange,
 )
 from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
@@ -373,7 +372,6 @@ def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Po
     """
     steps = []
     if args.upgrade_group in {DATA_PLANE, None}:
-        print("here")
         steps.extend(_get_ceph_mon_post_upgrade_steps(analysis_result.apps_data_plane))
 
     return steps
@@ -384,22 +382,17 @@ def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[P
 
     :param apps: List of OpenStackApplication.
     :type apps: list[OpenStackApplication]
-    :return: The post-upgrade step.
+    :return: List of post-upgrade steps.
     :rtype: list[PreUpgradeStep]
-    :raises NotSupported: When two ceph-mon are found at the model.
     """
     ceph_mons_apps = [app for app in apps if isinstance(app, CephMon)]
-    if num_ceph_mon_apps := len(ceph_mons_apps) > 1:
-        raise NotSupported(
-            f"Deployment with {num_ceph_mon_apps} ceph-mon applications is not supported."
-        )
 
     steps = []
     for app in ceph_mons_apps:
-        unit = list(app.units.values())[0]  # getting first unit, sice we do not care which one
+        unit = list(app.units.values())[0]  # getting the first unit, since we don't care which one
         steps.append(
             PostUpgradeStep(
-                "Ensure require-osd-release option matches with ceph-osd version",
+                "Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
                 coro=set_require_osd_release_option(unit.name, app.model),
             )
         )

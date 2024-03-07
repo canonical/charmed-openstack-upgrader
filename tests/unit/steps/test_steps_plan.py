@@ -26,7 +26,6 @@ from cou.exceptions import (
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
     NoTargetError,
-    NotSupported,
     OutOfSupportRange,
 )
 from cou.steps import (
@@ -760,7 +759,7 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
 @pytest.mark.parametrize("upgrade_group", [CONTROL_PLANE, HYPERVISORS])
 @patch("cou.steps.plan._get_ceph_mon_post_upgrade_steps")
 def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
-    """Test get post upgrad steps for not common plan or data-plane."""
+    """Test get post upgrade steps not run for control-plane or hypervisors group."""
     args = MagicMock(spec_set=CLIargs)()
     args.upgrade_group = upgrade_group
 
@@ -786,49 +785,13 @@ def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_steps, u
 
 
 def test_get_ceph_mon_post_upgrade_steps_zero(model):
-    """Test get post upgrade step for ceph-mon without any ceph-mon."""
+    """Test get post upgrade step for ceph-mon without any ceph-mon app."""
     analysis_result = MagicMock(spec_set=Analysis)()
     analysis_result.apps_control_plane = []
 
     step = cou_plan._get_ceph_mon_post_upgrade_steps(analysis_result)
 
     assert bool(step) is False
-
-
-def test_get_ceph_mon_post_upgrade_steps_single(model):
-    """Test get post upgrade step for ceph-mon with single ceph-mon."""
-    machines = {"0": MagicMock(spec_set=COUMachine)}
-    units = {
-        "ceph-mon/0": COUUnit(
-            name="ceph-mon/0",
-            workload_version="17.0.1",
-            machine=machines["0"],
-        )
-    }
-    ceph_mon = CephMon(
-        name="ceph-mon",
-        can_upgrade_to="",
-        charm="ceph-mon",
-        channel="quincy/stable",
-        config={"source": {"value": "distro"}},
-        machines={},
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units=units,
-        workload_version="17.0.1",
-    )
-    exp_steps = [
-        PostUpgradeStep(
-            "Ensure require-osd-release option matches with ceph-osd version",
-            coro=app_utils.set_require_osd_release_option("cpeh-mon/0", model),
-        )
-    ]
-
-    step = cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon])
-
-    assert step == exp_steps
 
 
 def test_get_ceph_mon_post_upgrade_steps_multiple(model):
@@ -856,8 +819,16 @@ def test_get_ceph_mon_post_upgrade_steps_multiple(model):
         workload_version="17.0.1",
     )
 
-    with pytest.raises(NotSupported):
-        cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon, ceph_mon, ceph_mon])
+    exp_steps = 2 * [
+        PostUpgradeStep(
+            "Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
+            coro=app_utils.set_require_osd_release_option("cpeh-mon/0", model),
+        )
+    ]
+
+    step = cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon, ceph_mon])
+
+    assert step == exp_steps
 
 
 @patch("cou.steps.plan.create_upgrade_group")

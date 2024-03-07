@@ -254,7 +254,7 @@ class BaseStep:
     def add_steps(self, steps: Iterable[BaseStep]) -> None:
         """Add multiple steps.
 
-        :param steps: Sequence of BaseStep to be added as sub step.
+        :param steps: Sequence of BaseStep to be added as sub steps.
         :type steps: Iterable[BaseStep]
         """
         for step in steps:
