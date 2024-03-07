@@ -795,8 +795,8 @@ class OpenStackApplication(COUApplication):
     def _check_mismatched_versions(self, units: Optional[list[COUUnit]]) -> None:
         """Check that there are no mismatched versions on app units.
 
-        If units are passed that means that the application will upgrade unit by unit,
-        so there are no mismatch.
+        If units are passed, the application will upgrade in unit-by-unit fashion,
+        and mismatch is not checked.
 
         :param units: Units to generate upgrade plan
         :type units: Optional[list[COUUnit]]
