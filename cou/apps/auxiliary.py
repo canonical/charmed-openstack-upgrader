@@ -19,7 +19,7 @@ from cou.apps import LONG_IDLE_TIMEOUT
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
-from cou.steps import PreUpgradeStep
+from cou.steps import ApplicationUpgradePlan, PreUpgradeStep
 from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
 from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import (
@@ -121,6 +121,31 @@ class AuxiliaryApplication(OpenStackApplication):
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
         # channel setter already validate if it is a valid channel.
         return max(compatible_os_releases)
+
+    def generate_upgrade_plan(
+        self,
+        target: OpenStackRelease,
+        force: bool,
+        units: Optional[list[COUUnit]] = None,
+    ) -> ApplicationUpgradePlan:
+        """Generate full upgrade plan for an Application.
+
+        Auxiliary applications cannot upgrade unit by unit.
+
+        :param target: OpenStack codename to upgrade.
+        :type target: OpenStackRelease
+        :param force: Whether the plan generation should be forced
+        :type force: bool
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[COUUnit]], optional
+        :return: Full upgrade plan if the Application is able to generate it.
+        :rtype: ApplicationUpgradePlan
+        """
+        if units:
+            logger.warning(
+                "%s cannot upgrade by units. The upgrade will use all-in-one method.", self.name
+            )
+        return super().generate_upgrade_plan(target, force, None)
 
 
 @AppFactory.register_application(["rabbitmq-server"])

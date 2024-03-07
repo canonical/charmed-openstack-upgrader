@@ -16,7 +16,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cou.apps.auxiliary import CephMon, MysqlInnodbCluster, OvnPrincipal, RabbitMQServer
+from cou.apps.auxiliary import (
+    AuxiliaryApplication,
+    CephMon,
+    MysqlInnodbCluster,
+    OvnPrincipal,
+    RabbitMQServer,
+)
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -1018,5 +1024,99 @@ def test_mysql_innodb_cluster_upgrade(model):
     add_steps(expected_plan, upgrade_steps)
 
     upgrade_plan = app.generate_upgrade_plan(target, False)
+
+    assert_steps(upgrade_plan, expected_plan)
+
+
+def test_auxiliary_upgrade_by_unit(model):
+    """Test generating plan with units doesn't create unit Upgrade steps."""
+    target = OpenStackRelease("victoria")
+    charm = "vault"
+    machines = {
+        "0": MagicMock(spec_set=COUMachine),
+        "1": MagicMock(spec_set=COUMachine),
+        "2": MagicMock(spec_set=COUMachine),
+    }
+    app = AuxiliaryApplication(
+        name=charm,
+        can_upgrade_to="1.7/stable",
+        charm=charm,
+        channel="1.7/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": COUUnit(
+                name=f"{charm}/0",
+                workload_version="1.7",
+                machine=machines["0"],
+            ),
+            f"{charm}/1": COUUnit(
+                name=f"{charm}/1",
+                workload_version="1.7",
+                machine=machines["1"],
+            ),
+            f"{charm}/2": COUUnit(
+                name=f"{charm}/2",
+                workload_version="1.7",
+                machine=machines["2"],
+            ),
+        },
+        workload_version="1.7",
+    )
+
+    upgrade_plan = app.generate_upgrade_plan(target, False, [app.units[f"{charm}/0"]])
+
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to {target}"
+    )
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    # even that a single unit is passed, it upgrade the packages for all units
+    for unit in app.units.values():
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
+    upgrade_steps = [
+        upgrade_packages,
+        PreUpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '1.7/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "1.7/stable", switch=None),
+        ),
+        UpgradeStep(
+            description=(
+                f"Change charm config of '{app.name}' "
+                f"'{app.origin_setting}' to 'cloud:focal-{target}'"
+            ),
+            parallel=False,
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": f"cloud:focal-{target}"}
+            ),
+        ),
+        PostUpgradeStep(
+            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            parallel=False,
+            coro=model.wait_for_active_idle(300, apps=[app.name]),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"{', '.join([unit for unit in app.units.keys()])}"
+            ),
+            parallel=False,
+            coro=app._verify_workload_upgrade(target, app.units.values()),
+        ),
+    ]
+    add_steps(expected_plan, upgrade_steps)
 
     assert_steps(upgrade_plan, expected_plan)
