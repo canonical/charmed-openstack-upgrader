@@ -392,7 +392,8 @@ def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[P
         unit = list(app.units.values())[0]  # getting the first unit, since we don't care which one
         steps.append(
             PostUpgradeStep(
-                "Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
+                f"Ensure the 'require-osd-release' option in '{app.name}' matches the 'ceph-osd' "
+                "version",
                 coro=set_require_osd_release_option(unit.name, app.model),
             )
         )

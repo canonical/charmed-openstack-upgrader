@@ -821,14 +821,14 @@ def test_get_ceph_mon_post_upgrade_steps_multiple(model):
 
     exp_steps = 2 * [
         PostUpgradeStep(
-            "Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
-            coro=app_utils.set_require_osd_release_option("cpeh-mon/0", model),
+            "Ensure the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version",
+            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         )
     ]
 
-    step = cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon, ceph_mon])
+    steps = cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon, ceph_mon])
 
-    assert step == exp_steps
+    assert steps == exp_steps
 
 
 @patch("cou.steps.plan.create_upgrade_group")
