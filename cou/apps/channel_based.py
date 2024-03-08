@@ -13,6 +13,7 @@
 # limitations under the License.
 """Channel based application class."""
 import logging
+from collections import defaultdict
 from typing import Iterable, Optional
 
 from cou.apps.base import OpenStackApplication
@@ -28,17 +29,17 @@ logger = logging.getLogger(__name__)
 class ChannelBasedApplication(OpenStackApplication):
     """Application for charms that are channel based."""
 
-    def _get_latest_os_version(self, unit: COUUnit) -> OpenStackRelease:
-        """Get the latest compatible OpenStack release based on the channel.
+    @property
+    def os_release_units(self) -> dict[OpenStackRelease, list[str]]:
+        """Get the OpenStack release versions from the units.
 
-        :param unit: COUUnit
-        :type unit: COUUnit
-        :raises ApplicationError: When there are no compatible OpenStack release for the
-        workload version.
-        :return: The latest compatible OpenStack release.
-        :rtype: OpenStackRelease
+        :return: OpenStack release versions from the units.
+        :rtype: defaultdict[OpenStackRelease, list[str]]
         """
-        return self.channel_codename
+        os_versions = defaultdict(list)
+        for unit in self.units.values():
+            os_versions[self.channel_codename].append(unit.name)
+        return dict(os_versions)
 
     @property
     def current_os_release(self) -> OpenStackRelease:

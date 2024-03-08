@@ -52,42 +52,6 @@ def test_openstack_application_magic_functions(model):
     assert app != "test-app"
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
-def test_application_get_latest_os_version_failed(mock_find_compatible_versions, model):
-    charm = "app"
-    app_name = "my_app"
-    unit = COUUnit(
-        name=f"{app_name}/0",
-        workload_version="1",
-        machine=MagicMock(spec_set=COUMachine),
-    )
-    exp_error = (
-        f"'{app_name}' with workload version {unit.workload_version} has no compatible OpenStack "
-        "release."
-    )
-    mock_find_compatible_versions.return_value = []
-    app = OpenStackApplication(
-        name=app_name,
-        can_upgrade_to="",
-        charm=charm,
-        channel="stable",
-        config={},
-        machines={},
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units={f"{app_name}/0": unit},
-        workload_version=unit.workload_version,
-    )
-
-    with pytest.raises(ApplicationError, match=exp_error):
-        app._get_latest_os_version(unit)
-
-    mock_find_compatible_versions.assert_called_once_with(charm, unit.workload_version)
-
-
 @pytest.mark.parametrize(
     "charm_config, enable, exp_description",
     [
@@ -146,6 +110,7 @@ def test_get_pause_unit_step(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     unit = COUUnit(
         name=f"{app_name}/0",
+        charm=charm,
         workload_version="1",
         machine=machines["0"],
     )
@@ -181,6 +146,7 @@ def test_get_resume_unit_step(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     unit = COUUnit(
         name=f"{app_name}/0",
+        charm=charm,
         workload_version="1",
         machine=machines["0"],
     )
@@ -214,6 +180,7 @@ def test_get_openstack_upgrade_step(model):
     machines = {"0": MagicMock(spec_set=COUMachine)}
     unit = COUUnit(
         name=f"{app_name}/0",
+        charm=charm,
         workload_version="1",
         machine=machines["0"],
     )
@@ -246,9 +213,9 @@ def test_get_openstack_upgrade_step(model):
     "units",
     [
         [],
-        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(1)],
-        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(2)],
-        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(3)],
+        [COUUnit(f"my_app/{unit}", "app", MagicMock(), MagicMock()) for unit in range(1)],
+        [COUUnit(f"my_app/{unit}", "app", MagicMock(), MagicMock()) for unit in range(2)],
+        [COUUnit(f"my_app/{unit}", "app", MagicMock(), MagicMock()) for unit in range(3)],
     ],
 )
 @patch("cou.apps.base.upgrade_packages")
@@ -257,7 +224,8 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
     app_name = "my_app"
     channel = "ussuri/stable"
     app_units = {
-        f"my_app/{unit}": COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(3)
+        f"my_app/{unit}": COUUnit(f"my_app/{unit}", charm, MagicMock(), MagicMock())
+        for unit in range(3)
     }
 
     app = OpenStackApplication(
@@ -278,9 +246,9 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
     "units",
     [
         [],
-        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(1)],
-        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(2)],
-        [COUUnit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(3)],
+        [COUUnit(f"my_app/{unit}", "app", MagicMock(), MagicMock()) for unit in range(1)],
+        [COUUnit(f"my_app/{unit}", "app", MagicMock(), MagicMock()) for unit in range(2)],
+        [COUUnit(f"my_app/{unit}", "app", MagicMock(), MagicMock()) for unit in range(3)],
     ],
 )
 @patch("cou.apps.base.OpenStackApplication._verify_workload_upgrade")
@@ -290,7 +258,9 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
     charm = "app"
     app_name = "my_app"
     channel = "ussuri/stable"
-    app_units = {f"my_app/{unit}": COUUnit(f"my_app/{unit}", mock, mock) for unit in range(3)}
+    app_units = {
+        f"my_app/{unit}": COUUnit(f"my_app/{unit}", charm, mock, mock) for unit in range(3)
+    }
 
     app = OpenStackApplication(
         app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
@@ -371,6 +341,7 @@ def test_check_application_target_error(current_os_release, apt_source_codename,
 @patch("cou.apps.base.OpenStackApplication.os_release_units", new_callable=PropertyMock)
 def test_check_mismatched_versions_exception(mock_os_release_units, model):
     """Raise exception if workload version is different on units of a control-plane application."""
+    name = charm = "my-app"
     exp_error_msg = (
         "Units of application my-app are running mismatched OpenStack versions: "
         r"'ussuri': \['my-app\/0', 'my-app\/1'\], 'victoria': \['my-app\/2'\]. "
@@ -385,16 +356,19 @@ def test_check_mismatched_versions_exception(mock_os_release_units, model):
     units = {
         "my-app/0": COUUnit(
             name="my-app/0",
+            charm=charm,
             workload_version="17.0.1",
             machine=machines["0"],
         ),
         "my-app/1": COUUnit(
             name="my-app/1",
+            charm=charm,
             workload_version="17.0.1",
             machine=machines["1"],
         ),
         "my-app/2": COUUnit(
             name="my-app/2",
+            charm=charm,
             workload_version="18.1.0",
             machine=machines["2"],
         ),
@@ -406,9 +380,9 @@ def test_check_mismatched_versions_exception(mock_os_release_units, model):
     }
 
     app = OpenStackApplication(
-        name="my-app",
+        name=name,
         can_upgrade_to="ussuri/stable",
-        charm="my-app",
+        charm=charm,
         channel="ussuri/stable",
         config={"source": {"value": "distro"}},
         machines=machines,
@@ -438,16 +412,19 @@ def test_check_mismatched_versions(mock_os_release_units, model):
     units = {
         "my-app/0": COUUnit(
             name="my-app/0",
+            charm="my-app",
             workload_version="17.0.1",
             machine=machines["0"],
         ),
         "my-app/1": COUUnit(
             name="my-app/1",
+            charm="my-app",
             workload_version="17.0.1",
             machine=machines["1"],
         ),
         "my-app/2": COUUnit(
             name="my-app/2",
+            charm="my-app",
             workload_version="18.1.0",
             machine=machines["2"],
         ),

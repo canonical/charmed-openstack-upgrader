@@ -44,16 +44,19 @@ def test_application_different_wl(model):
     units = {
         "keystone/0": COUUnit(
             name="keystone/0",
+            charm="keystone",
             workload_version="17.0.1",
             machine=machines["0"],
         ),
         "keystone/1": COUUnit(
             name="keystone/1",
+            charm="keystone",
             workload_version="17.0.1",
             machine=machines["1"],
         ),
         "keystone/2": COUUnit(
             name="keystone/2",
+            charm="keystone",
             workload_version="18.1.0",
             machine=machines["2"],
         ),
@@ -93,6 +96,7 @@ def test_application_no_origin_config(model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="18.0.1",
                 machine=machines["0"],
             )
@@ -121,6 +125,7 @@ def test_application_empty_origin_config(model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="18.0.1",
                 machine=machines["0"],
             )
@@ -153,6 +158,7 @@ def test_application_unexpected_channel(model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="19.0.1",
                 machine=machines["0"],
             )
@@ -186,6 +192,7 @@ def test_application_unknown_source(source_value, model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="19.0.1",
                 machine=machines["0"],
             )
@@ -219,6 +226,7 @@ async def test_application_verify_workload_upgrade(model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="17.0.1",
                 machine=machines["0"],
             )
@@ -261,6 +269,7 @@ async def test_application_verify_workload_upgrade_fail(model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="17.0.1",
                 machine=machines["0"],
             )
@@ -302,6 +311,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         units={
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
+                charm="keystone",
                 workload_version="17.0.1",
                 machine=machines["0"],
             )
@@ -392,6 +402,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         units={
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
+                charm="keystone",
                 workload_version="17.0.1",
                 machine=machines["0"],
             )
@@ -485,6 +496,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
         units={
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
+                charm="keystone",
                 workload_version="17.0.1",
                 machine=machines["0"],
             )
@@ -569,6 +581,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         units={
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
+                charm="keystone",
                 workload_version="17.0.1",
                 machine=machines["0"],
             )
@@ -653,6 +666,7 @@ def test_upgrade_plan_application_already_upgraded(model):
         units={
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
+                charm="keystone",
                 workload_version="19.0.1",
                 machine=machines["0"],
             )
@@ -687,6 +701,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         units={
             f"keystone/{unit}": COUUnit(
                 name=f"keystone/{unit}",
+                charm="keystone",
                 workload_version="17.0.1",
                 machine=machines["0"],
             )
@@ -828,7 +843,9 @@ def _generate_nova_compute_app(model):
     channel = "ussuri/stable"
 
     units = {
-        f"nova-compute/{unit_num}": COUUnit(f"nova-compute/{unit_num}", MagicMock(), MagicMock())
+        f"nova-compute/{unit_num}": COUUnit(
+            f"nova-compute/{unit_num}", "nova-compute", MagicMock(), MagicMock()
+        )
         for unit_num in range(3)
     }
     app = NovaCompute(
@@ -882,6 +899,7 @@ def test_nova_compute_upgrade_plan(model):
     units = {
         f"nova-compute/{unit}": COUUnit(
             name=f"nova-compute/{unit}",
+            charm="nova-compute",
             workload_version="21.0.0",
             machine=machines[f"{unit}"],
         )
@@ -935,6 +953,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
     units = {
         f"nova-compute/{unit}": COUUnit(
             name=f"nova-compute/{unit}",
+            charm="nova-compute",
             workload_version="21.0.0",
             machine=machines[f"{unit}"],
         )
@@ -981,6 +1000,7 @@ def test_cinder_upgrade_plan(model):
     units = {
         f"cinder/{i}": COUUnit(
             name=f"cinder/{i}",
+            charm="cinder",
             workload_version="16.4.2",
             machine=machines[f"{i}"],
         )
@@ -1034,6 +1054,7 @@ def test_cinder_upgrade_plan_single_unit(model):
     units = {
         f"cinder/{i}": COUUnit(
             name=f"cinder/{i}",
+            charm="cinder",
             workload_version="16.4.2",
             machine=machines[f"{i}"],
         )

@@ -29,6 +29,7 @@ from cou.exceptions import (
     ApplicationNotFound,
     CommandRunFailed,
     TimeoutException,
+    UnitError,
     UnitNotFound,
     WaitForApplicationsTimeout,
 )
@@ -699,7 +700,12 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             series=status.series,
             subordinate_to=status.subordinate_to,
             units={
-                name: juju_utils.COUUnit(name, exp_machines[unit.machine], unit.workload_version)
+                name: juju_utils.COUUnit(
+                    name,
+                    mocked_model.applications[app].charm_name,
+                    exp_machines[unit.machine],
+                    unit.workload_version,
+                )
                 for name, unit in exp_units[app].items()
             },
             workload_version=status.workload_version,
@@ -722,3 +728,18 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
 
     mock_get_status.assert_not_awaited()
     mock_get_machines.assert_not_awaited()
+
+
+def test_COUUnit_os_release_raise_error():
+    unit = juju_utils.COUUnit(
+        name="app/0",
+        charm="app",
+        workload_version="1",
+        machine=MagicMock(spec_set=juju_utils.COUMachine),
+    )
+    exp_error = (
+        f"'{unit.charm}' with workload version {unit.workload_version} "
+        "has no compatible OpenStack release."
+    )
+    with pytest.raises(UnitError, match=exp_error):
+        unit.os_release

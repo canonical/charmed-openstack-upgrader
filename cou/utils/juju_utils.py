@@ -40,10 +40,15 @@ from cou.exceptions import (
     ApplicationNotFound,
     CommandRunFailed,
     TimeoutException,
+    UnitError,
     UnitNotFound,
     WaitForApplicationsTimeout,
 )
-from cou.utils.openstack import is_charm_supported
+from cou.utils.openstack import (
+    OpenStackCodenameLookup,
+    OpenStackRelease,
+    is_charm_supported,
+)
 
 JUJU_MAX_FRAME_SIZE: int = 2**30
 DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 10))
@@ -147,8 +152,29 @@ class COUUnit:
     """Representation of a single unit of application."""
 
     name: str
+    charm: str
     machine: COUMachine
     workload_version: str
+
+    @property
+    def os_release(self) -> OpenStackRelease:
+        """Get the latest compatible OpenStack release based on the unit workload version.
+
+        :raises UnitError: When there are no compatible OpenStack release for the
+        workload version.
+        :return: The latest compatible OpenStack release.
+        :rtype: OpenStackRelease
+        """
+        compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+            self.charm, self.workload_version
+        )
+        if not compatible_os_versions:
+            raise UnitError(
+                f"'{self.charm}' with workload version {self.workload_version} has no "
+                "compatible OpenStack release."
+            )
+
+        return max(compatible_os_versions)
 
 
 @dataclass(frozen=True)
@@ -377,7 +403,12 @@ class COUModel:
                 series=status.series,
                 subordinate_to=status.subordinate_to,
                 units={
-                    name: COUUnit(name, machines[unit.machine], unit.workload_version)
+                    name: COUUnit(
+                        name,
+                        model.applications[app].charm_name,
+                        machines[unit.machine],
+                        unit.workload_version,
+                    )
                     for name, unit in status.units.items()
                 },
                 workload_version=status.workload_version,

@@ -43,6 +43,10 @@ class UnitNotFound(COUException):
     """Exception raised when a unit is not found in the model."""
 
 
+class UnitError(COUException):
+    """Exception raised when a unit does something unexpected."""
+
+
 class ApplicationNotFound(COUException):
     """Exception raised when an application is not found in the model."""
 

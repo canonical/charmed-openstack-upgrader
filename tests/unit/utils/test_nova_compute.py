@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from juju.action import Action
@@ -70,7 +70,7 @@ async def test_get_empty_hypervisors(
 ):
     mock_instance_count.side_effect = [count for _, count in hypervisors_count]
     result = await nova_compute.get_empty_hypervisors(
-        [_mock_nova_unit(nova_unit) for nova_unit, _ in hypervisors_count], model
+        [_create_nova_unit(nova_unit) for nova_unit, _ in hypervisors_count], model
     )
     assert {machine.machine_id for machine in result} == expected_result
 
@@ -83,7 +83,7 @@ async def test_verify_empty_hypervisor_before_upgrade_exception(
     mock_instance_count, mock_logger, instance_count, model
 ):
     mock_instance_count.return_value = instance_count
-    nova_unit = _mock_nova_unit(1)
+    nova_unit = _create_nova_unit(1)
     exp_error_msg = f"Unit: {nova_unit.name} has {instance_count} VMs running"
     with pytest.raises(HaltUpgradeExecution, match=exp_error_msg):
         await nova_compute.verify_empty_hypervisor_before_upgrade(nova_unit, model)
@@ -103,7 +103,7 @@ async def test_verify_empty_hypervisor_before_upgrade_ActionFailed(
 ):
     mock_instance_count.return_value = instance_count
     model.run_action.side_effect = ActionFailed("enable")
-    nova_unit = _mock_nova_unit(1)
+    nova_unit = _create_nova_unit(1)
     exp_error_msg = f"Unit: {nova_unit.name} has {instance_count} VMs running"
     with pytest.raises(HaltUpgradeExecution, match=exp_error_msg):
         await nova_compute.verify_empty_hypervisor_before_upgrade(nova_unit, model) is None
@@ -115,14 +115,14 @@ async def test_verify_empty_hypervisor_before_upgrade_ActionFailed(
 @pytest.mark.asyncio
 @patch("cou.utils.nova_compute.get_instance_count", return_value=0)
 async def test_verify_empty_hypervisor_before_upgrade(mock_instance_count, model):
-    nova_unit = _mock_nova_unit(1)
+    nova_unit = _create_nova_unit(1)
     assert await nova_compute.verify_empty_hypervisor_before_upgrade(nova_unit, model) is None
 
 
-def _mock_nova_unit(nova_unit):
-    mock_nova_unit = MagicMock(spec_set=COUUnit(MagicMock(), MagicMock(), MagicMock()))
-    mock_nova_unit.name = f"nova-compute/{nova_unit}"
-    nova_machine = COUMachine(str(nova_unit), f"zone-{nova_unit + 1}")
-    mock_nova_unit.machine = nova_machine
-
-    return mock_nova_unit
+def _create_nova_unit(nova_unit):
+    return COUUnit(
+        f"nova-compute/{nova_unit}",
+        "nova-compute",
+        COUMachine(str(nova_unit), f"zone-{nova_unit + 1}"),
+        "21.0.0",
+    )

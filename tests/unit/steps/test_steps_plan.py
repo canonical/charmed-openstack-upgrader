@@ -171,6 +171,7 @@ async def test_generate_plan(mock_generate_data_plane, model, cli_args):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="17.0.1",
                 machine=machines["0"],
             )
@@ -208,6 +209,7 @@ async def test_generate_plan(mock_generate_data_plane, model, cli_args):
         units={
             "cinder/0": COUUnit(
                 name="cinder/0",
+                charm="cinder",
                 workload_version="16.4.2",
                 machine=machines["0"],
             )
@@ -691,6 +693,7 @@ async def test_get_upgradable_hypervisors_machines(
     nova_compute.units = {
         f"nova-compute/{i}": COUUnit(
             name=f"nova-compute/{i}",
+            charm="nova-compute",
             workload_version="21.0.0",
             machine=machines[f"{i}"],
         )

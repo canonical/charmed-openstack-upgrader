@@ -23,7 +23,7 @@ from cou.apps.auxiliary import (
     OvnPrincipal,
     RabbitMQServer,
 )
-from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
+from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration, UnitError
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -59,6 +59,7 @@ def test_auxiliary_app(model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -91,6 +92,7 @@ def test_auxiliary_app_cs(model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -124,6 +126,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -208,6 +211,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.9",
                 machine=machines["0"],
             )
@@ -287,6 +291,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -378,6 +383,7 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
             units={
                 "rabbitmq-server/0": COUUnit(
                     name="rabbitmq-server/0",
+                    charm="rabbitmq-server",
                     workload_version="3.8",
                     machine=machines["0"],
                 )
@@ -386,7 +392,7 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
         )
 
 
-def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
+def test_auxiliary_app_unknown_version_raise_UnitError(model):
     """Test auxiliary upgrade plan with unknown version."""
     version = "80.5"
     charm = "rabbitmq-server"
@@ -407,14 +413,15 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm=charm,
                 workload_version=version,
                 machine=machines["0"],
             )
         },
         workload_version=version,
     )
-    with pytest.raises(ApplicationError, match=exp_msg):
-        app._get_latest_os_version(app.units[f"{charm}/0"])
+    with pytest.raises(UnitError, match=exp_msg):
+        app.current_os_release
 
 
 def test_auxiliary_raise_error_unknown_series(model):
@@ -443,6 +450,7 @@ def test_auxiliary_raise_error_unknown_series(model):
             units={
                 "rabbitmq-server/0": COUUnit(
                     name="rabbitmq-server/0",
+                    charm="rabbitmq-server",
                     workload_version="3.8",
                     machine=machines["0"],
                 )
@@ -474,6 +482,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -511,6 +520,7 @@ def test_auxiliary_raise_halt_upgrade(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -549,6 +559,7 @@ def test_auxiliary_no_suitable_channel(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -578,6 +589,7 @@ def test_ceph_mon_app(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm="ceph-mon",
                 workload_version="16.2.0",
                 machine=machines["0"],
             )
@@ -587,7 +599,7 @@ def test_ceph_mon_app(model):
 
     assert app.channel == "pacific/stable"
     assert app.os_origin == "cloud:focal-xena"
-    assert app._get_latest_os_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
+    assert app.units[f"{charm}/0"].os_release == OpenStackRelease("xena")
     assert app.apt_source_codename == "xena"
     assert app.channel_codename == "xena"
     assert app.is_subordinate is False
@@ -612,6 +624,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm="ceph-mon",
                 workload_version="16.2.0",
                 machine=machines["0"],
             )
@@ -701,6 +714,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm="ceph-mon",
                 workload_version="15.2.0",
                 machine=machines["0"],
             )
@@ -784,6 +798,7 @@ def test_ovn_principal(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm=charm,
                 workload_version="22.03",
                 machine=machines["0"],
             )
@@ -823,6 +838,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm=charm,
                 workload_version="20.03.2",
                 machine=machines["0"],
             )
@@ -861,6 +877,7 @@ def test_ovn_no_compatible_os_release(channel, model):
             units={
                 f"{charm}/0": COUUnit(
                     name=f"{charm}/0",
+                    charm=charm,
                     workload_version="22.03",
                     machine=machines["0"],
                 )
@@ -888,6 +905,7 @@ def test_ovn_principal_upgrade_plan(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm=charm,
                 workload_version="22.03",
                 machine=machines["0"],
             )
@@ -968,6 +986,7 @@ def test_mysql_innodb_cluster_upgrade(model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm=charm,
                 workload_version="8.0",
                 machine=machines["0"],
             )
@@ -1052,16 +1071,19 @@ def test_auxiliary_upgrade_by_unit(mock_super, model):
         units={
             f"{charm}/0": COUUnit(
                 name=f"{charm}/0",
+                charm=charm,
                 workload_version="1.7",
                 machine=machines["0"],
             ),
             f"{charm}/1": COUUnit(
                 name=f"{charm}/1",
+                charm=charm,
                 workload_version="1.7",
                 machine=machines["1"],
             ),
             f"{charm}/2": COUUnit(
                 name=f"{charm}/2",
+                charm=charm,
                 workload_version="1.7",
                 machine=machines["2"],
             ),

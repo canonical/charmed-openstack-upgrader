@@ -159,7 +159,10 @@ def test_analysis_dump(model):
         subordinate_to=[],
         units={
             f"keystone/{unit}": COUUnit(
-                name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[f"{unit}"]
+                name=f"keystone/{unit}",
+                charm="keystone",
+                workload_version="17.0.1",
+                machine=machines[f"{unit}"],
             )
             for unit in range(3)
         },
@@ -179,6 +182,7 @@ def test_analysis_dump(model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -199,6 +203,7 @@ def test_analysis_dump(model):
         units={
             f"cinder/{unit}": COUUnit(
                 name=f"cinder/{unit}",
+                charm="cinder",
                 workload_version="16.4.2",
                 machine=machines[f"{unit}"],
             )
@@ -266,6 +271,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="17.1.0",
                 machine=machines["0"],
             )
@@ -286,6 +292,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -306,6 +313,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         units={
             "cinder/0": COUUnit(
                 name="cinder/0",
+                charm="cinder",
                 workload_version="16.4.2",
                 machine=machines["0"],
             )
@@ -344,6 +352,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="19.1.0",
                 machine=machines["0"],
             )
@@ -364,6 +373,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -384,6 +394,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
         units={
             "cinder/0": COUUnit(
                 name="cinder/0",
+                charm="cinder",
                 workload_version="16.4.2",
                 machine=machines["0"],
             )
@@ -418,6 +429,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="17.1.0",
                 machine=machines["0"],
             )
@@ -438,6 +450,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["0"],
             )
@@ -458,6 +471,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         units={
             "cinder/0": COUUnit(
                 name="cinder/0",
+                charm="cinder",
                 workload_version="16.4.2",
                 machine=machines["0"],
             )
@@ -543,6 +557,7 @@ async def test_analysis_machines(model):
         units={
             "keystone/0": COUUnit(
                 name="keystone/0",
+                charm="keystone",
                 workload_version="17.1.0",
                 machine=machines["3"],
             )
@@ -563,6 +578,7 @@ async def test_analysis_machines(model):
         units={
             "rabbitmq-server/0": COUUnit(
                 name="rabbitmq-server/0",
+                charm="rabbitmq-server",
                 workload_version="3.8",
                 machine=machines["4"],
             )
@@ -583,6 +599,7 @@ async def test_analysis_machines(model):
         units={
             "cinder/0": COUUnit(
                 name="cinder/0",
+                charm="cinder",
                 workload_version="16.4.2",
                 machine=machines["5"],
             )
@@ -603,6 +620,7 @@ async def test_analysis_machines(model):
         units={
             f"nova-compute/{unit}": COUUnit(
                 name=f"nova-compute/{unit}",
+                charm="nova-compute",
                 workload_version="21.0.0",
                 machine=machines[f"{unit}"],
             )

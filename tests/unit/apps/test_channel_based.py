@@ -33,6 +33,7 @@ def test_application_versionless(model):
     units = {
         "glance-simplestreams-sync/0": COUUnit(
             name="glance-simplestreams-sync/0",
+            charm="glance-simplestreams-sync",
             workload_version="",
             machine=machines["0"],
         )
@@ -57,7 +58,7 @@ def test_application_versionless(model):
 
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is True
-    assert app._get_latest_os_version(units["glance-simplestreams-sync/0"]) == app.channel_codename
+    assert app.os_release_units == {OpenStackRelease("ussuri"): ["glance-simplestreams-sync/0"]}
 
 
 def test_application_gnocchi_ussuri(model):
@@ -80,6 +81,7 @@ def test_application_gnocchi_ussuri(model):
         units={
             "gnocchi/0": COUUnit(
                 name="gnocchi/0",
+                charm="gnocchi",
                 workload_version="4.3.4",
                 machine=machines["0"],
             )
@@ -112,6 +114,7 @@ def test_application_gnocchi_xena(model):
         units={
             "gnocchi/0": COUUnit(
                 name="gnocchi/0",
+                charm="gnocchi",
                 workload_version="4.4.1",
                 machine=machines["0"],
             )
@@ -147,6 +150,7 @@ def test_application_designate_bind_ussuri(model):
         units={
             "designate-bind/0": COUUnit(
                 name="designate-bind/0",
+                charm="designate-bind",
                 workload_version="9.16.1",
                 machine=machines["0"],
             )
@@ -176,6 +180,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
         units={
             "glance-simplestreams-sync/0": COUUnit(
                 name="glance-simplestreams-sync/0",
+                charm="glance-simplestreams-sync",
                 workload_version="",
                 machine=machines["0"],
             )
@@ -255,6 +260,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
         units={
             "gnocchi/0": COUUnit(
                 name="gnocchi/0",
+                charm="gnocchi",
                 workload_version="4.3.4",
                 machine=machines["0"],
             )
@@ -344,6 +350,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
         units={
             "designate-bind/0": COUUnit(
                 name="designate-bind/0",
+                charm="designate-bind",
                 workload_version="9.16.1",
                 machine=machines["0"],
             )

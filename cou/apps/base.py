@@ -116,7 +116,7 @@ class OpenStackApplication(COUApplication):
                         "name": unit.name,
                         "machine": unit.machine.machine_id,
                         "workload_version": unit.workload_version,
-                        "os_version": str(self._get_latest_os_version(unit)),
+                        "os_version": str(unit.os_release),
                     }
                     for unit in self.units.values()
                 },
@@ -191,27 +191,6 @@ class OpenStackApplication(COUApplication):
         except ValueError:
             return self.is_from_charm_store
 
-    def _get_latest_os_version(self, unit: COUUnit) -> OpenStackRelease:
-        """Get the latest compatible OpenStack release based on the unit workload version.
-
-        :param unit: Application Unit
-        :type unit: COUUnit
-        :raises ApplicationError: When there are no compatible OpenStack release for the
-        workload version.
-        :return: The latest compatible OpenStack release.
-        :rtype: OpenStackRelease
-        """
-        compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
-            self.charm, unit.workload_version
-        )
-        if not compatible_os_versions:
-            raise ApplicationError(
-                f"'{self.name}' with workload version {unit.workload_version} has no "
-                "compatible OpenStack release."
-            )
-
-        return max(compatible_os_versions)
-
     @staticmethod
     def _get_track_from_channel(charm_channel: str) -> str:
         """Get the track from a given channel.
@@ -251,8 +230,7 @@ class OpenStackApplication(COUApplication):
         """
         os_versions = defaultdict(list)
         for unit in self.units.values():
-            os_version = self._get_latest_os_version(unit)
-            os_versions[os_version].append(unit.name)
+            os_versions[unit.os_release].append(unit.name)
         return dict(os_versions)
 
     @property

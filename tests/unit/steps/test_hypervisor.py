@@ -81,7 +81,7 @@ def test_hypervisor_group():
 def test_azs():
     """Test AZs as custom defaultdict object."""
     azs = AZs()
-    test_unit = COUUnit("my-unit", MagicMock(spec_set=COUMachine)(), "")
+    test_unit = COUUnit("my-unit", "my-unit", MagicMock(spec_set=COUMachine)(), "")
 
     # test accessing parts of AZs
     assert azs["my-az"].name == "my-az"
@@ -127,16 +127,16 @@ def test_hypervisor_azs_grouping():
     machines = {f"{i}": COUMachine(f"{i}", (), f"az{i//2}") for i in range(6)}
     units = {
         # app1
-        "app1/0": COUUnit("app1/0", machines["0"], ""),
-        "app1/1": COUUnit("app1/1", machines["1"], ""),
-        "app1/2": COUUnit("app1/2", machines["2"], ""),
-        "app1/3": COUUnit("app1/3", machines["3"], ""),
-        "app1/4": COUUnit("app1/4", machines["4"], ""),
-        "app1/5": COUUnit("app1/5", machines["5"], ""),
+        "app1/0": COUUnit("app1/0", "app1", machines["0"], ""),
+        "app1/1": COUUnit("app1/1", "app1", machines["1"], ""),
+        "app1/2": COUUnit("app1/2", "app1", machines["2"], ""),
+        "app1/3": COUUnit("app1/3", "app1", machines["3"], ""),
+        "app1/4": COUUnit("app1/4", "app1", machines["4"], ""),
+        "app1/5": COUUnit("app1/5", "app1", machines["5"], ""),
         # app2
-        "app2/0": COUUnit("app2/0", machines["0"], ""),
-        "app2/1": COUUnit("app2/1", machines["2"], ""),
-        "app2/2": COUUnit("app2/2", machines["4"], ""),
+        "app2/0": COUUnit("app2/0", "app2", machines["0"], ""),
+        "app2/1": COUUnit("app2/1", "app2", machines["2"], ""),
+        "app2/2": COUUnit("app2/2", "app2", machines["4"], ""),
     }
 
     app1 = MagicMock(spec_set=COUApplication)()
@@ -265,6 +265,7 @@ def test_hypervisor_upgrade_plan(model):
         units={
             "cinder/0": COUUnit(
                 name="cinder/0",
+                charm="cinder",
                 workload_version="16.4.2",
                 machine=machines["0"],
             )
@@ -285,6 +286,7 @@ def test_hypervisor_upgrade_plan(model):
         units={
             f"nova-compute/{unit}": COUUnit(
                 name=f"nova-compute/{unit}",
+                charm="nova-compute",
                 workload_version="21.0.0",
                 machine=machines[f"{unit}"],
             )
@@ -358,6 +360,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
         units={
             "cinder/0": COUUnit(
                 name="cinder/0",
+                charm="cinder",
                 workload_version="16.4.2",
                 machine=machines["0"],
             )
@@ -378,6 +381,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
         units={
             f"nova-compute/{unit}": COUUnit(
                 name=f"nova-compute/{unit}",
+                charm="nova-compute",
                 workload_version="21.0.0",
                 machine=machines[f"{unit}"],
             )
