@@ -143,7 +143,9 @@ class AuxiliaryApplication(OpenStackApplication):
         """
         if units:
             logger.warning(
-                "%s cannot be upgraded using the single-unit method. The upgrade will proceed using the all-in-one method.", self.name
+                "%s cannot be upgraded using the single-unit method. "
+                "The upgrade will proceed using the all-in-one method.",
+                self.name,
             )
         return super().generate_upgrade_plan(target, force, None)
 
