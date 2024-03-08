@@ -19,20 +19,20 @@ import logging
 from typing import NoReturn
 
 from cou.exceptions import InterruptError
-from cou.steps import UpgradeStep
+from cou.steps import UpgradePlan
 from cou.utils import progress_indicator
 
 logger = logging.getLogger(__name__)
 
 
-async def _cancel_plan(plan: UpgradeStep, exit_code: int) -> NoReturn:
+async def _cancel_plan(plan: UpgradePlan, exit_code: int) -> NoReturn:
     """Watch plan and raise InterruptError when it is done.
 
     This watcher will make sure that InterruptError is raised after plan and all it's
     sub-steps are done.
 
     :param plan: watched UpgradeStep
-    :type plan: UpgradeStep
+    :type plan: UpgradePlan
     :param exit_code: Exit code
     :type exit_code: int
     :raise InterruptError: raise InterruptError after plan and all it's sub-steps are done
@@ -51,13 +51,13 @@ async def _cancel_plan(plan: UpgradeStep, exit_code: int) -> NoReturn:
     raise InterruptError("charmed-openstack-upgrader has been stopped safely", exit_code)
 
 
-def interrupt_handler(plan: UpgradeStep, loop: asyncio.AbstractEventLoop, exit_code: int) -> None:
+def interrupt_handler(plan: UpgradePlan, loop: asyncio.AbstractEventLoop, exit_code: int) -> None:
     """Handle cou interruption.
 
     This handler first tries to safely cancel the update plan otherwise immediately raises
     the exception.
-    :param plan: UpgradeStep to by canceled by this function
-    :type plan: UpgradeStep
+    :param plan: UpgradePlan to by canceled by this function
+    :type plan: UpgradePlan
     :param loop: event loop
     :type loop: asyncio.AbstractEventLoop
     :param exit_code: Exit code
