@@ -206,7 +206,7 @@ class MysqlInnodbCluster(AuxiliaryApplication):
 
 
 @AppFactory.register_application(["ceph-osd"])
-class CephOSD(AuxiliaryApplication):
+class CephOsd(AuxiliaryApplication):
     """Application for ceph-osd."""
 
     def pre_upgrade_steps(
@@ -223,7 +223,7 @@ class CephOSD(AuxiliaryApplication):
         """
         steps = [
             PreUpgradeStep(
-                description="Check if colocated nova-compute units had been upgraded.",
+                description="Check if all nova-compute units had been upgraded",
                 coro=self._verify_nova_compute(target),
             )
         ]
@@ -245,7 +245,7 @@ class CephOSD(AuxiliaryApplication):
                 logger.debug("skipping application %s", app.name)
                 continue
 
-            for unit in app.units:
+            for unit in app.units.values():
                 compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
                     app.charm, unit.workload_version
                 )

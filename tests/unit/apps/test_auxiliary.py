@@ -16,7 +16,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cou.apps.auxiliary import CephMon, MysqlInnodbCluster, OvnPrincipal, RabbitMQServer
+from cou.apps.auxiliary import (
+    CephMon,
+    CephOsd,
+    MysqlInnodbCluster,
+    OvnPrincipal,
+    RabbitMQServer,
+)
+from cou.apps.core import NovaCompute
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -1020,3 +1027,127 @@ def test_mysql_innodb_cluster_upgrade(model):
     upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
+
+
+@pytest.mark.parametrize(
+    "target, units",
+    [
+        (OpenStackRelease("victoria"), None),
+        (OpenStackRelease("victoria"), [MagicMock(spec_set=COUUnit)()]),
+    ],
+)
+@patch("cou.apps.auxiliary.AuxiliaryApplication.pre_upgrade_steps")
+def test_ceph_osd(mock_pre_upgrade_steps, target, units, model):
+    """Test Ceph-osd pre upgrade steps."""
+    mock_pre_upgrade_steps.return_value = [MagicMock(spec_set=UpgradeStep)()]
+    app = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+    steps = app.pre_upgrade_steps(target, units)
+
+    assert steps == [
+        PreUpgradeStep(
+            description="Check if all nova-compute units had been upgraded",
+            coro=app._verify_nova_compute(target),
+        ),
+        *mock_pre_upgrade_steps.return_value,
+    ]
+    mock_pre_upgrade_steps.assert_called_once_with(target, units)
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
+async def test_ceph_osd_verify_nova_compute_no_app(mock_lookup, model):
+    """Test Ceph-osd verifying all nova computes."""
+    target = OpenStackRelease("victoria")
+    app = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+    model.get_applications.return_value = [app]
+
+    await app._verify_nova_compute(target)
+
+    model.get_applications.assert_awaited_once_with()
+    mock_lookup.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
+async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
+    """Test Ceph-osd verifying all nova computes."""
+    target = OpenStackRelease("victoria")
+    mock_lookup.return_value = [target]
+    nova_compute = MagicMock(spec_set=NovaCompute)()
+    nova_compute.charm = "nova-compute"
+    nova_compute.units = {"nova-compute/0": COUUnit("nova-compute/0", None, "21.0.0")}
+    app = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+    model.get_applications.return_value = [app, nova_compute]
+
+    await app._verify_nova_compute(target)
+
+    model.get_applications.assert_awaited_once_with()
+    mock_lookup.assert_called_once_with("nova-compute", "21.0.0")
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
+async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
+    """Test Ceph-osd verifying all nova computes."""
+    mock_lookup.return_value = [OpenStackRelease("ussuri")]
+    target = OpenStackRelease("victoria")
+    nova_compute = MagicMock(spec_set=NovaCompute)()
+    nova_compute.charm = "nova-compute"
+    nova_compute.units = {"nova-compute/0": COUUnit("nova-compute/0", None, "21.0.0")}
+    app = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+    model.get_applications.return_value = [app, nova_compute]
+
+    with pytest.raises(ApplicationError, match=f"Units 'nova-compute/0' did not reach {target}."):
+        await app._verify_nova_compute(target)
