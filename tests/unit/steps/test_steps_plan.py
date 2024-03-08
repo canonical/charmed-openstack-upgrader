@@ -188,13 +188,7 @@ async def test_generate_plan(mock_generate_data_plane, model, cli_args):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="17.0.1",
-                machine=machines["0"],
-            )
-        },
+        units={},
         workload_version="17.0.1",
     )
     cinder = OpenStackApplication(

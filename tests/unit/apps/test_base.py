@@ -17,7 +17,11 @@ from unittest.mock import MagicMock, PropertyMock, call, patch
 import pytest
 
 from cou.apps.base import OpenStackApplication
-from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
+from cou.exceptions import (
+    ApplicationError,
+    HaltUpgradePlanGeneration,
+    MismatchedOpenStackVersions,
+)
 from cou.steps import UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
@@ -362,3 +366,110 @@ def test_check_application_target_error(current_os_release, apt_source_codename,
 
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app._check_application_target(target)
+
+
+@patch("cou.apps.base.OpenStackApplication.os_release_units", new_callable=PropertyMock)
+def test_check_mismatched_versions_exception(mock_os_release_units, model):
+    """Raise exception if workload version is different on units of a control-plane application."""
+    exp_error_msg = (
+        "Units of application my-app are running mismatched OpenStack versions: "
+        r"'ussuri': \['my-app\/0', 'my-app\/1'\], 'victoria': \['my-app\/2'\]. "
+        "This is not currently handled."
+    )
+
+    machines = {
+        "0": MagicMock(spec_set=COUMachine),
+        "1": MagicMock(spec_set=COUMachine),
+        "2": MagicMock(spec_set=COUMachine),
+    }
+    units = {
+        "my-app/0": COUUnit(
+            name="my-app/0",
+            workload_version="17.0.1",
+            machine=machines["0"],
+        ),
+        "my-app/1": COUUnit(
+            name="my-app/1",
+            workload_version="17.0.1",
+            machine=machines["1"],
+        ),
+        "my-app/2": COUUnit(
+            name="my-app/2",
+            workload_version="18.1.0",
+            machine=machines["2"],
+        ),
+    }
+
+    mock_os_release_units.return_value = {
+        OpenStackRelease("ussuri"): ["my-app/0", "my-app/1"],
+        OpenStackRelease("victoria"): ["my-app/2"],
+    }
+
+    app = OpenStackApplication(
+        name="my-app",
+        can_upgrade_to="ussuri/stable",
+        charm="my-app",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="18.1.0",
+    )
+
+    with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
+        app._check_mismatched_versions(None)
+
+    # if units are passed, it doesn't raise exception
+    assert app._check_mismatched_versions([units["my-app/0"]]) is None
+
+
+@patch("cou.apps.base.OpenStackApplication.os_release_units", new_callable=PropertyMock)
+def test_check_mismatched_versions(mock_os_release_units, model):
+    """Test that no exceptions is raised if units of the app have the same OpenStack version."""
+    machines = {
+        "0": MagicMock(spec_set=COUMachine),
+        "1": MagicMock(spec_set=COUMachine),
+        "2": MagicMock(spec_set=COUMachine),
+    }
+    units = {
+        "my-app/0": COUUnit(
+            name="my-app/0",
+            workload_version="17.0.1",
+            machine=machines["0"],
+        ),
+        "my-app/1": COUUnit(
+            name="my-app/1",
+            workload_version="17.0.1",
+            machine=machines["1"],
+        ),
+        "my-app/2": COUUnit(
+            name="my-app/2",
+            workload_version="18.1.0",
+            machine=machines["2"],
+        ),
+    }
+
+    mock_os_release_units.return_value = {
+        OpenStackRelease("ussuri"): ["my-app/0", "my-app/1", "my-app/2"],
+    }
+
+    app = OpenStackApplication(
+        name="my-app",
+        can_upgrade_to="ussuri/stable",
+        charm="my-app",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="18.1.0",
+    )
+
+    assert app._check_mismatched_versions([units["my-app/0"]]) is None

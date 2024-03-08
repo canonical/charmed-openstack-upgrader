@@ -18,11 +18,7 @@ from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone, NovaCompute
-from cou.exceptions import (
-    ApplicationError,
-    HaltUpgradePlanGeneration,
-    MismatchedOpenStackVersions,
-)
+from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -39,13 +35,7 @@ from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
 
 def test_application_different_wl(model):
-    """Different OpenStack Version on units if workload version is different."""
-    exp_error_msg = (
-        "Units of application keystone are running mismatched OpenStack versions: "
-        r"'ussuri': \['keystone\/0', 'keystone\/1'\], 'victoria': \['keystone\/2'\]. "
-        "This is not currently handled."
-    )
-
+    """The OpenStack version is considered the lowest of the units."""
     machines = {
         "0": MagicMock(spec_set=COUMachine),
         "1": MagicMock(spec_set=COUMachine),
@@ -82,9 +72,8 @@ def test_application_different_wl(model):
         units=units,
         workload_version="18.1.0",
     )
-
-    with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
-        app.current_os_release
+    assert OpenStackRelease("victoria") in app.os_release_units
+    assert app.current_os_release == OpenStackRelease("ussuri")
 
 
 def test_application_no_origin_config(model):

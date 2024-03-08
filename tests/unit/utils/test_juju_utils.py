@@ -186,6 +186,22 @@ def test_coumodel_init(mock_juju_data, mocker):
     assert model._model == mocked_model
 
 
+def test_coumodel_applications_no_cached(mocked_model):
+    """Test COUModel applications property without calling get_applications."""
+    model = juju_utils.COUModel("test-model")
+
+    with pytest.raises(ValueError, match="The get_applications has not yet been called."):
+        model.applications
+
+
+def test_coumodel_applications(mocked_model):
+    """Test COUModel applications property without calling get_applications."""
+    model = juju_utils.COUModel("test-model")
+    model._applications = exp_apps = {"app1": MagicMock(spec_set=juju_utils.COUApplication)()}
+
+    assert model.applications == exp_apps
+
+
 def test_coumodel_connected_no_connection(mocked_model):
     """Test COUModel connected property."""
     mocked_model.connection.side_effect = NoConnectionException
@@ -581,7 +597,7 @@ async def test_get_machines(mocked_model):
     }
 
     model = juju_utils.COUModel("test-model")
-    machines = await model.get_machines()
+    machines = await model._get_machines()
 
     assert machines == expected_machines
 
@@ -621,7 +637,7 @@ def _generate_app_status(units: dict[str, MagicMock]) -> MagicMock:
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.COUModel.get_status")
-@patch("cou.utils.juju_utils.COUModel.get_machines")
+@patch("cou.utils.juju_utils.COUModel._get_machines")
 async def test_get_applications(mock_get_machines, mock_get_status, mocked_model):
     """Test COUModel getting applications from model.
 
@@ -697,3 +713,12 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     mock_get_machines.assert_awaited_once_with()
     (mocked_model.applications[app].assert_awaited_once_with(app) for app in full_status_apps)
     assert apps == exp_apps
+
+    # checking that apps were cached
+    mock_get_status.reset_mock()
+    mock_get_machines.reset_mock()
+
+    assert model.applications == exp_apps
+
+    mock_get_status.assert_not_awaited()
+    mock_get_machines.assert_not_awaited()

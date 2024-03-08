@@ -201,6 +201,22 @@ class COUModel:
         self._juju_data = FileJujuData()
         self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE, jujudata=self.juju_data)
         self._name = name
+        self._applications: dict[str, COUApplication] | None = None
+
+    @property
+    def applications(self) -> dict[str, COUApplication]:
+        """Return cached applications.
+
+        This property represents the cached output of the get_applications function.
+
+        :return: dictionary of COUApplication
+        :rtype: dict[str, COUApplication]
+        :raises ValueError: When get_applications has not yet been called.
+        """
+        if self._applications is None:
+            raise ValueError("The get_applications has not yet been called.")
+
+        return self._applications
 
     @property
     def connected(self) -> bool:
@@ -266,6 +282,27 @@ class COUModel:
 
         return app
 
+    async def _get_machines(self) -> dict[str, COUMachine]:
+        """Get all the machines in the model.
+
+        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
+        :rtype: dict[str, Machine]
+        """
+        model = await self._get_model()
+
+        return {
+            machine.id: COUMachine(
+                machine_id=machine.id,
+                apps=tuple(
+                    unit.application
+                    for unit in self._model.units.values()
+                    if unit.machine.id == machine.id
+                ),
+                az=machine.hardware_characteristics.get("availability-zone"),
+            )
+            for machine in model.machines.values()
+        }
+
     async def _get_model(self) -> Model:
         """Get juju.model.Model and make sure that it is connected.
 
@@ -325,9 +362,9 @@ class COUModel:
         # note(rgildein): We get the applications from the Juju status, since we can get more
         #                 information the status than from objects. e.g. workload_version for unit
         full_status = await self.get_status()
-        machines = await self.get_machines()
+        machines = await self._get_machines()
 
-        return {
+        self._applications = {
             app: COUApplication(
                 name=app,
                 can_upgrade_to=status.can_upgrade_to,
@@ -347,6 +384,8 @@ class COUModel:
             )
             for app, status in full_status.applications.items()
         }
+
+        return self._applications
 
     @retry(no_retry_exceptions=(ApplicationNotFound,))
     async def get_application_config(self, name: str) -> dict:
@@ -375,27 +414,6 @@ class COUModel:
             raise ApplicationError(f"Cannot obtain charm_name for {application_name}")
 
         return app.charm_name
-
-    async def get_machines(self) -> dict[str, COUMachine]:
-        """Get all the machines in the model.
-
-        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
-        :rtype: dict[str, Machine]
-        """
-        model = await self._get_model()
-
-        return {
-            machine.id: COUMachine(
-                machine_id=machine.id,
-                apps=tuple(
-                    unit.application
-                    for unit in self._model.units.values()
-                    if unit.machine.id == machine.id
-                ),
-                az=machine.hardware_characteristics.get("availability-zone"),
-            )
-            for machine in model.machines.values()
-        }
 
     @retry
     async def get_status(self) -> FullStatus:

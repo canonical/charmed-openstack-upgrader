@@ -243,33 +243,26 @@ class OpenStackApplication(COUApplication):
         return f"{target.codename}/stable"
 
     @property
-    def current_os_release(self) -> OpenStackRelease:
-        """Current OpenStack Release of the application.
+    def os_release_units(self) -> dict[OpenStackRelease, list[str]]:
+        """Get the OpenStack release versions from the units.
 
-        :raises MismatchedOpenStackVersions: When units part of this application are
-        running mismatched OpenStack versions.
-        :return: OpenStackRelease object
-        :rtype: OpenStackRelease
+        :return: OpenStack release versions from the units.
+        :rtype: defaultdict[OpenStackRelease, list[str]]
         """
         os_versions = defaultdict(list)
         for unit in self.units.values():
             os_version = self._get_latest_os_version(unit)
             os_versions[os_version].append(unit.name)
+        return dict(os_versions)
 
-        if len(os_versions.keys()) == 1:
-            return next(iter(os_versions))
+    @property
+    def current_os_release(self) -> OpenStackRelease:
+        """Current OpenStack Release of the application.
 
-        # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
-        # upgrade methods, more than one version can be found.
-        mismatched_repr = [
-            f"'{openstack_release.codename}': {units}"
-            for openstack_release, units in os_versions.items()
-        ]
-
-        raise MismatchedOpenStackVersions(
-            f"Units of application {self.name} are running mismatched OpenStack versions: "
-            f"{', '.join(mismatched_repr)}. This is not currently handled."
-        )
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        return min(self.os_release_units.keys())
 
     @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
@@ -397,15 +390,20 @@ class OpenStackApplication(COUApplication):
             self._get_reached_expected_target_step(target, units),
         ]
 
-    def upgrade_plan_sanity_checks(self, target: OpenStackRelease) -> None:
+    def upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> None:
         """Run sanity checks before generating upgrade plan.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[COUUnit]], optional
         :raises ApplicationError: When enable-auto-restarts is not enabled.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         """
         self._check_application_target(target)
+        self._check_mismatched_versions(units)
         self._check_auto_restarts()
         logger.info(
             "%s application met all the necessary prerequisites to generate the upgrade plan",
@@ -431,7 +429,7 @@ class OpenStackApplication(COUApplication):
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
-        self.upgrade_plan_sanity_checks(target)
+        self.upgrade_plan_sanity_checks(target, units)
 
         upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to {target}",
@@ -792,4 +790,29 @@ class OpenStackApplication(COUApplication):
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "
                 f"than {target}. Ignoring."
+            )
+
+    def _check_mismatched_versions(self, units: Optional[list[COUUnit]]) -> None:
+        """Check that there are no mismatched versions on app units.
+
+        If units are passed, the application will upgrade in unit-by-unit fashion,
+        and mismatch is not checked.
+
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
+        :raises MismatchedOpenStackVersions:  When the units of the app are running
+            different OpenStack versions
+        """
+        if units:
+            return
+        os_versions = self.os_release_units
+        if len(os_versions.keys()) > 1:
+            mismatched_repr = [
+                f"'{openstack_release.codename}': {units}"
+                for openstack_release, units in os_versions.items()
+            ]
+
+            raise MismatchedOpenStackVersions(
+                f"Units of application {self.name} are running mismatched OpenStack versions: "
+                f"{', '.join(mismatched_repr)}. This is not currently handled."
             )
