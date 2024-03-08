@@ -16,7 +16,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cou.apps.auxiliary import CephMon, MysqlInnodbCluster, OvnPrincipal, RabbitMQServer
+from cou.apps.auxiliary import (
+    AuxiliaryApplication,
+    CephMon,
+    MysqlInnodbCluster,
+    OvnPrincipal,
+    RabbitMQServer,
+)
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -1020,3 +1026,51 @@ def test_mysql_innodb_cluster_upgrade(model):
     upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
+
+
+@patch("cou.apps.base.OpenStackApplication.generate_upgrade_plan")
+def test_auxiliary_upgrade_by_unit(mock_super, model):
+    """Test generating plan with units doesn't create unit Upgrade steps."""
+    target = OpenStackRelease("victoria")
+    charm = "vault"
+    machines = {
+        "0": MagicMock(spec_set=COUMachine),
+        "1": MagicMock(spec_set=COUMachine),
+        "2": MagicMock(spec_set=COUMachine),
+    }
+    app = AuxiliaryApplication(
+        name=charm,
+        can_upgrade_to="1.7/stable",
+        charm=charm,
+        channel="1.7/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": COUUnit(
+                name=f"{charm}/0",
+                workload_version="1.7",
+                machine=machines["0"],
+            ),
+            f"{charm}/1": COUUnit(
+                name=f"{charm}/1",
+                workload_version="1.7",
+                machine=machines["1"],
+            ),
+            f"{charm}/2": COUUnit(
+                name=f"{charm}/2",
+                workload_version="1.7",
+                machine=machines["2"],
+            ),
+        },
+        workload_version="1.7",
+    )
+
+    app.generate_upgrade_plan(target, False, [app.units[f"{charm}/0"]])
+
+    # Parent class was called with units=None even that units were passed to the
+    # Auxiliary app, meaning that will create all-in-one upgrade strategy
+    mock_super.assert_called_with(target, False, None)
