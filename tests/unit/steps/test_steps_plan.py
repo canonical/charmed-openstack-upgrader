@@ -772,7 +772,7 @@ def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_steps, upgr
 @pytest.mark.parametrize("upgrade_group", [DATA_PLANE, None])
 @patch("cou.steps.plan._get_ceph_mon_post_upgrade_steps")
 def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
-    """Test get post upgrad steps including ceph-mon."""
+    """Test get post upgrade steps including ceph-mon."""
     args = MagicMock(spec_set=CLIargs)()
     args.upgrade_group = upgrade_group
     analysis_result = MagicMock(spec_set=Analysis)()
