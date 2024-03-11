@@ -37,7 +37,7 @@ from cou.utils import app_utils
 from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.utils import assert_steps
+from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
 
 def test_auxiliary_app(model):
@@ -1030,15 +1030,9 @@ def test_mysql_innodb_cluster_upgrade(model):
     assert_steps(upgrade_plan, expected_plan)
 
 
-@pytest.mark.parametrize(
-    "target, units",
-    [
-        (OpenStackRelease("victoria"), None),
-        (OpenStackRelease("victoria"), [MagicMock(spec_set=COUUnit)()]),
-    ],
-)
+@pytest.mark.parametrize("target", [OpenStackRelease("victoria")])
 @patch("cou.apps.auxiliary.AuxiliaryApplication.pre_upgrade_steps")
-def test_ceph_osd(mock_pre_upgrade_steps, target, units, model):
+def test_ceph_osd_pre_upgrade_steps(mock_pre_upgrade_steps, target, model):
     """Test Ceph-osd pre upgrade steps."""
     mock_pre_upgrade_steps.return_value = [MagicMock(spec_set=UpgradeStep)()]
     app = CephOsd(
@@ -1055,7 +1049,7 @@ def test_ceph_osd(mock_pre_upgrade_steps, target, units, model):
         units={},
         workload_version="17.0.1",
     )
-    steps = app.pre_upgrade_steps(target, units)
+    steps = app.pre_upgrade_steps(target, None)
 
     assert steps == [
         PreUpgradeStep(
@@ -1064,7 +1058,7 @@ def test_ceph_osd(mock_pre_upgrade_steps, target, units, model):
         ),
         *mock_pre_upgrade_steps.return_value,
     ]
-    mock_pre_upgrade_steps.assert_called_once_with(target, units)
+    mock_pre_upgrade_steps.assert_called_once_with(target, None)
 
 
 @pytest.mark.asyncio
@@ -1150,7 +1144,7 @@ async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
     mock_lookup.return_value = [target]
     nova_compute = MagicMock(spec_set=NovaCompute)()
     nova_compute.charm = "nova-compute"
-    nova_compute.units = {"nova-compute/0": COUUnit("nova-compute/0", None, "21.0.0")}
+    nova_compute.units = {"nova-compute/0": COUUnit("nova-compute/0", None, "22.0.0")}
     app = CephOsd(
         name="ceph-osd",
         can_upgrade_to="octopus/stable",
@@ -1170,7 +1164,7 @@ async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
     await app._verify_nova_compute(target)
 
     model.get_applications.assert_awaited_once_with()
-    mock_lookup.assert_called_once_with("nova-compute", "21.0.0")
+    mock_lookup.assert_called_once_with("nova-compute", "22.0.0")
 
 
 @pytest.mark.asyncio
@@ -1181,7 +1175,7 @@ async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
     target = OpenStackRelease("victoria")
     nova_compute = MagicMock(spec_set=NovaCompute)()
     nova_compute.charm = "nova-compute"
-    nova_compute.units = {"nova-compute/0": COUUnit("nova-compute/0", None, "21.0.0")}
+    nova_compute.units = {"nova-compute/0": COUUnit("nova-compute/0", None, "22.0.0")}
     app = CephOsd(
         name="ceph-osd",
         can_upgrade_to="octopus/stable",
@@ -1200,3 +1194,37 @@ async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
 
     with pytest.raises(ApplicationError, match=f"Units 'nova-compute/0' did not reach {target}."):
         await app._verify_nova_compute(target)
+
+
+def test_ceph_osd_upgrade_plan(model):
+    """Testing generating ceph-osd upgrade plan."""
+    target = OpenStackRelease("victoria")
+    exp_plan = dedent_plan(
+        """\
+    Upgrade plan for 'ceph-osd' to victoria
+        Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
+        Upgrade 'ceph-osd' to the new channel: 'pacific/stable'
+        Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
+        Wait 300s for app ceph-osd to reach the idle state.
+        Check if the workload of 'ceph-osd' has been upgraded on units:
+    """
+    )
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    ceph_osd = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+
+    plan = ceph_osd.generate_upgrade_plan(target, False)
+
+    assert str(plan) == exp_plan
