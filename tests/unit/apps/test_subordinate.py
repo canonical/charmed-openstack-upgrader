@@ -20,7 +20,7 @@ import pytest
 from cou.apps.subordinate import SubordinateApplication
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
-from cou.utils.juju_utils import COUMachine, COUUnit
+from cou.utils.juju_utils import COUMachine
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
 from tests.unit.utils import assert_steps
@@ -42,13 +42,7 @@ def test_current_os_release(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="18.1.0",
-                machine=machines["0"],
-            )
-        },
+        units={},
         workload_version="18.1.0",
     )
 
@@ -119,13 +113,7 @@ def test_channel_valid(model, channel):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        units={
-            "keystone-ldap/0": COUUnit(
-                name="keystone-ldap/0",
-                workload_version="18.1.0",
-                machine=machines["0"],
-            )
-        },
+        units={},
         workload_version="18.1.0",
     )
 
@@ -157,13 +145,7 @@ def test_channel_setter_invalid(model, channel):
             origin="ch",
             series="focal",
             subordinate_to=["nova-compute"],
-            units={
-                "keystone-ldap/0": COUUnit(
-                    name="keystone-ldap/0",
-                    workload_version="18.1.0",
-                    machine=machines["0"],
-                )
-            },
+            units={},
             workload_version="18.1.0",
         )
 
