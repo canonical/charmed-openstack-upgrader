@@ -181,7 +181,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -259,7 +259,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -343,7 +343,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -672,7 +672,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -756,7 +756,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -939,7 +939,7 @@ def test_ovn_principal_upgrade_plan(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -1018,7 +1018,7 @@ def test_mysql_innodb_cluster_upgrade(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
