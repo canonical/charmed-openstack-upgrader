@@ -32,21 +32,36 @@ from cou.steps import (
     compare_step_coroutines,
     is_unit_upgrade_step,
 )
+from cou.utils import app_utils
 
 
-async def mock_coro(*args, **kwargs): ...
+async def mock_coro(a=1, b=2, c=3, *args, **kwargs): ...
+
+
+async def _coro(name: str, force: bool = False, units: list | None = None): ...
 
 
 @pytest.mark.parametrize(
     "coro1, coro2, exp_result",
     [
-        (None, mock_coro(), False),
-        (mock_coro(), None, False),
-        (mock_coro(), mock_coro(1, 2, 3), False),
-        (mock_coro(), mock_coro(arg1=True), False),
-        (mock_coro(), mock_coro(), True),
-        (mock_coro(1, 2, 3, kwarg1=True), mock_coro(1, 2, 3, kwarg1=True), True),
-        (mock_coro(1, 2, kwarg1=3, kwarg2=True), mock_coro(1, 2, 3, True), True),
+        (None, _coro("test/0"), False),
+        (_coro("test/0"), None, False),
+        (_coro("ceph-mon/1"), _coro("cpeh-mon/1"), False),
+        (_coro("test/0"), _coro(name="test/0"), True),
+        (
+            app_utils.set_require_osd_release_option("ceph-mon/0", MagicMock()),
+            app_utils.set_require_osd_release_option("cpeh-mon/0", MagicMock()),
+            False,
+        ),
+        (_coro("test/0"), _coro(name="test/0", force=False), True),
+        (_coro("test/0", True), _coro(name="test/0", force=False), False),
+        (_coro("test/0", True), _coro(name="test/0", force=True), True),
+        (_coro("test/0", True, ["1", "2", "3"]), _coro(name="test/0", force=True), False),
+        (
+            _coro("test/0", True, ["1", "2", "3"]),
+            _coro("test/0", True, units=["1", "2", "3"]),
+            True,
+        ),
     ],
 )
 def test_compare_step_coroutines(coro1, coro2, exp_result):
