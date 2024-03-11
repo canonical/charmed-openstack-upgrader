@@ -1198,17 +1198,20 @@ async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
 
 def test_ceph_osd_upgrade_plan(model):
     """Testing generating ceph-osd upgrade plan."""
-    target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
         """\
     Upgrade plan for 'ceph-osd' to victoria
-        Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
-        Upgrade 'ceph-osd' to the new channel: 'pacific/stable'
+        Check if all nova-compute units had been upgraded
+        Upgrade software packages of 'ceph-osd' from the current APT repositories
+            Upgrade software packages on unit ceph-osd/0
+            Upgrade software packages on unit ceph-osd/1
+            Upgrade software packages on unit ceph-osd/2
         Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
         Wait 300s for app ceph-osd to reach the idle state.
-        Check if the workload of 'ceph-osd' has been upgraded on units:
-    """
+        Check if the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
+    """  # noqa: E501 line too long
     )
+    target = OpenStackRelease("victoria")
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     ceph_osd = CephOsd(
         name="ceph-osd",
@@ -1221,7 +1224,14 @@ def test_ceph_osd_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={},
+        units={
+            f"ceph-osd/{i}": COUUnit(
+                name=f"ceph-osd/{i}",
+                workload_version="17.0.1",
+                machine=machines[f"{i}"],
+            )
+            for i in range(3)
+        },
         workload_version="17.0.1",
     )
 
