@@ -195,7 +195,7 @@ class CephMon(AuxiliaryApplication):
         """
         ceph_mon_unit, *_ = self.units.values()
         return PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )
 
