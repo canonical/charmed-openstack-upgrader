@@ -251,6 +251,18 @@ def test_step_add_step_failed():
         plan.add_step(MagicMock())
 
 
+def test_step_add_steps():
+    """Test BaseStep adding sub steps at once."""
+    exp_sub_steps = 3
+    plan = BaseStep(description="plan")
+    plan.add_steps(
+        [BaseStep(description=f"sub-step-{i}", coro=mock_coro()) for i in range(exp_sub_steps)]
+        + [BaseStep(description="empty-step")]  # we also check that empty step will not be added
+    )
+
+    assert len(plan.sub_steps) == exp_sub_steps
+
+
 def test_step_cancel_safe():
     """Test step safe cancel."""
     plan = BaseStep(description="plan")

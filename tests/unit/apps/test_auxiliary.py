@@ -17,6 +17,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cou.apps.auxiliary import (
+    AuxiliaryApplication,
     CephMon,
     CephOsd,
     MysqlInnodbCluster,
@@ -643,7 +644,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
@@ -732,7 +733,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
@@ -1091,6 +1092,54 @@ async def test_ceph_osd_verify_nova_compute_no_app(mock_lookup, model):
 
     model.get_applications.assert_awaited_once_with()
     mock_lookup.assert_not_called()
+
+
+@patch("cou.apps.base.OpenStackApplication.generate_upgrade_plan")
+def test_auxiliary_upgrade_by_unit(mock_super, model):
+    """Test generating plan with units doesn't create unit Upgrade steps."""
+    target = OpenStackRelease("victoria")
+    charm = "vault"
+    machines = {
+        "0": MagicMock(spec_set=COUMachine),
+        "1": MagicMock(spec_set=COUMachine),
+        "2": MagicMock(spec_set=COUMachine),
+    }
+    app = AuxiliaryApplication(
+        name=charm,
+        can_upgrade_to="1.7/stable",
+        charm=charm,
+        channel="1.7/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": COUUnit(
+                name=f"{charm}/0",
+                workload_version="1.7",
+                machine=machines["0"],
+            ),
+            f"{charm}/1": COUUnit(
+                name=f"{charm}/1",
+                workload_version="1.7",
+                machine=machines["1"],
+            ),
+            f"{charm}/2": COUUnit(
+                name=f"{charm}/2",
+                workload_version="1.7",
+                machine=machines["2"],
+            ),
+        },
+        workload_version="1.7",
+    )
+
+    app.generate_upgrade_plan(target, False, [app.units[f"{charm}/0"]])
+
+    # Parent class was called with units=None even that units were passed to the
+    # Auxiliary app, meaning that will create all-in-one upgrade strategy
+    mock_super.assert_called_with(target, False, None)
 
 
 @pytest.mark.asyncio
