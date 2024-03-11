@@ -842,7 +842,7 @@ def test_nova_compute_upgrade_plan(model):
     """Testing generating nova-compute upgrade plan."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrade plan for 'nova-compute' to victoria
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Upgrade software packages on unit nova-compute/0
@@ -911,7 +911,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
     """Testing generating nova-compute upgrade plan for single unit."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrade plan for 'nova-compute' to victoria
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Upgrade software packages on unit nova-compute/0
@@ -964,7 +964,7 @@ def test_cinder_upgrade_plan(model):
     """Testing generating cinder upgrade plan."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrade plan for 'cinder' to victoria
         Upgrade software packages of 'cinder' from the current APT repositories
             Upgrade software packages on unit cinder/0
@@ -1013,7 +1013,7 @@ def test_cinder_upgrade_plan_single_unit(model):
     """Testing generating cinder upgrade plan."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrade plan for 'cinder' to victoria
         Upgrade software packages of 'cinder' from the current APT repositories
             Upgrade software packages on unit cinder/0
