@@ -232,7 +232,7 @@ async def test_continue_upgrade(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("command", ["plan", "upgrade", "other1", "other2"])
+@pytest.mark.parametrize("command", ["plan", "other1", "other2"])
 @patch("cou.cli.get_upgrade_plan")
 @patch("cou.cli.run_upgrade")
 async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command, cli_args):
@@ -244,12 +244,23 @@ async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command, cli
     if command == "plan":
         mock_get_upgrade_plan.assert_awaited_once_with(cli_args)
         mock_run_upgrade.assert_not_called()
-    elif command == "upgrade":
-        mock_run_upgrade.assert_awaited_once_with(cli_args)
-        mock_get_upgrade_plan.assert_not_called()
     else:
         mock_run_upgrade.assert_not_called()
         mock_get_upgrade_plan.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.get_upgrade_plan")
+@patch("cou.cli.run_upgrade")
+async def test_run_command_upgrade(mock_run_upgrade, mock_get_upgrade_plan, cli_args):
+    """Test run command function."""
+    cli_args.command = "upgrade"
+
+    with pytest.raises(RuntimeError, match="This version of COU does not support it."):
+        await cli._run_command(cli_args)
+
+    mock_get_upgrade_plan.assert_not_called()
+    mock_run_upgrade.assert_not_called()
 
 
 @patch("cou.cli.sys")

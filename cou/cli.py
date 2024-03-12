@@ -176,11 +176,13 @@ async def _run_command(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
+    # pylint: disable=missing-raises-doc, unreachable
     match args.command:
         case "plan":
             await get_upgrade_plan(args)
         case "upgrade":
-            await run_upgrade(args)
+            raise RuntimeError("This version of COU does not support it.")
+            await run_upgrade(args)  # type: ignore
 
 
 def entrypoint() -> None:
