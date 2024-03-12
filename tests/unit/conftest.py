@@ -25,12 +25,11 @@ from cou.apps.auxiliary import OpenStackAuxiliaryApplication
 from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplication
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.apps.core import Keystone
-from cou.apps.machine import Machine
 from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.utils.juju_utils import COUMachine
 from cou.utils.openstack import OpenStackRelease
 
 STANDARD_AZS = ["zone-1", "zone-2", "zone-3"]
-HOSTNAME_PREFIX = "juju-c307f8"
 
 KEYSTONE_UNITS = ["keystone/0", "keystone/1", "keystone/2"]
 KEYSTONE_MACHINES = ["0/lxd/12", "1/lxd/12", "2/lxd/13"]
@@ -122,14 +121,8 @@ def apps_machines():
 
 
 def _generate_apps_machines(charm, machines, azs):
-    hostnames = [f"{HOSTNAME_PREFIX}-{machine}" for machine in machines]
-    machines_hostnames_azs = zip(machines, hostnames, azs)
-    return {
-        charm: {
-            machine_id: Machine(machine_id=machine_id, hostname=hostname, az=az)
-            for machine_id, hostname, az in machines_hostnames_azs
-        }
-    }
+    machines_azs = zip(machines, azs)
+    return {charm: {machine_id: COUMachine(machine_id, (), az) for machine_id, az in machines_azs}}
 
 
 @pytest.fixture
@@ -586,7 +579,7 @@ def model(config, apps_machines):
     model.scp_from_unit = AsyncMock()
     model.get_application_config = mock_get_app_config = AsyncMock()
     mock_get_app_config.side_effect = config.get
-    model.get_model_machines = machines
+    model.get_machines = machines
 
     return model
 

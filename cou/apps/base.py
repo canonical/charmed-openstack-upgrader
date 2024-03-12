@@ -24,7 +24,6 @@ from typing import Any, Optional
 from juju.client._definitions import ApplicationStatus, UnitStatus
 from ruamel.yaml import YAML
 
-from cou.apps.machine import Machine
 from cou.exceptions import (
     ApplicationError,
     HaltUpgradePlanGeneration,
@@ -38,7 +37,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import COUMachine, COUModel
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -56,7 +55,7 @@ class ApplicationUnit:
 
     name: str
     os_version: OpenStackRelease
-    machine: Machine
+    machine: COUMachine
     workload_version: str = ""
 
 
@@ -74,6 +73,8 @@ class OpenStackApplication:
     :type model: COUModel
     :param charm: Name of the charm.
     :type charm: str
+    :param machines: dictionary with COUMachine
+    :type machines: dict[str, COUMachine]
     :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
     :type charm_origin: str, defaults to ""
     :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
@@ -101,7 +102,7 @@ class OpenStackApplication:
     config: dict
     model: COUModel
     charm: str
-    machines: dict[str, Machine]
+    machines: dict[str, COUMachine]
     charm_origin: str = ""
     os_origin: str = ""
     origin_setting: Optional[str] = None

@@ -16,6 +16,7 @@
 import asyncio
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Optional
 
@@ -25,13 +26,11 @@ from juju.client._definitions import FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
 from juju.errors import JujuAppError, JujuError, JujuUnitError
-from juju.machine import Machine as JujuMachine
 from juju.model import Model
 from juju.unit import Unit
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
-from cou.apps.machine import Machine
 from cou.exceptions import (
     ActionFailed,
     ApplicationError,
@@ -131,6 +130,15 @@ def retry(
     return _wrapper
 
 
+@dataclass(frozen=True)
+class COUMachine:
+    """Representation of a juju machine."""
+
+    machine_id: str
+    apps: tuple[str]
+    az: Optional[str] = None  # simple deployments may not have azs
+
+
 class COUModel:
     """COU model object.
 
@@ -191,15 +199,6 @@ class COUModel:
                 raise ActionFailed(action, output=output)
 
         return result
-
-    async def _get_machines(self) -> dict[str, JujuMachine]:
-        """Get all machines from the model.
-
-        :return: Machines from the model connected.
-        :rtype: dict[str, Application]
-        """
-        model = await self._get_model()
-        return model.machines
 
     async def _get_application(self, name: str) -> Application:
         """Get juju.application.Application from model.
@@ -511,18 +510,23 @@ class COUModel:
 
         await _wait_for_active_idle()
 
-    async def get_model_machines(self) -> dict[str, Machine]:
+    async def get_machines(self) -> dict[str, COUMachine]:
         """Get all the machines in the model.
 
         :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
         :rtype: dict[str, Machine]
         """
-        juju_machines = await self._get_machines()
+        model = await self._get_model()
+
         return {
-            machine.id: Machine(
-                machine_id=machine.data["id"],
-                hostname=machine.data["hostname"],
-                az=machine.data["hardware-characteristics"].get("availability-zone"),
+            machine.id: COUMachine(
+                machine_id=machine.id,
+                apps=tuple(
+                    unit.application
+                    for unit in self._model.units.values()
+                    if unit.machine.id == machine.id
+                ),
+                az=machine.hardware_characteristics.get("availability-zone"),
             )
-            for machine in juju_machines.values()
+            for machine in model.machines.values()
         }
