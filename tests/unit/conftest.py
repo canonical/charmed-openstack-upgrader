@@ -26,7 +26,7 @@ from cou.apps.auxiliary_subordinate import OpenStackAuxiliarySubordinateApplicat
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.apps.core import Keystone
 from cou.apps.subordinate import OpenStackSubordinateApplication
-from cou.utils.juju_utils import COUMachine
+from cou.utils.juju_utils import Machine
 from cou.utils.openstack import OpenStackRelease
 
 STANDARD_AZS = ["zone-1", "zone-2", "zone-3"]
@@ -122,7 +122,7 @@ def apps_machines():
 
 def _generate_apps_machines(charm, machines, azs):
     machines_azs = zip(machines, azs)
-    return {charm: {machine_id: COUMachine(machine_id, (), az) for machine_id, az in machines_azs}}
+    return {charm: {machine_id: Machine(machine_id, (), az) for machine_id, az in machines_azs}}
 
 
 @pytest.fixture

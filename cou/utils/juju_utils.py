@@ -131,7 +131,7 @@ def retry(
 
 
 @dataclass(frozen=True)
-class COUMachine:
+class Machine:
     """Representation of a juju machine."""
 
     machine_id: str
@@ -510,7 +510,7 @@ class COUModel:
 
         await _wait_for_active_idle()
 
-    async def get_machines(self) -> dict[str, COUMachine]:
+    async def get_machines(self) -> dict[str, Machine]:
         """Get all the machines in the model.
 
         :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
@@ -519,7 +519,7 @@ class COUModel:
         model = await self._get_model()
 
         return {
-            machine.id: COUMachine(
+            machine.id: Machine(
                 machine_id=machine.id,
                 apps=tuple(
                     unit.application

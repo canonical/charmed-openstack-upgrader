@@ -174,15 +174,15 @@ async def test_retry_failure():
     ],
 )
 def test_machine_not_eq(machine_id, az):
-    machine_0 = juju_utils.COUMachine("0", (), "zone-1")
-    machine_1 = juju_utils.COUMachine(machine_id, (), az)
+    machine_0 = juju_utils.Machine("0", (), "zone-1")
+    machine_1 = juju_utils.Machine(machine_id, (), az)
 
     assert machine_0 != machine_1
 
 
 def test_machine_eq():
-    machine_0 = juju_utils.COUMachine("0", (), "zone-1")
-    machine_1 = juju_utils.COUMachine("0", (), "zone-1")
+    machine_0 = juju_utils.Machine("0", (), "zone-1")
+    machine_1 = juju_utils.Machine("0", (), "zone-1")
 
     assert machine_0 == machine_1
 
@@ -578,7 +578,7 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
 async def test_get_machines(mocked_model):
     """Test COUModel getting machines from model."""
     expected_machines = {
-        "0": juju_utils.COUMachine(
+        "0": juju_utils.Machine(
             "0",
             (
                 "app1",
@@ -586,8 +586,8 @@ async def test_get_machines(mocked_model):
             ),
             "zone-1",
         ),
-        "1": juju_utils.COUMachine("1", ("app1",), "zone-2"),
-        "2": juju_utils.COUMachine("2", ("app1",), "zone-3"),
+        "1": juju_utils.Machine("1", ("app1",), "zone-2"),
+        "2": juju_utils.Machine("2", ("app1",), "zone-3"),
     }
     mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
     mocked_model.units = {
