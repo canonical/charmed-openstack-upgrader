@@ -116,7 +116,7 @@ class OpenStackApplication(COUApplication):
                         "name": unit.name,
                         "machine": unit.machine.machine_id,
                         "workload_version": unit.workload_version,
-                        "os_version": str(self._get_latest_os_version(unit)),
+                        "os_version": str(self.unit_max_os_version(unit)),
                     }
                     for unit in self.units.values()
                 },
@@ -191,7 +191,7 @@ class OpenStackApplication(COUApplication):
         except ValueError:
             return self.is_from_charm_store
 
-    def _get_latest_os_version(self, unit: COUUnit) -> OpenStackRelease:
+    def unit_max_os_version(self, unit: COUUnit) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
 
         :param unit: Application Unit
@@ -251,7 +251,7 @@ class OpenStackApplication(COUApplication):
         """
         os_versions = defaultdict(list)
         for unit in self.units.values():
-            os_version = self._get_latest_os_version(unit)
+            os_version = self.unit_max_os_version(unit)
             os_versions[os_version].append(unit.name)
         return dict(os_versions)
 

@@ -414,7 +414,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
         workload_version=version,
     )
     with pytest.raises(ApplicationError, match=exp_msg):
-        app._get_latest_os_version(app.units[f"{charm}/0"])
+        app.unit_max_os_version(app.units[f"{charm}/0"])
 
 
 def test_auxiliary_raise_error_unknown_series(model):
@@ -587,7 +587,7 @@ def test_ceph_mon_app(model):
 
     assert app.channel == "pacific/stable"
     assert app.os_origin == "cloud:focal-xena"
-    assert app._get_latest_os_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
+    assert app.unit_max_os_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
     assert app.apt_source_codename == "xena"
     assert app.channel_codename == "xena"
     assert app.is_subordinate is False

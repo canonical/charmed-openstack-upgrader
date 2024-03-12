@@ -57,7 +57,7 @@ def test_application_versionless(model):
 
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is True
-    assert app._get_latest_os_version(units["glance-simplestreams-sync/0"]) == app.channel_codename
+    assert app.unit_max_os_version(units["glance-simplestreams-sync/0"]) == app.channel_codename
 
 
 def test_application_gnocchi_ussuri(model):
