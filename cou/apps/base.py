@@ -536,7 +536,7 @@ class OpenStackApplication(COUApplication):
             )
 
         if self.origin == "cs":
-            description = f"Migration of '{self.name}' from charmstore to charmhub"
+            description = f"Migrate '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
         elif self.channel in self.possible_current_channels:
             channel = self.channel
@@ -611,7 +611,7 @@ class OpenStackApplication(COUApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=f"Pause the unit: '{unit.name}'.",
+            description=f"Pause the unit: '{unit.name}'",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="pause", raise_on_failure=True
             ),
@@ -629,7 +629,7 @@ class OpenStackApplication(COUApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=f"Resume the unit: '{unit.name}'.",
+            description=f"Resume the unit: '{unit.name}'",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="resume", raise_on_failure=True
             ),
@@ -649,7 +649,7 @@ class OpenStackApplication(COUApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=f"Upgrade the unit: '{unit.name}'.",
+            description=f"Upgrade the unit: '{unit.name}'",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="openstack-upgrade", raise_on_failure=True
             ),
@@ -698,7 +698,7 @@ class OpenStackApplication(COUApplication):
             units = list(self.units.values())
         return PostUpgradeStep(
             description=(
-                f"Check if the workload of '{self.name}' has been upgraded on units: "
+                f"Verify that the workload of '{self.name}' has been upgraded on units: "
                 f"{', '.join([unit.name for unit in units])}"
             ),
             coro=self._verify_workload_upgrade(target, units),
@@ -739,11 +739,15 @@ class OpenStackApplication(COUApplication):
         """
         if self.wait_for_model:
             description = (
-                f"Wait {self.wait_timeout}s for model {self.model.name} to reach the idle state."
+                f"Wait for up to {self.wait_timeout}s for model {self.model.name} "
+                "to reach the idle state"
             )
             apps = None
         else:
-            description = f"Wait {self.wait_timeout}s for app {self.name} to reach the idle state."
+            description = (
+                f"Wait for up to {self.wait_timeout}s for app {self.name} "
+                "to reach the idle state"
+            )
             apps = [self.name]
 
         return PostUpgradeStep(

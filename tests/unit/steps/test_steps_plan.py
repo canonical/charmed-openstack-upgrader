@@ -54,13 +54,13 @@ def generate_expected_upgrade_plan_principal(app, target, model):
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
         # apps waiting for whole model
         wait_step = PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model {model.name} to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         )
     else:
         wait_step = PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app {app.name} to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         )
@@ -110,7 +110,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         wait_step,
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
@@ -234,7 +234,7 @@ async def test_generate_plan(mock_generate_data_plane, model, cli_args):
     )
     expected_plan.add_step(
         PreUpgradeStep(
-            description="Backup mysql databases",
+            description="Back up MySQL databases",
             parallel=False,
             coro=backup(model),
         )
@@ -739,7 +739,7 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
     if cli_backup:
         expected_steps.append(
             PreUpgradeStep(
-                description="Backup mysql databases",
+                description="Back up MySQL databases",
                 parallel=False,
                 coro=backup(model),
             )
@@ -815,7 +815,8 @@ def test_get_ceph_mon_post_upgrade_steps_multiple(model):
 
     exp_steps = 2 * [
         PostUpgradeStep(
-            "Ensure the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version",
+            "Ensure that the 'require-osd-release' option in 'ceph-mon' matches the "
+            "'ceph-osd' version",
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         )
     ]

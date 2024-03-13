@@ -49,8 +49,8 @@ Upgrade:
             Upgrade software packages on unit rabbitmq-server/2
         Upgrade 'rabbitmq-server' to the new channel: '3.9/stable'
         Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
-        Wait 1800s for model test-model to reach the idle state.
-        Check if the workload of 'rabbitmq-server' has been upgraded
+        Wait for up to 1800s for model test-model to reach the idle state
+        Verify that the workload of 'rabbitmq-server' has been upgraded
 
     Continue (y/n): y
     Upgrade plan for 'rabbitmq-server' to victoria ✔

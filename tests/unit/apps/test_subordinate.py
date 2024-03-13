@@ -181,7 +181,7 @@ def test_generate_plan_ch_migration(model, channel):
     )
     upgrade_steps = [
         PreUpgradeStep(
-            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            description=f"Migrate '{app.name}' from charmstore to charmhub",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone-ldap"),
         ),
