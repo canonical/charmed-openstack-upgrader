@@ -142,7 +142,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         dest="verbosity",
         help="Increase logging verbosity in STDOUT. Multiple 'v's yield progressively "
         "more detail (up to 4).\nNote that by default the logfile will include standard "
-        "logs from juju and websockets, as well as debug logs from all other modules. "
+        "logs from juju and websockets,\nas well as debug logs from all other modules.\n"
         "To also include the debug level logs from juju and websockets modules, use the "
         "maximum verbosity.",
     )
@@ -241,10 +241,10 @@ def create_plan_subparser(
     plan_subparser.add_parser(
         HYPERVISORS,
         description="Show the steps for upgrading nova-compute machines.\nThis is possible "
-        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n"
-        "Note that only principal applications colocated with nova-compute units that support "
-        "action-managed upgrades are within the scope of this command. Other principal "
-        "applications (e.g. ceph-osd) and subordinates can be upgraded via the data-plane "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n\n"
+        "Note that only principal applications colocated with nova-compute units\nthat support "
+        "action-managed upgrades are within the scope of this command.\nOther principal "
+        "applications (e.g. ceph-osd) and subordinates\ncan be upgraded via the data-plane "
         "subcommand.",
         help="Show the steps for upgrading nova-compute machines.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
@@ -314,10 +314,10 @@ def create_upgrade_subparser(
     upgrade_subparser.add_parser(
         HYPERVISORS,
         description="Upgrade nova-compute machines.\nThis is possible "
-        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n"
-        "Note that only principal applications colocated with nova-compute units that support "
-        "action-managed upgrades are within the scope of this command. Other principal "
-        "applications (e.g. ceph-osd) and subordinates can be upgraded via the data-plane "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n\n"
+        "Note that only principal applications colocated with nova-compute units\nthat support "
+        "action-managed upgrades are within the scope of this command.\nOther principal "
+        "applications (e.g. ceph-osd) and subordinates\ncan be upgraded via the data-plane "
         "subcommand.",
         help="Upgrade nova-compute machines.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
