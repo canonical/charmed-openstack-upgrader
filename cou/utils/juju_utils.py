@@ -482,6 +482,7 @@ class COUModel:
 
         if str(normalize_results["Code"]) != "0":
             raise CommandRunFailed(cmd=command, result=normalize_results)
+
         logger.debug(normalize_results["Stdout"])
 
         return normalize_results
