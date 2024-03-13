@@ -362,7 +362,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -452,7 +452,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -536,7 +536,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -619,7 +619,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -742,7 +742,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -842,7 +842,7 @@ def test_nova_compute_upgrade_plan(model):
     """Testing generating nova-compute upgrade plan."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrade plan for 'nova-compute' to 'victoria'
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Upgrade software packages on unit 'nova-compute/0'
@@ -911,7 +911,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
     """Testing generating nova-compute upgrade plan for single unit."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrade plan for 'nova-compute' to 'victoria'
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Upgrade software packages on unit 'nova-compute/0'
@@ -964,7 +964,7 @@ def test_cinder_upgrade_plan(model):
     """Testing generating cinder upgrade plan."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrade plan for 'cinder' to 'victoria'
         Upgrade software packages of 'cinder' from the current APT repositories
             Upgrade software packages on unit 'cinder/0'
@@ -1014,7 +1014,7 @@ def test_cinder_upgrade_plan_single_unit(model):
     """Testing generating cinder upgrade plan."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrade plan for 'cinder' to 'victoria'
         Upgrade software packages of 'cinder' from the current APT repositories
             Upgrade software packages on unit 'cinder/0'

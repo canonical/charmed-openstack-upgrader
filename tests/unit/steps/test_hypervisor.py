@@ -179,7 +179,7 @@ def test_hypervisor_upgrade_plan(model):
     """Testing generating hypervisors upgrade plan."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrading all applications deployed on machines with hypervisor.
         Upgrade plan for 'az-0' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
@@ -306,7 +306,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
     """
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrading all applications deployed on machines with hypervisor.
         Upgrade plan for 'az-0' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories

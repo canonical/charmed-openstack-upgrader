@@ -312,7 +312,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
 
@@ -401,7 +401,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
 
