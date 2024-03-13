@@ -140,10 +140,10 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         default=argparse.SUPPRESS,
         action="count",
         dest="verbosity",
-        help="Increase logging verbosity in STDOUT. Multiple 'v's yield progressively "
+        help="Increase logging verbosity in STDOUT.\nMultiple 'v's yield progressively "
         "more detail (up to 4).\nNote that by default the logfile will include standard "
-        "logs from juju and websockets,\nas well as debug logs from all other modules.\n"
-        "To also include the debug level logs from juju and websockets modules, use the "
+        "logs\nfrom juju and websockets, as well as debug logs from all other\nmodules. "
+        "To also include the debug level logs from juju and\nwebsockets modules, use the "
         "maximum verbosity.",
     )
     group.add_argument(
@@ -171,7 +171,7 @@ def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
         "--machine",
         "-m",
         help="Specify machine id(s) to upgrade.\nThis option accepts a single machine id as well "
-        "as a stringified comma-separated list of ids,\nand can be repeated multiple times.",
+        "as a stringified\ncomma-separated list of ids, and can be repeated multiple times.",
         dest="machines",
         action=SplitArgs,
         type=str,
@@ -180,8 +180,8 @@ def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
         "--availability-zone",
         "--az",
         help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
-        "availability zone as well as a stringified comma-separated list of AZs,\n"
-        "and can be repeated multiple times.",
+        "availability zone as well as a\nstringified comma-separated list of AZs, "
+        "and can be repeated\nmultiple times.",
         action=SplitArgs,
         dest="availability_zones",
         type=str,
@@ -218,7 +218,7 @@ def create_plan_subparser(
     plan_subparser = plan_parser.add_subparsers(
         title="Upgrade groups",
         dest="upgrade_group",
-        help="For more information about a upgrade group, run 'cou plan <upgrade-group>' -h.",
+        help="Run 'cou plan <upgrade-group> -h' for more info about an upgrade group.",
     )
     plan_subparser.add_parser(
         CONTROL_PLANE,
@@ -291,7 +291,7 @@ def create_upgrade_subparser(
     upgrade_subparser = upgrade_parser.add_subparsers(
         title="Upgrade group",
         dest="upgrade_group",
-        help="For more information about an upgrade group, run 'cou upgrade <upgrade-group> -h'",
+        help="Run 'cou upgrade <upgrade-group> -h' for more info about an upgrade group",
     )
     upgrade_subparser.add_parser(
         "control-plane",
