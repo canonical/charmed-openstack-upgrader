@@ -115,7 +115,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
