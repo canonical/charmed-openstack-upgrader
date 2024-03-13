@@ -23,6 +23,7 @@ from typing import Callable
 from cou.apps.auxiliary import (  # noqa: F401
     AuxiliaryApplication,
     CephMon,
+    CephOsd,
     OvnPrincipal,
     RabbitMQServer,
 )
@@ -313,11 +314,22 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
     #  the whole cloud.
     if args.upgrade_group in {CONTROL_PLANE, None}:
-        plan.sub_steps.extend(
+        plan.add_steps(
             _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
         )
+
+    hypervisor_apps, non_hypervisors_apps = _separate_hypervisors_apps(
+        analysis_result.apps_data_plane
+    )
     if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
-        plan.sub_steps.extend(await _generate_data_plane_plan(target, analysis_result, args))
+        plan.add_step(
+            await _generate_hypervisors_plan(args, analysis_result, target, hypervisor_apps)
+        )
+
+    if args.upgrade_group in {DATA_PLANE, None}:
+        plan.add_steps(
+            _generate_ceph_osd_and_subordinates_plan(target, non_hypervisors_apps, args.force)
+        )
 
     plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
 
@@ -435,39 +447,84 @@ def _generate_control_plane_plan(
     return [principal_upgrade_plan, subordinate_upgrade_plan]
 
 
-async def _generate_data_plane_plan(
-    target: OpenStackRelease,
-    analysis_result: Analysis,
-    args: CLIargs,
-) -> list[UpgradePlan]:  # pragma: no cover
-    """Generate upgrade plan for data plane.
+def _separate_hypervisors_apps(
+    apps_data_plane: list[OpenStackApplication],
+) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
+    """Separate what is considered hypervisors apps from non-hypervisors apps.
 
-    :param target: Target OpenStack release.
-    :type target: OpenStackRelease
-    :param analysis_result: Analysis result.
-    :type analysis_result: Analysis
-    :param args: CLI arguments
-    :type args: CLIargs
-    :return: Hypervisors plans and other data plane applications, e.g. ceph-osd
-    :rtype: list[UpgradePlan]
+    :param apps_data_plane: Applications from data-plane
+    :type apps_data_plane: list[OpenStackApplication]
+    :return: Tuple containing two lists of hypervisors and non-hypervisors apps
+    :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
     """
-    hypervisors_machines = await filter_hypervisors_machines(args, analysis_result)
-    logger.info("Hypervisors selected: %s", hypervisors_machines)
-
     hypervisor_apps = []
-    for app in analysis_result.apps_data_plane:
-        if app.charm == "ceph-osd":
-            # ceph-osd will not be handled by hypervisor planner
+    non_hypervisors_apps = []
+    for app in apps_data_plane:
+        if app.charm == "ceph-osd" or app.is_subordinate:
+            non_hypervisors_apps.append(app)
             continue
 
         hypervisor_apps.append(app)
+    return hypervisor_apps, non_hypervisors_apps
 
+
+async def _generate_hypervisors_plan(
+    args: CLIargs,
+    analysis_result: Analysis,
+    target: OpenStackRelease,
+    hypervisor_apps: list[OpenStackApplication],
+) -> UpgradePlan:
+    """Generate upgrade plan for hypervisors.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param hypervisor_apps: Hypervisor apps
+    :type hypervisor_apps: list[OpenStackApplication]
+    :return: Hypervisors upgrade plan.
+    :rtype: UpgradePlan
+    """
+    hypervisors_machines = await filter_hypervisors_machines(args, analysis_result)
+    logger.info("Hypervisors selected: %s", hypervisors_machines)
     hypervisor_planner = HypervisorUpgradePlanner(hypervisor_apps, hypervisors_machines)
-    hypervisor_plans = hypervisor_planner.generate_upgrade_plan(target, args.force)
-    logger.debug("Generation of the hypervisors upgrade plan complete")
+    hypervisor_plan = hypervisor_planner.generate_upgrade_plan(target, args.force)
+    logger.debug("Generation of the hypervisors upgrade plan completed")
+    return hypervisor_plan
 
-    # generate the plan for the remaining data-plane apps
-    return [hypervisor_plans]
+
+def _generate_ceph_osd_and_subordinates_plan(
+    target: OpenStackRelease, non_hypervisors_apps: list[OpenStackApplication], force: bool
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for ceph-osd and data-plane subordinates.
+
+    :param target:  Target OpenStack release.
+    :type target: OpenStackRelease
+    :param non_hypervisors_apps:  Non-hypervisor apps
+    :type non_hypervisors_apps: list[OpenStackApplication]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :return: list containing the upgrade plan for ceph-osd and subordinates
+    :rtype: list[UpgradePlan]
+    """
+    return [
+        create_upgrade_group(
+            apps=non_hypervisors_apps,
+            description="Data Plane ceph-osd upgrade plan",
+            target=target,
+            force=force,
+            filter_function=lambda app: isinstance(app, CephOsd),
+        ),
+        create_upgrade_group(
+            apps=non_hypervisors_apps,
+            description="Data Plane subordinate(s) upgrade plan",
+            target=target,
+            force=force,
+            filter_function=lambda app: isinstance(app, SubordinateBase),
+        ),
+    ]
 
 
 async def filter_hypervisors_machines(
