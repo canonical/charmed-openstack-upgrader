@@ -134,7 +134,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     expected_upgrade_package_step = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -143,7 +143,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     for unit in app.units.keys():
         expected_upgrade_package_step.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit}",
+                description=f"Upgrade software packages on unit '{unit}'",
                 parallel=False,
                 coro=app_utils.upgrade_packages(unit, model, None),
             )
@@ -173,7 +173,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model {model.name} to reach the idle state",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
@@ -218,7 +218,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -227,7 +227,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -251,7 +251,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model {model.name} to reach the idle state",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
@@ -297,7 +297,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}",
+        description=f"Upgrade plan for '{app.name}' to '{target}'",
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -306,7 +306,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -335,7 +335,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model {model.name} to reach the idle state",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
@@ -622,7 +622,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -631,7 +631,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -666,7 +666,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model {model.name} to reach the idle state",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
@@ -713,7 +713,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -722,7 +722,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -752,7 +752,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model {model.name} to reach the idle state",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
@@ -902,7 +902,7 @@ def test_ovn_principal_upgrade_plan(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -912,7 +912,7 @@ def test_ovn_principal_upgrade_plan(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -935,7 +935,7 @@ def test_ovn_principal_upgrade_plan(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 300s for app {app.name} to reach the idle state",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
@@ -982,7 +982,7 @@ def test_mysql_innodb_cluster_upgrade(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -991,7 +991,7 @@ def test_mysql_innodb_cluster_upgrade(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, ["mysql-server-core-8.0"]),
             )
         )
@@ -1014,7 +1014,7 @@ def test_mysql_innodb_cluster_upgrade(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for app {app.name} to reach the idle state",
+            description=f"Wait for up to 1800s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=[app.name]),
         ),
@@ -1057,7 +1057,7 @@ def test_ceph_osd_pre_upgrade_steps(mock_pre_upgrade_steps, target, model):
 
     assert steps == [
         PreUpgradeStep(
-            description="Verify that all nova-compute units had been upgraded",
+            description="Verify that all 'nova-compute' units had been upgraded",
             coro=app._verify_nova_compute(target),
         ),
         *mock_pre_upgrade_steps.return_value,
@@ -1204,14 +1204,14 @@ def test_ceph_osd_upgrade_plan(model):
     """Testing generating ceph-osd upgrade plan."""
     exp_plan = dedent_plan(
         """\
-    Upgrade plan for 'ceph-osd' to victoria
-        Verify that all nova-compute units had been upgraded
+    Upgrade plan for 'ceph-osd' to 'victoria'
+        Verify that all 'nova-compute' units had been upgraded
         Upgrade software packages of 'ceph-osd' from the current APT repositories
-            Upgrade software packages on unit ceph-osd/0
-            Upgrade software packages on unit ceph-osd/1
-            Upgrade software packages on unit ceph-osd/2
+            Upgrade software packages on unit 'ceph-osd/0'
+            Upgrade software packages on unit 'ceph-osd/1'
+            Upgrade software packages on unit 'ceph-osd/2'
         Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
-        Wait for up to 300s for app ceph-osd to reach the idle state
+        Wait for up to 300s for app 'ceph-osd' to reach the idle state
         Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
     """  # noqa: E501 line too long
     )

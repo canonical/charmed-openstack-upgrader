@@ -137,23 +137,23 @@ class SmokeTest(unittest.TestCase):
             "\tVerify that all OpenStack applications are in idle state\n"
             f"{backup_plan}"
             "\tControl Plane principal(s) upgrade plan\n"
-            "\t\tUpgrade plan for 'designate-bind' to victoria\n"
+            "\t\tUpgrade plan for 'designate-bind' to 'victoria'\n"
             "\t\t\tUpgrade software packages of 'designate-bind' "
             "from the current APT repositories\n"
-            "\t\t\t\tUpgrade software packages on unit designate-bind/0\n"
+            "\t\t\t\tUpgrade software packages on unit 'designate-bind/0'\n"
             "\t\t\tUpgrade 'designate-bind' to the new channel: 'victoria/stable'\n"
-            "\t\t\tWait for up to 300s for app designate-bind to reach the idle state\n"
+            "\t\t\tWait for up to 300s for app 'designate-bind' to reach the idle state\n"
             "\t\t\tVerify that the workload of 'designate-bind' has been upgraded on units:"
             " designate-bind/0\n"
-            "\t\tUpgrade plan for 'mysql-innodb-cluster' to victoria\n"
+            "\t\tUpgrade plan for 'mysql-innodb-cluster' to 'victoria'\n"
             "\t\t\tUpgrade software packages of 'mysql-innodb-cluster' "
             "from the current APT repositories\n"
-            "\t\t\t\tUpgrade software packages on unit mysql-innodb-cluster/0\n"
-            "\t\t\t\tUpgrade software packages on unit mysql-innodb-cluster/1\n"
-            "\t\t\t\tUpgrade software packages on unit mysql-innodb-cluster/2\n"
+            "\t\t\t\tUpgrade software packages on unit 'mysql-innodb-cluster/0'\n"
+            "\t\t\t\tUpgrade software packages on unit 'mysql-innodb-cluster/1'\n"
+            "\t\t\t\tUpgrade software packages on unit 'mysql-innodb-cluster/2'\n"
             "\t\t\tChange charm config of 'mysql-innodb-cluster' 'source' to "
             "'cloud:focal-victoria'\n"
-            "\t\t\tWait for up to 1800s for app mysql-innodb-cluster to reach the idle state\n"
+            "\t\t\tWait for up to 1800s for app 'mysql-innodb-cluster' to reach the idle state\n"
             "\t\t\tVerify that the workload of 'mysql-innodb-cluster' has been upgraded on units: "
             "mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2\n"
         )
@@ -189,8 +189,8 @@ class SmokeTest(unittest.TestCase):
         """Test cou upgrade."""
         # designate-bind upgrades from ussuri to victoria
         expected_msgs_before_upgrade = [
-            "Upgrade plan for 'designate-bind' to victoria",
-            "Upgrade plan for 'mysql-innodb-cluster' to victoria",
+            "Upgrade plan for 'designate-bind' to 'victoria'",
+            "Upgrade plan for 'mysql-innodb-cluster' to 'victoria'",
         ]
         result_before_upgrade = self.cou(
             ["upgrade", "--model", self.model_name, "--no-backup", "--auto-approve"]
@@ -201,8 +201,8 @@ class SmokeTest(unittest.TestCase):
 
         # designate-bind was upgraded to victoria and next step is to wallaby
         expected_msg_after_upgrade = [
-            "Upgrade plan for 'designate-bind' to wallaby",
-            "Upgrade plan for 'mysql-innodb-cluster' to wallaby",
+            "Upgrade plan for 'designate-bind' to 'wallaby'",
+            "Upgrade plan for 'mysql-innodb-cluster' to 'wallaby'",
         ]
         result_after_upgrade = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
         for expected_msg in expected_msg_after_upgrade:

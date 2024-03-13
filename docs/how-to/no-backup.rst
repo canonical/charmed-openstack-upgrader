@@ -21,11 +21,11 @@ Plan:
         Verify that all OpenStack applications are in idle state
         # note that there's no backup step planned
         Control Plane principal(s) upgrade plan
-        Upgrade plan for 'rabbitmq-server' to victoria
+        Upgrade plan for 'rabbitmq-server' to 'victoria'
             Upgrade software packages of 'rabbitmq-server' from the current APT repositories
-                Upgrade software packages on unit rabbitmq-server/0
-                Upgrade software packages on unit rabbitmq-server/1
-                Upgrade software packages on unit rabbitmq-server/2
+                Upgrade software packages on unit 'rabbitmq-server/0'
+                Upgrade software packages on unit 'rabbitmq-server/1'
+                Upgrade software packages on unit 'rabbitmq-server/2'
         ...
 
 Upgrade:
@@ -42,18 +42,18 @@ Upgrade:
     Verify that all OpenStack applications are in idle state ✔
     # note that there's no backup step being executed
 
-    Upgrade plan for 'rabbitmq-server' to victoria
+    Upgrade plan for 'rabbitmq-server' to 'victoria'
         Upgrade software packages of 'rabbitmq-server' from the current APT repositories
-            Upgrade software packages on unit rabbitmq-server/0
-            Upgrade software packages on unit rabbitmq-server/1
-            Upgrade software packages on unit rabbitmq-server/2
+            Upgrade software packages on unit 'rabbitmq-server/0'
+            Upgrade software packages on unit 'rabbitmq-server/1'
+            Upgrade software packages on unit 'rabbitmq-server/2'
         Upgrade 'rabbitmq-server' to the new channel: '3.9/stable'
         Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
-        Wait for up to 1800s for model test-model to reach the idle state
+        Wait for up to 1800s for model 'test-model' to reach the idle state
         Verify that the workload of 'rabbitmq-server' has been upgraded
 
     Continue (y/n): y
-    Upgrade plan for 'rabbitmq-server' to victoria ✔
+    Upgrade plan for 'rabbitmq-server' to 'victoria' ✔
 
     ... # apply steps
     Upgrade completed.

@@ -432,7 +432,7 @@ class OpenStackApplication(COUApplication):
         self.upgrade_plan_sanity_checks(target, units)
 
         upgrade_plan = ApplicationUpgradePlan(
-            description=f"Upgrade plan for '{self.name}' to {target}",
+            description=f"Upgrade plan for '{self.name}' to '{target}'",
         )
 
         upgrade_plan.sub_steps = [
@@ -454,7 +454,7 @@ class OpenStackApplication(COUApplication):
         :rtype: UnitUpgradeStep
         """
         # pylint: disable=unused-argument
-        unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit: {unit.name}")
+        unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit '{unit.name}'")
         unit_plan.add_step(self._get_pause_unit_step(unit))
         unit_plan.add_step(self._get_openstack_upgrade_step(unit))
         unit_plan.add_step(self._get_resume_unit_step(unit))
@@ -500,7 +500,7 @@ class OpenStackApplication(COUApplication):
         )
         step.sub_steps = [
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
             )
             for unit in units
@@ -739,13 +739,13 @@ class OpenStackApplication(COUApplication):
         """
         if self.wait_for_model:
             description = (
-                f"Wait for up to {self.wait_timeout}s for model {self.model.name} "
+                f"Wait for up to {self.wait_timeout}s for model '{self.model.name}' "
                 "to reach the idle state"
             )
             apps = None
         else:
             description = (
-                f"Wait for up to {self.wait_timeout}s for app {self.name} "
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}' "
                 "to reach the idle state"
             )
             apps = [self.name]

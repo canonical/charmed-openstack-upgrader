@@ -252,7 +252,7 @@ class CephOsd(AuxiliaryApplication):
         """
         steps = [
             PreUpgradeStep(
-                description="Verify that all nova-compute units had been upgraded",
+                description="Verify that all 'nova-compute' units had been upgraded",
                 coro=self._verify_nova_compute(target),
             )
         ]
