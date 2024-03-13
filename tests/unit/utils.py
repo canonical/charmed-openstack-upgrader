@@ -36,6 +36,8 @@ def generate_cou_machine(machine_id: str, az: str | None = None) -> MagicMock:
 def dedent_plan(plan: str) -> str:
     """Dedent the string plan."""
     result = dedent(plan)
-    result = result[1:]  # skip first new line
+    if result.startswith("\n"):
+        result = result[1:]  # skip first new line
+
     result = result.replace("    ", "\t")  # replace 4 spaces with tap
     return result
