@@ -157,12 +157,12 @@ class HypervisorUpgradePlanner:
         for app in self.apps:
             for unit in app.units.values():
                 if unit.machine not in self.machines:
-                    logger.info("skipping machine %s", unit.machine.machine_id)
+                    logger.debug("skipping machine %s", unit.machine.machine_id)
                     continue
 
                 unit_os_release = app.get_latest_os_version(unit)
                 if unit_os_release >= target:
-                    logger.debug("skipping unit %s is already on %s", unit.name, unit_os_release)
+                    logger.info("skipping unit %s is already on %s", unit.name, unit_os_release)
                     continue
 
                 # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
