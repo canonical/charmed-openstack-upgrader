@@ -196,7 +196,9 @@ class CephMon(AuxiliaryApplication):
         """
         ceph_mon_unit, *_ = self.units.values()
         return PreUpgradeStep(
-            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
+            description=(
+                "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version"
+            ),
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )
 
@@ -250,7 +252,7 @@ class CephOsd(AuxiliaryApplication):
         """
         steps = [
             PreUpgradeStep(
-                description="Check if all nova-compute units had been upgraded",
+                description="Verify that all 'nova-compute' units had been upgraded",
                 coro=self._verify_nova_compute(target),
             )
         ]
