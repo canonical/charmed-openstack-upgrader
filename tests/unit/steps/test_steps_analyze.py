@@ -492,7 +492,11 @@ def _unit(machine_id):
     [
         (
             [_app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")})],
-            [_app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")})],
+            [
+                _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
+                _app("swift-proxy", {"6": _unit("6")}),
+                _app("swift-storage", {"7": _unit("7")}),
+            ],
         ),
         (
             [],
@@ -500,6 +504,8 @@ def _unit(machine_id):
                 _app("nova-compute", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
                 _app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
                 _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
+                _app("swift-proxy", {"6": _unit("6")}),
+                _app("swift-storage", {"7": _unit("7")}),
             ],
         ),
         (
@@ -507,6 +513,8 @@ def _unit(machine_id):
             [
                 _app("nova-compute", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
                 _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
+                _app("swift-proxy", {"9": _unit("9")}),
+                _app("swift-storage", {"10": _unit("10")}),
             ],
         ),
     ],
