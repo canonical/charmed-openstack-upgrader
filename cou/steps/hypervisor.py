@@ -273,7 +273,9 @@ class HypervisorUpgradePlanner:
         """
         plan = UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
         for az, group in self.azs.items():
-            hypervisor_plan = HypervisorUpgradePlan(f"Upgrade plan for '{group.name}' to {target}")
+            hypervisor_plan = HypervisorUpgradePlan(
+                f"Upgrade plan for '{group.name}' to '{target}'"
+            )
 
             # pre upgrade steps
             logger.debug("generating pre-upgrade steps for %s AZ", az)
