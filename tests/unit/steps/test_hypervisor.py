@@ -143,12 +143,12 @@ def test_hypervisor_azs_grouping():
     app1 = MagicMock(spec_set=COUApplication)()
     app1.name = "app1"
     app1.units = {name: unit for name, unit in units.items() if name.startswith("app1")}
-    app1.unit_max_os_version.return_value = OpenStackRelease("ussuri")
+    app1.get_latest_os_version.return_value = OpenStackRelease("ussuri")
 
     app2 = MagicMock(spec_set=COUApplication)()
     app2.name = "app2"
     app2.units = {name: unit for name, unit in units.items() if name.startswith("app2")}
-    app2.unit_max_os_version.return_value = OpenStackRelease("ussuri")
+    app2.get_latest_os_version.return_value = OpenStackRelease("ussuri")
 
     # passing all machines to the HypervisorUpgradePlanner
     exp_azs_all = AZs()
@@ -161,7 +161,7 @@ def test_hypervisor_azs_grouping():
 
     hypervisor_planner_all = HypervisorUpgradePlanner([app1, app2], list(machines.values()))
 
-    assert dict(hypervisor_planner_all.azs(target)) == exp_azs_all
+    assert dict(hypervisor_planner_all.get_azs(target)) == exp_azs_all
 
     # passing machine 0 to the HypervisorUpgradePlanner
     exp_azs_0 = AZs()
@@ -169,14 +169,14 @@ def test_hypervisor_azs_grouping():
     exp_azs_0["az0"].app_units["app2"] = [units["app2/0"]]
 
     hypervisor_planner_machine_0 = HypervisorUpgradePlanner([app1, app2], [machines["0"]])
-    assert dict(hypervisor_planner_machine_0.azs(target)) == exp_azs_0
+    assert dict(hypervisor_planner_machine_0.get_azs(target)) == exp_azs_0
 
     # passing machine 1 to the HypervisorUpgradePlanner
     exp_azs_1 = AZs()
     exp_azs_1["az0"].app_units["app1"] = [units["app1/1"]]
 
     hypervisor_planner_machine_1 = HypervisorUpgradePlanner([app1, app2], [machines["1"]])
-    assert dict(hypervisor_planner_machine_1.azs(target)) == exp_azs_1
+    assert dict(hypervisor_planner_machine_1.get_azs(target)) == exp_azs_1
 
 
 def test_hypervisor_azs_grouping_units_different_os_release():
@@ -241,7 +241,7 @@ def test_hypervisor_azs_grouping_units_different_os_release():
         }
         return os_release[value.name]
 
-    app1.unit_max_os_version.side_effect = side_effect_app1
+    app1.get_latest_os_version.side_effect = side_effect_app1
 
     app2 = MagicMock(spec_set=COUApplication)()
     app2.name = "app2"
@@ -255,7 +255,7 @@ def test_hypervisor_azs_grouping_units_different_os_release():
         }
         return os_release[value.name]
 
-    app2.unit_max_os_version.side_effect = side_effect_app2
+    app2.get_latest_os_version.side_effect = side_effect_app2
 
     # passing all machines to the HypervisorUpgradePlanner
     exp_azs_all = AZs()
@@ -266,19 +266,19 @@ def test_hypervisor_azs_grouping_units_different_os_release():
 
     hypervisor_planner_all = HypervisorUpgradePlanner([app1, app2], list(machines.values()))
 
-    assert dict(hypervisor_planner_all.azs(target)) == exp_azs_all
+    assert dict(hypervisor_planner_all.get_azs(target)) == exp_azs_all
 
     # passing machine 0 to the HypervisorUpgradePlanner
     exp_azs_0 = AZs()
 
     hypervisor_planner_machine_0 = HypervisorUpgradePlanner([app1, app2], [machines["0"]])
-    assert dict(hypervisor_planner_machine_0.azs(target)) == exp_azs_0
+    assert dict(hypervisor_planner_machine_0.get_azs(target)) == exp_azs_0
 
     # passing machine 1 to the HypervisorUpgradePlanner
     exp_azs_1 = AZs()
 
     hypervisor_planner_machine_1 = HypervisorUpgradePlanner([app1, app2], [machines["1"]])
-    assert dict(hypervisor_planner_machine_1.azs(target)) == exp_azs_1
+    assert dict(hypervisor_planner_machine_1.get_azs(target)) == exp_azs_1
 
 
 def test_hypervisor_upgrade_plan(model):
@@ -502,7 +502,7 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
     """Testing generating hypervisors upgrade plan partially upgraded."""
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
-        """
+        """\
     Upgrading all applications deployed on machines with hypervisor.
         Upgrade plan for 'az-1' to victoria
             Upgrade software packages of 'cinder' from the current APT repositories

@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class ChannelBasedApplication(OpenStackApplication):
     """Application for charms that are channel based."""
 
-    def unit_max_os_version(self, unit: COUUnit) -> OpenStackRelease:
+    def get_latest_os_version(self, unit: COUUnit) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the channel.
 
         :param unit: COUUnit

@@ -54,7 +54,7 @@ def test_openstack_application_magic_functions(model):
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
-def test_applicationunit_max_os_version_failed(mock_find_compatible_versions, model):
+def test_applicationget_latest_os_version_failed(mock_find_compatible_versions, model):
     charm = "app"
     app_name = "my_app"
     unit = COUUnit(
@@ -83,7 +83,7 @@ def test_applicationunit_max_os_version_failed(mock_find_compatible_versions, mo
     )
 
     with pytest.raises(ApplicationError, match=exp_error):
-        app.unit_max_os_version(unit)
+        app.get_latest_os_version(unit)
 
     mock_find_compatible_versions.assert_called_once_with(charm, unit.workload_version)
 
