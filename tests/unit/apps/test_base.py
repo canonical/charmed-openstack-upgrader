@@ -54,7 +54,7 @@ def test_openstack_application_magic_functions(model):
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
-def test_applicationget_latest_os_version_failed(mock_find_compatible_versions, model):
+def test_application_get_latest_os_version_failed(mock_find_compatible_versions, model):
     charm = "app"
     app_name = "my_app"
     unit = COUUnit(
