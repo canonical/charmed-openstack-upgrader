@@ -499,7 +499,7 @@ class OpenStackApplication:
         :rtype: ApplicationUpgradePlan
         """
         upgrade_steps = ApplicationUpgradePlan(
-            description=f"Upgrade plan for '{self.name}' to {target}",
+            description=f"Upgrade plan for '{self.name}' to '{target}'",
         )
         all_steps = (
             self.pre_upgrade_plan(target)
@@ -561,7 +561,7 @@ class OpenStackApplication:
             )
 
         if self.charm_origin == "cs":
-            description = f"Migration of '{self.name}' from charmstore to charmhub"
+            description = f"Migrate '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
         elif self.channel in self.possible_current_channels:
             channel = self.channel
@@ -674,7 +674,7 @@ class OpenStackApplication:
         :rtype: PostUpgradeStep
         """
         return PostUpgradeStep(
-            description=f"Check if the workload of '{self.name}' has been upgraded",
+            description=f"Verify that the workload of '{self.name}' has been upgraded",
             parallel=parallel,
             coro=self._check_upgrade(target),
         )
@@ -687,11 +687,15 @@ class OpenStackApplication:
         """
         if self.wait_for_model:
             description = (
-                f"Wait {self.wait_timeout}s for model {self.model.name} to reach the idle state."
+                f"Wait for up to {self.wait_timeout}s for model '{self.model.name}' "
+                "to reach the idle state"
             )
             apps = None
         else:
-            description = f"Wait {self.wait_timeout}s for app {self.name} to reach the idle state."
+            description = (
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}' "
+                "to reach the idle state"
+            )
             apps = [self.name]
 
         return PostUpgradeStep(

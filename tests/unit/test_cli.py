@@ -85,7 +85,7 @@ async def test_get_upgrade_plan(
 ):
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
-    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analysis_result = MagicMock()
 
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
@@ -120,7 +120,7 @@ async def test_run_upgrade_quiet(
 ):
     """Test get_upgrade_plan function in either quiet or non-quiet mode."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
-    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
@@ -145,7 +145,7 @@ async def test_run_upgrade_with_prompt_continue(
     mock_manually_upgrade,
 ):
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
-    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
     mock_continue_upgrade.return_value = True
@@ -170,7 +170,7 @@ async def test_run_upgrade_with_prompt_abort(
     mock_manually_upgrade,
 ):
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
-    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
     mock_continue_upgrade.return_value = False
@@ -195,7 +195,7 @@ async def test_run_upgrade_with_no_prompt(
     mock_manually_upgrade,
 ):
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
-    plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 

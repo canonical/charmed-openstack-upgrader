@@ -102,7 +102,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -134,12 +134,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(status, config
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -165,7 +165,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -192,12 +192,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -221,7 +221,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
     )
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}",
+        description=f"Upgrade plan for '{app.name}' to '{target}'",
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -232,7 +232,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
             coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
         ),
         PreUpgradeStep(
-            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            description=f"Migrate '{app.name}' from charmstore to charmhub",
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
@@ -253,12 +253,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, 
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -397,7 +397,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -413,7 +413,9 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
             coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description=(
+                "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version"
+            ),
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
@@ -433,12 +435,12 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -465,7 +467,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -481,7 +483,9 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description=(
+                "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version"
+            ),
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
@@ -496,12 +500,12 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -576,7 +580,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_steps = [
@@ -603,12 +607,12 @@ def test_ovn_principal_upgrade_plan(status, config, model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -630,7 +634,7 @@ def test_mysql_innodb_cluster_upgrade(status, config, model):
     )
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -658,12 +662,12 @@ def test_mysql_innodb_cluster_upgrade(status, config, model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),

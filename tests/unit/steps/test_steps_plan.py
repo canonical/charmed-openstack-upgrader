@@ -44,18 +44,18 @@ from tests.unit.apps.utils import add_steps
 
 def generate_expected_upgrade_plan_principal(app, target, model):
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target.codename}"
+        description=f"Upgrade plan for '{app.name}' to '{target.codename}'"
     )
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
         # apps waiting for whole model
         wait_step = PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         )
     else:
         wait_step = PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         )
@@ -98,7 +98,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         ),
         wait_step,
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -109,7 +109,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
 
 def generate_expected_upgrade_plan_subordinate(app, target, model):
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -156,7 +156,7 @@ async def test_generate_plan(apps, model):
     )
     expected_plan.add_step(
         PreUpgradeStep(
-            description="Backup mysql databases",
+            description="Back up MySQL databases",
             parallel=False,
             coro=backup(model),
         )

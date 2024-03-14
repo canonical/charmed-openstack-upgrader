@@ -42,7 +42,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
 
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}",
+        description=f"Upgrade plan for '{app.name}' to '{target}'",
     )
     expected_plan.add_step(
         PreUpgradeStep(
@@ -106,7 +106,7 @@ def test_ovn_subordinate_upgrade_plan(status, model):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_steps = [
@@ -136,7 +136,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -158,7 +158,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_steps = [
@@ -187,7 +187,7 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_steps = [
