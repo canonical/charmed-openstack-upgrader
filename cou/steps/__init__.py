@@ -82,7 +82,7 @@ class BaseStep:
         :type parallel: bool
         :param coro: Step coroutine
         :type coro: Optional[coroutine]
-        :param dependent: Whether the step is dependent from other step.
+        :param dependent: Whether the step is dependent on another step.
         :type dependent: bool, defaults to False
         """
         if coro is not None:
