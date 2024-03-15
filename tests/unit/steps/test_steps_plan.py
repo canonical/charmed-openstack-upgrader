@@ -29,6 +29,7 @@ from cou.exceptions import (
     OutOfSupportRange,
 )
 from cou.steps import (
+    TAB,
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
@@ -77,6 +78,8 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -110,8 +113,8 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         wait_step,
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),

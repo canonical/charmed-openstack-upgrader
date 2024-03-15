@@ -27,6 +27,7 @@ from cou.apps.auxiliary import (
 from cou.apps.core import NovaCompute
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
+    TAB,
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
@@ -149,6 +150,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         expected_upgrade_package_step,
         PreUpgradeStep(
@@ -179,8 +182,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -231,6 +234,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
 
     upgrade_steps = [
         upgrade_packages,
@@ -257,8 +261,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -311,6 +315,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -341,8 +347,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -636,6 +642,8 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -672,8 +680,8 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -727,6 +735,8 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -758,8 +768,8 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -917,6 +927,8 @@ def test_ovn_principal_upgrade_plan(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -941,8 +953,8 @@ def test_ovn_principal_upgrade_plan(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -996,6 +1008,8 @@ def test_mysql_innodb_cluster_upgrade(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -1020,8 +1034,8 @@ def test_mysql_innodb_cluster_upgrade(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -1212,7 +1226,10 @@ def test_ceph_osd_upgrade_plan(model):
             Upgrade software packages on unit 'ceph-osd/2'
         Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
         Wait for up to 300s for app 'ceph-osd' to reach the idle state
-        Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
+        Verify that the workload of 'ceph-osd' has been upgraded on units:
+            - 'ceph-osd/0'
+            - 'ceph-osd/1'
+            - 'ceph-osd/2'
     """  # noqa: E501 line too long
     )
     target = OpenStackRelease("victoria")

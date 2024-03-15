@@ -20,6 +20,7 @@ from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone, NovaCompute
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
+    TAB,
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
@@ -324,6 +325,8 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -358,8 +361,8 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -414,6 +417,8 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -448,8 +453,8 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -508,6 +513,8 @@ def test_upgrade_plan_channel_on_next_os_release(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         UpgradeStep(
@@ -532,8 +539,8 @@ def test_upgrade_plan_channel_on_next_os_release(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -591,6 +598,8 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -615,8 +624,8 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -709,6 +718,8 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -738,8 +749,8 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -875,8 +886,11 @@ def test_nova_compute_upgrade_plan(model):
                 ├── Resume the unit: 'nova-compute/2'
                 Enable nova-compute scheduler from unit: 'nova-compute/2'
         Wait for up to 1800s for model 'test_model' to reach the idle state
-        Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
-    """  # noqa: E501 line too long
+        Verify that the workload of 'nova-compute' has been upgraded on units:
+            - 'nova-compute/0'
+            - 'nova-compute/1'
+            - 'nova-compute/2'
+    """
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     units = {
@@ -928,7 +942,8 @@ def test_nova_compute_upgrade_plan_single_unit(model):
                 ├── Resume the unit: 'nova-compute/0'
                 Enable nova-compute scheduler from unit: 'nova-compute/0'
         Wait for up to 1800s for model 'test_model' to reach the idle state
-        Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
+        Verify that the workload of 'nova-compute' has been upgraded on units:
+            - 'nova-compute/0'
     """
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
@@ -974,8 +989,10 @@ def test_cinder_upgrade_plan(model):
         Upgrade 'cinder' to the new channel: 'victoria/stable'
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
         Wait for up to 300s for app 'cinder' to reach the idle state
-        Verify that the workload of 'cinder' has been upgraded on units: \
-cinder/0, cinder/1, cinder/2
+        Verify that the workload of 'cinder' has been upgraded on units:
+            - 'cinder/0'
+            - 'cinder/1'
+            - 'cinder/2'
     """
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
@@ -1028,7 +1045,8 @@ def test_cinder_upgrade_plan_single_unit(model):
                 Upgrade the unit: 'cinder/0'
                 Resume the unit: 'cinder/0'
         Wait for up to 300s for app 'cinder' to reach the idle state
-        Verify that the workload of 'cinder' has been upgraded on units: cinder/0
+        Verify that the workload of 'cinder' has been upgraded on units:
+            - 'cinder/0'
     """
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}

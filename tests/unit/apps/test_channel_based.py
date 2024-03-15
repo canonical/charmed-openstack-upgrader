@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 
 from cou.apps.channel_based import ChannelBasedApplication
 from cou.steps import (
+    TAB,
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
@@ -278,6 +279,8 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -308,8 +311,8 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
@@ -367,6 +370,8 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
             )
         )
 
+    units_repr = "\n".join([f"{TAB}- '{unit}'" for unit in app.units])
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -397,8 +402,8 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
         ),
         PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{app.name}' has been upgraded on units: "
-                f"{', '.join([unit for unit in app.units.keys()])}"
+                f"Verify that the workload of '{app.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             parallel=False,
             coro=app._verify_workload_upgrade(target, list(app.units.values())),

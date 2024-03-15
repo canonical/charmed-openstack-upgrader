@@ -27,6 +27,7 @@ from cou.exceptions import CanceledStep
 
 logger = logging.getLogger(__name__)
 DEPENDENCY_DESCRIPTION_PREFIX = "├── "
+TAB = "\t"
 
 
 def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutine]) -> bool:
@@ -133,11 +134,12 @@ class BaseStep:
         :rtype: str
         """
         result = ""
-        tab = "\t"
         steps_to_visit = [(self, 0)]
         while steps_to_visit:
             step, indent = steps_to_visit.pop()
-            result += f"{tab * indent}{step.description}{os.linesep}" if step else ""
+            # add tab in the beginning and also on new lines that the description might have
+            description = f"{TAB * indent}{step.description}".replace("\n", f"\n{TAB * indent}")
+            result += f"{description}{os.linesep}" if step else ""
             steps_to_visit.extend([(s, indent + 1) for s in reversed(step.sub_steps)])
 
         return result

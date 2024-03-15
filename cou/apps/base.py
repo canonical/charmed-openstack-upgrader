@@ -29,6 +29,7 @@ from cou.exceptions import (
     MismatchedOpenStackVersions,
 )
 from cou.steps import (
+    TAB,
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
@@ -696,10 +697,13 @@ class OpenStackApplication(COUApplication):
         """
         if not units:
             units = list(self.units.values())
+
+        units_repr = "\n".join([f"{TAB}- '{unit.name}'" for unit in units])
+
         return PostUpgradeStep(
             description=(
-                f"Verify that the workload of '{self.name}' has been upgraded on units: "
-                f"{', '.join([unit.name for unit in units])}"
+                f"Verify that the workload of '{self.name}' has been upgraded on units:\n"
+                f"{units_repr}"
             ),
             coro=self._verify_workload_upgrade(target, units),
         )
