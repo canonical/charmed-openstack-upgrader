@@ -85,7 +85,7 @@ class OpenStackApplication:
     :raises RunUpgradeError: When an upgrade fails.
     """
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods
 
     name: str
     status: ApplicationStatus
