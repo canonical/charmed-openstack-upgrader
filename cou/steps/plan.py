@@ -21,22 +21,19 @@ from typing import Callable, Optional
 # decorator
 # pylint: disable=unused-import
 from cou.apps.auxiliary import (  # noqa: F401
-    CephMonApplication,
-    OpenStackAuxiliaryApplication,
-    OvnPrincipalApplication,
+    AuxiliaryApplication,
+    CephMon,
+    OvnPrincipal,
     RabbitMQServer,
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
-    OpenStackAuxiliarySubordinateApplication,
-    OvnSubordinateApplication,
+    AuxiliarySubordinateApplication,
+    OvnSubordinate,
 )
 from cou.apps.base import OpenStackApplication
-from cou.apps.channel_based import OpenStackChannelBasedApplication  # noqa: F401
+from cou.apps.channel_based import ChannelBasedApplication  # noqa: F401
 from cou.apps.core import Keystone, Octavia  # noqa: F401
-from cou.apps.subordinate import (  # noqa: F401
-    OpenStackSubordinateApplication,
-    SubordinateBaseClass,
-)
+from cou.apps.subordinate import SubordinateApplication, SubordinateBase  # noqa: F401
 from cou.commands import CLIargs
 from cou.exceptions import (
     HaltUpgradePlanGeneration,
@@ -98,7 +95,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
         apps=analysis_result.apps_control_plane,
         description="Control Plane principal(s) upgrade plan",
         target=target,
-        filter_function=lambda app: not isinstance(app, SubordinateBaseClass),
+        filter_function=lambda app: not isinstance(app, SubordinateBase),
     )
     plan.add_step(control_plane_principal_upgrade_plan)
 
@@ -106,7 +103,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
         apps=analysis_result.apps_control_plane,
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
-        filter_function=lambda app: isinstance(app, SubordinateBaseClass),
+        filter_function=lambda app: isinstance(app, SubordinateBase),
     )
     plan.add_step(control_plane_subordinate_upgrade_plan)
 

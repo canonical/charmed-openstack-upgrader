@@ -14,12 +14,7 @@
 """Auxiliary application class."""
 import pytest
 
-from cou.apps.auxiliary import (
-    CephMonApplication,
-    MysqlInnodbClusterApplication,
-    OvnPrincipalApplication,
-    RabbitMQServer,
-)
+from cou.apps.auxiliary import CephMon, MysqlInnodbCluster, OvnPrincipal, RabbitMQServer
 from cou.apps.base import ApplicationUnit
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
@@ -376,8 +371,8 @@ def test_auxiliary_no_suitable_channel(status, config, model):
 
 
 def test_ceph_mon_app(status, config, model):
-    """Test the correctness of instantiating CephMonApplication."""
-    app = CephMonApplication(
+    """Test the correctness of instantiating CephMon."""
+    app = CephMon(
         "ceph-mon",
         status["ceph-mon_xena"],
         config["auxiliary_xena"],
@@ -406,7 +401,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(
 ):
     """Test when ceph version changes between os releases."""
     target = OpenStackRelease("yoga")
-    app = CephMonApplication(
+    app = CephMon(
         "ceph-mon",
         status["ceph-mon_xena"],
         config["auxiliary_xena"],
@@ -481,7 +476,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
 ):
     """Test when ceph version remains the same between os releases."""
     target = OpenStackRelease("victoria")
-    app = CephMonApplication(
+    app = CephMon(
         "ceph-mon",
         status["ceph-mon_ussuri"],
         config["auxiliary_ussuri"],
@@ -544,7 +539,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
 
 
 def test_ovn_principal(status, config, model):
-    app = OvnPrincipalApplication(
+    app = OvnPrincipal(
         "ovn-central",
         status["ovn_central_ussuri_22"],
         config["auxiliary_ussuri"],
@@ -569,7 +564,7 @@ def test_ovn_workload_ver_lower_than_22_principal(status, config, model):
         "ovn-upgrade-2203.html"
     )
 
-    app_ovn_central = OvnPrincipalApplication(
+    app_ovn_central = OvnPrincipal(
         "ovn-central",
         status["ovn_central_ussuri_20"],
         config["auxiliary_ussuri"],
@@ -586,7 +581,7 @@ def test_ovn_no_compatible_os_release(status, config, model, channel):
     ovn_central_status = status["ovn_central_ussuri_22"]
     ovn_central_status.charm_channel = channel
     with pytest.raises(ApplicationError):
-        OvnPrincipalApplication(
+        OvnPrincipal(
             "ovn-central",
             ovn_central_status,
             config["auxiliary_ussuri"],
@@ -597,7 +592,7 @@ def test_ovn_no_compatible_os_release(status, config, model, channel):
 
 def test_ovn_principal_upgrade_plan(status, config, model):
     target = OpenStackRelease("victoria")
-    app = OvnPrincipalApplication(
+    app = OvnPrincipal(
         "ovn-central",
         status["ovn_central_ussuri_22"],
         config["auxiliary_ussuri"],
@@ -659,7 +654,7 @@ def test_ovn_principal_upgrade_plan(status, config, model):
 def test_mysql_innodb_cluster_upgrade(status, config, model):
     target = OpenStackRelease("victoria")
     # source is already configured to wallaby, so the plan halt with target victoria
-    app = MysqlInnodbClusterApplication(
+    app = MysqlInnodbCluster(
         "mysql-innodb-cluster",
         status["mysql-innodb-cluster"],
         config["auxiliary_ussuri"],
