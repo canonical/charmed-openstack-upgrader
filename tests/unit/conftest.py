@@ -645,7 +645,6 @@ def apps(status, config, model, apps_machines):
         model,
         "nova-compute",
         apps_machines["nova-compute"],
-        apps_machines["nova-compute"],
     )
     return {
         "keystone_focal_ussuri": keystone_ussuri,

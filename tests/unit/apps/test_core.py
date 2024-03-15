@@ -280,7 +280,7 @@ def test_application_no_origin_config(status, model, apps_machines):
         "keystone",
         apps_machines["keystone"],
     )
-    assert app._get_os_origin() == ""
+    assert app.os_origin == ""
     assert app.apt_source_codename is None
 
 
