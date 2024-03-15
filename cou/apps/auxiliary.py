@@ -15,7 +15,7 @@
 import logging
 from typing import Optional
 
-from cou.apps.base import OpenStackApplication
+from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import PreUpgradeStep
@@ -128,7 +128,7 @@ class RabbitMQServer(AuxiliaryApplication):
     RabbitMQ must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
 
@@ -136,7 +136,7 @@ class RabbitMQServer(AuxiliaryApplication):
 class CephMon(AuxiliaryApplication):
     """Application for Ceph Monitor charm."""
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
     def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
@@ -189,7 +189,7 @@ class MysqlInnodbCluster(AuxiliaryApplication):
     # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
     # mysqld processes from restarting, which lead to outages
     packages_to_hold: Optional[list] = ["mysql-server-core-8.0"]
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
 
 
 # NOTE (gabrielcocenza): Although CephOSD class is empty now, it will be
