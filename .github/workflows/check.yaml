@@ -1,9 +1,5 @@
 name: Check workflow running linter, unit and functional tests
 
-concurrency:
-  group: ${{ github.workflow }}
-
-
 on:
   workflow_call:
   workflow_dispatch:
@@ -13,6 +9,11 @@ on:
     paths-ignore:
       - '**.md'
       - '**.rst'
+
+concurrency:
+      # We do not want to run multiple jobs for single PR.
+      group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
 
 jobs:
   lint-unit:
@@ -60,7 +61,7 @@ jobs:
   func:
     name: Functional tests
     needs: snap-build
-    runs-on: [self-hosted, large]
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
