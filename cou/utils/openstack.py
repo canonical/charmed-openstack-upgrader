@@ -20,6 +20,7 @@ import encodings
 import logging
 from collections import OrderedDict, defaultdict, namedtuple
 from dataclasses import dataclass
+from functools import total_ordering
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
 
@@ -160,6 +161,7 @@ CEPH_RELEASES = [
 ]
 
 
+@total_ordering
 class OpenStackRelease:
     """Provides a class that will compare OpenStack releases by the codename.
 
@@ -193,29 +195,11 @@ class OpenStackRelease:
             return NotImplemented
         return self.index == self.openstack_codenames.index(str(other))
 
-    def __ne__(self, other: Any) -> bool:
-        """Do not equals."""
-        return not self.__eq__(other)
-
     def __lt__(self, other: Any) -> bool:
         """Do less than."""
         if not isinstance(other, (str, OpenStackRelease)):
             return NotImplemented
         return self.index < self.openstack_codenames.index(str(other))
-
-    def __ge__(self, other: Any) -> bool:
-        """Do greater than or equal."""
-        return not self.__lt__(other)
-
-    def __gt__(self, other: Any) -> bool:
-        """Do greater than."""
-        if not isinstance(other, (str, OpenStackRelease)):
-            return NotImplemented
-        return self.index > self.openstack_codenames.index(str(other))
-
-    def __le__(self, other: Any) -> bool:
-        """Do less than or equals."""
-        return not self.__gt__(other)
 
     def __repr__(self) -> str:
         """Return the representation of CompareOpenStack."""
