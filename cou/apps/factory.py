@@ -49,7 +49,7 @@ class AppFactory:
         decorator can be instantiated and used with their customized methods.
         :param name: Name of the application
         :type name: str
-        :param machines: Machine in the model
+        :param machines: Machines in the model
         :type machines: dict[str, Machine]
         :param status: Status of the application
         :type status: ApplicationStatus
