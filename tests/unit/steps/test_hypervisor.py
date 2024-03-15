@@ -504,38 +504,38 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
     exp_plan = dedent_plan(
         """\
     Upgrading all applications deployed on machines with hypervisor.
-        Upgrade plan for 'az-1' to victoria
+        Upgrade plan for 'az-1' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
-                Upgrade software packages on unit cinder/1
+                Upgrade software packages on unit 'cinder/1'
             Upgrade plan for units: cinder/1
-                Upgrade plan for unit: cinder/1
-                    Pause the unit: 'cinder/1'.
-                    Upgrade the unit: 'cinder/1'.
-                    Resume the unit: 'cinder/1'.
-            Wait 300s for app cinder to reach the idle state.
-            Check if the workload of 'cinder' has been upgraded on units: cinder/1
-        Upgrade plan for 'az-2' to victoria
+                Upgrade plan for unit 'cinder/1'
+                    Pause the unit: 'cinder/1'
+                    Upgrade the unit: 'cinder/1'
+                    Resume the unit: 'cinder/1'
+            Wait for up to 300s for app 'cinder' to reach the idle state
+            Verify that the workload of 'cinder' has been upgraded on units: cinder/1
+        Upgrade plan for 'az-2' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
-                Upgrade software packages on unit cinder/2
+                Upgrade software packages on unit 'cinder/2'
             Upgrade software packages of 'nova-compute' from the current APT repositories
-                Upgrade software packages on unit nova-compute/2
+                Upgrade software packages on unit 'nova-compute/2'
             Upgrade plan for units: cinder/2
-                Upgrade plan for unit: cinder/2
-                    Pause the unit: 'cinder/2'.
-                    Upgrade the unit: 'cinder/2'.
-                    Resume the unit: 'cinder/2'.
+                Upgrade plan for unit 'cinder/2'
+                    Pause the unit: 'cinder/2'
+                    Upgrade the unit: 'cinder/2'
+                    Resume the unit: 'cinder/2'
             Upgrade plan for units: nova-compute/2
-                Upgrade plan for unit: nova-compute/2
-                    Disable nova-compute scheduler from unit: 'nova-compute/2'.
-                    Check if unit nova-compute/2 has no VMs running before upgrading.
-                    ├── Pause the unit: 'nova-compute/2'.
-                    ├── Upgrade the unit: 'nova-compute/2'.
-                    ├── Resume the unit: 'nova-compute/2'.
-                    Enable nova-compute scheduler from unit: 'nova-compute/2'.
-            Wait 1800s for model test_model to reach the idle state.
-            Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/2
-            Wait 300s for app cinder to reach the idle state.
-            Check if the workload of 'cinder' has been upgraded on units: cinder/2
+                Upgrade plan for unit 'nova-compute/2'
+                    Disable nova-compute scheduler from unit: 'nova-compute/2'
+                    Verify that unit 'nova-compute/2' has no VMs running
+                    ├── Pause the unit: 'nova-compute/2'
+                    ├── Upgrade the unit: 'nova-compute/2'
+                    ├── Resume the unit: 'nova-compute/2'
+                    Enable nova-compute scheduler from unit: 'nova-compute/2'
+            Wait for up to 1800s for model 'test_model' to reach the idle state
+            Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/2
+            Wait for up to 300s for app 'cinder' to reach the idle state
+            Verify that the workload of 'cinder' has been upgraded on units: cinder/2
     """
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
