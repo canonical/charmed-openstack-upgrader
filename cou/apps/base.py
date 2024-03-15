@@ -502,11 +502,9 @@ class OpenStackApplication:
         upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
-        upgrade_plan.sub_steps = [
-            *self.pre_upgrade_steps(target),
-            *self.upgrade_steps(target),
-            *self.post_upgrade_steps(target),
-        ]
+        upgrade_plan.add_steps(self.pre_upgrade_steps(target))
+        upgrade_plan.add_steps(self.upgrade_steps(target))
+        upgrade_plan.add_steps(self.post_upgrade_steps(target))
 
         return upgrade_plan
 
@@ -522,13 +520,13 @@ class OpenStackApplication:
             ),
             parallel=True,
         )
-        for unit in self.units:
-            step.add_step(
-                UnitUpgradeStep(
-                    description=f"Upgrade software packages on unit {unit.name}",
-                    coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
-                )
+        step.add_steps(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
             )
+            for unit in self.units
+        )
 
         return step
 
