@@ -16,7 +16,7 @@ import logging
 
 import pytest
 
-from cou.apps.subordinate import OpenStackSubordinateApplication
+from cou.apps.subordinate import SubordinateApplication
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
 from cou.utils.openstack import OpenStackRelease
@@ -27,9 +27,7 @@ logger = logging.getLogger(__name__)
 
 def test_post_init(status, model):
     app_status = status["keystone_ldap_focal_ussuri"]
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
-    )
+    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
     assert app.channel == "ussuri/stable"
     assert app.charm_origin == "ch"
     assert app.os_origin == ""
@@ -38,18 +36,14 @@ def test_post_init(status, model):
 
 def test_current_os_release(status, model):
     app_status = status["keystone_ldap_focal_ussuri"]
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
-    )
+    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
     assert app.current_os_release == OpenStackRelease("ussuri")
 
 
 def test_generate_upgrade_plan(status, model):
     target = OpenStackRelease("victoria")
     app_status = status["keystone_ldap_focal_ussuri"]
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
-    )
+    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
@@ -86,9 +80,7 @@ def test_generate_upgrade_plan(status, model):
 def test_channel_valid(status, model, channel):
     app_status = status["keystone_ldap_focal_ussuri"]
     app_status.charm_channel = channel
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
-    )
+    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
 
     assert app.channel == channel
 
@@ -106,9 +98,7 @@ def test_channel_setter_invalid(status, model, channel):
     app_status = status["keystone_ldap_focal_ussuri"]
     app_status.charm_channel = channel
     with pytest.raises(ApplicationError):
-        OpenStackSubordinateApplication(
-            "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
-        )
+        SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
 
 
 @pytest.mark.parametrize(
@@ -124,9 +114,7 @@ def test_generate_plan_ch_migration(status, model, channel):
     app_status = status["keystone_ldap_focal_ussuri"]
     app_status.charm = "cs:amd64/focal/keystone-ldap-437"
     app_status.charm_channel = f"ussuri/{channel}"
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
-    )
+    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
 
     upgrade_plan = app.generate_upgrade_plan(target)
 
@@ -162,9 +150,7 @@ def test_generate_plan_ch_migration(status, model, channel):
 def test_generate_plan_from_to(status, model, from_os, to_os):
     app_status = status["keystone_ldap_focal_ussuri"]
     app_status.charm_channel = f"{from_os}/stable"
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
-    )
+    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
 
     upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(to_os))
 
@@ -199,9 +185,7 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
 def test_generate_plan_in_same_version(status, model, from_to):
     app_status = status["keystone_ldap_focal_ussuri"]
     app_status.charm_channel = f"{from_to}/stable"
-    app = OpenStackSubordinateApplication(
-        "my_keystone_ldap", app_status, {}, model, "keystone-ldap", {}
-    )
+    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
 
     upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(from_to))
     expected_plan = ApplicationUpgradePlan(

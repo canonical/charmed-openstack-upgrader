@@ -16,8 +16,8 @@
 import pytest
 
 from cou.apps.auxiliary_subordinate import (
-    OpenStackAuxiliarySubordinateApplication,
-    OvnSubordinateApplication,
+    AuxiliarySubordinateApplication,
+    OvnSubordinate,
 )
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
@@ -56,7 +56,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
 
 
 def test_ovn_subordinate(status, model):
-    app = OvnSubordinateApplication(
+    app = OvnSubordinate(
         "ovn-chassis", status["ovn_chassis_focal_22"], {}, model, "ovn-chassis", {}
     )
     assert app.channel == "22.03/stable"
@@ -77,7 +77,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
         "ovn-upgrade-2203.html"
     )
 
-    app_ovn_chassis = OvnSubordinateApplication(
+    app_ovn_chassis = OvnSubordinate(
         "ovn-chassis",
         status["ovn_chassis_focal_20"],
         {},
@@ -92,7 +92,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
 
 def test_ovn_subordinate_upgrade_plan(status, model):
     target = OpenStackRelease("victoria")
-    app = OvnSubordinateApplication(
+    app = OvnSubordinate(
         "ovn-chassis",
         status["ovn_chassis_focal_22"],
         {},
@@ -125,7 +125,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
     target = OpenStackRelease("victoria")
     app_status = status["ovn_chassis_focal_22"]
     app_status.can_upgrade_to = ""
-    app = OvnSubordinateApplication(
+    app = OvnSubordinate(
         "ovn-chassis",
         app_status,
         {},
@@ -146,7 +146,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
 def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
     """Test when ceph version remains the same between os releases."""
     target = OpenStackRelease("victoria")
-    app = OpenStackAuxiliarySubordinateApplication(
+    app = AuxiliarySubordinateApplication(
         "ceph-dashboard",
         status["ceph_dashboard_octopus"],
         config["auxiliary_ussuri"],
@@ -176,7 +176,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
 def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
     """Test when ceph version changes between os releases."""
     target = OpenStackRelease("yoga")
-    app = OpenStackAuxiliarySubordinateApplication(
+    app = AuxiliarySubordinateApplication(
         "ceph-dashboard",
         status["ceph_dashboard_pacific"],
         config["auxiliary_xena"],

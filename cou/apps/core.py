@@ -15,7 +15,7 @@
 """Core application class."""
 import logging
 
-from cou.apps.base import OpenStackApplication
+from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class Keystone(OpenStackApplication):
     Keystone must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
 
@@ -39,4 +39,4 @@ class Octavia(OpenStackApplication):
     Octavia required more time to settle before COU can continue.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT

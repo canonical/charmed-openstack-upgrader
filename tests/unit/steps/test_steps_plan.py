@@ -138,7 +138,7 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 
 @pytest.mark.asyncio
-async def test_generate_plan(apps, model):
+async def test_generate_plan(apps, model, cli_args):
     target = OpenStackRelease("victoria")
     app_keystone = apps["keystone_focal_ussuri"]
     app_cinder = apps["cinder_focal_ussuri"]
@@ -149,7 +149,7 @@ async def test_generate_plan(apps, model):
         apps_data_plane=[],
     )
 
-    upgrade_plan = await generate_plan(analysis_result, backup_database=True)
+    upgrade_plan = await generate_plan(analysis_result, cli_args)
 
     expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
     expected_plan.add_step(
