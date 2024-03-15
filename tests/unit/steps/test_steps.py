@@ -21,6 +21,7 @@ import pytest
 
 from cou.exceptions import CanceledStep
 from cou.steps import (
+    DEPENDENCY_DESCRIPTION_PREFIX,
     BaseStep,
     PostUpgradeStep,
     PreUpgradeStep,
@@ -136,6 +137,23 @@ def test_step_str():
     assert str(plan) == expected
 
 
+def test_step_str_dependent():
+    """Test BaseStep string representation."""
+    expected = (
+        f"a\n\ta.a\n\t\t{DEPENDENCY_DESCRIPTION_PREFIX}a.a.a\n"
+        f"\t\t{DEPENDENCY_DESCRIPTION_PREFIX}a.a.b\n\ta.b\n"
+    )
+    plan = BaseStep(description="a")
+    sub_step = BaseStep(description="a.a")
+    sub_step.sub_steps = [
+        BaseStep(description="a.a.a", coro=mock_coro("a.a.a"), dependent=True),
+        BaseStep(description="a.a.b", coro=mock_coro("a.a.b"), dependent=True),
+    ]
+    plan.sub_steps = [sub_step, BaseStep(description="a.b", coro=mock_coro("a.b"))]
+
+    assert str(plan) == expected
+
+
 def test_step_str_not_show():
     """Test BaseStep string representation when does not print because it's empty."""
     plan = BaseStep(description="a")
@@ -226,6 +244,18 @@ def test_step_add_step_failed():
 
     with pytest.raises(TypeError, match=exp_error_msg):
         plan.add_step(MagicMock())
+
+
+def test_step_add_steps():
+    """Test BaseStep adding sub steps at once."""
+    exp_sub_steps = 3
+    plan = BaseStep(description="plan")
+    plan.add_steps(
+        [BaseStep(description=f"sub-step-{i}", coro=mock_coro()) for i in range(exp_sub_steps)]
+        + [BaseStep(description="empty-step")]  # we also check that empty step will not be added
+    )
+
+    assert len(plan.sub_steps) == exp_sub_steps
 
 
 def test_step_cancel_safe():

@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
@@ -46,7 +47,10 @@ from cou.utils.openstack import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
+STANDARD_IDLE_TIMEOUT: int = int(
+    os.environ.get("COU_STANDARD_IDLE_TIMEOUT", 5 * 60)
+)  # default of 5 min
+LONG_IDLE_TIMEOUT: int = int(os.environ.get("COU_LONG_IDLE_TIMEOUT", 30 * 60))  # default of 30 min
 
 
 @dataclass
@@ -90,7 +94,7 @@ class OpenStackApplication:
     charm: str
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
     packages_to_hold: Optional[list] = field(default=None, init=False)
-    wait_timeout: int = field(default=DEFAULT_WAITING_TIMEOUT, init=False)
+    wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
 
     def __post_init__(self) -> None:
@@ -508,11 +512,9 @@ class OpenStackApplication:
         upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to {target}",
         )
-        upgrade_plan.sub_steps = [
-            *self.pre_upgrade_steps(target),
-            *self.upgrade_steps(target),
-            *self.post_upgrade_steps(target),
-        ]
+        upgrade_plan.add_steps(self.pre_upgrade_steps(target))
+        upgrade_plan.add_steps(self.upgrade_steps(target))
+        upgrade_plan.add_steps(self.post_upgrade_steps(target))
 
         return upgrade_plan
 
@@ -528,13 +530,13 @@ class OpenStackApplication:
             ),
             parallel=True,
         )
-        for unit in self.units:
-            step.add_step(
-                UnitUpgradeStep(
-                    description=f"Upgrade software packages on unit {unit.name}",
-                    coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
-                )
+        step.add_steps(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
             )
+            for unit in self.units
+        )
 
         return step
 

@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from unittest.mock import patch
 
 import pytest
 
 from cou import commands
+from cou.commands import CLIargs
 
 
 @pytest.mark.parametrize(
@@ -61,11 +62,11 @@ def test_parse_args_quiet_verbose_exclusive(args):
 
 
 @pytest.mark.parametrize(
-    "args, expected_namespace",
+    "args, expected_CLIargs",
     [
         (
             ["plan"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=0,
@@ -76,7 +77,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "--no-backup"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=0,
@@ -87,7 +88,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "--no-backup", "--quiet"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=0,
@@ -98,7 +99,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "--model=model_name"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name="model_name",
                 verbosity=0,
@@ -109,7 +110,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "control-plane"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=0,
@@ -120,7 +121,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "data-plane"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=0,
@@ -134,7 +135,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "control-plane", "--verbose"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=1,
@@ -145,7 +146,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "data-plane", "--machine=1", "-m=2,3"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=0,
@@ -159,7 +160,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "data-plane", "--quiet", "--availability-zone=1", "--az=2,3"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=0,
@@ -173,7 +174,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
         (
             ["plan", "data-plane", "--hostname=1", "-n=2,3"],
-            Namespace(
+            CLIargs(
                 command="plan",
                 model_name=None,
                 verbosity=0,
@@ -187,19 +188,19 @@ def test_parse_args_quiet_verbose_exclusive(args):
         ),
     ],
 )
-def test_parse_args_plan(args, expected_namespace):
+def test_parse_args_plan(args, expected_CLIargs):
     """Test parsing 'plan' subcommand and its arguments/options."""
     parsed_args = commands.parse_args(args)
 
-    assert parsed_args == expected_namespace
+    assert parsed_args == expected_CLIargs
 
 
 @pytest.mark.parametrize(
-    "args, expected_namespace",
+    "args, expected_CLIargs",
     [
         (
             ["upgrade"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -211,7 +212,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "--no-backup"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -223,7 +224,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "--no-backup", "--quiet"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -235,7 +236,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "--model=model_name"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name="model_name",
                 verbosity=0,
@@ -247,7 +248,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "control-plane"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -259,7 +260,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "data-plane"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -274,7 +275,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "control-plane", "--verbose"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=1,
@@ -286,7 +287,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "data-plane", "--machine=1", "-m=2,3"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -301,7 +302,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "data-plane", "--quiet", "--availability-zone=1", "--az=2,3"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -316,7 +317,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "data-plane", "--hostname=1", "-n=2,3"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -331,7 +332,7 @@ def test_parse_args_plan(args, expected_namespace):
         ),
         (
             ["upgrade", "data-plane", "--auto-approve", "--hostname=1", "-n=2,3"],
-            Namespace(
+            CLIargs(
                 command="upgrade",
                 model_name=None,
                 verbosity=0,
@@ -346,11 +347,11 @@ def test_parse_args_plan(args, expected_namespace):
         ),
     ],
 )
-def test_parse_args_upgrade(args, expected_namespace):
+def test_parse_args_upgrade(args, expected_CLIargs):
     """Test parsing 'run' subcommand and its arguments/options."""
     parsed_args = commands.parse_args(args)
 
-    assert parsed_args == expected_namespace
+    assert parsed_args == expected_CLIargs
 
 
 @pytest.mark.parametrize(
