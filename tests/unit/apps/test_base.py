@@ -150,7 +150,7 @@ def test_get_pause_unit_step(model):
         machine=machines["0"],
     )
     expected_upgrade_step = UnitUpgradeStep(
-        description=f"Pause the unit: '{unit.name}'.",
+        description=f"Pause the unit: '{unit.name}'",
         coro=model.run_action(
             unit_name=f"{unit.name}", action_name="pause", raise_on_failure=True
         ),
@@ -185,7 +185,7 @@ def test_get_resume_unit_step(model):
         machine=machines["0"],
     )
     expected_upgrade_step = UnitUpgradeStep(
-        description=f"Resume the unit: '{unit.name}'.",
+        description=f"Resume the unit: '{unit.name}'",
         coro=model.run_action(unit_name=unit.name, action_name="resume", raise_on_failure=True),
     )
     app = OpenStackApplication(
@@ -218,7 +218,7 @@ def test_get_openstack_upgrade_step(model):
         machine=machines["0"],
     )
     expected_upgrade_step = UnitUpgradeStep(
-        description=f"Upgrade the unit: '{unit.name}'.",
+        description=f"Upgrade the unit: '{unit.name}'",
         coro=model.run_action(
             unit_name=unit.name, action_name="openstack-upgrade", raise_on_failure=True
         ),

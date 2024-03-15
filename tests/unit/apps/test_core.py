@@ -310,7 +310,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -319,7 +319,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -352,13 +352,13 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
@@ -400,7 +400,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -409,7 +409,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -417,7 +417,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
-            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            description=f"Migrate '{app.name}' from charmstore to charmhub",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone"),
         ),
@@ -442,13 +442,13 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
@@ -493,7 +493,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     # no sub-step for refresh current channel or next channel
     upgrade_packages = PreUpgradeStep(
@@ -503,7 +503,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -526,13 +526,13 @@ def test_upgrade_plan_channel_on_next_os_release(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
@@ -577,7 +577,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -586,7 +586,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -609,13 +609,13 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
@@ -695,7 +695,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         workload_version="17.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -704,7 +704,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -732,13 +732,13 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
@@ -792,7 +792,7 @@ def test_nova_compute_get_empty_hypervisor_step(model):
     unit = units[0]
 
     expected_step = UpgradeStep(
-        description=f"Check if unit {unit.name} has no VMs running before upgrading.",
+        description=f"Verify that unit '{unit.name}' has no VMs running",
         coro=nova_compute_utils.verify_empty_hypervisor_before_upgrade(unit, model),
     )
     assert app._get_empty_hypervisor_step(unit) == expected_step
@@ -804,7 +804,7 @@ def test_nova_compute_get_enable_scheduler_step(model):
     unit = units[0]
 
     expected_step = UpgradeStep(
-        description=f"Enable nova-compute scheduler from unit: '{unit.name}'.",
+        description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
         coro=model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True),
     )
     assert app._get_enable_scheduler_step(unit) == expected_step
@@ -816,7 +816,7 @@ def test_nova_compute_get_disable_scheduler_step(model):
     unit = units[0]
 
     expected_step = UpgradeStep(
-        description=f"Disable nova-compute scheduler from unit: '{unit.name}'.",
+        description=f"Disable nova-compute scheduler from unit: '{unit.name}'",
         coro=model.run_action(unit_name=unit.name, action_name="disable", raise_on_failure=True),
     )
     assert app._get_disable_scheduler_step(unit) == expected_step
@@ -843,39 +843,39 @@ def test_nova_compute_upgrade_plan(model):
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
         """\
-    Upgrade plan for 'nova-compute' to victoria
+    Upgrade plan for 'nova-compute' to 'victoria'
         Upgrade software packages of 'nova-compute' from the current APT repositories
-            Upgrade software packages on unit nova-compute/0
-            Upgrade software packages on unit nova-compute/1
-            Upgrade software packages on unit nova-compute/2
+            Upgrade software packages on unit 'nova-compute/0'
+            Upgrade software packages on unit 'nova-compute/1'
+            Upgrade software packages on unit 'nova-compute/2'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
         Change charm config of 'nova-compute' 'action-managed-upgrade' to True
         Upgrade 'nova-compute' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
-            Upgrade plan for unit: nova-compute/0
-                Disable nova-compute scheduler from unit: 'nova-compute/0'.
-                Check if unit nova-compute/0 has no VMs running before upgrading.
-                ├── Pause the unit: 'nova-compute/0'.
-                ├── Upgrade the unit: 'nova-compute/0'.
-                ├── Resume the unit: 'nova-compute/0'.
-                Enable nova-compute scheduler from unit: 'nova-compute/0'.
-            Upgrade plan for unit: nova-compute/1
-                Disable nova-compute scheduler from unit: 'nova-compute/1'.
-                Check if unit nova-compute/1 has no VMs running before upgrading.
-                ├── Pause the unit: 'nova-compute/1'.
-                ├── Upgrade the unit: 'nova-compute/1'.
-                ├── Resume the unit: 'nova-compute/1'.
-                Enable nova-compute scheduler from unit: 'nova-compute/1'.
-            Upgrade plan for unit: nova-compute/2
-                Disable nova-compute scheduler from unit: 'nova-compute/2'.
-                Check if unit nova-compute/2 has no VMs running before upgrading.
-                ├── Pause the unit: 'nova-compute/2'.
-                ├── Upgrade the unit: 'nova-compute/2'.
-                ├── Resume the unit: 'nova-compute/2'.
-                Enable nova-compute scheduler from unit: 'nova-compute/2'.
-        Wait 1800s for model test_model to reach the idle state.
-        Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
+            Upgrade plan for unit 'nova-compute/0'
+                Disable nova-compute scheduler from unit: 'nova-compute/0'
+                Verify that unit 'nova-compute/0' has no VMs running
+                ├── Pause the unit: 'nova-compute/0'
+                ├── Upgrade the unit: 'nova-compute/0'
+                ├── Resume the unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/0'
+            Upgrade plan for unit 'nova-compute/1'
+                Disable nova-compute scheduler from unit: 'nova-compute/1'
+                Verify that unit 'nova-compute/1' has no VMs running
+                ├── Pause the unit: 'nova-compute/1'
+                ├── Upgrade the unit: 'nova-compute/1'
+                ├── Resume the unit: 'nova-compute/1'
+                Enable nova-compute scheduler from unit: 'nova-compute/1'
+            Upgrade plan for unit 'nova-compute/2'
+                Disable nova-compute scheduler from unit: 'nova-compute/2'
+                Verify that unit 'nova-compute/2' has no VMs running
+                ├── Pause the unit: 'nova-compute/2'
+                ├── Upgrade the unit: 'nova-compute/2'
+                ├── Resume the unit: 'nova-compute/2'
+                Enable nova-compute scheduler from unit: 'nova-compute/2'
+        Wait for up to 1800s for model 'test_model' to reach the idle state
+        Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
@@ -912,23 +912,23 @@ def test_nova_compute_upgrade_plan_single_unit(model):
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
         """\
-    Upgrade plan for 'nova-compute' to victoria
+    Upgrade plan for 'nova-compute' to 'victoria'
         Upgrade software packages of 'nova-compute' from the current APT repositories
-            Upgrade software packages on unit nova-compute/0
+            Upgrade software packages on unit 'nova-compute/0'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
         Change charm config of 'nova-compute' 'action-managed-upgrade' to True
         Upgrade 'nova-compute' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0
-            Upgrade plan for unit: nova-compute/0
-                Disable nova-compute scheduler from unit: 'nova-compute/0'.
-                Check if unit nova-compute/0 has no VMs running before upgrading.
-                ├── Pause the unit: 'nova-compute/0'.
-                ├── Upgrade the unit: 'nova-compute/0'.
-                ├── Resume the unit: 'nova-compute/0'.
-                Enable nova-compute scheduler from unit: 'nova-compute/0'.
-        Wait 1800s for model test_model to reach the idle state.
-        Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0
+            Upgrade plan for unit 'nova-compute/0'
+                Disable nova-compute scheduler from unit: 'nova-compute/0'
+                Verify that unit 'nova-compute/0' has no VMs running
+                ├── Pause the unit: 'nova-compute/0'
+                ├── Upgrade the unit: 'nova-compute/0'
+                ├── Resume the unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/0'
+        Wait for up to 1800s for model 'test_model' to reach the idle state
+        Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
@@ -965,16 +965,17 @@ def test_cinder_upgrade_plan(model):
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
         """\
-    Upgrade plan for 'cinder' to victoria
+    Upgrade plan for 'cinder' to 'victoria'
         Upgrade software packages of 'cinder' from the current APT repositories
-            Upgrade software packages on unit cinder/0
-            Upgrade software packages on unit cinder/1
-            Upgrade software packages on unit cinder/2
+            Upgrade software packages on unit 'cinder/0'
+            Upgrade software packages on unit 'cinder/1'
+            Upgrade software packages on unit 'cinder/2'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
         Upgrade 'cinder' to the new channel: 'victoria/stable'
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
-        Wait 300s for app cinder to reach the idle state.
-        Check if the workload of 'cinder' has been upgraded on units: cinder/0, cinder/1, cinder/2
+        Wait for up to 300s for app 'cinder' to reach the idle state
+        Verify that the workload of 'cinder' has been upgraded on units: \
+cinder/0, cinder/1, cinder/2
     """
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
@@ -1014,20 +1015,20 @@ def test_cinder_upgrade_plan_single_unit(model):
     target = OpenStackRelease("victoria")
     exp_plan = dedent_plan(
         """\
-    Upgrade plan for 'cinder' to victoria
+    Upgrade plan for 'cinder' to 'victoria'
         Upgrade software packages of 'cinder' from the current APT repositories
-            Upgrade software packages on unit cinder/0
+            Upgrade software packages on unit 'cinder/0'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
         Change charm config of 'cinder' 'action-managed-upgrade' to True
         Upgrade 'cinder' to the new channel: 'victoria/stable'
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
         Upgrade plan for units: cinder/0
-            Upgrade plan for unit: cinder/0
-                Pause the unit: 'cinder/0'.
-                Upgrade the unit: 'cinder/0'.
-                Resume the unit: 'cinder/0'.
-        Wait 300s for app cinder to reach the idle state.
-        Check if the workload of 'cinder' has been upgraded on units: cinder/0
+            Upgrade plan for unit 'cinder/0'
+                Pause the unit: 'cinder/0'
+                Upgrade the unit: 'cinder/0'
+                Resume the unit: 'cinder/0'
+        Wait for up to 300s for app 'cinder' to reach the idle state
+        Verify that the workload of 'cinder' has been upgraded on units: cinder/0
     """
     )
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}

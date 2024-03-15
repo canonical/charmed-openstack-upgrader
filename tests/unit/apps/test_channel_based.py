@@ -184,7 +184,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -194,7 +194,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -263,7 +263,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -273,7 +273,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -302,13 +302,13 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
@@ -352,7 +352,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -362,7 +362,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -391,13 +391,13 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,

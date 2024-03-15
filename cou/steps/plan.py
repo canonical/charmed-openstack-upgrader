@@ -352,7 +352,7 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
     if args.backup:
         steps.append(
             PreUpgradeStep(
-                description="Backup mysql databases",
+                description="Back up MySQL databases",
                 coro=backup(analysis_result.model),
             )
         )
@@ -392,8 +392,8 @@ def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[P
         unit = list(app.units.values())[0]  # getting the first unit, since we don't care which one
         steps.append(
             PostUpgradeStep(
-                f"Ensure the 'require-osd-release' option in '{app.name}' matches the 'ceph-osd' "
-                "version",
+                f"Ensure that the 'require-osd-release' option in '{app.name}' matches the "
+                "'ceph-osd' version",
                 coro=set_require_osd_release_option(unit.name, app.model),
             )
         )
@@ -531,7 +531,7 @@ def create_upgrade_group(
     :type apps: list[OpenStackApplication]
     :param target: Target OpenStack release.
     :type target: OpenStackRelease
-    :param description: Description of the upgrade step.
+    :param description: Description of the upgrade plan.
     :type description: str
     :param force: Whether the plan generation should be forced
     :type force: bool
