@@ -63,17 +63,20 @@ def test_get_log_level(quiet, verbosity, level):
 @patch("cou.cli.COUModel")
 @patch("cou.cli.generate_plan", new_callable=AsyncMock)
 @patch("cou.cli.Analysis.create", new_callable=AsyncMock)
-async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
+async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli_args):
     """Test analyze_and_plan function with different model_name arguments."""
+    cli_args.model_name = None
+    cli_args.backup = False
+
     cou_model.return_value.connect.side_effect = AsyncMock()
     analysis_result = Analysis(model=cou_model, apps_control_plane=[], apps_data_plane=[])
     mock_analyze.return_value = analysis_result
 
-    await cli.analyze_and_plan(None, False)
+    await cli.analyze_and_plan(cli_args)
 
     cou_model.assert_called_once_with(None)
     mock_analyze.assert_awaited_once_with(cou_model.return_value)
-    mock_generate_plan.assert_awaited_once_with(analysis_result, False)
+    mock_generate_plan.assert_awaited_once_with(analysis_result, cli_args)
 
 
 @pytest.mark.asyncio
@@ -81,7 +84,7 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model):
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.print_and_debug")
 async def test_get_upgrade_plan(
-    mock_print_and_debug, mock_analyze_and_plan, mock_manually_upgrade
+    mock_print_and_debug, mock_analyze_and_plan, mock_manually_upgrade, cli_args
 ):
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
@@ -89,9 +92,9 @@ async def test_get_upgrade_plan(
     mock_analysis_result = MagicMock()
 
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
-    await cli.get_upgrade_plan(None, True)
+    await cli.get_upgrade_plan(cli_args)
 
-    mock_analyze_and_plan.assert_awaited_once_with(None, True)
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_print_and_debug.assert_called_once_with(plan)
     mock_manually_upgrade.assert_called_once()
 
@@ -104,29 +107,36 @@ async def test_get_upgrade_plan(
         (False, 0),
     ],
 )
+@patch("cou.cli.continue_upgrade", new_callable=AsyncMock)
 @patch("cou.cli.manually_upgrade_data_plane")
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("builtins.print")
 @patch("cou.cli.print_and_debug")
-async def test_run_upgrade_quiet(
+async def test_run_upgrade_quiet_no_prompt(
     mock_print_and_debug,
     mock_print,
     mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
+    mock_continue_upgrade,
     quiet,
     expected_print_count,
+    cli_args,
 ):
-    """Test get_upgrade_plan function in either quiet or non-quiet mode."""
+    """Test get_upgrade_plan function in either quiet or non-quiet mode without prompt."""
+    mock_continue_upgrade.return_value = True
+    cli_args.quiet = quiet
+    cli_args.prompt = False
+
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(model_name=None, backup_database=True, prompt=False, quiet=quiet)
+    await cli.run_upgrade(cli_args)
 
-    mock_analyze_and_plan.assert_awaited_once_with(None, True)
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_print_and_debug.assert_called_once_with(plan)
     mock_apply_step.assert_called_once_with(plan, False)
     mock_print.call_count == expected_print_count
@@ -143,16 +153,20 @@ async def test_run_upgrade_with_prompt_continue(
     mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
+    cli_args,
 ):
+    cli_args.prompt = True
+    cli_args.quiet = True
+
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
     mock_continue_upgrade.return_value = True
 
-    await cli.run_upgrade(model_name=None, backup_database=True, prompt=True, quiet=False)
+    await cli.run_upgrade(cli_args)
 
-    mock_analyze_and_plan.assert_awaited_once_with(None, True)
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_continue_upgrade.assert_awaited_once_with()
     mock_apply_step.assert_called_once_with(plan, True)
     mock_manually_upgrade.assert_called_once()
@@ -168,16 +182,20 @@ async def test_run_upgrade_with_prompt_abort(
     mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
+    cli_args,
 ):
+    cli_args.auto_approve = False
+    cli_args.quiet = True
+
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
     mock_continue_upgrade.return_value = False
 
-    await cli.run_upgrade(model_name=None, backup_database=True, prompt=True, quiet=False)
+    await cli.run_upgrade(cli_args)
 
-    mock_analyze_and_plan.assert_awaited_once_with(None, True)
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_continue_upgrade.assert_awaited_once_with()
     mock_apply_step.assert_not_awaited()
     mock_manually_upgrade.assert_not_called()
@@ -193,15 +211,19 @@ async def test_run_upgrade_with_no_prompt(
     mock_apply_step,
     mock_analyze_and_plan,
     mock_manually_upgrade,
+    cli_args,
 ):
+    cli_args.prompt = False
+    cli_args.quiet = True
+
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="backup mysql databases", parallel=False))
     mock_analysis_result = MagicMock()
     mock_analyze_and_plan.return_value = (mock_analysis_result, plan)
 
-    await cli.run_upgrade(model_name=None, backup_database=True, prompt=False, quiet=False)
+    await cli.run_upgrade(cli_args)
 
-    mock_analyze_and_plan.assert_awaited_once_with(None, True)
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_continue_upgrade.assert_not_awaited()
     mock_apply_step.assert_called_once_with(plan, False)
     mock_manually_upgrade.assert_called_once()
@@ -234,22 +256,17 @@ async def test_continue_upgrade(
 @pytest.mark.parametrize("command", ["plan", "upgrade", "other1", "other2"])
 @patch("cou.cli.get_upgrade_plan")
 @patch("cou.cli.run_upgrade")
-async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command):
+async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command, cli_args):
     """Test run command function."""
-    args = MagicMock(spec="argparse.Namespace")()
-    args.command = command
-    prompt = not args.auto_approve
+    cli_args.command = command
 
-    await cli._run_command(args)
+    await cli._run_command(cli_args)
 
     if command == "plan":
-        mock_get_upgrade_plan.assert_awaited_once_with(
-            args.model_name,
-            args.backup,
-        )
+        mock_get_upgrade_plan.assert_awaited_once_with(cli_args)
         mock_run_upgrade.assert_not_called()
     elif command == "upgrade":
-        mock_run_upgrade.assert_awaited_once_with(args.model_name, args.backup, prompt, args.quiet)
+        mock_run_upgrade.assert_awaited_once_with(cli_args)
         mock_get_upgrade_plan.assert_not_called()
     else:
         mock_run_upgrade.assert_not_called()
