@@ -1079,7 +1079,7 @@ def test_separate_hypervisors_apps(model):
         workload_version="21.0.0",
     )
 
-    # cinder colocated with nova-compute is considered as hypervisor
+    # apps colocated with nova-compute are considered as hypervisor
     cinder = OpenStackApplication(
         name="cinder",
         can_upgrade_to="ussuri/stable",
@@ -1164,7 +1164,45 @@ def test_separate_hypervisors_apps(model):
         workload_version="17.0.1",
     )
 
-    # Any principal app not collocated with nova-compute is considered as non-hypervisor
+    result = cou_plan._separate_hypervisors_apps(
+        [
+            nova_compute,
+            cinder,
+            ceph_osd_colocated,
+            ceph_osd_not_colocated,
+            ovn_chassis,
+        ]
+    )
+    assert result == (
+        [nova_compute, cinder],
+        [ceph_osd_colocated, ceph_osd_not_colocated, ovn_chassis],
+    )
+
+
+def test_separate_hypervisors_apps_raises(model):
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(2)}
+    nova_compute = NovaCompute(
+        name="nova-compute",
+        can_upgrade_to="ussuri/stable",
+        charm="nova-compute",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
+        machines=machines["0"],
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "nova-compute/0": COUUnit(
+                name="nova-compute/0",
+                workload_version="21.0.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="21.0.0",
+    )
+
+    # Any principal app not collocated with nova-compute is unknown to COU
     swift_proxy = OpenStackApplication(
         name="swift-proxy",
         can_upgrade_to="ussuri/stable",
@@ -1174,7 +1212,7 @@ def test_separate_hypervisors_apps(model):
             "openstack-origin": {"value": "distro"},
             "action-managed-upgrade": {"value": False},
         },
-        machines=machines["2"],
+        machines=machines["1"],
         model=model,
         origin="ch",
         series="focal",
@@ -1183,26 +1221,15 @@ def test_separate_hypervisors_apps(model):
             "swift-proxy/0": COUUnit(
                 name="swift-proxy/0",
                 workload_version="2.24.0",
-                machine=machines["2"],
+                machine=machines["1"],
             )
         },
         workload_version="2.24.0",
     )
 
-    result = cou_plan._separate_hypervisors_apps(
-        [
-            nova_compute,
-            cinder,
-            ceph_osd_colocated,
-            ceph_osd_not_colocated,
-            ovn_chassis,
-            swift_proxy,
-        ]
-    )
-    assert result == (
-        [nova_compute, cinder],
-        [ceph_osd_colocated, ceph_osd_not_colocated, ovn_chassis, swift_proxy],
-    )
+    exp_msg = f"COU does not know how to upgrade '{swift_proxy.name}'"
+    with pytest.raises(DataPlaneCannotUpgrade, match=exp_msg):
+        cou_plan._separate_hypervisors_apps([nova_compute, swift_proxy])
 
 
 @patch("cou.steps.plan.create_upgrade_group")

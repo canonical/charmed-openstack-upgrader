@@ -453,6 +453,7 @@ def _separate_hypervisors_apps(
 
     :param apps_data_plane: Applications from data-plane
     :type apps_data_plane: list[OpenStackApplication]
+    :raises DataPlaneCannotUpgrade: When an unknown data-plane app is passed.
     :return: Tuple containing two lists of hypervisors and non-hypervisors apps
     :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
     """
@@ -460,15 +461,12 @@ def _separate_hypervisors_apps(
     non_hypervisors_apps = []
     _, nova_compute_machines = _get_nova_compute_units_and_machines(apps_data_plane)
     for app in apps_data_plane:
-        if (
-            app.charm == "ceph-osd"
-            or app.is_subordinate
-            # any principal data-plane app that is not deployed in a nova-compute machine
-            or all(unit.machine not in nova_compute_machines for unit in app.units.values())
-        ):
+        if app.charm == "ceph-osd" or app.is_subordinate:
             non_hypervisors_apps.append(app)
-        else:
+        elif any(unit.machine in nova_compute_machines for unit in app.units.values()):
             hypervisor_apps.append(app)
+        else:
+            raise DataPlaneCannotUpgrade(f"COU does not know how to upgrade '{app.name}'")
     return hypervisor_apps, non_hypervisors_apps
 
 
