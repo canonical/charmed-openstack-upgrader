@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, PropertyMock, call, patch
 
 import pytest
 
@@ -154,49 +154,50 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify that all OpenStack applications are in idle state
-        Backup mysql databases
+        Back up MySQL databases
         Control Plane principal(s) upgrade plan
-            Upgrade plan for 'keystone' to victoria
+            Upgrade plan for 'keystone' to 'victoria'
                 Upgrade software packages of 'keystone' from the current APT repositories
-                    Upgrade software packages on unit keystone/0
+                    Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
                 Change charm config of 'keystone' 'action-managed-upgrade' to False
                 Upgrade 'keystone' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
-                Wait 1800s for model test_model to reach the idle state.
-                Check if the workload of 'keystone' has been upgraded on units: keystone/0
+                Wait for up to 1800s for model 'test_model' to reach the idle state
+                Verify that the workload of 'keystone' has been upgraded on units: keystone/0
         Control Plane subordinate(s) upgrade plan
-            Upgrade plan for 'keystone-ldap' to victoria
+            Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
-            Upgrade plan for 'az-1' to victoria
+            Upgrade plan for 'az-1' to 'victoria'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
-                    Upgrade software packages on unit nova-compute/0
+                    Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
                 Change charm config of 'nova-compute' 'action-managed-upgrade' to True
                 Upgrade 'nova-compute' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
-                    Upgrade plan for unit: nova-compute/0
-                        Disable nova-compute scheduler from unit: 'nova-compute/0'.
-                        Check if unit nova-compute/0 has no VMs running before upgrading.
-                        ├── Pause the unit: 'nova-compute/0'.
-                        ├── Upgrade the unit: 'nova-compute/0'.
-                        ├── Resume the unit: 'nova-compute/0'.
-                        Enable nova-compute scheduler from unit: 'nova-compute/0'.
-                Wait 1800s for model test_model to reach the idle state.
-                Check if the workload of 'nova-compute' has been upgraded on units: nova-compute/0
-        Data Plane ceph-osd upgrade plan
-            Upgrade plan for 'ceph-osd' to victoria
-                Check if all nova-compute units had been upgraded
+                    Upgrade plan for unit 'nova-compute/0'
+                        Disable nova-compute scheduler from unit: 'nova-compute/0'
+                        Verify that unit 'nova-compute/0' has no VMs running
+                        ├── Pause the unit: 'nova-compute/0'
+                        ├── Upgrade the unit: 'nova-compute/0'
+                        ├── Resume the unit: 'nova-compute/0'
+                        Enable nova-compute scheduler from unit: 'nova-compute/0'
+                Wait for up to 1800s for model 'test_model' to reach the idle state
+                Verify that the workload of 'nova-compute' has been upgraded on units: \
+nova-compute/0
+        Remaining Data Plane principal(s) upgrade plan
+            Upgrade plan for 'ceph-osd' to 'victoria'
+                Verify that all 'nova-compute' units had been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
-                    Upgrade software packages on unit ceph-osd/0
+                    Upgrade software packages on unit 'ceph-osd/0'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
-                Wait 300s for app ceph-osd to reach the idle state.
-                Check if the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
+                Wait for up to 300s for app 'ceph-osd' to reach the idle state
+                Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
         Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ovn-chassis' to victoria
+            Upgrade plan for 'ovn-chassis' to 'victoria'
                 Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
     """
     )
@@ -525,7 +526,7 @@ def test_create_upgrade_plan(force):
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = cou_plan.create_upgrade_group([app], target, description, force, lambda *_: True)
+    plan = cou_plan.create_upgrade_group([app], target, description, force)
 
     assert plan.description == description
     assert plan.parallel is False
@@ -544,7 +545,7 @@ def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan = cou_plan.create_upgrade_group([app], target, description, force, lambda *_: True)
+    plan = cou_plan.create_upgrade_group([app], target, description, force)
 
     assert len(plan.sub_steps) == 0
     app.generate_upgrade_plan.assert_called_once_with(target, force)
@@ -558,7 +559,7 @@ def test_create_upgrade_plan_failed(force):
     app.generate_upgrade_plan.side_effect = Exception("test")
 
     with pytest.raises(Exception, match="test"):
-        cou_plan.create_upgrade_group([app], "victoria", "test", force, lambda *_: True)
+        cou_plan.create_upgrade_group([app], "victoria", "test", force)
 
 
 @patch("cou.steps.plan.verify_hypervisors_cli_azs")
@@ -882,11 +883,32 @@ def test_get_ceph_mon_post_upgrade_steps_multiple(model):
 @patch("cou.steps.plan.create_upgrade_group")
 def test_generate_control_plane_plan(mock_create_upgrade_group):
     target = OpenStackRelease("victoria")
+    force = False
+
     keystone = MagicMock(spec_set=OpenStackApplication)()
+    keystone.is_subordinate = False
 
-    cou_plan._generate_control_plane_plan(target, [keystone], False)
+    keystone_ldap = MagicMock(spec_set=SubordinateApplication)()
+    keystone_ldap.is_subordinate = True
 
-    assert mock_create_upgrade_group.call_count == 2
+    cou_plan._generate_control_plane_plan(target, [keystone, keystone_ldap], force)
+
+    expected_calls = [
+        call(
+            apps=[keystone],
+            description="Control Plane principal(s) upgrade plan",
+            target=target,
+            force=force,
+        ),
+        call(
+            apps=[keystone_ldap],
+            description="Control Plane subordinate(s) upgrade plan",
+            target=target,
+            force=force,
+        ),
+    ]
+
+    mock_create_upgrade_group.assert_has_calls(expected_calls)
 
 
 @pytest.mark.asyncio
@@ -895,13 +917,13 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
-@patch("cou.steps.plan._generate_hypervisors_plan", return_value=UpgradePlan("foo"))
-@patch("cou.steps.plan._generate_ceph_osd_and_subordinates_plan")
+@patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
+@patch("cou.steps.plan._generate_data_plane_remaining_plan")
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_None(
     mock_post_upgrade_steps,
     mock_ceph_osd_subordinates,
-    mock_generate_hypervisors_plan,
+    mock_generate_data_plane_hypervisors_plan,
     mock_separate_hypervisors_apps,
     mock_control_plane,
     mock_pre_upgrade_steps,
@@ -920,7 +942,7 @@ async def test_generate_plan_upgrade_group_None(
     mock_control_plane.assert_called_once()
     mock_separate_hypervisors_apps.assert_called_once()
 
-    mock_generate_hypervisors_plan.assert_called_once()
+    mock_generate_data_plane_hypervisors_plan.assert_called_once()
     mock_ceph_osd_subordinates.assert_called_once()
     mock_post_upgrade_steps.assert_called_once()
 
@@ -931,13 +953,13 @@ async def test_generate_plan_upgrade_group_None(
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
-@patch("cou.steps.plan._generate_hypervisors_plan", return_value=UpgradePlan("foo"))
-@patch("cou.steps.plan._generate_ceph_osd_and_subordinates_plan")
+@patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
+@patch("cou.steps.plan._generate_data_plane_remaining_plan")
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_control_plane(
     mock_post_upgrade_steps,
     mock_ceph_osd_subordinates,
-    mock_generate_hypervisors_plan,
+    mock_generate_data_plane_hypervisors_plan,
     mock_separate_hypervisors_apps,
     mock_control_plane,
     mock_pre_upgrade_steps,
@@ -956,7 +978,7 @@ async def test_generate_plan_upgrade_group_control_plane(
     mock_control_plane.assert_called_once()
     mock_separate_hypervisors_apps.assert_called_once()
 
-    mock_generate_hypervisors_plan.assert_not_called()
+    mock_generate_data_plane_hypervisors_plan.assert_not_called()
     mock_ceph_osd_subordinates.assert_not_called()
     mock_post_upgrade_steps.assert_called_once()
 
@@ -967,13 +989,13 @@ async def test_generate_plan_upgrade_group_control_plane(
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
-@patch("cou.steps.plan._generate_hypervisors_plan", return_value=UpgradePlan("foo"))
-@patch("cou.steps.plan._generate_ceph_osd_and_subordinates_plan")
+@patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
+@patch("cou.steps.plan._generate_data_plane_remaining_plan")
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_data_plane(
     mock_post_upgrade_steps,
     mock_ceph_osd_subordinates,
-    mock_generate_hypervisors_plan,
+    mock_generate_data_plane_hypervisors_plan,
     mock_separate_hypervisors_apps,
     mock_control_plane,
     mock_pre_upgrade_steps,
@@ -992,7 +1014,7 @@ async def test_generate_plan_upgrade_group_data_plane(
     mock_control_plane.assert_not_called()
     mock_separate_hypervisors_apps.assert_called_once()
 
-    mock_generate_hypervisors_plan.assert_called_once()
+    mock_generate_data_plane_hypervisors_plan.assert_called_once()
     mock_ceph_osd_subordinates.assert_called_once()
     mock_post_upgrade_steps.assert_called_once()
 
@@ -1003,13 +1025,13 @@ async def test_generate_plan_upgrade_group_data_plane(
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
-@patch("cou.steps.plan._generate_hypervisors_plan", return_value=UpgradePlan("foo"))
-@patch("cou.steps.plan._generate_ceph_osd_and_subordinates_plan")
+@patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
+@patch("cou.steps.plan._generate_data_plane_remaining_plan")
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_hypervisors(
     mock_post_upgrade_steps,
     mock_ceph_osd_subordinates,
-    mock_generate_hypervisors_plan,
+    mock_generate_data_plane_hypervisors_plan,
     mock_separate_hypervisors_apps,
     mock_control_plane,
     mock_pre_upgrade_steps,
@@ -1028,42 +1050,185 @@ async def test_generate_plan_upgrade_group_hypervisors(
     mock_control_plane.assert_not_called()
     mock_separate_hypervisors_apps.assert_called_once()
 
-    mock_generate_hypervisors_plan.assert_called_once()
+    mock_generate_data_plane_hypervisors_plan.assert_called_once()
     mock_ceph_osd_subordinates.assert_not_called()
     mock_post_upgrade_steps.assert_called_once()
 
 
-def test_separate_hypervisors_apps():
-    nova_compute = MagicMock(spec_set=OpenStackApplication)()
-    nova_compute.charm = "nova-compute"
-    nova_compute.is_subordinate = False
+def test_separate_hypervisors_apps(model):
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
 
-    cinder = MagicMock(spec_set=OpenStackApplication)()
-    cinder.charm = "cinder"
-    cinder.is_subordinate = False
+    nova_compute = NovaCompute(
+        name="nova-compute",
+        can_upgrade_to="ussuri/stable",
+        charm="nova-compute",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
+        machines=machines["0"],
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "nova-compute/0": COUUnit(
+                name="nova-compute/0",
+                workload_version="21.0.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="21.0.0",
+    )
 
-    ceph_osd = MagicMock(spec_set=OpenStackApplication)()
-    ceph_osd.charm = "ceph-osd"
-    ceph_osd.is_subordinate = False
+    # cinder colocated with nova-compute is considered as hypervisor
+    cinder = OpenStackApplication(
+        name="cinder",
+        can_upgrade_to="ussuri/stable",
+        charm="cinder",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": False},
+        },
+        machines=machines["0"],
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "cinder/0": COUUnit(
+                name="cinder/0",
+                workload_version="16.4.2",
+                machine=machines["0"],
+            )
+        },
+        workload_version="16.4.2",
+    )
 
-    ovn_chassis = MagicMock(spec_set=OvnSubordinate)()
-    ovn_chassis.charm = "ovn-chassis"
-    ovn_chassis.is_subordinate = True
+    # subordinates are considered as non-hypervisors
+    ovn_chassis = OvnSubordinate(
+        name="ovn-chassis",
+        can_upgrade_to="22.03/stable",
+        charm="ovn-chassis",
+        channel="22.03/stable",
+        config={},
+        machines=machines["0"],
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="22.3",
+    )
 
-    result = cou_plan._separate_hypervisors_apps([nova_compute, cinder, ceph_osd, ovn_chassis])
-    assert result == ([nova_compute, cinder], [ceph_osd, ovn_chassis])
+    # ceph-osd colocated with nova-compute is considered as non-hypervisor
+    ceph_osd_colocated = CephOsd(
+        name="ceph-osd-colocated",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines["0"],
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "ceph-osd/0": COUUnit(
+                name="ceph-osd/0",
+                workload_version="17.0.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="17.0.1",
+    )
+
+    # ceph-osd not colocated with nova-compute is considered as non-hypervisor
+    ceph_osd_not_colocated = CephOsd(
+        name="ceph-osd-not-colocated",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines["1"],
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "ceph-osd/0": COUUnit(
+                name="ceph-osd/0",
+                workload_version="17.0.1",
+                machine=machines["1"],
+            )
+        },
+        workload_version="17.0.1",
+    )
+
+    # Any principal app not collocated with nova-compute is considered as non-hypervisor
+    swift_proxy = OpenStackApplication(
+        name="swift-proxy",
+        can_upgrade_to="ussuri/stable",
+        charm="swift-proxy",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": False},
+        },
+        machines=machines["2"],
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "swift-proxy/0": COUUnit(
+                name="swift-proxy/0",
+                workload_version="2.24.0",
+                machine=machines["2"],
+            )
+        },
+        workload_version="2.24.0",
+    )
+
+    result = cou_plan._separate_hypervisors_apps(
+        [
+            nova_compute,
+            cinder,
+            ceph_osd_colocated,
+            ceph_osd_not_colocated,
+            ovn_chassis,
+            swift_proxy,
+        ]
+    )
+    assert result == (
+        [nova_compute, cinder],
+        [ceph_osd_colocated, ceph_osd_not_colocated, ovn_chassis, swift_proxy],
+    )
 
 
 @patch("cou.steps.plan.create_upgrade_group")
-def test_generate_ceph_osd_and_subordinates_plan(mock_create_upgrade_group):
+def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
     target = OpenStackRelease("victoria")
-    non_hypervisors_apps = [
-        MagicMock(spec_set=OpenStackApplication)(),
-        MagicMock(spec_set=OvnSubordinate)(),
+    force = False
+
+    ceph_osd = MagicMock(spec_set=CephOsd)()
+    ceph_osd.is_subordinate = False
+
+    ovn_chassis = MagicMock(spec_set=OvnSubordinate)()
+    ovn_chassis.is_subordinate = True
+
+    cou_plan._generate_data_plane_remaining_plan(target, [ceph_osd, ovn_chassis], force)
+    expected_calls = [
+        call(
+            apps=[ceph_osd],
+            description="Remaining Data Plane principal(s) upgrade plan",
+            target=target,
+            force=force,
+        ),
+        call(
+            apps=[ovn_chassis],
+            description="Data Plane subordinate(s) upgrade plan",
+            target=target,
+            force=force,
+        ),
     ]
-    result = cou_plan._generate_ceph_osd_and_subordinates_plan(target, non_hypervisors_apps, False)
-    assert mock_create_upgrade_group.call_count == 2
-    assert result == [
-        mock_create_upgrade_group.return_value,
-        mock_create_upgrade_group.return_value,
-    ]
+    mock_create_upgrade_group.assert_has_calls(expected_calls)
