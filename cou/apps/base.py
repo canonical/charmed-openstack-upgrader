@@ -38,7 +38,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import COUModel, Machine
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -59,8 +59,8 @@ class ApplicationUnit:
 
     name: str
     os_version: OpenStackRelease
+    machine: Machine
     workload_version: str = ""
-    machine: str = ""
 
 
 @dataclass
@@ -77,6 +77,8 @@ class OpenStackApplication:
     :type model: COUModel
     :param charm: Name of the charm.
     :type charm: str
+    :param machines: dictionary with Machine
+    :type machines: dict[str, Machine]
     :param units: Units representation of an application.
     :type units: list[ApplicationUnit]
     :raises ApplicationError: When there are no compatible OpenStack release for the
@@ -95,6 +97,7 @@ class OpenStackApplication:
     config: dict
     model: COUModel
     charm: str
+    machines: dict[str, Machine]
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
     packages_to_hold: Optional[list] = field(default=None, init=False)
     wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
@@ -177,7 +180,7 @@ class OpenStackApplication:
                         name=name,
                         workload_version=unit.workload_version,
                         os_version=compatible_os_version,
-                        machine=unit.machine,
+                        machine=self.machines[unit.machine],
                     )
                 )
 
@@ -390,16 +393,8 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        try:
-            # get the OpenStack release from the channel track of the application.
-            os_track_release_channel = OpenStackRelease(self._get_track_from_channel(self.channel))
-        except ValueError:
-            logger.debug(
-                "The current channel of '%s' does not exist or is unexpectedly formatted",
-                self.name,
-            )
-            os_track_release_channel = self.current_os_release
-        return os_track_release_channel
+        # get the OpenStack release from the channel track of the application.
+        return OpenStackRelease(self._get_track_from_channel(self.channel))
 
     @property
     def can_upgrade_current_channel(self) -> bool:

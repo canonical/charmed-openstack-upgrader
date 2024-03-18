@@ -18,6 +18,7 @@ import pytest
 from juju.action import Action
 from juju.application import Application
 from juju.client.connector import NoConnectionException
+from juju.machine import Machine
 from juju.model import Model
 from juju.unit import Unit
 
@@ -31,6 +32,35 @@ from cou.exceptions import (
     WaitForApplicationsTimeout,
 )
 from cou.utils import juju_utils
+
+
+@pytest.fixture
+def mocked_model(mocker):
+    """Fixture providing mocked juju.model.Model object."""
+    mocker.patch("cou.utils.juju_utils.FileJujuData")
+    model_mocker = mocker.patch("cou.utils.juju_utils.Model", return_value=AsyncMock(Model))
+    model = model_mocker.return_value
+    model.connection.return_value.is_open = True  # simulate already connected model
+    yield model
+
+
+def _generate_juju_unit(app: str, machine_id: str) -> MagicMock:
+    unit = MagicMock(set=Unit)()
+    unit.application = app
+    unit.machine.id = machine_id
+    return unit
+
+
+def _generate_juju_machine(machine_id: str) -> MagicMock:
+    machine = MagicMock(set=Machine)()
+    machine.id = machine_id
+    machine.hardware_characteristics = {
+        "arch": "amd64",
+        "mem": 0,
+        "cpu-cores": 0,
+        "availability-zone": f"zone-{int(machine_id) + 1}",
+    }
+    return machine
 
 
 def test_normalize_action_results():
@@ -135,14 +165,26 @@ async def test_retry_failure():
         await test_model.func()
 
 
-@pytest.fixture
-def mocked_model(mocker):
-    """Fixture providing mocked juju.model.Model object."""
-    mocker.patch("cou.utils.juju_utils.FileJujuData")
-    model_mocker = mocker.patch("cou.utils.juju_utils.Model", return_value=AsyncMock(Model))
-    model = model_mocker.return_value
-    model.connection.return_value.is_open = True  # simulate already connected model
-    yield model
+@pytest.mark.parametrize(
+    "machine_id, az",
+    [
+        # one field different is considered another machine
+        ("0", "zone-3"),
+        ("1", "zone-2"),
+    ],
+)
+def test_machine_not_eq(machine_id, az):
+    machine_0 = juju_utils.Machine("0", (), "zone-1")
+    machine_1 = juju_utils.Machine(machine_id, (), az)
+
+    assert machine_0 != machine_1
+
+
+def test_machine_eq():
+    machine_0 = juju_utils.Machine("0", (), "zone-1")
+    machine_1 = juju_utils.Machine("0", (), "zone-1")
+
+    assert machine_0 == machine_1
 
 
 @patch("cou.utils.juju_utils.FileJujuData")
@@ -530,3 +572,36 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
         status="active",
     )
     mock_get_supported_apps.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_get_machines(mocked_model):
+    """Test COUModel getting machines from model."""
+    expected_machines = {
+        "0": juju_utils.Machine(
+            "0",
+            (
+                "app1",
+                "app2",
+            ),
+            "zone-1",
+        ),
+        "1": juju_utils.Machine("1", ("app1",), "zone-2"),
+        "2": juju_utils.Machine("2", ("app1",), "zone-3"),
+    }
+    mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
+    mocked_model.units = {
+        "app1/0": _generate_juju_unit("app1", "0"),
+        "app1/1": _generate_juju_unit("app1", "1"),
+        "app1/2": _generate_juju_unit("app1", "2"),
+        "app2/0": _generate_juju_unit("app2", "0"),
+    }
+    mocked_model.applications = {
+        "app1": MagicMock(spec_set=Application)(),
+        "app2": MagicMock(spec_set=Application)(),
+    }
+
+    model = juju_utils.COUModel("test-model")
+    machines = await model.get_machines()
+
+    assert machines == expected_machines
