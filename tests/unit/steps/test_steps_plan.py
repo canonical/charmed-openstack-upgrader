@@ -1179,57 +1179,27 @@ def test_separate_hypervisors_apps(model):
     )
 
 
-def test_separate_hypervisors_apps_raises(model):
-    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(2)}
-    nova_compute = NovaCompute(
-        name="nova-compute",
-        can_upgrade_to="ussuri/stable",
-        charm="nova-compute",
-        channel="ussuri/stable",
-        config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
-        machines=machines["0"],
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units={
-            "nova-compute/0": COUUnit(
-                name="nova-compute/0",
-                workload_version="21.0.0",
-                machine=machines["0"],
-            )
-        },
-        workload_version="21.0.0",
-    )
+@pytest.mark.asyncio
+@patch("cou.steps.plan.HypervisorUpgradePlanner")
+@patch("cou.steps.plan.filter_hypervisors_machines")
+async def test_generate_data_plane_hypervisors_plan(
+    mock_filter_hypervisors, mock_hypervisor_planner, cli_args
+):
+    apps = [MagicMock(spec_set=OpenStackApplication)()]
+    target = OpenStackRelease("victoria")
+    analysis_result = MagicMock(spec_set=Analysis)()
+    hypervisors_machines = [COUMachine("0", (), "zone-0")]
+    mock_filter_hypervisors.return_value = hypervisors_machines
+    hypervisor_planner_instance = mock_hypervisor_planner.return_value
+    cli_args.force = False
 
-    # Any principal app not collocated with nova-compute is unknown to COU
-    swift_proxy = OpenStackApplication(
-        name="swift-proxy",
-        can_upgrade_to="ussuri/stable",
-        charm="swift-proxy",
-        channel="ussuri/stable",
-        config={
-            "openstack-origin": {"value": "distro"},
-            "action-managed-upgrade": {"value": False},
-        },
-        machines=machines["1"],
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units={
-            "swift-proxy/0": COUUnit(
-                name="swift-proxy/0",
-                workload_version="2.24.0",
-                machine=machines["1"],
-            )
-        },
-        workload_version="2.24.0",
-    )
+    await cou_plan._generate_data_plane_hypervisors_plan(target, analysis_result, cli_args, apps)
 
-    exp_msg = f"COU does not know how to upgrade '{swift_proxy.name}'"
-    with pytest.raises(DataPlaneCannotUpgrade, match=exp_msg):
-        cou_plan._separate_hypervisors_apps([nova_compute, swift_proxy])
+    mock_filter_hypervisors.assert_called_once_with(cli_args, analysis_result)
+    mock_hypervisor_planner.assert_called_once_with(apps, hypervisors_machines)
+    hypervisor_planner_instance.generate_upgrade_plan.assert_called_once_with(
+        target, cli_args.force
+    )
 
 
 @patch("cou.steps.plan.create_upgrade_group")

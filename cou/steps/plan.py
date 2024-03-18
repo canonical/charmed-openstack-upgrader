@@ -323,7 +323,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
         plan.add_step(
             await _generate_data_plane_hypervisors_plan(
-                args, analysis_result, target, hypervisor_apps
+                target, analysis_result, args, hypervisor_apps
             )
         )
 
@@ -447,43 +447,45 @@ def _generate_control_plane_plan(
 
 
 def _separate_hypervisors_apps(
-    apps_data_plane: list[OpenStackApplication],
+    apps: list[OpenStackApplication],
 ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
     """Separate what is considered hypervisors apps from non-hypervisors apps.
 
-    :param apps_data_plane: Applications from data-plane
-    :type apps_data_plane: list[OpenStackApplication]
+    :param apps: Applications from data-plane
+    :type apps: list[OpenStackApplication]
     :raises DataPlaneCannotUpgrade: When an unknown data-plane app is passed.
     :return: Tuple containing two lists of hypervisors and non-hypervisors apps
     :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
     """
     hypervisor_apps = []
     non_hypervisors_apps = []
-    _, nova_compute_machines = _get_nova_compute_units_and_machines(apps_data_plane)
-    for app in apps_data_plane:
-        if app.charm == "ceph-osd" or app.is_subordinate:
-            non_hypervisors_apps.append(app)
-        elif any(unit.machine in nova_compute_machines for unit in app.units.values()):
+    _, nova_compute_machines = _get_nova_compute_units_and_machines(apps)
+    for app in apps:
+        if (
+            any(unit.machine in nova_compute_machines for unit in app.units.values())
+            and app.charm != "ceph-osd"
+            and app.is_subordinate is False
+        ):
             hypervisor_apps.append(app)
         else:
-            raise DataPlaneCannotUpgrade(f"COU does not know how to upgrade '{app.name}'")
+            non_hypervisors_apps.append(app)
     return hypervisor_apps, non_hypervisors_apps
 
 
 async def _generate_data_plane_hypervisors_plan(
-    args: CLIargs,
-    analysis_result: Analysis,
     target: OpenStackRelease,
+    analysis_result: Analysis,
+    args: CLIargs,
     apps: list[OpenStackApplication],
 ) -> UpgradePlan:
     """Generate upgrade plan for hypervisors.
 
-    :param args: CLI arguments
-    :type args: CLIargs
-    :param analysis_result: Analysis result
-    :type analysis_result: Analysis
     :param target: Target OpenStack release.
     :type target: OpenStackRelease
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
     :param apps: Hypervisor apps
     :type apps: list[OpenStackApplication]
     :return: Hypervisors upgrade plan.
@@ -576,20 +578,17 @@ async def _get_upgradable_hypervisors_machines(
 
 
 def _get_nova_compute_units_and_machines(
-    apps_data_plane: list[OpenStackApplication],
+    apps: list[OpenStackApplication],
 ) -> tuple[list[COUUnit], list[COUMachine]]:
     """Get the nova-compute units and machines.
 
-    :param apps_data_plane: Data-plane apps
-    :type apps_data_plane: list[OpenStackApplication]
+    :param apps: Data-plane apps
+    :type apps: list[OpenStackApplication]
     :return: A tuple containing a list of nova-compute units and a list of machines
     :rtype: tuple[list[COUUnit], list[COUMachine]]
     """
     nova_compute_units = [
-        unit
-        for app in apps_data_plane
-        for unit in app.units.values()
-        if app.charm == "nova-compute"
+        unit for app in apps for unit in app.units.values() if app.charm == "nova-compute"
     ]
 
     return nova_compute_units, [unit.machine for unit in nova_compute_units]
