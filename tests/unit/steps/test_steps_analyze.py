@@ -18,6 +18,7 @@ import pytest
 from cou.apps.base import ApplicationUnit, OpenStackApplication
 from cou.steps import analyze
 from cou.steps.analyze import Analysis
+from cou.utils.juju_utils import Machine
 
 
 def test_analysis_dump(apps, model):
@@ -75,9 +76,9 @@ def test_analysis_dump(apps, model):
     result = analyze.Analysis(
         model=model,
         apps_control_plane=[
-            apps["keystone_ussuri"],
-            apps["cinder_ussuri"],
-            apps["rmq_ussuri"],
+            apps["keystone_focal_ussuri"],
+            apps["cinder_focal_ussuri"],
+            apps["rmq"],
         ],
         apps_data_plane=[],
     )
@@ -85,9 +86,15 @@ def test_analysis_dump(apps, model):
 
 
 @pytest.mark.asyncio
-async def test_populate_model(full_status, config, model):
+async def test_populate_model(full_status, config, model, apps_machines):
     model.get_status = AsyncMock(return_value=full_status)
     model.get_application_config = AsyncMock(return_value=config["openstack_ussuri"])
+
+    machines = {}
+    for sub_dict in apps_machines.values():
+        machines.update(sub_dict)
+
+    model.get_machines = AsyncMock(return_value=machines)
 
     # Initially, 6 applications are in the status: keystone, cinder, rabbitmq-server, my-app,
     # ceph-osd and nova-compute. my-app it's not on the lookup table, so won't be instantiated.
@@ -108,7 +115,7 @@ async def test_populate_model(full_status, config, model):
 @patch.object(analyze.Analysis, "_populate", new_callable=AsyncMock)
 async def test_analysis_create(mock_populate, apps, model):
     """Test analysis object."""
-    exp_apps = [apps["keystone_ussuri"], apps["cinder_ussuri"], apps["rmq_ussuri"]]
+    exp_apps = [apps["keystone_focal_ussuri"], apps["cinder_focal_ussuri"], apps["rmq"]]
     expected_result = analyze.Analysis(
         model=model, apps_control_plane=exp_apps, apps_data_plane=[]
     )
@@ -123,7 +130,11 @@ async def test_analysis_create(mock_populate, apps, model):
 async def test_analysis_detect_current_cloud_os_release_different_releases(apps, model):
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[apps["rmq_ussuri"], apps["keystone_wallaby"], apps["cinder_ussuri"]],
+        apps_control_plane=[
+            apps["rmq"],
+            apps["keystone_focal_wallaby"],
+            apps["cinder_focal_ussuri"],
+        ],
         apps_data_plane=[],
     )
 
@@ -135,7 +146,7 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(apps,
 async def test_analysis_detect_current_cloud_os_release_same_release(apps, model):
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[apps["cinder_ussuri"], apps["keystone_ussuri"]],
+        apps_control_plane=[apps["cinder_focal_ussuri"], apps["keystone_focal_ussuri"]],
         apps_data_plane=[],
     )
 
@@ -147,7 +158,11 @@ async def test_analysis_detect_current_cloud_os_release_same_release(apps, model
 async def test_analysis_detect_current_cloud_series_same_series(apps, model):
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[apps["rmq_ussuri"], apps["keystone_wallaby"], apps["cinder_ussuri"]],
+        apps_control_plane=[
+            apps["rmq"],
+            apps["keystone_focal_wallaby"],
+            apps["cinder_focal_ussuri"],
+        ],
         apps_data_plane=[],
     )
 
@@ -157,9 +172,13 @@ async def test_analysis_detect_current_cloud_series_same_series(apps, model):
 
 @pytest.mark.asyncio
 async def test_analysis_detect_current_cloud_series_different_series(apps, model):
+    # change keystone to bionic
+    keystone_bionic_ussuri = apps["keystone_focal_ussuri"]
+    keystone_bionic_ussuri.status.series = "bionic"
+
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[apps["cinder_ussuri"], apps["keystone_bionic_ussuri"]],
+        apps_control_plane=[apps["cinder_focal_ussuri"], keystone_bionic_ussuri],
         apps_data_plane=[],
     )
 
@@ -174,9 +193,9 @@ def _app(name, units):
     return app
 
 
-def _unit(machine):
+def _unit(machine_id):
     unit = MagicMock(spec_set=ApplicationUnit).return_value
-    unit.machine = machine
+    unit.machine = Machine(machine_id, (), "zone-1")
     return unit
 
 
