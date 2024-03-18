@@ -16,6 +16,7 @@
 import asyncio
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Optional
 
@@ -127,6 +128,15 @@ def retry(
         return _wrapper(function)
 
     return _wrapper
+
+
+@dataclass(frozen=True)
+class Machine:
+    """Representation of a juju machine."""
+
+    machine_id: str
+    apps: tuple[str]
+    az: Optional[str] = None  # simple deployments may not have azs
 
 
 class COUModel:
@@ -499,3 +509,24 @@ class COUModel:
             apps = await self._get_supported_apps()
 
         await _wait_for_active_idle()
+
+    async def get_machines(self) -> dict[str, Machine]:
+        """Get all the machines in the model.
+
+        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
+        :rtype: dict[str, Machine]
+        """
+        model = await self._get_model()
+
+        return {
+            machine.id: Machine(
+                machine_id=machine.id,
+                apps=tuple(
+                    unit.application
+                    for unit in self._model.units.values()
+                    if unit.machine.id == machine.id
+                ),
+                az=machine.hardware_characteristics.get("availability-zone"),
+            )
+            for machine in model.machines.values()
+        }
