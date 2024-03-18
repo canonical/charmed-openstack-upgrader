@@ -124,6 +124,7 @@ def test_hypervisor_azs_grouping():
     5        started  10.10.10.6   host5          ubuntu@22.04  az2 Running
     ```
     """
+    target = OpenStackRelease("victoria")
     machines = {f"{i}": COUMachine(f"{i}", (), f"az{i//2}") for i in range(6)}
     units = {
         # app1
@@ -142,9 +143,12 @@ def test_hypervisor_azs_grouping():
     app1 = MagicMock(spec_set=COUApplication)()
     app1.name = "app1"
     app1.units = {name: unit for name, unit in units.items() if name.startswith("app1")}
+    app1.get_latest_os_version.return_value = OpenStackRelease("ussuri")
+
     app2 = MagicMock(spec_set=COUApplication)()
     app2.name = "app2"
     app2.units = {name: unit for name, unit in units.items() if name.startswith("app2")}
+    app2.get_latest_os_version.return_value = OpenStackRelease("ussuri")
 
     # passing all machines to the HypervisorUpgradePlanner
     exp_azs_all = AZs()
@@ -157,7 +161,7 @@ def test_hypervisor_azs_grouping():
 
     hypervisor_planner_all = HypervisorUpgradePlanner([app1, app2], list(machines.values()))
 
-    assert dict(hypervisor_planner_all.azs) == exp_azs_all
+    assert dict(hypervisor_planner_all.get_azs(target)) == exp_azs_all
 
     # passing machine 0 to the HypervisorUpgradePlanner
     exp_azs_0 = AZs()
@@ -165,14 +169,116 @@ def test_hypervisor_azs_grouping():
     exp_azs_0["az0"].app_units["app2"] = [units["app2/0"]]
 
     hypervisor_planner_machine_0 = HypervisorUpgradePlanner([app1, app2], [machines["0"]])
-    assert dict(hypervisor_planner_machine_0.azs) == exp_azs_0
+    assert dict(hypervisor_planner_machine_0.get_azs(target)) == exp_azs_0
 
     # passing machine 1 to the HypervisorUpgradePlanner
     exp_azs_1 = AZs()
     exp_azs_1["az0"].app_units["app1"] = [units["app1/1"]]
 
     hypervisor_planner_machine_1 = HypervisorUpgradePlanner([app1, app2], [machines["1"]])
-    assert dict(hypervisor_planner_machine_1.azs) == exp_azs_1
+    assert dict(hypervisor_planner_machine_1.get_azs(target)) == exp_azs_1
+
+
+def test_hypervisor_azs_grouping_units_different_os_release():
+    """Test HypervisorUpgradePlanner azs grouping.
+
+    This should return 2 AZs because az0 already got upgraded.
+
+    Juju status example:
+    ```bash
+    App                   Version  Status  Scale  Charm          Channel  Rev  Exposed  Message
+    app1
+    app2
+
+    Unit                     Workload  Agent  Machine  Public address  Ports  Message
+    app1/0*                  active    idle   0
+    app1/1                   active    idle   1
+    app1/2                   active    idle   2
+    app1/3                   active    idle   3
+    app1/4                   active    idle   4
+    app1/5                   active    idle   5
+    app2/0*                  active    idle   0
+    app2/1                   active    idle   2
+    app2/2                   active    idle   4
+
+    Machine  State    Address      Inst id        Base          AZ  Message
+    0        started  10.10.10.1   host0          ubuntu@22.04  az0 Running
+    1        started  10.10.10.2   host1          ubuntu@22.04  az0 Running
+    2        started  10.10.10.3   host2          ubuntu@22.04  az1 Running
+    3        started  10.10.10.4   host3          ubuntu@22.04  az1 Running
+    4        started  10.10.10.5   host4          ubuntu@22.04  az2 Running
+    5        started  10.10.10.6   host5          ubuntu@22.04  az2 Running
+    ```
+    """
+    target = OpenStackRelease("victoria")
+    machines = {f"{i}": COUMachine(f"{i}", (), f"az{i//2}") for i in range(6)}
+    units = {
+        # app1
+        "app1/0": COUUnit("app1/0", machines["0"], ""),
+        "app1/1": COUUnit("app1/1", machines["1"], ""),
+        "app1/2": COUUnit("app1/2", machines["2"], ""),
+        "app1/3": COUUnit("app1/3", machines["3"], ""),
+        "app1/4": COUUnit("app1/4", machines["4"], ""),
+        "app1/5": COUUnit("app1/5", machines["5"], ""),
+        # app2
+        "app2/0": COUUnit("app2/0", machines["0"], ""),
+        "app2/1": COUUnit("app2/1", machines["2"], ""),
+        "app2/2": COUUnit("app2/2", machines["4"], ""),
+    }
+
+    app1 = MagicMock(spec_set=COUApplication)()
+    app1.name = "app1"
+    app1.units = {name: unit for name, unit in units.items() if name.startswith("app1")}
+
+    def side_effect_app1(value):
+        os_release = {
+            "app1/0": OpenStackRelease("victoria"),
+            "app1/1": OpenStackRelease("victoria"),
+            "app1/2": OpenStackRelease("victoria"),
+            "app1/3": OpenStackRelease("ussuri"),
+            "app1/4": OpenStackRelease("ussuri"),
+            "app1/5": OpenStackRelease("ussuri"),
+        }
+        return os_release[value.name]
+
+    app1.get_latest_os_version.side_effect = side_effect_app1
+
+    app2 = MagicMock(spec_set=COUApplication)()
+    app2.name = "app2"
+    app2.units = {name: unit for name, unit in units.items() if name.startswith("app2")}
+
+    def side_effect_app2(value):
+        os_release = {
+            "app2/0": OpenStackRelease("victoria"),
+            "app2/1": OpenStackRelease("ussuri"),
+            "app2/2": OpenStackRelease("ussuri"),
+        }
+        return os_release[value.name]
+
+    app2.get_latest_os_version.side_effect = side_effect_app2
+
+    # passing all machines to the HypervisorUpgradePlanner
+    exp_azs_all = AZs()
+    exp_azs_all["az1"].app_units["app1"] = [units["app1/3"]]
+    exp_azs_all["az1"].app_units["app2"] = [units["app2/1"]]
+    exp_azs_all["az2"].app_units["app1"] = [units["app1/4"], units["app1/5"]]
+    exp_azs_all["az2"].app_units["app2"] = [units["app2/2"]]
+
+    hypervisor_planner_all = HypervisorUpgradePlanner([app1, app2], list(machines.values()))
+
+    assert dict(hypervisor_planner_all.get_azs(target)) == exp_azs_all
+
+    # passing machine 0 to the HypervisorUpgradePlanner
+    exp_azs_0 = AZs()
+
+    hypervisor_planner_machine_0 = HypervisorUpgradePlanner([app1, app2], [machines["0"]])
+    assert dict(hypervisor_planner_machine_0.get_azs(target)) == exp_azs_0
+
+    # passing machine 1 to the HypervisorUpgradePlanner
+    exp_azs_1 = AZs()
+
+    hypervisor_planner_machine_1 = HypervisorUpgradePlanner([app1, app2], [machines["1"]])
+    assert dict(hypervisor_planner_machine_1.get_azs(target)) == exp_azs_1
 
 
 def test_hypervisor_upgrade_plan(model):
@@ -387,6 +493,122 @@ def test_hypervisor_upgrade_plan_single_machine(model):
     )
 
     planner = HypervisorUpgradePlanner([cinder, nova_compute], [machines["0"]])
+    plan = planner.generate_upgrade_plan(target, False)
+
+    assert str(plan) == exp_plan
+
+
+def test_hypervisor_upgrade_plan_some_units_upgraded(model):
+    """Testing generating hypervisors upgrade plan partially upgraded."""
+    target = OpenStackRelease("victoria")
+    exp_plan = dedent_plan(
+        """\
+    Upgrading all applications deployed on machines with hypervisor.
+        Upgrade plan for 'az-1' to 'victoria'
+            Upgrade software packages of 'cinder' from the current APT repositories
+                Upgrade software packages on unit 'cinder/1'
+            Upgrade plan for units: cinder/1
+                Upgrade plan for unit 'cinder/1'
+                    Pause the unit: 'cinder/1'
+                    Upgrade the unit: 'cinder/1'
+                    Resume the unit: 'cinder/1'
+            Wait for up to 300s for app 'cinder' to reach the idle state
+            Verify that the workload of 'cinder' has been upgraded on units: cinder/1
+        Upgrade plan for 'az-2' to 'victoria'
+            Upgrade software packages of 'cinder' from the current APT repositories
+                Upgrade software packages on unit 'cinder/2'
+            Upgrade software packages of 'nova-compute' from the current APT repositories
+                Upgrade software packages on unit 'nova-compute/2'
+            Upgrade plan for units: cinder/2
+                Upgrade plan for unit 'cinder/2'
+                    Pause the unit: 'cinder/2'
+                    Upgrade the unit: 'cinder/2'
+                    Resume the unit: 'cinder/2'
+            Upgrade plan for units: nova-compute/2
+                Upgrade plan for unit 'nova-compute/2'
+                    Disable nova-compute scheduler from unit: 'nova-compute/2'
+                    Verify that unit 'nova-compute/2' has no VMs running
+                    ├── Pause the unit: 'nova-compute/2'
+                    ├── Upgrade the unit: 'nova-compute/2'
+                    ├── Resume the unit: 'nova-compute/2'
+                    Enable nova-compute scheduler from unit: 'nova-compute/2'
+            Wait for up to 1800s for model 'test_model' to reach the idle state
+            Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/2
+            Wait for up to 300s for app 'cinder' to reach the idle state
+            Verify that the workload of 'cinder' has been upgraded on units: cinder/2
+    """
+    )
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    # cinder/0 already upgraded
+    cinder = OpenStackApplication(
+        name="cinder",
+        can_upgrade_to="",
+        charm="cinder",
+        channel="victoria/stable",
+        config={
+            "openstack-origin": {"value": "cloud:focal-victoria"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines={"0": machines["0"]},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "cinder/0": COUUnit(
+                name="cinder/0",
+                workload_version="17.4.2",
+                machine=machines["0"],
+            ),
+            "cinder/1": COUUnit(
+                name="cinder/1",
+                workload_version="16.4.2",
+                machine=machines["1"],
+            ),
+            "cinder/2": COUUnit(
+                name="cinder/2",
+                workload_version="16.4.2",
+                machine=machines["2"],
+            ),
+        },
+        workload_version="17.4.2",
+    )
+    # nova-compute/0 and nova-compute/1 already upgraded
+    nova_compute = NovaCompute(
+        name="nova-compute",
+        can_upgrade_to="",
+        charm="nova-compute",
+        channel="victoria/stable",
+        config={
+            "openstack-origin": {"value": "cloud:focal-victoria"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "nova-compute/0": COUUnit(
+                name="nova-compute/0",
+                workload_version="22.0.0",
+                machine=machines["0"],
+            ),
+            "nova-compute/1": COUUnit(
+                name="nova-compute/1",
+                workload_version="22.0.0",
+                machine=machines["1"],
+            ),
+            "nova-compute/2": COUUnit(
+                name="nova-compute/2",
+                workload_version="21.0.0",
+                machine=machines["2"],
+            ),
+        },
+        workload_version="22.0.0",
+    )
+
+    planner = HypervisorUpgradePlanner([cinder, nova_compute], list(machines.values()))
     plan = planner.generate_upgrade_plan(target, False)
 
     assert str(plan) == exp_plan

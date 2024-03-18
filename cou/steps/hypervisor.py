@@ -126,37 +126,43 @@ class HypervisorUpgradePlanner:
         """
         return self._machines
 
-    @property
-    def azs(self) -> AZs:
-        """Returns a list of AZs defined in individual applications.
+    def get_azs(self, target: OpenStackRelease) -> AZs:
+        """Return a list of AZs defined in individual applications.
 
-        Each AZ contains a dictionary of application name and all units in the AZ.
+        Each AZ contains a dictionary of application name and all units not yet upgraded
+        in the AZ for a certain target.
         eg.
         az1:
         - cinder:
-          - cinder/0
-          - cinder/1
-          - cinder/2
+            - cinder/0
+            - cinder/1
+            - cinder/2
         - nova-compute
-          - nova-compute/0
-          - nova-compute/1
-          - nova-compute/2
+            - nova-compute/0
+            - nova-compute/1
+            - nova-compute/2
         ...
         az2
         - cinder
-          -cinder/3
+            -cinder/3
         ...
         ...
 
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
         :return: dictionary with key as az name and value as HypervisorGroup
         :rtype: dict[str, HypervisorGroup]
-        :raises ApplicationError: if there is unit without az defined
         """
         azs = AZs()
         for app in self.apps:
             for unit in app.units.values():
                 if unit.machine not in self.machines:
                     logger.debug("skipping machine %s", unit.machine.machine_id)
+                    continue
+
+                unit_os_release = app.get_latest_os_version(unit)
+                if unit_os_release >= target:
+                    logger.info("skipping unit %s is already on %s", unit.name, unit_os_release)
                     continue
 
                 # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
@@ -272,7 +278,7 @@ class HypervisorUpgradePlanner:
         :rtype: UpgradePlan
         """
         plan = UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
-        for az, group in self.azs.items():
+        for az, group in self.get_azs(target).items():
             hypervisor_plan = HypervisorUpgradePlan(
                 f"Upgrade plan for '{group.name}' to '{target}'"
             )
