@@ -17,12 +17,73 @@ import asyncio
 import logging
 import sys
 
+from cou.exceptions import HaltUpgradeExecution
 from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 
 AVAILABLE_OPTIONS = ["y", "yes", "n", "no"]
 
 logger = logging.getLogger(__name__)
+
+
+async def _run_sub_stpes_in_parallel(
+    step: BaseStep, prompt: bool, overwrite_progress: bool
+) -> None:
+    """Run all sub-steps of step in parallel.
+
+    :param step: Step to be executed.
+    :type step: BaseStep
+    :param prompt: Whether to run upgrade step with prompt (interactive mode).
+    :type prompt: bool
+    :param overwrite_progress: Whether to overwrite the progress indication message in CLI output
+                               for all sub-steps. True to overwrite and False (the default) to
+                               persist.
+    :type overwrite_progress: bool
+    :raises HaltUpgradeExecution: When any step raised it. All other steps will be completed.
+    """
+    logger.debug("running all sub-steps of %s step in parallel", step)
+    grouped_coroutines = (
+        apply_step(sub_step, prompt, overwrite_progress) for sub_step in step.sub_steps
+    )
+    try:
+        await asyncio.gather(*grouped_coroutines)
+    except HaltUpgradeExecution as error:
+        logger.debug("%s", error)
+        raise
+
+
+async def _run_sub_stpes_sequentially(
+    step: BaseStep, prompt: bool, overwrite_progress: bool
+) -> None:
+    """Run all sub-steps of step sequentially.
+
+    :param step: Step to be executed.
+    :type step: BaseStep
+    :param prompt: Whether to run upgrade step with prompt (interactive mode).
+    :type prompt: bool
+    :param overwrite_progress: Whether to overwrite the progress indication message in CLI output
+                               for all sub-steps. True to overwrite and False (the default) to
+                               persist.
+    :type overwrite_progress: bool
+    :raises HaltUpgradeExecution: When any step raised it. Remaining steps will be skipped.
+    """
+    logger.debug("running all sub-steps of %s step sequentially", step)
+    for sub_step in step.sub_steps:
+        logger.debug("running sub-step %s of %s step", sub_step, step)
+        try:
+            await apply_step(sub_step, prompt, overwrite_progress)
+        except HaltUpgradeExecution:
+            sub_step_index = step.sub_steps.index(sub_step)
+            logger.warning(
+                "Step: '%s' from '%s' failed to complete execution. The following steps will "
+                "be skipped:\n %s",
+                sub_step.description,
+                step.description,
+                "\n".join(
+                    sub_step.description for sub_step in step.sub_steps[sub_step_index + 1 :]
+                ),
+            )
+            raise
 
 
 async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = False) -> None:
@@ -48,18 +109,14 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
     # sub-steps will get overwritten upon completion
     overwrite_substeps_progress = overwrite_progress or isinstance(step, ApplicationUpgradePlan)
 
-    if step.parallel:
-        logger.debug("running all sub-steps of %s step in parallel", step)
-        grouped_coroutines = (
-            apply_step(sub_step, prompt, overwrite_substeps_progress)
-            for sub_step in step.sub_steps
-        )
-        await asyncio.gather(*grouped_coroutines)
-    else:
-        logger.debug("running all sub-steps of %s step sequentially", step)
-        for sub_step in step.sub_steps:
-            logger.debug("running sub-step %s of %s step", sub_step, step)
-            await apply_step(sub_step, prompt, overwrite_substeps_progress)
+    try:
+        if step.parallel:
+            await _run_sub_stpes_in_parallel(step, prompt, overwrite_substeps_progress)
+        else:
+            await _run_sub_stpes_sequentially(step, prompt, overwrite_substeps_progress)
+    except HaltUpgradeExecution as error:
+        progress_indicator.fail(str(error))
+        return
 
     # Upon completion of all sub-steps of ApplicationUpgradePlan, replace the current progress
     # indication message, if any, with a persistent application description message.

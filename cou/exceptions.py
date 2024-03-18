@@ -59,6 +59,10 @@ class HaltUpgradePlanGeneration(COUException):
     """Exception to halt the application upgrade at any moment."""
 
 
+class HaltUpgradeExecution(COUException):
+    """Exception to halt the application upgrade at any moment."""
+
+
 class ApplicationError(COUException):
     """Exception raised when Application does something unexpected."""
 
