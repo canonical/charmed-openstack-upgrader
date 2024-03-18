@@ -83,7 +83,7 @@ def test_application_get_latest_os_version_failed(mock_find_compatible_versions,
     )
 
     with pytest.raises(ApplicationError, match=exp_error):
-        app._get_latest_os_version(unit)
+        app.get_latest_os_version(unit)
 
     mock_find_compatible_versions.assert_called_once_with(charm, unit.workload_version)
 
