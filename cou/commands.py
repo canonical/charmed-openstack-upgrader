@@ -171,7 +171,8 @@ def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
         "--machine",
         "-m",
         help="Specify machine id(s) to upgrade.\nThis option accepts a single machine id as well "
-        "as a stringified\ncomma-separated list of ids, and can be repeated multiple times.",
+        "as a stringified\ncomma-separated list of ids, and can be repeated multiple times.\n"
+        "This option cannot be used together with [--availability-zone/--az].",
         dest="machines",
         action=SplitArgs,
         type=str,
@@ -181,7 +182,8 @@ def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
         "--az",
         help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
         "availability zone as well as a\nstringified comma-separated list of AZs, "
-        "and can be repeated\nmultiple times.",
+        "and can be repeated\nmultiple times. This option cannot be used together with\n"
+        "[--machine/-m]",
         action=SplitArgs,
         dest="availability_zones",
         type=str,
