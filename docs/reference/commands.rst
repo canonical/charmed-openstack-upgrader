@@ -108,7 +108,7 @@ The options available for **control-plane** upgrade are:
 .. terminal:: 
     :input: cou upgrade control-plane --help
 
-    Usage: cou plan control-plane [options]
+    Usage: cou upgrade control-plane [options]
 
     Run upgrade for the control-plane components.
 
@@ -135,7 +135,7 @@ The available options for a **data-plane** upgrade align closely with those offe
 .. terminal:: 
     :input: cou upgrade data-plane --help
 
-    Usage: cou plan data-plane [options]
+    Usage: cou upgrade data-plane [options]
 
     Upgrade all data-plane components.
     This is possible only if control-plane has been fully upgraded,

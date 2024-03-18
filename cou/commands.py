@@ -299,7 +299,7 @@ def create_upgrade_subparser(
         "control-plane",
         description="Run upgrade for the control-plane components.",
         help="Run upgrade for the control-plane components.",
-        usage="cou plan control-plane [options]",
+        usage="cou upgrade control-plane [options]",
         parents=[subcommand_common_opts_parser, upgrade_args_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
@@ -309,7 +309,7 @@ def create_upgrade_subparser(
         "control-plane has been fully upgraded,\notherwise an error will be thrown.",
         help="Upgrade all data-plane components.\nThis is possible only if "
         "control-plane has been fully upgraded,\notherwise an error will be thrown.",
-        usage="cou plan data-plane [options]",
+        usage="cou upgrade data-plane [options]",
         parents=[subcommand_common_opts_parser, upgrade_args_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
