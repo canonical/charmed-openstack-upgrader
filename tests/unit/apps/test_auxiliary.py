@@ -19,10 +19,12 @@ import pytest
 from cou.apps.auxiliary import (
     AuxiliaryApplication,
     CephMon,
+    CephOsd,
     MysqlInnodbCluster,
     OvnPrincipal,
     RabbitMQServer,
 )
+from cou.apps.core import NovaCompute
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -35,7 +37,7 @@ from cou.utils import app_utils
 from cou.utils.juju_utils import COUMachine, COUUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.apps.utils import add_steps
-from tests.unit.utils import assert_steps
+from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
 
 def test_auxiliary_app(model):
@@ -132,7 +134,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     expected_upgrade_package_step = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -141,7 +143,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     for unit in app.units.keys():
         expected_upgrade_package_step.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit}",
+                description=f"Upgrade software packages on unit '{unit}'",
                 parallel=False,
                 coro=app_utils.upgrade_packages(unit, model, None),
             )
@@ -171,17 +173,17 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -216,7 +218,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -225,7 +227,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -249,17 +251,17 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -295,7 +297,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}",
+        description=f"Upgrade plan for '{app.name}' to '{target}'",
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -304,7 +306,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -312,7 +314,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
-            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            description=f"Migrate '{app.name}' from charmstore to charmhub",
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
@@ -333,17 +335,17 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -620,7 +622,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -629,7 +631,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -642,7 +644,9 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
+            description=(
+                "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version"
+            ),
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
@@ -662,17 +666,17 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -709,7 +713,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -718,7 +722,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -731,7 +735,9 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
+            description=(
+                "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version"
+            ),
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
@@ -746,17 +752,17 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -896,7 +902,7 @@ def test_ovn_principal_upgrade_plan(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -906,7 +912,7 @@ def test_ovn_principal_upgrade_plan(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, None),
             )
         )
@@ -929,17 +935,17 @@ def test_ovn_principal_upgrade_plan(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -976,7 +982,7 @@ def test_mysql_innodb_cluster_upgrade(model):
     )
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -985,7 +991,7 @@ def test_mysql_innodb_cluster_upgrade(model):
     for unit in app.units.values():
         upgrade_packages.add_step(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=app_utils.upgrade_packages(unit.name, model, ["mysql-server-core-8.0"]),
             )
         )
@@ -1008,17 +1014,17 @@ def test_mysql_innodb_cluster_upgrade(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=(
-                f"Check if the workload of '{app.name}' has been upgraded on units: "
+                f"Verify that the workload of '{app.name}' has been upgraded on units: "
                 f"{', '.join([unit for unit in app.units.keys()])}"
             ),
             parallel=False,
-            coro=app._verify_workload_upgrade(target, app.units.values()),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
     add_steps(expected_plan, upgrade_steps)
@@ -1026,6 +1032,64 @@ def test_mysql_innodb_cluster_upgrade(model):
     upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
+
+
+@pytest.mark.parametrize("target", [OpenStackRelease("victoria")])
+@patch("cou.apps.auxiliary.AuxiliaryApplication.pre_upgrade_steps")
+def test_ceph_osd_pre_upgrade_steps(mock_pre_upgrade_steps, target, model):
+    """Test Ceph-osd pre upgrade steps."""
+    mock_pre_upgrade_steps.return_value = [MagicMock(spec_set=UpgradeStep)()]
+    app = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+    steps = app.pre_upgrade_steps(target, None)
+
+    assert steps == [
+        PreUpgradeStep(
+            description="Verify that all 'nova-compute' units had been upgraded",
+            coro=app._verify_nova_compute(target),
+        ),
+        *mock_pre_upgrade_steps.return_value,
+    ]
+    mock_pre_upgrade_steps.assert_called_once_with(target, None)
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
+async def test_ceph_osd_verify_nova_compute_no_app(mock_lookup, model):
+    """Test Ceph-osd verifying all nova computes."""
+    target = OpenStackRelease("victoria")
+    app = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+    model.get_applications.return_value = [app]
+
+    await app._verify_nova_compute(target)
+
+    model.get_applications.assert_awaited_once_with()
+    mock_lookup.assert_not_called()
 
 
 @patch("cou.apps.base.OpenStackApplication.generate_upgrade_plan")
@@ -1074,3 +1138,107 @@ def test_auxiliary_upgrade_by_unit(mock_super, model):
     # Parent class was called with units=None even that units were passed to the
     # Auxiliary app, meaning that will create all-in-one upgrade strategy
     mock_super.assert_called_with(target, False, None)
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
+async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
+    """Test Ceph-osd verifying all nova computes."""
+    target = OpenStackRelease("victoria")
+    mock_lookup.return_value = [target]
+    nova_compute = MagicMock(spec_set=NovaCompute)()
+    nova_compute.charm = "nova-compute"
+    nova_compute.units = {"nova-compute/0": COUUnit("nova-compute/0", None, "22.0.0")}
+    app = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+    model.get_applications.return_value = [app, nova_compute]
+
+    await app._verify_nova_compute(target)
+
+    model.get_applications.assert_awaited_once_with()
+    mock_lookup.assert_called_once_with("nova-compute", "22.0.0")
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
+async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
+    """Test Ceph-osd verifying all nova computes."""
+    mock_lookup.return_value = [OpenStackRelease("ussuri")]
+    target = OpenStackRelease("victoria")
+    nova_compute = MagicMock(spec_set=NovaCompute)()
+    nova_compute.charm = "nova-compute"
+    nova_compute.units = {"nova-compute/0": COUUnit("nova-compute/0", None, "22.0.0")}
+    app = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="17.0.1",
+    )
+    model.get_applications.return_value = [app, nova_compute]
+
+    with pytest.raises(ApplicationError, match=f"Units 'nova-compute/0' did not reach {target}."):
+        await app._verify_nova_compute(target)
+
+
+def test_ceph_osd_upgrade_plan(model):
+    """Testing generating ceph-osd upgrade plan."""
+    exp_plan = dedent_plan(
+        """\
+    Upgrade plan for 'ceph-osd' to 'victoria'
+        Verify that all 'nova-compute' units had been upgraded
+        Upgrade software packages of 'ceph-osd' from the current APT repositories
+            Upgrade software packages on unit 'ceph-osd/0'
+            Upgrade software packages on unit 'ceph-osd/1'
+            Upgrade software packages on unit 'ceph-osd/2'
+        Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
+        Wait for up to 300s for app 'ceph-osd' to reach the idle state
+        Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
+    """  # noqa: E501 line too long
+    )
+    target = OpenStackRelease("victoria")
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    ceph_osd = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel="octopus/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"ceph-osd/{i}": COUUnit(
+                name=f"ceph-osd/{i}",
+                workload_version="17.0.1",
+                machine=machines[f"{i}"],
+            )
+            for i in range(3)
+        },
+        workload_version="17.0.1",
+    )
+
+    plan = ceph_osd.generate_upgrade_plan(target, False)
+
+    assert str(plan) == exp_plan

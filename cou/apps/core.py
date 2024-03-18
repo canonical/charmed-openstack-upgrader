@@ -88,7 +88,7 @@ class NovaCompute(OpenStackApplication):
         :return: Unit upgrade step
         :rtype: UnitUpgradeStep
         """
-        unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit: {unit.name}")
+        unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit '{unit.name}'")
         unit_plan.add_step(self._get_disable_scheduler_step(unit))
 
         if not force:
@@ -113,7 +113,7 @@ class NovaCompute(OpenStackApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=f"Check if unit {unit.name} has no VMs running before upgrading.",
+            description=f"Verify that unit '{unit.name}' has no VMs running",
             coro=verify_empty_hypervisor_before_upgrade(unit, self.model),
         )
 
@@ -126,7 +126,7 @@ class NovaCompute(OpenStackApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=f"Enable nova-compute scheduler from unit: '{unit.name}'.",
+            description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="enable", raise_on_failure=True
             ),
@@ -141,7 +141,7 @@ class NovaCompute(OpenStackApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=f"Disable nova-compute scheduler from unit: '{unit.name}'.",
+            description=f"Disable nova-compute scheduler from unit: '{unit.name}'",
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="disable", raise_on_failure=True
             ),

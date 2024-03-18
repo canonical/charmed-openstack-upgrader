@@ -68,7 +68,7 @@ def test_generate_upgrade_plan(model):
         workload_version="18.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -177,11 +177,11 @@ def test_generate_plan_ch_migration(model, channel):
         workload_version="18.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
-            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            description=f"Migrate '{app.name}' from charmstore to charmhub",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone-ldap"),
         ),
@@ -224,7 +224,9 @@ def test_generate_plan_from_to(model, from_os, to_os):
         units={},
         workload_version="18.1.0",
     )
-    expected_plan = ApplicationUpgradePlan(description=f"Upgrade plan for '{app.name}' to {to_os}")
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to '{to_os}'"
+    )
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_os}/stable'",
@@ -272,7 +274,7 @@ def test_generate_plan_in_same_version(model, from_to):
         workload_version="18.1.0",
     )
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {from_to}"
+        description=f"Upgrade plan for '{app.name}' to '{from_to}'"
     )
     upgrade_steps = [
         PreUpgradeStep(

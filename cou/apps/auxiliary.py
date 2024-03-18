@@ -25,6 +25,7 @@ from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
+    OpenStackCodenameLookup,
     OpenStackRelease,
 )
 
@@ -195,7 +196,9 @@ class CephMon(AuxiliaryApplication):
         """
         ceph_mon_unit, *_ = self.units.values()
         return PreUpgradeStep(
-            description="Ensure the 'require-osd-release' option matches the 'ceph-osd' version",
+            description=(
+                "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version"
+            ),
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )
 
@@ -231,10 +234,55 @@ class MysqlInnodbCluster(AuxiliaryApplication):
     wait_timeout = LONG_IDLE_TIMEOUT
 
 
-# NOTE (gabrielcocenza): Although CephOSD class is empty now, it will be
-# necessary to add post upgrade plan to set require-osd-release. Registering on
-# AuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
-# as a normal OpenStackApplication.
 @AppFactory.register_application(["ceph-osd"])
-class CephOSD(AuxiliaryApplication):
+class CephOsd(AuxiliaryApplication):
     """Application for ceph-osd."""
+
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
+        :return: List of pre upgrade steps.
+        :rtype: list[PreUpgradeStep]
+        """
+        steps = [
+            PreUpgradeStep(
+                description="Verify that all 'nova-compute' units had been upgraded",
+                coro=self._verify_nova_compute(target),
+            )
+        ]
+        steps.extend(super().pre_upgrade_steps(target, units))
+        return steps
+
+    async def _verify_nova_compute(self, target: OpenStackRelease) -> None:
+        """Check if a nova-compute application has upgraded its workload version.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises ApplicationError: When any nova-compute app workload version isn't reached.
+        """
+        units_not_upgraded = []
+        apps = await self.model.get_applications()
+
+        for app in apps:
+            if app.charm != "nova-compute":
+                logger.debug("skipping application %s", app.name)
+                continue
+
+            for unit in app.units.values():
+                compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+                    app.charm, unit.workload_version
+                )
+
+                if target not in compatible_os_versions:
+                    units_not_upgraded.append(unit.name)
+
+        if units_not_upgraded:
+            raise ApplicationError(
+                f"Units '{', '.join(units_not_upgraded)}' did not reach {target}."
+            )
