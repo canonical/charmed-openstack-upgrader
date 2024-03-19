@@ -30,7 +30,6 @@ from cou.steps import (
 )
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import add_steps
 
 
 def test_application_eq(status, config, model, apps_machines):
@@ -440,7 +439,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -509,7 +508,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model, app
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -569,7 +568,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model, apps_mac
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -629,7 +628,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -709,6 +708,6 @@ def test_upgrade_plan_application_already_disable_action_managed(
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
