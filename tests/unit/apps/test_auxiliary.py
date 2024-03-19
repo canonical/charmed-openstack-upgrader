@@ -352,6 +352,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(status, config, model, mocker, a
 def test_auxiliary_raise_halt_upgrade(status, config, model, apps_machines):
     target = OpenStackRelease("victoria")
     # source is already configured to wallaby, so the plan halt with target victoria
+    status["rabbitmq_server"].can_upgrade_to = []
     app = RabbitMQServer(
         "rabbitmq-server",
         status["rabbitmq_server"],
@@ -360,6 +361,7 @@ def test_auxiliary_raise_halt_upgrade(status, config, model, apps_machines):
         "rabbitmq-server",
         apps_machines["rmq"],
     )
+
     with pytest.raises(HaltUpgradePlanGeneration):
         app.generate_upgrade_plan(target)
 
