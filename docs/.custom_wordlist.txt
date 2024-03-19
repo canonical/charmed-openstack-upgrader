@@ -39,3 +39,4 @@ ganesha
 ceilometer
 rabbitmq
 barbican
+colocated

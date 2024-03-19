@@ -42,9 +42,9 @@ output below for a description of all allowed options.
         data-plane          Show the steps for upgrading all data-plane components.
                             This is possible only if control-plane has been fully upgraded,
                             otherwise an error will be thrown.
-        hypervisors         Show the steps for upgrading nova-compute machines.
-                            This is possible only if control-plane has been fully upgraded,
-                            otherwise an error will be thrown.
+        hypervisors         Show the steps for upgrading machines with nova-compute and
+                            colocated services. This is possible only if control-plane
+                            has been fully upgraded, otherwise an error will be thrown.
 
 By default, COU plans upgrade for the entire OpenStack cloud with `cou plan`. However, the
 upgrade process can be tailored to target a specific group through a sub-command for more
@@ -88,7 +88,7 @@ upgrade phase. Refer to the output below for a description of all available opti
         data-plane          Upgrade all data-plane components.
                             This is possible only if control-plane has been fully upgraded,
                             otherwise an error will be thrown.
-        hypervisors         Upgrade nova-compute machines.
+        hypervisors         Upgrade machines with nova-compute and colocated services.
                             This is possible only if control-plane has been fully upgraded,
                             otherwise an error will be thrown.
 
@@ -167,7 +167,7 @@ narrow the upgrade to a particular subset of nodes.
 
     Usage: cou upgrade hypervisors [options]
 
-    Upgrade nova-compute machines.
+    Upgrade machines with nova-compute and colocated services.
     This is possible only if control-plane has been fully upgraded,
     otherwise an error will be thrown.
 

@@ -242,14 +242,15 @@ def create_plan_subparser(
     )
     plan_subparser.add_parser(
         HYPERVISORS,
-        description="Show the steps for upgrading nova-compute machines.\nThis is possible "
-        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n\n"
-        "Note that only principal applications colocated with nova-compute units\nthat support "
-        "action-managed upgrades are within the scope of this command.\nOther principal "
-        "applications (e.g. ceph-osd) and subordinates\ncan be upgraded via the data-plane "
-        "subcommand.",
-        help="Show the steps for upgrading nova-compute machines.\nThis is possible "
-        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
+        description="Show the steps for upgrading machines with nova-compute and\n"
+        "colocated services. This is possible only if control-plane\nhas been fully upgraded, "
+        "otherwise an error will be thrown.\n\nNote that only principal applications colocated "
+        "with nova-compute units\nthat support action-managed upgrades are within the scope of "
+        "this command.\nOther principal applications (e.g. ceph-osd) and subordinates\ncan be "
+        "upgraded via the data-plane subcommand.",
+        help="Show the steps for upgrading machines with nova-compute and\ncolocated services. "
+        "This is possible only if control-plane\nhas been fully upgraded, otherwise an error "
+        "will be thrown.",
         usage="cou plan hypervisors [options]",
         parents=[subcommand_common_opts_parser, hypervisors_parser],
         formatter_class=CapitalizeHelpFormatter,
@@ -315,13 +316,13 @@ def create_upgrade_subparser(
     )
     upgrade_subparser.add_parser(
         HYPERVISORS,
-        description="Upgrade nova-compute machines.\nThis is possible "
+        description="Upgrade machines with nova-compute and colocated services.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n\n"
         "Note that only principal applications colocated with nova-compute units\nthat support "
         "action-managed upgrades are within the scope of this command.\nOther principal "
         "applications (e.g. ceph-osd) and subordinates\ncan be upgraded via the data-plane "
         "subcommand.",
-        help="Upgrade nova-compute machines.\nThis is possible "
+        help="Upgrade machines with nova-compute and colocated services.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
         usage="cou upgrade hypervisors [options]",
         parents=[
