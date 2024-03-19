@@ -706,7 +706,7 @@ class OpenStackApplication:
             )
 
     def _check_application_target(self, target: OpenStackRelease) -> None:
-        """Check if application release is not lower than or equal to target.
+        """Check if the application is already upgraded.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease

@@ -27,9 +27,10 @@ class SubordinateBase(OpenStackApplication):
     """Subordinate base class."""
 
     def _check_application_target(self, target: OpenStackRelease) -> None:
-        """Check if application release is not lower than or equal to target.
+        """Check if the application is already upgraded.
 
-        Subordinate application are not comparing apt_source_codename with target.
+        Subordinate applications use the apt source of the related principal and don't have an
+        origin/openstack-origin config option.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
