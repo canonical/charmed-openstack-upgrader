@@ -18,6 +18,14 @@ import io
 import unittest
 from unittest import mock
 
+from cou.steps import BaseStep
+
+
+def assert_steps(step_1: BaseStep, step_2: BaseStep) -> None:
+    """Compare two steps and raise exception if they are different."""
+    msg = f"\n{step_1}!=\n{step_2}"
+    assert step_1 == step_2, msg
+
 
 @contextlib.contextmanager
 def patch_open():

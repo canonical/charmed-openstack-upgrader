@@ -578,8 +578,8 @@ def model(config, apps_machines):
     model.get_status = AsyncMock(side_effect=get_status)
     model.get_charm_name = AsyncMock(side_effect=get_charm_name)
     model.scp_from_unit = AsyncMock()
-    model.get_application_config = mock_get_app_config = AsyncMock()
-    mock_get_app_config.side_effect = config.get
+    model.get_application_config = AsyncMock(side_effect=config.get)
+    model.set_application_config = AsyncMock()
     model.get_machines = machines
 
     return model

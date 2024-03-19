@@ -18,6 +18,8 @@ from juju.client._definitions import UnitStatus
 
 from cou.apps.base import OpenStackApplication
 from cou.exceptions import ApplicationError
+from cou.steps import UpgradeStep
+from tests.unit.utils import assert_steps
 
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
@@ -41,3 +43,42 @@ def test_application_get_latest_os_version_failed(
         app._get_latest_os_version(unit)
 
     mock_find_compatible_versions.assert_called_once_with(charm, unit.workload_version)
+
+
+@pytest.mark.parametrize(
+    "charm_config, enable, exp_description",
+    [
+        ({}, True, None),
+        ({}, False, None),
+        (
+            {"action-managed-upgrade": {"value": False}},
+            True,
+            "Change charm config of 'my_app' 'action-managed-upgrade' to True",
+        ),
+        ({"action-managed-upgrade": {"value": False}}, False, None),
+        ({"action-managed-upgrade": {"value": True}}, True, None),
+        (
+            {"action-managed-upgrade": {"value": True}},
+            False,
+            "Change charm config of 'my_app' 'action-managed-upgrade' to False",
+        ),
+    ],
+)
+def test_set_action_managed_upgrade(charm_config, enable, exp_description, model):
+    charm = "app"
+    app_name = "my_app"
+    status = MagicMock()
+    status.charm_channel = "ussuri/stable"
+    if exp_description:
+        # Note (rgildein): we need to set exp_step here, since we need to use model fixture
+        exp_step = UpgradeStep(
+            exp_description,
+            coro=model.set_application_config(app_name, {"action-managed-upgrade": enable}),
+        )
+    else:
+        exp_step = UpgradeStep()
+
+    app = OpenStackApplication(app_name, status, charm_config, model, charm, {})
+    step = app._set_action_managed_upgrade(enable)
+
+    assert_steps(step, exp_step)
