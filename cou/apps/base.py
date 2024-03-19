@@ -514,9 +514,8 @@ class OpenStackApplication:
         :rtype: PreUpgradeStep
         """
         step = PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{self.name}' from the current APT repositories"
-            ),
+            description=f"Upgrade software packages of '{self.name}' from the current "
+            "APT repositories",
             parallel=True,
         )
         step.add_steps(
@@ -593,9 +592,8 @@ class OpenStackApplication:
         """
         if self.channel != self.target_channel(target):
             return UpgradeStep(
-                description=(
-                    f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
-                ),
+                description=f"Upgrade '{self.name}' to the new channel: "
+                f"'{self.target_channel(target)}'",
                 coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
             )
         return UpgradeStep()
@@ -610,9 +608,8 @@ class OpenStackApplication:
         """
         if self.config.get("action-managed-upgrade", {}).get("value", False):
             return UpgradeStep(
-                description=(
-                    f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
-                ),
+                description=f"Change charm config of '{self.name}' 'action-managed-upgrade' "
+                "to False.",
                 coro=self.model.set_application_config(
                     self.name, {"action-managed-upgrade": False}
                 ),
@@ -629,10 +626,8 @@ class OpenStackApplication:
         """
         if self.os_origin != self.new_origin(target) and self.origin_setting:
             return UpgradeStep(
-                description=(
-                    f"Change charm config of '{self.name}' "
-                    f"'{self.origin_setting}' to '{self.new_origin(target)}'"
-                ),
+                description=f"Change charm config of '{self.name}' "
+                f"'{self.origin_setting}' to '{self.new_origin(target)}'",
                 coro=self.model.set_application_config(
                     self.name, {self.origin_setting: self.new_origin(target)}
                 ),

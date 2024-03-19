@@ -127,10 +127,8 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,
@@ -189,10 +187,8 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,
@@ -262,10 +258,8 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,

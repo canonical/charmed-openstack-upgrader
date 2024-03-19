@@ -420,10 +420,8 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
@@ -489,10 +487,8 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model, app
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
@@ -549,10 +545,8 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model, apps_mac
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
@@ -689,10 +683,8 @@ def test_upgrade_plan_application_already_disable_action_managed(
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}

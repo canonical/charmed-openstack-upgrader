@@ -76,10 +76,8 @@ def generate_expected_upgrade_plan_principal(app, target, model):
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
-            description=(
-                f"Refresh '{app.name}' to the latest revision of "
-                f"'{target.previous_release}/stable'"
-            ),
+            description=f"Refresh '{app.name}' to the latest revision of "
+            f"'{target.previous_release}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
         ),
@@ -89,15 +87,13 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
-            description=(f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'"),
+            description=f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-{target.codename}'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-{target.codename}'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": f"cloud:focal-{target.codename}"}
@@ -120,15 +116,13 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
     )
     upgrade_steps = [
         PreUpgradeStep(
-            description=(
-                f"Refresh '{app.name}' to the latest revision of "
-                f"'{target.previous_release}/stable'"
-            ),
+            description=f"Refresh '{app.name}' to the latest revision of "
+            f"'{target.previous_release}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
         ),
         UpgradeStep(
-            description=(f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'"),
+            description=f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
