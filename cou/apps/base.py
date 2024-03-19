@@ -719,7 +719,11 @@ class OpenStackApplication:
             self.apt_source_codename,
         )
 
-        if self.current_os_release >= target and self.apt_source_codename >= target:
+        if (
+            self.current_os_release >= target
+            and self.can_upgrade_current_channel is False
+            and self.apt_source_codename >= target
+        ):
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "
                 f"than {target}. Ignoring."

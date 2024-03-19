@@ -37,7 +37,7 @@ class SubordinateBase(OpenStackApplication):
         """
         logger.debug("%s application current os_release is %s", self.name, self.current_os_release)
 
-        if self.current_os_release >= target:
+        if self.current_os_release >= target and self.can_upgrade_current_channel is False:
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "
                 f"than {target}. Ignoring."

@@ -641,6 +641,7 @@ def test_upgrade_plan_application_already_upgraded(status, config, model, apps_m
     )
     target = OpenStackRelease("victoria")
     app_status = status["keystone_focal_wallaby"]
+    app_status.can_upgrade_to = []
     app_config = config["openstack_wallaby"]
     app = Keystone(
         "my_keystone", app_status, app_config, model, "keystone", apps_machines["keystone"]
