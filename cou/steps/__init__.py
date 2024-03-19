@@ -21,11 +21,12 @@ import inspect
 import logging
 import os
 import warnings
-from typing import Any, Coroutine, List, Optional
+from typing import Any, Coroutine, Iterable, List, Optional
 
 from cou.exceptions import CanceledStep
 
 logger = logging.getLogger(__name__)
+DEPENDENCY_DESCRIPTION_PREFIX = "├── "
 
 
 def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutine]) -> bool:
@@ -71,6 +72,7 @@ class BaseStep:
         description: str = "",
         parallel: bool = False,
         coro: Optional[Coroutine] = None,
+        dependent: bool = False,
     ):
         """Initialize BaseStep.
 
@@ -80,6 +82,8 @@ class BaseStep:
         :type parallel: bool
         :param coro: Step coroutine
         :type coro: Optional[coroutine]
+        :param dependent: Whether the step is dependent on another step.
+        :type dependent: bool, defaults to False
         """
         if coro is not None:
             # NOTE(rgildein): We need to ignore coroutine not to be awaited if step is not run
@@ -89,8 +93,11 @@ class BaseStep:
 
         self._coro: Optional[Coroutine] = coro
         self.parallel = parallel
-        self.description = description
-        self.sub_steps: List[BaseStep] = []
+        self.dependent = dependent
+        self.description = (
+            DEPENDENCY_DESCRIPTION_PREFIX + description if dependent else description
+        )
+        self._sub_steps: List[BaseStep] = []
         self._canceled: bool = False
         self._task: Optional[asyncio.Task] = None
 
@@ -168,6 +175,7 @@ class BaseStep:
         """
         if not description and self._coro:
             raise ValueError("Every coroutine should have a description")
+
         self._description = description
 
     @property
@@ -195,13 +203,49 @@ class BaseStep:
 
         return self._task.done()
 
+    @property
+    def sub_steps(self) -> List[BaseStep]:
+        """Return list of sub-steps.
+
+        :return: List of BaseStep.
+        :rtype: List[BaseStep]
+        """
+        return self._sub_steps
+
+    @sub_steps.setter
+    def sub_steps(self, steps: Iterable[BaseStep]) -> None:
+        """Set a list of sub-steps.
+
+        :param steps: Iterable object containing all steps.
+        :type steps: Iterable
+        """
+        for step in steps:
+            self.add_step(step)
+
     def add_step(self, step: BaseStep) -> None:
         """Add a single step.
 
         :param step: BaseStep to be added as sub step.
         :type step: BaseStep
+        :raises TypeError: If step is not based on BaseStep.
         """
-        self.sub_steps.append(step)
+        if not isinstance(step, BaseStep):
+            raise TypeError("Cannot add an upgrade step that is not derived from BaseStep")
+
+        if not step:
+            logger.debug("skipping adding empty step")
+            return
+
+        self._sub_steps.append(step)
+
+    def add_steps(self, steps: Iterable[BaseStep]) -> None:
+        """Add multiple steps.
+
+        :param steps: Sequence of BaseStep to be added as sub steps.
+        :type steps: Iterable[BaseStep]
+        """
+        for step in steps:
+            self.add_step(step)
 
     def cancel(self, safe: bool = True) -> None:
         """Cancel step and all its sub steps.
@@ -284,6 +328,10 @@ class UpgradeStep(BaseStep):
     """Represents the upgrade step."""
 
     prompt: bool = False
+
+
+class UnitUpgradeStep(UpgradeStep):
+    """Represents the upgrade step for an individual unit."""
 
 
 class PreUpgradeStep(UpgradeStep):

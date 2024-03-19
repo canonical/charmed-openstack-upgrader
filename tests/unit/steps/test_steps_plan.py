@@ -26,6 +26,7 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradePlan,
     UpgradeStep,
 )
@@ -60,14 +61,20 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         )
 
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    for unit in app.units:
+        upgrade_packages.add_step(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=app_utils.upgrade_packages(unit.name, model, None),
+            )
+        )
+
     upgrade_steps = [
-        PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{app.name}' from the current APT repositories"
-            ),
-            parallel=False,
-            coro=app_utils.upgrade_packages(app.status.units.keys(), model, None),
-        ),
+        upgrade_packages,
         PreUpgradeStep(
             description=(
                 f"Refresh '{app.name}' to the latest revision of "
@@ -131,18 +138,18 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 
 @pytest.mark.asyncio
-async def test_generate_plan(apps, model):
+async def test_generate_plan(apps, model, cli_args):
     target = OpenStackRelease("victoria")
-    app_keystone = apps["keystone_ussuri"]
-    app_cinder = apps["cinder_ussuri"]
-    app_keystone_ldap = apps["keystone_ldap"]
+    app_keystone = apps["keystone_focal_ussuri"]
+    app_cinder = apps["cinder_focal_ussuri"]
+    app_keystone_ldap = apps["keystone_ldap_focal_ussuri"]
     analysis_result = Analysis(
         model=model,
         apps_control_plane=[app_keystone, app_cinder, app_keystone_ldap],
         apps_data_plane=[],
     )
 
-    upgrade_plan = await generate_plan(analysis_result, backup_database=True)
+    upgrade_plan = await generate_plan(analysis_result, cli_args)
 
     expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
     expected_plan.add_step(
@@ -252,7 +259,8 @@ def test_determine_upgrade_target_release_out_of_range(current_os_release, curre
 @pytest.mark.asyncio
 async def test_create_upgrade_plan():
     """Test create_upgrade_group."""
-    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app: OpenStackApplication = MagicMock(spec_set=OpenStackApplication)
+    app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
     target = OpenStackRelease("victoria")
     description = "test"
 
@@ -296,8 +304,8 @@ async def test_create_upgrade_plan_failed():
 def test_plan_print_warn_manually_upgrade(mock_print, model, apps):
     result = Analysis(
         model=model,
-        apps_control_plane=[apps["keystone_wallaby"]],
-        apps_data_plane=[apps["nova_ussuri"]],
+        apps_control_plane=[apps["keystone_focal_wallaby"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
     )
     manually_upgrade_data_plane(result)
     mock_print.assert_called_with(
@@ -309,8 +317,8 @@ def test_plan_print_warn_manually_upgrade(mock_print, model, apps):
 def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
     result = Analysis(
         model=model,
-        apps_control_plane=[apps["keystone_ussuri"]],
-        apps_data_plane=[apps["nova_ussuri"]],
+        apps_control_plane=[apps["keystone_focal_ussuri"]],
+        apps_data_plane=[apps["nova_focal_ussuri"]],
     )
     manually_upgrade_data_plane(result)
     mock_print.assert_not_called()

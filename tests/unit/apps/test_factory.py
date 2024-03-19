@@ -25,6 +25,7 @@ def test_app_factory_not_supported_openstack_charm(mock_is_charm_supported):
         config=MagicMock(),
         model=MagicMock(),
         charm=charm,
+        machines=MagicMock(),
     )
     assert my_app is None
     mock_is_charm_supported.assert_called_once_with(charm)
@@ -40,7 +41,7 @@ def test_app_factory_register(mock_is_charm_supported):
             pass
 
     assert charm in factory.AppFactory.charms
-    foo = factory.AppFactory.create("my-foo", MagicMock(), {}, MagicMock(), charm)
+    foo = factory.AppFactory.create("my-foo", MagicMock(), {}, MagicMock(), charm, MagicMock())
     mock_is_charm_supported.assert_called_once_with(charm)
     assert foo is not None
     assert isinstance(foo, Foo)

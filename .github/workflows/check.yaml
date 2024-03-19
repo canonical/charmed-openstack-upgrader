@@ -1,18 +1,20 @@
 
 name: Check workflow running linter, unit and functional tests
 
-concurrency:
-  group: ${{ github.workflow }}
-
-
 on:
   workflow_call:
+  workflow_dispatch:
   pull_request:
     types: [ opened, synchronize, reopened ]
     branches: [ master, main ]
     paths-ignore:
       - '**.md'
       - '**.rst'
+
+concurrency:
+      # We do not want to run multiple jobs for single PR.
+      group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
 
 jobs:
   lint-unit:
@@ -25,7 +27,7 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       tox-version: '<4'
-    
+
   snap-build:
     name: Build snap package
     needs: lint-unit
@@ -60,7 +62,7 @@ jobs:
   func:
     name: Functional tests
     needs: snap-build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +72,13 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+      - name: Setup Juju 2.9/stable environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: lxd
+          juju-channel: 2.9/stable
+      - name: Remove tox install by actions-operator
+        run: sudo apt remove tox -y
       - name: Install tox
         run: |
           python -m pip install --upgrade pip

@@ -16,8 +16,8 @@
 import pytest
 
 from cou.apps.auxiliary_subordinate import (
-    OpenStackAuxiliarySubordinateApplication,
-    OvnSubordinateApplication,
+    AuxiliarySubordinateApplication,
+    OvnSubordinate,
 )
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
@@ -56,12 +56,8 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(apps, model):
 
 
 def test_ovn_subordinate(status, model):
-    app = OvnSubordinateApplication(
-        "ovn-chassis",
-        status["ovn_chassis_ussuri_22"],
-        {},
-        model,
-        "ovn-chassis",
+    app = OvnSubordinate(
+        "ovn-chassis", status["ovn_chassis_focal_22"], {}, model, "ovn-chassis", {}
     )
     assert app.channel == "22.03/stable"
     assert app.os_origin == ""
@@ -81,12 +77,13 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
         "ovn-upgrade-2203.html"
     )
 
-    app_ovn_chassis = OvnSubordinateApplication(
+    app_ovn_chassis = OvnSubordinate(
         "ovn-chassis",
-        status["ovn_chassis_ussuri_20"],
+        status["ovn_chassis_focal_20"],
         {},
         model,
         "ovn-chassis",
+        {},
     )
 
     with pytest.raises(ApplicationError, match=exp_error_msg_ovn_upgrade):
@@ -95,12 +92,13 @@ def test_ovn_workload_ver_lower_than_22_subordinate(status, model):
 
 def test_ovn_subordinate_upgrade_plan(status, model):
     target = OpenStackRelease("victoria")
-    app = OvnSubordinateApplication(
+    app = OvnSubordinate(
         "ovn-chassis",
-        status["ovn_chassis_ussuri_22"],
+        status["ovn_chassis_focal_22"],
         {},
         model,
         "ovn-chassis",
+        {},
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -125,14 +123,15 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
     # ovn chassis 22.03 is considered yoga. If it's not necessary to upgrade
     # the charm code, there is no steps to upgrade.
     target = OpenStackRelease("victoria")
-    app_status = status["ovn_chassis_ussuri_22"]
+    app_status = status["ovn_chassis_focal_22"]
     app_status.can_upgrade_to = ""
-    app = OvnSubordinateApplication(
+    app = OvnSubordinate(
         "ovn-chassis",
         app_status,
         {},
         model,
         "ovn-chassis",
+        {},
     )
 
     expected_plan = ApplicationUpgradePlan(
@@ -147,12 +146,13 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
 def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
     """Test when ceph version remains the same between os releases."""
     target = OpenStackRelease("victoria")
-    app = OpenStackAuxiliarySubordinateApplication(
+    app = AuxiliarySubordinateApplication(
         "ceph-dashboard",
-        status["ceph_dashboard_ussuri"],
+        status["ceph_dashboard_octopus"],
         config["auxiliary_ussuri"],
         model,
         "ceph-dashboard",
+        {},
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)
@@ -176,12 +176,13 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
 def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
     """Test when ceph version changes between os releases."""
     target = OpenStackRelease("yoga")
-    app = OpenStackAuxiliarySubordinateApplication(
+    app = AuxiliarySubordinateApplication(
         "ceph-dashboard",
-        status["ceph_dashboard_xena"],
+        status["ceph_dashboard_pacific"],
         config["auxiliary_xena"],
         model,
         "ceph-dashboard",
+        {},
     )
 
     upgrade_plan = app.generate_upgrade_plan(target)

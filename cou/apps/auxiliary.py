@@ -15,7 +15,7 @@
 import logging
 from typing import Optional
 
-from cou.apps.base import OpenStackApplication
+from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import PreUpgradeStep
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 @AppFactory.register_application(["vault", "ceph-fs", "ceph-radosgw"])
-class OpenStackAuxiliaryApplication(OpenStackApplication):
+class AuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
     def is_valid_track(self, charm_channel: str) -> bool:
@@ -122,42 +122,40 @@ class OpenStackAuxiliaryApplication(OpenStackApplication):
 
 
 @AppFactory.register_application(["rabbitmq-server"])
-class RabbitMQServer(OpenStackAuxiliaryApplication):
+class RabbitMQServer(AuxiliaryApplication):
     """RabbitMQ application.
 
     RabbitMQ must wait for the entire model to be idle before declaring the upgrade complete.
     """
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
 
 @AppFactory.register_application(["ceph-mon"])
-class CephMonApplication(OpenStackAuxiliaryApplication):
+class CephMon(AuxiliaryApplication):
     """Application for Ceph Monitor charm."""
 
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
-        """Pre Upgrade planning.
+    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
+        :return:  List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        return super().pre_upgrade_plan(target) + [self._get_change_require_osd_release_plan()]
+        return super().pre_upgrade_steps(target) + [self._get_change_require_osd_release_step()]
 
-    def _get_change_require_osd_release_plan(self, parallel: bool = False) -> PreUpgradeStep:
-        """Get plan to set correct value for require-osd-release option on ceph-mon.
+    def _get_change_require_osd_release_step(self) -> PreUpgradeStep:
+        """Get the step to set correct value for require-osd-release option on ceph-mon.
 
         This step is needed as a workaround for LP#1929254. Reference:
         https://docs.openstack.org/charm-guide/latest/project/issues/upgrade-issues.html#ceph-require-osd-release
 
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Plan to check and set correct value for require-osd-release
+        :return: Step to check and set correct value for require-osd-release
         :rtype: PreUpgradeStep
         """
         ceph_mon_unit, *_ = self.units
@@ -165,42 +163,41 @@ class CephMonApplication(OpenStackAuxiliaryApplication):
             description=(
                 "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version"
             ),
-            parallel=parallel,
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )
 
 
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
-class OvnPrincipalApplication(OpenStackAuxiliaryApplication):
+class OvnPrincipal(AuxiliaryApplication):
     """Ovn principal application class."""
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
-        """Pre Upgrade planning.
+    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
+        :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         for unit in self.units:
             validate_ovn_support(unit.workload_version)
-        return super().pre_upgrade_plan(target)
+        return super().pre_upgrade_steps(target)
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])
-class MysqlInnodbClusterApplication(OpenStackAuxiliaryApplication):
+class MysqlInnodbCluster(AuxiliaryApplication):
     """Application for mysql-innodb-cluster charm."""
 
     # NOTE(agileshaw): holding 'mysql-server-core-8.0' package prevents undesired
     # mysqld processes from restarting, which lead to outages
     packages_to_hold: Optional[list] = ["mysql-server-core-8.0"]
-    wait_timeout = 30 * 60  # 30 min
+    wait_timeout = LONG_IDLE_TIMEOUT
 
 
 # NOTE (gabrielcocenza): Although CephOSD class is empty now, it will be
 # necessary to add post upgrade plan to set require-osd-release. Registering on
-# OpenStackAuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
+# AuxiliaryApplication can be easily forgot and ceph-osd can't be instantiated
 # as a normal OpenStackApplication.
 @AppFactory.register_application(["ceph-osd"])
-class CephOSD(OpenStackAuxiliaryApplication):
+class CephOSD(AuxiliaryApplication):
     """Application for ceph-osd."""

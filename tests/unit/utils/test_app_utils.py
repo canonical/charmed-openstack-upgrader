@@ -23,10 +23,10 @@ from cou.utils import app_utils
 @pytest.mark.asyncio
 async def test_application_upgrade_packages(model):
     model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
+    units = ["keystone/0", "keystone/1"]
 
-    await app_utils.upgrade_packages(
-        units=["keystone/0", "keystone/1"], model=model, packages_to_hold=None
-    )
+    for unit in units:
+        await app_utils.upgrade_packages(unit=unit, model=model, packages_to_hold=None)
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     expected_calls = [
@@ -52,10 +52,12 @@ async def test_application_upgrade_packages(model):
 @pytest.mark.asyncio
 async def test_application_upgrade_packages_with_hold(model):
     model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
+    units = ["keystone/0", "keystone/1"]
 
-    await app_utils.upgrade_packages(
-        units=["keystone/0", "keystone/1"], model=model, packages_to_hold=["package1", "package2"]
-    )
+    for unit in units:
+        await app_utils.upgrade_packages(
+            unit=unit, model=model, packages_to_hold=["package1", "package2"]
+        )
 
     dpkg_opts = "-o Dpkg::Options::=--force-confnew -o Dpkg::Options::=--force-confdef"
     expected_calls = [

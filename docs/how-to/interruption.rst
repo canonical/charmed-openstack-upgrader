@@ -14,7 +14,7 @@ the process at any prompt.
 
 Usage example:
 
-.. terminal:: 
+.. terminal::
     :input: cou upgrade
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
@@ -28,6 +28,9 @@ Usage example:
     Back up MySQL databases ✔
     Upgrade plan for 'keystone' to 'victoria'
         Upgrade software packages of 'keystone' from the current APT repositories
+            Upgrade software packages on unit keystone/0
+            Upgrade software packages on unit keystone/1
+            Upgrade software packages on unit keystone/2
         Upgrade 'keystone' to the new channel: 'victoria/stable'
         Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
         Wait for up to 1800s for model 'test-model' to reach the idle state
@@ -49,7 +52,7 @@ the cloud may be left in an inconsistent state.
 
 Exiting before running upgrade plan:
 
-.. terminal:: 
+.. terminal::
     :input: cou upgrade - # ctrl+c is pressed while connecting to the controller
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
@@ -63,7 +66,7 @@ Exiting before running upgrade plan:
 
 Safe cancel:
 
-.. terminal:: 
+.. terminal::
     :input: cou upgrade # ctrl+c is pressed once during the upgrade
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
@@ -73,11 +76,11 @@ Safe cancel:
     ...
     Running cloud upgrade...
     Canceling upgrade... (Press ctrl+c again to stop immediately) ✔
-    charmed-openstack-upgrader has been stopped safely 
+    charmed-openstack-upgrader has been stopped safely
 
 Unsafe cancel:
 
-.. terminal:: 
+.. terminal::
     :input: cou upgrade # ctrl+c is pressed twice during the upgrade
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'

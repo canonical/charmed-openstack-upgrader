@@ -121,6 +121,7 @@ class Analysis:
         :rtype: List[OpenStackApplication]
         """
         juju_status = await model.get_status()
+        juju_machines = await model.get_machines()
         apps = {
             AppFactory.create(
                 name=app,
@@ -128,6 +129,10 @@ class Analysis:
                 config=await model.get_application_config(app),
                 model=model,
                 charm=await model.get_charm_name(app),
+                machines={
+                    unit_status.machine: juju_machines[unit_status.machine]
+                    for unit_status in app_status.units.values()
+                },
             )
             for app, app_status in juju_status.applications.items()
             if app_status

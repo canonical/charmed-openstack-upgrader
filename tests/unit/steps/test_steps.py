@@ -21,6 +21,7 @@ import pytest
 
 from cou.exceptions import CanceledStep
 from cou.steps import (
+    DEPENDENCY_DESCRIPTION_PREFIX,
     BaseStep,
     PostUpgradeStep,
     PreUpgradeStep,
@@ -29,8 +30,7 @@ from cou.steps import (
 )
 
 
-async def mock_coro(*args, **kwargs):
-    ...
+async def mock_coro(*args, **kwargs): ...
 
 
 @pytest.mark.parametrize(
@@ -110,12 +110,14 @@ def test_step_bool():
     sub_step = BaseStep(description="a.a")
     assert bool(sub_step) is False
 
-    plan.sub_steps = [sub_step]
+    plan.add_step(sub_step)
     assert bool(plan) is False
 
     # coroutine in the plan sub_steps tree
     sub_sub_step = BaseStep(description="a.a.a", coro=mock_coro("a.a.a"))
-    sub_step.sub_steps = [sub_sub_step]
+    sub_step.add_step(sub_sub_step)
+    plan.add_step(sub_step)
+
     assert bool(sub_sub_step) is True
     assert bool(sub_step) is True
     assert bool(plan) is True
@@ -129,6 +131,23 @@ def test_step_str():
     sub_step.sub_steps = [
         BaseStep(description="a.a.a", coro=mock_coro("a.a.a")),
         BaseStep(description="a.a.b", coro=mock_coro("a.a.b")),
+    ]
+    plan.sub_steps = [sub_step, BaseStep(description="a.b", coro=mock_coro("a.b"))]
+
+    assert str(plan) == expected
+
+
+def test_step_str_dependent():
+    """Test BaseStep string representation."""
+    expected = (
+        f"a\n\ta.a\n\t\t{DEPENDENCY_DESCRIPTION_PREFIX}a.a.a\n"
+        f"\t\t{DEPENDENCY_DESCRIPTION_PREFIX}a.a.b\n\ta.b\n"
+    )
+    plan = BaseStep(description="a")
+    sub_step = BaseStep(description="a.a")
+    sub_step.sub_steps = [
+        BaseStep(description="a.a.a", coro=mock_coro("a.a.a"), dependent=True),
+        BaseStep(description="a.a.b", coro=mock_coro("a.a.b"), dependent=True),
     ]
     plan.sub_steps = [sub_step, BaseStep(description="a.b", coro=mock_coro("a.b"))]
 
@@ -203,7 +222,38 @@ def test_step_add_step():
     exp_sub_steps = 3
     plan = BaseStep(description="plan")
     for i in range(exp_sub_steps):
+        plan.add_step(BaseStep(description=f"sub-step-{i}", coro=mock_coro()))
+
+    assert len(plan.sub_steps) == exp_sub_steps
+
+
+def test_step_add_step_skipping_empty():
+    """Test BaseStep skipping to add empty sub steps."""
+    exp_sub_steps = 0
+    plan = BaseStep(description="plan")
+    for i in range(3):
         plan.add_step(BaseStep(description=f"sub-step-{i}"))
+
+    assert len(plan.sub_steps) == exp_sub_steps
+
+
+def test_step_add_step_failed():
+    """Test BaseStep adding sub steps failing."""
+    exp_error_msg = "Cannot add an upgrade step that is not derived from BaseStep"
+    plan = BaseStep(description="plan")
+
+    with pytest.raises(TypeError, match=exp_error_msg):
+        plan.add_step(MagicMock())
+
+
+def test_step_add_steps():
+    """Test BaseStep adding sub steps at once."""
+    exp_sub_steps = 3
+    plan = BaseStep(description="plan")
+    plan.add_steps(
+        [BaseStep(description=f"sub-step-{i}", coro=mock_coro()) for i in range(exp_sub_steps)]
+        + [BaseStep(description="empty-step")]  # we also check that empty step will not be added
+    )
 
     assert len(plan.sub_steps) == exp_sub_steps
 
@@ -211,9 +261,13 @@ def test_step_add_step():
 def test_step_cancel_safe():
     """Test step safe cancel."""
     plan = BaseStep(description="plan")
-    plan.sub_steps = sub_steps = [BaseStep(description=f"sub-{i}") for i in range(10)]
+    plan.sub_steps = sub_steps = [
+        BaseStep(description=f"sub-{i}", coro=mock_coro()) for i in range(10)
+    ]
     # add sub-sub-steps to one sub-step
-    sub_steps[0].sub_steps = [BaseStep(description=f"sub-0.{i}") for i in range(3)]
+    sub_steps[0].sub_steps = [
+        BaseStep(description=f"sub-0.{i}", coro=mock_coro()) for i in range(3)
+    ]
 
     plan.cancel()
 

@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
@@ -33,10 +34,11 @@ from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
     PreUpgradeStep,
+    UnitUpgradeStep,
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import COUModel, Machine
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -45,7 +47,10 @@ from cou.utils.openstack import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_WAITING_TIMEOUT = 5 * 60  # 5 min
+STANDARD_IDLE_TIMEOUT: int = int(
+    os.environ.get("COU_STANDARD_IDLE_TIMEOUT", 5 * 60)
+)  # default of 5 min
+LONG_IDLE_TIMEOUT: int = int(os.environ.get("COU_LONG_IDLE_TIMEOUT", 30 * 60))  # default of 30 min
 
 
 @dataclass
@@ -54,8 +59,8 @@ class ApplicationUnit:
 
     name: str
     os_version: OpenStackRelease
+    machine: Machine
     workload_version: str = ""
-    machine: str = ""
 
 
 @dataclass
@@ -72,15 +77,8 @@ class OpenStackApplication:
     :type model: COUModel
     :param charm: Name of the charm.
     :type charm: str
-    :param charm_origin: Origin of the charm (local, ch, cs and etc.), defaults to ""
-    :type charm_origin: str, defaults to ""
-    :param os_origin: OpenStack origin of the application. E.g: cloud:focal-wallaby, defaults to ""
-    :type os_origin: str, defaults to ""
-    :param origin_setting: "source" or "openstack-origin" of the charm configuration.
-        Return None if not present
-    :type origin_setting: Optional[str], defaults to None
-    :param channel: Channel that the charm tracks. E.g: "ussuri/stable", defaults to ""
-    :type channel: str, defaults to ""
+    :param machines: dictionary with Machine
+    :type machines: dict[str, Machine]
     :param units: Units representation of an application.
     :type units: list[ApplicationUnit]
     :raises ApplicationError: When there are no compatible OpenStack release for the
@@ -99,20 +97,16 @@ class OpenStackApplication:
     config: dict
     model: COUModel
     charm: str
-    charm_origin: str = ""
-    os_origin: str = ""
-    origin_setting: Optional[str] = None
+    machines: dict[str, Machine]
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
     packages_to_hold: Optional[list] = field(default=None, init=False)
-    wait_timeout: int = field(default=DEFAULT_WAITING_TIMEOUT, init=False)
+    wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
 
     def __post_init__(self) -> None:
         """Initialize the Application dataclass."""
-        self.charm_origin = self.status.charm.split(":")[0]
-        self.os_origin = self._get_os_origin()
+        self._verify_channel()
         self._populate_units()
-        self.channel = self.status.charm_channel
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -159,6 +153,23 @@ class OpenStackApplication:
             yaml.dump(summary, stream)
             return stream.getvalue()
 
+    def _verify_channel(self) -> None:
+        """Verify app channel from current data.
+
+        :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
+        """
+        if self.is_from_charm_store or self.is_valid_track(self.status.charm_channel):
+            logger.debug("%s app has proper channel %s", self.name, self.status.charm_channel)
+            return
+
+        raise ApplicationError(
+            f"Channel: {self.status.charm_channel} for charm '{self.charm}' on series "
+            f"'{self.series}' is currently not supported in this tool. Please take a look at the "
+            "documentation: "
+            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
+            "you are using the right track."
+        )
+
     def _populate_units(self) -> None:
         """Populate application units."""
         if not self.is_subordinate:
@@ -169,7 +180,7 @@ class OpenStackApplication:
                         name=name,
                         workload_version=unit.workload_version,
                         os_version=compatible_os_version,
-                        machine=unit.machine,
+                        machine=self.machines[unit.machine],
                     )
                 )
 
@@ -189,32 +200,43 @@ class OpenStackApplication:
         :return: Charm channel. E.g: ussuri/stable
         :rtype: str
         """
-        # NOTE(gabrielcocenza) Some applications current_os_release points
-        # to channel_codename without setting the channel before. In that
-        # case we set the attribute before accessing it.
-        if not hasattr(self, "_channel"):
-            self.channel = self.status.charm_channel
-        return self._channel
+        return self.status.charm_channel
 
-    @channel.setter
-    def channel(self, charm_channel: str) -> None:
-        """Set charm channel of the application.
+    @property
+    def charm_origin(self) -> str:
+        """Get the charm origin of application.
 
-        When application comes from charm store, the channel won't be OpenStack related.
-        :param charm_channel: Charm channel. E.g: ussuri/stable
-        :type charm_channel: str
-        :raises ApplicationError:  Exception raised when channel is not a valid OpenStack
-            channel.
+        :return: Charm origin. E.g: cs or ch
+        :rtype: str
         """
-        if self.is_from_charm_store or self.is_valid_track(charm_channel):
-            self._channel = charm_channel
-            return
-        raise ApplicationError(
-            f"Channel: {charm_channel} for charm '{self.charm}' on series '{self.series}' "
-            "is currently not supported in this tool. Please take a look at the documentation:"
-            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see "
-            "if you are using the right track."
-        )
+        return self.status.charm.split(":")[0]
+
+    @property
+    def os_origin(self) -> str:
+        """Get application configuration for openstack-origin or source.
+
+        :return: Configuration parameter of the charm to set OpenStack origin.
+            e.g: cloud:focal-wallaby
+        :rtype: str
+        """
+        if origin := self.origin_setting:
+            return self.config[origin].get("value", "")
+
+        logger.warning("Failed to get origin for %s, no origin config found", self.name)
+        return ""
+
+    @property
+    def origin_setting(self) -> Optional[str]:
+        """Get charm origin setting name.
+
+        :return: return name of charm origin setting, e.g. "source", "openstack-origin" or None
+        :rtype: Optional[str]
+        """
+        for origin in ("openstack-origin", "source"):
+            if origin in self.config:
+                return origin
+
+        return None
 
     @property
     def is_from_charm_store(self) -> bool:
@@ -249,15 +271,16 @@ class OpenStackApplication:
         :return: The latest compatible OpenStack release.
         :rtype: OpenStackRelease
         """
-        try:
-            return max(
-                OpenStackCodenameLookup.find_compatible_versions(self.charm, unit.workload_version)
-            )
-        except ValueError as exc:
+        compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+            self.charm, unit.workload_version
+        )
+        if not compatible_os_versions:
             raise ApplicationError(
                 f"'{self.name}' with workload version {unit.workload_version} has no "
                 "compatible OpenStack release."
-            ) from exc
+            )
+
+        return max(compatible_os_versions)
 
     @staticmethod
     def _get_track_from_channel(charm_channel: str) -> str:
@@ -370,16 +393,8 @@ class OpenStackApplication:
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        try:
-            # get the OpenStack release from the channel track of the application.
-            os_track_release_channel = OpenStackRelease(self._get_track_from_channel(self.channel))
-        except ValueError:
-            logger.debug(
-                "The current channel of '%s' does not exist or is unexpectedly formatted",
-                self.name,
-            )
-            os_track_release_channel = self.current_os_release
-        return os_track_release_channel
+        # get the OpenStack release from the channel track of the application.
+        return OpenStackRelease(self._get_track_from_channel(self.channel))
 
     @property
     def can_upgrade_current_channel(self) -> bool:
@@ -399,21 +414,6 @@ class OpenStackApplication:
         :rtype: str
         """
         return f"cloud:{self.series}-{target.codename}"
-
-    def _get_os_origin(self) -> str:
-        """Get application configuration for openstack-origin or source.
-
-        :return: Configuration parameter of the charm to set OpenStack origin.
-            E.g: cloud:focal-wallaby
-        :rtype: str
-        """
-        for origin in ("openstack-origin", "source"):
-            if self.config.get(origin):
-                self.origin_setting = origin
-                return self.config[origin].get("value", "")
-
-        logger.warning("Failed to get origin for %s, no origin config found", self.name)
-        return ""
 
     async def _check_upgrade(self, target: OpenStackRelease) -> None:
         """Check if an application has upgraded its workload version.
@@ -439,26 +439,26 @@ class OpenStackApplication:
                 f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
             )
 
-    def pre_upgrade_plan(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
-        """Pre Upgrade planning.
+    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add pre upgrade as sub steps.
+        :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         return [
-            self._get_upgrade_current_release_packages_plan(),
-            self._get_refresh_charm_plan(target),
+            self._get_upgrade_current_release_packages_step(),
+            self._get_refresh_charm_step(target),
         ]
 
-    def upgrade_plan(self, target: OpenStackRelease) -> list[UpgradeStep]:
-        """Upgrade planning.
+    def upgrade_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+        """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
-        :return: Plan that will add upgrade as sub steps.
+        :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
         if self.current_os_release >= target and self.apt_source_codename >= target:
@@ -470,24 +470,24 @@ class OpenStackApplication:
             raise HaltUpgradePlanGeneration(msg)
 
         return [
-            self._get_disable_action_managed_plan(),
-            self._get_upgrade_charm_plan(target),
-            self._get_workload_upgrade_plan(target),
+            self._get_disable_action_managed_step(),
+            self._get_upgrade_charm_step(target),
+            self._get_workload_upgrade_step(target),
         ]
 
-    def post_upgrade_plan(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
-        """Post Upgrade planning.
+    def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
+        """Post Upgrade steps planning.
 
         Wait until the application reaches the idle state and then check the target workload.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Plan that will add post upgrade as sub steps.
+        :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
         return [
             self._get_wait_step(),
-            self._get_reached_expected_target_plan(target),
+            self._get_reached_expected_target_step(target),
         ]
 
     def generate_upgrade_plan(self, target: OpenStackRelease) -> ApplicationUpgradePlan:
@@ -498,48 +498,46 @@ class OpenStackApplication:
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
-        upgrade_steps = ApplicationUpgradePlan(
+        upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to '{target}'",
         )
-        all_steps = (
-            self.pre_upgrade_plan(target)
-            + self.upgrade_plan(target)
-            + self.post_upgrade_plan(target)
-        )
-        for step in all_steps:
-            if step:
-                upgrade_steps.add_step(step)
-        return upgrade_steps
+        upgrade_plan.add_steps(self.pre_upgrade_steps(target))
+        upgrade_plan.add_steps(self.upgrade_steps(target))
+        upgrade_plan.add_steps(self.post_upgrade_steps(target))
 
-    def _get_upgrade_current_release_packages_plan(self, parallel: bool = False) -> PreUpgradeStep:
-        """Get Plan for upgrading software packages to the latest of the current release.
+        return upgrade_plan
 
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Plan for upgrading software packages to the latest of the current release.
+    def _get_upgrade_current_release_packages_step(self) -> PreUpgradeStep:
+        """Get step for upgrading software packages to the latest of the current release.
+
+        :return: Step for upgrading software packages to the latest of the current release.
         :rtype: PreUpgradeStep
         """
-        return PreUpgradeStep(
+        step = PreUpgradeStep(
             description=(
                 f"Upgrade software packages of '{self.name}' from the current APT repositories"
             ),
-            parallel=parallel,
-            coro=upgrade_packages(self.status.units.keys(), self.model, self.packages_to_hold),
+            parallel=True,
+        )
+        step.add_steps(
+            UnitUpgradeStep(
+                description=f"Upgrade software packages on unit {unit.name}",
+                coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
+            )
+            for unit in self.units
         )
 
-    def _get_refresh_charm_plan(
-        self, target: OpenStackRelease, parallel: bool = False
-    ) -> PreUpgradeStep:
-        """Get plan for refreshing the current channel.
+        return step
+
+    def _get_refresh_charm_step(self, target: OpenStackRelease) -> PreUpgradeStep:
+        """Get step for refreshing the current channel.
 
         This function also identifies if charm comes from charmstore and in that case,
         makes the migration.
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
         :raises ApplicationError: When application has unexpected channel.
-        :return: Plan for refreshing the charm.
+        :return: Step for refreshing the charm.
         :rtype: PreUpgradeStep
         """
         if not self.can_upgrade_current_channel:
@@ -582,20 +580,15 @@ class OpenStackApplication:
 
         return PreUpgradeStep(
             description=description,
-            parallel=parallel,
             coro=self.model.upgrade_charm(self.name, channel, switch=switch),
         )
 
-    def _get_upgrade_charm_plan(
-        self, target: OpenStackRelease, parallel: bool = False
-    ) -> UpgradeStep:
-        """Get plan for upgrading the charm.
+    def _get_upgrade_charm_step(self, target: OpenStackRelease) -> UpgradeStep:
+        """Get step for upgrading the charm.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Plan for upgrading the charm.
+        :return: Step for upgrading the charm.
         :rtype: UpgradeStep
         """
         if self.channel != self.target_channel(target):
@@ -603,19 +596,16 @@ class OpenStackApplication:
                 description=(
                     f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
                 ),
-                parallel=parallel,
                 coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
             )
         return UpgradeStep()
 
-    def _get_disable_action_managed_plan(self, parallel: bool = False) -> UpgradeStep:
-        """Get plan to disable action-managed-upgrade.
+    def _get_disable_action_managed_step(self) -> UpgradeStep:
+        """Get step to disable action-managed-upgrade.
 
         This is used to upgrade as "all-in-one" strategy.
 
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Plan to disable action-managed-upgrade
+        :return: Step to disable action-managed-upgrade
         :rtype: UpgradeStep
         """
         if self.config.get("action-managed-upgrade", {}).get("value", False):
@@ -623,23 +613,18 @@ class OpenStackApplication:
                 description=(
                     f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
                 ),
-                parallel=parallel,
                 coro=self.model.set_application_config(
                     self.name, {"action-managed-upgrade": False}
                 ),
             )
         return UpgradeStep()
 
-    def _get_workload_upgrade_plan(
-        self, target: OpenStackRelease, parallel: bool = False
-    ) -> UpgradeStep:
-        """Get workload upgrade plan by changing openstack-origin or source.
+    def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
+        """Get workload upgrade step by changing openstack-origin or source.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Workload upgrade plan
+        :return: Workload upgrade step
         :rtype: UpgradeStep
         """
         if self.os_origin != self.new_origin(target) and self.origin_setting:
@@ -648,7 +633,6 @@ class OpenStackApplication:
                     f"Change charm config of '{self.name}' "
                     f"'{self.origin_setting}' to '{self.new_origin(target)}'"
                 ),
-                parallel=parallel,
                 coro=self.model.set_application_config(
                     self.name, {self.origin_setting: self.new_origin(target)}
                 ),
@@ -661,21 +645,16 @@ class OpenStackApplication:
         )
         return UpgradeStep()
 
-    def _get_reached_expected_target_plan(
-        self, target: OpenStackRelease, parallel: bool = False
-    ) -> PostUpgradeStep:
-        """Get plan to check if application workload has been upgraded.
+    def _get_reached_expected_target_step(self, target: OpenStackRelease) -> PostUpgradeStep:
+        """Get post upgrade step to check if application workload has been upgraded.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param parallel: Parallel running, defaults to False
-        :type parallel: bool, optional
-        :return: Plan to check if application workload has been upgraded
+        :return: Post Upgrade step to check if application workload has been upgraded.
         :rtype: PostUpgradeStep
         """
         return PostUpgradeStep(
             description=f"Verify that the workload of '{self.name}' has been upgraded",
-            parallel=parallel,
             coro=self._check_upgrade(target),
         )
 
