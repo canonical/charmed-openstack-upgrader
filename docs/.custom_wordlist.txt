@@ -5,6 +5,7 @@ Github
 frictionless
 COU
 cou
+colocated
 COUModel
 SIGINT
 SIGINTs
@@ -14,6 +15,7 @@ STDOUT
 juju
 libjuju
 VPN
+VMs
 ctrl
 snapcraft
 OpenStackApplication

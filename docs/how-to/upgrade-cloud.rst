@@ -2,6 +2,103 @@
 Upgrade a cloud
 ===============
 
+Recommendations for upgrading production clouds
+-----------------------------------------------
+
+1. Be sure to upgrade in a maintenance window
+2. Start with the upgrade on control-plane applications
+3. Don't force the upgrade on non-empty hypervisors
+4. After upgrading the control-plane, choose one empty hypervisor to be a `canary node`.
+    After upgrading it, test if it's behaving as expected.
+5. If no issues are found after upgrading the `canary node`, proceed with the upgrade.
+
+Run upgrade for the whole cloud
+-------------------------------
+
+To upgrade the whole cloud in a single command.
+
+.. code:: bash
+
+    cou upgrade
+
+
+Run upgrade for the control-plane
+---------------------------------
+
+To upgrade a plan targeting the **control-plane** applications use:
+
+.. code:: bash
+
+    cou upgrade control-plane
+
+**Note:** Control-plane applications will be upgraded using the `all-in-one`_ method,
+meaning that all units will be upgraded at once.
+
+
+Run upgrade for the data-plane
+------------------------------
+
+To upgrade the **data-plane** applications use:
+
+.. code:: bash
+
+    cou plan data-plane
+
+**Note:**
+- It's essential to complete the upgrade of the **control-plane** components before
+being able to upgrade for **data-plane**.
+- Nova-compute and services colocated on the same machines will be upgraded using the
+`paused-single-unit`_ method, meaning that it will upgrade unit by unit.
+
+
+Run upgrade for the hypervisors
+-------------------------------
+
+To upgrade just the **hypervisors** use:
+
+.. code:: bash
+
+    cou upgrade hypervisors
+
+It's also possible to target for specific **availability-zones** or **machines**:
+
+.. code:: bash
+
+    # upgrade for just empty hypervisors in machines 0 and 1
+    cou upgrade hypervisors --machine "0, 1"
+
+    # upgrade for all empty hypervisors that are into zone-1
+    cou upgrade hypervisors --availability-zone=zone-1
+
+**Note:**
+- Those specific filters are mutually exclusive, meaning that it's not possible
+to use then together.
+- Since **hypervisors** comprise a subset of **data-plane** components, it is
+also necessary to complete the upgrade of the **control-plane** components before
+being able to upgrade the **hypervisors**.
+
+Upgrade non-empty hypervisors
+-----------------------------
+By default, COU will skip the upgrade on hypervisors that have VMs running. If it's
+necessary to also include then, use the `--force` command. For example:
+
+.. code:: bash
+
+    # upgrade data-plane applications using all hypervisors
+    cou upgrade data-plane --force
+
+    # upgrade all hypervisors
+    cou upgrade hypervisors --force
+
+    # upgrade hypervisors from machines 0 and 1
+    cou upgrade hypervisors --machine "0, 1" --force
+
+    # upgrade all hypervisors that are in zone-1
+    cou upgrade hypervisors --availability-zone=zone-1 --force
+
+**Note:** This is not safe and might cause problems in the running VMs. The recommendation
+is to migrate the VMs and upgrade machines that are empty
+
 Run interactive upgrades
 ------------------------
 
@@ -36,68 +133,7 @@ Usage example
             Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
             Wait for up to 1800s for model 'test-model' to reach the idle state
             Verify that the workload of 'rabbitmq-server' has been upgraded
-        Upgrade plan for 'keystone' to 'victoria'
-            Upgrade software packages of 'keystone' from the current APT repositories
-                Upgrade software packages on unit 'keystone/0'
-                Upgrade software packages on unit 'keystone/1'
-                Upgrade software packages on unit 'keystone/2'
-            Upgrade 'keystone' to the new channel: 'victoria/stable'
-            Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
-            Wait for up to 1800s for model 'test-model' to reach the idle state
-            Verify that the workload of 'keystone' has been upgraded
-        Upgrade plan for 'cinder' to 'victoria'
-            Upgrade software packages of 'cinder' from the current APT repositories
-                Upgrade software packages on unit 'cinder/0'
-            Refresh 'cinder' to the latest revision of 'ussuri/stable'
-            Upgrade 'cinder' to the new channel: 'victoria/stable'
-            Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
-            Wait for up to 300s for app 'cinder' to reach the idle state
-            Verify that the workload of 'cinder' has been upgraded
-        Upgrade plan for 'glance' to 'victoria'
-            Upgrade software packages of 'glance' from the current APT repositories
-                Upgrade software packages on unit 'glance/0'
-            Upgrade 'glance' to the new channel: 'victoria/stable'
-            Change charm config of 'glance' 'openstack-origin' to 'cloud:focal-victoria'
-            Wait for up to 300s for app 'glance' to reach the idle state
-            Verify that the workload of 'glance' has been upgraded
-        Upgrade plan for 'neutron-api' to 'victoria'
-            Upgrade software packages of 'neutron-api' from the current APT repositories
-                Upgrade software packages on unit 'neutron-api/0'
-            Upgrade 'neutron-api' to the new channel: 'victoria/stable'
-            Change charm config of 'neutron-api' 'openstack-origin' to 'cloud:focal-victoria'
-            Wait for up to 300s for app 'neutron-api' to reach the idle state
-            Verify that the workload of 'neutron-api' has been upgraded
-        Upgrade plan for 'neutron-gateway' to 'victoria'
-            Upgrade software packages of 'neutron-gateway' from the current APT repositories
-                Upgrade software packages on unit 'neutron-gateway/0'
-            Upgrade 'neutron-gateway' to the new channel: 'victoria/stable'
-            Change charm config of 'neutron-gateway' 'openstack-origin' to 'cloud:focal-victoria'
-            Wait for up to 300s for app 'neutron-gateway' to reach the idle state
-            Verify that the workload of 'neutron-gateway' has been upgraded
-        Upgrade plan for 'placement' to 'victoria'
-            Upgrade software packages of 'placement' from the current APT repositories
-                Upgrade software packages on unit 'placement/0'
-            Upgrade 'placement' to the new channel: 'victoria/stable'
-            Change charm config of 'placement' 'openstack-origin' to 'cloud:focal-victoria'
-            Wait for up to 300s for app 'placement' to reach the idle state
-            Verify that the workload of 'placement' has been upgraded
-        Upgrade plan for 'nova-cloud-controller' to 'victoria'
-            Upgrade software packages of 'nova-cloud-controller' from the current APT repositories
-                Upgrade software packages on unit 'nova-cloud-controller/0'
-            Refresh 'nova-cloud-controller' to the latest revision of 'ussuri/stable'
-            Upgrade 'nova-cloud-controller' to the new channel: 'victoria/stable'
-            Change charm config of 'nova-cloud-controller' 'openstack-origin' to 'cloud:focal-victoria'
-            Wait for up to 300s for app 'nova-cloud-controller' to reach the idle state
-            Verify that the workload of 'nova-cloud-controller' has been upgraded
-        Upgrade plan for 'mysql' to 'victoria'
-            Upgrade software packages of 'mysql' from the current APT repositories
-                Upgrade software packages on unit 'mysql/0'
-            Change charm config of 'mysql' 'source' to 'cloud:focal-victoria'
-            Wait for up to 1800s for app 'mysql' to reach the idle state
-            Verify that the workload of 'mysql' has been upgraded
-        Control Plane subordinate(s) upgrade plan
-        Upgrade plan for 'neutron-openvswitch' to 'victoria'
-            Upgrade 'neutron-openvswitch' to the new channel: 'victoria/stable'
+        ...
     Would you like to start the upgrade? Continue (y/N): y
     Running cloud upgrade...
     Verify that all OpenStack applications are in idle state ✔
@@ -169,3 +205,8 @@ Non-interactive and quiet mode:
     :input: cou upgrade --auto-approve --quiet
 
     Upgrade completed.
+
+
+.. LINKS
+.. _all-in-one: https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#perform-the-upgrade
+.. _paused-single-unit: https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#perform-the-upgrade
