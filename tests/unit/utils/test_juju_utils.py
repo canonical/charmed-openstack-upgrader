@@ -38,7 +38,7 @@ from cou.utils import juju_utils
 def mocked_model(mocker):
     """Fixture providing mocked juju.model.Model object."""
     mocker.patch("cou.utils.juju_utils.FileJujuData")
-    model_mocker = mocker.patch("cou.utils.juju_utils.Model", return_value=AsyncMock(Model))
+    model_mocker = mocker.patch("cou.utils.juju_utils.JujuModel", return_value=AsyncMock(Model))
     model = model_mocker.return_value
     model.connection.return_value.is_open = True  # simulate already connected model
     yield model
@@ -190,7 +190,7 @@ def test_machine_eq():
 @patch("cou.utils.juju_utils.FileJujuData")
 def test_coumodel_init(mock_juju_data, mocker):
     """Test Model initialization."""
-    model_mocker = mocker.patch("cou.utils.juju_utils.Model")
+    model_mocker = mocker.patch("cou.utils.juju_utils.JujuModel")
     mocked_model = model_mocker.return_value
     mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
     name = "test-model"
