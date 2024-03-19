@@ -16,6 +16,7 @@ import logging
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
+from cou.exceptions import HaltUpgradePlanGeneration
 from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradeStep
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 
@@ -24,6 +25,23 @@ logger = logging.getLogger(__name__)
 
 class SubordinateBase(OpenStackApplication):
     """Subordinate base class."""
+
+    def _check_application_target(self, target: OpenStackRelease) -> None:
+        """Check if application release is not lower than or equal to target.
+
+        Subordinate application are not comparing apt_source_codename with target.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        """
+        logger.debug("%s application current os_release is %s", self.name, self.current_os_release)
+
+        if self.current_os_release >= target:
+            raise HaltUpgradePlanGeneration(
+                f"Application '{self.name}' already configured for release equal to or greater "
+                f"than {target}. Ignoring."
+            )
 
     def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
@@ -69,7 +87,7 @@ class SubordinateApplication(SubordinateBase):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        if self.is_from_charm_store:  # pylint: disable=duplicate-code
+        if self.is_from_charm_store:
             logger.debug(
                 "'%s' is from charm store and will be considered with channel codename as ussuri",
                 self.name,
