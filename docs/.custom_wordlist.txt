@@ -5,7 +5,7 @@ Github
 frictionless
 COU
 cou
-COUModel
+Model
 SIGINT
 SIGINTs
 SIGTERM

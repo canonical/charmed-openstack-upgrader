@@ -22,7 +22,7 @@ from typing import Optional
 from juju.client._definitions import ApplicationStatus
 
 from cou.apps.base import OpenStackApplication
-from cou.utils.juju_utils import COUModel, Machine
+from cou.utils.juju_utils import Machine, Model
 from cou.utils.openstack import is_charm_supported
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class AppFactory:
         name: str,
         status: ApplicationStatus,
         config: dict,
-        model: COUModel,
+        model: Model,
         charm: str,
         machines: dict[str, Machine],
     ) -> Optional[OpenStackApplication]:
@@ -55,8 +55,8 @@ class AppFactory:
         :type status: ApplicationStatus
         :param config: Configuration of the application
         :type config: dict
-        :param model: COUModel object
-        :type model: COUModel
+        :param model: Model object
+        :type model: Model
         :param charm: Name of the charm
         :type charm: str
         :return: The OpenStackApplication class or None if not supported.

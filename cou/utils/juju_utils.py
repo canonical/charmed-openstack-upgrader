@@ -26,7 +26,7 @@ from juju.client._definitions import FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
 from juju.errors import JujuAppError, JujuError, JujuUnitError
-from juju.model import Model
+from juju.model import Model as JujuModel
 from juju.unit import Unit
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
@@ -91,7 +91,7 @@ def retry(
     timeout: int = DEFAULT_TIMEOUT,
     no_retry_exceptions: tuple = (),
 ) -> Callable:
-    """Retry function for usage in COUModel.
+    """Retry function for usage in Model.
 
     :param function: function to be wrapped
     :type function: Optional[Callable]
@@ -139,7 +139,7 @@ class Machine:
     az: Optional[str] = None  # simple deployments may not have azs
 
 
-class COUModel:
+class Model:
     """COU model object.
 
     This version of the model provides better waiting for the model to turn idle, auto-reconnection
@@ -149,7 +149,7 @@ class COUModel:
     def __init__(self, name: Optional[str]):
         """COU Model initialization with name and juju.model.Model."""
         self._juju_data = FileJujuData()
-        self._model = Model(max_frame_size=JUJU_MAX_FRAME_SIZE, jujudata=self.juju_data)
+        self._model = JujuModel(max_frame_size=JUJU_MAX_FRAME_SIZE, jujudata=self.juju_data)
         self._name = name
 
     @property
@@ -216,11 +216,11 @@ class COUModel:
 
         return app
 
-    async def _get_model(self) -> Model:
+    async def _get_model(self) -> JujuModel:
         """Get juju.model.Model and make sure that it is connected.
 
         :return: Model
-        :rtype: Model
+        :rtype: JujuModel
         """
         if not self.connected:
             await self.connect()
