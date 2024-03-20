@@ -5,7 +5,7 @@ import unittest
 import zaza
 import zaza.model
 
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import Model
 
 log = logging.getLogger(__name__)
 
@@ -13,13 +13,13 @@ TESTED_APP = "designate-bind"
 TESTED_UNIT = f"{TESTED_APP}/0"
 
 
-class COUModelTest(unittest.TestCase):
-    """COUModel functional tests."""
+class ModelTest(unittest.TestCase):
+    """Model functional tests."""
 
     def setUp(self) -> None:
         zaza.get_or_create_libjuju_thread()
         model_name = zaza.model.get_juju_model()
-        self.model = COUModel(model_name)
+        self.model = Model(model_name)
 
     def tearDown(self) -> None:
         zaza.sync_wrapper(self.model._model.disconnect)()
@@ -38,7 +38,7 @@ class COUModelTest(unittest.TestCase):
         self.assertEqual(TESTED_APP, charm)
 
     def test_get_status(self):
-        """Test COUModel.get_status."""
+        """Test Model.get_status."""
         status = zaza.sync_wrapper(self.model.get_status)()
         self.assertIn(TESTED_APP, status.applications)
 

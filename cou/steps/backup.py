@@ -19,16 +19,16 @@ from pathlib import Path
 
 from cou.exceptions import UnitNotFound
 from cou.utils import COU_DATA
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import Model
 
 logger = logging.getLogger(__name__)
 
 
-async def backup(model: COUModel) -> Path:
+async def backup(model: Model) -> Path:
     """Backup mysql database of openstack.
 
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :return: Path of the local file from the backup.
     :rtype: Path
     """
@@ -70,14 +70,14 @@ def _check_db_relations(app_config: dict) -> bool:
     return False
 
 
-async def get_database_app_unit_name(model: COUModel) -> str:
+async def get_database_app_unit_name(model: Model) -> str:
     """Get mysql-innodb-cluster application's first unit's name.
 
     Gets the openstack database mysql-innodb-cluster application if there are more than one
     application the one with the keystone relation is selected.
 
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :raises UnitNotFound: When cannot find a valid unit for 'mysql-innodb-cluster
     :returns: Name of the mysql-innodb-cluster application name
     :rtype: ApplicationStatus
