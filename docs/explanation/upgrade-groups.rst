@@ -41,6 +41,8 @@ of COU are (following their upgrade order):
 - nova-cloud-controller
 - openstack-dashboard
 - octavia
+- additional principal applications that contribute to the formation of the OpenStack cloud 
+  (typically **mysql-innodb-cluster**)
 - **control-plane** subordinate applications
 
 

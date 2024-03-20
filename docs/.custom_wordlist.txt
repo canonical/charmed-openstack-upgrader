@@ -39,4 +39,6 @@ ganesha
 ceilometer
 rabbitmq
 barbican
+mysql
+innodb
 colocated

@@ -180,7 +180,7 @@ def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
     hypervisors_filters.add_argument(
         "--availability-zone",
         "--az",
-        help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
+        help="Specify Juju availability zone(s) to upgrade.\nThis option accepts a single "
         "availability zone as well as a\nstringified comma-separated list of AZs, "
         "and can be repeated\nmultiple times. This option cannot be used together with\n"
         "[--machine/-m]",

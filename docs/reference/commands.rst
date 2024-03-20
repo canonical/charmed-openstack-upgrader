@@ -100,8 +100,8 @@ Upgrade Groups
 --------------
 
 In COU, users can choose to selectively target only certain components in OpenStack cloud
-for upgrades, grouped by their roles. The available upgrade groups are **control-plane**,
-**data-plane**, and **hypervisors**.
+for planning and executing upgrades, grouped by their roles. The available upgrade groups
+are **control-plane**, **data-plane**, and **hypervisors**.
 
 The options available for **control-plane** upgrade are:
 
@@ -197,7 +197,7 @@ narrow the upgrade to a particular subset of nodes.
                             comma-separated list of ids, and can be repeated multiple times.
                             This option cannot be used together with [--availability-zone/--az].
       --availability-zone AVAILABILITY_ZONES, --az AVAILABILITY_ZONES
-                            Specify availability zone(s) to upgrade.
+                            Specify Juju availability zone(s) to upgrade.
                             This option accepts a single availability zone as well as a
                             stringified comma-separated list of AZs, and can be repeated
                             multiple times. This option cannot be used together with
