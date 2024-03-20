@@ -409,7 +409,7 @@ def test_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
@@ -478,7 +478,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(status, config, model, app
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone"),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
@@ -543,7 +543,7 @@ def test_upgrade_plan_channel_on_next_os_release(status, config, model, apps_mac
     upgrade_steps = [
         upgrade_packages,
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
@@ -608,7 +608,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),

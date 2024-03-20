@@ -83,7 +83,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),

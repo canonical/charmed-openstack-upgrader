@@ -18,8 +18,9 @@ from juju.client._definitions import UnitStatus
 
 from cou.apps.base import OpenStackApplication
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
-from cou.steps import PreUpgradeStep
+from cou.steps import PreUpgradeStep, UpgradeStep
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.utils import assert_steps
 
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
@@ -133,3 +134,42 @@ def test_get_refresh_charm_step_empty_can_upgrade_to(can_upgrade_current_channel
     step = app._get_refresh_charm_step(target)
 
     assert step == PreUpgradeStep()
+
+
+@pytest.mark.parametrize(
+    "charm_config, enable, exp_description",
+    [
+        ({}, True, None),
+        ({}, False, None),
+        (
+            {"action-managed-upgrade": {"value": False}},
+            True,
+            "Change charm config of 'my_app' 'action-managed-upgrade' to True",
+        ),
+        ({"action-managed-upgrade": {"value": False}}, False, None),
+        ({"action-managed-upgrade": {"value": True}}, True, None),
+        (
+            {"action-managed-upgrade": {"value": True}},
+            False,
+            "Change charm config of 'my_app' 'action-managed-upgrade' to False",
+        ),
+    ],
+)
+def test_set_action_managed_upgrade(charm_config, enable, exp_description, model):
+    charm = "app"
+    app_name = "my_app"
+    status = MagicMock()
+    status.charm_channel = "ussuri/stable"
+    if exp_description:
+        # Note (rgildein): we need to set exp_step here, since we need to use model fixture
+        exp_step = UpgradeStep(
+            exp_description,
+            coro=model.set_application_config(app_name, {"action-managed-upgrade": enable}),
+        )
+    else:
+        exp_step = UpgradeStep()
+
+    app = OpenStackApplication(app_name, status, charm_config, model, charm, {})
+    step = app._set_action_managed_upgrade(enable)
+
+    assert_steps(step, exp_step)

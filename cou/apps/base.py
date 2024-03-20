@@ -474,7 +474,7 @@ class OpenStackApplication:
         :rtype: list[UpgradeStep]
         """
         return [
-            self._get_disable_action_managed_step(),
+            self._set_action_managed_upgrade(False),
             self._get_upgrade_charm_step(target),
             self._get_workload_upgrade_step(target),
         ]
@@ -606,24 +606,30 @@ class OpenStackApplication:
             )
         return UpgradeStep()
 
-    def _get_disable_action_managed_step(self) -> UpgradeStep:
-        """Get step to disable action-managed-upgrade.
+    def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:
+        """Set action-managed-upgrade config option.
 
-        This is used to upgrade as "all-in-one" strategy.
-
-        :return: Step to disable action-managed-upgrade
-        :rtype: UpgradeStep
+        :param enable: enable or disable option
+        :type enable: bool
+        :return: Step to change action-managed-upgrade config option, if option exist.
+        :rtype: UnitUpgradeStep
         """
-        if self.config.get("action-managed-upgrade", {}).get("value", False):
-            return UpgradeStep(
-                description=(
-                    f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
-                ),
-                coro=self.model.set_application_config(
-                    self.name, {"action-managed-upgrade": False}
-                ),
+        if "action-managed-upgrade" not in self.config:
+            logger.debug(
+                "%s application doesn't have an action-managed-upgrade config option", self.name
             )
-        return UpgradeStep()
+            return UpgradeStep()
+
+        if self.config["action-managed-upgrade"].get("value") == enable:
+            logger.debug(
+                "%s application already has action-managed-upgrade set to %s", self.name, enable
+            )
+            return UpgradeStep()
+
+        return UpgradeStep(
+            f"Change charm config of '{self.name}' 'action-managed-upgrade' to {enable}",
+            coro=self.model.set_application_config(self.name, {"action-managed-upgrade": enable}),
+        )
 
     def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
         """Get workload upgrade step by changing openstack-origin or source.
