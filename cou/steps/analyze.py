@@ -31,15 +31,15 @@ logger = logging.getLogger(__name__)
 class Analysis:
     """Analyze result.
 
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :param apps_control_plane: Control plane applications in the model
     :type apps_control_plane:  list[OpenStackApplication]
     :param apps_data_plane: Data plane applications in the model
     :type apps_data_plane:  list[OpenStackApplication]
     """
 
-    model: juju_utils.COUModel
+    model: juju_utils.Model
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
     min_os_version_control_plane: Optional[OpenStackRelease] = None
@@ -92,11 +92,11 @@ class Analysis:
         return control_plane, data_plane
 
     @classmethod
-    async def create(cls, model: juju_utils.COUModel) -> Analysis:
+    async def create(cls, model: juju_utils.Model) -> Analysis:
         """Analyze the deployment before planning.
 
-        :param model: COUModel object
-        :type model: COUModel
+        :param model: Model object
+        :type model: Model
         :return: Analysis object populated with the model applications.
         :rtype: Analysis
         """
@@ -108,15 +108,15 @@ class Analysis:
         return Analysis(model=model, apps_data_plane=data_plane, apps_control_plane=control_plane)
 
     @classmethod
-    async def _populate(cls, model: juju_utils.COUModel) -> list[OpenStackApplication]:
+    async def _populate(cls, model: juju_utils.Model) -> list[OpenStackApplication]:
         """Analyze the applications in the model.
 
         Applications that must be upgraded in a specific order will be returned first, followed
         by applications that can be upgraded in any order. Applications that are not supported
         will be ignored.
 
-        :param model: COUModel object
-        :type model: COUModel
+        :param model: Model object
+        :type model: Model
         :return: Application objects with their respective information.
         :rtype: List[OpenStackApplication]
         """

@@ -6,7 +6,7 @@ There are three variables through which the connection behaviour to the Juju mod
 can be tuned. This may be necessary if **COU** is run from behind a VPN or if the network
 is heavily used.
 
-* **COU_TIMEOUT** - set the timeout of retries for any calls by COUModel to libjuju. It's unit-less and the number represents the number of seconds. Defaults to 10 seconds.
+* **COU_TIMEOUT** - set the timeout of retries for any calls by Model to libjuju. It's unit-less and the number represents the number of seconds. Defaults to 10 seconds.
 
 * **COU_MODEL_RETRIES** - set how many times to retry connecting to the Juju model before giving up. Defaults to 5.
 

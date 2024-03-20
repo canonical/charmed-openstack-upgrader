@@ -38,7 +38,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import COUModel, Machine
+from cou.utils.juju_utils import Machine, Model
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -73,8 +73,8 @@ class OpenStackApplication:
     :type status: ApplicationStatus
     :param config: Configuration of the application.
     :type config: dict
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :param charm: Name of the charm.
     :type charm: str
     :param machines: dictionary with Machine
@@ -92,7 +92,7 @@ class OpenStackApplication:
     name: str
     status: ApplicationStatus
     config: dict
-    model: COUModel
+    model: Model
     charm: str
     machines: dict[str, Machine]
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
