@@ -26,7 +26,6 @@ from cou.steps import (
 )
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import add_steps
 
 
 def test_auxiliary_app(status, config, model, apps_machines):
@@ -152,7 +151,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -217,7 +216,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model, apps_m
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -287,7 +286,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -481,7 +480,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model, apps_machines
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -552,7 +551,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -669,7 +668,7 @@ def test_ovn_principal_upgrade_plan(status, config, model, apps_machines):
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -729,6 +728,6 @@ def test_mysql_innodb_cluster_upgrade(status, config, model, apps_machines):
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan

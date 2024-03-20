@@ -22,7 +22,6 @@ from cou.apps.auxiliary_subordinate import (
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import add_steps
 
 
 def test_auxiliary_subordinate(apps):
@@ -114,7 +113,7 @@ def test_ovn_subordinate_upgrade_plan(status, model):
             coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -167,7 +166,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -202,6 +201,6 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
             coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
