@@ -20,7 +20,6 @@ from cou.apps.subordinate import SubordinateApplication
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import add_steps
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +60,7 @@ def test_generate_upgrade_plan(status, model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -133,7 +132,7 @@ def test_generate_plan_ch_migration(status, model, channel):
             coro=model.upgrade_charm(app.name, "wallaby/stable"),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -167,7 +166,7 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
             coro=model.upgrade_charm(app.name, f"{to_os}/stable"),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -198,6 +197,6 @@ def test_generate_plan_in_same_version(status, model, from_to):
             coro=model.upgrade_charm(app.name, f"{from_to}/stable", switch=None),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
