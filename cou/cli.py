@@ -31,7 +31,7 @@ from cou.steps.execute import apply_step
 from cou.steps.plan import generate_plan, manually_upgrade_data_plane
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import Model
 
 AVAILABLE_OPTIONS = "cas"
 
@@ -113,7 +113,7 @@ async def analyze_and_plan(args: CLIargs) -> tuple[Analysis, UpgradePlan]:
     :return: Generated analysis and upgrade plan.
     :rtype: tuple[Analysis, UpgradePlan]
     """
-    model = COUModel(args.model_name)
+    model = Model(args.model_name)
     progress_indicator.start(f"Connecting to '{model.name}' model...")
     await model.connect()
     logger.info("Using model: %s", model.name)

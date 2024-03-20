@@ -563,14 +563,14 @@ async def get_charm_name(value: str):
 
 @pytest.fixture
 def model(config, apps_machines):
-    """Define test COUModel object."""
+    """Define test Model object."""
     machines = {}
     for sub_machines in apps_machines.values():
         machines = {**machines, **sub_machines}
     model_name = "test_model"
     from cou.utils import juju_utils
 
-    model = AsyncMock(spec_set=juju_utils.COUModel)
+    model = AsyncMock(spec_set=juju_utils.Model)
     type(model).name = PropertyMock(return_value=model_name)
     model.run_on_unit = AsyncMock()
     model.run_action = AsyncMock()

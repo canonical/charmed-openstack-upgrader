@@ -60,7 +60,7 @@ def test_get_log_level(quiet, verbosity, level):
 
 
 @pytest.mark.asyncio
-@patch("cou.cli.COUModel")
+@patch("cou.cli.Model")
 @patch("cou.cli.generate_plan", new_callable=AsyncMock)
 @patch("cou.cli.Analysis.create", new_callable=AsyncMock)
 async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli_args):
