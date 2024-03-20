@@ -174,7 +174,7 @@ def test_application_different_wl(status, config, model, apps_machines):
         "my_keystone", app_status, app_config, model, "keystone", apps_machines["keystone"]
     )
     with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
-        app.current_os_release
+        app._check_mismatched_versions()
 
 
 def test_application_cs(status, config, units, model, apps_machines):
@@ -636,11 +636,12 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(
 
 def test_upgrade_plan_application_already_upgraded(status, config, model, apps_machines):
     exp_error_msg = (
-        "Application 'my_keystone' already configured for release equal or greater "
+        "Application 'my_keystone' already configured for release equal to or greater "
         "than victoria. Ignoring."
     )
     target = OpenStackRelease("victoria")
     app_status = status["keystone_focal_wallaby"]
+    app_status.can_upgrade_to = []
     app_config = config["openstack_wallaby"]
     app = Keystone(
         "my_keystone", app_status, app_config, model, "keystone", apps_machines["keystone"]
