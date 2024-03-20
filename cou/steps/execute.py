@@ -26,7 +26,7 @@ AVAILABLE_OPTIONS = ["y", "yes", "n", "no"]
 logger = logging.getLogger(__name__)
 
 
-async def _run_sub_stpes_in_parallel(
+async def _run_sub_steps_in_parallel(
     step: BaseStep, prompt: bool, overwrite_progress: bool
 ) -> None:
     """Run all sub-steps of step in parallel.
@@ -52,7 +52,7 @@ async def _run_sub_stpes_in_parallel(
         raise
 
 
-async def _run_sub_stpes_sequentially(
+async def _run_sub_steps_sequentially(
     step: BaseStep, prompt: bool, overwrite_progress: bool
 ) -> None:
     """Run all sub-steps of step sequentially.
@@ -111,9 +111,9 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
 
     try:
         if step.parallel:
-            await _run_sub_stpes_in_parallel(step, prompt, overwrite_substeps_progress)
+            await _run_sub_steps_in_parallel(step, prompt, overwrite_substeps_progress)
         else:
-            await _run_sub_stpes_sequentially(step, prompt, overwrite_substeps_progress)
+            await _run_sub_steps_sequentially(step, prompt, overwrite_substeps_progress)
     except HaltUpgradeExecution as error:
         progress_indicator.fail(str(error))
         return
