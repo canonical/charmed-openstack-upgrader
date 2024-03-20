@@ -85,7 +85,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     if args.backup:
         plan.add_step(
             PreUpgradeStep(
-                description="Backup mysql databases",
+                description="Back up MySQL databases",
                 parallel=False,
                 coro=backup(analysis_result.model),
             )
@@ -122,7 +122,7 @@ async def create_upgrade_group(
     :type apps: list[OpenStackApplication]
     :param target: Target OpenStack release.
     :type target: OpenStackRelease
-    :param description: Description of the upgrade step.
+    :param description: Description of the upgrade plan.
     :type description: str
     :param filter_function: Function to filter applications.
     :type filter_function: Callable[[OpenStackApplication], bool]

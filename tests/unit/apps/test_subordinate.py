@@ -46,7 +46,7 @@ def test_generate_upgrade_plan(status, model):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
@@ -118,11 +118,11 @@ def test_generate_plan_ch_migration(status, model, channel):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_steps = [
         PreUpgradeStep(
-            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            description=f"Migrate '{app.name}' from charmstore to charmhub",
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone-ldap"),
         ),
@@ -153,7 +153,9 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
 
     upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(to_os))
 
-    expected_plan = ApplicationUpgradePlan(description=f"Upgrade plan for '{app.name}' to {to_os}")
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to '{to_os}'"
+    )
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_os}/stable'",
@@ -188,7 +190,7 @@ def test_generate_plan_in_same_version(status, model, from_to):
 
     upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(from_to))
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {from_to}"
+        description=f"Upgrade plan for '{app.name}' to '{from_to}'"
     )
     upgrade_steps = [
         PreUpgradeStep(

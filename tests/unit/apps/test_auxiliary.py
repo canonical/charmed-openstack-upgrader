@@ -102,7 +102,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     expected_upgrade_package_step = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -130,10 +130,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,
@@ -141,12 +139,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -173,7 +171,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model, apps_m
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -195,10 +193,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model, apps_m
             coro=model.upgrade_charm(app.name, "3.9/stable", switch=None),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,
@@ -206,12 +202,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(status, config, model, apps_m
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -238,7 +234,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(
     )
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}",
+        description=f"Upgrade plan for '{app.name}' to '{target}'",
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -255,7 +251,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
-            description=f"Migration of '{app.name}' from charmstore to charmhub",
+            description=f"Migrate '{app.name}' from charmstore to charmhub",
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
@@ -265,10 +261,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,
@@ -276,12 +270,12 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -428,7 +422,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model, apps_machines
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -450,7 +444,8 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model, apps_machines
             coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description="Ensure that the 'require-osd-release' option matches "
+            "the 'ceph-osd' version",
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
@@ -460,22 +455,20 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(status, config, model, apps_machines
             coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-yoga'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-yoga'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-yoga"}
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -504,7 +497,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -526,27 +519,26 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
         PreUpgradeStep(
-            description="Ensure require-osd-release option matches with ceph-osd version",
+            description="Ensure that the 'require-osd-release' option matches the "
+            "'ceph-osd' version",
             parallel=False,
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for model {model.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=None),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -625,7 +617,7 @@ def test_ovn_principal_upgrade_plan(status, config, model, apps_machines):
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -648,22 +640,20 @@ def test_ovn_principal_upgrade_plan(status, config, model, apps_machines):
             coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -686,7 +676,7 @@ def test_mysql_innodb_cluster_upgrade(status, config, model, apps_machines):
     )
     upgrade_plan = app.generate_upgrade_plan(target)
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
@@ -708,22 +698,20 @@ def test_mysql_innodb_cluster_upgrade(status, config, model, apps_machines):
             coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 1800s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 1800s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(1800, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),

@@ -144,14 +144,14 @@ def test_get_refresh_charm_step_empty_can_upgrade_to(can_upgrade_current_channel
         (
             {"action-managed-upgrade": {"value": False}},
             True,
-            "Change charm config of 'my_app' 'action-managed-upgrade' to True",
+            "Change charm config of 'my_app' 'action-managed-upgrade' to 'True'",
         ),
         ({"action-managed-upgrade": {"value": False}}, False, None),
         ({"action-managed-upgrade": {"value": True}}, True, None),
         (
             {"action-managed-upgrade": {"value": True}},
             False,
-            "Change charm config of 'my_app' 'action-managed-upgrade' to False",
+            "Change charm config of 'my_app' 'action-managed-upgrade' to 'False'",
         ),
     ],
 )

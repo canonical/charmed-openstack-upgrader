@@ -25,16 +25,16 @@ Usage example:
     ...
     Running cloud upgrade...
     Verify that all OpenStack applications are in idle state ✔
-    Backup mysql databases ✔
-    Upgrade plan for 'keystone' to victoria
+    Back up MySQL databases ✔
+    Upgrade plan for 'keystone' to 'victoria'
         Upgrade software packages of 'keystone' from the current APT repositories
             Upgrade software packages on unit keystone/0
             Upgrade software packages on unit keystone/1
             Upgrade software packages on unit keystone/2
         Upgrade 'keystone' to the new channel: 'victoria/stable'
         Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
-        Wait 1800s for model test-model to reach the idle state.
-        Check if the workload of 'keystone' has been upgraded
+        Wait for up to 1800s for model 'test-model' to reach the idle state
+        Verify that the workload of 'keystone' has been upgraded
 
     Would you like to start the upgrade? Continue (y/N): n
 
