@@ -9,7 +9,7 @@ import zaza
 
 from cou.steps.backup import backup
 from cou.utils import COU_DATA
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import Model
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class BackupTest(unittest.TestCase):
     def setUp(self) -> None:
         zaza.get_or_create_libjuju_thread()
         model_name = zaza.model.get_juju_model()
-        self.model = COUModel(model_name)
+        self.model = Model(model_name)
         zaza.sync_wrapper(self.model.connect)()
 
     def tearDown(self) -> None:

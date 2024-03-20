@@ -38,7 +38,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils.app_utils import upgrade_packages
-from cou.utils.juju_utils import COUModel, Machine
+from cou.utils.juju_utils import Machine, Model
 from cou.utils.openstack import (
     DISTRO_TO_OPENSTACK_MAPPING,
     OpenStackCodenameLookup,
@@ -73,8 +73,8 @@ class OpenStackApplication:
     :type status: ApplicationStatus
     :param config: Configuration of the application.
     :type config: dict
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :param charm: Name of the charm.
     :type charm: str
     :param machines: dictionary with Machine
@@ -83,19 +83,16 @@ class OpenStackApplication:
     :type units: list[ApplicationUnit]
     :raises ApplicationError: When there are no compatible OpenStack release for the
         workload version.
-    :raises MismatchedOpenStackVersions: When units part of this application are running mismatched
-        OpenStack versions.
-    :raises HaltUpgradePlanGeneration: When the class halts the upgrade plan generation.
     :raises CommandRunFailed: When a command fails to run.
     :raises RunUpgradeError: When an upgrade fails.
     """
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods
 
     name: str
     status: ApplicationStatus
     config: dict
-    model: COUModel
+    model: Model
     charm: str
     machines: dict[str, Machine]
     units: list[ApplicationUnit] = field(default_factory=lambda: [])
@@ -247,6 +244,20 @@ class OpenStackApplication:
         """
         return self.charm_origin == "cs"
 
+    @property
+    def os_release_units(self) -> dict[OpenStackRelease, list[str]]:
+        """Get the OpenStack release versions from the units.
+
+        :return: OpenStack release versions from the units.
+        :rtype: defaultdict[OpenStackRelease, list[str]]
+        """
+        os_versions = defaultdict(list)
+        for unit in self.units:
+            os_version = self._get_latest_os_version(unit)
+            os_versions[os_version].append(unit.name)
+
+        return dict(os_versions)
+
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
 
@@ -325,28 +336,10 @@ class OpenStackApplication:
     def current_os_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
-        :raises MismatchedOpenStackVersions: When units part of this application are
-        running mismatched OpenStack versions.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        os_versions = defaultdict(list)
-        for unit in self.units:
-            os_versions[unit.os_version].append(unit.name)
-
-        if len(os_versions.keys()) == 1:
-            return next(iter(os_versions))
-
-        # NOTE (gabrielcocenza) on applications that use single-unit or paused-single-unit
-        # upgrade methods, more than one version can be found.
-        mismatched_repr = [
-            f"'{openstack_release.codename}': {units}"
-            for openstack_release, units in os_versions.items()
-        ]
-        raise MismatchedOpenStackVersions(
-            f"Units of application {self.name} are running mismatched OpenStack versions: "
-            f"{', '.join(mismatched_repr)}. This is not currently handled."
-        )
+        return min(self.os_release_units.keys())
 
     @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
@@ -439,6 +432,25 @@ class OpenStackApplication:
                 f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
             )
 
+    def upgrade_plan_sanity_checks(self, target: OpenStackRelease) -> None:
+        """Run sanity checks before generating upgrade plan.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :raises MismatchedOpenStackVersions: When the units of the app are running different
+                                             OpenStack versions.
+        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        """
+        self._check_application_target(target)
+        self._check_mismatched_versions()
+        self._check_auto_restarts()
+        logger.info(
+            "%s application met all the necessary prerequisites to generate the upgrade plan",
+            self.name,
+        )
+
     def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
@@ -461,16 +473,8 @@ class OpenStackApplication:
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
-        if self.current_os_release >= target and self.apt_source_codename >= target:
-            msg = (
-                f"Application '{self.name}' already configured for release equal or greater "
-                f"than {target}. Ignoring."
-            )
-            logger.info(msg)
-            raise HaltUpgradePlanGeneration(msg)
-
         return [
-            self._get_disable_action_managed_step(),
+            self._set_action_managed_upgrade(False),
             self._get_upgrade_charm_step(target),
             self._get_workload_upgrade_step(target),
         ]
@@ -498,6 +502,8 @@ class OpenStackApplication:
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
+        self.upgrade_plan_sanity_checks(target)
+
         upgrade_plan = ApplicationUpgradePlan(
             description=f"Upgrade plan for '{self.name}' to '{target}'",
         )
@@ -598,23 +604,30 @@ class OpenStackApplication:
             )
         return UpgradeStep()
 
-    def _get_disable_action_managed_step(self) -> UpgradeStep:
-        """Get step to disable action-managed-upgrade.
+    def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:
+        """Set action-managed-upgrade config option.
 
-        This is used to upgrade as "all-in-one" strategy.
-
-        :return: Step to disable action-managed-upgrade
-        :rtype: UpgradeStep
+        :param enable: enable or disable option
+        :type enable: bool
+        :return: Step to change action-managed-upgrade config option, if option exist.
+        :rtype: UnitUpgradeStep
         """
-        if self.config.get("action-managed-upgrade", {}).get("value", False):
-            return UpgradeStep(
-                description=f"Change charm config of '{self.name}' 'action-managed-upgrade' "
-                "to False.",
-                coro=self.model.set_application_config(
-                    self.name, {"action-managed-upgrade": False}
-                ),
+        if "action-managed-upgrade" not in self.config:
+            logger.debug(
+                "%s application doesn't have an action-managed-upgrade config option", self.name
             )
-        return UpgradeStep()
+            return UpgradeStep()
+
+        if self.config["action-managed-upgrade"].get("value") == enable:
+            logger.debug(
+                "%s application already has action-managed-upgrade set to %s", self.name, enable
+            )
+            return UpgradeStep()
+
+        return UpgradeStep(
+            f"Change charm config of '{self.name}' 'action-managed-upgrade' to '{enable}'",
+            coro=self.model.set_application_config(self.name, {"action-managed-upgrade": enable}),
+        )
 
     def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
         """Get workload upgrade step by changing openstack-origin or source.
@@ -677,3 +690,65 @@ class OpenStackApplication:
             parallel=False,
             coro=self.model.wait_for_active_idle(self.wait_timeout, apps=apps),
         )
+
+    def _check_auto_restarts(self) -> None:
+        """Check if enable-auto-restarts is enabled.
+
+        If the enable-auto-restart option is not enabled, this check will raise an exception.
+
+        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        """
+        if "enable-auto-restarts" not in self.config:
+            logger.debug(
+                "%s application does not have an enable-auto-restarts config option", self.name
+            )
+            return
+
+        if self.config["enable-auto-restarts"].get("value") is False:
+            raise ApplicationError(
+                "COU does not currently support upgrading applications that disable service "
+                "restarts. Please enable charm option enable-auto-restart and rerun COU to "
+                f"upgrade the {self.name} application."
+            )
+
+    def _check_application_target(self, target: OpenStackRelease) -> None:
+        """Check if the application is already upgraded.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        """
+        logger.debug(
+            "%s application current os_release is %s and apt source is %s",
+            self.name,
+            self.current_os_release,
+            self.apt_source_codename,
+        )
+
+        if (
+            self.current_os_release >= target
+            and self.can_upgrade_current_channel is False
+            and self.apt_source_codename >= target
+        ):
+            raise HaltUpgradePlanGeneration(
+                f"Application '{self.name}' already configured for release equal to or greater "
+                f"than {target}. Ignoring."
+            )
+
+    def _check_mismatched_versions(self) -> None:
+        """Check that there are no mismatched versions on app units.
+
+        :raises MismatchedOpenStackVersions: When the units of the app are running different
+                                             OpenStack versions.
+        """
+        os_versions = self.os_release_units
+        if len(os_versions.keys()) > 1:
+            mismatched_repr = [
+                f"'{openstack_release.codename}': {units}"
+                for openstack_release, units in os_versions.items()
+            ]
+
+            raise MismatchedOpenStackVersions(
+                f"Units of application {self.name} are running mismatched OpenStack versions: "
+                f"{', '.join(mismatched_repr)}. This is not currently handled."
+            )

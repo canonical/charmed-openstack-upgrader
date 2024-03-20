@@ -20,19 +20,19 @@ from typing import Optional
 from packaging.version import Version
 
 from cou.exceptions import ApplicationError, RunUpgradeError
-from cou.utils.juju_utils import COUModel
+from cou.utils.juju_utils import Model
 from cou.utils.openstack import CEPH_RELEASES
 
 logger = logging.getLogger(__name__)
 
 
-async def upgrade_packages(unit: str, model: COUModel, packages_to_hold: Optional[list]) -> None:
+async def upgrade_packages(unit: str, model: Model, packages_to_hold: Optional[list]) -> None:
     """Run package updates and upgrades on each unit of an Application.
 
     :param unit: Unit name where the package upgrade runs on.
     :type unit: str
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :param packages_to_hold: A list of packages to put on hold during package upgrade.
     :type packages_to_hold: Optional[list]
     :raises CommandRunFailed: When a command fails to run.
@@ -46,7 +46,7 @@ async def upgrade_packages(unit: str, model: COUModel, packages_to_hold: Optiona
     await model.run_on_unit(unit_name=unit, command=command, timeout=600)
 
 
-async def set_require_osd_release_option(unit: str, model: COUModel) -> None:
+async def set_require_osd_release_option(unit: str, model: Model) -> None:
     """Check and set the correct value for require-osd-release on a ceph-mon unit.
 
     This function compares the value of require-osd-release option with the current release
@@ -54,8 +54,8 @@ async def set_require_osd_release_option(unit: str, model: COUModel) -> None:
     require-osd-release.
     :param unit: The ceph-mon unit name where the check command runs on.
     :type unit: str
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :raises CommandRunFailed: When a command fails to run.
     """
     # The current `require_osd_release` value set on the ceph-mon unit
@@ -89,13 +89,13 @@ def validate_ovn_support(version: str) -> None:
 
 
 # Private functions
-async def _get_required_osd_release(unit: str, model: COUModel) -> str:
+async def _get_required_osd_release(unit: str, model: Model) -> str:
     """Get the value of require-osd-release option on a ceph-mon unit.
 
     :param unit: The ceph-mon unit name where the check command runs on.
     :type unit: str
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :return: the value of require-osd-release option
     :rtype: str
     :raises CommandRunFailed: When a command fails to run.
@@ -113,15 +113,15 @@ async def _get_required_osd_release(unit: str, model: COUModel) -> str:
     return current_require_osd_release
 
 
-async def _get_current_osd_release(unit: str, model: COUModel) -> str:
+async def _get_current_osd_release(unit: str, model: Model) -> str:
     """Get the current release of OSDs.
 
     The release of OSDs is parsed from the output of running `ceph versions` command
     on a ceph-mon unit.
     :param unit: The ceph-mon unit name where the check command runs on.
     :type unit: str
-    :param model: COUModel object
-    :type model: COUModel
+    :param model: Model object
+    :type model: Model
     :return: the release which OSDs are on
     :rtype: str
     :raises RunUpgradeError: When an upgrade fails.

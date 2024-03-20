@@ -40,7 +40,6 @@ from cou.steps.plan import (
 )
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import add_steps
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
@@ -82,7 +81,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to False.",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
             parallel=False,
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
@@ -106,7 +105,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=app._check_upgrade(target),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
     return expected_plan
 
 
@@ -127,7 +126,7 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
     return expected_plan
 
 

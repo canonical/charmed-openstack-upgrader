@@ -19,10 +19,9 @@ from cou.apps.auxiliary_subordinate import (
     AuxiliarySubordinateApplication,
     OvnSubordinate,
 )
-from cou.exceptions import ApplicationError
+from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import add_steps
 
 
 def test_auxiliary_subordinate(apps):
@@ -114,7 +113,7 @@ def test_ovn_subordinate_upgrade_plan(status, model):
             coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -123,6 +122,10 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
     # ovn chassis 22.03 is considered yoga. If it's not necessary to upgrade
     # the charm code, there is no steps to upgrade.
     target = OpenStackRelease("victoria")
+    exp_message = (
+        "Application 'ovn-chassis' already configured for release equal to or greater than "
+        "victoria. Ignoring"
+    )
     app_status = status["ovn_chassis_focal_22"]
     app_status.can_upgrade_to = ""
     app = OvnSubordinate(
@@ -134,13 +137,8 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(status, model):
         {},
     )
 
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
-    )
-
-    upgrade_plan = app.generate_upgrade_plan(target)
-    assert upgrade_plan == expected_plan
-    assert str(upgrade_plan) == ""
+    with pytest.raises(HaltUpgradePlanGeneration, match=exp_message):
+        app.generate_upgrade_plan(target)
 
 
 def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
@@ -168,7 +166,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(status, config, model):
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -203,6 +201,6 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(status, config, model):
             coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
     ]
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan

@@ -19,7 +19,6 @@ from cou.steps import (
 )
 from cou.utils import app_utils
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.apps.utils import add_steps
 
 
 def test_application_versionless(status, config, model, apps_machines):
@@ -137,7 +136,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(
         ),
     ]
 
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -207,7 +206,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
         ),
     ]
 
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
 
@@ -278,6 +277,6 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
         ),
     ]
 
-    add_steps(expected_plan, upgrade_steps)
+    expected_plan.add_steps(upgrade_steps)
 
     assert upgrade_plan == expected_plan
