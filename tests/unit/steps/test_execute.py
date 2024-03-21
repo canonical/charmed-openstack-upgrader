@@ -16,11 +16,11 @@ import asyncio
 import unittest
 from random import randint
 from textwrap import dedent
-from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
-from cou.exceptions import HaltUpgradeExecution
+from cou.exceptions import HaltUpgradeExecution, RunUpgradeError
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -54,14 +54,16 @@ async def test_run_sub_steps_in_parallel(mock_apply_step):
 
 @pytest.mark.asyncio
 @patch("cou.steps.execute.apply_step")
-async def test_run_sub_steps_in_parallel_halt(mock_apply_step):
-    """Test running all sub-steps of step in parallel with one step raise HaltUpgradeExecution."""
+async def test_run_sub_steps_in_parallel_fail(mock_apply_step):
+    """Test running all sub-steps of step in parallel with steps raising error."""
     finished_steps, failed_steps = [], []
 
     async def _apply_step(step, *args, **kwargs):
+        await asyncio.sleep(randint(0, 5) / 10)  # wait randomly between 0 and 0.5 seconds
+
         if "halt" in step.description:
             failed_steps.append(step.description)
-            raise HaltUpgradeExecution(step.description)
+            raise Exception(step.description)
 
         finished_steps.append(step.description)
 
@@ -76,12 +78,15 @@ async def test_run_sub_steps_in_parallel_halt(mock_apply_step):
         PostUpgradeStep("post-upgrade"),
     ]
     mock_apply_step.side_effect = _apply_step
+    exp_error_msg = f"The following substeps of '{upgrade_step.description}' failed\n"
 
-    with pytest.raises(HaltUpgradeExecution):
+    with pytest.raises(RunUpgradeError, match=exp_error_msg):
         await _run_sub_steps_in_parallel(upgrade_step, False, False)
 
-    assert finished_steps == ["pre-upgrade", "upgrade 1", "upgrade 4", "post-upgrade"]
-    assert failed_steps == ["upgrade 2 halt", "upgrade 3 halt"]
+    # Note(rgildein): We need to sort the list of completed and failed steps because they are
+    #                 randomly waiting.
+    assert sorted(finished_steps) == ["post-upgrade", "pre-upgrade", "upgrade 1", "upgrade 4"]
+    assert sorted(failed_steps) == ["upgrade 2 halt", "upgrade 3 halt"]
     mock_apply_step.assert_has_awaits([call(step, False, False) for step in sub_steps])
 
 
@@ -105,25 +110,55 @@ async def test_run_sub_steps_sequentially(mock_apply_step):
 @patch("cou.steps.execute.apply_step")
 @patch("cou.steps.execute.logger")
 async def test_run_sub_steps_sequentially_halt(mock_logger, mock_apply_step):
-    """Test running all sub-steps of step sequentially."""
+    """Test the sequential execution of all sub-steps and raising HaltUpgradeExecution."""
     upgrade_step = MagicMock(spec_set=UpgradeStep())
     upgrade_step.parallel = True
     upgrade_step.sub_steps = sub_steps = [
         PreUpgradeStep("pre-upgrade"),
-        UpgradeStep("upgrade"),
+        UpgradeStep("upgrade 1", dependent=True),
+        UpgradeStep("upgrade 2", dependent=True),
+        UpgradeStep("upgrade 3", dependent=True),
         PostUpgradeStep("post-upgrade"),
     ]
-    mock_apply_step.side_effect = [None, HaltUpgradeExecution("halt"), None]
+    mock_apply_step.side_effect = [HaltUpgradeExecution("halt"), None]
 
-    with pytest.raises(HaltUpgradeExecution):
+    # Note(rgildein): HaltUpgradeExecution is caught and not raised.
+    await _run_sub_steps_sequentially(upgrade_step, False, False)
+
+    # Note(rgildein): Since the first step is raising HaltUpgradeExecution, apply_plan will only
+    #                 awaited twice. All dependent steps will be skipped.
+    mock_apply_step.assert_has_awaits(
+        [call(sub_steps[0], False, False), call(sub_steps[-1], False, False)]
+    )
+    # Note(rgildein): Warning will be called only for dependent steps.
+    mock_logger.warning.assert_has_calls(
+        [call("skipping dependent step: %s", step.description) for step in sub_steps[1:-1]]
+    )
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.execute.apply_step")
+async def test_run_sub_steps_sequentially_fail(mock_apply_step):
+    """Test the sequential execution of all sub-steps and raising Exception."""
+    upgrade_step = MagicMock(spec_set=UpgradeStep())
+    upgrade_step.parallel = True
+    upgrade_step.sub_steps = sub_steps = [
+        PreUpgradeStep("pre-upgrade"),
+        UpgradeStep("upgrade 1", dependent=True),
+        UpgradeStep("upgrade 2", dependent=True),
+        UpgradeStep("upgrade 3", dependent=True),
+        PostUpgradeStep("post-upgrade"),
+    ]
+    mock_apply_step.side_effect = [None, Exception("test")]
+
+    with pytest.raises(Exception, match="test"):
         await _run_sub_steps_sequentially(upgrade_step, False, False)
 
-    # Note(rgildein): Since the second step is raising HaltUpgradeExecution, apply_plan will be
-    #                 awaited only 2 times.
+    # Note(rgildein): Since the second step is raising Exception, apply_plan will only
+    #                 awaited twice.
     mock_apply_step.assert_has_awaits(
         [call(sub_steps[0], False, False), call(sub_steps[1], False, False)]
     )
-    mock_logger.warning.assert_called_once_with(ANY, "upgrade", upgrade_step.description, ANY)
 
 
 @pytest.mark.asyncio
@@ -205,28 +240,6 @@ async def test_run_step_in_parallel_upgrade_step(
     upgrade_step.run.assert_awaited_once_with()
     mock_run_sub_steps_in_parallel.assert_called_once_with(upgrade_step, False, True)
     mock_indicator.succeed.assert_not_called()
-
-
-@pytest.mark.asyncio
-@patch("cou.steps.execute.apply_step")
-@patch("cou.steps.execute._run_sub_steps_sequentially")
-@patch("cou.steps.execute.progress_indicator")
-async def test_run_step_sequentially_halt(
-    mock_indicator, mock_run_sub_steps_sequentially, mock_apply_step
-):
-    """Test running upgrade step and all sub-steps sequentially raising HaltUpgradeExecution."""
-    mock_run_sub_steps_sequentially.side_effect = HaltUpgradeExecution("halt")
-    upgrade_step = MagicMock(spec_set=UpgradeStep())
-    upgrade_step.run = AsyncMock()
-    upgrade_step.parallel = False
-
-    await _run_step(upgrade_step, False)
-
-    mock_indicator.start.assert_called_once_with(upgrade_step.description)
-    upgrade_step.run.assert_awaited_once_with()
-    mock_indicator.succeed.assert_called_once_with()
-    mock_run_sub_steps_sequentially.assert_awaited_once_with(upgrade_step, False, False)
-    mock_indicator.fail.assert_called_once_with("halt")
 
 
 @pytest.mark.asyncio
