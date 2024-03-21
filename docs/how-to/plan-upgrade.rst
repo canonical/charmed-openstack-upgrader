@@ -91,9 +91,9 @@ To generate a plan targeting the **data-plane** applications use:
 **Note:**
 
 - It's essential to complete the upgrade of the **control-plane** components before being able to
-generate a plan for the **data-plane**.
+  generate a plan for the **data-plane**.
 - By default, this command will skip hypervisors that have VMs running from the planning. See the
-`Plan for non-empty hypervisors`_ section for instructions on how to include them.
+  `Plan for non-empty hypervisors`_ section for instructions on how to include them.
 
 
 Plan for the hypervisors
@@ -118,12 +118,12 @@ It's also possible to target for specific Juju **availability-zones** or **machi
 **Note:**
 
 - Those specific filters are mutually exclusive, meaning that it's not possible
-to use them together.
+  to use them together.
 - Since **hypervisors** comprise a subset of **data-plane** components, it is
-also necessary to complete the upgrade of the **control-plane** components before
-the **hypervisors** can be upgraded.
-- By default, this command will skip hypervisors that have VMs running from the planning . See the
-`Plan for non-empty hypervisors`_ section for instructions on how to include them.
+  also necessary to complete the upgrade of the **control-plane** components before
+  the **hypervisors** can be upgraded.
+- By default, this command will skip hypervisors that have VMs running from the planning.
+  See the `Plan for non-empty hypervisors`_ section for instructions on how to include them.
 
 
 Plan for non-empty hypervisors
