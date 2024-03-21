@@ -474,7 +474,7 @@ class OpenStackApplication:
         :rtype: list[UpgradeStep]
         """
         return [
-            self._get_disable_action_managed_step(),
+            self._set_action_managed_upgrade(False),
             self._get_upgrade_charm_step(target),
             self._get_workload_upgrade_step(target),
         ]
@@ -505,7 +505,7 @@ class OpenStackApplication:
         self.upgrade_plan_sanity_checks(target)
 
         upgrade_plan = ApplicationUpgradePlan(
-            description=f"Upgrade plan for '{self.name}' to {target}",
+            description=f"Upgrade plan for '{self.name}' to '{target}'",
         )
         upgrade_plan.add_steps(self.pre_upgrade_steps(target))
         upgrade_plan.add_steps(self.upgrade_steps(target))
@@ -520,9 +520,8 @@ class OpenStackApplication:
         :rtype: PreUpgradeStep
         """
         step = PreUpgradeStep(
-            description=(
-                f"Upgrade software packages of '{self.name}' from the current APT repositories"
-            ),
+            description=f"Upgrade software packages of '{self.name}' from the current "
+            "APT repositories",
             parallel=True,
         )
         step.add_steps(
@@ -565,7 +564,7 @@ class OpenStackApplication:
             )
 
         if self.charm_origin == "cs":
-            description = f"Migration of '{self.name}' from charmstore to charmhub"
+            description = f"Migrate '{self.name}' from charmstore to charmhub"
             switch = f"ch:{self.charm}"
         elif self.channel in self.possible_current_channels:
             channel = self.channel
@@ -599,31 +598,36 @@ class OpenStackApplication:
         """
         if self.channel != self.target_channel(target):
             return UpgradeStep(
-                description=(
-                    f"Upgrade '{self.name}' to the new channel: '{self.target_channel(target)}'"
-                ),
+                description=f"Upgrade '{self.name}' to the new channel: "
+                f"'{self.target_channel(target)}'",
                 coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
             )
         return UpgradeStep()
 
-    def _get_disable_action_managed_step(self) -> UpgradeStep:
-        """Get step to disable action-managed-upgrade.
+    def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:
+        """Set action-managed-upgrade config option.
 
-        This is used to upgrade as "all-in-one" strategy.
-
-        :return: Step to disable action-managed-upgrade
-        :rtype: UpgradeStep
+        :param enable: enable or disable option
+        :type enable: bool
+        :return: Step to change action-managed-upgrade config option, if option exist.
+        :rtype: UnitUpgradeStep
         """
-        if self.config.get("action-managed-upgrade", {}).get("value", False):
-            return UpgradeStep(
-                description=(
-                    f"Change charm config of '{self.name}' 'action-managed-upgrade' to False."
-                ),
-                coro=self.model.set_application_config(
-                    self.name, {"action-managed-upgrade": False}
-                ),
+        if "action-managed-upgrade" not in self.config:
+            logger.debug(
+                "%s application doesn't have an action-managed-upgrade config option", self.name
             )
-        return UpgradeStep()
+            return UpgradeStep()
+
+        if self.config["action-managed-upgrade"].get("value") == enable:
+            logger.debug(
+                "%s application already has action-managed-upgrade set to %s", self.name, enable
+            )
+            return UpgradeStep()
+
+        return UpgradeStep(
+            f"Change charm config of '{self.name}' 'action-managed-upgrade' to '{enable}'",
+            coro=self.model.set_application_config(self.name, {"action-managed-upgrade": enable}),
+        )
 
     def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
         """Get workload upgrade step by changing openstack-origin or source.
@@ -635,10 +639,8 @@ class OpenStackApplication:
         """
         if self.os_origin != self.new_origin(target) and self.origin_setting:
             return UpgradeStep(
-                description=(
-                    f"Change charm config of '{self.name}' "
-                    f"'{self.origin_setting}' to '{self.new_origin(target)}'"
-                ),
+                description=f"Change charm config of '{self.name}' "
+                f"'{self.origin_setting}' to '{self.new_origin(target)}'",
                 coro=self.model.set_application_config(
                     self.name, {self.origin_setting: self.new_origin(target)}
                 ),
@@ -660,7 +662,7 @@ class OpenStackApplication:
         :rtype: PostUpgradeStep
         """
         return PostUpgradeStep(
-            description=f"Check if the workload of '{self.name}' has been upgraded",
+            description=f"Verify that the workload of '{self.name}' has been upgraded",
             coro=self._check_upgrade(target),
         )
 
@@ -672,11 +674,15 @@ class OpenStackApplication:
         """
         if self.wait_for_model:
             description = (
-                f"Wait {self.wait_timeout}s for model {self.model.name} to reach the idle state."
+                f"Wait for up to {self.wait_timeout}s for model '{self.model.name}' "
+                "to reach the idle state"
             )
             apps = None
         else:
-            description = f"Wait {self.wait_timeout}s for app {self.name} to reach the idle state."
+            description = (
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}' "
+                "to reach the idle state"
+            )
             apps = [self.name]
 
         return PostUpgradeStep(

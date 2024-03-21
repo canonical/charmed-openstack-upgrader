@@ -98,7 +98,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -126,10 +126,8 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,
@@ -160,7 +158,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -188,10 +186,8 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,
@@ -199,12 +195,12 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, mod
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
@@ -233,7 +229,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
     upgrade_plan = app.generate_upgrade_plan(target)
 
     expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to {target}"
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
     )
 
     upgrade_packages = PreUpgradeStep(
@@ -261,10 +257,8 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=(
-                f"Change charm config of '{app.name}' "
-                f"'{app.origin_setting}' to 'cloud:focal-victoria'"
-            ),
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
                 app.name,
@@ -272,12 +266,12 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait 300s for app {app.name} to reach the idle state.",
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Check if the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
             parallel=False,
             coro=app._check_upgrade(target),
         ),
