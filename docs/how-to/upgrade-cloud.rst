@@ -43,10 +43,11 @@ To run an upgrade targeting the **data-plane** applications use:
     cou upgrade data-plane
 
 **Note:**
+
 - It's essential to complete the upgrade of the **control-plane** components before
 being able to upgrade the **data-plane**.
 - By default, this command will not upgrade hypervisors that have VMs running. See the
-`Upgrade non-empty hypervisors`_ section to include them.
+`Upgrade non-empty hypervisors`_ section for instructions on how to include them.
 
 
 Run upgrade for the hypervisors
@@ -69,13 +70,14 @@ It's also possible to target for specific Juju **availability-zones** or **machi
     cou upgrade hypervisors --availability-zone=zone-1
 
 **Note:**
+
 - Those specific filters are mutually exclusive, meaning that it's not possible
 to use them together.
 - Since **hypervisors** comprise a subset of **data-plane** components, it is
 also necessary to complete the upgrade of the **control-plane** components before
 the **hypervisors** can be upgraded.
 - By default, this command will not upgrade hypervisors that have VMs running. See the
-`Upgrade non-empty hypervisors`_ section to include them.
+`Upgrade non-empty hypervisors`_ section for instructions on how to include them.
 
 Upgrade non-empty hypervisors
 -----------------------------
@@ -204,8 +206,3 @@ Non-interactive and quiet mode:
     :input: cou upgrade --auto-approve --quiet
 
     Upgrade completed.
-
-
-.. LINKS
-.. _all-in-one: https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#perform-the-upgrade
-.. _paused-single-unit: https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#perform-the-upgrade
