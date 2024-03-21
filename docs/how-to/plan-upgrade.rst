@@ -9,7 +9,8 @@ printed on STDOUT.
 Plan for the whole cloud
 ------------------------
 
-To generate a plan for **control-plane** and **data-plane** use:
+To generate a plan for the entire OpenStack cloud, including both the **control-plane** and the
+**data-plane**, use:
 
 .. code:: bash
 
@@ -87,8 +88,11 @@ To generate a plan targeting the **data-plane** applications use:
 
     cou plan data-plane
 
-**Note:** It's essential to complete the upgrade of the **control-plane** components before
-being able to generate the plan for **data-plane**.
+**Note:**
+- It's essential to complete the upgrade of the **control-plane** components before being able to
+generate a plan for the **data-plane**.
+- By default, this command will skip hypervisors from the planning that have VMs running. See the
+`Plan for non-empty hypervisors`_ section to include them.
 
 
 Plan for the hypervisors
@@ -100,7 +104,7 @@ To generate a plan targeting just the **hypervisors** use:
 
     cou plan hypervisors
 
-It's also possible to target for specific **availability-zones** or **machines**:
+It's also possible to target for specific Juju **availability-zones** or **machines**:
 
 .. code:: bash
 
@@ -112,17 +116,18 @@ It's also possible to target for specific **availability-zones** or **machines**
 
 **Note:**:
 - Those specific filters are mutually exclusive, meaning that it's not possible
-to use then together.
+to use them together.
 - Since **hypervisors** comprise a subset of **data-plane** components, it is
 also necessary to complete the upgrade of the **control-plane** components before
-being able to generate **hypervisors** plan.
+being able to generate a plan for the **hypervisors**.
+- By default, this command will skip hypervisors from the planning that have VMs running. See the
+`Plan for non-empty hypervisors`_ section to include them.
 
 
 Plan for non-empty hypervisors
 ------------------------------
 
-By default, COU will skip from the planning hypervisors that have VMs running. If it's
-necessary to also include then, use the `--force` command. For example:
+If it's necessary to plan for non-empty hypervisors, use the `--force` command. For example:
 
 .. code:: bash
 

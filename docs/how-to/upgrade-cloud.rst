@@ -8,14 +8,15 @@ Recommendations for upgrading production clouds
 1. Be sure to upgrade in a maintenance window
 2. Start with the upgrade on control-plane applications
 3. Don't force the upgrade on non-empty hypervisors
-4. After upgrading the control-plane, choose one empty hypervisor to be a `canary node`.
+4. After upgrading the **control-plane**, choose one empty hypervisor to be a `canary node`.
     After upgrading it, test if it's behaving as expected.
 5. If no issues are found after upgrading the `canary node`, proceed with the upgrade.
 
 Run upgrade for the whole cloud
 -------------------------------
 
-To upgrade the whole cloud in a single command.
+To upgrade the entire OpenStack cloud, including both the **control-plane** and the
+**data-plane**, use:
 
 .. code:: bash
 
@@ -25,30 +26,27 @@ To upgrade the whole cloud in a single command.
 Run upgrade for the control-plane
 ---------------------------------
 
-To upgrade a plan targeting the **control-plane** applications use:
+To run an upgrade targeting the **control-plane** applications use:
 
 .. code:: bash
 
     cou upgrade control-plane
 
-**Note:** Control-plane applications will be upgraded using the `all-in-one`_ method,
-meaning that all units will be upgraded at once.
-
 
 Run upgrade for the data-plane
 ------------------------------
 
-To upgrade the **data-plane** applications use:
+To run an upgrade targeting the **data-plane** applications use:
 
 .. code:: bash
 
-    cou plan data-plane
+    cou upgrade data-plane
 
 **Note:**
 - It's essential to complete the upgrade of the **control-plane** components before
-being able to upgrade for **data-plane**.
-- Nova-compute and services colocated on the same machines will be upgraded using the
-`paused-single-unit`_ method, meaning that it will upgrade unit by unit.
+being able to upgrade the **data-plane**.
+- By default, this command will not upgrade hypervisors that have VMs running. See the
+`Upgrade non-empty hypervisors`_ section to include them.
 
 
 Run upgrade for the hypervisors
@@ -60,7 +58,7 @@ To upgrade just the **hypervisors** use:
 
     cou upgrade hypervisors
 
-It's also possible to target for specific **availability-zones** or **machines**:
+It's also possible to target for specific Juju **availability-zones** or **machines**:
 
 .. code:: bash
 
@@ -72,15 +70,16 @@ It's also possible to target for specific **availability-zones** or **machines**
 
 **Note:**
 - Those specific filters are mutually exclusive, meaning that it's not possible
-to use then together.
+to use them together.
 - Since **hypervisors** comprise a subset of **data-plane** components, it is
 also necessary to complete the upgrade of the **control-plane** components before
-being able to upgrade the **hypervisors**.
+the **hypervisors** can be upgraded.
+- By default, this command will not upgrade hypervisors that have VMs running. See the
+`Upgrade non-empty hypervisors`_ section to include them.
 
 Upgrade non-empty hypervisors
 -----------------------------
-By default, COU will skip the upgrade on hypervisors that have VMs running. If it's
-necessary to also include then, use the `--force` command. For example:
+If it's necessary to upgrade non-empty hypervisors, use the `--force` command. For example:
 
 .. code:: bash
 
@@ -97,7 +96,7 @@ necessary to also include then, use the `--force` command. For example:
     cou upgrade hypervisors --availability-zone=zone-1 --force
 
 **Note:** This is not safe and might cause problems in the running VMs. The recommendation
-is to migrate the VMs and upgrade machines that are empty
+is to migrate the VMs and upgrade hypervisors machines that are empty.
 
 Run interactive upgrades
 ------------------------
