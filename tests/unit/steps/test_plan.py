@@ -16,6 +16,8 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 
 from cou.apps.base import OpenStackApplication
+from cou.apps.core import Keystone
+from cou.apps.subordinate import SubordinateApplication
 from cou.exceptions import (
     HaltUpgradePlanGeneration,
     HighestReleaseAchieved,
@@ -39,13 +41,13 @@ from cou.steps.plan import (
     manually_upgrade_data_plane,
 )
 from cou.utils import app_utils
+from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.utils import assert_steps
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target.codename}'"
-    )
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target.codename}'")
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
         # apps waiting for whole model
         wait_step = PostUpgradeStep(
@@ -64,13 +66,13 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units:
-        upgrade_packages.add_step(
-            UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
-                coro=app_utils.upgrade_packages(unit.name, model, None),
-            )
+    upgrade_packages.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit {unit.name}",
+            coro=app_utils.upgrade_packages(unit.name, model, None),
         )
+        for unit in app.units.values()
+    )
 
     upgrade_steps = [
         upgrade_packages,
@@ -110,9 +112,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
 
 
 def generate_expected_upgrade_plan_subordinate(app, target, model):
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
-    )
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of "
@@ -131,18 +131,78 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 
 @pytest.mark.asyncio
-async def test_generate_plan(apps, model, cli_args):
+async def test_generate_plan(model, cli_args):
+    """Test generation of upgrade plan."""
+    cli_args.is_data_plane_command = False
     target = OpenStackRelease("victoria")
-    app_keystone = apps["keystone_focal_ussuri"]
-    app_cinder = apps["cinder_focal_ussuri"]
-    app_keystone_ldap = apps["keystone_ldap_focal_ussuri"]
-    analysis_result = Analysis(
+    # keystone = Keystone()
+    machines = {"0": MagicMock(spec_set=Machine)}
+    keystone = Keystone(
+        name="keystone",
+        can_upgrade_to="ussuri/stable",
+        charm="keystone",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines={},
         model=model,
-        apps_control_plane=[app_keystone, app_cinder, app_keystone_ldap],
-        apps_data_plane=[],
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "keystone/0": Unit(
+                name="keystone/0",
+                workload_version="17.0.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="17.0.1",
+    )
+    keystone_ldap = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to="ussuri/stable",
+        charm="keystone-ldap",
+        channel="ussuri/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="17.0.1",
+    )
+    cinder = OpenStackApplication(
+        name="cinder",
+        can_upgrade_to="ussuri/stable",
+        charm="cinder",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "cinder/0": Unit(
+                name="cinder/0",
+                workload_version="16.4.2",
+                machine=machines["0"],
+            )
+        },
+        workload_version="16.4.2",
     )
 
-    upgrade_plan = await generate_plan(analysis_result, cli_args)
+    analysis_result = Analysis(
+        model=model,
+        apps_control_plane=[keystone, cinder, keystone_ldap],
+        apps_data_plane=[],
+    )
 
     expected_plan = UpgradePlan("Upgrade cloud from 'ussuri' to 'victoria'")
     expected_plan.add_step(
@@ -163,20 +223,20 @@ async def test_generate_plan(apps, model, cli_args):
     )
 
     control_plane_principals = UpgradePlan("Control Plane principal(s) upgrade plan")
-    keystone_plan = generate_expected_upgrade_plan_principal(app_keystone, target, model)
-    cinder_plan = generate_expected_upgrade_plan_principal(app_cinder, target, model)
+    keystone_plan = generate_expected_upgrade_plan_principal(keystone, target, model)
+    cinder_plan = generate_expected_upgrade_plan_principal(cinder, target, model)
     control_plane_principals.add_step(keystone_plan)
     control_plane_principals.add_step(cinder_plan)
 
     control_plane_subordinates = UpgradePlan("Control Plane subordinate(s) upgrade plan")
-    keystone_ldap_plan = generate_expected_upgrade_plan_subordinate(
-        app_keystone_ldap, target, model
-    )
+    keystone_ldap_plan = generate_expected_upgrade_plan_subordinate(keystone_ldap, target, model)
     control_plane_subordinates.add_step(keystone_ldap_plan)
 
     expected_plan.add_step(control_plane_principals)
     expected_plan.add_step(control_plane_subordinates)
-    assert upgrade_plan == expected_plan
+
+    upgrade_plan = await generate_plan(analysis_result, cli_args)
+    assert_steps(upgrade_plan, expected_plan)
 
 
 @pytest.mark.parametrize(
@@ -294,24 +354,38 @@ async def test_create_upgrade_plan_failed():
 
 
 @patch("builtins.print")
-def test_plan_print_warn_manually_upgrade(mock_print, model, apps):
+def test_plan_print_warn_manually_upgrade(mock_print, model):
+    nova_compute = MagicMock(spec_set=OpenStackApplication)()
+    nova_compute.name = "nova-compute"
+    nova_compute.current_os_release = OpenStackRelease("victoria")
+    nova_compute.series = "focal"
+    keystone = MagicMock(spec_set=OpenStackApplication)()
+    keystone.name = "keystone"
+    keystone.current_os_release = OpenStackRelease("wallaby")
+    keystone.series = "focal"
+
     result = Analysis(
         model=model,
-        apps_control_plane=[apps["keystone_focal_wallaby"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
+        apps_control_plane=[keystone],
+        apps_data_plane=[nova_compute],
     )
     manually_upgrade_data_plane(result)
     mock_print.assert_called_with(
-        "WARNING: Please upgrade manually the data plane apps: nova-compute"
+        f"WARNING: Please upgrade manually the data plane apps: {nova_compute.name}"
     )
 
 
 @patch("builtins.print")
-def test_analysis_not_print_warn_manually_upgrade(mock_print, model, apps):
+def test_analysis_not_print_warn_manually_upgrade(mock_print, model):
+    keystone = MagicMock(spec_set=OpenStackApplication)()
+    keystone.name = "keystone"
+    keystone.current_os_release = OpenStackRelease("wallaby")
+    keystone.series = "focal"
+
     result = Analysis(
         model=model,
-        apps_control_plane=[apps["keystone_focal_ussuri"]],
-        apps_data_plane=[apps["nova_focal_ussuri"]],
+        apps_control_plane=[keystone],
+        apps_data_plane=[],
     )
     manually_upgrade_data_plane(result)
     mock_print.assert_not_called()

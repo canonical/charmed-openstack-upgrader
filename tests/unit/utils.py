@@ -12,11 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module to provide helper for writing unit tests."""
+from textwrap import dedent
+from unittest.mock import MagicMock
 
 from cou.steps import BaseStep
+from cou.utils.juju_utils import Machine
 
 
 def assert_steps(step_1: BaseStep, step_2: BaseStep) -> None:
     """Compare two steps and raise exception if they are different."""
     msg = f"\n{step_1}!=\n{step_2}"
     assert step_1 == step_2, msg
+
+
+def generate_cou_machine(machine_id: str, az: str | None = None) -> MagicMock:
+    machine = MagicMock(spec_set=Machine)()
+    machine.machine_id = machine_id
+    machine.az = az
+    machine.apps = tuple()
+    return machine
+
+
+def dedent_plan(plan: str) -> str:
+    """Dedent the string plan."""
+    result = dedent(plan)
+    result = result.replace("    ", "\t")  # replace 4 spaces with tap
+    return result
