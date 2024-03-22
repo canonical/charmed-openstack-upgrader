@@ -183,84 +183,61 @@ def verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> No
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    if args.machines:
-        verify_hypervisors_cli_machines(args.machines, analysis_result)
-    elif args.availability_zones:
-        verify_hypervisors_cli_azs(args.availability_zones, analysis_result)
-
-
-def verify_hypervisors_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:
-    """Verify if the machines passed from the CLI are valid.
-
-    :param cli_machines: Machines passed to the CLI as arguments
-    :type cli_machines: set[str]
-    :param analysis_result: Analysis result
-    :type analysis_result: Analysis
-    """
-    verify_data_plane_membership(
-        all_options=set(analysis_result.machines.keys()),
-        data_plane_options=set(analysis_result.data_plane_machines.keys()),
-        cli_input=cli_machines,
-        parameter_type="Machine(s)",
+    _, nova_compute_machines = _get_nova_compute_units_and_machines(
+        analysis_result.apps_data_plane
     )
-
-
-def verify_hypervisors_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> None:
-    """Verify if the availability zones passed from the CLI are valid.
-
-    :param cli_azs: AZs passed to the CLI as arguments
-    :type cli_azs: set[str]
-    :param analysis_result:  Analysis result
-    :type analysis_result: Analysis
-    :raises DataPlaneMachineFilterError: When the cloud does not have availability zones.
-    """
-    all_azs: set[str] = {
-        machine.az for machine in analysis_result.machines.values() if machine.az is not None
-    }
-    data_plane_azs: set[str] = {
-        machine.az
-        for machine in analysis_result.data_plane_machines.values()
-        if machine.az is not None
-    }
-
-    if not data_plane_azs and not all_azs:
-        raise DataPlaneMachineFilterError(
-            "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
+    if args.machines:
+        verify_hypervisors_membership(
+            all_options=set(analysis_result.machines.keys()),
+            hypervisors_options={machine.machine_id for machine in nova_compute_machines},
+            cli_input=args.machines,
+            parameter_type="Machine(s)",
+        )
+    elif args.availability_zones:
+        verify_hypervisors_membership(
+            all_options={
+                machine.az
+                for machine in analysis_result.machines.values()
+                if machine.az is not None
+            },
+            hypervisors_options={
+                machine.az for machine in nova_compute_machines if machine.az is not None
+            },
+            cli_input=args.availability_zones,
+            parameter_type="Availability Zone(s)",
         )
 
-    verify_data_plane_membership(
-        all_options=all_azs,
-        data_plane_options=data_plane_azs,
-        cli_input=cli_azs,
-        parameter_type="Availability Zone(s)",
-    )
 
-
-def verify_data_plane_membership(
+def verify_hypervisors_membership(
     all_options: set[str],
-    data_plane_options: set[str],
+    hypervisors_options: set[str],
     cli_input: set[str],
     parameter_type: str,
 ) -> None:
-    """Check if the parameter passed are member of data-plane.
+    """Check if the parameter passed are member of hypervisors.
 
     :param all_options: All possible options for a parameter.
     :type all_options: set[str]
-    :param data_plane_options: All data-plane possible options for a parameter.
-    :type data_plane_options: set[str]
+    :param hypervisors_options: All hypervisors possible options for a parameter.
+    :type hypervisors_options: set[str]
     :param cli_input: The input that come from the cli
     :type cli_input: set[str]
     :param parameter_type: Type of the parameter passed (az or machine).
     :type parameter_type: str
     :raises DataPlaneMachineFilterError: When the value passed from the user is not sane.
     """
+    if not hypervisors_options and not all_options:
+        raise DataPlaneMachineFilterError(
+            f"Cannot find {parameter_type}. Is this a valid OpenStack cloud?"
+        )
     if not cli_input.issubset(all_options):
         raise DataPlaneMachineFilterError(
             f"{parameter_type}: {cli_input - all_options} don't exist."
         )
-    if not cli_input.issubset(data_plane_options):
+    if not cli_input.issubset(hypervisors_options):
         raise DataPlaneMachineFilterError(
-            f"{parameter_type}: {cli_input - data_plane_options} are not considered as data-plane."
+            f"{parameter_type}: {cli_input - hypervisors_options} "
+            "are not considered as hypervisors."
         )
 
 

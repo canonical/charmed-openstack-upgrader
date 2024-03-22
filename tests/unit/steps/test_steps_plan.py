@@ -562,100 +562,185 @@ def test_create_upgrade_plan_failed(force):
         cou_plan.create_upgrade_group([app], "victoria", "test", force)
 
 
-@patch("cou.steps.plan.verify_hypervisors_cli_azs")
-@patch("cou.steps.plan.verify_hypervisors_cli_machines")
-def test_verify_hypervisors_cli_input_machines(mock_cli_machines, mock_cli_azs, cli_args):
-    cli_args.machines = {"1"}
-    cli_args.availability_zones = None
-
-    analysis_result = MagicMock(spec_set=Analysis)()
-
-    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
-
-    mock_cli_machines.assert_called_once_with(cli_args.machines, analysis_result)
-    mock_cli_azs.assert_not_called()
-
-
-@patch("cou.steps.plan.verify_hypervisors_cli_azs")
-@patch("cou.steps.plan.verify_hypervisors_cli_machines")
-def test_verify_hypervisors_cli_input_azs(mock_cli_machines, mock_cli_azs, cli_args):
-    cli_args.machines = None
-    cli_args.availability_zones = {"zone-1"}
-
-    analysis_result = MagicMock(spec_set=Analysis)()
-
-    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
-
-    mock_cli_machines.assert_not_called()
-    mock_cli_azs.assert_called_once_with(cli_args.availability_zones, analysis_result)
-
-
-@patch("cou.steps.plan.verify_hypervisors_cli_azs")
-@patch("cou.steps.plan.verify_hypervisors_cli_machines")
-def test_verify_hypervisors_cli_input_None(mock_cli_machines, mock_cli_azs, cli_args):
-    cli_args.machines = None
-    cli_args.availability_zones = None
-
-    analysis_result = MagicMock(spec_set=Analysis)()
-
-    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
-
-    mock_cli_machines.assert_not_called()
-    mock_cli_azs.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "cli_machines, exp_error_msg",
-    [
-        ({"1"}, r"Machine.*are not considered as data-plane."),
-        ({"5/lxd/18"}, r"Machine.*don't exist."),
-    ],
-)
-def test_verify_hypervisors_cli_machines_raise(cli_machines, exp_error_msg):
+@patch("cou.steps.plan._get_nova_compute_units_and_machines")
+@patch("cou.steps.plan.verify_hypervisors_membership")
+def test_verify_hypervisors_cli_input_machines(
+    mock_verify_hypervisors_membership, mock_nova_compute, cli_args
+):
     machine0 = MagicMock(spec_set=COUMachine)()
-    machine1 = MagicMock(spec_set=COUMachine)()
-    analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.machines = {"0": machine0, "1": machine1}
-    analysis_result.data_plane_machines = {"0": machine0}
-    analysis_result.control_plane_machines = {"1": machine1}
-
-    with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_hypervisors_cli_machines(cli_machines, analysis_result)
-
-
-@pytest.mark.parametrize(
-    "cli_azs, exp_error_msg",
-    [
-        ({"zone-1"}, r"Availability Zone.* are not considered as data-plane."),
-        ({"zone-test", "zone-foo"}, r"Availability Zone.*don't exist."),
-    ],
-)
-def test_verify_hypervisors_cli_azs_raise_dont_exist(cli_azs, exp_error_msg):
-    machine0 = MagicMock(spec_set=COUMachine)()
+    machine0.machine_id = "0"
     machine0.az = "zone-0"
+
     machine1 = MagicMock(spec_set=COUMachine)()
+    machine1.machine_id = "1"
     machine1.az = "zone-1"
+
+    nova_compute_machines = [machine0]
+    mock_nova_compute.return_value = (MagicMock(), nova_compute_machines)
+    cli_args.machines = {"0"}
+    cli_args.availability_zones = None
+
     analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.machines = {"0": machine0, "1": machine1}
-    analysis_result.data_plane_machines = {"0": machine0}
-    analysis_result.control_plane_machines = {"1": machine1}
+    analysis_result.machines.return_value = {"0": machine0, "1": machine1}
 
+    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
+
+    mock_verify_hypervisors_membership.assert_called_once_with(
+        all_options=set(analysis_result.machines.keys()),
+        hypervisors_options={machine.machine_id for machine in nova_compute_machines},
+        cli_input=cli_args.machines,
+        parameter_type="Machine(s)",
+    )
+
+
+@patch("cou.steps.plan._get_nova_compute_units_and_machines")
+@patch("cou.steps.plan.verify_hypervisors_membership")
+def test_verify_hypervisors_cli_input_azs(
+    mock_verify_hypervisors_membership, mock_nova_compute, cli_args
+):
+    machine0 = MagicMock(spec_set=COUMachine)()
+    machine0.machine_id = "0"
+    machine0.az = "zone-0"
+
+    machine1 = MagicMock(spec_set=COUMachine)()
+    machine1.machine_id = "1"
+    machine1.az = "zone-1"
+
+    nova_compute_machines = [machine0]
+    mock_nova_compute.return_value = (MagicMock(), nova_compute_machines)
+    cli_args.machines = None
+    cli_args.availability_zones = {"zone-0"}
+
+    analysis_result = MagicMock(spec_set=Analysis)()
+    analysis_result.machines.return_value = {"0": machine0, "1": machine1}
+
+    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
+
+    mock_verify_hypervisors_membership.assert_called_once_with(
+        all_options={
+            machine.az for machine in analysis_result.machines.values() if machine.az is not None
+        },
+        hypervisors_options={
+            machine.az for machine in nova_compute_machines if machine.az is not None
+        },
+        cli_input=cli_args.availability_zones,
+        parameter_type="Availability Zone(s)",
+    )
+
+
+@patch("cou.steps.plan._get_nova_compute_units_and_machines")
+@patch("cou.steps.plan.verify_hypervisors_membership")
+def test_verify_hypervisors_cli_input_None(
+    mock_verify_hypervisors_membership, mock_nova_compute, cli_args
+):
+    mock_nova_compute.return_value = [MagicMock(), MagicMock()]
+    cli_args.machines = None
+    cli_args.availability_zones = None
+
+    analysis_result = MagicMock(spec_set=Analysis)()
+
+    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
+
+    mock_nova_compute.assert_called_once_with(analysis_result.apps_data_plane)
+    mock_verify_hypervisors_membership.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "all_options, hypervisors_options, cli_input, parameter_type",
+    [
+        ({"0", "1", "2"}, {"1", "2"}, {"1"}, "Machine(s)"),
+        ({"0", "1", "2"}, {"1", "2"}, {"2"}, "Machine(s)"),
+        ({"zone-0", "zone-1", "zone-2"}, {"zone-1", "zone-2"}, {"zone-1"}, "Availability Zone(s)"),
+        ({"zone-0", "zone-1", "zone-2"}, {"zone-1", "zone-2"}, {"zone-2"}, "Availability Zone(s)"),
+    ],
+)
+def test_verify_hypervisors_membership(
+    all_options, hypervisors_options, cli_input, parameter_type
+):
+    assert (
+        cou_plan.verify_hypervisors_membership(
+            all_options, hypervisors_options, cli_input, parameter_type
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "all_options, hypervisors_options, cli_input, parameter_type, exp_error_msg",
+    [
+        ({"0", "1", "2"}, {"1", "2"}, {"3"}, "Machine(s)", r"Machine.*don't exist."),
+        (
+            {"zone-0", "zone-1", "zone-2"},
+            {"zone-1", "zone-2"},
+            {"zone-3"},
+            "Availability Zone(s)",
+            r"Availability Zone.*don't exist.",
+        ),
+    ],
+)
+def test_verify_hypervisors_membership_raise_dont_exist(
+    all_options, hypervisors_options, cli_input, parameter_type, exp_error_msg
+):
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_hypervisors_cli_azs(cli_azs, analysis_result)
+        cou_plan.verify_hypervisors_membership(
+            all_options, hypervisors_options, cli_input, parameter_type
+        )
 
 
-def test_verify_hypervisors_cli_azs_raise_cannot_find():
-    exp_error_msg = r"Cannot find Availability Zone\(s\). Is this a valid OpenStack cloud?"
-    mock_analyze = MagicMock()
-
-    mock_machine = MagicMock()
-    mock_machine.az = None
-    mock_machine.id = "1"
-
-    mock_analyze.machines = {"1": mock_machine}
-    mock_analyze.data_plane_machines = {"1": mock_machine}
+@pytest.mark.parametrize(
+    "all_options, hypervisors_options, cli_input, parameter_type, exp_error_msg",
+    [
+        (
+            {"0", "1", "2"},
+            {"1", "2"},
+            {"0"},
+            "Machine(s)",
+            r"Machine.*are not considered as hypervisors.",
+        ),
+        (
+            {"zone-0", "zone-1", "zone-2"},
+            {"zone-1", "zone-2"},
+            {"zone-0"},
+            "Availability Zone(s)",
+            r"Availability Zone.* are not considered as hypervisors.",
+        ),
+    ],
+)
+def test_verify_hypervisors_membership_raise_not_data_plane(
+    all_options, hypervisors_options, cli_input, parameter_type, exp_error_msg
+):
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_hypervisors_cli_azs({"zone-1"}, mock_analyze)
+        cou_plan.verify_hypervisors_membership(
+            all_options, hypervisors_options, cli_input, parameter_type
+        )
+
+
+@pytest.mark.parametrize(
+    "all_options, hypervisors_options, cli_input, parameter_type, exp_error_msg",
+    [
+        (
+            {},
+            {},
+            {"0"},
+            "Machine(s)",
+            r"Cannot find Machine\(s\). Is this a valid OpenStack cloud?",
+        ),
+        (
+            {},
+            {},
+            {"zone-0"},
+            "Availability Zone(s)",
+            r"Cannot find Availability Zone\(s\). Is this a valid OpenStack cloud?",
+        ),
+    ],
+)
+def test_verify_hypervisors_membership_raise_valid_openstack(
+    all_options, hypervisors_options, cli_input, parameter_type, exp_error_msg
+):
+    with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
+        cou_plan.verify_hypervisors_membership(
+            all_options, hypervisors_options, cli_input, parameter_type
+        )
 
 
 @pytest.mark.parametrize(
