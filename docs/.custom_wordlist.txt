@@ -36,6 +36,8 @@ SIGINTs
 SIGTERM
 SIGTERMs
 snapcraft
+subcommand
+subcommands
 STDOUT
 Upgrader
 ussuri

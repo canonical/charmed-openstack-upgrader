@@ -2,18 +2,20 @@
 Upgrade a cloud
 ===============
 
-Recommendations for upgrading production clouds
------------------------------------------------
+Recommendations and guidelines for upgrading production clouds
+--------------------------------------------------------------
 
-1. Be sure to upgrade in a maintenance window
-2. Start with the upgrade on control-plane applications
-3. Don't force the upgrade on non-empty hypervisors
-4. After upgrading the **control-plane**, choose one empty hypervisor to be a `canary node`.
-   After upgrading it, test if it's behaving as expected.
-5. If no issues are found after upgrading the `canary node`, proceed with the upgrade.
+1. Upgrades can be disruptive; perform them during a maintenance window
+2. The **control-plane** must be upgraded before the **data-plane**. Simply use
+   `cou upgrade control-plane` without subcommands to ensure the correct ordering of operations.
+3. Forcing the upgrade of non-empty hypervisors will disrupt the connectivity of the VMs they are
+   hosting; live-migrate instances away from hypervisors undergoing an upgrade if possible
+4. Use the `hypervisors` subcommand to test the upgrade of a single `canary machine` before
+   upgrading the rest of the **data-plane**.
+5. If no issues are found after upgrading the `canary machine`, proceed with the upgrade.
 
-Run upgrade for the whole cloud
--------------------------------
+Upgrade the whole cloud
+-----------------------
 
 To upgrade the entire OpenStack cloud, including both the **control-plane** and the
 **data-plane**, use:
@@ -23,20 +25,20 @@ To upgrade the entire OpenStack cloud, including both the **control-plane** and 
     cou upgrade
 
 
-Run upgrade for the control-plane
----------------------------------
+Upgrade the control-plane
+-------------------------
 
-To run an upgrade targeting the **control-plane** applications use:
+To run an upgrade targeting only the **control-plane** applications use:
 
 .. code:: bash
 
     cou upgrade control-plane
 
 
-Run upgrade for the data-plane
-------------------------------
+Upgrade the data-plane
+----------------------
 
-To run an upgrade targeting the **data-plane** applications use:
+To run an upgrade targeting only the **data-plane** applications use:
 
 .. code:: bash
 
@@ -47,24 +49,25 @@ To run an upgrade targeting the **data-plane** applications use:
 - It's essential to complete the upgrade of the **control-plane** components before
   being able to upgrade the **data-plane**.
 - By default, if non-empty hypervisor are identified, they are going to be excluded from the
-  upgrade and a warning message will show. See the `Upgrade non-empty hypervisors`_
+  upgrade and a warning message will be shown. See the `Upgrade non-empty hypervisors`_
   section for instructions on how to include them.
 
 
-Run upgrade for the hypervisors
--------------------------------
+Upgrade the hypervisors
+-----------------------
 
 To upgrade just the **hypervisors** use:
 
 .. code:: bash
 
+    # upgrade for all empty hypervisors
     cou upgrade hypervisors
 
-It's also possible to target for specific Juju **availability-zones** or **machines**:
+It's also possible to target specific Juju **availability-zones** or **machines**:
 
 .. code:: bash
 
-    # upgrade for just empty hypervisors on machines 0 and 1
+    # upgrade for hypervisors with machine ID 0 and 1 (unless they're hosting VMs)
     cou upgrade hypervisors --machine "0, 1"
 
     # upgrade for all empty hypervisors that are into zone-1
@@ -74,33 +77,32 @@ It's also possible to target for specific Juju **availability-zones** or **machi
 
 - Those specific filters are mutually exclusive, meaning that it's not possible
   to use them together.
-- Since **hypervisors** comprise a subset of **data-plane** components, it is
-  also necessary to complete the upgrade of the **control-plane** components before
-  the **hypervisors** can be upgraded.
+- Since **hypervisors** are part of the **data-plane**, they won't be upgraded unless the
+  **control-plane** has already been upgraded.
 - By default, if non-empty hypervisor are identified, they are going to be excluded from the
-  upgrade and a warning message will show. See the `Upgrade non-empty hypervisors`_
+  upgrade and a warning message will be shown. See the `Upgrade non-empty hypervisors`_
   section for instructions on how to include them.
 
 Upgrade non-empty hypervisors
 -----------------------------
-If it's necessary to upgrade non-empty hypervisors, use the `--force` command. For example:
+If it's necessary to upgrade non-empty hypervisors, use the `--force` option. For example:
 
 .. code:: bash
 
-    # upgrade data-plane applications using all hypervisors
+    # upgrade all data-plane applications, including hypervisors currently running instances
     cou upgrade data-plane --force
 
-    # upgrade all hypervisors
+    # upgrade all hypervisors, even if they are hosting running instances
     cou upgrade hypervisors --force
 
-    # upgrade hypervisors from machines 0 and 1
+    # upgrade hypervisors on machines 0 and 1, even if they are hosting running instances
     cou upgrade hypervisors --machine "0, 1" --force
 
-    # upgrade all hypervisors that are in zone-1
+    # upgrade all hypervisors that are in zone-1, even if they are hosting running instances
     cou upgrade hypervisors --availability-zone=zone-1 --force
 
-**Note:** This is not safe and might cause problems in the running VMs. The recommendation
-is to migrate the VMs and upgrade hypervisors machines that are empty.
+**Note:** This will disrupt connectivity for any running VM. Migrate them elsewhere before
+upgrading if this is undesirable.
 
 Run interactive upgrades
 ------------------------

@@ -76,7 +76,7 @@ Output example
 Plan for the control-plane
 --------------------------
 
-To generate a plan targeting the **control-plane** applications use:
+To generate a plan targeting only the **control-plane** applications use:
 
 .. code:: bash
 
@@ -85,7 +85,7 @@ To generate a plan targeting the **control-plane** applications use:
 Plan for the data-plane
 -----------------------
 
-To generate a plan targeting the **data-plane** applications use:
+To generate a plan targeting only the **data-plane** applications use:
 
 .. code:: bash
 
@@ -96,7 +96,7 @@ To generate a plan targeting the **data-plane** applications use:
 - It's essential to complete the upgrade of the **control-plane** components before being able to
   generate a plan for the **data-plane**.
 - By default, if non-empty hypervisor are identified, they are going to be excluded from the
-  planning and a warning message will show. See the `Plan for non-empty hypervisors`_
+  planning and a warning message will be shown. See the `Plan for non-empty hypervisors`_
   section for instructions on how to include them.
 
 
@@ -107,13 +107,14 @@ To generate a plan targeting just the **hypervisors** use:
 
 .. code:: bash
 
+    # plan for all empty hypervisors
     cou plan hypervisors
 
-It's also possible to target for specific Juju **availability-zones** or **machines**:
+It's also possible to target specific Juju **availability-zones** or **machines**:
 
 .. code:: bash
 
-    # plan for just empty hypervisors on machines 0 and 1
+    # plan for hypervisors with machine ID 0 and 1 (unless they're hosting VMs)
     cou plan hypervisors --machine "0, 1"
 
     # plan for all empty hypervisors that are into zone-1
@@ -123,29 +124,28 @@ It's also possible to target for specific Juju **availability-zones** or **machi
 
 - Those specific filters are mutually exclusive, meaning that it's not possible
   to use them together.
-- Since **hypervisors** comprise a subset of **data-plane** components, it is
-  also necessary to complete the upgrade of the **control-plane** components before
-  the **hypervisors** can be upgraded.
+- Since **hypervisors** are part of the **data-plane**, they won't be upgraded unless the
+  **control-plane** has already been upgraded.
 - By default, if non-empty hypervisor are identified, they are going to be excluded from the
-  planning and a warning message will show. See the `Plan for non-empty hypervisors`_
+  planning and a warning message will be shown. See the `Plan for non-empty hypervisors`_
   section for instructions on how to include them.
 
 
 Plan for non-empty hypervisors
 ------------------------------
 
-If it's necessary to plan for non-empty hypervisors, use the `--force` command. For example:
+If it's necessary to plan for non-empty hypervisors, use the `--force` option. For example:
 
 .. code:: bash
 
-    # plan for data-plane applications using all hypervisors
+    # plan for all data-plane applications, including hypervisors currently running instances
     cou plan data-plane --force
 
-    # plan for all hypervisors
+    # plan for all hypervisors, even if they are hosting running instances
     cou plan hypervisors --force
 
-    # plan for hypervisors from machines 0 and 1
+    # plan for hypervisors on machines 0 and 1, even if they are hosting running instances
     cou plan hypervisors --machine "0, 1" --force
 
-    # plan for all hypervisors that are in zone-1
+    # plan for all hypervisors that are in zone-1, even if they are hosting running instances
     cou plan hypervisors --availability-zone=zone-1 --force
