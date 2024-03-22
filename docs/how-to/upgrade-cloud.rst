@@ -47,7 +47,7 @@ To run an upgrade targeting the **data-plane** applications use:
 - It's essential to complete the upgrade of the **control-plane** components before
   being able to upgrade the **data-plane**.
 - By default, if non-empty hypervisor are identified, a warning message will show saying that they
-  are going to be disconsidered from the upgrade. See the `Upgrade non-empty hypervisors`_
+  are going to be excluded from the upgrade. See the `Upgrade non-empty hypervisors`_
   section for instructions on how to include them.
 
 
@@ -78,7 +78,7 @@ It's also possible to target for specific Juju **availability-zones** or **machi
   also necessary to complete the upgrade of the **control-plane** components before
   the **hypervisors** can be upgraded.
 - By default, if non-empty hypervisor are identified, a warning message will show saying that they
-  are going to be disconsidered from the upgrade. See the `Upgrade non-empty hypervisors`_
+  are going to be excluded from the upgrade. See the `Upgrade non-empty hypervisors`_
   section for instructions on how to include them.
 
 Upgrade non-empty hypervisors
