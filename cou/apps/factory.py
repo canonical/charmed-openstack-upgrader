@@ -19,10 +19,8 @@ import logging
 from collections.abc import Callable
 from typing import Optional
 
-from juju.client._definitions import ApplicationStatus
-
 from cou.apps.base import OpenStackApplication
-from cou.utils.juju_utils import Machine, Model
+from cou.utils.juju_utils import Application
 from cou.utils.openstack import is_charm_supported
 
 logger = logging.getLogger(__name__)
@@ -34,48 +32,37 @@ class AppFactory:
     charms: dict[str, type[OpenStackApplication]] = {}
 
     @classmethod
-    def create(
-        cls,
-        name: str,
-        status: ApplicationStatus,
-        config: dict,
-        model: Model,
-        charm: str,
-        machines: dict[str, Machine],
-    ) -> Optional[OpenStackApplication]:
+    def create(cls, app: Application) -> Optional[OpenStackApplication]:
         """Create the OpenStackApplication or registered subclasses.
 
         Applications Subclasses registered with the "register_application"
         decorator can be instantiated and used with their customized methods.
-        :param name: Name of the application
-        :type name: str
-        :param machines: Machines in the model
-        :type machines: dict[str, Machine]
-        :param status: Status of the application
-        :type status: ApplicationStatus
-        :param config: Configuration of the application
-        :type config: dict
-        :param model: Model object
-        :type model: Model
-        :param charm: Name of the charm
-        :type charm: str
+        :param app: Application
+        :type app: Application
         :return: The OpenStackApplication class or None if not supported.
         :rtype: Optional[OpenStackApplication]
         """
         # pylint: disable=too-many-arguments
-        if is_charm_supported(charm):
-            app_class = cls.charms.get(charm, OpenStackApplication)
+        if is_charm_supported(app.charm):
+            app_class = cls.charms.get(app.charm, OpenStackApplication)
             return app_class(
-                name=name,
-                status=status,
-                config=config,
-                model=model,
-                charm=charm,
-                machines=machines,
+                name=app.name,
+                can_upgrade_to=app.can_upgrade_to,
+                charm=app.charm,
+                channel=app.channel,
+                config=app.config,
+                machines=app.machines,
+                model=app.model,
+                origin=app.origin,
+                series=app.series,
+                subordinate_to=app.subordinate_to,
+                units=app.units,
+                workload_version=app.workload_version,
             )
+
         logger.debug(
             "'%s' is not a supported OpenStack related application and will be ignored.",
-            name,
+            app.name,
         )
         return None
 

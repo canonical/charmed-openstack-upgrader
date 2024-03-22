@@ -9,6 +9,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+from unittest.mock import MagicMock
+
 from cou.apps.channel_based import ChannelBasedApplication
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -18,100 +21,179 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils import app_utils
+from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.utils import assert_steps
 
 
-def test_application_versionless(status, config, model, apps_machines):
+def test_application_versionless(model):
+    """Test application without version."""
+    machines = {"0": MagicMock(spec_set=Machine)}
+    units = {
+        "glance-simplestreams-sync/0": Unit(
+            name="glance-simplestreams-sync/0",
+            workload_version="",
+            machine=machines["0"],
+        )
+    }
     app = ChannelBasedApplication(
-        "glance-simplestreams-sync",
-        status["glance_simplestreams_sync_focal_ussuri"],
-        config["openstack_ussuri"],
-        model,
-        "glance-simplestreams-sync",
-        apps_machines["glance-simplestreams-sync"],
+        name="glance-simplestreams-sync",
+        can_upgrade_to="",
+        charm="glance-simplestreams-sync",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="",
     )
+
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is True
+    assert app.get_latest_os_version(units["glance-simplestreams-sync/0"]) == app.channel_codename
 
 
-def test_application_gnocchi_ussuri(status, config, model, apps_machines):
+def test_application_gnocchi_ussuri(model):
+    """Test the Gnocchi ChannelBasedApplication with Ussuri."""
+    machines = {"0": MagicMock(spec_set=Machine)}
     app = ChannelBasedApplication(
-        "gnocchi",
-        status["gnocchi_focal_ussuri"],
-        config["openstack_ussuri"],
-        model,
-        "gnocchi",
-        apps_machines["gnocchi"],
+        name="gnocchi",
+        can_upgrade_to="",
+        charm="gnocchi",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "gnocchi/0": Unit(
+                name="gnocchi/0",
+                workload_version="4.3.4",
+                machine=machines["0"],
+            )
+        },
+        workload_version="4.3.4",
     )
+
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is False
 
 
-def test_application_gnocchi_xena(status, config, model, apps_machines):
-    # workload version is the same for xena and yoga, but current_os_release
-    # is based on the channel.
+def test_application_gnocchi_xena(model):
+    """Test the Gnocchi ChannelBasedApplication with Xena.
+
+    The workload version is the same for xena and yoga, but current_os_release is based on
+    the channel.
+    """
+    machines = {"0": MagicMock(spec_set=Machine)}
     app = ChannelBasedApplication(
-        "gnocchi",
-        status["gnocchi_focal_xena"],
-        config["openstack_xena"],
-        model,
-        "gnocchi",
-        apps_machines["gnocchi"],
+        name="gnocchi",
+        can_upgrade_to="",
+        charm="gnocchi",
+        channel="xena/stable",
+        config={"openstack-origin": {"value": "cloud:focal-xena"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "gnocchi/0": Unit(
+                name="gnocchi/0",
+                workload_version="4.4.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="4.4.1",
     )
+
     assert app.current_os_release == "xena"
     assert app.is_versionless is False
 
 
-def test_application_designate_bind_ussuri(status, config, model, apps_machines):
-    # workload version is the same from ussuri to yoga, but current_os_release
-    # is based on the channel.
-    app_config = config["openstack_ussuri"]
-    app_config["action-managed-upgrade"] = {"value": False}
+def test_application_designate_bind_ussuri(model):
+    """Test the Designate-bind ChannelBasedApplication with Ussuri.
+
+    The workload version is the same from ussuri to yoga, but current_os_release is based on
+    the channel.
+    """
+    machines = {"0": MagicMock(spec_set=Machine)}
     app = ChannelBasedApplication(
-        "designate-bind",
-        status["designate_bind_focal_ussuri"],
-        app_config,
-        model,
-        "designate-bind",
-        apps_machines["designate-bind"],
+        name="designate-bind",
+        can_upgrade_to="",
+        charm="designate-bind",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": False},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "designate-bind/0": Unit(
+                name="designate-bind/0",
+                workload_version="9.16.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="9.16.1",
     )
+
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is False
 
 
-def test_application_versionless_upgrade_plan_ussuri_to_victoria(
-    status, config, model, apps_machines
-):
+def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
+    """Test generating plan for glance-simplestreams-sync (ChannelBasedApplication)."""
     target = OpenStackRelease("victoria")
-    app_config = config["openstack_ussuri"]
-    # Does not have action-managed-upgrade
-    app_config.pop("action-managed-upgrade")
+    machines = {"0": MagicMock(spec_set=Machine)}
     app = ChannelBasedApplication(
-        "glance-simplestreams-sync",
-        status["glance_simplestreams_sync_focal_ussuri"],
-        app_config,
-        model,
-        "glance-simplestreams-sync",
-        apps_machines["glance-simplestreams-sync"],
+        name="glance-simplestreams-sync",
+        can_upgrade_to="ussuri/stable",
+        charm="glance-simplestreams-sync",
+        channel="ussuri/stable",
+        config={"openstack-origin": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "glance-simplestreams-sync/0": Unit(
+                name="glance-simplestreams-sync/0",
+                workload_version="",
+                machine=machines["0"],
+            )
+        },
+        workload_version="",
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
-
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
-    )
-
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units:
-        upgrade_packages.add_step(
-            UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
-                coro=app_utils.upgrade_packages(unit.name, model, None),
-            )
+    upgrade_packages.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit {unit.name}",
+            coro=app_utils.upgrade_packages(unit.name, model, None),
         )
+        for unit in app.units.values()
+    )
 
     upgrade_steps = [
         upgrade_packages,
@@ -138,111 +220,55 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(
 
     expected_plan.add_steps(upgrade_steps)
 
-    assert upgrade_plan == expected_plan
-
-
-def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(status, config, model, apps_machines):
-    # Gnocchi from ussuri to victoria upgrade the workload version from 4.3.4 to 4.4.0.
-    target = OpenStackRelease("victoria")
-    app_config = config["openstack_ussuri"]
-    app_config["action-managed-upgrade"] = {"value": False}
-    app = ChannelBasedApplication(
-        "gnocchi",
-        status["gnocchi_focal_ussuri"],
-        app_config,
-        model,
-        "gnocchi",
-        apps_machines["gnocchi"],
-    )
-
     upgrade_plan = app.generate_upgrade_plan(target)
 
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
+    assert_steps(upgrade_plan, expected_plan)
+
+
+def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
+    """Test generating plan for Gnocchi (ChannelBasedApplication).
+
+    Updating Gnocchi from ussuri to victoria increases the workload version from 4.3.4 to 4.4.0.
+    """
+    target = OpenStackRelease("victoria")
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = ChannelBasedApplication(
+        name="gnocchi",
+        can_upgrade_to="ussuri/stable",
+        charm="gnocchi",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": False},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "gnocchi/0": Unit(
+                name="gnocchi/0",
+                workload_version="4.3.4",
+                machine=machines["0"],
+            )
+        },
+        workload_version="4.3.4",
     )
+
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
 
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
-    for unit in app.units:
-        upgrade_packages.add_step(
-            UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
-                coro=app_utils.upgrade_packages(unit.name, model, None),
-            )
+    upgrade_packages.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit {unit.name}",
+            coro=app_utils.upgrade_packages(unit.name, model, None),
         )
-
-    upgrade_steps = [
-        upgrade_packages,
-        PreUpgradeStep(
-            description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
-        ),
-        UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "victoria/stable"),
-        ),
-        UpgradeStep(
-            description=f"Change charm config of '{app.name}' "
-            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
-            parallel=False,
-            coro=model.set_application_config(
-                app.name,
-                {f"{app.origin_setting}": "cloud:focal-victoria"},
-            ),
-        ),
-        PostUpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
-            parallel=False,
-            coro=model.wait_for_active_idle(300, apps=[app.name]),
-        ),
-        PostUpgradeStep(
-            description=f"Verify that the workload of '{app.name}' has been upgraded",
-            parallel=False,
-            coro=app._check_upgrade(target),
-        ),
-    ]
-
-    expected_plan.add_steps(upgrade_steps)
-
-    assert upgrade_plan == expected_plan
-
-
-def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
-    status, config, model, apps_machines
-):
-    target = OpenStackRelease("victoria")
-    app_config = config["openstack_ussuri"]
-    app_config["action-managed-upgrade"] = {"value": False}
-    app = ChannelBasedApplication(
-        "designate-bind",
-        status["designate_bind_focal_ussuri"],
-        app_config,
-        model,
-        "designate-bind",
-        apps_machines["designate-bind"],
+        for unit in app.units.values()
     )
-
-    upgrade_plan = app.generate_upgrade_plan(target)
-
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
-    )
-
-    upgrade_packages = PreUpgradeStep(
-        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
-        parallel=True,
-    )
-    for unit in app.units:
-        upgrade_packages.add_step(
-            UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
-                coro=app_utils.upgrade_packages(unit.name, model, None),
-            )
-        )
 
     upgrade_steps = [
         upgrade_packages,
@@ -279,4 +305,88 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(
 
     expected_plan.add_steps(upgrade_steps)
 
-    assert upgrade_plan == expected_plan
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    assert_steps(upgrade_plan, expected_plan)
+
+
+def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
+    """Test generating plan for Designate-bind (ChannelBasedApplication)."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = ChannelBasedApplication(
+        name="designate-bind",
+        can_upgrade_to="ussuri/stable",
+        charm="designate-bind",
+        channel="ussuri/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": False},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "designate-bind/0": Unit(
+                name="designate-bind/0",
+                workload_version="9.16.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="9.16.1",
+    )
+
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
+
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    upgrade_packages.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit {unit.name}",
+            coro=app_utils.upgrade_packages(unit.name, model, None),
+        )
+        for unit in app.units.values()
+    )
+
+    upgrade_steps = [
+        upgrade_packages,
+        PreUpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
+        ),
+        UpgradeStep(
+            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "victoria/stable"),
+        ),
+        UpgradeStep(
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
+            parallel=False,
+            coro=model.set_application_config(
+                app.name,
+                {f"{app.origin_setting}": "cloud:focal-victoria"},
+            ),
+        ),
+        PostUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_active_idle(300, apps=[app.name]),
+        ),
+        PostUpgradeStep(
+            description=f"Verify that the workload of '{app.name}' has been upgraded",
+            parallel=False,
+            coro=app._check_upgrade(target),
+        ),
+    ]
+
+    expected_plan.add_steps(upgrade_steps)
+
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    assert_steps(upgrade_plan, expected_plan)

@@ -13,6 +13,9 @@
 # limitations under the License.
 
 """Juju utilities for charmed-openstack-upgrader."""
+
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
@@ -21,13 +24,13 @@ from datetime import datetime
 from typing import Any, Callable, Optional
 
 from juju.action import Action
-from juju.application import Application
+from juju.application import Application as JujuApplication
 from juju.client._definitions import FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
 from juju.errors import JujuAppError, JujuError, JujuUnitError
 from juju.model import Model as JujuModel
-from juju.unit import Unit
+from juju.unit import Unit as JujuUnit
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
@@ -139,6 +142,53 @@ class Machine:
     az: Optional[str] = None  # simple deployments may not have azs
 
 
+@dataclass(frozen=True)
+class Unit:
+    """Representation of a single unit of application."""
+
+    name: str
+    machine: Machine
+    workload_version: str
+
+
+@dataclass(frozen=True)
+class Application:
+    """Representation of a single application."""
+
+    # pylint: disable=too-many-instance-attributes
+
+    name: str
+    can_upgrade_to: str
+    charm: str
+    channel: str
+    config: dict[str, Any]
+    machines: dict[str, Machine]
+    model: Model
+    origin: str
+    series: str
+    subordinate_to: list[str]
+    units: dict[str, Unit]
+    workload_version: str
+
+    @property
+    def is_subordinate(self) -> bool:
+        """Check if application is subordinate.
+
+        :return: True if subordinate, False otherwise.
+        :rtype: bool
+        """
+        return bool(self.subordinate_to)
+
+    @property
+    def is_from_charm_store(self) -> bool:
+        """Check if application comes from charm store.
+
+        :return: True if comes, False otherwise.
+        :rtype: bool
+        """
+        return self.origin == "cs"
+
+
 class Model:
     """COU model object.
 
@@ -178,36 +228,36 @@ class Model:
         return self._name
 
     @retry(no_retry_exceptions=(ActionFailed,))
-    async def _get_action_result(self, action: Action, raise_on_failure: bool) -> Action:
-        """Get results from action.
+    async def _get_waited_action_object(self, action: Action, raise_on_failure: bool) -> Action:
+        """Get waited action object.
+
+        To access action data from the returned action object, use `action_obj.data`, which
+        contains action parameters, results, status, and metadata. Alternatively, it is possible
+        to access action results directly with `action_obj.results`.
 
         :param action: Action object
         :type: Action
         :param raise_on_failure: Whether to raise ActionFailed exception on failure, defaults
                                  to False
         :type raise_on_failure: bool
-        :return: action results
+        :return: the awaited action object
         :rtype: Action
         :raises ActionFailed: When the application status is in error (it's not 'completed').
         """
-        result = await action.wait()
-        if raise_on_failure:
-            model = await self._get_model()
-            status = await model.get_action_status(uuid_or_prefix=action.entity_id)
-            if status != "completed":
-                output = await model.get_action_output(action.entity_id)
-                raise ActionFailed(action, output=output)
+        action_obj = await action.wait()
+        if raise_on_failure and action_obj.status != "completed":
+            raise ActionFailed(action, output=action_obj.data)
 
-        return result
+        return action_obj
 
-    async def _get_application(self, name: str) -> Application:
+    async def _get_application(self, name: str) -> JujuApplication:
         """Get juju.application.Application from model.
 
         :param name: Name of application
         :type name: str
-        :raises ApplicationNotFound: When Application is not found in the model.
+        :raises ApplicationNotFound: When application is not found in the model.
         :return: Application
-        :rtype: Application
+        :rtype: JujuApplication
         """
         model = await self._get_model()
         app = model.applications.get(name)
@@ -215,6 +265,27 @@ class Model:
             raise ApplicationNotFound(f"Application {name} was not found in model {model.name}.")
 
         return app
+
+    async def _get_machines(self) -> dict[str, Machine]:
+        """Get all the machines in the model.
+
+        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
+        :rtype: dict[str, Machine]
+        """
+        model = await self._get_model()
+
+        return {
+            machine.id: Machine(
+                machine_id=machine.id,
+                apps=tuple(
+                    unit.application
+                    for unit in self._model.units.values()
+                    if unit.machine.id == machine.id
+                ),
+                az=machine.hardware_characteristics.get("availability-zone"),
+            )
+            for machine in model.machines.values()
+        }
 
     async def _get_model(self) -> JujuModel:
         """Get juju.model.Model and make sure that it is connected.
@@ -238,14 +309,14 @@ class Model:
             name for name, app in model.applications.items() if is_charm_supported(app.charm_name)
         ]
 
-    async def _get_unit(self, name: str) -> Unit:
+    async def _get_unit(self, name: str) -> JujuUnit:
         """Get juju.unit.unit from model.
 
         :param name: Name of unit
         :type name: str
         :raises UnitNotFound: When unit is not found in the model.
         :return: Unit
-        :rtype: Unit
+        :rtype: JujuUnit
         """
         model = await self._get_model()
         unit = model.units.get(name)
@@ -265,6 +336,40 @@ class Model:
         )
 
     @retry
+    async def get_applications(self) -> dict[str, Application]:
+        """Return list of applications with all relevant information.
+
+        :returns: list of application with all information
+        :rtype: list[Application]
+        """
+        model = await self._get_model()
+        # note(rgildein): We get the applications from the Juju status, since we can get more
+        #                 information the status than from objects. e.g. workload_version for unit
+        full_status = await self.get_status()
+        machines = await self._get_machines()
+
+        return {
+            app: Application(
+                name=app,
+                can_upgrade_to=status.can_upgrade_to,
+                charm=model.applications[app].charm_name,
+                channel=status.charm_channel,
+                config=await model.applications[app].get_config(),
+                machines={unit.machine: machines[unit.machine] for unit in status.units.values()},
+                model=self,
+                origin=status.charm.split(":")[0],
+                series=status.series,
+                subordinate_to=status.subordinate_to,
+                units={
+                    name: Unit(name, machines[unit.machine], unit.workload_version)
+                    for name, unit in status.units.items()
+                },
+                workload_version=status.workload_version,
+            )
+            for app, status in full_status.applications.items()
+        }
+
+    @retry(no_retry_exceptions=(ApplicationNotFound,))
     async def get_application_config(self, name: str) -> dict:
         """Return application configuration.
 
@@ -329,8 +434,8 @@ class Model:
         action_params = action_params or {}
         unit = await self._get_unit(unit_name)
         action = await unit.run_action(action_name, **action_params)
-        result = await self._get_action_result(action, raise_on_failure)
-        return result
+        action_obj = await self._get_waited_action_object(action, raise_on_failure)
+        return action_obj
 
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run(...)` and the rest of the function is static.
@@ -509,24 +614,3 @@ class Model:
             apps = await self._get_supported_apps()
 
         await _wait_for_active_idle()
-
-    async def get_machines(self) -> dict[str, Machine]:
-        """Get all the machines in the model.
-
-        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
-        :rtype: dict[str, Machine]
-        """
-        model = await self._get_model()
-
-        return {
-            machine.id: Machine(
-                machine_id=machine.id,
-                apps=tuple(
-                    unit.application
-                    for unit in self._model.units.values()
-                    if unit.machine.id == machine.id
-                ),
-                az=machine.hardware_characteristics.get("availability-zone"),
-            )
-            for machine in model.machines.values()
-        }

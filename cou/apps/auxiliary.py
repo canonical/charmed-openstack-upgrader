@@ -158,7 +158,7 @@ class CephMon(AuxiliaryApplication):
         :return: Step to check and set correct value for require-osd-release
         :rtype: PreUpgradeStep
         """
-        ceph_mon_unit, *_ = self.units
+        ceph_mon_unit, *_ = self.units.values()
         return PreUpgradeStep(
             description="Ensure that the 'require-osd-release' option matches the "
             "'ceph-osd' version",
@@ -178,7 +178,7 @@ class OvnPrincipal(AuxiliaryApplication):
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        for unit in self.units:
+        for unit in self.units.values():
             validate_ovn_support(unit.workload_version)
         return super().pre_upgrade_steps(target)
 

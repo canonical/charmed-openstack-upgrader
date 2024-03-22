@@ -13,41 +13,60 @@
 #  limitations under the License.
 """Subordinate application class."""
 import logging
+from unittest.mock import MagicMock
 
 import pytest
 
 from cou.apps.subordinate import SubordinateApplication
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
+from cou.utils.juju_utils import Machine
 from cou.utils.openstack import OpenStackRelease
+from tests.unit.utils import assert_steps
 
 logger = logging.getLogger(__name__)
 
 
-def test_post_init(status, model):
-    app_status = status["keystone_ldap_focal_ussuri"]
-    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
-    assert app.channel == "ussuri/stable"
-    assert app.charm_origin == "ch"
-    assert app.os_origin == ""
-    assert app.is_subordinate is True
+def test_current_os_release(model):
+    """Test current_os_release for SubordinateApplication."""
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to="ussuri/stable",
+        charm="keystone-ldap",
+        channel="ussuri/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="18.1.0",
+    )
 
-
-def test_current_os_release(status, model):
-    app_status = status["keystone_ldap_focal_ussuri"]
-    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
     assert app.current_os_release == OpenStackRelease("ussuri")
 
 
-def test_generate_upgrade_plan(status, model):
+def test_generate_upgrade_plan(model):
+    """Test generate upgrade plan for SubordinateApplication."""
     target = OpenStackRelease("victoria")
-    app_status = status["keystone_ldap_focal_ussuri"]
-    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
-    upgrade_plan = app.generate_upgrade_plan(target)
-
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to="ussuri/stable",
+        charm="keystone-ldap",
+        channel="ussuri/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="18.1.0",
     )
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
@@ -62,7 +81,9 @@ def test_generate_upgrade_plan(status, model):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    assert upgrade_plan == expected_plan
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    assert_steps(upgrade_plan, expected_plan)
 
 
 @pytest.mark.parametrize(
@@ -76,10 +97,23 @@ def test_generate_upgrade_plan(status, model):
         "wallaby/edge",
     ],
 )
-def test_channel_valid(status, model, channel):
-    app_status = status["keystone_ldap_focal_ussuri"]
-    app_status.charm_channel = channel
-    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
+def test_channel_valid(model, channel):
+    """Test successful validation of channel upgrade plan for SubordinateApplication."""
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to=channel,
+        charm="keystone-ldap",
+        channel=channel,
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="18.1.0",
+    )
 
     assert app.channel == channel
 
@@ -93,11 +127,25 @@ def test_channel_valid(status, model, channel):
         "something/stable",
     ],
 )
-def test_channel_setter_invalid(status, model, channel):
-    app_status = status["keystone_ldap_focal_ussuri"]
-    app_status.charm_channel = channel
+def test_channel_setter_invalid(model, channel):
+    """Test unsuccessful validation of channel upgrade plan for SubordinateApplication."""
+    machines = {"0": MagicMock(spec_set=Machine)}
+
     with pytest.raises(ApplicationError):
-        SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
+        SubordinateApplication(
+            name="keystone-ldap",
+            can_upgrade_to=channel,
+            charm="keystone-ldap",
+            channel=channel,
+            config={},
+            machines=machines,
+            model=model,
+            origin="ch",
+            series="focal",
+            subordinate_to=["nova-compute"],
+            units={},
+            workload_version="18.1.0",
+        )
 
 
 @pytest.mark.parametrize(
@@ -108,18 +156,25 @@ def test_channel_setter_invalid(status, model, channel):
         "candidate",
     ],
 )
-def test_generate_plan_ch_migration(status, model, channel):
+def test_generate_plan_ch_migration(model, channel):
+    """Test generate upgrade plan for SubordinateApplication with charmhub migration."""
     target = OpenStackRelease("wallaby")
-    app_status = status["keystone_ldap_focal_ussuri"]
-    app_status.charm = "cs:amd64/focal/keystone-ldap-437"
-    app_status.charm_channel = f"ussuri/{channel}"
-    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
-
-    upgrade_plan = app.generate_upgrade_plan(target)
-
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to="wallaby/stable",
+        charm="keystone-ldap",
+        channel=f"ussuri/{channel}",
+        config={},
+        machines=machines,
+        model=model,
+        origin="cs",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="18.1.0",
     )
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Migrate '{app.name}' from charmstore to charmhub",
@@ -134,7 +189,9 @@ def test_generate_plan_ch_migration(status, model, channel):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    assert upgrade_plan == expected_plan
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    assert_steps(upgrade_plan, expected_plan)
 
 
 @pytest.mark.parametrize(
@@ -146,16 +203,25 @@ def test_generate_plan_ch_migration(status, model, channel):
         (["xena", "yoga"]),
     ],
 )
-def test_generate_plan_from_to(status, model, from_os, to_os):
-    app_status = status["keystone_ldap_focal_ussuri"]
-    app_status.charm_channel = f"{from_os}/stable"
-    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
-
-    upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(to_os))
-
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{to_os}'"
+def test_generate_plan_from_to(model, from_os, to_os):
+    """Test generate upgrade plan for SubordinateApplication from to version."""
+    target = OpenStackRelease(to_os)
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to=f"{to_os}/stable",
+        charm="keystone-ldap",
+        channel=f"{from_os}/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="18.1.0",
     )
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{to_os}'")
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_os}/stable'",
@@ -170,7 +236,9 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    assert upgrade_plan == expected_plan
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    assert_steps(upgrade_plan, expected_plan)
 
 
 @pytest.mark.parametrize(
@@ -183,15 +251,25 @@ def test_generate_plan_from_to(status, model, from_os, to_os):
         "yoga",
     ],
 )
-def test_generate_plan_in_same_version(status, model, from_to):
-    app_status = status["keystone_ldap_focal_ussuri"]
-    app_status.charm_channel = f"{from_to}/stable"
-    app = SubordinateApplication("my_keystone_ldap", app_status, {}, model, "keystone-ldap", {})
-
-    upgrade_plan = app.generate_upgrade_plan(OpenStackRelease(from_to))
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{from_to}'"
+def test_generate_plan_in_same_version(model, from_to):
+    """Test generate upgrade plan for SubordinateApplication in same version."""
+    target = OpenStackRelease(from_to)
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to=f"{from_to}/stable",
+        charm="keystone-ldap",
+        channel=f"{from_to}/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="18.1.0",
     )
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{from_to}'")
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_to}/stable'",
@@ -201,4 +279,6 @@ def test_generate_plan_in_same_version(status, model, from_to):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    assert upgrade_plan == expected_plan
+    upgrade_plan = app.generate_upgrade_plan(target)
+
+    assert_steps(upgrade_plan, expected_plan)
