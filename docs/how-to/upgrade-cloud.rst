@@ -9,7 +9,7 @@ Recommendations for upgrading production clouds
 2. Start with the upgrade on control-plane applications
 3. Don't force the upgrade on non-empty hypervisors
 4. After upgrading the **control-plane**, choose one empty hypervisor to be a `canary node`.
-    After upgrading it, test if it's behaving as expected.
+   After upgrading it, test if it's behaving as expected.
 5. If no issues are found after upgrading the `canary node`, proceed with the upgrade.
 
 Run upgrade for the whole cloud
@@ -46,8 +46,9 @@ To run an upgrade targeting the **data-plane** applications use:
 
 - It's essential to complete the upgrade of the **control-plane** components before
   being able to upgrade the **data-plane**.
-- By default, this command will not upgrade hypervisors that have VMs running. See the
-  `Upgrade non-empty hypervisors`_ section for instructions on how to include them.
+- By default, if non-empty hypervisor are identified, a warning message will show saying that they
+  are going to be disconsidered from the upgrade. See the `Upgrade non-empty hypervisors`_
+  section for instructions on how to include them.
 
 
 Run upgrade for the hypervisors
@@ -63,7 +64,7 @@ It's also possible to target for specific Juju **availability-zones** or **machi
 
 .. code:: bash
 
-    # upgrade for just empty hypervisors in machines 0 and 1
+    # upgrade for just empty hypervisors on machines 0 and 1
     cou upgrade hypervisors --machine "0, 1"
 
     # upgrade for all empty hypervisors that are into zone-1
@@ -76,8 +77,9 @@ It's also possible to target for specific Juju **availability-zones** or **machi
 - Since **hypervisors** comprise a subset of **data-plane** components, it is
   also necessary to complete the upgrade of the **control-plane** components before
   the **hypervisors** can be upgraded.
-- By default, this command will not upgrade hypervisors that have VMs running. See the
-  `Upgrade non-empty hypervisors`_ section for instructions on how to include them.
+- By default, if non-empty hypervisor are identified, a warning message will show saying that they
+  are going to be disconsidered from the upgrade. See the `Upgrade non-empty hypervisors`_
+  section for instructions on how to include them.
 
 Upgrade non-empty hypervisors
 -----------------------------

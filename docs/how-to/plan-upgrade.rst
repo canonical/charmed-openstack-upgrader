@@ -16,6 +16,9 @@ To generate a plan for the entire OpenStack cloud, including both the **control-
 
     cou plan
 
+Output example
+^^^^^^^^^^^^^^
+
 .. terminal::
     :input: cou plan
 
@@ -92,8 +95,9 @@ To generate a plan targeting the **data-plane** applications use:
 
 - It's essential to complete the upgrade of the **control-plane** components before being able to
   generate a plan for the **data-plane**.
-- By default, this command will skip hypervisors that have VMs running from the planning. See the
-  `Plan for non-empty hypervisors`_ section for instructions on how to include them.
+- By default, if non-empty hypervisor are identified, a warning message will show saying that they
+  are going to be disconsidered from the planning. See the `Plan for non-empty hypervisors`_
+  section for instructions on how to include them.
 
 
 Plan for the hypervisors
@@ -109,7 +113,7 @@ It's also possible to target for specific Juju **availability-zones** or **machi
 
 .. code:: bash
 
-    # plan for just empty hypervisors in machines 0 and 1
+    # plan for just empty hypervisors on machines 0 and 1
     cou plan hypervisors --machine "0, 1"
 
     # plan for all empty hypervisors that are into zone-1
@@ -122,8 +126,9 @@ It's also possible to target for specific Juju **availability-zones** or **machi
 - Since **hypervisors** comprise a subset of **data-plane** components, it is
   also necessary to complete the upgrade of the **control-plane** components before
   the **hypervisors** can be upgraded.
-- By default, this command will skip hypervisors that have VMs running from the planning.
-  See the `Plan for non-empty hypervisors`_ section for instructions on how to include them.
+- By default, if non-empty hypervisor are identified, a warning message will show saying that they
+  are going to be disconsidered from the planning. See the `Plan for non-empty hypervisors`_
+  section for instructions on how to include them.
 
 
 Plan for non-empty hypervisors
