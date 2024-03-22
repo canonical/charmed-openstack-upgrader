@@ -41,3 +41,4 @@ barbican
 mysql
 innodb
 colocated
+minimize
