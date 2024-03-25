@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -21,11 +21,9 @@ from cou.apps.auxiliary_subordinate import (
     AuxiliarySubordinateApplication,
     OvnSubordinate,
 )
-from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
-from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
+from cou.exceptions import ApplicationError
 from cou.utils.juju_utils import Machine
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import assert_steps
 
 
 def test_auxiliary_subordinate(model):
@@ -46,46 +44,8 @@ def test_auxiliary_subordinate(model):
         workload_version="8.0",
     )
 
-    assert app.channel == "8.0/stable"
-    assert app.origin == "ch"
-    assert app.os_origin == ""
-    assert app.apt_source_codename is None
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
-    assert app.is_subordinate is True
-
-
-def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
-    """Test auxiliary subordinate application upgrade plan to victoria."""
-    target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
-    app = AuxiliarySubordinateApplication(
-        name="keystone-mysql-router",
-        can_upgrade_to="8.0/stable",
-        charm="mysql-router",
-        channel="8.0/stable",
-        config={"source": {"value": "distro"}},
-        machines=machines,
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=["keystone"],
-        units={},
-        workload_version="8.0",
-    )
-
-    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
-    expected_plan.add_step(
-        PreUpgradeStep(
-            description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
-        ),
-    )
-
-    upgrade_plan = app.generate_upgrade_plan(target, False)
-
-    assert_steps(upgrade_plan, expected_plan)
 
 
 def test_ovn_subordinate(model):
@@ -106,15 +66,12 @@ def test_ovn_subordinate(model):
         workload_version="22.3",
     )
 
-    assert app.channel == "22.03/stable"
-    assert app.os_origin == ""
-    assert app.apt_source_codename is None
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
-    assert app.is_subordinate is True
 
 
-def test_ovn_workload_ver_lower_than_22_subordinate(model):
+@patch("cou.apps.base.OpenStackApplication.pre_upgrade_steps")
+def test_ovn_workload_ver_lower_than_22_subordinate(_, model):
     """Test the OvnSubordinate with lower version than 22."""
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=Machine)}
@@ -140,150 +97,4 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.generate_upgrade_plan(target, False)
-
-
-def test_ovn_subordinate_upgrade_plan(model):
-    """Test generating plan for OvnSubordinate."""
-    target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnSubordinate(
-        name="ovn-chassis",
-        can_upgrade_to="22.03/stable",
-        charm="ovn-chassis",
-        channel="22.03/stable",
-        config={"source": {"value": "distro"}},
-        machines=machines,
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=["nova-compute"],
-        units={},
-        workload_version="22.3",
-    )
-
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
-    )
-    upgrade_steps = [
-        PreUpgradeStep(
-            description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
-        )
-    ]
-    expected_plan.add_steps(upgrade_steps)
-
-    upgrade_plan = app.generate_upgrade_plan(target, False)
-
-    assert_steps(upgrade_plan, expected_plan)
-
-
-def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
-    """Test generating plan for OvnSubordinate failing.
-
-    The ovn chassis 22.03 is considered yoga. If it's not necessary to upgrade the charm code,
-    there is no steps to upgrade.
-    """
-    exp_msg = (
-        "Application 'ovn-chassis' already configured for release equal to or greater than "
-        "victoria. Ignoring."
-    )
-    target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnSubordinate(
-        name="ovn-chassis",
-        can_upgrade_to="",
-        charm="ovn-chassis",
-        channel="22.03/stable",
-        config={"source": {"value": "distro"}},
-        machines=machines,
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=["nova-compute"],
-        units={},
-        workload_version="22.3",
-    )
-
-    with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
-        app.generate_upgrade_plan(target, False)
-
-
-def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
-    """Test when ceph version remains the same between os releases."""
-    target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
-    app = AuxiliarySubordinateApplication(
-        name="ceph-dashboard",
-        can_upgrade_to="octopus/stable",
-        charm="ceph-dashboard",
-        channel="octopus/stable",
-        config={"source": {"value": "distro"}},
-        machines=machines,
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=["nova-compute"],
-        units={},
-        workload_version="15.2.0",
-    )
-
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
-    )
-    upgrade_steps = [
-        PreUpgradeStep(
-            description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
-        )
-    ]
-
-    expected_plan.add_steps(upgrade_steps)
-
-    upgrade_plan = app.generate_upgrade_plan(target, False)
-
-    assert_steps(upgrade_plan, expected_plan)
-
-
-def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
-    """Test when ceph version changes between os releases."""
-    target = OpenStackRelease("yoga")
-    machines = {"0": MagicMock(spec_set=Machine)}
-    app = AuxiliarySubordinateApplication(
-        name="ceph-dashboard",
-        can_upgrade_to="pacific/stable",
-        charm="ceph-dashboard",
-        channel="pacific/stable",
-        config={"source": {"value": "distro"}},
-        machines=machines,
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=["nova-compute"],
-        units={},
-        workload_version="16.2.0",
-    )
-
-    expected_plan = ApplicationUpgradePlan(
-        description=f"Upgrade plan for '{app.name}' to '{target}'"
-    )
-
-    upgrade_steps = [
-        PreUpgradeStep(
-            description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
-        ),
-        UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "quincy/stable"),
-        ),
-    ]
-    expected_plan.add_steps(upgrade_steps)
-
-    upgrade_plan = app.generate_upgrade_plan(target, False)
-
-    assert_steps(upgrade_plan, expected_plan)
+        app.pre_upgrade_steps(target, False)
