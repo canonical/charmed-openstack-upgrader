@@ -347,6 +347,22 @@ def test_check_application_target(current_os_release, apt_source_codename, _):
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_check_application_target_can_upgrade(current_os_release, apt_source_codename, _):
+    """Test function to verify target."""
+    target = OpenStackRelease("victoria")
+    release = OpenStackRelease("ussuri")
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "stable", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
+    )
+    current_os_release.return_value = apt_source_codename.return_value = release
+
+    app._check_application_target(target)
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
 def test_check_application_target_error(current_os_release, apt_source_codename, _):
     """Test function to verify target raising error."""
     target = OpenStackRelease("victoria")
