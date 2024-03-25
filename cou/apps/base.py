@@ -19,7 +19,7 @@ import logging
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 import yaml
 
@@ -30,6 +30,7 @@ from cou.exceptions import (
 )
 from cou.steps import (
     ApplicationUpgradePlan,
+    InformationStep,
     PostUpgradeStep,
     PreUpgradeStep,
     UnitUpgradeStep,
@@ -357,7 +358,6 @@ class OpenStackApplication(Application):
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :raises MismatchedOpenStackVersions: When the units of the app are running different
                                              OpenStack versions.
-        :raises ApplicationError: When enable-auto-restarts is not enabled.
         """
         self._check_application_target(target)
         self._check_mismatched_versions()
@@ -410,22 +410,35 @@ class OpenStackApplication(Application):
             self._get_reached_expected_target_step(target),
         ]
 
-    def generate_upgrade_plan(self, target: OpenStackRelease) -> ApplicationUpgradePlan:
+    def generate_upgrade_plan(
+        self, target: OpenStackRelease
+    ) -> Tuple[ApplicationUpgradePlan, Optional[str]]:
         """Generate full upgrade plan for an Application.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
-        :return: Full upgrade plan if the Application is able to generate it.
-        :rtype: ApplicationUpgradePlan
+        :return: Full upgrade plan if the Application is able to generate it and
+        a possible error message if any sanity check fails
+        :rtype: Tuple[ApplicationUpgradePlan, Optional[str]]
         """
-        self.upgrade_plan_sanity_checks(target)
-
         upgrade_plan = ApplicationUpgradePlan(f"Upgrade plan for '{self.name}' to '{target}'")
+        try:
+            self.upgrade_plan_sanity_checks(target)
+        except (ApplicationError, MismatchedOpenStackVersions) as e:
+            error_message = f"Cannot generate plan for '{self.name}'\n\t{e}"
+            upgrade_plan.add_step(
+                InformationStep(
+                    f"Cannot generate plan for '{self.name}'. "
+                    "See the error message for more info."
+                )
+            )
+            return upgrade_plan, error_message
+
         upgrade_plan.add_steps(self.pre_upgrade_steps(target))
         upgrade_plan.add_steps(self.upgrade_steps(target))
         upgrade_plan.add_steps(self.post_upgrade_steps(target))
 
-        return upgrade_plan
+        return upgrade_plan, None
 
     def _get_upgrade_current_release_packages_step(self) -> PreUpgradeStep:
         """Get step for upgrading software packages to the latest of the current release.

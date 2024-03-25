@@ -340,3 +340,33 @@ class PreUpgradeStep(UpgradeStep):
 
 class PostUpgradeStep(UpgradeStep):
     """Represents the post-upgrade step."""
+
+
+class InformationStep(BaseStep):
+    """Represents the step that host an informative message.
+
+    This class doesn't contain any coroutine to run and is only intended to be
+    used to provide more additional information of a upgrade plan or step.
+
+    E.g. If an application failed to pass sanity checks for planning its upgrade,
+    this step will be generated instead of actual upgrade steps to point the user
+    to the warning log messages.
+    """
+
+    prompt: bool = False
+
+    def __init__(self, description: str):
+        """Initialize upgrade plan.
+
+        :param description: Description of the step.
+        :type description: str
+        """
+        super().__init__(description=description, parallel=False, coro=None)
+
+    async def run(self) -> None:
+        """Run UpgradePlan.
+
+        UpgradePlan should not have contain any coroutine, so simply print a debug
+        message to demonstrate the noop.
+        """
+        logger.debug("No coroutine to run for %s", repr(self))

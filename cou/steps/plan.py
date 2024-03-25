@@ -15,7 +15,7 @@
 """Upgrade planning utilities."""
 
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -50,15 +50,15 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
+async def generate_plan(analysis_result: Analysis, args: CLIargs) -> Tuple[UpgradePlan, list[str]]:
     """Generate plan for upgrade.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Plan with all upgrade steps necessary based on the Analysis.
-    :rtype: UpgradePlan
+    :return: Plan with all upgrade steps necessary based on the Analysis, and error messages.
+    :rtype: Tuple[UpgradePlan, list[str]]
     """
     target = determine_upgrade_target(
         analysis_result.current_cloud_os_release, analysis_result.current_cloud_series
@@ -91,23 +91,26 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
             )
         )
 
-    control_plane_principal_upgrade_plan = await create_upgrade_group(
+    error_messages = []
+    control_plane_principal_upgrade_plan, cp_principals_errors = await create_upgrade_group(
         apps=analysis_result.apps_control_plane,
         description="Control Plane principal(s) upgrade plan",
         target=target,
         filter_function=lambda app: not isinstance(app, SubordinateBase),
     )
     plan.add_step(control_plane_principal_upgrade_plan)
+    error_messages.extend(cp_principals_errors)
 
-    control_plane_subordinate_upgrade_plan = await create_upgrade_group(
+    control_plane_subordinate_upgrade_plan, cp_subordinates_errors = await create_upgrade_group(
         apps=analysis_result.apps_control_plane,
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
         filter_function=lambda app: isinstance(app, SubordinateBase),
     )
     plan.add_step(control_plane_subordinate_upgrade_plan)
+    error_messages.extend(cp_subordinates_errors)
 
-    return plan
+    return plan, error_messages
 
 
 async def create_upgrade_group(
@@ -115,7 +118,7 @@ async def create_upgrade_group(
     target: OpenStackRelease,
     description: str,
     filter_function: Callable[[OpenStackApplication], bool],
-) -> UpgradePlan:
+) -> Tuple[UpgradePlan, list[str]]:
     """Create upgrade group.
 
     :param apps: Result of the analysis.
@@ -127,14 +130,17 @@ async def create_upgrade_group(
     :param filter_function: Function to filter applications.
     :type filter_function: Callable[[OpenStackApplication], bool]
     :raises Exception: When cannot generate upgrade plan.
-    :return: Upgrade group.
-    :rtype: UpgradePlan
+    :return: Upgrade plan for the group and error messages produced and error messages
+    :rtype: Tuple[UpgradePlan, list[str]]
     """
+    error_messages = []
     group_upgrade_plan = UpgradePlan(description)
     for app in filter(filter_function, apps):
         try:
-            app_upgrade_plan = app.generate_upgrade_plan(target)
+            app_upgrade_plan, error = app.generate_upgrade_plan(target)
             group_upgrade_plan.add_step(app_upgrade_plan)
+            if error:
+                error_messages.append(error)
         except HaltUpgradePlanGeneration as exc:
             # we do not care if applications halt the upgrade plan generation
             # for some known reason.
@@ -143,7 +149,7 @@ async def create_upgrade_group(
             logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
             raise
 
-    return group_upgrade_plan
+    return group_upgrade_plan, error_messages
 
 
 def determine_upgrade_target(
