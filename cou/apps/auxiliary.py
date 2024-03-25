@@ -204,21 +204,28 @@ class CephMon(AuxiliaryApplication):
 class OvnPrincipal(AuxiliaryApplication):
     """Ovn principal application class."""
 
-    def pre_upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[PreUpgradeStep]:
-        """Pre Upgrade steps planning.
+    def _check_ovn_support(self) -> None:
+        """Check OVN version.
 
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan
-        :type units: Optional[list[Unit]]
-        :return: List of pre upgrade steps.
-        :rtype: list[PreUpgradeStep]
+        :raises ApplicationError: When workload version is lower than 22.03.0.
         """
         for unit in self.units.values():
             validate_ovn_support(unit.workload_version)
-        return super().pre_upgrade_steps(target, units)
+
+    def upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> None:
+        """Run sanity checks before generating upgrade plan.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[Unit]], optional
+        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        """
+        super().upgrade_plan_sanity_checks(target, units)
+        self._check_ovn_support()
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])
