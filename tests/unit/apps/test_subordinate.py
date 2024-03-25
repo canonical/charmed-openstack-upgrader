@@ -81,8 +81,7 @@ def test_generate_upgrade_plan(model):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
-
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -189,8 +188,7 @@ def test_generate_plan_ch_migration(model, channel):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
-
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -236,8 +234,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
-
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -279,6 +276,5 @@ def test_generate_plan_in_same_version(model, from_to):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
-
+    upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)

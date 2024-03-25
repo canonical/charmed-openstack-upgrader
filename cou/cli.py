@@ -28,7 +28,7 @@ from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
-from cou.steps.plan import generate_plan, manually_upgrade_data_plane
+from cou.steps.plan import generate_plan
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import Model
@@ -105,13 +105,13 @@ async def continue_upgrade() -> bool:
     return False
 
 
-async def analyze_and_plan(args: CLIargs) -> tuple[Analysis, UpgradePlan]:
+async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Generated analysis and upgrade plan.
-    :rtype: tuple[Analysis, UpgradePlan]
+    :return: Generated upgrade plan.
+    :rtype: UpgradePlan
     """
     model = Model(args.model_name)
     progress_indicator.start(f"Connecting to '{model.name}' model...")
@@ -128,7 +128,7 @@ async def analyze_and_plan(args: CLIargs) -> tuple[Analysis, UpgradePlan]:
     upgrade_plan = await generate_plan(analysis_result, args)
     progress_indicator.succeed()
 
-    return analysis_result, upgrade_plan
+    return upgrade_plan
 
 
 async def get_upgrade_plan(args: CLIargs) -> None:
@@ -137,9 +137,8 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    analysis_result, upgrade_plan = await analyze_and_plan(args)
+    upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
-    manually_upgrade_data_plane(analysis_result)
     print(
         "Please note that the actual upgrade steps could be different if the cloud state "
         "changes because the plan will be re-calculated at upgrade time."
@@ -152,7 +151,7 @@ async def run_upgrade(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    analysis_result, upgrade_plan = await analyze_and_plan(args)
+    upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
     if args.prompt and not await continue_upgrade():
@@ -168,7 +167,6 @@ async def run_upgrade(args: CLIargs) -> None:
         print("Running cloud upgrade...")
 
     await apply_step(upgrade_plan, args.prompt)
-    manually_upgrade_data_plane(analysis_result)
     print("Upgrade completed.")
 
 

@@ -28,9 +28,9 @@ Usage example:
     Back up MySQL databases ✔
     Upgrade plan for 'keystone' to 'victoria'
         Upgrade software packages of 'keystone' from the current APT repositories
-            Upgrade software packages on unit keystone/0
-            Upgrade software packages on unit keystone/1
-            Upgrade software packages on unit keystone/2
+            Upgrade software packages on unit 'keystone/0'
+            Upgrade software packages on unit 'keystone/1'
+            Upgrade software packages on unit 'keystone/2'
         Upgrade 'keystone' to the new channel: 'victoria/stable'
         Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
         Wait for up to 1800s for model 'test-model' to reach the idle state

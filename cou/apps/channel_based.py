@@ -13,6 +13,7 @@
 # limitations under the License.
 """Channel based application class."""
 import logging
+from typing import Optional
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
@@ -28,7 +29,7 @@ class ChannelBasedApplication(OpenStackApplication):
     """Application for charms that are channel based."""
 
     def get_latest_os_version(self, unit: Unit) -> OpenStackRelease:
-        """Get the latest compatible OpenStack release based on the unit workload version.
+        """Get the latest compatible OpenStack release based on the channel.
 
         :param unit: Unit
         :type unit: Unit
@@ -58,7 +59,9 @@ class ChannelBasedApplication(OpenStackApplication):
         """
         return not all(unit.workload_version for unit in self.units.values())
 
-    def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
+    def post_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
         """Post Upgrade steps planning.
 
         Wait until the application reaches the idle state and then check the target workload.
@@ -66,10 +69,12 @@ class ChannelBasedApplication(OpenStackApplication):
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[list[Unit]]
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
         if self.is_versionless:
             return []
 
-        return super().post_upgrade_steps(target)
+        return super().post_upgrade_steps(target, units)
