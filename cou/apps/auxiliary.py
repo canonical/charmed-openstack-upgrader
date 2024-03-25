@@ -204,6 +204,23 @@ class CephMon(AuxiliaryApplication):
 class OvnPrincipal(AuxiliaryApplication):
     """Ovn principal application class."""
 
+    def upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> None:
+        """Run sanity checks before generating upgrade plan.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[Unit]], optional
+        :raises ApplicationError: When enable-version-pinning is True
+        """
+        super().upgrade_plan_sanity_checks(target, units)
+        if self.config["enable-version-pinning"].get("value"):
+            raise ApplicationError(
+                f"'{self.name}' should set 'enable-version-pinning' before upgrading"
+            )
+
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
     ) -> list[PreUpgradeStep]:
