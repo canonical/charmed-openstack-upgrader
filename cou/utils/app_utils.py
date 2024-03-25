@@ -91,6 +91,22 @@ def validate_ovn_support(version: str) -> None:
         )
 
 
+def check_ovn_version_pinning(name: str, version_pinning_config: bool) -> None:
+    """Check if application version pinning is disabled.
+
+    Ovn applications need to have the version pinning set to False to ensure e smooth cluster
+    operation.
+
+    :param name: Name of the application. E.g: ovn-chassis
+    :type name: str
+    :param version_pinning_config: 'enable-version-pinning' configuration
+    :type version_pinning_config: bool
+    :raises ApplicationError: When enable-version-pinning is True
+    """
+    if version_pinning_config:
+        raise ApplicationError(f"'{name}' should set 'enable-version-pinning' before upgrading")
+
+
 async def _get_required_osd_release(unit: str, model: COUModel) -> str:
     """Get the value of require-osd-release option on a ceph-mon unit.
 

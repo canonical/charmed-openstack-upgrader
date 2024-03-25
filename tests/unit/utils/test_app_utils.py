@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
-from cou.exceptions import RunUpgradeError
+from cou.exceptions import ApplicationError, RunUpgradeError
 from cou.utils import app_utils
 
 
@@ -240,3 +240,14 @@ async def test_get_current_osd_release_unsuccessful(model, osd_release_output, e
         command="ceph versions -f json",
         timeout=600,
     )
+
+
+def test_check_ovn_version_pinning():
+    assert app_utils.check_ovn_version_pinning("ovn-foo", False) is None
+
+
+def test_check_ovn_version_pinning_raise():
+    name = "ovn-foo"
+    error_message = f"'{name}' should set 'enable-version-pinning' before upgrading"
+    with pytest.raises(ApplicationError, match=error_message):
+        app_utils.check_ovn_version_pinning("ovn-foo", True)

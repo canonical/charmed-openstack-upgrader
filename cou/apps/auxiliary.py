@@ -20,7 +20,11 @@ from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep
-from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
+from cou.utils.app_utils import (
+    check_ovn_version_pinning,
+    set_require_osd_release_option,
+    validate_ovn_support,
+)
 from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
@@ -206,6 +210,19 @@ class CephMon(AuxiliaryApplication):
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
 class OvnPrincipal(AuxiliaryApplication):
     """Ovn principal application class."""
+
+    def upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> None:
+        """Run sanity checks before generating upgrade plan.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[COUUnit]], optional
+        """
+        check_ovn_version_pinning(self.name, self.config["enable-version-pinning"].get("value"))
+        super().upgrade_plan_sanity_checks(target, units)
 
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[COUUnit]]

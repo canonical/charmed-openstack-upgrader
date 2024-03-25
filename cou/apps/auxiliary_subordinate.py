@@ -18,7 +18,7 @@ from cou.apps.auxiliary import AuxiliaryApplication
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBase
 from cou.steps import PreUpgradeStep
-from cou.utils.app_utils import validate_ovn_support
+from cou.utils.app_utils import check_ovn_version_pinning, validate_ovn_support
 from cou.utils.juju_utils import COUUnit
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
@@ -42,6 +42,19 @@ class AuxiliarySubordinateApplication(SubordinateBase, AuxiliaryApplication):
 @AppFactory.register_application(["ovn-chassis"])
 class OvnSubordinate(AuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
+
+    def upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> None:
+        """Run sanity checks before generating upgrade plan.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[COUUnit]], optional
+        """
+        check_ovn_version_pinning(self.name, self.config["enable-version-pinning"].get("value"))
+        super().upgrade_plan_sanity_checks(target, units)
 
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[COUUnit]]
