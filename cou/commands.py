@@ -14,6 +14,7 @@
 
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
+import logging
 from dataclasses import dataclass
 from typing import Any, Iterable, Optional
 
@@ -21,6 +22,10 @@ import pkg_resources
 
 CONTROL_PLANE = "control-plane"
 DATA_PLANE = "data-plane"
+HYPERVISORS = "hypervisors"
+
+
+logger = logging.getLogger(__name__)
 
 
 class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
@@ -71,8 +76,33 @@ class CapitalizeHelpFormatter(argparse.RawTextHelpFormatter):
         super().add_argument(action)
 
 
+class SplitArgs(argparse.Action):
+    """Custom COU action to split cli inputs."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Optional[str] = None,
+    ) -> None:
+        logger.debug("SplitArgs: %s %s %s %s", parser, namespace, values, option_string)
+        new_items = {item.strip() for item in values.split(",")}
+        cli_input = getattr(namespace, self.dest) or set()
+        cli_input.update(new_items)
+        setattr(namespace, self.dest, cli_input)
+
+
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
+
+    Using SUPPRESS for the subparser default keeps it from overwriting the parent parser value.
+    A SUPPRESS default is not inserted into the namespace at the start of parsing. A value is
+    written only if the user used that argument.
+
+    Without SUPPRESS a command like: "cou upgrade --force data-plane" wouldn't force the data-plane
+    to upgrade non-empty hypervisors, because the "child" argument "data-plane" would overwrite it
+    with a default value False.
 
     :return: a parser groups options commonly shared by subcommands
     :rtype: argparse.ArgumentParser
@@ -81,7 +111,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     subcommand_common_opts_parser = argparse.ArgumentParser(add_help=False)
     subcommand_common_opts_parser.add_argument(
         "--model",
-        default=None,
+        default=argparse.SUPPRESS,
         dest="model_name",
         type=str,
         help="Set the model to operate on.\nIf not set, the currently active Juju model will "
@@ -92,7 +122,14 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         help="Include database backup step before cloud upgrade.\n"
         "Default to enabling database backup.",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=argparse.SUPPRESS,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--force",
+        action="store_true",
+        dest="force",
+        help="Force the plan/upgrade of non-empty hypervisors.",
+        default=argparse.SUPPRESS,
     )
 
     # quiet and verbose options are mutually exclusive
@@ -100,13 +137,13 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     group.add_argument(
         "--verbose",
         "-v",
-        default=0,
+        default=argparse.SUPPRESS,
         action="count",
         dest="verbosity",
-        help="Increase logging verbosity in STDOUT. Multiple 'v's yield progressively "
+        help="Increase logging verbosity in STDOUT.\nMultiple 'v's yield progressively "
         "more detail (up to 4).\nNote that by default the logfile will include standard "
-        "logs from juju and websockets, as well as debug logs from all other modules. "
-        "To also include the debug level logs from juju and websockets modules, use the "
+        "logs\nfrom juju and websockets, as well as debug logs from all other\nmodules. "
+        "To also include the debug level logs from juju and\nwebsockets modules, use the "
         "maximum verbosity.",
     )
     group.add_argument(
@@ -115,56 +152,49 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="quiet",
         help="Disable output in STDOUT.",
+        default=argparse.SUPPRESS,
     )
 
     return subcommand_common_opts_parser
 
 
-def get_dataplane_common_opts_parser() -> argparse.ArgumentParser:
-    """Create a shared parser for options specific to data-plane.
+def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
+    """Create a shared parser for options specific to the hypervisors child command.
 
-    :return: a parser groups options specific to data-plane
+    :return: a parser groups options specific to the hypervisors
     :rtype: argparse.ArgumentParser
     """
-    # Define options specific to data-plane child command and make them mutually exclusive
-    dp_subparser = argparse.ArgumentParser(add_help=False)
-    dp_upgrade_group = dp_subparser.add_mutually_exclusive_group()
-    dp_upgrade_group.add_argument(
+    # Define options specific to hypervisors child command and make them mutually exclusive
+    hypervisors_subparser = argparse.ArgumentParser(add_help=False)
+    hypervisors_filters = hypervisors_subparser.add_mutually_exclusive_group()
+    hypervisors_filters.add_argument(
         "--machine",
         "-m",
-        action="append",
         help="Specify machine id(s) to upgrade.\nThis option accepts a single machine id as well "
-        "as a stringified comma-separated list of ids,\nand can be repeated multiple times.",
+        "as a stringified\ncomma-separated list of ids, and can be repeated multiple times.\n"
+        "This option cannot be used together with [--availability-zone/--az].",
         dest="machines",
+        action=SplitArgs,
         type=str,
     )
-    dp_upgrade_group.add_argument(
-        "--hostname",
-        "-n",
-        action="append",
-        help="Specify machine hostnames(s) to upgrade.\nThis option accepts a single hostname as "
-        "well as a stringified comma-separated list of hostnames,\nand can be repeated multiple "
-        "times.",
-        dest="hostnames",
-        type=str,
-    )
-    dp_upgrade_group.add_argument(
+    hypervisors_filters.add_argument(
         "--availability-zone",
         "--az",
-        action="append",
-        help="Specify availability zone(s) to upgrade.\nThis option accepts a single "
-        "availability zone as well as a stringified comma-separated list of AZs,\n"
-        "and can be repeated multiple times.",
+        help="Specify Juju availability zone(s) to upgrade.\nThis option accepts a single "
+        "availability zone as well as a\nstringified comma-separated list of AZs, "
+        "and can be repeated\nmultiple times. This option cannot be used together with\n"
+        "[--machine/-m]",
+        action=SplitArgs,
         dest="availability_zones",
         type=str,
     )
-    return dp_subparser
+    return hypervisors_subparser
 
 
 def create_plan_subparser(
     subparsers: argparse._SubParsersAction,
     subcommand_common_opts_parser: argparse.ArgumentParser,
-    dp_parser: argparse.ArgumentParser,
+    hypervisors_parser: argparse.ArgumentParser,
 ) -> None:
     """Create and configure 'plan' subcommand parser.
 
@@ -172,17 +202,14 @@ def create_plan_subparser(
     :type subparsers: argparse.ArgumentParser
     :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
     :type subcommand_common_opts_parser: argparse.ArgumentParser
-    :param dp_parser: a parser groups options specific to data-plane
-    :type dp_parser: argparse.ArgumentParser
+    :param hypervisors_parser: a parser grouping options specific to hypervisors
+    :type hypervisors_parser: argparse.ArgumentParser
     """
     # Arg parser for "cou plan" sub-command
     plan_parser = subparsers.add_parser(
         "plan",
-        description="Show the steps COU will take to upgrade the cloud to the next release.",
-        # TODO(txiao): Replace the description with the following message after data-plane upgrade
-        # is implemented
-        # description="Show the steps COU will take to upgrade the cloud to the next release.\n"
-        # "If upgrade-group is unspecified, plan upgrade for the whole cloud.",
+        description="Show the steps COU will take to upgrade the cloud to the next release.\n"
+        "If upgrade-group is unspecified, plan upgrade for the whole cloud.",
         help="Show the steps COU will take to upgrade the cloud to the next release.",
         usage="cou plan [options]",
         parents=[subcommand_common_opts_parser],
@@ -193,9 +220,7 @@ def create_plan_subparser(
     plan_subparser = plan_parser.add_subparsers(
         title="Upgrade groups",
         dest="upgrade_group",
-        help=argparse.SUPPRESS,
-        # TODO(txiao): Add the following help message after data-plane upgrade is implemented
-        # help="For more information about a upgrade group, run 'cou plan <upgrade-group>' -h.",
+        help="Run 'cou plan <upgrade-group> -h' for more info about an upgrade group.",
     )
     plan_subparser.add_parser(
         CONTROL_PLANE,
@@ -207,12 +232,27 @@ def create_plan_subparser(
     )
     plan_subparser.add_parser(
         DATA_PLANE,
-        description="Show the steps for upgrading the data-plane components.\nThis is possible "
+        description="Show the steps for upgrading all data-plane components.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
-        help="Show the steps for upgrading the data-plane components.\nThis is possible "
+        help="Show the steps for upgrading all data-plane components.\nThis is possible "
         "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
         usage="cou plan data-plane [options]",
-        parents=[subcommand_common_opts_parser, dp_parser],
+        parents=[subcommand_common_opts_parser],
+        formatter_class=CapitalizeHelpFormatter,
+    )
+    plan_subparser.add_parser(
+        HYPERVISORS,
+        description="Show the steps for upgrading machines with nova-compute and\n"
+        "colocated services. This is possible only if control-plane\nhas been fully upgraded, "
+        "otherwise an error will be thrown.\n\nNote that only principal applications colocated "
+        "with nova-compute units\nthat support action-managed upgrades are within the scope of "
+        "this command.\nOther principal applications (e.g. ceph-osd) and subordinates\ncan be "
+        "upgraded via the data-plane subcommand.",
+        help="Show the steps for upgrading machines with nova-compute and\ncolocated services. "
+        "This is possible only if control-plane\nhas been fully upgraded, otherwise an error "
+        "will be thrown.",
+        usage="cou plan hypervisors [options]",
+        parents=[subcommand_common_opts_parser, hypervisors_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
 
@@ -220,7 +260,7 @@ def create_plan_subparser(
 def create_upgrade_subparser(
     subparsers: argparse._SubParsersAction,
     subcommand_common_opts_parser: argparse.ArgumentParser,
-    dp_parser: argparse.ArgumentParser,
+    hypervisors_parser: argparse.ArgumentParser,
 ) -> None:
     """Create and configure 'upgrade' subcommand parser.
 
@@ -228,8 +268,8 @@ def create_upgrade_subparser(
     :type subparsers: argparse.ArgumentParser
     :param subcommand_common_opts_parser: parser groups options commonly shared by subcommands
     :type subcommand_common_opts_parser: argparse.ArgumentParser
-    :param dp_parser: a parser groups options specific to data-plane
-    :type dp_parser: argparse.ArgumentParser
+    :param hypervisors_parser: a parser groups options specific to data-plane
+    :type hypervisors_parser: argparse.ArgumentParser
     """
     # Arg parser for "cou upgrade" sub-command and set up common options
     upgrade_args_parser = argparse.ArgumentParser(add_help=False)
@@ -238,14 +278,12 @@ def create_upgrade_subparser(
         help="Automatically approve and continue with each upgrade step without prompt.",
         action="store_true",
         dest="auto_approve",
+        default=argparse.SUPPRESS,
     )
     upgrade_parser = subparsers.add_parser(
         "upgrade",
-        description="Run the cloud upgrade.",
-        # TODO(txiao): Replace the description with the following message after data-plane upgrade
-        # is implemented
-        # description="Run the cloud upgrade.\nIf upgrade-group is unspecified, "
-        # "upgrade the whole cloud.",
+        description="Run the cloud upgrade.\nIf upgrade-group is unspecified, "
+        "upgrade the whole cloud.",
         help="Run the cloud upgrade.",
         usage="cou upgrade [options]",
         parents=[subcommand_common_opts_parser, upgrade_args_parser],
@@ -256,28 +294,40 @@ def create_upgrade_subparser(
     upgrade_subparser = upgrade_parser.add_subparsers(
         title="Upgrade group",
         dest="upgrade_group",
-        help=argparse.SUPPRESS,
-        # TODO(txiao): Add the following help message after data-plane upgrade is implemented
-        # help="For more information about an upgrade group, run 'cou upgrade <upgrade-group> -h'",
+        help="Run 'cou upgrade <upgrade-group> -h' for more info about an upgrade group",
     )
     upgrade_subparser.add_parser(
         "control-plane",
         description="Run upgrade for the control-plane components.",
         help="Run upgrade for the control-plane components.",
-        usage="cou plan control-plane [options]",
+        usage="cou upgrade control-plane [options]",
         parents=[subcommand_common_opts_parser, upgrade_args_parser],
         formatter_class=CapitalizeHelpFormatter,
     )
     upgrade_subparser.add_parser(
         "data-plane",
-        description="Run upgrade for the data-plane components.\nThis is possible only if "
+        description="Upgrade all data-plane components.\nThis is possible only if "
         "control-plane has been fully upgraded,\notherwise an error will be thrown.",
-        help="Run upgrade for the data-plane components.\nThis is possible only if "
+        help="Upgrade all data-plane components.\nThis is possible only if "
         "control-plane has been fully upgraded,\notherwise an error will be thrown.",
-        usage="cou plan data-plane [options]",
+        usage="cou upgrade data-plane [options]",
+        parents=[subcommand_common_opts_parser, upgrade_args_parser],
+        formatter_class=CapitalizeHelpFormatter,
+    )
+    upgrade_subparser.add_parser(
+        HYPERVISORS,
+        description="Upgrade machines with nova-compute and colocated services.\nThis is possible "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.\n\n"
+        "Note that only principal applications colocated with nova-compute units\nthat support "
+        "action-managed upgrades are within the scope of this command.\nOther principal "
+        "applications (e.g. ceph-osd) and subordinates\ncan be upgraded via the data-plane "
+        "subcommand.",
+        help="Upgrade machines with nova-compute and colocated services.\nThis is possible "
+        "only if control-plane has been fully upgraded,\notherwise an error will be thrown.",
+        usage="cou upgrade hypervisors [options]",
         parents=[
             subcommand_common_opts_parser,
-            dp_parser,
+            hypervisors_parser,
             upgrade_args_parser,
         ],
         formatter_class=CapitalizeHelpFormatter,
@@ -313,9 +363,9 @@ def create_subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAc
     )
 
     subcommand_common_opts_parser = get_subcommand_common_opts_parser()
-    dp_parser = get_dataplane_common_opts_parser()
-    create_plan_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
-    create_upgrade_subparser(subparsers, subcommand_common_opts_parser, dp_parser)
+    hypervisors_parser = get_hypervisors_common_opts_parser()
+    create_plan_subparser(subparsers, subcommand_common_opts_parser, hypervisors_parser)
+    create_upgrade_subparser(subparsers, subcommand_common_opts_parser, hypervisors_parser)
 
     return subparsers
 
@@ -333,13 +383,13 @@ class CLIargs:
     verbosity: int = 0
     backup: bool = True
     quiet: bool = False
+    force: bool = False
     auto_approve: bool = False
     model_name: Optional[str] = None
     upgrade_group: Optional[str] = None
     subcommand: Optional[str] = None  # for help option
-    machines: Optional[list[str]] = None
-    hostnames: Optional[list[str]] = None
-    availability_zones: Optional[list[str]] = None
+    machines: Optional[set[str]] = None
+    availability_zones: Optional[set[str]] = None
 
     @property
     def prompt(self) -> bool:

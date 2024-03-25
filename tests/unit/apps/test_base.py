@@ -12,10 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
+from unittest.mock import MagicMock, PropertyMock, call, patch
 
 import pytest
-from juju.client._definitions import ApplicationStatus, FullStatus, UnitStatus
 
 from cou.apps.base import OpenStackApplication
 from cou.exceptions import (
@@ -23,112 +22,14 @@ from cou.exceptions import (
     HaltUpgradePlanGeneration,
     MismatchedOpenStackVersions,
 )
-from cou.steps import PreUpgradeStep, UpgradeStep
+from cou.steps import UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps
 
 
 @patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-def test_openstack_application_get_refresh_charm_step_nothing_to_upgrade(_, model):
-    """Test OpenStackApplication _get_refresh_charm_step with empty can_upgrade_to."""
-    target = OpenStackRelease("victoria")
-    app = OpenStackApplication(
-        name="test-app",
-        can_upgrade_to="",
-        charm="app",
-        channel="stable",
-        config={},
-        machines={},
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units={},
-        workload_version="1",
-    )
-
-    assert app._get_refresh_charm_step(target) == PreUpgradeStep()
-
-
-@pytest.mark.asyncio
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
-async def test_openstack_application_check_upgrade(mock_find_compatible_versions, _, model):
-    """Test OpenStackApplication _check_upgrade."""
-    app_name = "test-app"
-    charm = "app"
-    target = OpenStackRelease("victoria")
-
-    mock_find_compatible_versions.return_value = [target]
-
-    unit_status = MagicMock(spec_set=UnitStatus)()
-    app_status = MagicMock(spec_set=ApplicationStatus)()
-    app_status.units = {f"{app_name}/0": unit_status, f"{app_name}/1": unit_status}
-    mocked_status = MagicMock(spec_set=FullStatus)()
-    mocked_status.applications = {app_name: app_status}
-    model.get_status = AsyncMock(return_value=mocked_status)
-
-    app = OpenStackApplication(
-        name=app_name,
-        can_upgrade_to="",
-        charm=charm,
-        channel="stable",
-        config={},
-        machines={},
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units={},
-        workload_version="1",
-    )
-    await app._check_upgrade(target)
-
-    model.get_status.assert_awaited_once_with()
-    mock_find_compatible_versions.assert_has_calls([call(charm, unit_status.workload_version)] * 2)
-
-
-@pytest.mark.asyncio
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
-async def test_openstack_application_check_upgrade_fail(mock_find_compatible_versions, _, model):
-    """Test OpenStackApplication _check_upgrade failing."""
-    app_name = "test-app"
-    charm = "app"
-    target = OpenStackRelease("victoria")
-    exp_error_msg = f"Cannot upgrade units '{app_name}/0, {app_name}/1' to {target}."
-
-    mock_find_compatible_versions.return_value = []
-
-    unit_status = MagicMock(spec_set=UnitStatus)()
-    app_status = MagicMock(spec_set=ApplicationStatus)()
-    app_status.units = {f"{app_name}/0": unit_status, f"{app_name}/1": unit_status}
-    mocked_status = MagicMock(spec_set=FullStatus)()
-    mocked_status.applications = {app_name: app_status}
-    model.get_status = AsyncMock(return_value=mocked_status)
-
-    app = OpenStackApplication(
-        name=app_name,
-        can_upgrade_to="",
-        charm=charm,
-        channel="stable",
-        config={},
-        machines={},
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units={},
-        workload_version="1",
-    )
-
-    with pytest.raises(ApplicationError, match=exp_error_msg):
-        await app._check_upgrade(target)
-
-
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-def test_openstack_application_magic_functions(_, model):
+def test_openstack_application_magic_functions(model):
     """Test OpenStackApplication magic functions, like __hash__, __eq__."""
     app = OpenStackApplication(
         name="test-app",
@@ -238,6 +139,105 @@ def test_set_action_managed_upgrade(charm_config, enable, exp_description, model
     assert_steps(step, exp_step)
 
 
+def test_get_pause_unit_step(model):
+    charm = "app"
+    app_name = "my_app"
+    channel = "ussuri/stable"
+    machines = {"0": MagicMock(spec_set=Machine)}
+    unit = Unit(
+        name=f"{app_name}/0",
+        workload_version="1",
+        machine=machines["0"],
+    )
+    expected_upgrade_step = UnitUpgradeStep(
+        description=f"Pause the unit: '{unit.name}'",
+        coro=model.run_action(f"{unit.name}", "pause", raise_on_failure=True),
+    )
+    app = OpenStackApplication(
+        name=app_name,
+        can_upgrade_to="",
+        charm=charm,
+        channel=channel,
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={f"{unit.name}": unit},
+        workload_version="1",
+    )
+
+    step = app._get_pause_unit_step(unit)
+    assert_steps(step, expected_upgrade_step)
+
+
+def test_get_resume_unit_step(model):
+    charm = "app"
+    app_name = "my_app"
+    channel = "ussuri/stable"
+    machines = {"0": MagicMock(spec_set=Machine)}
+    unit = Unit(
+        name=f"{app_name}/0",
+        workload_version="1",
+        machine=machines["0"],
+    )
+    expected_upgrade_step = UnitUpgradeStep(
+        description=f"Resume the unit: '{unit.name}'",
+        coro=model.run_action(unit.name, "resume", raise_on_failure=True),
+    )
+    app = OpenStackApplication(
+        name=app_name,
+        can_upgrade_to="",
+        charm=charm,
+        channel=channel,
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={f"{app_name}/0": unit},
+        workload_version="1",
+    )
+
+    step = app._get_resume_unit_step(unit)
+    assert_steps(step, expected_upgrade_step)
+
+
+def test_get_openstack_upgrade_step(model):
+    charm = "app"
+    app_name = "my_app"
+    channel = "ussuri/stable"
+    machines = {"0": MagicMock(spec_set=Machine)}
+    unit = Unit(
+        name=f"{app_name}/0",
+        workload_version="1",
+        machine=machines["0"],
+    )
+    expected_upgrade_step = UnitUpgradeStep(
+        description=f"Upgrade the unit: '{unit.name}'",
+        coro=model.run_action(unit.name, "openstack-upgrade", raise_on_failure=True),
+    )
+    app = OpenStackApplication(
+        name=app_name,
+        can_upgrade_to="",
+        charm=charm,
+        channel=channel,
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={f"{app_name}/0": unit},
+        workload_version="1",
+    )
+
+    step = app._get_openstack_upgrade_step(unit)
+    assert_steps(step, expected_upgrade_step)
+
+
 @pytest.mark.parametrize(
     "units",
     [
@@ -266,7 +266,7 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
         else [call(unit.name, model, None) for unit in app_units.values()]
     )
 
-    app._get_upgrade_current_release_packages_step()
+    app._get_upgrade_current_release_packages_step(units)
     mock_upgrade_packages.assert_has_calls(expected_calls)
 
 
@@ -279,7 +279,8 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
         [Unit(f"my_app/{unit}", MagicMock(), MagicMock()) for unit in range(3)],
     ],
 )
-def test_get_reached_expected_target_step(units, model):
+@patch("cou.apps.base.OpenStackApplication._verify_workload_upgrade")
+def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
     target = OpenStackRelease("victoria")
     mock = MagicMock()
     charm = "app"
@@ -291,7 +292,10 @@ def test_get_reached_expected_target_step(units, model):
         app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
     )
 
-    app._get_reached_expected_target_step(target)
+    expected_calls = [call(target, units)] if units else [call(target, list(app.units.values()))]
+
+    app._get_reached_expected_target_step(target, units)
+    mock_workload_upgrade.assert_has_calls(expected_calls)
 
 
 @pytest.mark.parametrize("config", ({}, {"enable-auto-restarts": {"value": True}}))
@@ -413,7 +417,10 @@ def test_check_mismatched_versions_exception(mock_os_release_units, model):
     )
 
     with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
-        app._check_mismatched_versions()
+        app._check_mismatched_versions(None)
+
+    # if units are passed, it doesn't raise exception
+    assert app._check_mismatched_versions([units["my-app/0"]]) is None
 
 
 @patch("cou.apps.base.OpenStackApplication.os_release_units", new_callable=PropertyMock)
@@ -461,4 +468,4 @@ def test_check_mismatched_versions(mock_os_release_units, model):
         workload_version="18.1.0",
     )
 
-    assert app._check_mismatched_versions() is None
+    assert app._check_mismatched_versions([units["my-app/0"]]) is None

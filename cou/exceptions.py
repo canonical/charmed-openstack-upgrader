@@ -71,6 +71,10 @@ class RunUpgradeError(COUException):
     """Exception raised when an upgrade fails."""
 
 
+class DataPlaneMachineFilterError(COUException):
+    """Exception raised when filtering data-plane machines fails."""
+
+
 class ActionFailed(COUException):
     """Exception raised when action fails."""
 
@@ -124,6 +128,10 @@ class OutOfSupportRange(COUException):
 
 class WaitForApplicationsTimeout(COUException):
     """Waiting for applications hit timeout error."""
+
+
+class DataPlaneCannotUpgrade(COUException):
+    """COU exception when the cloud is inconsistent to generate a plan."""
 
 
 class InterruptError(KeyboardInterrupt):
