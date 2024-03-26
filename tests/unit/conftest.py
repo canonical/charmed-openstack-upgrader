@@ -13,26 +13,14 @@
 # limitations under the License.
 
 from pathlib import Path
+from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
-from juju.client.client import FullStatus
 
 from cou.commands import CLIargs
-
-
-def get_status():
-    """Help function to load Juju status from json file."""
-    current_path = Path(__file__).parent.resolve()
-    with open(current_path / "jujustatus.json", "r") as file:
-        status = file.read().rstrip()
-
-    return FullStatus.from_json(status)
-
-
-async def get_charm_name(value: str):
-    """Help function to get charm name."""
-    return value
+from cou.steps.analyze import Analysis
+from tests.unit.utils import get_charm_name, get_sample_plan, get_status
 
 
 @pytest.fixture
@@ -71,3 +59,14 @@ def cli_args() -> MagicMock:
     """
     # spec_set needs an instantiated class to be strict with the fields.
     return MagicMock(spec_set=CLIargs(command="plan"))()
+
+
+@pytest.fixture
+def sample_plans(model) -> Generator[tuple[Analysis, str], None, None]:
+    """Fixture that returns all sample plans in a directory."""
+    directory = Path(__file__).parent / "sample_plans"
+    sample_plans = [
+        get_sample_plan(model, sample_file) for sample_file in directory.glob("*.yaml")
+    ]
+    model.get_applications = AsyncMock(side_effect=[apps for apps, _, _ in sample_plans])
+    return [(Analysis.create(model), exp_plan, file) for _, exp_plan, file in sample_plans]
