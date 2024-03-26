@@ -105,13 +105,14 @@ async def continue_upgrade() -> bool:
     return False
 
 
-async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
+async def analyze_and_plan(args: CLIargs) -> tuple[UpgradePlan, list[str]]:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Generated upgrade plan.
-    :rtype: UpgradePlan
+    :return: Tuple containing the generated upgrade plan and a list of recorded error messages
+        from plan generation.
+    :rtype: tuple[UpgradePlan, list[str]]
     """
     model = Model(args.model_name)
     progress_indicator.start(f"Connecting to '{model.name}' model...")
@@ -125,10 +126,10 @@ async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
     progress_indicator.succeed()
 
     progress_indicator.start("Generating upgrade plan...")
-    upgrade_plan = await generate_plan(analysis_result, args)
+    upgrade_plan, error_messages = await generate_plan(analysis_result, args)
     progress_indicator.succeed()
 
-    return upgrade_plan
+    return upgrade_plan, error_messages
 
 
 async def get_upgrade_plan(args: CLIargs) -> None:
@@ -137,8 +138,15 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    upgrade_plan = await analyze_and_plan(args)
+    upgrade_plan, error_messages = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
+
+    if error_messages:
+        for error in error_messages:
+            logger.error(error)
+        print("Note that running upgrades will not be possible until errors are fixed.")
+        return
+
     print(
         "Please note that the actual upgrade steps could be different if the cloud state "
         "changes because the plan will be re-calculated at upgrade time."
@@ -151,8 +159,14 @@ async def run_upgrade(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    upgrade_plan = await analyze_and_plan(args)
+    upgrade_plan, error_messages = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
+
+    if error_messages:
+        for error in error_messages:
+            logger.error(error)
+        print("Not possible to run upgrades. Please fix the errors before proceeding.")
+        return
 
     if args.prompt and not await continue_upgrade():
         return

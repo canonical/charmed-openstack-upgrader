@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from juju.errors import JujuError
@@ -71,6 +71,7 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli
     cou_model.return_value.connect.side_effect = AsyncMock()
     analysis_result = Analysis(model=cou_model, apps_control_plane=[], apps_data_plane=[])
     mock_analyze.return_value = analysis_result
+    mock_generate_plan.return_value = (UpgradePlan("Mock upgrade plan"), [])
 
     await cli.analyze_and_plan(cli_args)
 
@@ -87,11 +88,31 @@ async def test_get_upgrade_plan(mock_print_and_debug, mock_analyze_and_plan, cli
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
 
-    mock_analyze_and_plan.return_value = plan
+    mock_analyze_and_plan.return_value = (plan, [])
     await cli.get_upgrade_plan(cli_args)
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_print_and_debug.assert_called_once_with(plan)
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.print_and_debug")
+@patch("cou.cli.logger")
+async def test_get_upgrade_plan_with_errors(
+    mock_logger, mock_print_and_debug, mock_analyze_and_plan, cli_args
+):
+    """Test get_upgrade_plan function."""
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
+    error_messages = ["Mock error message1", "Mock error message2"]
+
+    mock_analyze_and_plan.return_value = (plan, error_messages)
+    await cli.get_upgrade_plan(cli_args)
+
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
+    mock_print_and_debug.assert_called_once_with(plan)
+    mock_logger.error.assert_has_calls([call("Mock error message1"), call("Mock error message2")])
 
 
 @pytest.mark.asyncio
@@ -117,14 +138,14 @@ async def test_run_upgrade_quiet_no_prompt(
     expected_print_count,
     cli_args,
 ):
-    """Test get_upgrade_plan function in either quiet or non-quiet mode without prompt."""
+    """Test run_upgrade function in either quiet or non-quiet mode without prompt."""
     mock_continue_upgrade.return_value = True
     cli_args.quiet = quiet
     cli_args.prompt = False
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_analyze_and_plan.return_value = plan
+    mock_analyze_and_plan.return_value = (plan, [])
 
     await cli.run_upgrade(cli_args)
 
@@ -144,12 +165,13 @@ async def test_run_upgrade_with_prompt_continue(
     mock_analyze_and_plan,
     cli_args,
 ):
+    """Test run_upgrade function with prompt to continue."""
     cli_args.prompt = True
     cli_args.quiet = True
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_analyze_and_plan.return_value = plan
+    mock_analyze_and_plan.return_value = (plan, [])
     mock_continue_upgrade.return_value = True
 
     await cli.run_upgrade(cli_args)
@@ -169,12 +191,13 @@ async def test_run_upgrade_with_prompt_abort(
     mock_analyze_and_plan,
     cli_args,
 ):
+    """Test run_upgrade function with prompt to abort."""
     cli_args.auto_approve = False
     cli_args.quiet = True
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_analyze_and_plan.return_value = plan
+    mock_analyze_and_plan.return_value = (plan, [])
     mock_continue_upgrade.return_value = False
 
     await cli.run_upgrade(cli_args)
@@ -194,18 +217,51 @@ async def test_run_upgrade_with_no_prompt(
     mock_analyze_and_plan,
     cli_args,
 ):
+    """Test run_upgrade function in non-interactive mode."""
     cli_args.prompt = False
     cli_args.quiet = True
 
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_analyze_and_plan.return_value = plan
+    mock_analyze_and_plan.return_value = (plan, [])
 
     await cli.run_upgrade(cli_args)
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_continue_upgrade.assert_not_awaited()
     mock_apply_step.assert_called_once_with(plan, False)
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_step")
+@patch("builtins.print")
+@patch("cou.cli.print_and_debug")
+@patch("cou.cli.logger")
+async def test_run_upgrade_with_errors(
+    mock_logger,
+    mock_print_and_debug,
+    mock_print,
+    mock_apply_step,
+    mock_analyze_and_plan,
+    cli_args,
+):
+    """Test run_upgrade function with error messages from plan generation."""
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
+    error_messages = ["Mock error message1", "Mock error message2"]
+
+    mock_analyze_and_plan.return_value = (plan, error_messages)
+
+    await cli.run_upgrade(cli_args)
+
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
+    mock_print_and_debug.assert_called_once_with(plan)
+    mock_print.assert_called_once_with(
+        "Not possible to run upgrades. Please fix the errors before proceeding."
+    )
+    mock_logger.error.assert_has_calls([call("Mock error message1"), call("Mock error message2")])
+    mock_apply_step.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -225,6 +281,7 @@ async def test_continue_upgrade(
     input_value,
     expected_result,
 ):
+    """Test continue_upgrade function with various inputs."""
     mock_prompt_input.return_value = input_value
     result = await cli.continue_upgrade()
 
