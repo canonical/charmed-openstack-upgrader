@@ -184,7 +184,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                         ├── Pause the unit: 'nova-compute/0'
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
-                        Enable nova-compute scheduler from unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/0'
                 Wait for up to 1800s for model 'test_model' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: \
 nova-compute/0

@@ -751,9 +751,22 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
     assert_steps(upgrade_plan, expected_plan)
 
 
+@patch("cou.apps.base.OpenStackApplication._get_wait_step")
+@patch("cou.apps.base.OpenStackApplication._get_reached_expected_target_step")
+@patch("cou.apps.core.NovaCompute._get_enable_scheduler_step")
+def test_nova_compute_post_upgrade_steps(mock_enable, mock_expected_target, mock_wait_step, model):
+    app = _generate_nova_compute_app(model)
+    target = OpenStackRelease("victoria")
+    units = list(app.units.values())
+
+    app.post_upgrade_steps(target, units)
+    mock_enable.assert_called_once_with(units)
+    mock_expected_target.assert_called_once_with(target, units)
+    mock_wait_step.assert_called_once_with()
+
+
 @pytest.mark.parametrize("force", [True, False])
 # add_step check if the step added is from BaseStep, so the return is an empty UnitUpgradeStep
-@patch("cou.apps.core.NovaCompute._get_enable_scheduler_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_resume_unit_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_openstack_upgrade_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_pause_unit_step", return_value=UnitUpgradeStep())
@@ -765,7 +778,6 @@ def test_nova_compute_get_unit_upgrade_steps(
     mock_pause,
     mock_upgrade,
     mock_resume,
-    mock_enable,
     model,
     force,
 ):
@@ -783,7 +795,6 @@ def test_nova_compute_get_unit_upgrade_steps(
     mock_pause.assert_called_once_with(unit, not force)
     mock_upgrade.assert_called_once_with(unit, not force)
     mock_resume.assert_called_once_with(unit, not force)
-    mock_enable.assert_called_once_with(unit)
 
 
 def test_nova_compute_get_empty_hypervisor_step(model):
@@ -801,13 +812,17 @@ def test_nova_compute_get_empty_hypervisor_step(model):
 def test_nova_compute_get_enable_scheduler_step(model):
     app = _generate_nova_compute_app(model)
     units = list(app.units.values())
-    unit = units[0]
 
-    expected_step = UpgradeStep(
-        description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
-        coro=model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True),
-    )
-    assert app._get_enable_scheduler_step(unit) == expected_step
+    expected_step = [
+        UpgradeStep(
+            description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
+            coro=model.run_action(
+                unit_name=unit.name, action_name="enable", raise_on_failure=True
+            ),
+        )
+        for unit in units
+    ]
+    assert app._get_enable_scheduler_step(units) == expected_step
 
 
 def test_nova_compute_get_disable_scheduler_step(model):
@@ -859,21 +874,21 @@ def test_nova_compute_upgrade_plan(model):
                 ├── Pause the unit: 'nova-compute/0'
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
-                Enable nova-compute scheduler from unit: 'nova-compute/0'
             Upgrade plan for unit 'nova-compute/1'
                 Disable nova-compute scheduler from unit: 'nova-compute/1'
                 Verify that unit 'nova-compute/1' has no VMs running
                 ├── Pause the unit: 'nova-compute/1'
                 ├── Upgrade the unit: 'nova-compute/1'
                 ├── Resume the unit: 'nova-compute/1'
-                Enable nova-compute scheduler from unit: 'nova-compute/1'
             Upgrade plan for unit 'nova-compute/2'
                 Disable nova-compute scheduler from unit: 'nova-compute/2'
                 Verify that unit 'nova-compute/2' has no VMs running
                 ├── Pause the unit: 'nova-compute/2'
                 ├── Upgrade the unit: 'nova-compute/2'
                 ├── Resume the unit: 'nova-compute/2'
-                Enable nova-compute scheduler from unit: 'nova-compute/2'
+        Enable nova-compute scheduler from unit: 'nova-compute/0'
+        Enable nova-compute scheduler from unit: 'nova-compute/1'
+        Enable nova-compute scheduler from unit: 'nova-compute/2'
         Wait for up to 1800s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
@@ -926,7 +941,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
                 ├── Pause the unit: 'nova-compute/0'
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
-                Enable nova-compute scheduler from unit: 'nova-compute/0'
+        Enable nova-compute scheduler from unit: 'nova-compute/0'
         Wait for up to 1800s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """

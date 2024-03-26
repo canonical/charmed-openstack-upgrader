@@ -216,7 +216,7 @@ class HypervisorUpgradePlanner:
         :return: Upgrade plan for hypervisor group.
         :rtype: HypervisorUpgradePlan
         """
-        steps = []
+        steps: list[UpgradeStep] = []
         for app in self.apps:
             if app.name not in group.app_units:
                 logger.debug(
@@ -228,7 +228,13 @@ class HypervisorUpgradePlanner:
 
             units = group.app_units[app.name]
             logger.info("generating upgrade steps for %s units of %s app", app.name, units)
-            steps.extend(app.upgrade_steps(target, units, force))
+
+            if app.charm == "nova-compute":
+                # NOTE(gabrielcocenza) it's important to disable the scheduler before upgrading
+                # any application, that is why we insert in the first position.
+                steps = app.upgrade_steps(target, units, force) + steps
+            else:
+                steps.extend(app.upgrade_steps(target, units, force))
 
         return steps
 
@@ -248,9 +254,7 @@ class HypervisorUpgradePlanner:
         :rtype: list[PostUpgradeStep]
         """
         steps = []
-        # NOTE(rgildein): Using the reverse order of post-upgrade steps, so these steps starts from
-        #                 subordinate or colocated apps and not nova-compute.
-        for app in self.apps[::-1]:
+        for app in self.apps:
             if app.name not in group.app_units:
                 logger.debug(
                     "skipping application %s because it is not part of group %s",
@@ -261,7 +265,12 @@ class HypervisorUpgradePlanner:
 
             units = group.app_units[app.name]
             logger.info("generating post-upgrade steps for %s units of %s app", app.name, units)
-            steps.extend(app.post_upgrade_steps(target, units=units))
+            if app.charm == "nova-compute":
+                # NOTE(gabrielcocenza) it's important to enable the scheduler after upgrading
+                # all applications.
+                steps.extend(app.post_upgrade_steps(target, units=units))
+            else:
+                steps = app.post_upgrade_steps(target, units) + steps
 
         return steps
 
