@@ -14,12 +14,12 @@
 """Module to provide helper for writing unit tests."""
 from pathlib import Path
 from textwrap import dedent
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 from juju.client.client import FullStatus
 
 from cou.steps import BaseStep
-from cou.utils.juju_utils import Machine
+from cou.utils.juju_utils import Application, Machine, Model, Unit
 
 
 def assert_steps(step_1: BaseStep, step_2: BaseStep) -> None:

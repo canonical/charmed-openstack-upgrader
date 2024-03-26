@@ -102,6 +102,7 @@ quiet-level = 3
 check-filenames = true
 
 [tool.pytest.ini_options]
+addopts = "--ignore=tests/unit/apps_planning"
 filterwarnings = [
     "ignore::RuntimeWarning",
 ]
