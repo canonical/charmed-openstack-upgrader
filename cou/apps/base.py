@@ -324,126 +324,194 @@ class OpenStackApplication(Application):
         """
         return f"cloud:{self.series}-{target.codename}"
 
-    async def _check_upgrade(self, target: OpenStackRelease) -> None:
+    async def _verify_workload_upgrade(self, target: OpenStackRelease, units: list[Unit]) -> None:
         """Check if an application has upgraded its workload version.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to check if got upgraded
+        :type units: list[Unit]
         :raises ApplicationError: When the workload version of the charm doesn't upgrade.
         """
         status = await self.model.get_status()
         app_status = status.applications.get(self.name)
         units_not_upgraded = []
-        for unit in app_status.units.keys():
-            workload_version = app_status.units[unit].workload_version
+        for unit in units:
+            workload_version = app_status.units[unit.name].workload_version
             compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
                 self.charm, workload_version
             )
             if target not in compatible_os_versions:
-                units_not_upgraded.append(unit)
+                units_not_upgraded.append(unit.name)
 
         if units_not_upgraded:
-            units_not_upgraded_string = ", ".join(units_not_upgraded)
             raise ApplicationError(
-                f"Cannot upgrade units '{units_not_upgraded_string}' to {target}."
+                f"Cannot upgrade units '{', '.join(units_not_upgraded)}' to {target}."
             )
 
-    def upgrade_plan_sanity_checks(self, target: OpenStackRelease) -> None:
+    def upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> None:
         """Run sanity checks before generating upgrade plan.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[Unit]], optional
         :raises ApplicationError: When enable-auto-restarts is not enabled.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
-        :raises MismatchedOpenStackVersions: When the units of the app are running different
-                                             OpenStack versions.
-        :raises ApplicationError: When enable-auto-restarts is not enabled.
         """
         self._check_application_target(target)
-        self._check_mismatched_versions()
+        self._check_mismatched_versions(units)
         self._check_auto_restarts()
         logger.info(
             "%s application met all the necessary prerequisites to generate the upgrade plan",
             self.name,
         )
 
-    def pre_upgrade_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
         :return: List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
         return [
-            self._get_upgrade_current_release_packages_step(),
+            self._get_upgrade_current_release_packages_step(units),
             self._get_refresh_charm_step(target),
         ]
 
-    def upgrade_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]], force: bool
+    ) -> list[UpgradeStep]:
         """Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :param units: Units to generate upgrade steps
+        :type units: Optional[list[Unit]]
+        :param force: Whether the plan generation should be forced
+        :type force: bool
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
         return [
-            self._set_action_managed_upgrade(False),
+            self._set_action_managed_upgrade(enable=bool(units)),
             self._get_upgrade_charm_step(target),
-            self._get_workload_upgrade_step(target),
+            self._get_change_install_repository_step(target),
+            self._get_units_upgrade_steps(units, force),
         ]
 
-    def post_upgrade_steps(self, target: OpenStackRelease) -> list[PostUpgradeStep]:
+    def post_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
         """Post Upgrade steps planning.
 
         Wait until the application reaches the idle state and then check the target workload.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[list[Unit]]
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
         return [
             self._get_wait_step(),
-            self._get_reached_expected_target_step(target),
+            self._get_reached_expected_target_step(target, units),
         ]
 
-    def generate_upgrade_plan(self, target: OpenStackRelease) -> ApplicationUpgradePlan:
+    def generate_upgrade_plan(
+        self,
+        target: OpenStackRelease,
+        force: bool,
+        units: Optional[list[Unit]] = None,
+    ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
+
+        Units are passed if the application should be upgraded unit by unit.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
+        :param force: Whether the plan generation should be forced
+        :type force: bool
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[Unit]]
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
-        self.upgrade_plan_sanity_checks(target)
+        self.upgrade_plan_sanity_checks(target, units)
 
         upgrade_plan = ApplicationUpgradePlan(f"Upgrade plan for '{self.name}' to '{target}'")
-        upgrade_plan.add_steps(self.pre_upgrade_steps(target))
-        upgrade_plan.add_steps(self.upgrade_steps(target))
-        upgrade_plan.add_steps(self.post_upgrade_steps(target))
+        upgrade_plan.add_steps(self.pre_upgrade_steps(target, units))
+        upgrade_plan.add_steps(self.upgrade_steps(target, units, force))
+        upgrade_plan.add_steps(self.post_upgrade_steps(target, units))
 
         return upgrade_plan
 
-    def _get_upgrade_current_release_packages_step(self) -> PreUpgradeStep:
+    def _get_unit_upgrade_steps(self, unit: Unit, force: bool) -> UnitUpgradeStep:
+        """Get the upgrade steps for a single unit.
+
+        :param unit: Unit to generate upgrade steps
+        :type unit: Unit
+        :param force: Whether the unit step generation should be forced
+        :type force: bool
+        :return: Unit upgrade step
+        :rtype: UnitUpgradeStep
+        """
+        # pylint: disable=unused-argument
+        unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit '{unit.name}'")
+        unit_plan.add_step(self._get_pause_unit_step(unit))
+        unit_plan.add_step(self._get_openstack_upgrade_step(unit))
+        unit_plan.add_step(self._get_resume_unit_step(unit))
+        return unit_plan
+
+    def _get_units_upgrade_steps(self, units: Optional[list[Unit]], force: bool) -> UpgradeStep:
+        """Get the upgrade steps for the units.
+
+        :param units: Units to generate upgrade steps
+        :type units: list[Unit]
+        :param force: Whether the plan generation should be forced
+        :type force: bool
+        :return: Upgrade step
+        :rtype: UpgradeStep
+        """
+        if not units:
+            logger.debug("units were not provided, skipping")
+            return UpgradeStep()
+
+        units_plan = UpgradeStep(
+            description=f"Upgrade plan for units: {', '.join([unit.name for unit in units])}",
+            parallel=True,
+        )
+        units_plan.add_steps(self._get_unit_upgrade_steps(unit, force) for unit in units)
+        return units_plan
+
+    def _get_upgrade_current_release_packages_step(
+        self, units: Optional[list[Unit]]
+    ) -> PreUpgradeStep:
         """Get step for upgrading software packages to the latest of the current release.
 
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
         :return: Step for upgrading software packages to the latest of the current release.
         :rtype: PreUpgradeStep
         """
         step = PreUpgradeStep(
-            description=f"Upgrade software packages of '{self.name}' from the current "
-            "APT repositories",
+            f"Upgrade software packages of '{self.name}' from the current APT repositories",
             parallel=True,
         )
         step.add_steps(
             UnitUpgradeStep(
-                description=f"Upgrade software packages on unit {unit.name}",
+                description=f"Upgrade software packages on unit '{unit.name}'",
                 coro=upgrade_packages(unit.name, self.model, self.packages_to_hold),
             )
-            for unit in self.units.values()
+            for unit in units or self.units.values()
         )
 
         return step
@@ -541,8 +609,56 @@ class OpenStackApplication(Application):
             coro=self.model.set_application_config(self.name, {"action-managed-upgrade": enable}),
         )
 
-    def _get_workload_upgrade_step(self, target: OpenStackRelease) -> UpgradeStep:
-        """Get workload upgrade step by changing openstack-origin or source.
+    def _get_pause_unit_step(self, unit: Unit, dependent: bool = False) -> UnitUpgradeStep:
+        """Get the step to pause a unit to upgrade.
+
+        :param unit: Unit to be paused.
+        :type unit: Unit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
+        :return: Step to pause a unit.
+        :rtype: UnitUpgradeStep
+        """
+        return UnitUpgradeStep(
+            description=f"Pause the unit: '{unit.name}'",
+            coro=self.model.run_action(unit.name, "pause", raise_on_failure=True),
+            dependent=dependent,
+        )
+
+    def _get_resume_unit_step(self, unit: Unit, dependent: bool = False) -> UnitUpgradeStep:
+        """Get the step to resume a unit after upgrading the workload version.
+
+        :param unit: Unit to be resumed.
+        :type unit: Unit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
+        :return: Step to resume a unit.
+        :rtype: UnitUpgradeStep
+        """
+        return UnitUpgradeStep(
+            description=f"Resume the unit: '{unit.name}'",
+            coro=self.model.run_action(unit.name, "resume", raise_on_failure=True),
+            dependent=dependent,
+        )
+
+    def _get_openstack_upgrade_step(self, unit: Unit, dependent: bool = False) -> UnitUpgradeStep:
+        """Get the step to upgrade a unit.
+
+        :param unit: Unit to be upgraded.
+        :type unit: Unit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
+        :return: Step to upgrade a unit.
+        :rtype: UnitUpgradeStep
+        """
+        return UnitUpgradeStep(
+            description=f"Upgrade the unit: '{unit.name}'",
+            coro=self.model.run_action(unit.name, "openstack-upgrade", raise_on_failure=True),
+            dependent=dependent,
+        )
+
+    def _get_change_install_repository_step(self, target: OpenStackRelease) -> UpgradeStep:
+        """Change openstack-origin or source for the next OpenStack target.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
@@ -551,31 +667,39 @@ class OpenStackApplication(Application):
         """
         if self.os_origin != self.new_origin(target) and self.origin_setting:
             return UpgradeStep(
-                description=f"Change charm config of '{self.name}' "
-                f"'{self.origin_setting}' to '{self.new_origin(target)}'",
+                f"Change charm config of '{self.name}' '{self.origin_setting}' to "
+                f"'{self.new_origin(target)}'",
                 coro=self.model.set_application_config(
                     self.name, {self.origin_setting: self.new_origin(target)}
                 ),
             )
         logger.warning(
-            "Not triggering the workload upgrade of app %s: %s already set to %s",
+            "Not changing the install repository of app %s: %s already set to %s",
             self.name,
             self.origin_setting,
             self.new_origin(target),
         )
         return UpgradeStep()
 
-    def _get_reached_expected_target_step(self, target: OpenStackRelease) -> PostUpgradeStep:
+    def _get_reached_expected_target_step(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> PostUpgradeStep:
         """Get post upgrade step to check if application workload has been upgraded.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[list[Unit]]
         :return: Post Upgrade step to check if application workload has been upgraded.
         :rtype: PostUpgradeStep
         """
+        if not units:
+            units = list(self.units.values())
+
         return PostUpgradeStep(
-            description=f"Verify that the workload of '{self.name}' has been upgraded",
-            coro=self._check_upgrade(target),
+            f"Verify that the workload of '{self.name}' has been upgraded on units: "
+            f"{', '.join([unit.name for unit in units])}",
+            coro=self._verify_workload_upgrade(target, units),
         )
 
     def _get_wait_step(self) -> PostUpgradeStep:
@@ -647,12 +771,20 @@ class OpenStackApplication(Application):
                 f"than {target}. Ignoring."
             )
 
-    def _check_mismatched_versions(self) -> None:
+    def _check_mismatched_versions(self, units: Optional[list[Unit]]) -> None:
         """Check that there are no mismatched versions on app units.
 
-        :raises MismatchedOpenStackVersions: When the units of the app are running different
-                                             OpenStack versions.
+        If units are passed, the application will be upgraded in unit-by-unit fashion,
+        and mismatch is not checked.
+
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
+        :raises MismatchedOpenStackVersions: When the units of the app are running
+                                             different OpenStack versions
         """
+        if units:
+            return
+
         os_versions = self.os_release_units
         if len(os_versions.keys()) > 1:
             mismatched_repr = [

@@ -83,7 +83,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
         ),
     )
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -140,7 +140,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 def test_ovn_subordinate_upgrade_plan(model):
@@ -162,18 +162,19 @@ def test_ovn_subordinate_upgrade_plan(model):
         workload_version="22.3",
     )
 
-    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
-
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
+    )
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
-        ),
+        )
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -206,7 +207,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
     )
 
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
-        app.generate_upgrade_plan(target)
+        app.generate_upgrade_plan(target, False)
 
 
 def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
@@ -228,17 +229,20 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
         workload_version="15.2.0",
     )
 
-    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
+    )
     upgrade_steps = [
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
-        ),
+        )
     ]
+
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -262,7 +266,9 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
         workload_version="16.2.0",
     )
 
-    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
+    )
 
     upgrade_steps = [
         PreUpgradeStep(
@@ -278,6 +284,6 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
     ]
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)

@@ -314,6 +314,16 @@ class UpgradePlan(BaseStep):
         logger.debug("No coroutine to run for %s", repr(self))
 
 
+class HypervisorGroupUpgradePlan(UpgradePlan):
+    """Represents the plan for a group of hypervisors.
+
+    This class is intended to be used as a group for hypervisor upgrade steps, therefore
+    doesn't accept coroutine or parallel as inputs.
+    """
+
+    prompt: bool = True
+
+
 class ApplicationUpgradePlan(UpgradePlan):
     """Represents the plan for application-level upgrade.
 
@@ -322,6 +332,26 @@ class ApplicationUpgradePlan(UpgradePlan):
     """
 
     prompt: bool = True
+
+
+class HypervisorUpgradePlan(BaseStep):
+    """Represents the plan for hypervisor upgrade.
+
+    This class is intended to be used as a group for unit-level upgrade steps, which are
+    grouped by a single hypervisor. It doesn't accept coroutine or parallel as inputs.
+
+    All sub-steps will run in parallel.
+    """
+
+    prompt: bool = False
+
+    def __init__(self, description: str):
+        """Initialize upgrade plan.
+
+        :param description: Description of the step.
+        :type description: str
+        """
+        super().__init__(description=description, parallel=True, coro=None)
 
 
 class UpgradeStep(BaseStep):

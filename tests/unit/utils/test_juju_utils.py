@@ -175,7 +175,7 @@ def test_machine_eq():
 
 @patch("cou.utils.juju_utils.FileJujuData")
 def test_coumodel_init(mock_juju_data, mocker):
-    """Test COUModel initialization."""
+    """Test Model initialization."""
     model_mocker = mocker.patch("cou.utils.juju_utils.JujuModel")
     mocked_model = model_mocker.return_value
     mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
@@ -191,7 +191,7 @@ def test_coumodel_init(mock_juju_data, mocker):
 
 
 def test_coumodel_connected_no_connection(mocked_model):
-    """Test COUModel connected property."""
+    """Test Model connected property."""
     mocked_model.connection.side_effect = NoConnectionException
 
     model = juju_utils.Model("test-model")
@@ -200,7 +200,7 @@ def test_coumodel_connected_no_connection(mocked_model):
 
 
 def test_coumodel_connected(mocked_model):
-    """Test COUModel connected property."""
+    """Test Model connected property."""
     mocked_model.connection.return_value.is_open = True
 
     model = juju_utils.Model("test-model")
@@ -209,7 +209,7 @@ def test_coumodel_connected(mocked_model):
 
 
 def test_coumodel_name(mocked_model):
-    """Test COUModel name property without model name."""
+    """Test Model name property without model name."""
     exp_model_name = "test-model"
     mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
 
@@ -220,7 +220,7 @@ def test_coumodel_name(mocked_model):
 
 
 def test_coumodel_name_no_name(mocked_model):
-    """Test COUModel name property without model name."""
+    """Test Model name property without model name."""
     mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
 
     model = juju_utils.Model(None)
@@ -230,7 +230,7 @@ def test_coumodel_name_no_name(mocked_model):
 
 
 def test_coumodel_name_connected(mocked_model):
-    """Test COUModel initialization without model name, but connected."""
+    """Test Model initialization without model name, but connected."""
     mocked_model.connection.return_value.is_open = True
 
     model = juju_utils.Model(None)
@@ -241,7 +241,7 @@ def test_coumodel_name_connected(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_connect(mocked_model):
-    """Test COUModel connection."""
+    """Test Model connection."""
     name = "test-model"
     model = juju_utils.Model(name)
     await model.connect()
@@ -256,7 +256,7 @@ async def test_coumodel_connect(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_application(mocked_model):
-    """Test COUModel get application."""
+    """Test Model get application."""
     app_name = "test-app"
     model = juju_utils.Model("test-model")
 
@@ -268,7 +268,7 @@ async def test_coumodel_get_application(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_application_failure(mocked_model):
-    """Test COUModel get not existing application."""
+    """Test Model get not existing application."""
     model = juju_utils.Model("test-model")
     mocked_model.applications.get.return_value = None
 
@@ -278,7 +278,7 @@ async def test_coumodel_get_application_failure(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_model(mocked_model):
-    """Test COUModel get connected model object."""
+    """Test Model get connected model object."""
     mocked_model.connection.return_value = None  # simulate disconnected model
 
     model = juju_utils.Model("test-model")
@@ -291,7 +291,7 @@ async def test_coumodel_get_model(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_unit(mocked_model):
-    """Test COUModel get unit."""
+    """Test Model get unit."""
     unit_name = "test-unit"
     model = juju_utils.Model("test-model")
 
@@ -303,7 +303,7 @@ async def test_coumodel_get_unit(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_unit_failure(mocked_model):
-    """Test COUModel get not existing unit."""
+    """Test Model get not existing unit."""
     model = juju_utils.Model("test-model")
     mocked_model.units.get.return_value = None
 
@@ -314,7 +314,7 @@ async def test_coumodel_get_unit_failure(mocked_model):
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.is_charm_supported")
 async def test_coumodel_get_supported_apps(mock_is_charm_supported, mocked_model):
-    """Test COUModel providing list of supported applications."""
+    """Test Model providing list of supported applications."""
     mock_is_charm_supported.side_effect = [False, True]
     model = juju_utils.Model("test-model")
     app = MagicMock(spec_set=Application).return_value
@@ -328,7 +328,7 @@ async def test_coumodel_get_supported_apps(mock_is_charm_supported, mocked_model
 
 @pytest.mark.asyncio
 async def test_coumodel_get_application_configs(mocked_model):
-    """Test COUModel get application configuration."""
+    """Test Model get application configuration."""
     mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
     model = juju_utils.Model("test-model")
 
@@ -340,7 +340,7 @@ async def test_coumodel_get_application_configs(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_charm_name(mocked_model):
-    """Test COUModel get charm name from application by application name."""
+    """Test Model get charm name from application by application name."""
     mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
     model = juju_utils.Model("test-model")
 
@@ -351,7 +351,7 @@ async def test_coumodel_get_charm_name(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_charm_name_failure(mocked_model):
-    """Test COUModel get charm name from application by application name."""
+    """Test Model get charm name from application by application name."""
     mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
     mocked_app.charm_name = None
     app_name = "test-app"
@@ -363,7 +363,7 @@ async def test_coumodel_get_charm_name_failure(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_status(mocked_model):
-    """Test COUModel get model status."""
+    """Test Model get model status."""
     model = juju_utils.Model("test-model")
 
     status = await model.get_status()
@@ -374,7 +374,7 @@ async def test_coumodel_get_status(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_waited_action_object_object(mocked_model):
-    """Test COUModel get action result."""
+    """Test Model get action result."""
     mocked_action = AsyncMock(spec_set=Action).return_value
     model = juju_utils.Model("test-model")
 
@@ -386,7 +386,7 @@ async def test_coumodel_get_waited_action_object_object(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_get_waited_action_object_failure(mocked_model):
-    """Test COUModel get action result failing."""
+    """Test Model get action result failing."""
     mocked_action = AsyncMock(spec_set=Action).return_value
     mocked_action.wait.return_value = mocked_action
     mocked_action.wait.status = "failed"
@@ -399,7 +399,7 @@ async def test_coumodel_get_waited_action_object_failure(mocked_model):
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_waited_action_object")
 async def test_coumodel_run_action(mock_get_waited_action_object, mocked_model):
-    """Test COUModel run action."""
+    """Test Model run action."""
     action_name = "test-action"
     action_params = {"test-arg": "test"}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
@@ -418,7 +418,7 @@ async def test_coumodel_run_action(mock_get_waited_action_object, mocked_model):
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils._normalize_action_results")
 async def test_coumodel_run_on_unit(mock_normalize_action_results, mocked_model):
-    """Test COUModel run on unit."""
+    """Test Model run on unit."""
     command = "test-command"
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
@@ -435,7 +435,7 @@ async def test_coumodel_run_on_unit(mock_normalize_action_results, mocked_model)
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils._normalize_action_results")
 async def test_coumodel_run_on_unit_failed_command(mock_normalize_action_results, mocked_model):
-    """Test COUModel run on unit."""
+    """Test Model run on unit."""
     command = "test-command"
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
@@ -452,7 +452,7 @@ async def test_coumodel_run_on_unit_failed_command(mock_normalize_action_results
 
 @pytest.mark.asyncio
 async def test_coumodel_set_application_configs(mocked_model):
-    """Test COUModel set application configuration."""
+    """Test Model set application configuration."""
     test_config = {"test-key": "test-value"}
     mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
     model = juju_utils.Model("test-model")
@@ -464,7 +464,7 @@ async def test_coumodel_set_application_configs(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_scp_from_unit(mocked_model):
-    """Test COUModel scp from unit to destination."""
+    """Test Model scp from unit to destination."""
     source, destination = "/tmp/source", "/tmp/destination"
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     model = juju_utils.Model("test-model")
@@ -478,7 +478,7 @@ async def test_coumodel_scp_from_unit(mocked_model):
 
 @pytest.mark.asyncio
 async def test_coumodel_upgrade_charm(mocked_model):
-    """Test COUModel upgrade application."""
+    """Test Model upgrade application."""
     application_name = "test-app"
     channel = "latest/edge"
     mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
@@ -499,7 +499,7 @@ async def test_coumodel_upgrade_charm(mocked_model):
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
 async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_model):
-    """Test COUModel wait for related apps to be active idle."""
+    """Test Model wait for related apps to be active idle."""
     timeout = 60
     model = juju_utils.Model("test-model")
     mock_get_supported_apps.return_value = ["app1", "app2"]
@@ -519,7 +519,7 @@ async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_mod
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
 async def test_coumodel_wait_for_active_idle_apps(mock_get_supported_apps, mocked_model):
-    """Test COUModel wait for specific apps to be active idle."""
+    """Test Model wait for specific apps to be active idle."""
     timeout = 60
     model = juju_utils.Model("test-model")
 
@@ -538,7 +538,7 @@ async def test_coumodel_wait_for_active_idle_apps(mock_get_supported_apps, mocke
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
 async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mocked_model):
-    """Test COUModel wait for model to be active idle reach timeout."""
+    """Test Model wait for model to be active idle reach timeout."""
     timeout = 60
     exp_apps = ["app1", "app2"]
     mocked_model.wait_for_idle.side_effect = asyncio.exceptions.TimeoutError
@@ -559,7 +559,7 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
 
 @pytest.mark.asyncio
 async def test_get_machines(mocked_model):
-    """Test COUModel getting machines from model."""
+    """Test Model getting machines from model."""
     expected_machines = {
         "0": juju_utils.Machine(
             "0",
@@ -627,7 +627,7 @@ def _generate_app_status(units: dict[str, MagicMock]) -> MagicMock:
 @patch("cou.utils.juju_utils.Model.get_status")
 @patch("cou.utils.juju_utils.Model._get_machines")
 async def test_get_applications(mock_get_machines, mock_get_status, mocked_model):
-    """Test COUModel getting applications from model.
+    """Test Model getting applications from model.
 
     Getting application from status, where model contain 3 applications deployed on 3 machines.
     The juju status to show model, which this test try to use.

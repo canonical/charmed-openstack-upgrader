@@ -183,13 +183,14 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
     )
 
     expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
+
     upgrade_packages = PreUpgradeStep(
         description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
         parallel=True,
     )
     upgrade_packages.add_steps(
         UnitUpgradeStep(
-            description=f"Upgrade software packages on unit {unit.name}",
+            description=f"Upgrade software packages on unit '{unit.name}'",
             coro=app_utils.upgrade_packages(unit.name, model, None),
         )
         for unit in app.units.values()
@@ -212,15 +213,14 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
-                app.name,
-                {f"{app.origin_setting}": "cloud:focal-victoria"},
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
     ]
 
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -264,7 +264,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
     )
     upgrade_packages.add_steps(
         UnitUpgradeStep(
-            description=f"Upgrade software packages on unit {unit.name}",
+            description=f"Upgrade software packages on unit '{unit.name}'",
             coro=app_utils.upgrade_packages(unit.name, model, None),
         )
         for unit in app.units.values()
@@ -297,15 +297,16 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Verify that the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
+            f"{', '.join([unit for unit in app.units.keys()])}",
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
 
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
 
@@ -346,7 +347,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
     )
     upgrade_packages.add_steps(
         UnitUpgradeStep(
-            description=f"Upgrade software packages on unit {unit.name}",
+            description=f"Upgrade software packages on unit '{unit.name}'",
             coro=app_utils.upgrade_packages(unit.name, model, None),
         )
         for unit in app.units.values()
@@ -369,8 +370,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
             coro=model.set_application_config(
-                app.name,
-                {f"{app.origin_setting}": "cloud:focal-victoria"},
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
         PostUpgradeStep(
@@ -379,14 +379,15 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
             coro=model.wait_for_active_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
-            description=f"Verify that the workload of '{app.name}' has been upgraded",
+            description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
+            f"{', '.join([unit for unit in app.units.keys()])}",
             parallel=False,
-            coro=app._check_upgrade(target),
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
 
     expected_plan.add_steps(upgrade_steps)
 
-    upgrade_plan = app.generate_upgrade_plan(target)
+    upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
