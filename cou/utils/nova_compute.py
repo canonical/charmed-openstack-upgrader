@@ -17,7 +17,7 @@
 import asyncio
 import logging
 
-from cou.exceptions import ActionFailed, HaltUpgradeExecution
+from cou.exceptions import HaltUpgradeExecution
 from cou.utils.juju_utils import Machine, Model, Unit
 
 logger = logging.getLogger(__name__)
@@ -64,11 +64,12 @@ async def get_instance_count(unit: str, model: Model) -> int:
     )
 
 
-async def verify_empty_hypervisor_before_upgrade(unit: Unit, model: Model) -> None:
+async def verify_empty_hypervisor(unit: Unit, model: Model) -> None:
     """Verify if there are no VMs running in a nova-compute unit before upgrading.
 
     If there are VMs running, it will enable the scheduler again to leave the cloud
     in the same state before upgrading.
+
     :param unit: Unit to check if there are VMs running.
     :type unit: Unit
     :param model: Model
@@ -77,13 +78,6 @@ async def verify_empty_hypervisor_before_upgrade(unit: Unit, model: Model) -> No
     """
     unit_instance_count = await get_instance_count(unit.name, model)
     if unit_instance_count != 0:
-        try:
-            await model.run_action(
-                unit_name=unit.name, action_name="enable", raise_on_failure=True
-            )
-            logger.info("Successfully enabled nova-compute scheduler from unit %s.", unit.name)
-        except ActionFailed:
-            logger.error("Failed to enable nova-compute scheduler from unit %s.", unit.name)
         logger.warning(
             "Unit: %s has %s VMs running. The upgrade on this unit cannot happen "
             "unless it's empty or force flag is used",

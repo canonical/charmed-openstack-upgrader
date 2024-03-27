@@ -130,7 +130,7 @@ class AuxiliaryApplication(OpenStackApplication):
     ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
 
-        Auxiliary applications cannot upgrade unit by unit.
+        Auxiliary applications cannot be upgraded unit by unit.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
@@ -249,7 +249,7 @@ class CephOsd(AuxiliaryApplication):
         """
         steps = [
             PreUpgradeStep(
-                description="Verify that all 'nova-compute' units had been upgraded",
+                description="Verify that all 'nova-compute' units has been upgraded",
                 coro=self._verify_nova_compute(target),
             )
         ]
@@ -257,7 +257,7 @@ class CephOsd(AuxiliaryApplication):
         return steps
 
     async def _verify_nova_compute(self, target: OpenStackRelease) -> None:
-        """Check if a nova-compute application has upgraded its workload version.
+        """Check if all units of nova-compute applications has upgraded their workload version.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease

@@ -20,7 +20,7 @@ from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.steps import UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import Unit
-from cou.utils.nova_compute import verify_empty_hypervisor_before_upgrade
+from cou.utils.nova_compute import verify_empty_hypervisor
 from cou.utils.openstack import OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -65,9 +65,9 @@ class NovaCompute(OpenStackApplication):
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param units: Units to generate upgrade steps,
+        :param units: Units to generate upgrade steps.
         :type units: Optional[list[Unit]]
-        :param force: Whether the plan generation should be forced
+        :param force: Whether the plan generation should be forced.
         :type force: bool
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
@@ -106,14 +106,14 @@ class NovaCompute(OpenStackApplication):
 
         In case force is set to true, no check is done.
 
-        :param unit: Unit to check the instance-count
+        :param unit: Unit to check the instance-count.
         :type unit: Unit
         :return: Step to check if the hypervisor is empty.
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
             description=f"Verify that unit '{unit.name}' has no VMs running",
-            coro=verify_empty_hypervisor_before_upgrade(unit, self.model),
+            coro=verify_empty_hypervisor(unit, self.model),
         )
 
     def _get_enable_scheduler_step(self, unit: Unit) -> UnitUpgradeStep:
@@ -121,7 +121,7 @@ class NovaCompute(OpenStackApplication):
 
         :param unit: Unit to be enabled.
         :type unit: Unit
-        :return: Step to enable the scheduler
+        :return: Step to enable the scheduler.
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
@@ -132,11 +132,11 @@ class NovaCompute(OpenStackApplication):
         )
 
     def _get_disable_scheduler_step(self, unit: Unit) -> UnitUpgradeStep:
-        """Get the step to disable the scheduler,  so the unit cannot create new VMs.
+        """Get the step to disable the scheduler, so the unit cannot create new VMs.
 
         :param unit: Unit to be disabled.
         :type unit: Unit
-        :return: Step to disable the scheduler
+        :return: Step to disable the scheduler.
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(

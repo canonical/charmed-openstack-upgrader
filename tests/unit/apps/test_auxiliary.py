@@ -1011,7 +1011,7 @@ def test_ceph_osd_pre_upgrade_steps(mock_pre_upgrade_steps, target, model):
 
     assert steps == [
         PreUpgradeStep(
-            description="Verify that all 'nova-compute' units had been upgraded",
+            description="Verify that all 'nova-compute' units has been upgraded",
             coro=app._verify_nova_compute(target),
         ),
         *mock_pre_upgrade_steps.return_value,
@@ -1159,7 +1159,7 @@ def test_ceph_osd_upgrade_plan(model):
     exp_plan = dedent_plan(
         """\
     Upgrade plan for 'ceph-osd' to 'victoria'
-        Verify that all 'nova-compute' units had been upgraded
+        Verify that all 'nova-compute' units has been upgraded
         Upgrade software packages of 'ceph-osd' from the current APT repositories
             Upgrade software packages on unit 'ceph-osd/0'
             Upgrade software packages on unit 'ceph-osd/1'

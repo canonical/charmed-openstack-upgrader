@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from juju.action import Action
 
-from cou.exceptions import ActionFailed, HaltUpgradeExecution
+from cou.exceptions import HaltUpgradeExecution
 from cou.utils import nova_compute
 from cou.utils.juju_utils import Machine, Unit
 
@@ -79,44 +79,24 @@ async def test_get_empty_hypervisors(
 @pytest.mark.asyncio
 @patch("cou.utils.nova_compute.logger")
 @patch("cou.utils.nova_compute.get_instance_count")
-async def test_verify_empty_hypervisor_before_upgrade_exception(
+async def test_verify_empty_hypervisor_HaltUpgradeExecution(
     mock_instance_count, mock_logger, instance_count, model
 ):
     mock_instance_count.return_value = instance_count
     nova_unit = _mock_nova_unit(1)
     exp_error_msg = f"Unit: {nova_unit.name} has {instance_count} VMs running"
+
     with pytest.raises(HaltUpgradeExecution, match=exp_error_msg):
-        await nova_compute.verify_empty_hypervisor_before_upgrade(nova_unit, model)
-    model.run_action.assert_called_once_with(
-        unit_name=nova_unit.name, action_name="enable", raise_on_failure=True
-    )
-    mock_logger.error.assert_not_called()
-    mock_logger.warning.assert_called_once()
+        await nova_compute.verify_empty_hypervisor(nova_unit, model) is None
 
-
-@pytest.mark.parametrize("instance_count", [1, 10, 50])
-@pytest.mark.asyncio
-@patch("cou.utils.nova_compute.logger")
-@patch("cou.utils.nova_compute.get_instance_count")
-async def test_verify_empty_hypervisor_before_upgrade_ActionFailed(
-    mock_instance_count, mock_logger, instance_count, model
-):
-    mock_instance_count.return_value = instance_count
-    model.run_action.side_effect = ActionFailed("enable")
-    nova_unit = _mock_nova_unit(1)
-    exp_error_msg = f"Unit: {nova_unit.name} has {instance_count} VMs running"
-    with pytest.raises(HaltUpgradeExecution, match=exp_error_msg):
-        await nova_compute.verify_empty_hypervisor_before_upgrade(nova_unit, model) is None
-
-    mock_logger.error.assert_called_once()
     mock_logger.warning.assert_called_once()
 
 
 @pytest.mark.asyncio
 @patch("cou.utils.nova_compute.get_instance_count", return_value=0)
-async def test_verify_empty_hypervisor_before_upgrade(mock_instance_count, model):
+async def test_verify_empty_hypervisor(mock_instance_count, model):
     nova_unit = _mock_nova_unit(1)
-    assert await nova_compute.verify_empty_hypervisor_before_upgrade(nova_unit, model) is None
+    assert await nova_compute.verify_empty_hypervisor(nova_unit, model) is None
 
 
 def _mock_nova_unit(nova_unit):

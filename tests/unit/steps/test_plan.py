@@ -138,7 +138,7 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.filter_hypervisors_machines")
+@patch("cou.steps.plan._filter_hypervisors_machines")
 async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
     """Test generation of upgrade plan."""
     exp_plan = dedent_plan(
@@ -181,7 +181,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
 nova-compute/0
         Remaining Data Plane principal(s) upgrade plan
             Upgrade plan for 'ceph-osd' to 'victoria'
-                Verify that all 'nova-compute' units had been upgraded
+                Verify that all 'nova-compute' units has been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Upgrade software packages on unit 'ceph-osd/0'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
@@ -304,7 +304,7 @@ nova-compute/0
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.filter_hypervisors_machines")
+@patch("cou.steps.plan._filter_hypervisors_machines")
 async def test_generate_plan_with_error_messages(mock_filter_hypervisors, model, cli_args):
     """Test generation of upgrade plan with error messages."""
     exp_plan = dedent_plan(
@@ -337,7 +337,7 @@ async def test_generate_plan_with_error_messages(mock_filter_hypervisors, model,
 nova-compute/0
         Remaining Data Plane principal(s) upgrade plan
             Upgrade plan for 'ceph-osd' to 'victoria'
-                Verify that all 'nova-compute' units had been upgraded
+                Verify that all 'nova-compute' units has been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Upgrade software packages on unit 'ceph-osd/0'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
@@ -468,10 +468,10 @@ This is not currently handled."""
     ]
 
 
-@patch("cou.steps.plan.verify_hypervisors_cli_input")
-@patch("cou.steps.plan.verify_supported_series")
-@patch("cou.steps.plan.verify_highest_release_achieved")
-@patch("cou.steps.plan.verify_data_plane_ready_to_upgrade")
+@patch("cou.steps.plan._verify_hypervisors_cli_input")
+@patch("cou.steps.plan._verify_supported_series")
+@patch("cou.steps.plan._verify_highest_release_achieved")
+@patch("cou.steps.plan._verify_data_plane_ready_to_upgrade")
 def test_pre_plan_sanity_checks(
     mock_verify_data_plane_ready_to_upgrade,
     mock_verify_highest_release_achieved,
@@ -482,7 +482,7 @@ def test_pre_plan_sanity_checks(
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
     mock_analysis_result.current_cloud_series = "focal"
-    cou_plan.pre_plan_sanity_checks(cli_args, mock_analysis_result)
+    cou_plan._pre_plan_sanity_checks(cli_args, mock_analysis_result)
     mock_verify_highest_release_achieved.assert_called_once_with(mock_analysis_result)
     mock_verify_supported_series.assert_called_once_with(mock_analysis_result)
     mock_verify_data_plane_ready_to_upgrade.assert_called_once_with(cli_args, mock_analysis_result)
@@ -511,7 +511,7 @@ def test_verify_supported_series(current_os_release, current_series, exp_error_m
     with pytest.raises(OutOfSupportRange, match=exp_error_msg):
         mock_analysis_result.current_cloud_os_release = current_os_release
         mock_analysis_result.current_cloud_series = current_series
-        cou_plan.verify_supported_series(mock_analysis_result)
+        cou_plan._verify_supported_series(mock_analysis_result)
 
 
 def test_verify_highest_release_achieved():
@@ -523,7 +523,7 @@ def test_verify_highest_release_achieved():
         "Newer OpenStack releases may be available after upgrading to a later Ubuntu series."
     )
     with pytest.raises(HighestReleaseAchieved, match=exp_error_msg):
-        cou_plan.verify_highest_release_achieved(mock_analysis_result)
+        cou_plan._verify_highest_release_achieved(mock_analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -550,11 +550,11 @@ def test_verify_data_plane_ready_to_upgrade_error(
     mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
     mock_analysis_result.min_os_version_data_plane = min_os_version_data_plane
     with pytest.raises(DataPlaneCannotUpgrade, match=exp_error_msg):
-        cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
+        cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
 
 
 @pytest.mark.parametrize("upgrade_group", [DATA_PLANE, HYPERVISORS])
-@patch("cou.steps.plan.is_control_plane_upgraded")
+@patch("cou.steps.plan._is_control_plane_upgraded")
 def test_verify_data_plane_ready_to_upgrade_data_plane_cmd(
     mock_control_plane_upgraded, cli_args, upgrade_group
 ):
@@ -562,13 +562,13 @@ def test_verify_data_plane_ready_to_upgrade_data_plane_cmd(
     mock_analysis_result.min_os_version_data_plane = OpenStackRelease("ussuri")
     cli_args.upgrade_group = upgrade_group
 
-    cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
+    cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
 
     mock_control_plane_upgraded.assert_called_once_with(mock_analysis_result)
 
 
 @pytest.mark.parametrize("upgrade_group", [CONTROL_PLANE, None])
-@patch("cou.steps.plan.is_control_plane_upgraded")
+@patch("cou.steps.plan._is_control_plane_upgraded")
 def test_verify_data_plane_ready_to_upgrade_non_data_plane_cmd(
     mock_control_plane_upgraded, cli_args, upgrade_group
 ):
@@ -576,7 +576,7 @@ def test_verify_data_plane_ready_to_upgrade_non_data_plane_cmd(
     mock_analysis_result.min_os_version_data_plane = OpenStackRelease("ussuri")
     cli_args.upgrade_group = upgrade_group
 
-    cou_plan.verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
+    cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
 
     mock_control_plane_upgraded.assert_not_called()
 
@@ -596,7 +596,7 @@ def test_is_control_plane_upgraded(
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
     mock_analysis_result.min_os_version_data_plane = min_os_version_data_plane
-    assert cou_plan.is_control_plane_upgraded(mock_analysis_result) is expected_result
+    assert cou_plan._is_control_plane_upgraded(mock_analysis_result) is expected_result
 
 
 @pytest.mark.parametrize(
@@ -611,7 +611,7 @@ def test_determine_upgrade_target(current_os_release, current_series, next_relea
     mock_analysis_result.current_cloud_os_release = current_os_release
     mock_analysis_result.current_cloud_series = current_series
 
-    target = cou_plan.determine_upgrade_target(mock_analysis_result)
+    target = cou_plan._determine_upgrade_target(mock_analysis_result)
 
     assert target == next_release
 
@@ -640,7 +640,7 @@ def test_determine_upgrade_target_current_os_and_series(
         mock_analysis_result = MagicMock(spec=Analysis)()
         mock_analysis_result.current_cloud_series = current_series
         mock_analysis_result.current_cloud_os_release = current_os_release
-        cou_plan.determine_upgrade_target(mock_analysis_result)
+        cou_plan._determine_upgrade_target(mock_analysis_result)
 
 
 def test_determine_upgrade_target_no_next_release():
@@ -658,7 +658,7 @@ def test_determine_upgrade_target_no_next_release():
             "ussuri"
         )  # instantiate OpenStackRelease with any valid codename
         mock_analysis_result.current_cloud_os_release = current_os_release
-        cou_plan.determine_upgrade_target(mock_analysis_result)
+        cou_plan._determine_upgrade_target(mock_analysis_result)
 
 
 def test_determine_upgrade_target_out_support_range():
@@ -672,18 +672,18 @@ def test_determine_upgrade_target_out_support_range():
         "Ubuntu series 'focal': ussuri, victoria, wallaby, xena, yoga."
     )
     with pytest.raises(OutOfSupportRange, match=exp_error_msg):
-        cou_plan.determine_upgrade_target(mock_analysis_result)
+        cou_plan._determine_upgrade_target(mock_analysis_result)
 
 
 @pytest.mark.parametrize("force", [True, False])
 def test_create_upgrade_plan(force):
-    """Test create_upgrade_group."""
+    """Test _create_upgrade_group."""
     app: OpenStackApplication = MagicMock(spec_set=OpenStackApplication)
     app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan, error_messages = cou_plan.create_upgrade_group([app], target, description, force)
+    plan, error_messages = cou_plan._create_upgrade_group([app], target, description, force)
 
     assert plan.description == description
     assert plan.parallel is False
@@ -696,14 +696,14 @@ def test_create_upgrade_plan(force):
 
 @pytest.mark.parametrize("force", [True, False])
 def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
-    """Test create_upgrade_group with HaltUpgradePlanGeneration exception raised."""
+    """Test _create_upgrade_group with HaltUpgradePlanGeneration exception raised."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
     app.generate_upgrade_plan.side_effect = HaltUpgradePlanGeneration
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan, error_messages = cou_plan.create_upgrade_group([app], target, description, force)
+    plan, error_messages = cou_plan._create_upgrade_group([app], target, description, force)
 
     assert len(plan.sub_steps) == 0
     assert len(error_messages) == 0
@@ -714,14 +714,14 @@ def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
     "exceptions", [MismatchedOpenStackVersions, ApplicationError, COUException]
 )
 def test_create_upgrade_plan_COUExceptions(exceptions):
-    """Test create_upgrade_group with different types of COUExceptions raised."""
+    """Test _create_upgrade_group with different types of COUExceptions raised."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
     app.generate_upgrade_plan.side_effect = exceptions
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan, error_messages = cou_plan.create_upgrade_group([app], target, description, False)
+    plan, error_messages = cou_plan._create_upgrade_group([app], target, description, False)
 
     assert len(plan.sub_steps) == 0
     assert len(error_messages) == 1
@@ -730,52 +730,52 @@ def test_create_upgrade_plan_COUExceptions(exceptions):
 
 @pytest.mark.parametrize("force", [True, False])
 def test_create_upgrade_plan_failed(force):
-    """Test create_upgrade_group with unknown exception."""
+    """Test _create_upgrade_group with unknown exception."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
     app.generate_upgrade_plan.side_effect = Exception("test")
 
     with pytest.raises(Exception, match="test"):
-        cou_plan.create_upgrade_group([app], "victoria", "test", force)
+        cou_plan._create_upgrade_group([app], "victoria", "test", force)
 
 
-@patch("cou.steps.plan.verify_hypervisors_cli_azs")
-@patch("cou.steps.plan.verify_hypervisors_cli_machines")
+@patch("cou.steps.plan._verify_hypervisors_cli_azs")
+@patch("cou.steps.plan._verify_hypervisors_cli_machines")
 def test_verify_hypervisors_cli_input_machines(mock_cli_machines, mock_cli_azs, cli_args):
     cli_args.machines = {"1"}
     cli_args.availability_zones = None
 
     analysis_result = MagicMock(spec_set=Analysis)()
 
-    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
+    assert cou_plan._verify_hypervisors_cli_input(cli_args, analysis_result) is None
 
     mock_cli_machines.assert_called_once_with(cli_args.machines, analysis_result)
     mock_cli_azs.assert_not_called()
 
 
-@patch("cou.steps.plan.verify_hypervisors_cli_azs")
-@patch("cou.steps.plan.verify_hypervisors_cli_machines")
+@patch("cou.steps.plan._verify_hypervisors_cli_azs")
+@patch("cou.steps.plan._verify_hypervisors_cli_machines")
 def test_verify_hypervisors_cli_input_azs(mock_cli_machines, mock_cli_azs, cli_args):
     cli_args.machines = None
     cli_args.availability_zones = {"zone-1"}
 
     analysis_result = MagicMock(spec_set=Analysis)()
 
-    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
+    assert cou_plan._verify_hypervisors_cli_input(cli_args, analysis_result) is None
 
     mock_cli_machines.assert_not_called()
     mock_cli_azs.assert_called_once_with(cli_args.availability_zones, analysis_result)
 
 
-@patch("cou.steps.plan.verify_hypervisors_cli_azs")
-@patch("cou.steps.plan.verify_hypervisors_cli_machines")
+@patch("cou.steps.plan._verify_hypervisors_cli_azs")
+@patch("cou.steps.plan._verify_hypervisors_cli_machines")
 def test_verify_hypervisors_cli_input_None(mock_cli_machines, mock_cli_azs, cli_args):
     cli_args.machines = None
     cli_args.availability_zones = None
 
     analysis_result = MagicMock(spec_set=Analysis)()
 
-    assert cou_plan.verify_hypervisors_cli_input(cli_args, analysis_result) is None
+    assert cou_plan._verify_hypervisors_cli_input(cli_args, analysis_result) is None
 
     mock_cli_machines.assert_not_called()
     mock_cli_azs.assert_not_called()
@@ -797,7 +797,7 @@ def test_verify_hypervisors_cli_machines_raise(cli_machines, exp_error_msg):
     analysis_result.control_plane_machines = {"1": machine1}
 
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_hypervisors_cli_machines(cli_machines, analysis_result)
+        cou_plan._verify_hypervisors_cli_machines(cli_machines, analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -818,7 +818,7 @@ def test_verify_hypervisors_cli_azs_raise_dont_exist(cli_azs, exp_error_msg):
     analysis_result.control_plane_machines = {"1": machine1}
 
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_hypervisors_cli_azs(cli_azs, analysis_result)
+        cou_plan._verify_hypervisors_cli_azs(cli_azs, analysis_result)
 
 
 def test_verify_hypervisors_cli_azs_raise_cannot_find():
@@ -832,7 +832,7 @@ def test_verify_hypervisors_cli_azs_raise_cannot_find():
     mock_analyze.machines = {"1": mock_machine}
     mock_analyze.data_plane_machines = {"1": mock_machine}
     with pytest.raises(DataPlaneMachineFilterError, match=exp_error_msg):
-        cou_plan.verify_hypervisors_cli_azs({"zone-1"}, mock_analyze)
+        cou_plan._verify_hypervisors_cli_azs({"zone-1"}, mock_analyze)
 
 
 @pytest.mark.parametrize(
@@ -886,7 +886,7 @@ async def test_filter_hypervisors_machines(
     cli_args.availability_zones = cli_azs
     cli_args.force = force
 
-    machines = await cou_plan.filter_hypervisors_machines(cli_args, MagicMock())
+    machines = await cou_plan._filter_hypervisors_machines(cli_args, MagicMock())
 
     assert {machine.machine_id for machine in machines} == expected_machines
 
@@ -1058,7 +1058,7 @@ def test_get_ceph_mon_post_upgrade_steps_multiple(model):
 
 
 @patch(
-    "cou.steps.plan.create_upgrade_group",
+    "cou.steps.plan._create_upgrade_group",
     side_effect=[
         (MagicMock(), ["principal_error_1", "principal_error_2"]),
         (MagicMock(), ["subordinate_error"]),
@@ -1098,8 +1098,8 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.pre_plan_sanity_checks")
-@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan._pre_plan_sanity_checks")
+@patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
     "cou.steps.plan._generate_control_plane_plan",
@@ -1141,8 +1141,8 @@ async def test_generate_plan_upgrade_group_None(
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.pre_plan_sanity_checks")
-@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan._pre_plan_sanity_checks")
+@patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
     "cou.steps.plan._generate_control_plane_plan",
@@ -1175,8 +1175,8 @@ async def test_generate_plan_upgrade_group_control_plane(
     mock_determine_upgrade_target.assert_called_once()
     mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_called_once()
-    mock_separate_hypervisors_apps.assert_called_once()
 
+    mock_separate_hypervisors_apps.assert_not_called()
     mock_generate_data_plane_hypervisors_plan.assert_not_called()
     mock_ceph_osd_subordinates.assert_not_called()
     mock_post_upgrade_steps.assert_called_once()
@@ -1184,8 +1184,8 @@ async def test_generate_plan_upgrade_group_control_plane(
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.pre_plan_sanity_checks")
-@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan._pre_plan_sanity_checks")
+@patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
     "cou.steps.plan._generate_control_plane_plan",
@@ -1227,8 +1227,8 @@ async def test_generate_plan_upgrade_group_data_plane(
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.pre_plan_sanity_checks")
-@patch("cou.steps.plan.determine_upgrade_target")
+@patch("cou.steps.plan._pre_plan_sanity_checks")
+@patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
@@ -1388,7 +1388,7 @@ def test_separate_hypervisors_apps(model):
 
 @pytest.mark.asyncio
 @patch("cou.steps.plan.HypervisorUpgradePlanner")
-@patch("cou.steps.plan.filter_hypervisors_machines")
+@patch("cou.steps.plan._filter_hypervisors_machines")
 async def test_generate_data_plane_hypervisors_plan(
     mock_filter_hypervisors, mock_hypervisor_planner, cli_args
 ):
@@ -1410,7 +1410,7 @@ async def test_generate_data_plane_hypervisors_plan(
 
 
 @patch(
-    "cou.steps.plan.create_upgrade_group",
+    "cou.steps.plan._create_upgrade_group",
     side_effect=[
         (MagicMock(), ["principal_error"]),
         (MagicMock(), ["subordinate_error_1", "subordinate_error_2"]),

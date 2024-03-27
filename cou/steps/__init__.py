@@ -315,9 +315,9 @@ class UpgradePlan(BaseStep):
 
 
 class HypervisorGroupUpgradePlan(UpgradePlan):
-    """Represents the plan for group of hypervisors.
+    """Represents the plan for a group of hypervisors.
 
-    This class is intended to be used as group for hypervisor upgrade steps, therefore
+    This class is intended to be used as a group for hypervisor upgrade steps, therefore
     doesn't accept coroutine or parallel as inputs.
     """
 

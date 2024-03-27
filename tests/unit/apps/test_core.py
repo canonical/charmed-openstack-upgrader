@@ -764,7 +764,7 @@ def test_nova_compute_get_empty_hypervisor_step(model):
 
     expected_step = UpgradeStep(
         description=f"Verify that unit '{unit.name}' has no VMs running",
-        coro=nova_compute_utils.verify_empty_hypervisor_before_upgrade(unit, model),
+        coro=nova_compute_utils.verify_empty_hypervisor(unit, model),
     )
     assert app._get_empty_hypervisor_step(unit) == expected_step
 
