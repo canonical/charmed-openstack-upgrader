@@ -964,8 +964,8 @@ async def test_generate_plan_upgrade_group_control_plane(
     mock_determine_upgrade_target.assert_called_once()
     mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_called_once()
-    mock_separate_hypervisors_apps.assert_called_once()
 
+    mock_separate_hypervisors_apps.assert_not_called()
     mock_generate_data_plane_hypervisors_plan.assert_not_called()
     mock_ceph_osd_subordinates.assert_not_called()
     mock_post_upgrade_steps.assert_called_once()

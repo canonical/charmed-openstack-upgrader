@@ -55,6 +55,68 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
+async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
+    """Generate plan for upgrade.
+
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: Plan with all upgrade steps necessary based on the Analysis.
+    :rtype: UpgradePlan
+    """
+    _pre_plan_sanity_checks(args, analysis_result)
+    target = _determine_upgrade_target(analysis_result)
+
+    plan = UpgradePlan(
+        f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
+    )
+    plan.add_steps(_get_pre_upgrade_steps(analysis_result, args))
+
+    # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
+    #  the whole cloud.
+    if args.upgrade_group in {CONTROL_PLANE, None}:
+        plan.add_steps(
+            _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
+        )
+
+    if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
+        plan.add_steps(await _generate_data_plane_plan(target, analysis_result, args))
+
+    plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
+
+    return plan
+
+
+async def _generate_data_plane_plan(
+    target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for data-plane.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: A list containing the upgrade plan for hypervisors, principals and subordinates
+             data-plane applications.
+    :rtype: list[UpgradePlan]
+    """
+    hypervisor_apps, non_hypervisors_apps = _separate_hypervisors_apps(
+        analysis_result.apps_data_plane
+    )
+
+    plans = [
+        await _generate_data_plane_hypervisors_plan(target, analysis_result, args, hypervisor_apps)
+    ]
+
+    if args.upgrade_group != HYPERVISORS:
+        plans.extend(_generate_data_plane_remaining_plan(target, non_hypervisors_apps, args.force))
+
+    return plans
+
+
 def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     """Pre checks to generate the upgrade plan.
 
@@ -292,51 +354,6 @@ def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRele
     return current_os_release, current_series
 
 
-async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
-    """Generate plan for upgrade.
-
-    :param analysis_result: Analysis result.
-    :type analysis_result: Analysis
-    :param args: CLI arguments
-    :type args: CLIargs
-    :return: Plan with all upgrade steps necessary based on the Analysis.
-    :rtype: UpgradePlan
-    """
-    _pre_plan_sanity_checks(args, analysis_result)
-    target = _determine_upgrade_target(analysis_result)
-
-    plan = UpgradePlan(
-        f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
-    )
-    plan.add_steps(_get_pre_upgrade_steps(analysis_result, args))
-
-    # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
-    #  the whole cloud.
-    if args.upgrade_group in {CONTROL_PLANE, None}:
-        plan.add_steps(
-            _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
-        )
-
-    hypervisor_apps, non_hypervisors_apps = _separate_hypervisors_apps(
-        analysis_result.apps_data_plane
-    )
-    if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
-        plan.add_step(
-            await _generate_data_plane_hypervisors_plan(
-                target, analysis_result, args, hypervisor_apps
-            )
-        )
-
-    if args.upgrade_group in {DATA_PLANE, None}:
-        plan.add_steps(
-            _generate_data_plane_remaining_plan(target, non_hypervisors_apps, args.force)
-        )
-
-    plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
-
-    return plan
-
-
 def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
     """Get the pre-upgrade steps.
 
@@ -512,8 +529,7 @@ def _generate_data_plane_remaining_plan(
     :type apps: list[OpenStackApplication]
     :param force: Whether the plan generation should be forced
     :type force: bool
-    :return: list containing the upgrade plan for principals and subordinates
-        data-plane apps.
+    :return: A list containing the upgrade plan for principals and subordinates data-plane apps.
     :rtype: list[UpgradePlan]
     """
     return [
