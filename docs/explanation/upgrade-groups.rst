@@ -42,7 +42,7 @@ of COU are (following their upgrade order):
 - openstack-dashboard
 - octavia
 - additional principal applications that contribute to the formation of the OpenStack cloud 
-  (typically **mysql-innodb-cluster**)
+  (typically **mysql-innodb-cluster** and **vault**)
 - **control-plane** subordinate applications
 
 
