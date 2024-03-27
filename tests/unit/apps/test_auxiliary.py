@@ -808,7 +808,7 @@ def test_ovn_version_pinning_principal(model):
     """Test the OvnPrincipal when enable-version-pinning is set to True."""
     target = OpenStackRelease("victoria")
     charm = "ovn-central"
-    exp_msg = f"'{charm}' should set 'enable-version-pinning' before upgrading"
+    exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
     machines = {"0": MagicMock(spec_set=Machine)}
     app = OvnPrincipal(
         name=charm,

@@ -58,7 +58,7 @@ class OvnSubordinate(AuxiliarySubordinateApplication):
         super().upgrade_plan_sanity_checks(target, units)
         if self.config["enable-version-pinning"].get("value"):
             raise ApplicationError(
-                f"'{self.name}' should set 'enable-version-pinning' before upgrading"
+                f"Cannot upgrade '{self.name}'. 'enable-version-pinning' must be set to 'false'."
             )
 
     def pre_upgrade_steps(
