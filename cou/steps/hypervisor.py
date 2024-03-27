@@ -68,9 +68,9 @@ class AZs(defaultdict):
         self.default_factory = None
 
     def __missing__(self, key: str) -> HypervisorGroup:
-        """Handle missing key in AZs.
+        """Handle missing keys in AZs.
 
-        If key is missing in the AZs dict, the default value
+        If a key is missing in the AZs dict, the default value
         HypervisorGroup(name=key, apps=defaultdict(list) will be used. Like this we can always
         access the az["my-az"].name == "my-az" or az["my-az"].apps["my-app"].
         """
@@ -153,8 +153,8 @@ class HypervisorUpgradePlanner:
                     logger.info("skipping unit %s is already on %s", unit.name, unit_os_release)
                     continue
 
-                # NOTE(rgildein): If there is no AZ, we will use empty string and all units will
-                #                 belong to a single group.
+                # NOTE(rgildein): If there is no AZ, we will use an empty string and group all
+                #                 units to a single hypervisor group.
                 az = unit.machine.az or ""
                 azs[az].app_units[app.name].append(unit)
 

@@ -434,7 +434,7 @@ class OpenStackApplication(Application):
     ) -> ApplicationUpgradePlan:
         """Generate full upgrade plan for an Application.
 
-        Units are passed if the application should upgrade unit by unit.
+        Units are passed if the application should be upgraded unit by unit.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
@@ -774,13 +774,13 @@ class OpenStackApplication(Application):
     def _check_mismatched_versions(self, units: Optional[list[Unit]]) -> None:
         """Check that there are no mismatched versions on app units.
 
-        If units are passed, the application will upgrade in unit-by-unit fashion,
+        If units are passed, the application will be upgraded in unit-by-unit fashion,
         and mismatch is not checked.
 
         :param units: Units to generate upgrade plan
         :type units: Optional[list[Unit]]
-        :raises MismatchedOpenStackVersions:  When the units of the app are running
-            different OpenStack versions
+        :raises MismatchedOpenStackVersions: When the units of the app are running
+                                             different OpenStack versions
         """
         if units:
             return

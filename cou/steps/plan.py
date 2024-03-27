@@ -55,7 +55,7 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-def pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
+def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     """Pre checks to generate the upgrade plan.
 
     :param args: CLI arguments
@@ -63,13 +63,13 @@ def pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
-    verify_supported_series(analysis_result)
-    verify_highest_release_achieved(analysis_result)
-    verify_data_plane_ready_to_upgrade(args, analysis_result)
-    verify_hypervisors_cli_input(args, analysis_result)
+    _verify_supported_series(analysis_result)
+    _verify_highest_release_achieved(analysis_result)
+    _verify_data_plane_ready_to_upgrade(args, analysis_result)
+    _verify_hypervisors_cli_input(args, analysis_result)
 
 
-def verify_supported_series(analysis_result: Analysis) -> None:
+def _verify_supported_series(analysis_result: Analysis) -> None:
     """Verify the Ubuntu series of the cloud to see if it is supported.
 
     :param analysis_result: Analysis result.
@@ -85,7 +85,7 @@ def verify_supported_series(analysis_result: Analysis) -> None:
         )
 
 
-def verify_highest_release_achieved(analysis_result: Analysis) -> None:
+def _verify_highest_release_achieved(analysis_result: Analysis) -> None:
     """Verify if the highest OpenStack release is reached for the current Ubuntu series.
 
     :param analysis_result: Analysis result.
@@ -103,7 +103,7 @@ def verify_highest_release_achieved(analysis_result: Analysis) -> None:
         )
 
 
-def verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis) -> None:
+def _verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis) -> None:
     """Verify if data plane is ready to upgrade.
 
     To be able to upgrade data-plane, first all control plane apps should be upgraded.
@@ -119,11 +119,11 @@ def verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis)
             raise DataPlaneCannotUpgrade(
                 "Cannot find data-plane apps. Is this a valid OpenStack cloud?"
             )
-        if not is_control_plane_upgraded(analysis_result):
+        if not _is_control_plane_upgraded(analysis_result):
             raise DataPlaneCannotUpgrade("Please, upgrade control-plane before data-plane")
 
 
-def is_control_plane_upgraded(analysis_result: Analysis) -> bool:
+def _is_control_plane_upgraded(analysis_result: Analysis) -> bool:
     """Check if control plane has been fully upgraded.
 
     Control-plane will be considered as upgraded when the OpenStack version of it
@@ -140,7 +140,7 @@ def is_control_plane_upgraded(analysis_result: Analysis) -> bool:
     return bool(control_plane and data_plane and control_plane > data_plane)
 
 
-def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
+def _determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
     """Determine the target release to upgrade to.
 
     :param analysis_result: Analysis result.
@@ -175,7 +175,7 @@ def determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
     return target
 
 
-def verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> None:
+def _verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> None:
     """Sanity checks from the parameters passed in the cli to upgrade data-plane.
 
     :param args: CLI arguments
@@ -184,12 +184,12 @@ def verify_hypervisors_cli_input(args: CLIargs, analysis_result: Analysis) -> No
     :type analysis_result: Analysis
     """
     if args.machines:
-        verify_hypervisors_cli_machines(args.machines, analysis_result)
+        _verify_hypervisors_cli_machines(args.machines, analysis_result)
     elif args.availability_zones:
-        verify_hypervisors_cli_azs(args.availability_zones, analysis_result)
+        _verify_hypervisors_cli_azs(args.availability_zones, analysis_result)
 
 
-def verify_hypervisors_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:
+def _verify_hypervisors_cli_machines(cli_machines: set[str], analysis_result: Analysis) -> None:
     """Verify if the machines passed from the CLI are valid.
 
     :param cli_machines: Machines passed to the CLI as arguments
@@ -197,7 +197,7 @@ def verify_hypervisors_cli_machines(cli_machines: set[str], analysis_result: Ana
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    verify_data_plane_membership(
+    _verify_data_plane_membership(
         all_options=set(analysis_result.machines.keys()),
         data_plane_options=set(analysis_result.data_plane_machines.keys()),
         cli_input=cli_machines,
@@ -205,7 +205,7 @@ def verify_hypervisors_cli_machines(cli_machines: set[str], analysis_result: Ana
     )
 
 
-def verify_hypervisors_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> None:
+def _verify_hypervisors_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> None:
     """Verify if the availability zones passed from the CLI are valid.
 
     :param cli_azs: AZs passed to the CLI as arguments
@@ -228,7 +228,7 @@ def verify_hypervisors_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> 
             "Cannot find Availability Zone(s). Is this a valid OpenStack cloud?"
         )
 
-    verify_data_plane_membership(
+    _verify_data_plane_membership(
         all_options=all_azs,
         data_plane_options=data_plane_azs,
         cli_input=cli_azs,
@@ -236,7 +236,7 @@ def verify_hypervisors_cli_azs(cli_azs: set[str], analysis_result: Analysis) -> 
     )
 
 
-def verify_data_plane_membership(
+def _verify_data_plane_membership(
     all_options: set[str],
     data_plane_options: set[str],
     cli_input: set[str],
@@ -302,8 +302,8 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :return: Plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """
-    pre_plan_sanity_checks(args, analysis_result)
-    target = determine_upgrade_target(analysis_result)
+    _pre_plan_sanity_checks(args, analysis_result)
+    target = _determine_upgrade_target(analysis_result)
 
     plan = UpgradePlan(
         f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
@@ -428,14 +428,14 @@ def _generate_control_plane_plan(
     :return: Principal and Subordinate upgrade plan.
     :rtype: list[UpgradePlan]
     """
-    principal_upgrade_plan = create_upgrade_group(
+    principal_upgrade_plan = _create_upgrade_group(
         apps=[app for app in apps if app.is_subordinate is False],
         description="Control Plane principal(s) upgrade plan",
         target=target,
         force=force,
     )
 
-    subordinate_upgrade_plan = create_upgrade_group(
+    subordinate_upgrade_plan = _create_upgrade_group(
         apps=[app for app in apps if app.is_subordinate],
         description="Control Plane subordinate(s) upgrade plan",
         target=target,
@@ -491,7 +491,7 @@ async def _generate_data_plane_hypervisors_plan(
     :return: Hypervisors upgrade plan.
     :rtype: UpgradePlan
     """
-    hypervisors_machines = await filter_hypervisors_machines(args, analysis_result)
+    hypervisors_machines = await _filter_hypervisors_machines(args, analysis_result)
     logger.info("Hypervisors selected: %s", hypervisors_machines)
     hypervisor_planner = HypervisorUpgradePlanner(apps, hypervisors_machines)
     hypervisor_plan = hypervisor_planner.generate_upgrade_plan(target, args.force)
@@ -517,13 +517,13 @@ def _generate_data_plane_remaining_plan(
     :rtype: list[UpgradePlan]
     """
     return [
-        create_upgrade_group(
+        _create_upgrade_group(
             apps=[app for app in apps if app.is_subordinate is False],
             description="Remaining Data Plane principal(s) upgrade plan",
             target=target,
             force=force,
         ),
-        create_upgrade_group(
+        _create_upgrade_group(
             apps=[app for app in apps if app.is_subordinate],
             description="Data Plane subordinate(s) upgrade plan",
             target=target,
@@ -532,7 +532,7 @@ def _generate_data_plane_remaining_plan(
     ]
 
 
-async def filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> list[Machine]:
+async def _filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> list[Machine]:
     """Filter the hypervisors to generate plan and upgrade.
 
     :param args: CLI arguments
@@ -592,7 +592,7 @@ def _get_nova_compute_units_and_machines(
     return nova_compute_units, [unit.machine for unit in nova_compute_units]
 
 
-def create_upgrade_group(
+def _create_upgrade_group(
     apps: list[OpenStackApplication],
     target: OpenStackRelease,
     description: str,

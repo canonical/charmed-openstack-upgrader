@@ -217,9 +217,9 @@ class Analysis:
 
     @property
     def machines(self) -> dict[str, juju_utils.Machine]:
-        """All machines of the model.
+        """All OpenStack machines of the model.
 
-        :return: All machines of the model.
+        :return: All OpenStack machines of the model.
         :rtype: dict[str, Machine]
         """
         return {**self.data_plane_machines, **self.control_plane_machines}
