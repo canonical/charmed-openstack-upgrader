@@ -13,23 +13,21 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 
 from cou.commands import CLIargs
-from cou.steps.analyze import Analysis
+from cou.utils.juju_utils import Model
 from tests.unit.utils import get_charm_name, get_sample_plan, get_status
 
 
 @pytest.fixture
-def model():
+def model() -> AsyncMock:
     """Define test Model object."""
     model_name = "test_model"
-    from cou.utils import juju_utils
 
-    model = AsyncMock(spec_set=juju_utils.Model)
+    model = AsyncMock(spec_set=Model)
     type(model).name = PropertyMock(return_value=model_name)
     model.run_on_unit = AsyncMock()
     model.run_action = AsyncMock()
@@ -61,12 +59,16 @@ def cli_args() -> MagicMock:
     return MagicMock(spec_set=CLIargs(command="plan"))()
 
 
-@pytest.fixture
-def sample_plans(model) -> Generator[tuple[Analysis, str], None, None]:
-    """Fixture that returns all sample plans in a directory."""
+@pytest.fixture(scope="session")
+def sample_plans() -> dict[str, tuple[Model, str]]:
+    """Fixture that returns all sample plans in a directory.
+
+    This fixture returns a dictionary with filename as key and value as a
+    cou.utils.juju_utils.Model object whose get_applications function returns the applications
+    from the file and the expected plan.
+    """
     directory = Path(__file__).parent / "sample_plans"
-    sample_plans = [
-        get_sample_plan(model, sample_file) for sample_file in directory.glob("*.yaml")
-    ]
-    model.get_applications = AsyncMock(side_effect=[apps for apps, _, _ in sample_plans])
-    return [(Analysis.create(model), exp_plan, file) for _, exp_plan, file in sample_plans]
+
+    yield {
+        sample_file.name: get_sample_plan(sample_file) for sample_file in directory.glob("*.yaml")
+    }

@@ -14,12 +14,11 @@
 """Module to provide helper for writing unit tests."""
 from pathlib import Path
 from textwrap import dedent
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import yaml
 from juju.client.client import FullStatus
 
-from cou.apps.base import OpenStackApplication
 from cou.steps import BaseStep
 from cou.utils.juju_utils import Application, Machine, Model, Unit
 
@@ -59,9 +58,7 @@ async def get_charm_name(value: str):
     return value
 
 
-def get_sample_plan(
-    model: Model, source: Path
-) -> tuple[dict[str, OpenStackApplication], str, Path]:
+def get_sample_plan(source: Path) -> tuple[Model, str]:
     """Help function to get dict of Applications and expected upgrade plan from file.
 
     This function can load applications from yaml format, where each app is string representation
@@ -82,34 +79,37 @@ def get_sample_plan(
     with open(source, "r") as file:
         data = yaml.load(file, Loader=yaml.Loader)
 
+    model = AsyncMock(spec_set=Model)
+
     # Note(rgildein): We need to get machines first, since they are used in Unit object.
     machines = {
         machine_id: Machine(machine["id"], machine["apps"], machine["az"])
         for app_data in data["applications"].values()
         for machine_id, machine in app_data["machines"].items()
     }
+    applications = {
+        name: Application(
+            name=name,
+            can_upgrade_to=app_data["can_upgrade_to"],
+            charm=app_data["charm"],
+            channel=app_data["channel"],
+            config=app_data["config"],
+            machines={machine_id: machines[machine_id] for machine_id in app_data["machines"]},
+            model=model,
+            origin=app_data["origin"],
+            series=app_data["series"],
+            subordinate_to=app_data["subordinate_to"],
+            units={
+                name: Unit(name, machines[unit["machine"]], unit["workload_version"])
+                for name, unit in app_data["units"].items()
+            },
+            workload_version=app_data["workload_version"],
+        )
+        for name, app_data in data["applications"].items()
+    }
 
-    return (
-        {
-            name: Application(
-                name=name,
-                can_upgrade_to=app_data["can_upgrade_to"],
-                charm=app_data["charm"],
-                channel=app_data["channel"],
-                config=app_data["config"],
-                machines={machine_id: machines[machine_id] for machine_id in app_data["machines"]},
-                model=model,
-                origin=app_data["origin"],
-                series=app_data["series"],
-                subordinate_to=app_data["subordinate_to"],
-                units={
-                    name: Unit(name, machines[unit["machine"]], unit["workload_version"])
-                    for name, unit in app_data["units"].items()
-                },
-                workload_version=app_data["workload_version"],
-            )
-            for name, app_data in data["applications"].items()
-        },
-        dedent_plan(data["plan"]),
-        source,
-    )
+    type(model).name = PropertyMock(return_value=source.stem)
+    # model._get_machines = AsyncMock(return_value=machines)
+    model.get_applications = AsyncMock(return_value=applications)
+
+    return model, dedent_plan(data["plan"])

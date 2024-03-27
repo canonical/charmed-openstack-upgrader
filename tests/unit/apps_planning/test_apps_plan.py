@@ -17,17 +17,18 @@ from unittest.mock import patch
 import pytest
 
 from cou.commands import CLIargs
+from cou.steps.analyze import Analysis
 from cou.steps.plan import generate_plan
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan.filter_hypervisors_machines")
-async def test_sample_plans_no_inputs(_, subtests, sample_plans):
+@patch("cou.utils.nova_compute.get_instance_count", return_value=0)
+async def test_base_plan(_, model, sample_plans):
     """Testing all sample plans."""
     args = CLIargs("plan", auto_approve=True)
+    model, exp_plan = sample_plans["base.yaml"]
 
-    for analysis_create_coro, exp_plan, file in sample_plans:
-        with subtests.test(msg=file.name):
-            analysis_results = await analysis_create_coro
-            plan = await generate_plan(analysis_results, args)
-            assert str(plan) == exp_plan
+    analysis_results = await Analysis.create(model)
+    plan = await generate_plan(analysis_results, args)
+
+    assert str(plan) == exp_plan
