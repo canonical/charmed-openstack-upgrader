@@ -229,12 +229,7 @@ class HypervisorUpgradePlanner:
             units = group.app_units[app.name]
             logger.info("generating upgrade steps for %s units of %s app", app.name, units)
 
-            if app.charm == "nova-compute":
-                # NOTE(gabrielcocenza) it's important to disable the scheduler before upgrading
-                # any application, that is why we insert in the first position.
-                steps = app.upgrade_steps(target, units, force) + steps
-            else:
-                steps.extend(app.upgrade_steps(target, units, force))
+            steps.extend(app.upgrade_steps(target, units, force))
 
         return steps
 
@@ -265,12 +260,7 @@ class HypervisorUpgradePlanner:
 
             units = group.app_units[app.name]
             logger.info("generating post-upgrade steps for %s units of %s app", app.name, units)
-            if app.charm == "nova-compute":
-                # NOTE(gabrielcocenza) it's important to enable the scheduler after upgrading
-                # all applications.
-                steps.extend(app.post_upgrade_steps(target, units=units))
-            else:
-                steps = app.post_upgrade_steps(target, units) + steps
+            steps.extend(app.post_upgrade_steps(target, units=units))
 
         return steps
 

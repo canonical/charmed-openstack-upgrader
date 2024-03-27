@@ -19,7 +19,7 @@ from typing import Iterable, Optional
 from cou.apps import LONG_IDLE_TIMEOUT
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
-from cou.steps import PostUpgradeStep, UnitUpgradeStep, UpgradeStep
+from cou.steps import PostUpgradeStep, PreUpgradeStep, UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import COUUnit
 from cou.utils.nova_compute import verify_empty_hypervisor_before_upgrade
 from cou.utils.openstack import OpenStackRelease
@@ -58,6 +58,20 @@ class NovaCompute(OpenStackApplication):
     wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
     upgrade_units_running_vms = False
+
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[COUUnit]]
+    ) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[COUUnit]]
+        :return: List of pre upgrade steps.
+        :rtype: list[PreUpgradeStep]
+        """
+        return self._get_disable_scheduler_step(units) + super().pre_upgrade_steps(target, units)
 
     def upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[COUUnit]], force: bool
@@ -105,7 +119,6 @@ class NovaCompute(OpenStackApplication):
         :rtype: UnitUpgradeStep
         """
         unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit '{unit.name}'")
-        unit_plan.add_step(self._get_disable_scheduler_step(unit))
 
         if not force:
             unit_plan.add_step(self._get_empty_hypervisor_step(unit))
@@ -142,32 +155,36 @@ class NovaCompute(OpenStackApplication):
         :return: Steps to enable the scheduler on units
         :rtype: list[PostUpgradeStep]
         """
-        steps = []
         if not units:
             units = list(self.units.values())
-
-        for unit in units:
-            steps.append(
-                PostUpgradeStep(
-                    description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
-                    coro=self.model.run_action(
-                        unit_name=unit.name, action_name="enable", raise_on_failure=True
-                    ),
-                )
+        return [
+            PostUpgradeStep(
+                description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
+                coro=self.model.run_action(
+                    unit_name=unit.name, action_name="enable", raise_on_failure=True
+                ),
             )
-        return steps
+            for unit in units
+        ]
 
-    def _get_disable_scheduler_step(self, unit: COUUnit) -> UnitUpgradeStep:
+    def _get_disable_scheduler_step(
+        self, units: Optional[Iterable[COUUnit]]
+    ) -> list[PreUpgradeStep]:
         """Get the step to disable the scheduler,  so the unit cannot create new VMs.
 
-        :param unit: Unit to be disabled.
-        :type unit: COUUnit
-        :return: Step to disable the scheduler
-        :rtype: UnitUpgradeStep
+        :param units: Units to be disabled.
+        :type units: Optional[Iterable[COUUnit]]
+        :return: Steps to disable the scheduler on units
+        :rtype: list[PreUpgradeStep]
         """
-        return UnitUpgradeStep(
-            description=f"Disable nova-compute scheduler from unit: '{unit.name}'",
-            coro=self.model.run_action(
-                unit_name=unit.name, action_name="disable", raise_on_failure=True
-            ),
-        )
+        if not units:
+            units = list(self.units.values())
+        return [
+            PreUpgradeStep(
+                description=f"Disable nova-compute scheduler from unit: '{unit.name}'",
+                coro=self.model.run_action(
+                    unit_name=unit.name, action_name="disable", raise_on_failure=True
+                ),
+            )
+            for unit in units
+        ]
