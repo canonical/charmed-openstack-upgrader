@@ -298,14 +298,14 @@ nova-compute/0
         apps_data_plane=[ceph_osd, nova_compute, ovn_chassis],
     )
 
-    upgrade_plan, error_messages = await cou_plan.generate_plan(analysis_result, cli_args)
+    upgrade_plan, warning_messages = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
-    assert len(error_messages) == 0
+    assert len(warning_messages) == 0
 
 
 @pytest.mark.asyncio
 @patch("cou.steps.plan._filter_hypervisors_machines")
-async def test_generate_plan_with_error_messages(mock_filter_hypervisors, model, cli_args):
+async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, model, cli_args):
     """Test generation of upgrade plan with error messages."""
     exp_plan = dedent_plan(
         """\
@@ -459,9 +459,9 @@ nova-compute/0
         apps_data_plane=[ceph_osd, nova_compute, ovn_chassis],
     )
 
-    upgrade_plan, error_messages = await cou_plan.generate_plan(analysis_result, cli_args)
+    upgrade_plan, warning_messages = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
-    assert error_messages == [
+    assert warning_messages == [
         """Cannot generate plan for 'keystone'\n\tUnits of application keystone are running \
 mismatched OpenStack versions: 'ussuri': ['keystone/0'], 'victoria': ['keystone/1']. \
 This is not currently handled."""
@@ -683,13 +683,13 @@ def test_create_upgrade_plan(force):
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan, error_messages = cou_plan._create_upgrade_group([app], target, description, force)
+    plan, warning_messages = cou_plan._create_upgrade_group([app], target, description, force)
 
     assert plan.description == description
     assert plan.parallel is False
     assert plan._coro is None
     assert len(plan.sub_steps) == 1
-    assert len(error_messages) == 0
+    assert len(warning_messages) == 0
     assert plan.sub_steps[0] == app.generate_upgrade_plan.return_value
     app.generate_upgrade_plan.assert_called_once_with(target, force)
 
@@ -703,10 +703,10 @@ def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan, error_messages = cou_plan._create_upgrade_group([app], target, description, force)
+    plan, warning_messages = cou_plan._create_upgrade_group([app], target, description, force)
 
     assert len(plan.sub_steps) == 0
-    assert len(error_messages) == 0
+    assert len(warning_messages) == 0
     app.generate_upgrade_plan.assert_called_once_with(target, force)
 
 
@@ -721,10 +721,10 @@ def test_create_upgrade_plan_COUExceptions(exceptions):
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan, error_messages = cou_plan._create_upgrade_group([app], target, description, False)
+    plan, warning_messages = cou_plan._create_upgrade_group([app], target, description, False)
 
     assert len(plan.sub_steps) == 0
-    assert len(error_messages) == 1
+    assert len(warning_messages) == 1
     app.generate_upgrade_plan.assert_called_once_with(target, False)
 
 
@@ -1060,8 +1060,8 @@ def test_get_ceph_mon_post_upgrade_steps_multiple(model):
 @patch(
     "cou.steps.plan._create_upgrade_group",
     side_effect=[
-        (MagicMock(), ["principal_error_1", "principal_error_2"]),
-        (MagicMock(), ["subordinate_error"]),
+        (MagicMock(), ["principal_warning_1", "principal_warning_2"]),
+        (MagicMock(), ["subordinate_warning"]),
     ],
 )
 def test_generate_control_plane_plan(mock_create_upgrade_group):
@@ -1074,7 +1074,7 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
     keystone_ldap = MagicMock(spec_set=SubordinateApplication)()
     keystone_ldap.is_subordinate = True
 
-    _, error_messages = cou_plan._generate_control_plane_plan(
+    _, warning_messages = cou_plan._generate_control_plane_plan(
         target, [keystone, keystone_ldap], force
     )
 
@@ -1094,7 +1094,11 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
     ]
 
     mock_create_upgrade_group.assert_has_calls(expected_calls)
-    assert error_messages == ["principal_error_1", "principal_error_2", "subordinate_error"]
+    assert warning_messages == [
+        "principal_warning_1",
+        "principal_warning_2",
+        "subordinate_warning",
+    ]
 
 
 @pytest.mark.asyncio
@@ -1103,13 +1107,13 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
     "cou.steps.plan._generate_control_plane_plan",
-    return_value=(MagicMock(), ["control_plane_error_1", "control_plane_error_2"]),
+    return_value=(MagicMock(), ["control_plane_warning_1", "control_plane_warning_2"]),
 )
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
     "cou.steps.plan._generate_data_plane_remaining_plan",
-    return_value=(MagicMock(), ["data_plane_error"]),
+    return_value=(MagicMock(), ["data_plane_warning"]),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_None(
@@ -1126,7 +1130,7 @@ async def test_generate_plan_upgrade_group_None(
     cli_args.upgrade_group = None
     mock_analysis_result = MagicMock(spec=Analysis)()
 
-    _, error_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
+    _, warning_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
@@ -1137,7 +1141,11 @@ async def test_generate_plan_upgrade_group_None(
     mock_generate_data_plane_hypervisors_plan.assert_called_once()
     mock_ceph_osd_subordinates.assert_called_once()
     mock_post_upgrade_steps.assert_called_once()
-    assert error_messages == ["control_plane_error_1", "control_plane_error_2", "data_plane_error"]
+    assert warning_messages == [
+        "control_plane_warning_1",
+        "control_plane_warning_2",
+        "data_plane_warning",
+    ]
 
 
 @pytest.mark.asyncio
@@ -1146,13 +1154,13 @@ async def test_generate_plan_upgrade_group_None(
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
     "cou.steps.plan._generate_control_plane_plan",
-    return_value=(MagicMock(), ["control_plane_error_1", "control_plane_error_2"]),
+    return_value=(MagicMock(), ["control_plane_warning_1", "control_plane_warning_2"]),
 )
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
     "cou.steps.plan._generate_data_plane_remaining_plan",
-    return_value=(MagicMock(), ["data_plane_error"]),
+    return_value=(MagicMock(), ["data_plane_warning"]),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_control_plane(
@@ -1169,7 +1177,7 @@ async def test_generate_plan_upgrade_group_control_plane(
     cli_args.upgrade_group = CONTROL_PLANE
     mock_analysis_result = MagicMock(spec=Analysis)()
 
-    _, error_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
+    _, warning_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
@@ -1180,7 +1188,7 @@ async def test_generate_plan_upgrade_group_control_plane(
     mock_generate_data_plane_hypervisors_plan.assert_not_called()
     mock_ceph_osd_subordinates.assert_not_called()
     mock_post_upgrade_steps.assert_called_once()
-    assert error_messages == ["control_plane_error_1", "control_plane_error_2"]
+    assert warning_messages == ["control_plane_warning_1", "control_plane_warning_2"]
 
 
 @pytest.mark.asyncio
@@ -1189,13 +1197,13 @@ async def test_generate_plan_upgrade_group_control_plane(
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
     "cou.steps.plan._generate_control_plane_plan",
-    return_value=(MagicMock(), ["control_plane_error_1", "control_plane_error_2"]),
+    return_value=(MagicMock(), ["control_plane_warning_1", "control_plane_warning_2"]),
 )
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
     "cou.steps.plan._generate_data_plane_remaining_plan",
-    return_value=(MagicMock(), ["data_plane_error"]),
+    return_value=(MagicMock(), ["data_plane_warning"]),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_data_plane(
@@ -1212,7 +1220,7 @@ async def test_generate_plan_upgrade_group_data_plane(
     cli_args.upgrade_group = DATA_PLANE
     mock_analysis_result = MagicMock(spec=Analysis)()
 
-    _, error_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
+    _, warning_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
@@ -1223,7 +1231,7 @@ async def test_generate_plan_upgrade_group_data_plane(
     mock_generate_data_plane_hypervisors_plan.assert_called_once()
     mock_ceph_osd_subordinates.assert_called_once()
     mock_post_upgrade_steps.assert_called_once()
-    assert error_messages == ["data_plane_error"]
+    assert warning_messages == ["data_plane_warning"]
 
 
 @pytest.mark.asyncio
@@ -1412,8 +1420,8 @@ async def test_generate_data_plane_hypervisors_plan(
 @patch(
     "cou.steps.plan._create_upgrade_group",
     side_effect=[
-        (MagicMock(), ["principal_error"]),
-        (MagicMock(), ["subordinate_error_1", "subordinate_error_2"]),
+        (MagicMock(), ["principal_warning"]),
+        (MagicMock(), ["subordinate_warning_1", "subordinate_warning_2"]),
     ],
 )
 def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
@@ -1426,7 +1434,7 @@ def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
     ovn_chassis = MagicMock(spec_set=OvnSubordinate)()
     ovn_chassis.is_subordinate = True
 
-    _, error_messages = cou_plan._generate_data_plane_remaining_plan(
+    _, warning_messages = cou_plan._generate_data_plane_remaining_plan(
         target, [ceph_osd, ovn_chassis], force
     )
     expected_calls = [
@@ -1444,4 +1452,8 @@ def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
         ),
     ]
     mock_create_upgrade_group.assert_has_calls(expected_calls)
-    assert error_messages == ["principal_error", "subordinate_error_1", "subordinate_error_2"]
+    assert warning_messages == [
+        "principal_warning",
+        "subordinate_warning_1",
+        "subordinate_warning_2",
+    ]

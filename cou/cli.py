@@ -110,7 +110,7 @@ async def analyze_and_plan(args: CLIargs) -> tuple[UpgradePlan, list[str]]:
 
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Tuple containing the generated upgrade plan and a list of recorded error messages
+    :return: Tuple containing the generated upgrade plan and a list of recorded warning messages
         from plan generation.
     :rtype: tuple[UpgradePlan, list[str]]
     """
@@ -126,10 +126,10 @@ async def analyze_and_plan(args: CLIargs) -> tuple[UpgradePlan, list[str]]:
     progress_indicator.succeed()
 
     progress_indicator.start("Generating upgrade plan...")
-    upgrade_plan, error_messages = await generate_plan(analysis_result, args)
+    upgrade_plan, warning_messages = await generate_plan(analysis_result, args)
     progress_indicator.succeed()
 
-    return upgrade_plan, error_messages
+    return upgrade_plan, warning_messages
 
 
 async def get_upgrade_plan(args: CLIargs) -> None:
@@ -138,13 +138,16 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    upgrade_plan, error_messages = await analyze_and_plan(args)
+    upgrade_plan, warning_messages = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if error_messages:
-        for error in error_messages:
-            logger.error(error)
-        print("Note that running upgrades will not be possible until errors are fixed.")
+    if warning_messages:
+        for warning in warning_messages:
+            logger.warning(warning)
+        print(
+            "Running upgrades will not be possible until problems indicated in the warnings "
+            "are resolved."
+        )
         return
 
     print(
@@ -159,13 +162,16 @@ async def run_upgrade(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    upgrade_plan, error_messages = await analyze_and_plan(args)
+    upgrade_plan, warning_messages = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if error_messages:
-        for error in error_messages:
-            logger.error(error)
-        print("Not possible to run upgrades. Please fix the errors before proceeding.")
+    if warning_messages:
+        for warning in warning_messages:
+            logger.warning(warning)
+        print(
+            "Cannot run upgrades. Please resolve the problems indicated in the warnings "
+            "before proceeding."
+        )
         return
 
     if args.prompt and not await continue_upgrade():

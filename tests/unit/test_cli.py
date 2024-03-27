@@ -98,21 +98,28 @@ async def test_get_upgrade_plan(mock_print_and_debug, mock_analyze_and_plan, cli
 @pytest.mark.asyncio
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.print_and_debug")
+@patch("builtins.print")
 @patch("cou.cli.logger")
-async def test_get_upgrade_plan_with_errors(
-    mock_logger, mock_print_and_debug, mock_analyze_and_plan, cli_args
+async def test_get_upgrade_plan_with_warnings(
+    mock_logger, mock_print, mock_print_and_debug, mock_analyze_and_plan, cli_args
 ):
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    error_messages = ["Mock error message1", "Mock error message2"]
+    warning_messages = ["Mock warning message1", "Mock warning message2"]
 
-    mock_analyze_and_plan.return_value = (plan, error_messages)
+    mock_analyze_and_plan.return_value = (plan, warning_messages)
     await cli.get_upgrade_plan(cli_args)
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_print_and_debug.assert_called_once_with(plan)
-    mock_logger.error.assert_has_calls([call("Mock error message1"), call("Mock error message2")])
+    mock_logger.warning.assert_has_calls(
+        [call("Mock warning message1"), call("Mock warning message2")]
+    )
+    mock_print.assert_called_once_with(
+        "Running upgrades will not be possible until problems indicated "
+        "in the warnings are resolved."
+    )
 
 
 @pytest.mark.asyncio
@@ -238,7 +245,7 @@ async def test_run_upgrade_with_no_prompt(
 @patch("builtins.print")
 @patch("cou.cli.print_and_debug")
 @patch("cou.cli.logger")
-async def test_run_upgrade_with_errors(
+async def test_run_upgrade_with_warnings(
     mock_logger,
     mock_print_and_debug,
     mock_print,
@@ -249,18 +256,21 @@ async def test_run_upgrade_with_errors(
     """Test run_upgrade function with error messages from plan generation."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    error_messages = ["Mock error message1", "Mock error message2"]
+    warning_messages = ["Mock warning message1", "Mock warning message2"]
 
-    mock_analyze_and_plan.return_value = (plan, error_messages)
+    mock_analyze_and_plan.return_value = (plan, warning_messages)
 
     await cli.run_upgrade(cli_args)
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_print_and_debug.assert_called_once_with(plan)
     mock_print.assert_called_once_with(
-        "Not possible to run upgrades. Please fix the errors before proceeding."
+        "Cannot run upgrades. "
+        "Please resolve the problems indicated in the warnings before proceeding."
     )
-    mock_logger.error.assert_has_calls([call("Mock error message1"), call("Mock error message2")])
+    mock_logger.warning.assert_has_calls(
+        [call("Mock warning message1"), call("Mock warning message2")]
+    )
     mock_apply_step.assert_not_called()
 
 
