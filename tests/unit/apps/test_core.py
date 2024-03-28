@@ -17,8 +17,12 @@ import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import OpenStackApplication
-from cou.apps.core import Keystone, NovaCompute
-from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
+from cou.apps.core import Keystone, NovaCompute, Swift
+from cou.exceptions import (
+    ApplicationError,
+    ApplicationNotSupported,
+    HaltUpgradePlanGeneration,
+)
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -1113,3 +1117,37 @@ def test_cinder_upgrade_plan_single_unit(model):
     plan = cinder.generate_upgrade_plan(target, False, [units["cinder/0"]])
 
     assert str(plan) == exp_plan
+
+
+def test_swift_application_not_supported(model):
+    """Test Swift application raising ApplicationNotSupported error."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = Swift(
+        name="swift-proxy",
+        can_upgrade_to="ussuri/stable",
+        charm="swift-proxy",
+        channel="ussuri/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "swift-proxy/0": Unit(
+                name="swift-proxy/0",
+                workload_version="2.25.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="2.25.0",
+    )
+
+    exp_error = (
+        "'swift-proxy' application is not currently supported by COU. Please manually "
+        "upgrade it."
+    )
+
+    with pytest.raises(ApplicationNotSupported, match=exp_error):
+        app.generate_upgrade_plan(target, False)
