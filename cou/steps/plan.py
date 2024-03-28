@@ -32,7 +32,7 @@ from cou.apps.auxiliary_subordinate import (  # noqa: F401
 )
 from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import ChannelBasedApplication  # noqa: F401
-from cou.apps.core import Keystone, Octavia  # noqa: F401
+from cou.apps.core import Keystone, Octavia, Swift  # noqa: F401
 from cou.apps.subordinate import SubordinateApplication, SubordinateBase  # noqa: F401
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
