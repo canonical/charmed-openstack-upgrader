@@ -23,12 +23,17 @@ from signal import SIGINT, SIGTERM
 from juju.errors import JujuError
 
 from cou.commands import CLIargs, parse_args
-from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
+from cou.exceptions import (
+    COUException,
+    HighestReleaseAchieved,
+    RunUpgradeError,
+    TimeoutException,
+)
 from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
-from cou.steps.plan import generate_plan
+from cou.steps.plan import PlanWarnings, generate_plan
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import Model
@@ -105,14 +110,13 @@ async def continue_upgrade() -> bool:
     return False
 
 
-async def analyze_and_plan(args: CLIargs) -> tuple[UpgradePlan, list[str]]:
+async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
     """Analyze cloud and generate the upgrade plan with steps.
 
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Tuple containing the generated upgrade plan and a list of recorded warning messages
-        from plan generation.
-    :rtype: tuple[UpgradePlan, list[str]]
+    :return: The generated upgrade plan.
+    :rtype: UpgradePlan
     """
     model = Model(args.model_name)
     progress_indicator.start(f"Connecting to '{model.name}' model...")
@@ -126,10 +130,10 @@ async def analyze_and_plan(args: CLIargs) -> tuple[UpgradePlan, list[str]]:
     progress_indicator.succeed()
 
     progress_indicator.start("Generating upgrade plan...")
-    upgrade_plan, warning_messages = await generate_plan(analysis_result, args)
+    upgrade_plan = await generate_plan(analysis_result, args)
     progress_indicator.succeed()
 
-    return upgrade_plan, warning_messages
+    return upgrade_plan
 
 
 async def get_upgrade_plan(args: CLIargs) -> None:
@@ -138,12 +142,11 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    upgrade_plan, warning_messages = await analyze_and_plan(args)
+    upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if warning_messages:
-        for warning in warning_messages:
-            logger.warning(warning)
+    if warnings := PlanWarnings().warnings:
+        logger.warning("%s", "\n".join(warnings))
         print(
             "Running upgrades will not be possible until problems indicated in the warnings "
             "are resolved."
@@ -161,18 +164,17 @@ async def run_upgrade(args: CLIargs) -> None:
 
     :param args: CLI arguments
     :type args: CLIargs
+    :raises RunUpgradeError: When some applications failed to generate their plans.
     """
-    upgrade_plan, warning_messages = await analyze_and_plan(args)
+    upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if warning_messages:
-        for warning in warning_messages:
-            logger.warning(warning)
-        print(
+    if warnings := PlanWarnings().warnings:
+        logger.warning("%s", "\n".join(warnings))
+        raise RunUpgradeError(  # this will be caught as a COUException in entrypoint
             "Cannot run upgrades. Please resolve the problems indicated in the warnings "
             "before proceeding."
         )
-        return
 
     if args.prompt and not await continue_upgrade():
         return

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Upgrade planning utilities."""
+from __future__ import annotations
 
 import logging
 
@@ -56,21 +57,56 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-async def generate_plan(analysis_result: Analysis, args: CLIargs) -> tuple[UpgradePlan, list[str]]:
+class PlanWarnings:
+    """Representation of a collection of warning messages from plan generation.
+
+    This is a singleton class which holds all warning messages returned by applications
+    when generating a plan.
+    """
+
+    _instance = None
+
+    def __new__(cls) -> PlanWarnings:
+        """Create a new instance of the PlanWarnings class if doesn't already exist."""
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self) -> None:
+        """Initialize the PlanWarnings class."""
+        self._warnings: list[str] = []
+
+    def add_warning(self, warning: str) -> None:
+        """Add a new warning to the collection.
+
+        :param warning: A warning message to be stored.
+        :type warning: str
+        """
+        self._warnings.append(warning)
+
+    @property
+    def warnings(self) -> list[str]:
+        """Get all warnings stored in the class.
+
+        :return: The list of all warnings stored in the class.
+        :rtype: list[str]
+        """
+        return self._warnings
+
+
+async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
     """Generate plan for upgrade.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Tuple containing a plan with all upgrade steps necessary based on the Analysis,
-        and a list of recorded warning messages from plan generation.
-    :rtype: tuple[UpgradePlan, list[str]]
+    :return: A plan with all upgrade steps necessary based on the Analysis.
+    :rtype: UpgradePlan
     """
     _pre_plan_sanity_checks(args, analysis_result)
     target = _determine_upgrade_target(analysis_result)
 
-    warning_messages = []
     plan = UpgradePlan(
         f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
     )
@@ -79,65 +115,21 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> tuple[Upgra
     # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
     #  the whole cloud.
     if args.upgrade_group in {CONTROL_PLANE, None}:
-        control_plane_upgrade_step, control_plane_warnings = _generate_control_plane_plan(
-            target, analysis_result.apps_control_plane, args.force
+        plan.add_steps(
+            _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
         )
-        plan.add_steps(control_plane_upgrade_step)
-        warning_messages.extend(control_plane_warnings)
 
     if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
-        data_plane_upgrade_steps, data_plane_warnings = await _generate_data_plane_plan(
-            target, analysis_result, args
-        )
-        plan.add_steps(data_plane_upgrade_steps)
-        warning_messages.extend(data_plane_warnings)
+        plan.add_steps(await _generate_data_plane_plan(target, analysis_result, args))
 
     plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
 
-    return plan, warning_messages
-
-
-def _generate_control_plane_plan(
-    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
-) -> tuple[list[UpgradePlan], list[str]]:
-    """Generate upgrade plan for control plane.
-
-    :param target: Target OpenStack release.
-    :type target: OpenStackRelease
-    :param apps: List of control plane applications.
-    :type apps: list[OpenStackApplication]
-    :param force: Whether the plan generation should be forced
-    :type force: bool
-    :return: Tuple containing control plane (Principal and Subordinate) upgrade plans
-        and a list of recorded warning messages from plan generation.
-    :rtype: tuple[list[UpgradePlan], list[str]]
-    """
-    warning_messages = []
-    principal_upgrade_plan, principal_warnings = _create_upgrade_group(
-        apps=[app for app in apps if app.is_subordinate is False],
-        description="Control Plane principal(s) upgrade plan",
-        target=target,
-        force=force,
-    )
-    warning_messages.extend(principal_warnings)
-
-    subordinate_upgrade_plan, subordinate_warnings = _create_upgrade_group(
-        apps=[app for app in apps if app.is_subordinate],
-        description="Control Plane subordinate(s) upgrade plan",
-        target=target,
-        force=force,
-    )
-    warning_messages.extend(subordinate_warnings)
-
-    logger.debug("Generation of the control plane upgrade plan complete")
-    control_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
-
-    return control_plane_upgrade_plan, warning_messages
+    return plan
 
 
 async def _generate_data_plane_plan(
     target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
-) -> tuple[list[UpgradePlan], list[str]]:
+) -> list[UpgradePlan]:
     """Generate upgrade plan for data-plane.
 
     :param target: Target OpenStack release.
@@ -146,12 +138,10 @@ async def _generate_data_plane_plan(
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :return: A tuple containing list of the upgrade plans for hypervisors, principals and
-        subordinates data-plane applications, and a list of recorded warning messages from
-        plan generation.
-    :rtype: tuple[list[UpgradePlan], list[str]]
+    :return: A list of the upgrade plans for hypervisors, principals and subordinates
+        data-plane applications.
+    :rtype: list[UpgradePlan]
     """
-    data_plane_warnings = []
     hypervisor_apps, non_hypervisors_apps = _separate_hypervisors_apps(
         analysis_result.apps_data_plane
     )
@@ -161,53 +151,9 @@ async def _generate_data_plane_plan(
     ]
 
     if args.upgrade_group != HYPERVISORS:
-        remaining_upgrade_steps, warnings = _generate_data_plane_remaining_plan(
-            target, non_hypervisors_apps, args.force
-        )
-        plans.extend(remaining_upgrade_steps)
-        data_plane_warnings.extend(warnings)
+        plans.extend(_generate_data_plane_remaining_plan(target, non_hypervisors_apps, args.force))
 
-    return plans, data_plane_warnings
-
-
-def _generate_data_plane_remaining_plan(
-    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
-) -> tuple[list[UpgradePlan], list[str]]:
-    """Generate upgrade plan for principals and subordinates data-plane apps.
-
-    Those plans are done using the all-in-one upgrade strategy.
-
-    :param target:  Target OpenStack release.
-    :type target: OpenStackRelease
-    :param apps:  List of non-hypervisor apps
-    :type apps: list[OpenStackApplication]
-    :param force: Whether the plan generation should be forced
-    :type force: bool
-    :return: Tuple containing a list of data plane (non-hypervisors Principal and Subordiante)
-        upgrade plans, and a list of recorded warning messages from plan generation.
-    :rtype: tuple[list[UpgradePlan], list[str]]
-    """
-    warning_messages = []
-    principal_upgrade_plan, principal_warnings = _create_upgrade_group(
-        apps=[app for app in apps if app.is_subordinate is False],
-        description="Remaining Data Plane principal(s) upgrade plan",
-        target=target,
-        force=force,
-    )
-    warning_messages.extend(principal_warnings)
-
-    subordinate_upgrade_plan, subordinate_warnings = _create_upgrade_group(
-        apps=[app for app in apps if app.is_subordinate],
-        description="Data Plane subordinate(s) upgrade plan",
-        target=target,
-        force=force,
-    )
-    warning_messages.extend(subordinate_warnings)
-
-    logger.debug("Generation of remaining data plane upgrade plan complete")
-    data_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
-
-    return data_plane_upgrade_plan, warning_messages
+    return plans
 
 
 def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
@@ -524,6 +470,40 @@ def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[P
     return steps
 
 
+def _generate_control_plane_plan(
+    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for control plane.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param apps: List of control plane applications.
+    :type apps: list[OpenStackApplication]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :return: A list containing control plane (Principal and Subordinate) upgrade plans.
+    :rtype: list[UpgradePlan]
+    """
+    principal_upgrade_plan = _create_upgrade_group(
+        apps=[app for app in apps if app.is_subordinate is False],
+        description="Control Plane principal(s) upgrade plan",
+        target=target,
+        force=force,
+    )
+
+    subordinate_upgrade_plan = _create_upgrade_group(
+        apps=[app for app in apps if app.is_subordinate],
+        description="Control Plane subordinate(s) upgrade plan",
+        target=target,
+        force=force,
+    )
+
+    logger.debug("Generation of the control plane upgrade plan complete")
+    control_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
+
+    return control_plane_upgrade_plan
+
+
 def _separate_hypervisors_apps(
     apps: list[OpenStackApplication],
 ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
@@ -575,6 +555,42 @@ async def _generate_data_plane_hypervisors_plan(
     hypervisor_plan = hypervisor_planner.generate_upgrade_plan(target, args.force)
     logger.debug("Generation of the hypervisors upgrade plan completed")
     return hypervisor_plan
+
+
+def _generate_data_plane_remaining_plan(
+    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for principals and subordinates data-plane apps.
+
+    Those plans are done using the all-in-one upgrade strategy.
+
+    :param target:  Target OpenStack release.
+    :type target: OpenStackRelease
+    :param apps:  List of non-hypervisor apps
+    :type apps: list[OpenStackApplication]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :return: A list of data plane (non-hypervisors Principal and Subordinate) upgrade plans.
+    :rtype: list[UpgradePlan]
+    """
+    principal_upgrade_plan = _create_upgrade_group(
+        apps=[app for app in apps if app.is_subordinate is False],
+        description="Remaining Data Plane principal(s) upgrade plan",
+        target=target,
+        force=force,
+    )
+
+    subordinate_upgrade_plan = _create_upgrade_group(
+        apps=[app for app in apps if app.is_subordinate],
+        description="Data Plane subordinate(s) upgrade plan",
+        target=target,
+        force=force,
+    )
+
+    logger.debug("Generation of remaining data plane upgrade plan complete")
+    data_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
+
+    return data_plane_upgrade_plan
 
 
 async def _filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> list[Machine]:
@@ -642,8 +658,11 @@ def _create_upgrade_group(
     target: OpenStackRelease,
     description: str,
     force: bool,
-) -> tuple[UpgradePlan, list[str]]:
+) -> UpgradePlan:
     """Create upgrade group.
+
+    COUExceptions (except HaltUpgradePlanGeneration) raised by application will be stored
+    in the PlanWarnings object.
 
     :param apps: Apps to create the group.
     :type apps: list[OpenStackApplication]
@@ -654,12 +673,12 @@ def _create_upgrade_group(
     :param force: Whether the plan generation should be forced
     :type force: bool
     :raises Exception: When cannot generate upgrade plan.
-    :return: Tuple containing upgrade plan of an upgrade group and a list of recorded
-        warning messages from plan generation.
-    :rtype: tuple[UpgradePlan, list[str]]
+    :return: Upgrade plan of an upgrade group.
+    :rtype: UpgradePlan
     """
-    warning_messages = []
+    plan_warnings = PlanWarnings()
     group_upgrade_plan = UpgradePlan(description)
+
     for app in apps:
         try:
             app_upgrade_plan = app.generate_upgrade_plan(target, force)
@@ -670,9 +689,9 @@ def _create_upgrade_group(
             logger.debug("'%s' halted the upgrade planning generation: %s", app.name, exc)
         except COUException as exc:
             logger.debug("Cannot generate plan for '%s'\n\t%s", app.name, exc)
-            warning_messages.append(f"Cannot generate plan for '{app.name}'\n\t{exc}")
+            plan_warnings.add_warning(f"Cannot generate plan for '{app.name}'\n\t{exc}")
         except Exception as exc:
             logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
             raise
 
-    return group_upgrade_plan, warning_messages
+    return group_upgrade_plan
