@@ -11,3 +11,4 @@ and known issues.
    analysis
    planning
    upgrade
+   upgrade-groups
