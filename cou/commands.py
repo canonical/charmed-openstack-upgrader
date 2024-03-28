@@ -141,7 +141,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         action="count",
         dest="verbosity",
         help="Increase logging verbosity in STDOUT.\nMultiple 'v's yield progressively "
-        "more detail (up to 4).\nNote that by default the logfile will include standard "
+        "more detail (up to 3).\nNote that by default the logfile will not include standard "
         "logs\nfrom juju and websockets, as well as debug logs from all other\nmodules. "
         "To also include the debug level logs from juju and\nwebsockets modules, use the "
         "maximum verbosity.",
