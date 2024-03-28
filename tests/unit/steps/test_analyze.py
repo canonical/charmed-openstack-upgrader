@@ -19,6 +19,7 @@ import pytest
 from cou.apps.auxiliary import RabbitMQServer
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone
+from cou.apps.subordinate import SubordinateApplication
 from cou.steps import analyze
 from cou.steps.analyze import Analysis
 from cou.utils.juju_utils import Application, Machine, Unit
@@ -478,12 +479,22 @@ def _app(name, units):
     app = MagicMock(spec_set=OpenStackApplication).return_value
     app.charm = name
     app.units = units
+    app.machines = {unit.machine.machine_id: unit.machine for unit in units.values()}
+    return app
+
+
+def _subordinate_app(name, machines_ids):
+    app = MagicMock(spec_set=SubordinateApplication).return_value
+    app.charm = name
+    app.machines = {
+        machine_id: Machine(machine_id, ("", ""), "zone-1") for machine_id in machines_ids
+    }
     return app
 
 
 def _unit(machine_id):
     unit = MagicMock(spec_set=Unit).return_value
-    unit.machine = Machine(machine_id, "zone-1")
+    unit.machine = Machine(machine_id, ("", ""), "zone-1")
     return unit
 
 
@@ -491,13 +502,22 @@ def _unit(machine_id):
     "exp_control_plane, exp_data_plane",
     [
         (
-            [_app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")})],
-            [_app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")})],
+            [
+                _app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
+                # subordinate deployed on a control-plane machine is considered control-plane
+                _subordinate_app("keystone-ldap", ["0", "1", "2"]),
+            ],
+            [
+                _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
+                # subordinate deployed on a data-plane machine is considered data-plane
+                _subordinate_app("my-data-plane-subordinate", ["3", "4", "5"]),
+            ],
         ),
         (
             [],
             [
                 _app("nova-compute", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
+                # control-plane application deployed on data-plane machine is considered data-plane
                 _app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
                 _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
             ],

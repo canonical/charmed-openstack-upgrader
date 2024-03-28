@@ -73,7 +73,11 @@ upgrade phase. Refer to the output below for a description of all available opti
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 3).
+                            Multiple 'v's yield progressively more detail (
+                            
+                            
+                            
+                            3).
                             Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
