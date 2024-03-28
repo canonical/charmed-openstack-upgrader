@@ -86,7 +86,7 @@ class NovaCompute(OpenStackApplication):
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
-        if not units:
+        if units is None:
             units = list(self.units.values())
 
         return super().upgrade_steps(target, units, force)
@@ -117,7 +117,7 @@ class NovaCompute(OpenStackApplication):
         :return: Unit upgrade step
         :rtype: UnitUpgradeStep
         """
-        unit_plan = UnitUpgradeStep(description=f"Upgrade plan for unit '{unit.name}'")
+        unit_plan = UnitUpgradeStep(f"Upgrade plan for unit '{unit.name}'")
 
         if not force:
             unit_plan.add_step(self._get_empty_hypervisor_step(unit))
@@ -140,7 +140,7 @@ class NovaCompute(OpenStackApplication):
         :rtype: UnitUpgradeStep
         """
         return UnitUpgradeStep(
-            description=f"Verify that unit '{unit.name}' has no VMs running",
+            f"Verify that unit '{unit.name}' has no VMs running",
             coro=verify_empty_hypervisor(unit, self.model),
         )
 
@@ -152,8 +152,7 @@ class NovaCompute(OpenStackApplication):
         :return: Steps to enable the scheduler on units
         :rtype: list[PostUpgradeStep]
         """
-        if not units:
-            units = list(self.units.values())
+        units_to_enable = self.units.values() if units is None else units
         return [
             PostUpgradeStep(
                 description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
@@ -161,19 +160,18 @@ class NovaCompute(OpenStackApplication):
                     unit_name=unit.name, action_name="enable", raise_on_failure=True
                 ),
             )
-            for unit in units
+            for unit in units_to_enable
         ]
 
     def _get_disable_scheduler_step(self, units: Optional[list[Unit]]) -> list[PreUpgradeStep]:
-        """Get the step to disable the scheduler,  so the unit cannot create new VMs.
+        """Get the step to disable the scheduler, so the unit cannot create new VMs.
 
         :param units: Units to be disabled.
         :type units:  Optional[list[Unit]]
         :return: Steps to disable the scheduler on units
         :rtype: list[PreUpgradeStep]
         """
-        if not units:
-            units = list(self.units.values())
+        units_to_disable = self.units.values() if units is None else units
         return [
             PreUpgradeStep(
                 description=f"Disable nova-compute scheduler from unit: '{unit.name}'",
@@ -181,5 +179,5 @@ class NovaCompute(OpenStackApplication):
                     unit_name=unit.name, action_name="disable", raise_on_failure=True
                 ),
             )
-            for unit in units
+            for unit in units_to_disable
         ]

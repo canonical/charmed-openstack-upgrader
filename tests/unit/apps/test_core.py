@@ -793,11 +793,18 @@ def test_nova_compute_get_empty_hypervisor_step(model):
     assert app._get_empty_hypervisor_step(unit) == expected_step
 
 
-@pytest.mark.parametrize("units_slice", [1, 2, 3])
-def test_nova_compute_get_enable_scheduler_step(model, units_slice):
+@pytest.mark.parametrize(
+    "units",
+    [
+        [f"nova-compute/{unit}" for unit in range(1)],
+        [f"nova-compute/{unit}" for unit in range(2)],
+        [f"nova-compute/{unit}" for unit in range(3)],
+    ],
+)
+def test_nova_compute_get_enable_scheduler_step(model, units):
     """Enable the scheduler on selected units."""
     app = _generate_nova_compute_app(model)
-    units_selected = list(app.units.values())[0:units_slice]
+    units_selected = [app.units[unit] for unit in units]
 
     expected_step = [
         PostUpgradeStep(
@@ -811,8 +818,7 @@ def test_nova_compute_get_enable_scheduler_step(model, units_slice):
     assert app._get_enable_scheduler_step(units_selected) == expected_step
 
 
-@pytest.mark.parametrize("units_selected", [None, []])
-def test_nova_compute_get_enable_scheduler_step_no_units(model, units_selected):
+def test_nova_compute_get_enable_scheduler_step_no_units(model):
     """Enable the scheduler on all units if no units are passed."""
     app = _generate_nova_compute_app(model)
 
@@ -825,14 +831,21 @@ def test_nova_compute_get_enable_scheduler_step_no_units(model, units_selected):
         )
         for unit in app.units.values()
     ]
-    assert app._get_enable_scheduler_step(units_selected) == expected_step
+    assert app._get_enable_scheduler_step(None) == expected_step
 
 
-@pytest.mark.parametrize("units_slice", [1, 2, 3])
-def test_nova_compute_get_disable_scheduler_step(model, units_slice):
+@pytest.mark.parametrize(
+    "units",
+    [
+        [f"nova-compute/{unit}" for unit in range(1)],
+        [f"nova-compute/{unit}" for unit in range(2)],
+        [f"nova-compute/{unit}" for unit in range(3)],
+    ],
+)
+def test_nova_compute_get_disable_scheduler_step(model, units):
     """Disable the scheduler on selected units."""
     app = _generate_nova_compute_app(model)
-    units_selected = list(app.units.values())[0:units_slice]
+    units_selected = [app.units[unit] for unit in units]
 
     expected_step = [
         PreUpgradeStep(
@@ -846,8 +859,7 @@ def test_nova_compute_get_disable_scheduler_step(model, units_slice):
     assert app._get_disable_scheduler_step(units_selected) == expected_step
 
 
-@pytest.mark.parametrize("units_selected", [None, []])
-def test_nova_compute_get_disable_scheduler_step_no_units(model, units_selected):
+def test_nova_compute_get_disable_scheduler_step_no_units(model):
     """Disable the scheduler on selected units."""
     app = _generate_nova_compute_app(model)
     expected_step = [
@@ -859,7 +871,7 @@ def test_nova_compute_get_disable_scheduler_step_no_units(model, units_selected)
         )
         for unit in app.units.values()
     ]
-    assert app._get_disable_scheduler_step(units_selected) == expected_step
+    assert app._get_disable_scheduler_step(None) == expected_step
 
 
 def _generate_nova_compute_app(model):
