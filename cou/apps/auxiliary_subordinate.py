@@ -32,6 +32,7 @@ class AuxiliarySubordinateApplication(SubordinateBase, AuxiliaryApplication):
 
         We cannot determine the OpenStack release base on workload packages because the principal
         charm has already upgraded the packages.
+
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
@@ -58,8 +59,11 @@ class OvnSubordinate(AuxiliarySubordinateApplication):
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[Unit]], optional
-        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        :raises ApplicationError: When enable-auto-restarts is not enabled or workload version is
+                                  lower than 22.03.0.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :raises MismatchedOpenStackVersions: When the units of the app are running different
+                                             OpenStack versions.
         """
         super().upgrade_plan_sanity_checks(target, units)
         self._check_ovn_support()

@@ -40,6 +40,7 @@ class AuxiliaryApplication(OpenStackApplication):
 
         Auxiliary charms don't follow the OpenStack track convention
         and are validated based on the openstack_to_track_mapping.csv table.
+
         :param charm_channel: Charm channel. E.g: 3.8/stable
         :type charm_channel: str
         :return: True if valid, False otherwise.
@@ -56,9 +57,9 @@ class AuxiliaryApplication(OpenStackApplication):
     def possible_current_channels(self) -> list[str]:
         """Return the possible current channels based on the series and current OpenStack release.
 
-        :raises ApplicationError: When cannot find tracks.
         :return: The possible current channels for the application.
         :rtype: list[str]
+        :raises ApplicationError: When cannot find tracks.
         """
         tracks = OPENSTACK_TO_TRACK_MAPPING.get(
             (self.charm, self.series, self.current_os_release.codename)
@@ -80,9 +81,9 @@ class AuxiliaryApplication(OpenStackApplication):
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :raises ApplicationError: When cannot find a track.
         :return: The next channel for the application. E.g: 3.8/stable
         :rtype: str
+        :raises ApplicationError: When cannot find a track.
         """
         tracks = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.codename))
         if tracks:
@@ -102,10 +103,11 @@ class AuxiliaryApplication(OpenStackApplication):
 
         Auxiliary charms can have multiple compatible OpenStack releases. In
         that case, return the latest compatible OpenStack version.
-        :raises ApplicationError: When cannot identify suitable OpenStack release codename
-            based on the track of the charm channel.
+
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
+        :raises ApplicationError: When cannot identify suitable OpenStack release codename
+                                  based on the track of the charm channel.
         """
         if self.is_from_charm_store:
             logger.debug(
@@ -223,6 +225,8 @@ class OvnPrincipal(AuxiliaryApplication):
         :type units: Optional[list[Unit]], optional
         :raises ApplicationError: When enable-auto-restarts is not enabled.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :raises MismatchedOpenStackVersions: When the units of the app are running different
+                                             OpenStack versions.
         """
         super().upgrade_plan_sanity_checks(target, units)
         self._check_ovn_support()
