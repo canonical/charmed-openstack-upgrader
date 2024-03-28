@@ -251,7 +251,7 @@ class Ovn(AuxiliaryApplication):
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[Unit]], optional
-        :raises ApplicationError: When enable-auto-restarts is not enabled or .
+        :raises ApplicationError: When application is wrongly configured.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :raises MismatchedOpenStackVersions: When the units of the app are running different
                                              OpenStack versions.
