@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Auxiliary application class."""
+import abc
 import logging
 from typing import Optional
+
+from packaging.version import Version
 
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep
-from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
+from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import Unit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
@@ -202,17 +205,42 @@ class CephMon(AuxiliaryApplication):
         )
 
 
-@AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
-class OvnPrincipal(AuxiliaryApplication):
-    """Ovn principal application class."""
+class Ovn(AuxiliaryApplication):
+    """Ovn generic application class."""
 
+    @abc.abstractmethod
     def _check_ovn_support(self) -> None:
-        """Check OVN version.
+        """Check OVN version to be implemented."""
 
+    @staticmethod
+    def _validate_ovn_support(version: str) -> None:
+        """Validate COU OVN support.
+
+        COU does not support upgrade clouds with OVN version lower than 22.03.
+
+        :param version: Version of the OVN.
+        :type version: str
         :raises ApplicationError: When workload version is lower than 22.03.0.
         """
-        for unit in self.units.values():
-            validate_ovn_support(unit.workload_version)
+        if Version(version) < Version("22.03.0"):
+            raise ApplicationError(
+                (
+                    "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
+                    "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
+                    "https://docs.openstack.org/charm-guide/latest/project/procedures/"
+                    "ovn-upgrade-2203.html"
+                )
+            )
+
+    def _check_version_pinning(self) -> None:
+        """Check if the version pinning is False.
+
+        :raises ApplicationError: When version pinning is True
+        """
+        if self.config["enable-version-pinning"].get("value"):
+            raise ApplicationError(
+                f"Cannot upgrade '{self.name}'. 'enable-version-pinning' must be set to 'false'."
+            )
 
     def upgrade_plan_sanity_checks(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
@@ -223,17 +251,27 @@ class OvnPrincipal(AuxiliaryApplication):
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[Unit]], optional
-        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        :raises ApplicationError: When enable-auto-restarts is not enabled or .
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :raises MismatchedOpenStackVersions: When the units of the app are running different
                                              OpenStack versions.
         """
         super().upgrade_plan_sanity_checks(target, units)
         self._check_ovn_support()
-        if self.config["enable-version-pinning"].get("value"):
-            raise ApplicationError(
-                f"Cannot upgrade '{self.name}'. 'enable-version-pinning' must be set to 'false'."
-            )
+        self._check_version_pinning()
+
+
+@AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
+class OvnPrincipal(Ovn):
+    """Ovn principal application class."""
+
+    def _check_ovn_support(self) -> None:
+        """Check OVN version.
+
+        :raises ApplicationError: When workload version is lower than 22.03.0.
+        """
+        for unit in self.units.values():
+            OvnPrincipal._validate_ovn_support(unit.workload_version)
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])
