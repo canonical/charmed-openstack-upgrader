@@ -28,8 +28,8 @@ output below for a description of all allowed options.
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 4).
-                            Note that by default the logfile will include standard logs
+                            Multiple 'v's yield progressively more detail (up to 3).
+                            Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
                             websockets modules, use the maximum verbosity.
@@ -73,8 +73,8 @@ upgrade phase. Refer to the output below for a description of all available opti
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 4).
-                            Note that by default the logfile will include standard logs
+                            Multiple 'v's yield progressively more detail (up to 3).
+                            Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
                             websockets modules, use the maximum verbosity.
@@ -121,8 +121,8 @@ The options available for **control-plane** upgrade are:
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 4).
-                            Note that by default the logfile will include standard logs
+                            Multiple 'v's yield progressively more detail (up to 3).
+                            Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
                             websockets modules, use the maximum verbosity.
@@ -150,8 +150,8 @@ The available options for a **data-plane** upgrade align closely with those offe
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 4).
-                            Note that by default the logfile will include standard logs
+                            Multiple 'v's yield progressively more detail (up to 3).
+                            Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
                             websockets modules, use the maximum verbosity.
@@ -185,8 +185,8 @@ narrow the upgrade to a particular subset of nodes.
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 4).
-                            Note that by default the logfile will include standard logs
+                            Multiple 'v's yield progressively more detail (up to 3).
+                            Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
                             websockets modules, use the maximum verbosity.
