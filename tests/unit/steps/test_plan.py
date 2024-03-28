@@ -279,7 +279,7 @@ nova-compute/0
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
         channel="22.03/stable",
-        config={},
+        config={"enable-version-pinning": {"value": False}},
         machines=machines["1"],
         model=model,
         origin="ch",

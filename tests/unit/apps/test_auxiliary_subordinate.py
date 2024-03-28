@@ -129,7 +129,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
         channel="20.03/stable",
-        config={"source": {"value": "distro"}},
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
         machines=machines,
         model=model,
         origin="ch",
@@ -143,6 +143,31 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
         app.generate_upgrade_plan(target, False)
 
 
+def test_ovn_version_pinning_subordinate(model):
+    """Test the OvnSubordinate when enable-version-pinning is set to True."""
+    charm = "ovn-chassis"
+    target = OpenStackRelease("victoria")
+    machines = {"0": MagicMock(spec_set=Machine)}
+    exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
+    app = OvnSubordinate(
+        name=charm,
+        can_upgrade_to="22.03/stable",
+        charm=charm,
+        channel="22.03/stable",
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": True}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="22.3",
+    )
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.upgrade_plan_sanity_checks(target, [])
+
+
 def test_ovn_subordinate_upgrade_plan(model):
     """Test generating plan for OvnSubordinate."""
     target = OpenStackRelease("victoria")
@@ -152,7 +177,7 @@ def test_ovn_subordinate_upgrade_plan(model):
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
         channel="22.03/stable",
-        config={"source": {"value": "distro"}},
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
         machines=machines,
         model=model,
         origin="ch",
@@ -196,7 +221,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
         can_upgrade_to="",
         charm="ovn-chassis",
         channel="22.03/stable",
-        config={"source": {"value": "distro"}},
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
         machines=machines,
         model=model,
         origin="ch",

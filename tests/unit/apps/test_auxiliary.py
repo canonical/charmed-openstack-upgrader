@@ -784,7 +784,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
         can_upgrade_to="22.03/stable",
         charm=charm,
         channel="20.03/stable",
-        config={"source": {"value": "distro"}},
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
         machines=machines,
         model=model,
         origin="ch",
@@ -802,6 +802,37 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
 
     with pytest.raises(ApplicationError, match=exp_msg):
         app.generate_upgrade_plan(target, False)
+
+
+def test_ovn_version_pinning_principal(model):
+    """Test the OvnPrincipal when enable-version-pinning is set to True."""
+    target = OpenStackRelease("victoria")
+    charm = "ovn-central"
+    exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = OvnPrincipal(
+        name=charm,
+        can_upgrade_to="22.03/stable",
+        charm=charm,
+        channel="22.03/stable",
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": True}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="22.03.2",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03.2",
+    )
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.upgrade_plan_sanity_checks(target, list(app.units.values()))
 
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])
@@ -849,7 +880,7 @@ def test_ovn_principal_upgrade_plan(model):
         can_upgrade_to="22.06/stable",
         charm=charm,
         channel="22.03/stable",
-        config={"source": {"value": "distro"}},
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
         machines=machines,
         model=model,
         origin="ch",
