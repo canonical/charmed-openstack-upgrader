@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 async def get_empty_hypervisors(units: list[Unit], model: Model) -> list[Machine]:
     """Get the empty hypervisors in the model.
 
-    :param units: all nova-compute units.
+    :param units: All nova-compute units.
     :type units: list[Unit]
     :param model: Model object
     :type model: Model

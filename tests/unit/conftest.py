@@ -16,32 +16,18 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
-from juju.client.client import FullStatus
 
 from cou.commands import CLIargs
-
-
-def get_status():
-    """Help function to load Juju status from json file."""
-    current_path = Path(__file__).parent.resolve()
-    with open(current_path / "jujustatus.json", "r") as file:
-        status = file.read().rstrip()
-
-    return FullStatus.from_json(status)
-
-
-async def get_charm_name(value: str):
-    """Help function to get charm name."""
-    return value
+from cou.utils.juju_utils import Model
+from tests.unit.utils import get_charm_name, get_sample_plan, get_status
 
 
 @pytest.fixture
-def model():
+def model() -> AsyncMock:
     """Define test Model object."""
     model_name = "test_model"
-    from cou.utils import juju_utils
 
-    model = AsyncMock(spec_set=juju_utils.Model)
+    model = AsyncMock(spec_set=Model)
     type(model).name = PropertyMock(return_value=model_name)
     model.run_on_unit = AsyncMock()
     model.run_action = AsyncMock()
@@ -71,3 +57,18 @@ def cli_args() -> MagicMock:
     """
     # spec_set needs an instantiated class to be strict with the fields.
     return MagicMock(spec_set=CLIargs(command="plan"))()
+
+
+@pytest.fixture(scope="session")
+def sample_plans() -> dict[str, tuple[Model, str]]:
+    """Fixture that returns all sample plans in a directory.
+
+    This fixture returns a dictionary with filename as key and value as a
+    cou.utils.juju_utils.Model object whose get_applications function returns the applications
+    from the file and the expected plan.
+    """
+    directory = Path(__file__).parent / "sample_plans"
+
+    yield {
+        sample_file.name: get_sample_plan(sample_file) for sample_file in directory.glob("*.yaml")
+    }
