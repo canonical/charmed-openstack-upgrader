@@ -84,7 +84,7 @@ class Analysis:
         for app in apps:
             if is_data_plane(app):
                 data_plane.append(app)
-            elif any(unit.machine in data_plane_machines for unit in app.units.values()):
+            elif any(machine in data_plane_machines for machine in app.machines.values()):
                 data_plane.append(app)
             else:
                 control_plane.append(app)
