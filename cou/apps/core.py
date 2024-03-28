@@ -18,6 +18,7 @@ from typing import Optional
 
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
+from cou.exceptions import ApplicationNotSupported
 from cou.steps import UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import Unit
 from cou.utils.nova_compute import verify_empty_hypervisor
@@ -144,4 +145,30 @@ class NovaCompute(OpenStackApplication):
             coro=self.model.run_action(
                 unit_name=unit.name, action_name="disable", raise_on_failure=True
             ),
+        )
+
+
+@AppFactory.register_application(["swift-proxy", "swift-storage"])
+class Swift(OpenStackApplication):
+    """Swift application.
+
+    Swift applications, including swift-proxy and swift-storage, are considered as
+    valid OpenStack components, but not currently supported by COU for upgrade.
+    """
+
+    def upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> None:
+        """Run sanity checks before generating upgrade plan.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[Unit]], optional
+        :raises ApplicationNotSupported: When application is known but not currently
+                                         supported by COU.
+        """
+        raise ApplicationNotSupported(
+            f"'{self.name}' application is not currently supported by COU. Please manually "
+            "upgrade it."
         )
