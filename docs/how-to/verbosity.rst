@@ -2,35 +2,29 @@
 Change verbosity level
 ======================
 
-The verbose parameter can be used to increase the verbosity level. The parameter
-can be used multiple times (up to four), increasing verbosity from error to debug
-log level.
+Using the **verbose** parameter enables the adjustment of verbosity levels. 
+This parameter can be specified repeatedly, up to three times, to escalate the
+verbosity from the warning level up to the debug log level.
 
-The default verbosity level is **error**.
+The default verbosity level is **warning**.
 
 Usage examples
 --------------
 
-The warning level.
+The info level.
 
 .. code:: bash
 
     cou upgrade -v
 
-The info level.
+The debug level for all messages except **python-libjuju** and **websockets**.
 
 .. code:: bash
     
     cou upgrade -vv
 
-The debug level for all messages except **python-libjuju** and **websockets**.
+The debug level for all messages including the **python-libjuju** and **websockets**.
 
 .. code:: bash
 
     cou upgrade -vvv
-
-The debug level for all messages including the **python-libjuju** and **websockets**.
-
-.. code:: bash
-    
-    cou upgrade -vvvv
