@@ -159,6 +159,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for 'az-1' to 'victoria'
+                Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
@@ -167,12 +168,11 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Upgrade plan for unit 'nova-compute/0'
-                        Disable nova-compute scheduler from unit: 'nova-compute/0'
                         Verify that unit 'nova-compute/0' has no VMs running
                         ├── Pause the unit: 'nova-compute/0'
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
-                        Enable nova-compute scheduler from unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/0'
                 Wait for up to 1800s for model 'test_model' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: \
 nova-compute/0

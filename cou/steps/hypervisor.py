@@ -216,6 +216,7 @@ class HypervisorUpgradePlanner:
 
             units = group.app_units[app.name]
             logger.info("generating upgrade steps for %s units of %s app", app.name, units)
+
             steps.extend(app.upgrade_steps(target, units, force))
 
         return steps
@@ -236,9 +237,7 @@ class HypervisorUpgradePlanner:
         :rtype: list[PostUpgradeStep]
         """
         steps = []
-        # NOTE(rgildein): Using the reverse order of post-upgrade steps, so these steps starts from
-        #                 subordinate or colocated apps and not nova-compute.
-        for app in self.apps[::-1]:
+        for app in self.apps:
             if app.name not in group.app_units:
                 logger.debug(
                     "skipping application %s because it is not part of group %s",
