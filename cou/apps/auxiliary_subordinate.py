@@ -12,13 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary subordinate application class."""
-from typing import Optional
-
-from cou.apps.auxiliary import AuxiliaryApplication
+from cou.apps.auxiliary import AuxiliaryApplication, Ovn
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBase
-from cou.utils.app_utils import validate_ovn_support
-from cou.utils.juju_utils import Unit
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
 
@@ -40,7 +36,7 @@ class AuxiliarySubordinateApplication(SubordinateBase, AuxiliaryApplication):
 
 
 @AppFactory.register_application(["ovn-chassis"])
-class OvnSubordinate(AuxiliarySubordinateApplication):
+class OvnSubordinate(Ovn, AuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
 
     def _check_ovn_support(self) -> None:
@@ -48,22 +44,4 @@ class OvnSubordinate(AuxiliarySubordinateApplication):
 
         :raises ApplicationError: When workload version is lower than 22.03.0.
         """
-        validate_ovn_support(self.workload_version)
-
-    def upgrade_plan_sanity_checks(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> None:
-        """Run sanity checks before generating upgrade plan.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan, defaults to None
-        :type units: Optional[list[Unit]], optional
-        :raises ApplicationError: When enable-auto-restarts is not enabled or workload version is
-                                  lower than 22.03.0.
-        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
-        :raises MismatchedOpenStackVersions: When the units of the app are running different
-                                             OpenStack versions.
-        """
-        super().upgrade_plan_sanity_checks(target, units)
-        self._check_ovn_support()
+        OvnSubordinate._validate_ovn_support(self.workload_version)
