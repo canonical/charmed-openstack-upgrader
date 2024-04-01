@@ -54,30 +54,21 @@ class AuxiliaryApplication(OpenStackApplication):
             return True
 
         track = self._get_track_from_channel(charm_channel)
-        return (self.charm, self.series, track) in TRACK_TO_OPENSTACK_MAPPING
-
-    @property
-    def possible_current_channels(self) -> list[str]:
-        """Return the possible current channels based on the series and current OpenStack release.
-
-        :return: The possible current channels for the application.
-        :rtype: list[str]
-        :raises ApplicationError: When cannot find tracks.
-        """
         tracks = OPENSTACK_TO_TRACK_MAPPING.get(
             (self.charm, self.series, self.current_os_release.codename)
         )
-        if tracks:
-            return [f"{track}/stable" for track in tracks]
+        return (
+            self.charm,
+            self.series,
+            track,
+        ) in TRACK_TO_OPENSTACK_MAPPING and bool(tracks)
 
-        raise ApplicationError(
-            (
-                f"Cannot find a suitable '{self.charm}' charm channel for "
-                f"{self.current_os_release.codename} on series '{self.series}'. "
-                "Please take a look at the documentation: "
-                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
-            )
+    @property
+    def possible_current_channel(self) -> str:
+        *_, track = OPENSTACK_TO_TRACK_MAPPING.get(
+            (self.charm, self.series, self.current_os_release.codename), []
         )
+        return f"{track}/stable"
 
     def target_channel(self, target: OpenStackRelease) -> str:
         """Return the appropriate channel for the passed OpenStack target.

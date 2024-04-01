@@ -51,6 +51,7 @@ STANDARD_IDLE_TIMEOUT: int = int(
 LONG_IDLE_TIMEOUT: int = int(os.environ.get("COU_LONG_IDLE_TIMEOUT", 30 * 60))  # default of 30 min
 ORIGIN_SETTINGS = ("openstack-origin", "source")
 REQUIRED_SETTINGS = ("enable-auto-restarts", "action-managed-upgrade", *ORIGIN_SETTINGS)
+LATEST_STABLE = "latest/stable"
 
 
 @dataclass(frozen=True)
@@ -139,7 +140,11 @@ class OpenStackApplication(Application):
 
         :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
         """
-        if self.is_from_charm_store or self.is_valid_track(self.channel):
+        if (
+            self.is_from_charm_store
+            or self.channel == LATEST_STABLE
+            or self.is_valid_track(self.channel)
+        ):
             logger.debug("%s app has proper channel %s", self.name, self.channel)
             return
 
@@ -236,13 +241,13 @@ class OpenStackApplication(Application):
         return None
 
     @property
-    def possible_current_channels(self) -> list[str]:
-        """Return the possible current channels based on the current OpenStack release.
+    def possible_current_channel(self) -> str:
+        """Return the possible current channel based on the current OpenStack release.
 
-        :return: The possible current channels for the application. E.g: ["ussuri/stable"]
-        :rtype: list[str]
+        :return: The possible current channel of the application. E.g: "ussuri/stable"
+        :rtype: str
         """
-        return [f"{self.current_os_release.codename}/stable"]
+        return f"{self.current_os_release.codename}/stable"
 
     @property
     def os_release_units(self) -> dict[OpenStackRelease, list[str]]:
@@ -383,6 +388,8 @@ class OpenStackApplication(Application):
         """
         return [
             self._get_upgrade_current_release_packages_step(units),
+            self._get_charm_hub_migration(),
+            self._get_change_to_openstack_channels(),
             self._get_refresh_charm_step(target),
         ]
 
@@ -516,6 +523,33 @@ class OpenStackApplication(Application):
 
         return step
 
+    def _get_charm_hub_migration(self) -> PreUpgradeStep:
+        if not self.is_from_charm_store:
+            return PreUpgradeStep()
+
+        return PreUpgradeStep(
+            f"Migrate '{self.name}' from charmstore to charmhub",
+            coro=self.model.upgrade_charm(
+                self.name, self.possible_current_channel, switch=f"ch:{self.charm}"
+            ),
+        )
+
+    def _get_change_to_openstack_channels(self) -> PreUpgradeStep:
+        if self.channel != LATEST_STABLE:
+            return PreUpgradeStep()
+        return PreUpgradeStep(
+            f"Change '{self.name}' channel from {self.channel} to {self.possible_current_channel}. "
+            "COU cannot guarantee that this is not a downgrade",
+            coro=self.model.upgrade_charm(self.name, self.possible_current_channel),
+        )
+
+    def _need_to_refresh(self, target) -> bool:
+        return self.can_upgrade_to or self.channel_codename < target
+
+    @property
+    def _can_refresh(self) -> bool:
+        return not self.is_from_charm_store and self.channel != LATEST_STABLE
+
     def _get_refresh_charm_step(self, target: OpenStackRelease) -> PreUpgradeStep:
         """Get step for refreshing the current channel.
 
@@ -527,45 +561,16 @@ class OpenStackApplication(Application):
         :return: Step for refreshing the charm.
         :rtype: PreUpgradeStep
         """
-        if not self.can_upgrade_to:
-            return PreUpgradeStep()
-
-        switch = None
-        *_, channel = self.possible_current_channels
-
-        # corner case for rabbitmq and hacluster.
-        if len(self.possible_current_channels) > 1:
+        if not self._can_refresh or not self._need_to_refresh(target):
             logger.info(
-                "'%s' has more than one channel compatible with the current OpenStack release: "
-                "'%s'. '%s' will be used",
+                "Skipping charm refresh for %s.",
                 self.name,
-                self.current_os_release.codename,
-                channel,
-            )
-
-        if self.origin == "cs":
-            description = f"Migrate '{self.name}' from charmstore to charmhub"
-            switch = f"ch:{self.charm}"
-        elif self.channel in self.possible_current_channels:
-            channel = self.channel
-            description = f"Refresh '{self.name}' to the latest revision of '{channel}'"
-        elif self.channel_codename >= target:
-            logger.info(
-                "Skipping charm refresh for %s, its channel is already set to %s.",
-                self.name,
-                self.channel,
             )
             return PreUpgradeStep()
-        elif self.channel not in self.possible_current_channels:
-            raise ApplicationError(
-                f"'{self.name}' has unexpected channel: '{self.channel}' for the current workload "
-                f"version and OpenStack release: '{self.current_os_release.codename}'. "
-                f"Possible channels are: {','.join(self.possible_current_channels)}"
-            )
 
         return PreUpgradeStep(
-            description=description,
-            coro=self.model.upgrade_charm(self.name, channel, switch=switch),
+            description=f"Refresh '{self.name}' to the latest revision of '{self.channel}'",
+            coro=self.model.upgrade_charm(self.name, self.channel),
         )
 
     def _get_upgrade_charm_step(self, target: OpenStackRelease) -> UpgradeStep:
