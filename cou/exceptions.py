@@ -147,3 +147,7 @@ class InterruptError(KeyboardInterrupt):
         """
         self.exit_code = exit_code
         super().__init__(message)
+
+
+class ApplicationNotSupported(COUException):
+    """COU exception when the application is known but not supported by COU."""

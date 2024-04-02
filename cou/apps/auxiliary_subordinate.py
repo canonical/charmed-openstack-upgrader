@@ -12,14 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary subordinate application class."""
-from typing import Optional
-
-from cou.apps.auxiliary import AuxiliaryApplication
+from cou.apps.auxiliary import AuxiliaryApplication, Ovn
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBase
-from cou.steps import PreUpgradeStep
-from cou.utils.app_utils import validate_ovn_support
-from cou.utils.juju_utils import Unit
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
 
 
@@ -33,6 +28,7 @@ class AuxiliarySubordinateApplication(SubordinateBase, AuxiliaryApplication):
 
         We cannot determine the OpenStack release base on workload packages because the principal
         charm has already upgraded the packages.
+
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
@@ -40,20 +36,12 @@ class AuxiliarySubordinateApplication(SubordinateBase, AuxiliaryApplication):
 
 
 @AppFactory.register_application(["ovn-chassis"])
-class OvnSubordinate(AuxiliarySubordinateApplication):
+class OvnSubordinate(Ovn, AuxiliarySubordinateApplication):
     """Ovn subordinate application class."""
 
-    def pre_upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[PreUpgradeStep]:
-        """Pre Upgrade steps planning.
+    def _check_ovn_support(self) -> None:
+        """Check OVN version.
 
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan
-        :type units: Optional[list[Unit]]
-        :return: List of pre upgrade steps.
-        :rtype: list[PreUpgradeStep]
+        :raises ApplicationError: When workload version is lower than 22.03.0.
         """
-        validate_ovn_support(self.workload_version)
-        return super().pre_upgrade_steps(target, units)
+        OvnSubordinate._validate_ovn_support(self.workload_version)

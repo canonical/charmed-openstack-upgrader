@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Auxiliary application class."""
+import abc
 import logging
 from typing import Optional
+
+from packaging.version import Version
 
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep
-from cou.utils.app_utils import set_require_osd_release_option, validate_ovn_support
+from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import Unit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
@@ -40,6 +43,7 @@ class AuxiliaryApplication(OpenStackApplication):
 
         Auxiliary charms don't follow the OpenStack track convention
         and are validated based on the openstack_to_track_mapping.csv table.
+
         :param charm_channel: Charm channel. E.g: 3.8/stable
         :type charm_channel: str
         :return: True if valid, False otherwise.
@@ -56,9 +60,9 @@ class AuxiliaryApplication(OpenStackApplication):
     def possible_current_channels(self) -> list[str]:
         """Return the possible current channels based on the series and current OpenStack release.
 
-        :raises ApplicationError: When cannot find tracks.
         :return: The possible current channels for the application.
         :rtype: list[str]
+        :raises ApplicationError: When cannot find tracks.
         """
         tracks = OPENSTACK_TO_TRACK_MAPPING.get(
             (self.charm, self.series, self.current_os_release.codename)
@@ -80,9 +84,9 @@ class AuxiliaryApplication(OpenStackApplication):
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :raises ApplicationError: When cannot find a track.
         :return: The next channel for the application. E.g: 3.8/stable
         :rtype: str
+        :raises ApplicationError: When cannot find a track.
         """
         tracks = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.codename))
         if tracks:
@@ -102,10 +106,11 @@ class AuxiliaryApplication(OpenStackApplication):
 
         Auxiliary charms can have multiple compatible OpenStack releases. In
         that case, return the latest compatible OpenStack version.
-        :raises ApplicationError: When cannot identify suitable OpenStack release codename
-            based on the track of the charm channel.
+
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
+        :raises ApplicationError: When cannot identify suitable OpenStack release codename
+                                  based on the track of the charm channel.
         """
         if self.is_from_charm_store:
             logger.debug(
@@ -200,25 +205,73 @@ class CephMon(AuxiliaryApplication):
         )
 
 
-@AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
-class OvnPrincipal(AuxiliaryApplication):
-    """Ovn principal application class."""
+class Ovn(AuxiliaryApplication):
+    """Ovn generic application class."""
 
-    def pre_upgrade_steps(
+    @abc.abstractmethod
+    def _check_ovn_support(self) -> None:
+        """Check OVN version to be implemented."""
+
+    @staticmethod
+    def _validate_ovn_support(version: str) -> None:
+        """Validate COU OVN support.
+
+        COU does not support upgrade clouds with OVN version lower than 22.03.
+
+        :param version: Version of the OVN.
+        :type version: str
+        :raises ApplicationError: When workload version is lower than 22.03.0.
+        """
+        if Version(version) < Version("22.03.0"):
+            raise ApplicationError(
+                (
+                    "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
+                    "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
+                    "https://docs.openstack.org/charm-guide/latest/project/procedures/"
+                    "ovn-upgrade-2203.html"
+                )
+            )
+
+    def _check_version_pinning(self) -> None:
+        """Check if the version pinning is False.
+
+        :raises ApplicationError: When version pinning is True
+        """
+        if self.config["enable-version-pinning"].get("value"):
+            raise ApplicationError(
+                f"Cannot upgrade '{self.name}'. 'enable-version-pinning' must be set to 'false'."
+            )
+
+    def upgrade_plan_sanity_checks(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[PreUpgradeStep]:
-        """Pre Upgrade steps planning.
+    ) -> None:
+        """Run sanity checks before generating upgrade plan.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan
-        :type units: Optional[list[Unit]]
-        :return: List of pre upgrade steps.
-        :rtype: list[PreUpgradeStep]
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[Unit]], optional
+        :raises ApplicationError: When application is wrongly configured.
+        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :raises MismatchedOpenStackVersions: When the units of the app are running different
+                                             OpenStack versions.
+        """
+        super().upgrade_plan_sanity_checks(target, units)
+        self._check_ovn_support()
+        self._check_version_pinning()
+
+
+@AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
+class OvnPrincipal(Ovn):
+    """Ovn principal application class."""
+
+    def _check_ovn_support(self) -> None:
+        """Check OVN version.
+
+        :raises ApplicationError: When workload version is lower than 22.03.0.
         """
         for unit in self.units.values():
-            validate_ovn_support(unit.workload_version)
-        return super().pre_upgrade_steps(target, units)
+            OvnPrincipal._validate_ovn_support(unit.workload_version)
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])

@@ -42,22 +42,20 @@ class VerbosityLevel(Enum):
     """
     Enumeration of verbosity levels for logging.
 
-    - 'ERROR': Only errors will be logged.
     - 'WARNING': Both errors and warnings will be logged.
     - 'INFO': Errors, warnings, and general information will be logged.
     - 'DEBUG': Detailed debugging information will be logged.
     - 'NOTSET': Maximum verbosity where everything will be logged.
     """
 
-    ERROR = 0
-    WARNING = 1
-    INFO = 2
-    DEBUG = 3
-    NOTSET = 4
+    WARNING = 0
+    INFO = 1
+    DEBUG = 2
+    NOTSET = 3
 
     @classmethod
     def _missing_(cls, value: object) -> Enum:
-        """Return maximum verbosity for value larger than 4.
+        """Return maximum verbosity for value larger than 3.
 
         :param value: value to get enum member
         :type value: object
@@ -65,7 +63,7 @@ class VerbosityLevel(Enum):
         :rtype: Enum
         :raises ValueError: Invalid value input.
         """
-        if isinstance(value, int) and value > 4:
+        if isinstance(value, int) and value > 3:
             return cls.NOTSET
         raise ValueError(f"{value} is not a valid member of VerbosityLevel.")
 
