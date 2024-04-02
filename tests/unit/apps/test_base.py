@@ -22,7 +22,7 @@ from cou.exceptions import (
     HaltUpgradePlanGeneration,
     MismatchedOpenStackVersions,
 )
-from cou.steps import UnitUpgradeStep, UpgradeStep
+from cou.steps import PreUpgradeStep, UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps
@@ -485,3 +485,127 @@ def test_check_mismatched_versions(mock_os_release_units, model):
     )
 
     assert app._check_mismatched_versions([units["my-app/0"]]) is None
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+def test_get_charm_hub_migration_ch(_, model):
+    """Application is already from charm hub."""
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, "ussuri/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+    )
+    assert app._get_charm_hub_migration() == PreUpgradeStep()
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_get_charm_hub_migration_cs(current_os_release, _, model):
+    """Application is already from charm store."""
+    current_os_release.return_value = OpenStackRelease("ussuri")
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, "ussuri/stable", {}, {}, model, "cs", "focal", [], {}, "1"
+    )
+    assert app._get_charm_hub_migration() == PreUpgradeStep(
+        f"Migrate '{app.name}' from charmstore to charmhub",
+        coro=model.upgrade_charm(app.name, app.possible_current_channel, switch=f"ch:{app.charm}"),
+    )
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_get_change_to_openstack_channels_latest_stable(current_os_release, _, model):
+    """Application using latest/stable channel."""
+    current_os_release.return_value = OpenStackRelease("ussuri")
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, "latest/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+    )
+    assert app._get_change_to_openstack_channels() == PreUpgradeStep(
+        f"WARNING: Changing '{app.name}' channel from {app.channel} to "
+        f"{app.possible_current_channel}. COU cannot guarantee that this is not a downgrade",
+        coro=model.upgrade_charm(app.name, app.possible_current_channel),
+    )
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_get_change_to_openstack_channels_openstack_channel(current_os_release, _, model):
+    """Application already on OpenStack channel."""
+    current_os_release.return_value = OpenStackRelease("ussuri")
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, "ussuri/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+    )
+    assert app._get_change_to_openstack_channels() == PreUpgradeStep()
+
+
+@pytest.mark.parametrize(
+    "can_refresh, need_to_refresh", [(False, True), (True, False), (False, False)]
+)
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.apps.base.OpenStackApplication.can_refresh", new_callable=PropertyMock)
+@patch("cou.apps.base.OpenStackApplication._need_to_refresh")
+def test_get_refresh_charm_step_skip(
+    mock_need_to_refresh, mock_can_refresh, model, can_refresh, need_to_refresh
+):
+    """Application does not need to refresh."""
+    mock_need_to_refresh.return_value = need_to_refresh
+    mock_can_refresh.return_value = can_refresh
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, "ussuri/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+    )
+    assert app._get_refresh_charm_step(target) == PreUpgradeStep()
+
+
+@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
+@patch("cou.apps.base.OpenStackApplication.can_refresh", new_callable=PropertyMock)
+@patch("cou.apps.base.OpenStackApplication._need_to_refresh")
+def test_get_refresh_charm_step(mock_need_to_refresh, mock_can_refresh, _, model):
+    """Application does not need to refresh."""
+    mock_need_to_refresh.return_value = True
+    mock_can_refresh.return_value = True
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, "ussuri/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+    )
+    assert app._get_refresh_charm_step(target) == PreUpgradeStep(
+        f"Refresh '{app.name}' to the latest revision of '{app.channel}'",
+        coro=model.upgrade_charm(app.name, app.channel),
+    )
+
+
+@pytest.mark.parametrize(
+    "origin, channel, exp_result",
+    [("cs", "stable", False), ("ch", "latest/stable", False), ("ch", "ussuri/stable", True)],
+)
+def test_can_refresh(model, origin, channel, exp_result):
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, channel, {}, {}, model, origin, "focal", [], {}, "1"
+    )
+    assert app.can_refresh is exp_result
+
+
+@pytest.mark.parametrize(
+    "can_upgrade_to, channel, exp_result",
+    [
+        ("", "ussuri/stable", False),
+        ("ch:amd64/focal/my-app-723", "ussuri/stable", True),
+        ("ch:amd64/focal/my-app-723", "victoria/stable", True),
+        # when channel_codename is bigger than target it's not necessary to refresh
+        ("ch:amd64/focal/my-app-723", "wallaby/stable", False),
+        ("", "wallaby/stable", False),
+    ],
+)
+def test_need_to_refresh(model, can_upgrade_to, channel, exp_result):
+    """Test when the application needs to refresh."""
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, can_upgrade_to, app_name, channel, {}, {}, model, "ch", "focal", [], {}, "1"
+    )
+    assert app._need_to_refresh(target) is exp_result

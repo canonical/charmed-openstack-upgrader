@@ -53,18 +53,25 @@ class AuxiliaryApplication(OpenStackApplication):
             logger.debug("'%s' has been installed from the charm store", self.name)
             return True
 
-        track = self._get_track_from_channel(charm_channel)
-        tracks = OPENSTACK_TO_TRACK_MAPPING.get(
-            (self.charm, self.series, self.current_os_release.codename)
+        current_track = self._get_track_from_channel(charm_channel)
+        possible_tracks = OPENSTACK_TO_TRACK_MAPPING.get(
+            (self.charm, self.series, self.current_os_release.codename), []
         )
         return (
             self.charm,
             self.series,
-            track,
-        ) in TRACK_TO_OPENSTACK_MAPPING and bool(tracks)
+            current_track,
+        ) in TRACK_TO_OPENSTACK_MAPPING and len(possible_tracks) > 0
 
     @property
     def possible_current_channel(self) -> str:
+        """Return the possible current channel.
+
+        Possible current channel is based in the series and in the current OpenStack release of
+        the application.
+        :return: The possible current channel of the application. E.g: "3.9/stable"
+        :rtype: str
+        """
         *_, track = OPENSTACK_TO_TRACK_MAPPING.get(
             (self.charm, self.series, self.current_os_release.codename), []
         )
@@ -115,7 +122,6 @@ class AuxiliaryApplication(OpenStackApplication):
 
         track: str = self._get_track_from_channel(self.channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
-        # channel setter already validate if it is a valid channel.
         return max(compatible_os_releases)
 
     def generate_upgrade_plan(
@@ -144,6 +150,20 @@ class AuxiliaryApplication(OpenStackApplication):
                 self.name,
             )
         return super().generate_upgrade_plan(target, force, None)
+
+    def _need_to_refresh(self, target: OpenStackRelease) -> bool:
+        """Check if the application needs to refresh the current channel.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: True if needs to refresh, False otherwise
+        :rtype: bool
+        """
+        track: str = self._get_track_from_channel(self.channel)
+        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
+        return bool(self.can_upgrade_to) and any(
+            os_release <= target for os_release in compatible_os_releases
+        )
 
 
 @AppFactory.register_application(["rabbitmq-server"])

@@ -268,11 +268,11 @@ nova-compute/0
         units={
             "ceph-osd/0": Unit(
                 name="ceph-osd/0",
-                workload_version="17.0.1",
+                workload_version="15.2.0",
                 machine=machines["2"],
             )
         },
-        workload_version="17.0.1",
+        workload_version="15.2.0",
     )
 
     ovn_chassis = OvnSubordinate(

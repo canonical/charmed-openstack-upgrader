@@ -438,7 +438,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
 
     machines = {"0": MagicMock(spec_set=Machine)}
     with pytest.raises(ApplicationError):
-        app = RabbitMQServer(
+        RabbitMQServer(
             name="rabbitmq-server",
             can_upgrade_to="",
             charm="rabbitmq-server",
@@ -1033,12 +1033,12 @@ def test_ceph_osd_pre_upgrade_steps(mock_pre_upgrade_steps, target, model):
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
-                workload_version="17.0.1",
+                workload_version="15.2.0",
                 machine=machines[f"{i}"],
             )
             for i in range(3)
         },
-        workload_version="17.0.1",
+        workload_version="15.2.0",
     )
     steps = app.pre_upgrade_steps(target, None)
 
@@ -1071,12 +1071,12 @@ async def test_ceph_osd_verify_nova_compute_no_app(model):
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
-                workload_version="17.0.1",
+                workload_version="15.2.0",
                 machine=machines[f"{i}"],
             )
             for i in range(3)
         },
-        workload_version="17.0.1",
+        workload_version="15.2.0",
     )
     model.get_applications.return_value = [app]
 
@@ -1241,14 +1241,54 @@ def test_ceph_osd_upgrade_plan(model):
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
-                workload_version="17.0.1",
+                workload_version="15.2.0",
                 machine=machines[f"{i}"],
             )
             for i in range(3)
         },
-        workload_version="17.0.1",
+        workload_version="15.2.0",
     )
 
     plan = ceph_osd.generate_upgrade_plan(target, False)
 
     assert str(plan) == exp_plan
+
+
+@pytest.mark.parametrize(
+    "can_upgrade_to, compatible_os_releases, exp_result",
+    [
+        (
+            "ch:amd64/focal/my-app-723",
+            [OpenStackRelease("ussuri"), OpenStackRelease("victoria")],
+            True,
+        ),
+        (
+            "ch:amd64/focal/my-app-723",
+            [OpenStackRelease("victoria")],
+            True,
+        ),
+        # compatible_os_releases bigger than target
+        (
+            "ch:amd64/focal/my-app-723",
+            [OpenStackRelease("wallaby"), OpenStackRelease("xena")],
+            False,
+        ),
+        (
+            "",
+            [OpenStackRelease("ussuri"), OpenStackRelease("victoria")],
+            False,
+        ),
+    ],
+)
+@patch("cou.apps.auxiliary.AuxiliaryApplication._verify_channel", return_value=None)
+@patch("cou.apps.auxiliary.TRACK_TO_OPENSTACK_MAPPING")
+def test_need_to_refresh_auxiliary(
+    mock_track_os_mapping, _, model, can_upgrade_to, compatible_os_releases, exp_result
+):
+    mock_track_os_mapping.__getitem__.return_value = compatible_os_releases
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    app = AuxiliaryApplication(
+        app_name, can_upgrade_to, app_name, "3.9/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+    )
+    assert app._need_to_refresh(target) is exp_result
