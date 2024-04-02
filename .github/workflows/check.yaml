@@ -62,7 +62,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install tox
-    - name: Run unit tests
+    - name: Run mocked-plans tests
       run: tox -e mocked-plans
 
   snap-build:
