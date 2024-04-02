@@ -26,11 +26,10 @@ from cou.steps.analyze import Analysis
 @pytest.mark.parametrize(
     "verbosity_value, verbosity_name",
     [
-        (0, "ERROR"),
-        (1, "WARNING"),
-        (2, "INFO"),
-        (3, "DEBUG"),
-        (4, "NOTSET"),
+        (0, "WARNING"),
+        (1, "INFO"),
+        (2, "DEBUG"),
+        (3, "NOTSET"),
         (5, "NOTSET"),
         (10, "NOTSET"),
     ],
@@ -52,7 +51,7 @@ def test_verbosity_level_exception(verbosity_value, exception):
 
 @pytest.mark.parametrize(
     "quiet, verbosity, level",
-    [(True, 0, "CRITICAL"), (True, 5, "CRITICAL"), (False, 0, "ERROR"), (False, 2, "INFO")],
+    [(True, 0, "CRITICAL"), (True, 5, "CRITICAL"), (False, 0, "WARNING"), (False, 2, "DEBUG")],
 )
 def test_get_log_level(quiet, verbosity, level):
     """Test get_log_level return value."""

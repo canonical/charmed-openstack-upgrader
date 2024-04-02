@@ -17,9 +17,7 @@ import json
 import logging
 from typing import Optional
 
-from packaging.version import Version
-
-from cou.exceptions import ApplicationError, RunUpgradeError
+from cou.exceptions import RunUpgradeError
 from cou.utils.juju_utils import Model
 from cou.utils.openstack import CEPH_RELEASES
 
@@ -66,26 +64,6 @@ async def set_require_osd_release_option(unit: str, model: Model) -> None:
     if current_require_osd_release != current_running_osd_release:
         set_command = f"ceph osd require-osd-release {current_running_osd_release}"
         await model.run_on_unit(unit_name=unit, command=set_command, timeout=600)
-
-
-def validate_ovn_support(version: str) -> None:
-    """Validate COU OVN support.
-
-    COU does not support upgrade clouds with OVN version lower than 22.03.
-
-    :param version: Version of the OVN.
-    :type version: str
-    :raises ApplicationError: When workload version is lower than 22.03.0.
-    """
-    if Version(version) < Version("22.03.0"):
-        raise ApplicationError(
-            (
-                "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
-                "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
-                "https://docs.openstack.org/charm-guide/latest/project/procedures/"
-                "ovn-upgrade-2203.html"
-            )
-        )
 
 
 # Private functions

@@ -17,8 +17,12 @@ import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import OpenStackApplication
-from cou.apps.core import Keystone, NovaCompute
-from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
+from cou.apps.core import Keystone, NovaCompute, Swift
+from cou.exceptions import (
+    ApplicationError,
+    ApplicationNotSupported,
+    HaltUpgradePlanGeneration,
+)
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -722,21 +726,47 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
     assert_steps(upgrade_plan, expected_plan)
 
 
+@patch("cou.apps.base.OpenStackApplication._get_refresh_charm_step")
+@patch("cou.apps.base.OpenStackApplication._get_upgrade_current_release_packages_step")
+@patch("cou.apps.core.NovaCompute._get_disable_scheduler_step")
+def test_nova_compute_pre_upgrade_steps(
+    mock_disable, mock_upgrade_package, mock_refresh_charm, model
+):
+    app = _generate_nova_compute_app(model)
+    target = OpenStackRelease("victoria")
+    units = list(app.units.values())
+
+    app.pre_upgrade_steps(target, units)
+    mock_disable.assert_called_once_with(units)
+    mock_upgrade_package.assert_called_once_with(units)
+    mock_refresh_charm.assert_called_once_with(target)
+
+
+@patch("cou.apps.base.OpenStackApplication._get_wait_step")
+@patch("cou.apps.base.OpenStackApplication._get_reached_expected_target_step")
+@patch("cou.apps.core.NovaCompute._get_enable_scheduler_step")
+def test_nova_compute_post_upgrade_steps(mock_enable, mock_expected_target, mock_wait_step, model):
+    app = _generate_nova_compute_app(model)
+    target = OpenStackRelease("victoria")
+    units = list(app.units.values())
+
+    app.post_upgrade_steps(target, units)
+    mock_enable.assert_called_once_with(units)
+    mock_expected_target.assert_called_once_with(target, units)
+    mock_wait_step.assert_called_once_with()
+
+
 @pytest.mark.parametrize("force", [True, False])
 # add_step check if the step added is from BaseStep, so the return is an empty UnitUpgradeStep
-@patch("cou.apps.core.NovaCompute._get_enable_scheduler_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_resume_unit_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_openstack_upgrade_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_pause_unit_step", return_value=UnitUpgradeStep())
 @patch("cou.apps.core.NovaCompute._get_empty_hypervisor_step", return_value=UnitUpgradeStep())
-@patch("cou.apps.core.NovaCompute._get_disable_scheduler_step", return_value=UnitUpgradeStep())
 def test_nova_compute_get_unit_upgrade_steps(
-    mock_disable,
     mock_empty,
     mock_pause,
     mock_upgrade,
     mock_resume,
-    mock_enable,
     model,
     force,
 ):
@@ -745,7 +775,6 @@ def test_nova_compute_get_unit_upgrade_steps(
 
     app._get_unit_upgrade_steps(unit, force)
 
-    mock_disable.assert_called_once_with(unit)
     if force:
         mock_empty.assert_not_called()
     else:
@@ -754,7 +783,6 @@ def test_nova_compute_get_unit_upgrade_steps(
     mock_pause.assert_called_once_with(unit, not force)
     mock_upgrade.assert_called_once_with(unit, not force)
     mock_resume.assert_called_once_with(unit, not force)
-    mock_enable.assert_called_once_with(unit)
 
 
 def test_nova_compute_get_empty_hypervisor_step(model):
@@ -769,28 +797,85 @@ def test_nova_compute_get_empty_hypervisor_step(model):
     assert app._get_empty_hypervisor_step(unit) == expected_step
 
 
-def test_nova_compute_get_enable_scheduler_step(model):
+@pytest.mark.parametrize(
+    "units",
+    [
+        [f"nova-compute/{unit}" for unit in range(1)],
+        [f"nova-compute/{unit}" for unit in range(2)],
+        [f"nova-compute/{unit}" for unit in range(3)],
+    ],
+)
+def test_nova_compute_get_enable_scheduler_step(model, units):
+    """Enable the scheduler on selected units."""
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
-    unit = units[0]
+    units_selected = [app.units[unit] for unit in units]
 
-    expected_step = UpgradeStep(
-        description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
-        coro=model.run_action(unit_name=unit.name, action_name="enable", raise_on_failure=True),
-    )
-    assert app._get_enable_scheduler_step(unit) == expected_step
+    expected_step = [
+        PostUpgradeStep(
+            description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
+            coro=model.run_action(
+                unit_name=unit.name, action_name="enable", raise_on_failure=True
+            ),
+        )
+        for unit in units_selected
+    ]
+    assert app._get_enable_scheduler_step(units_selected) == expected_step
 
 
-def test_nova_compute_get_disable_scheduler_step(model):
+def test_nova_compute_get_enable_scheduler_step_no_units(model):
+    """Enable the scheduler on all units if no units are passed."""
     app = _generate_nova_compute_app(model)
-    units = list(app.units.values())
-    unit = units[0]
 
-    expected_step = UpgradeStep(
-        description=f"Disable nova-compute scheduler from unit: '{unit.name}'",
-        coro=model.run_action(unit_name=unit.name, action_name="disable", raise_on_failure=True),
-    )
-    assert app._get_disable_scheduler_step(unit) == expected_step
+    expected_step = [
+        PostUpgradeStep(
+            description=f"Enable nova-compute scheduler from unit: '{unit.name}'",
+            coro=model.run_action(
+                unit_name=unit.name, action_name="enable", raise_on_failure=True
+            ),
+        )
+        for unit in app.units.values()
+    ]
+    assert app._get_enable_scheduler_step(None) == expected_step
+
+
+@pytest.mark.parametrize(
+    "units",
+    [
+        [f"nova-compute/{unit}" for unit in range(1)],
+        [f"nova-compute/{unit}" for unit in range(2)],
+        [f"nova-compute/{unit}" for unit in range(3)],
+    ],
+)
+def test_nova_compute_get_disable_scheduler_step(model, units):
+    """Disable the scheduler on selected units."""
+    app = _generate_nova_compute_app(model)
+    units_selected = [app.units[unit] for unit in units]
+
+    expected_step = [
+        PreUpgradeStep(
+            description=f"Disable nova-compute scheduler from unit: '{unit.name}'",
+            coro=model.run_action(
+                unit_name=unit.name, action_name="disable", raise_on_failure=True
+            ),
+        )
+        for unit in units_selected
+    ]
+    assert app._get_disable_scheduler_step(units_selected) == expected_step
+
+
+def test_nova_compute_get_disable_scheduler_step_no_units(model):
+    """Disable the scheduler on selected units."""
+    app = _generate_nova_compute_app(model)
+    expected_step = [
+        PreUpgradeStep(
+            description=f"Disable nova-compute scheduler from unit: '{unit.name}'",
+            coro=model.run_action(
+                unit_name=unit.name, action_name="disable", raise_on_failure=True
+            ),
+        )
+        for unit in app.units.values()
+    ]
+    assert app._get_disable_scheduler_step(None) == expected_step
 
 
 def _generate_nova_compute_app(model):
@@ -815,6 +900,9 @@ def test_nova_compute_upgrade_plan(model):
     exp_plan = dedent_plan(
         """\
     Upgrade plan for 'nova-compute' to 'victoria'
+        Disable nova-compute scheduler from unit: 'nova-compute/0'
+        Disable nova-compute scheduler from unit: 'nova-compute/1'
+        Disable nova-compute scheduler from unit: 'nova-compute/2'
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Upgrade software packages on unit 'nova-compute/0'
             Upgrade software packages on unit 'nova-compute/1'
@@ -825,26 +913,23 @@ def test_nova_compute_upgrade_plan(model):
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
             Upgrade plan for unit 'nova-compute/0'
-                Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Verify that unit 'nova-compute/0' has no VMs running
                 ├── Pause the unit: 'nova-compute/0'
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
-                Enable nova-compute scheduler from unit: 'nova-compute/0'
             Upgrade plan for unit 'nova-compute/1'
-                Disable nova-compute scheduler from unit: 'nova-compute/1'
                 Verify that unit 'nova-compute/1' has no VMs running
                 ├── Pause the unit: 'nova-compute/1'
                 ├── Upgrade the unit: 'nova-compute/1'
                 ├── Resume the unit: 'nova-compute/1'
-                Enable nova-compute scheduler from unit: 'nova-compute/1'
             Upgrade plan for unit 'nova-compute/2'
-                Disable nova-compute scheduler from unit: 'nova-compute/2'
                 Verify that unit 'nova-compute/2' has no VMs running
                 ├── Pause the unit: 'nova-compute/2'
                 ├── Upgrade the unit: 'nova-compute/2'
                 ├── Resume the unit: 'nova-compute/2'
-                Enable nova-compute scheduler from unit: 'nova-compute/2'
+        Enable nova-compute scheduler from unit: 'nova-compute/0'
+        Enable nova-compute scheduler from unit: 'nova-compute/1'
+        Enable nova-compute scheduler from unit: 'nova-compute/2'
         Wait for up to 1800s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
@@ -884,6 +969,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
     exp_plan = dedent_plan(
         """\
     Upgrade plan for 'nova-compute' to 'victoria'
+        Disable nova-compute scheduler from unit: 'nova-compute/0'
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Upgrade software packages on unit 'nova-compute/0'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
@@ -892,12 +978,11 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0
             Upgrade plan for unit 'nova-compute/0'
-                Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Verify that unit 'nova-compute/0' has no VMs running
                 ├── Pause the unit: 'nova-compute/0'
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
-                Enable nova-compute scheduler from unit: 'nova-compute/0'
+        Enable nova-compute scheduler from unit: 'nova-compute/0'
         Wait for up to 1800s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
@@ -1032,3 +1117,37 @@ def test_cinder_upgrade_plan_single_unit(model):
     plan = cinder.generate_upgrade_plan(target, False, [units["cinder/0"]])
 
     assert str(plan) == exp_plan
+
+
+def test_swift_application_not_supported(model):
+    """Test Swift application raising ApplicationNotSupported error."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = Swift(
+        name="swift-proxy",
+        can_upgrade_to="ussuri/stable",
+        charm="swift-proxy",
+        channel="ussuri/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "swift-proxy/0": Unit(
+                name="swift-proxy/0",
+                workload_version="2.25.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="2.25.0",
+    )
+
+    exp_error = (
+        "'swift-proxy' application is not currently supported by COU. Please manually "
+        "upgrade it."
+    )
+
+    with pytest.raises(ApplicationNotSupported, match=exp_error):
+        app.generate_upgrade_plan(target, False)
