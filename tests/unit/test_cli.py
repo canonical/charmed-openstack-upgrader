@@ -88,16 +88,26 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli
 @pytest.mark.asyncio
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.print_and_debug")
-async def test_get_upgrade_plan(mock_print_and_debug, mock_analyze_and_plan, cli_args):
+@patch("builtins.print")
+@patch("cou.cli.PlanWarnings", spec_set=PlanWarnings)
+async def test_get_upgrade_plan(
+    mock_plan_warnings, mock_print, mock_print_and_debug, mock_analyze_and_plan, cli_args
+):
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
+    mock_plan_warnings.warnings = []
+    mock_plan_warnings.return_value = mock_plan_warnings
 
     mock_analyze_and_plan.return_value = plan
     await cli.get_upgrade_plan(cli_args)
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_print_and_debug.assert_called_once_with(plan)
+    mock_print.assert_called_once_with(
+        "Please note that the actual upgrade steps could be different if the cloud "
+        "state changes because the plan will be re-calculated at upgrade time."
+    )
 
 
 @pytest.mark.asyncio

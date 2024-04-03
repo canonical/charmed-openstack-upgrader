@@ -461,17 +461,26 @@ nova-compute/0
 
     upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
+    # Check only the last entry because this is a singleton class which is being
+    # tested in other functions
+    assert cou_plan.PlanWarnings().warnings[-1] == (
+        "Cannot generate plan for 'keystone'\n"
+        "\tUnits of application keystone are running mismatched OpenStack "
+        "versions: 'ussuri': ['keystone/0'], 'victoria': ['keystone/1']. This is "
+        "not currently handled."
+    )
 
 
 def test_PlanWarnings_warnings_property():
     """Test PlanWarnings object."""
     exp_warnings = ["Mock warning message1", "Mock warning message2"]
-    plan_warnings = cou_plan.PlanWarnings()
 
     for warning in exp_warnings:
-        plan_warnings.add_warning(warning)
+        cou_plan.PlanWarnings().add_warning(warning)
 
-    assert plan_warnings.warnings == exp_warnings
+    # Check only the last two entries because this is a singleton class which is
+    # also being tested in other functions
+    assert cou_plan.PlanWarnings().warnings[-2:] == exp_warnings
 
 
 @patch("cou.steps.plan._verify_hypervisors_cli_input")

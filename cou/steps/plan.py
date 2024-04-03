@@ -66,16 +66,13 @@ class PlanWarnings:
     """
 
     _instance = None
+    _warnings: list[str] = []
 
     def __new__(cls) -> PlanWarnings:
         """Create a new instance of the PlanWarnings class if doesn't already exist."""
         if not cls._instance:
             cls._instance = super().__new__(cls)
         return cls._instance
-
-    def __init__(self) -> None:
-        """Initialize the PlanWarnings class."""
-        self._warnings: list[str] = []
 
     def add_warning(self, warning: str) -> None:
         """Add a new warning to the collection.
