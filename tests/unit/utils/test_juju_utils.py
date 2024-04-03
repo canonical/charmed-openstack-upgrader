@@ -664,7 +664,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
         "app1": dict([_generate_unit_status("app1", i, f"{i}") for i in range(3)]),
         "app2": dict([_generate_unit_status("app2", 0, "0")]),
         "app3": dict([_generate_unit_status("app3", 0, "1")]),
-        "app4": {},  # suboridnate application has no units defined in juju status
+        "app4": {},  # subordinate application has no units defined in juju status
     }
     exp_units = {
         "app1": [_generate_juju_unit("app1", f"{i}") for i in range(3)],
