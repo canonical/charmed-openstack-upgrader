@@ -660,7 +660,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
         "1": juju_utils.Machine("1", ()),
         "2": juju_utils.Machine("2", ()),
     }
-    exp_units_form_status = {
+    exp_units_from_status = {
         "app1": dict([_generate_unit_status("app1", i, f"{i}") for i in range(3)]),
         "app2": dict([_generate_unit_status("app2", 0, "0")]),
         "app3": dict([_generate_unit_status("app3", 0, "1")]),
