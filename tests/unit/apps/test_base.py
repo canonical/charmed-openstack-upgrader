@@ -487,107 +487,268 @@ def test_check_mismatched_versions(mock_os_release_units, model):
     assert app._check_mismatched_versions([units["my-app/0"]]) is None
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-def test_get_charm_hub_migration_ch(_, model):
-    """Application is already from charm hub."""
+def test_get_charmhub_migration_step_skip(model):
+    """Expect an empty pre-upgrade step for applications installed from charmhub."""
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "ussuri/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
     )
-    assert app._get_charm_hub_migration() == PreUpgradeStep()
+    assert app._get_charmhub_migration_step() == PreUpgradeStep()
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_get_charm_hub_migration_cs(current_os_release, _, model):
-    """Application is already from charm store."""
+def test_get_charmhub_migration_step(current_os_release, model):
+    """Switch applications installed from charm store to a charmhub channel."""
     current_os_release.return_value = OpenStackRelease("ussuri")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "ussuri/stable", {}, {}, model, "cs", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="cs",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
     )
-    assert app._get_charm_hub_migration() == PreUpgradeStep(
+    assert app._get_charmhub_migration_step() == PreUpgradeStep(
         f"Migrate '{app.name}' from charmstore to charmhub",
-        coro=model.upgrade_charm(app.name, app.possible_current_channel, switch=f"ch:{app.charm}"),
+        coro=model.upgrade_charm(app.name, app.expected_current_channel, switch=f"ch:{app.charm}"),
     )
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_get_change_to_openstack_channels_latest_stable(current_os_release, _, model):
-    """Application using latest/stable channel."""
+def test_get_change_to_openstack_channels_step_latest_stable(current_os_release, model):
+    """Applications using latest/stable should be switched to a release-specific channel."""
     current_os_release.return_value = OpenStackRelease("ussuri")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "latest/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="latest/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
     )
-    assert app._get_change_to_openstack_channels() == PreUpgradeStep(
+    assert app._get_change_to_openstack_channels_step() == PreUpgradeStep(
         f"WARNING: Changing '{app.name}' channel from {app.channel} to "
-        f"{app.possible_current_channel}. COU cannot guarantee that this is not a downgrade",
-        coro=model.upgrade_charm(app.name, app.possible_current_channel),
+        f"{app.expected_current_channel}. This may be a charm downgrade, "
+        "which is generally not supported.",
+        coro=model.upgrade_charm(app.name, app.expected_current_channel),
     )
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_get_change_to_openstack_channels_openstack_channel(current_os_release, _, model):
-    """Application already on OpenStack channel."""
+def test_get_change_to_openstack_channels_step_openstack_channel(current_os_release, model):
+    """Expect an empty pre-upgrade step for applications using release-specific channel."""
     current_os_release.return_value = OpenStackRelease("ussuri")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "ussuri/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
     )
-    assert app._get_change_to_openstack_channels() == PreUpgradeStep()
+    assert app._get_change_to_openstack_channels_step() == PreUpgradeStep()
 
 
-@pytest.mark.parametrize(
-    "can_refresh, need_to_refresh", [(False, True), (True, False), (False, False)]
+@patch(
+    "cou.apps.base.OpenStackApplication._get_refresh_current_channel_step",
+    return_value=PreUpgradeStep(),
 )
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-@patch("cou.apps.base.OpenStackApplication.can_refresh", new_callable=PropertyMock)
-@patch("cou.apps.base.OpenStackApplication._need_to_refresh")
+@patch(
+    "cou.apps.base.OpenStackApplication._get_change_to_openstack_channels_step",
+    return_value=PreUpgradeStep(),
+)
+@patch(
+    "cou.apps.base.OpenStackApplication._get_charmhub_migration_step",
+    return_value=PreUpgradeStep(),
+)
 def test_get_refresh_charm_step_skip(
-    mock_need_to_refresh, mock_can_refresh, model, can_refresh, need_to_refresh
+    mock_ch_migration, mock_change_os_channels, mock_refresh_current_channel, model
 ):
-    """Application does not need to refresh."""
-    mock_need_to_refresh.return_value = need_to_refresh
-    mock_can_refresh.return_value = can_refresh
+    """Expect an empty pre-upgrade for application that does not need to refresh."""
     target = OpenStackRelease("victoria")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "ussuri/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
     )
     assert app._get_refresh_charm_step(target) == PreUpgradeStep()
+    mock_ch_migration.assert_called_once()
+    mock_change_os_channels.assert_called_once()
+    mock_refresh_current_channel.assert_called_once_with(target)
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-@patch("cou.apps.base.OpenStackApplication.can_refresh", new_callable=PropertyMock)
-@patch("cou.apps.base.OpenStackApplication._need_to_refresh")
-def test_get_refresh_charm_step(mock_need_to_refresh, mock_can_refresh, _, model):
-    """Application does not need to refresh."""
-    mock_need_to_refresh.return_value = True
-    mock_can_refresh.return_value = True
+@patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
+@patch(
+    "cou.apps.base.OpenStackApplication._get_change_to_openstack_channels_step",
+    return_value=PreUpgradeStep(),
+)
+@patch(
+    "cou.apps.base.OpenStackApplication._get_charmhub_migration_step",
+    return_value=PreUpgradeStep(),
+)
+def test_get_refresh_charm_step_refresh_current_channel(
+    mock_ch_migration, mock_change_os_channels, mock_refresh_current_channel, model
+):
+    """Expect an pre-upgrade for application that does need to refresh current channel."""
     target = OpenStackRelease("victoria")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "ussuri/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="ch:amd64/focal/my-app-723",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
     )
-    assert app._get_refresh_charm_step(target) == PreUpgradeStep(
+    expected_result = PreUpgradeStep(
         f"Refresh '{app.name}' to the latest revision of '{app.channel}'",
         coro=model.upgrade_charm(app.name, app.channel),
     )
+    mock_refresh_current_channel.return_value = expected_result
+
+    assert app._get_refresh_charm_step(target) == expected_result
+
+    mock_ch_migration.assert_called_once()
+    mock_change_os_channels.assert_called_once()
+    mock_refresh_current_channel.assert_called_once_with(target)
 
 
-@pytest.mark.parametrize(
-    "origin, channel, exp_result",
-    [("cs", "stable", False), ("ch", "latest/stable", False), ("ch", "ussuri/stable", True)],
+@patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
+@patch("cou.apps.base.OpenStackApplication._get_change_to_openstack_channels_step")
+@patch(
+    "cou.apps.base.OpenStackApplication._get_charmhub_migration_step",
+    return_value=PreUpgradeStep(),
 )
-def test_can_refresh(model, origin, channel, exp_result):
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_get_refresh_charm_step_change_to_openstack_channels(
+    current_os_release,
+    mock_ch_migration,
+    mock_change_os_channels,
+    mock_refresh_current_channel,
+    model,
+):
+    """Expect an pre-upgrade for application that does need to change to OpenStack channel."""
+    current_os_release.return_value = OpenStackRelease("ussuri")
+    target = OpenStackRelease("victoria")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, channel, {}, {}, model, origin, "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to="ch:amd64/focal/my-app-723",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
     )
-    assert app.can_refresh is exp_result
+    expected_result = PreUpgradeStep(
+        f"WARNING: Changing '{app.name}' channel from {app.channel} to "
+        f"{app.expected_current_channel}. This may be a charm downgrade, "
+        "which is generally not supported.",
+        coro=model.upgrade_charm(app.name, app.expected_current_channel),
+    )
+
+    mock_change_os_channels.return_value = expected_result
+
+    assert app._get_refresh_charm_step(target) == expected_result
+
+    mock_ch_migration.assert_called_once()
+    mock_change_os_channels.assert_called_once()
+    mock_refresh_current_channel.assert_not_called()
+
+
+@patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
+@patch("cou.apps.base.OpenStackApplication._get_change_to_openstack_channels_step")
+@patch("cou.apps.base.OpenStackApplication._get_charmhub_migration_step")
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_get_refresh_charm_step_charmhub_migration(
+    current_os_release,
+    mock_ch_migration,
+    mock_change_os_channels,
+    mock_refresh_current_channel,
+    model,
+):
+    """Expect an pre-upgrade for application that does need to refresh current channel."""
+    current_os_release.return_value = OpenStackRelease("ussuri")
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    app = OpenStackApplication(
+        name=app_name,
+        can_upgrade_to="ch:amd64/focal/my-app-723",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+    expected_result = PreUpgradeStep(
+        f"Migrate '{app.name}' from charmstore to charmhub",
+        coro=model.upgrade_charm(app.name, app.expected_current_channel, switch=f"ch:{app.charm}"),
+    )
+    mock_ch_migration.return_value = expected_result
+
+    assert app._get_refresh_charm_step(target) == expected_result
+
+    mock_ch_migration.assert_called_once()
+    mock_change_os_channels.assert_not_called()
+    mock_refresh_current_channel.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -606,6 +767,66 @@ def test_need_to_refresh(model, can_upgrade_to, channel, exp_result):
     target = OpenStackRelease("victoria")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, can_upgrade_to, app_name, channel, {}, {}, model, "ch", "focal", [], {}, "1"
+        name=app_name,
+        can_upgrade_to=can_upgrade_to,
+        charm=app_name,
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
     )
     assert app._need_to_refresh(target) is exp_result
+
+
+@patch("cou.apps.base.OpenStackApplication._need_to_refresh", return_value=False)
+def test_get_refresh_current_channel_step_skip(_, model):
+    """Expect an empty step for application that does not need to refresh the current channel."""
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    app = OpenStackApplication(
+        name=app_name,
+        can_upgrade_to="",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+    assert app._get_refresh_current_channel_step(target) == PreUpgradeStep()
+
+
+@patch("cou.apps.base.OpenStackApplication._need_to_refresh", return_value=True)
+def test_get_refresh_current_channel_step(_, model):
+    """Expect an pre-upgrade for application that does need to refresh the current channel."""
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    app = OpenStackApplication(
+        name=app_name,
+        can_upgrade_to="ch:amd64/focal/my-app-723",
+        charm=app_name,
+        channel="ussuri/stable",
+        config={},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+    expected_result = PreUpgradeStep(
+        f"Refresh '{app.name}' to the latest revision of '{app.channel}'",
+        coro=model.upgrade_charm(app.name, app.channel),
+    )
+
+    assert app._get_refresh_current_channel_step(target) == expected_result

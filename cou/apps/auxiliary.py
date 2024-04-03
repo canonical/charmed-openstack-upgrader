@@ -64,17 +64,19 @@ class AuxiliaryApplication(OpenStackApplication):
         ) in TRACK_TO_OPENSTACK_MAPPING and len(possible_tracks) > 0
 
     @property
-    def possible_current_channel(self) -> str:
-        """Return the possible current channel.
+    def expected_current_channel(self) -> str:
+        """Return the expected current channel.
 
-        Possible current channel is based in the series and in the current OpenStack release of
-        the application.
-        :return: The possible current channel of the application. E.g: "3.9/stable"
+        Expected current channel is the channel that the application is suppose to be using based
+        on the current series, workload version and, by consequence, the OpenStack release
+        identified.
+        :return: The expected current channel of the application. E.g: "3.9/stable"
         :rtype: str
         """
-        *_, track = OPENSTACK_TO_TRACK_MAPPING.get(
-            (self.charm, self.series, self.current_os_release.codename), []
-        )
+        *_, track = OPENSTACK_TO_TRACK_MAPPING[
+            (self.charm, self.series, self.current_os_release.codename)
+        ]
+
         return f"{track}/stable"
 
     def target_channel(self, target: OpenStackRelease) -> str:
