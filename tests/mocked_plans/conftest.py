@@ -27,7 +27,7 @@ def sample_plans() -> dict[str, tuple[Model, str]]:
     This fixture returns a dictionary with the filename as the key and
     a tuple consisting of a cou.utils.juju_utils.Model object and the
     expected plan in string format as the value. The get_applications
-    function of this Model object returns the applications read from a 
+    function of this Model object returns the applications read from a
     YAML file, from which the expected plan is also parsed.
     """
     directory = Path(__file__).parent / "sample_plans"
