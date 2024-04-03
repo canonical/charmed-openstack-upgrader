@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional, Union
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -529,7 +530,11 @@ async def _generate_data_plane_hypervisors_plan(
     hypervisors_machines = await _filter_hypervisors_machines(args, analysis_result)
     logger.info("Hypervisors selected: %s", hypervisors_machines)
     hypervisor_planner = HypervisorUpgradePlanner(apps, hypervisors_machines)
-    hypervisor_plan = hypervisor_planner.generate_upgrade_plan(target, args.force)
+    # NOTE(agileshaw): Assign an empty UpgradePlan for hypervisor_plan if _generate_instance_plan
+    #                  returns None
+    hypervisor_plan = _generate_instance_plan(
+        hypervisor_planner, target, args.force
+    ) or UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
     logger.debug("Generation of the hypervisors upgrade plan completed")
     return hypervisor_plan
 
@@ -653,22 +658,54 @@ def _create_upgrade_group(
     :return: Upgrade plan of an upgrade group.
     :rtype: UpgradePlan
     """
-    plan_warnings = PlanWarnings()
     group_upgrade_plan = UpgradePlan(description)
 
     for app in apps:
-        try:
-            app_upgrade_plan = app.generate_upgrade_plan(target, force)
+        if app_upgrade_plan := _generate_instance_plan(app, target, force):
             group_upgrade_plan.add_step(app_upgrade_plan)
-        except HaltUpgradePlanGeneration as exc:
-            # we do not care if applications halt the upgrade plan generation
-            # for some known reason.
-            logger.debug("'%s' halted the upgrade planning generation: %s", app.name, exc)
-        except COUException as exc:
-            logger.debug("Cannot generate plan for '%s'\n\t%s", app.name, exc)
-            plan_warnings.add_warning(f"Cannot generate plan for '{app.name}'\n\t{exc}")
-        except Exception as exc:
-            logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
-            raise
 
     return group_upgrade_plan
+
+
+def _generate_instance_plan(
+    instance: Union[HypervisorUpgradePlanner, OpenStackApplication],
+    target: OpenStackRelease,
+    force: bool,
+) -> Optional[UpgradePlan]:
+    """Generate upgrade plan for an instance and handle exceptions.
+
+    COUExceptions (except HaltUpgradePlanGeneration) raised by application will be stored
+    in the PlanWarnings object.
+
+    :param instance: An OpenStackApplication or HypervisorUpgradePlanner instance to generate
+                     plan for.
+    :type instance: Union[HypervisorUpgradePlanner, OpenStackApplication]
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :raises Exception: When cannot generate upgrade plan.
+    :return: Upgrade plan of an instance.
+    :rtype: Optional[UpgradePlan]:
+    """
+    instance_id = (
+        instance.name
+        if isinstance(instance, OpenStackApplication)
+        else "Hypervisors Groups:" + ", ".join(instance.get_azs(target).keys())
+    )
+
+    try:
+        instance_upgrade_plan = instance.generate_upgrade_plan(target, force)
+        return instance_upgrade_plan
+    except HaltUpgradePlanGeneration as exc:
+        # we do not care if applications halt the upgrade plan generation
+        # for some known reason.
+        logger.debug("'%s' halted the upgrade planning generation: %s", instance_id, exc)
+    except COUException as exc:
+        logger.debug("Cannot generate plan for '%s'\n\t%s", instance_id, exc)
+        PlanWarnings().add_warning(f"Cannot generate plan for '{instance_id}'\n\t{exc}")
+    except Exception as exc:
+        logger.error("Cannot generate upgrade plan for '%s': %s", instance_id, exc)
+        raise
+
+    return None

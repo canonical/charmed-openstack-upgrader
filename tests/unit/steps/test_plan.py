@@ -43,6 +43,7 @@ from cou.steps import (
 from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
@@ -298,9 +299,8 @@ nova-compute/0
         apps_data_plane=[ceph_osd, nova_compute, ovn_chassis],
     )
 
-    upgrade_plan, warning_messages = await cou_plan.generate_plan(analysis_result, cli_args)
+    upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
-    assert len(warning_messages) == 0
 
 
 @pytest.mark.asyncio
@@ -318,6 +318,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                 Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for 'az-1' to 'victoria'
+                Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
@@ -326,12 +327,11 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Upgrade plan for unit 'nova-compute/0'
-                        Disable nova-compute scheduler from unit: 'nova-compute/0'
                         Verify that unit 'nova-compute/0' has no VMs running
                         ├── Pause the unit: 'nova-compute/0'
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
-                        Enable nova-compute scheduler from unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/0'
                 Wait for up to 1800s for model 'test_model' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: \
 nova-compute/0
@@ -443,7 +443,7 @@ nova-compute/0
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
         channel="22.03/stable",
-        config={},
+        config={"enable-version-pinning": {"value": False}},
         machines=machines["1"],
         model=model,
         origin="ch",
@@ -459,13 +459,19 @@ nova-compute/0
         apps_data_plane=[ceph_osd, nova_compute, ovn_chassis],
     )
 
-    upgrade_plan, warning_messages = await cou_plan.generate_plan(analysis_result, cli_args)
+    upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
-    assert warning_messages == [
-        """Cannot generate plan for 'keystone'\n\tUnits of application keystone are running \
-mismatched OpenStack versions: 'ussuri': ['keystone/0'], 'victoria': ['keystone/1']. \
-This is not currently handled."""
-    ]
+
+
+def test_PlanWarnings_warnings_property():
+    """Test PlanWarnings object."""
+    exp_warnings = ["Mock warning message1", "Mock warning message2"]
+    plan_warnings = cou_plan.PlanWarnings()
+
+    for warning in exp_warnings:
+        plan_warnings.add_warning(warning)
+
+    assert plan_warnings.warnings == exp_warnings
 
 
 @patch("cou.steps.plan._verify_hypervisors_cli_input")
@@ -678,65 +684,20 @@ def test_determine_upgrade_target_out_support_range():
 @pytest.mark.parametrize("force", [True, False])
 def test_create_upgrade_plan(force):
     """Test _create_upgrade_group."""
-    app: OpenStackApplication = MagicMock(spec_set=OpenStackApplication)
+    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app.name = "test-app"
     app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
     target = OpenStackRelease("victoria")
     description = "test"
 
-    plan, warning_messages = cou_plan._create_upgrade_group([app], target, description, force)
+    plan = cou_plan._create_upgrade_group([app], target, description, force)
 
     assert plan.description == description
     assert plan.parallel is False
     assert plan._coro is None
     assert len(plan.sub_steps) == 1
-    assert len(warning_messages) == 0
     assert plan.sub_steps[0] == app.generate_upgrade_plan.return_value
     app.generate_upgrade_plan.assert_called_once_with(target, force)
-
-
-@pytest.mark.parametrize("force", [True, False])
-def test_create_upgrade_plan_HaltUpgradePlanGeneration(force):
-    """Test _create_upgrade_group with HaltUpgradePlanGeneration exception raised."""
-    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
-    app.name = "test-app"
-    app.generate_upgrade_plan.side_effect = HaltUpgradePlanGeneration
-    target = OpenStackRelease("victoria")
-    description = "test"
-
-    plan, warning_messages = cou_plan._create_upgrade_group([app], target, description, force)
-
-    assert len(plan.sub_steps) == 0
-    assert len(warning_messages) == 0
-    app.generate_upgrade_plan.assert_called_once_with(target, force)
-
-
-@pytest.mark.parametrize(
-    "exceptions", [MismatchedOpenStackVersions, ApplicationError, COUException]
-)
-def test_create_upgrade_plan_COUExceptions(exceptions):
-    """Test _create_upgrade_group with different types of COUExceptions raised."""
-    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
-    app.name = "test-app"
-    app.generate_upgrade_plan.side_effect = exceptions
-    target = OpenStackRelease("victoria")
-    description = "test"
-
-    plan, warning_messages = cou_plan._create_upgrade_group([app], target, description, False)
-
-    assert len(plan.sub_steps) == 0
-    assert len(warning_messages) == 1
-    app.generate_upgrade_plan.assert_called_once_with(target, False)
-
-
-@pytest.mark.parametrize("force", [True, False])
-def test_create_upgrade_plan_failed(force):
-    """Test _create_upgrade_group with unknown exception."""
-    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
-    app.name = "test-app"
-    app.generate_upgrade_plan.side_effect = Exception("test")
-
-    with pytest.raises(Exception, match="test"):
-        cou_plan._create_upgrade_group([app], "victoria", "test", force)
 
 
 @patch("cou.steps.plan._get_nova_compute_units_and_machines")
@@ -1142,13 +1103,7 @@ def test_get_ceph_mon_post_upgrade_steps_multiple(model):
     assert steps == exp_steps
 
 
-@patch(
-    "cou.steps.plan._create_upgrade_group",
-    side_effect=[
-        (MagicMock(), ["principal_warning_1", "principal_warning_2"]),
-        (MagicMock(), ["subordinate_warning"]),
-    ],
-)
+@patch("cou.steps.plan._create_upgrade_group")
 def test_generate_control_plane_plan(mock_create_upgrade_group):
     target = OpenStackRelease("victoria")
     force = False
@@ -1159,9 +1114,7 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
     keystone_ldap = MagicMock(spec_set=SubordinateApplication)()
     keystone_ldap.is_subordinate = True
 
-    _, warning_messages = cou_plan._generate_control_plane_plan(
-        target, [keystone, keystone_ldap], force
-    )
+    cou_plan._generate_control_plane_plan(target, [keystone, keystone_ldap], force)
 
     expected_calls = [
         call(
@@ -1179,26 +1132,18 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
     ]
 
     mock_create_upgrade_group.assert_has_calls(expected_calls)
-    assert warning_messages == [
-        "principal_warning_1",
-        "principal_warning_2",
-        "subordinate_warning",
-    ]
 
 
 @pytest.mark.asyncio
 @patch("cou.steps.plan._pre_plan_sanity_checks")
 @patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
-@patch(
-    "cou.steps.plan._generate_control_plane_plan",
-    return_value=(MagicMock(), ["control_plane_warning_1", "control_plane_warning_2"]),
-)
+@patch("cou.steps.plan._generate_control_plane_plan", return_value=MagicMock())
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
     "cou.steps.plan._generate_data_plane_remaining_plan",
-    return_value=(MagicMock(), ["data_plane_warning"]),
+    return_value=MagicMock(),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_None(
@@ -1215,7 +1160,7 @@ async def test_generate_plan_upgrade_group_None(
     cli_args.upgrade_group = None
     mock_analysis_result = MagicMock(spec=Analysis)()
 
-    _, warning_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
+    await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
@@ -1226,11 +1171,6 @@ async def test_generate_plan_upgrade_group_None(
     mock_generate_data_plane_hypervisors_plan.assert_called_once()
     mock_ceph_osd_subordinates.assert_called_once()
     mock_post_upgrade_steps.assert_called_once()
-    assert warning_messages == [
-        "control_plane_warning_1",
-        "control_plane_warning_2",
-        "data_plane_warning",
-    ]
 
 
 @pytest.mark.asyncio
@@ -1239,13 +1179,13 @@ async def test_generate_plan_upgrade_group_None(
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
     "cou.steps.plan._generate_control_plane_plan",
-    return_value=(MagicMock(), ["control_plane_warning_1", "control_plane_warning_2"]),
+    return_value=MagicMock(),
 )
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
     "cou.steps.plan._generate_data_plane_remaining_plan",
-    return_value=(MagicMock(), ["data_plane_warning"]),
+    return_value=MagicMock(),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_control_plane(
@@ -1262,7 +1202,7 @@ async def test_generate_plan_upgrade_group_control_plane(
     cli_args.upgrade_group = CONTROL_PLANE
     mock_analysis_result = MagicMock(spec=Analysis)()
 
-    _, warning_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
+    await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
@@ -1273,7 +1213,6 @@ async def test_generate_plan_upgrade_group_control_plane(
     mock_generate_data_plane_hypervisors_plan.assert_not_called()
     mock_ceph_osd_subordinates.assert_not_called()
     mock_post_upgrade_steps.assert_called_once()
-    assert warning_messages == ["control_plane_warning_1", "control_plane_warning_2"]
 
 
 @pytest.mark.asyncio
@@ -1282,13 +1221,13 @@ async def test_generate_plan_upgrade_group_control_plane(
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
     "cou.steps.plan._generate_control_plane_plan",
-    return_value=(MagicMock(), ["control_plane_warning_1", "control_plane_warning_2"]),
+    return_value=MagicMock(),
 )
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
     "cou.steps.plan._generate_data_plane_remaining_plan",
-    return_value=(MagicMock(), ["data_plane_warning"]),
+    return_value=MagicMock(),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_data_plane(
@@ -1305,7 +1244,7 @@ async def test_generate_plan_upgrade_group_data_plane(
     cli_args.upgrade_group = DATA_PLANE
     mock_analysis_result = MagicMock(spec=Analysis)()
 
-    _, warning_messages = await cou_plan.generate_plan(mock_analysis_result, cli_args)
+    await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
     mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
@@ -1316,7 +1255,6 @@ async def test_generate_plan_upgrade_group_data_plane(
     mock_generate_data_plane_hypervisors_plan.assert_called_once()
     mock_ceph_osd_subordinates.assert_called_once()
     mock_post_upgrade_steps.assert_called_once()
-    assert warning_messages == ["data_plane_warning"]
 
 
 @pytest.mark.asyncio
@@ -1502,13 +1440,32 @@ async def test_generate_data_plane_hypervisors_plan(
     )
 
 
-@patch(
-    "cou.steps.plan._create_upgrade_group",
-    side_effect=[
-        (MagicMock(), ["principal_warning"]),
-        (MagicMock(), ["subordinate_warning_1", "subordinate_warning_2"]),
-    ],
-)
+@pytest.mark.asyncio
+@patch("cou.steps.plan.HypervisorUpgradePlanner")
+@patch("cou.steps.plan._filter_hypervisors_machines")
+@patch("cou.steps.plan._generate_instance_plan")
+async def test_generate_data_plane_hypervisors_plan_None(
+    mock_generate_instance_plan, mock_filter_hypervisors, mock_hypervisor_planner, cli_args
+):
+    """Test hypervisor plan is not None when _generate_instance_plan return None."""
+    apps = [MagicMock(spec_set=OpenStackApplication)()]
+    target = OpenStackRelease("victoria")
+    analysis_result = MagicMock(spec_set=Analysis)()
+    hypervisors_machines = [Machine("0", (), "zone-0")]
+    mock_filter_hypervisors.return_value = hypervisors_machines
+    mock_generate_instance_plan.return_value = None
+    cli_args.force = False
+
+    plan = await cou_plan._generate_data_plane_hypervisors_plan(
+        target, analysis_result, cli_args, apps
+    )
+
+    assert isinstance(plan, UpgradePlan)  # plan is not None
+    mock_filter_hypervisors.assert_called_once_with(cli_args, analysis_result)
+    mock_hypervisor_planner.assert_called_once_with(apps, hypervisors_machines)
+
+
+@patch("cou.steps.plan._create_upgrade_group")
 def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
     target = OpenStackRelease("victoria")
     force = False
@@ -1519,9 +1476,7 @@ def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
     ovn_chassis = MagicMock(spec_set=OvnSubordinate)()
     ovn_chassis.is_subordinate = True
 
-    _, warning_messages = cou_plan._generate_data_plane_remaining_plan(
-        target, [ceph_osd, ovn_chassis], force
-    )
+    cou_plan._generate_data_plane_remaining_plan(target, [ceph_osd, ovn_chassis], force)
     expected_calls = [
         call(
             apps=[ceph_osd],
@@ -1537,8 +1492,76 @@ def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
         ),
     ]
     mock_create_upgrade_group.assert_has_calls(expected_calls)
-    assert warning_messages == [
-        "principal_warning",
-        "subordinate_warning_1",
-        "subordinate_warning_2",
-    ]
+
+
+def test_generate_instance_plan_app():
+    """Test _generate_instance_plan for OpenStackApplication."""
+    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app.name = "test-app"
+    app.generate_upgrade_plan.return_value = MagicMock(spec_set=ApplicationUpgradePlan)
+    target = OpenStackRelease("victoria")
+
+    plan = cou_plan._generate_instance_plan(app, target, False)
+
+    assert isinstance(plan, ApplicationUpgradePlan)
+    app.generate_upgrade_plan.assert_called_once_with(target, False)
+
+
+def test_generate_instance_plan_hypervisors():
+    """Test _generate_instance_plan for HypervisorUpgradePlanner."""
+    hypervisors: HypervisorUpgradePlanner = MagicMock(spec=HypervisorUpgradePlanner)
+    hypervisors.get_azs.return_value = {
+        "az1": MagicMock(spec_set=HypervisorGroup),
+        "az2": MagicMock(spec_set=HypervisorGroup),
+    }
+    hypervisors.generate_upgrade_plan.return_value = MagicMock(spec_set=UpgradePlan)
+    target = OpenStackRelease("victoria")
+
+    plan = cou_plan._generate_instance_plan(hypervisors, target, False)
+
+    assert isinstance(plan, UpgradePlan)
+    hypervisors.generate_upgrade_plan.assert_called_once_with(target, False)
+
+
+def test_generate_instance_plan_HaltUpgradePlanGeneration():
+    """Test _generate_instance_plan with HaltUpgradePlanGeneration."""
+    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app.name = "test-app"
+    app.generate_upgrade_plan.side_effect = HaltUpgradePlanGeneration
+    target = OpenStackRelease("victoria")
+
+    plan = cou_plan._generate_instance_plan(app, target, False)
+
+    assert plan is None
+    app.generate_upgrade_plan.assert_called_once_with(target, False)
+
+
+@pytest.mark.parametrize(
+    "exceptions", [ApplicationError, MismatchedOpenStackVersions, COUException]
+)
+@patch("cou.steps.plan.PlanWarnings", spec_set=cou_plan.PlanWarnings)
+def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
+    """Test _generate_instance_plan with COUException."""
+    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app.name = "test-app"
+    app.generate_upgrade_plan.side_effect = exceptions("mock message")
+    target = OpenStackRelease("victoria")
+    mock_plan_warnings.return_value = mock_plan_warnings
+
+    plan = cou_plan._generate_instance_plan(app, target, False)
+
+    assert plan is None
+    app.generate_upgrade_plan.assert_called_once_with(target, False)
+    mock_plan_warnings.add_warning.assert_called_once_with(
+        "Cannot generate plan for 'test-app'\n\tmock message"
+    )
+
+
+def test_create_upgrade_plan_failed():
+    """Test _generate_instance_plan with unknown exception."""
+    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app.name = "test-app"
+    app.generate_upgrade_plan.side_effect = Exception("test")
+
+    with pytest.raises(Exception, match="test"):
+        cou_plan._create_upgrade_group([app], "victoria", "test", False)

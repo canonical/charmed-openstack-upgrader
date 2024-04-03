@@ -145,7 +145,7 @@ async def get_upgrade_plan(args: CLIargs) -> None:
 
     if warnings := PlanWarnings().warnings:
         logger.warning("%s", "\n".join(warnings))
-        print(
+        logger.warning(
             "Running upgrades will not be possible until problems indicated in the warnings "
             "are resolved."
         )
