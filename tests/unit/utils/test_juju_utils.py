@@ -678,7 +678,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
         mocked_model.applications[app].get_config = AsyncMock()
         mocked_model.applications[app].units = exp_units[app]
 
-    full_status_apps = {app: _generate_app_status(exp_units_form_status[app]) for app in exp_apps}
+    full_status_apps = {app: _generate_app_status(exp_units_from_status[app]) for app in exp_apps}
     mock_get_status.return_value.applications = full_status_apps
     mock_get_machines.return_value = exp_machines
 
@@ -697,7 +697,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             subordinate_to=status.subordinate_to,
             units={
                 name: juju_utils.Unit(name, exp_machines[unit.machine], unit.workload_version)
-                for name, unit in exp_units_form_status[app].items()
+                for name, unit in exp_units_from_status[app].items()
             },
             workload_version=status.workload_version,
         )
