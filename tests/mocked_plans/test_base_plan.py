@@ -24,7 +24,7 @@ from cou.steps.plan import generate_plan
 @pytest.mark.asyncio
 @patch("cou.utils.nova_compute.get_instance_count", return_value=0)
 async def test_base_plan(_, sample_plans):
-    """Testing all sample plans."""
+    """Testing the base plans."""
     args = CLIargs("plan", auto_approve=True)
     model, exp_plan = sample_plans["base.yaml"]
 
