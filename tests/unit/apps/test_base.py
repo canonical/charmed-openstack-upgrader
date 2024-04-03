@@ -560,7 +560,7 @@ def test_get_change_to_openstack_channels_step_latest_stable(current_os_release,
 
 
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_get_change_to_openstack_channels_step_openstack_channel(current_os_release, model):
+def test_get_change_to_openstack_channels_step(current_os_release, model):
     """Expect an empty pre-upgrade step for applications using release-specific channel."""
     current_os_release.return_value = OpenStackRelease("ussuri")
     app_name = "app"
@@ -720,7 +720,7 @@ def test_get_refresh_charm_step_charmhub_migration(
     mock_refresh_current_channel,
     model,
 ):
-    """Expect an pre-upgrade for application that does need to refresh current channel."""
+    """Expect an pre-upgrade for application that does need to migrate to charmhub."""
     current_os_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
     app_name = "app"
