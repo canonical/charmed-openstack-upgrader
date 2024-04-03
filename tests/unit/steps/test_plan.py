@@ -463,7 +463,7 @@ nova-compute/0
     assert str(upgrade_plan) == exp_plan
     # Check only the last entry because this is a singleton class which is being
     # tested in other functions
-    assert cou_plan.PlanWarnings().warnings[-1] == (
+    assert cou_plan.PlanWarnings.messages[-1] == (
         "Cannot generate plan for 'keystone'\n"
         "\tUnits of application keystone are running mismatched OpenStack "
         "versions: 'ussuri': ['keystone/0'], 'victoria': ['keystone/1']. This is "
@@ -476,11 +476,11 @@ def test_PlanWarnings_warnings_property():
     exp_warnings = ["Mock warning message1", "Mock warning message2"]
 
     for warning in exp_warnings:
-        cou_plan.PlanWarnings().add_warning(warning)
+        cou_plan.PlanWarnings.add_message(warning)
 
     # Check only the last two entries because this is a singleton class which is
     # also being tested in other functions
-    assert cou_plan.PlanWarnings().warnings[-2:] == exp_warnings
+    assert cou_plan.PlanWarnings.messages[-2:] == exp_warnings
 
 
 @patch("cou.steps.plan._verify_hypervisors_cli_input")
@@ -1555,13 +1555,12 @@ def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
     app.name = "test-app"
     app.generate_upgrade_plan.side_effect = exceptions("mock message")
     target = OpenStackRelease("victoria")
-    mock_plan_warnings.return_value = mock_plan_warnings
 
     plan = cou_plan._generate_instance_plan(app, target, False)
 
     assert plan is None
     app.generate_upgrade_plan.assert_called_once_with(target, False)
-    mock_plan_warnings.add_warning.assert_called_once_with(
+    mock_plan_warnings.add_message.assert_called_once_with(
         "Cannot generate plan for 'test-app'\n\tmock message"
     )
 

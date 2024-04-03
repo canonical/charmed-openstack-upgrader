@@ -96,10 +96,9 @@ async def test_get_upgrade_plan(
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_plan_warnings.warnings = []
-    mock_plan_warnings.return_value = mock_plan_warnings
-
+    mock_plan_warnings.messages = []
     mock_analyze_and_plan.return_value = plan
+
     await cli.get_upgrade_plan(cli_args)
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
@@ -121,10 +120,9 @@ async def test_get_upgrade_plan_with_warnings(
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_plan_warnings.warnings = ["Mock warning message1", "Mock warning message2"]
-    mock_plan_warnings.return_value = mock_plan_warnings
-
+    mock_plan_warnings.messages = ["Mock warning message1", "Mock warning message2"]
     mock_analyze_and_plan.return_value = plan
+
     await cli.get_upgrade_plan(cli_args)
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
@@ -173,8 +171,7 @@ async def test_run_upgrade_quiet_no_prompt(
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
-    mock_plan_warnings.warnings = []
-    mock_plan_warnings.return_value = mock_plan_warnings
+    mock_plan_warnings.messages = []
 
     await cli.run_upgrade(cli_args)
 
@@ -203,8 +200,7 @@ async def test_run_upgrade_with_prompt_continue(
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
-    mock_plan_warnings.warnings = []
-    mock_plan_warnings.return_value = mock_plan_warnings
+    mock_plan_warnings.messages = []
     mock_continue_upgrade.return_value = True
 
     await cli.run_upgrade(cli_args)
@@ -233,8 +229,7 @@ async def test_run_upgrade_with_prompt_abort(
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
-    mock_plan_warnings.warnings = []
-    mock_plan_warnings.return_value = mock_plan_warnings
+    mock_plan_warnings.messages = []
     mock_continue_upgrade.return_value = False
 
     await cli.run_upgrade(cli_args)
@@ -263,8 +258,7 @@ async def test_run_upgrade_with_no_prompt(
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
-    mock_plan_warnings.warnings = []
-    mock_plan_warnings.return_value = mock_plan_warnings
+    mock_plan_warnings.messages = []
 
     await cli.run_upgrade(cli_args)
 
@@ -290,8 +284,7 @@ async def test_run_upgrade_with_warnings(
     """Test run_upgrade function with error messages from plan generation."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_plan_warnings.warnings = ["Mock warning message1", "Mock warning message2"]
-    mock_plan_warnings.return_value = mock_plan_warnings
+    mock_plan_warnings.messages = ["Mock warning message1", "Mock warning message2"]
     exc_message = (
         "Cannot run upgrades. "
         "Please resolve the problems indicated in the warnings before proceeding."

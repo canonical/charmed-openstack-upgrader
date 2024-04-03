@@ -143,7 +143,7 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if warnings := PlanWarnings().warnings:
+    if warnings := PlanWarnings.messages:
         logger.warning("%s", "\n".join(warnings))
         logger.warning(
             "Running upgrades will not be possible until problems indicated in the warnings "
@@ -167,7 +167,7 @@ async def run_upgrade(args: CLIargs) -> None:
     upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if warnings := PlanWarnings().warnings:
+    if warnings := PlanWarnings.messages:
         logger.warning("%s", "\n".join(warnings))
         raise RunUpgradeError(  # this will be caught as a COUException in entrypoint
             "Cannot run upgrades. Please resolve the problems indicated in the warnings "

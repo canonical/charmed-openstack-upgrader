@@ -58,38 +58,22 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-class PlanWarnings:
+class PlanWarnings:  # pylint: disable=too-few-public-methods
     """Representation of a collection of warning messages from plan generation.
 
-    This is a singleton class which holds all warning messages returned by applications
-    when generating a plan.
+    This class holds all warning messages returned by applications when generating a plan.
     """
 
-    _instance = None
-    _warnings: list[str] = []
+    messages: list[str] = []
 
-    def __new__(cls) -> PlanWarnings:
-        """Create a new instance of the PlanWarnings class if doesn't already exist."""
-        if not cls._instance:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+    @classmethod
+    def add_message(cls, message: str) -> None:
+        """Add a new warning message to the collection.
 
-    def add_warning(self, warning: str) -> None:
-        """Add a new warning to the collection.
-
-        :param warning: A warning message to be stored.
-        :type warning: str
+        :param message: A warning message to be stored.
+        :type message: str
         """
-        self._warnings.append(warning)
-
-    @property
-    def warnings(self) -> list[str]:
-        """Get all warnings stored in the class.
-
-        :return: The list of all warnings stored in the class.
-        :rtype: list[str]
-        """
-        return self._warnings
+        cls.messages.append(message)
 
 
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
@@ -700,7 +684,7 @@ def _generate_instance_plan(
         logger.debug("'%s' halted the upgrade planning generation: %s", instance_id, exc)
     except COUException as exc:
         logger.debug("Cannot generate plan for '%s'\n\t%s", instance_id, exc)
-        PlanWarnings().add_warning(f"Cannot generate plan for '{instance_id}'\n\t{exc}")
+        PlanWarnings.add_message(f"Cannot generate plan for '{instance_id}'\n\t{exc}")
     except Exception as exc:
         logger.error("Cannot generate upgrade plan for '%s': %s", instance_id, exc)
         raise
