@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Test all sample plans."""
+import logging
 from unittest.mock import patch
 
 import pytest
@@ -32,3 +33,27 @@ async def test_base_plan(_, sample_plans):
     plan = await generate_plan(analysis_results, args)
 
     assert str(plan) == exp_plan
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.nova_compute.get_instance_count", side_effect=[1, 0, 1])
+async def test_base_plan_non_empty(_, sample_plans, caplog):
+    """Testing non-empty hypervisor logs."""
+    args = CLIargs("plan", auto_approve=True)
+    model, __ = sample_plans["base.yaml"]
+
+    with caplog.at_level(logging.INFO):
+        analysis_results = await Analysis.create(model)
+        await generate_plan(analysis_results, args)
+
+    expected_skipped_log = "Skipped (non-empty) hypervisors: nova-compute/0, nova-compute/2"
+
+    expected_selected_log = "Selected (empty) hypervisors: nova-compute/1"
+
+    assert any(expected_skipped_log in message for message in caplog.messages), (
+        "Expected skipped log message not found: '%s'" % expected_skipped_log
+    )
+
+    assert any(expected_selected_log in message for message in caplog.messages), (
+        "Expected selected log message not found: '%s'" % expected_selected_log
+    )

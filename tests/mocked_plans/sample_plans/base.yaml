@@ -19,21 +19,37 @@ plan: |
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for 'az-0' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
+                Disable nova-compute scheduler from unit: 'nova-compute/1'
+                Disable nova-compute scheduler from unit: 'nova-compute/2'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Upgrade software packages on unit 'nova-compute/0'
+                    Upgrade software packages on unit 'nova-compute/1'
+                    Upgrade software packages on unit 'nova-compute/2'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
                 Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
                 Upgrade 'nova-compute' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
-                Upgrade plan for units: nova-compute/0
+                Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
                     Upgrade plan for unit 'nova-compute/0'
                         Verify that unit 'nova-compute/0' has no VMs running
                         ├── Pause the unit: 'nova-compute/0'
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
+                    Upgrade plan for unit 'nova-compute/1'
+                        Verify that unit 'nova-compute/1' has no VMs running
+                        ├── Pause the unit: 'nova-compute/1'
+                        ├── Upgrade the unit: 'nova-compute/1'
+                        ├── Resume the unit: 'nova-compute/1'
+                    Upgrade plan for unit 'nova-compute/2'
+                        Verify that unit 'nova-compute/2' has no VMs running
+                        ├── Pause the unit: 'nova-compute/2'
+                        ├── Upgrade the unit: 'nova-compute/2'
+                        ├── Resume the unit: 'nova-compute/2'
                 Enable nova-compute scheduler from unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/1'
+                Enable nova-compute scheduler from unit: 'nova-compute/2'
                 Wait for up to 1800s for model 'base' to reach the idle state
-                Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
+                Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
         Remaining Data Plane principal(s) upgrade plan
             Upgrade plan for 'ceph-osd' to 'victoria'
                 Verify that all 'nova-compute' units has been upgraded
@@ -131,11 +147,30 @@ applications:
         machine: '1'
         workload_version: 21.0.0
         os_version: ussuri
+      nova-compute/1:
+        name: nova-compute/0
+        machine: '2'
+        workload_version: 21.0.0
+        os_version: ussuri
+      nova-compute/2:
+        name: nova-compute/0
+        machine: '3'
+        workload_version: 21.0.0
+        os_version: ussuri
     machines:
       '1':
         id: '1'
         apps: !!python/tuple ['nova-compute', 'ovn-chassis']
         az: az-0
+      '2':
+        id: '2'
+        apps: !!python/tuple ['nova-compute', 'ovn-chassis']
+        az: az-0
+      '3':
+        id: '3'
+        apps: !!python/tuple ['nova-compute', 'ovn-chassis']
+        az: az-0
+
 
   ovn-chassis:
     can_upgrade_to: 22.03/stable

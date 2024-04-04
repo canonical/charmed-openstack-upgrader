@@ -509,7 +509,6 @@ async def _generate_data_plane_hypervisors_plan(
     :rtype: UpgradePlan
     """
     hypervisors_machines = await _filter_hypervisors_machines(args, analysis_result)
-    logger.info("Hypervisors selected: %s", hypervisors_machines)
     hypervisor_planner = HypervisorUpgradePlanner(apps, hypervisors_machines)
     # NOTE(agileshaw): Assign an empty UpgradePlan for hypervisor_plan if _generate_instance_plan
     #                  returns None
@@ -596,7 +595,27 @@ async def _get_upgradable_hypervisors_machines(
     if cli_force:
         return nova_compute_machines
 
-    return await get_empty_hypervisors(nova_compute_units, analysis_result.model)
+    empty_hypervisors = await get_empty_hypervisors(nova_compute_units, analysis_result.model)
+
+    machine_to_unit_name = {
+        machine.machine_id: unit.name
+        for unit, machine in zip(nova_compute_units, nova_compute_machines)
+    }
+    empty_hypervisor_ids = {machine.machine_id for machine in empty_hypervisors}
+    all_hypervisor_ids = {machine.machine_id for machine in nova_compute_machines}
+    skipped_hypervisor_ids = all_hypervisor_ids - empty_hypervisor_ids
+
+    skipped_unit_names = ", ".join(
+        machine_to_unit_name[machine_id] for machine_id in sorted(skipped_hypervisor_ids)
+    )
+    logger.info("Skipped (non-empty) hypervisors: %s", skipped_unit_names)
+
+    selected_unit_names = ", ".join(
+        machine_to_unit_name[machine_id] for machine_id in sorted(empty_hypervisor_ids)
+    )
+    logger.info("Selected (empty) hypervisors: %s", selected_unit_names)
+
+    return empty_hypervisors
 
 
 def _get_nova_compute_units_and_machines(
