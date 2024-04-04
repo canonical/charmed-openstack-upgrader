@@ -341,6 +341,7 @@ nova-compute/0
                 Verify that all 'nova-compute' units has been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Upgrade software packages on unit 'ceph-osd/0'
+                Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
