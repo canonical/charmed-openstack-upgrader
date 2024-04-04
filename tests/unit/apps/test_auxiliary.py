@@ -807,7 +807,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
 def test_ovn_version_pinning_principal(model):
     """Test the OvnPrincipal when enable-version-pinning is set to True."""
     target = OpenStackRelease("victoria")
-    charm = "ovn-central"
+    charm = "ovn-dedicated-chassis"
     exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
     machines = {"0": MagicMock(spec_set=Machine)}
     app = OvnPrincipal(
@@ -873,6 +873,7 @@ def test_ovn_no_compatible_os_release(channel, model):
 @patch("cou.apps.auxiliary.logger")
 def test_ovn_check_version_pinning_no_version_pinning_config(mock_logger, model):
     machines = {"0": MagicMock(spec_set=Machine)}
+    # Ovn-central doesn't have enable-version-pinning configuration
     app = OvnPrincipal(
         name="ovn-central",
         can_upgrade_to="",
@@ -901,9 +902,9 @@ def test_ovn_check_version_pinning_no_version_pinning_config(mock_logger, model)
 def test_ovn_check_version_pinning_version_pinning_config_False(mock_logger, model):
     machines = {"0": MagicMock(spec_set=Machine)}
     app = OvnPrincipal(
-        name="ovn-central",
+        name="ovn-dedicated-chassis",
         can_upgrade_to="",
-        charm="ovn-central",
+        charm="ovn-dedicated-chassis",
         channel="22.03/stable",
         config={"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
         machines=machines,
@@ -912,8 +913,8 @@ def test_ovn_check_version_pinning_version_pinning_config_False(mock_logger, mod
         series="focal",
         subordinate_to=[],
         units={
-            "ovn-central/0": Unit(
-                name="ovn-central/0",
+            "ovn-dedicated-chassis/0": Unit(
+                name="ovn-dedicated-chassis/0",
                 workload_version="22.03",
                 machine=machines["0"],
             )
@@ -927,9 +928,9 @@ def test_ovn_check_version_pinning_version_pinning_config_False(mock_logger, mod
 def test_ovn_check_version_pinning_version_pinning_config_True(model):
     machines = {"0": MagicMock(spec_set=Machine)}
     app = OvnPrincipal(
-        name="ovn-central",
+        name="ovn-dedicated-chassis",
         can_upgrade_to="",
-        charm="ovn-central",
+        charm="ovn-dedicated-chassis",
         channel="22.03/stable",
         config={"source": {"value": "distro"}, "enable-version-pinning": {"value": True}},
         machines=machines,
@@ -938,8 +939,8 @@ def test_ovn_check_version_pinning_version_pinning_config_True(model):
         series="focal",
         subordinate_to=[],
         units={
-            "ovn-central/0": Unit(
-                name="ovn-central/0",
+            "ovn-dedicated-chassis/0": Unit(
+                name="ovn-dedicated-chassis/0",
                 workload_version="22.03",
                 machine=machines["0"],
             )
@@ -954,7 +955,7 @@ def test_ovn_check_version_pinning_version_pinning_config_True(model):
 def test_ovn_principal_upgrade_plan(model):
     """Test generating plan for OvnPrincipal."""
     target = OpenStackRelease("victoria")
-    charm = "ovn-central"
+    charm = "ovn-dedicated-chassis"
     machines = {"0": MagicMock(spec_set=Machine)}
     app = OvnPrincipal(
         name=charm,
