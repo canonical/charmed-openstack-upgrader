@@ -129,22 +129,23 @@ def test_channel_valid(model, channel):
 def test_channel_setter_invalid(model, channel):
     """Test unsuccessful validation of channel upgrade plan for SubordinateApplication."""
     machines = {"0": MagicMock(spec_set=Machine)}
+    app = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to=channel,
+        charm="keystone-ldap",
+        channel=channel,
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="18.1.0",
+    )
 
     with pytest.raises(ApplicationError):
-        SubordinateApplication(
-            name="keystone-ldap",
-            can_upgrade_to=channel,
-            charm="keystone-ldap",
-            channel=channel,
-            config={},
-            machines=machines,
-            model=model,
-            origin="ch",
-            series="focal",
-            subordinate_to=["nova-compute"],
-            units={},
-            workload_version="18.1.0",
-        )
+        app._check_channel()
 
 
 @pytest.mark.parametrize(

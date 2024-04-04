@@ -67,10 +67,6 @@ class OpenStackApplication(Application):
     wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
 
-    def __post_init__(self) -> None:
-        """Initialize the Application dataclass."""
-        self._verify_channel()
-
     def __hash__(self) -> int:
         """Hash magic method for Application.
 
@@ -133,23 +129,6 @@ class OpenStackApplication(Application):
         }
 
         return yaml.dump(summary, sort_keys=False)
-
-    def _verify_channel(self) -> None:
-        """Verify app channel from current data.
-
-        :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
-        """
-        if self.is_from_charm_store or self.is_valid_track(self.channel):
-            logger.debug("%s app has proper channel %s", self.name, self.channel)
-            return
-
-        raise ApplicationError(
-            f"Channel: {self.channel} for charm '{self.charm}' on series "
-            f"'{self.series}' is currently not supported in this tool. Please take a look at the "
-            "documentation: "
-            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
-            "you are using the right track."
-        )
 
     @property
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
@@ -361,6 +340,7 @@ class OpenStackApplication(Application):
         :raises ApplicationError: When enable-auto-restarts is not enabled.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         """
+        self._check_channel()
         self._check_application_target(target)
         self._check_mismatched_versions(units)
         self._check_auto_restarts()
@@ -725,6 +705,23 @@ class OpenStackApplication(Application):
             description=description,
             parallel=False,
             coro=self.model.wait_for_active_idle(self.wait_timeout, apps=apps),
+        )
+
+    def _check_channel(self) -> None:
+        """Check app channel from current data.
+
+        :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
+        """
+        if self.is_from_charm_store or self.is_valid_track(self.channel):
+            logger.debug("%s app has proper channel %s", self.name, self.channel)
+            return
+
+        raise ApplicationError(
+            f"Channel: {self.channel} for charm '{self.charm}' on series "
+            f"'{self.series}' is currently not supported in this tool. Please take a look at the "
+            "documentation: "
+            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
+            "you are using the right track."
         )
 
     def _check_auto_restarts(self) -> None:

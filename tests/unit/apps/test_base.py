@@ -28,7 +28,6 @@ from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 def test_openstack_application_magic_functions(model):
     """Test OpenStackApplication magic functions, like __hash__, __eq__."""
     app = OpenStackApplication(
@@ -52,7 +51,6 @@ def test_openstack_application_magic_functions(model):
     assert app != "test-app"
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
 def test_application_get_latest_os_version_failed(mock_find_compatible_versions, model):
     charm = "app"
@@ -298,9 +296,40 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
     mock_workload_upgrade.assert_has_calls(expected_calls)
 
 
+@pytest.mark.parametrize("origin", ["cs", "ch"])
+@patch("cou.apps.base.OpenStackApplication.is_valid_track", return_value=True)
+def test_check_channel(_, origin):
+    """Test function to verify that enable-auto-restarts is disabled."""
+    app_name = "app"
+    app = OpenStackApplication(
+        app_name, "", app_name, "stable", {}, {}, MagicMock(), origin, "focal", [], {}, "1"
+    )
+
+    app._check_channel()
+
+
+@patch("cou.apps.base.OpenStackApplication.is_valid_track", return_value=False)
+def test_check_channel_error(_):
+    """Test function to verify that enable-auto-restarts is disabled."""
+    name = "app"
+    channel = "stable"
+    series = "focal"
+    exp_error_msg = (
+        f"Channel: {channel} for charm '{name}' on series '{series}' is currently not supported "
+        "in this tool. Please take a look at the documentation: "
+        "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if you "
+        "are using the right track."
+    )
+    app = OpenStackApplication(
+        name, "", name, channel, {}, {}, MagicMock(), "ch", series, [], {}, "1"
+    )
+
+    with pytest.raises(ApplicationError, match=exp_error_msg):
+        app._check_channel()
+
+
 @pytest.mark.parametrize("config", ({}, {"enable-auto-restarts": {"value": True}}))
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-def test_check_auto_restarts(_, config):
+def test_check_auto_restarts(config):
     """Test function to verify that enable-auto-restarts is disabled."""
     app_name = "app"
     app = OpenStackApplication(
@@ -310,8 +339,7 @@ def test_check_auto_restarts(_, config):
     app._check_auto_restarts()
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
-def test_check_auto_restarts_error(_):
+def test_check_auto_restarts_error():
     """Test function to verify that enable-auto-restarts is disabled raising error."""
     app_name = "app"
     exp_error_msg = (
@@ -328,10 +356,9 @@ def test_check_auto_restarts_error(_):
         app._check_auto_restarts()
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_check_application_target(current_os_release, apt_source_codename, _):
+def test_check_application_target(current_os_release, apt_source_codename):
     """Test function to verify target."""
     target = OpenStackRelease("victoria")
     release = OpenStackRelease("ussuri")
@@ -344,10 +371,9 @@ def test_check_application_target(current_os_release, apt_source_codename, _):
     app._check_application_target(target)
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_check_application_target_can_upgrade(current_os_release, apt_source_codename, _):
+def test_check_application_target_can_upgrade(current_os_release, apt_source_codename):
     """Test function to verify target."""
     target = OpenStackRelease("victoria")
     release = OpenStackRelease("ussuri")
@@ -360,10 +386,9 @@ def test_check_application_target_can_upgrade(current_os_release, apt_source_cod
     app._check_application_target(target)
 
 
-@patch("cou.apps.base.OpenStackApplication._verify_channel", return_value=None)
 @patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_check_application_target_error(current_os_release, apt_source_codename, _):
+def test_check_application_target_error(current_os_release, apt_source_codename):
     """Test function to verify target raising error."""
     target = OpenStackRelease("victoria")
     app_name = "app"

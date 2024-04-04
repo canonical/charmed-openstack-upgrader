@@ -344,27 +344,29 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
         "to see if you are using the right track."
     )
     machines = {"0": MagicMock(spec_set=Machine)}
+    app = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="3.9/stable",
+        charm="rabbitmq-server",
+        channel=channel,
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.8",
+                machine=machines["0"],
+            )
+        },
+        workload_version="3.8",
+    )
+
     with pytest.raises(ApplicationError, match=exp_msg):
-        RabbitMQServer(
-            name="rabbitmq-server",
-            can_upgrade_to="3.9/stable",
-            charm="rabbitmq-server",
-            channel=channel,
-            config={"source": {"value": "distro"}},
-            machines=machines,
-            model=model,
-            origin="ch",
-            series="focal",
-            subordinate_to=[],
-            units={
-                "rabbitmq-server/0": Unit(
-                    name="rabbitmq-server/0",
-                    workload_version="3.8",
-                    machine=machines["0"],
-                )
-            },
-            workload_version="3.8",
-        )
+        app._check_channel()
 
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
@@ -409,27 +411,28 @@ def test_auxiliary_raise_error_unknown_series(model):
         "to see if you are using the right track."
     )
     machines = {"0": MagicMock(spec_set=Machine)}
+    app = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="3.9/stable",
+        charm="rabbitmq-server",
+        channel=channel,
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series=series,
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.8",
+                machine=machines["0"],
+            )
+        },
+        workload_version="3.8",
+    )
     with pytest.raises(ApplicationError, match=exp_msg):
-        RabbitMQServer(
-            name="rabbitmq-server",
-            can_upgrade_to="3.9/stable",
-            charm="rabbitmq-server",
-            channel=channel,
-            config={"source": {"value": "distro"}},
-            machines=machines,
-            model=model,
-            origin="ch",
-            series=series,
-            subordinate_to=[],
-            units={
-                "rabbitmq-server/0": Unit(
-                    name="rabbitmq-server/0",
-                    workload_version="3.8",
-                    machine=machines["0"],
-                )
-            },
-            workload_version="3.8",
-        )
+        app._check_channel()
 
 
 @patch("cou.apps.core.OpenStackApplication.current_os_release")
@@ -846,28 +849,29 @@ def test_ovn_no_compatible_os_release(channel, model):
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
+    app = OvnPrincipal(
+        name=charm,
+        can_upgrade_to="quincy/stable",
+        charm=charm,
+        channel=channel,
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="22.03",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03",
+    )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        OvnPrincipal(
-            name=charm,
-            can_upgrade_to="quincy/stable",
-            charm=charm,
-            channel=channel,
-            config={"source": {"value": "distro"}},
-            machines=machines,
-            model=model,
-            origin="ch",
-            series="focal",
-            subordinate_to=[],
-            units={
-                f"{charm}/0": Unit(
-                    name=f"{charm}/0",
-                    workload_version="22.03",
-                    machine=machines["0"],
-                )
-            },
-            workload_version="22.03",
-        )
+        app._check_channel()
 
 
 def test_ovn_principal_upgrade_plan(model):
