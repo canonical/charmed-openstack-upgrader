@@ -534,11 +534,13 @@ class OpenStackApplication(Application):
         :return: Step for refreshing the charm
         :rtype: PreUpgradeStep
         """
-        if refresh_step := self._get_charmhub_migration_step():
-            return refresh_step
-        if refresh_step := self._get_change_to_openstack_channels_step():
-            return refresh_step
-        return self._get_refresh_current_channel_step(target)
+        if self.is_from_charm_store:
+            return self._get_charmhub_migration_step()
+        if self.channel == LATEST_STABLE:
+            return self._get_change_to_openstack_channels_step()
+        if self._need_to_refresh(target):
+            return self._get_refresh_current_channel_step()
+        return PreUpgradeStep()
 
     def _get_charmhub_migration_step(self) -> PreUpgradeStep:
         """Get the step for charm hub migration from charm store if necessary.
@@ -546,9 +548,6 @@ class OpenStackApplication(Application):
         :return: Step for charmhub migration
         :rtype: PreUpgradeStep
         """
-        if not self.is_from_charm_store:
-            return PreUpgradeStep()
-
         return PreUpgradeStep(
             f"Migrate '{self.name}' from charmstore to charmhub",
             coro=self.model.upgrade_charm(
@@ -562,8 +561,6 @@ class OpenStackApplication(Application):
         :return: Step for changing to OpenStack channels
         :rtype: PreUpgradeStep
         """
-        if self.channel != LATEST_STABLE:
-            return PreUpgradeStep()
         logger.warning(
             "Changing '%s' channel from %s to %s. This may be a charm downgrade, "
             "which is generally not supported.",
@@ -578,21 +575,12 @@ class OpenStackApplication(Application):
             coro=self.model.upgrade_charm(self.name, self.expected_current_channel),
         )
 
-    def _get_refresh_current_channel_step(self, target: OpenStackRelease) -> PreUpgradeStep:
+    def _get_refresh_current_channel_step(self) -> PreUpgradeStep:
         """Get step for refreshing the current channel.
 
-        :param target: OpenStack release as target to upgrade
-        :type target: OpenStackRelease
         :return: Step for refreshing the charm
         :rtype: PreUpgradeStep
         """
-        if not self._need_to_refresh(target):
-            logger.info(
-                "Skipping charm refresh for %s.",
-                self.name,
-            )
-            return PreUpgradeStep()
-
         return PreUpgradeStep(
             f"Refresh '{self.name}' to the latest revision of '{self.channel}'",
             coro=self.model.upgrade_charm(self.name, self.channel),
