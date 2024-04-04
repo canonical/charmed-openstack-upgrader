@@ -870,6 +870,87 @@ def test_ovn_no_compatible_os_release(channel, model):
         )
 
 
+@patch("cou.apps.auxiliary.logger")
+def test_ovn_check_version_pinning_no_version_pinning_config(mock_logger, model):
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = OvnPrincipal(
+        name="ovn-central",
+        can_upgrade_to="",
+        charm="ovn-central",
+        channel="22.03/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "ovn-central/0": Unit(
+                name="ovn-central/0",
+                workload_version="22.03",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03",
+    )
+    assert app._check_version_pinning() is None
+    mock_logger.debug.assert_called_once()
+
+
+@patch("cou.apps.auxiliary.logger")
+def test_ovn_check_version_pinning_version_pinning_config_False(mock_logger, model):
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = OvnPrincipal(
+        name="ovn-central",
+        can_upgrade_to="",
+        charm="ovn-central",
+        channel="22.03/stable",
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "ovn-central/0": Unit(
+                name="ovn-central/0",
+                workload_version="22.03",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03",
+    )
+    assert app._check_version_pinning() is None
+    mock_logger.debug.assert_not_called()
+
+
+def test_ovn_check_version_pinning_version_pinning_config_True(model):
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = OvnPrincipal(
+        name="ovn-central",
+        can_upgrade_to="",
+        charm="ovn-central",
+        channel="22.03/stable",
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": True}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "ovn-central/0": Unit(
+                name="ovn-central/0",
+                workload_version="22.03",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03",
+    )
+    exp_msg = f"Cannot upgrade '{app.name}'. 'enable-version-pinning' must be set to 'false'."
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app._check_version_pinning()
+
+
 def test_ovn_principal_upgrade_plan(model):
     """Test generating plan for OvnPrincipal."""
     target = OpenStackRelease("victoria")

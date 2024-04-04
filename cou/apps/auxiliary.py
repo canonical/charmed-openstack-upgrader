@@ -237,6 +237,12 @@ class Ovn(AuxiliaryApplication):
 
         :raises ApplicationError: When version pinning is True
         """
+        if "enable-version-pinning" not in self.config:
+            logger.debug(
+                "Ovn application: '%s' does not have the 'enable-version-pinning' configuration.",
+                self.name,
+            )
+            return
         if self.config["enable-version-pinning"].get("value"):
             raise ApplicationError(
                 f"Cannot upgrade '{self.name}'. 'enable-version-pinning' must be set to 'false'."
