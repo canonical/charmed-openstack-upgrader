@@ -540,7 +540,7 @@ def test_get_change_to_openstack_channels_step(current_os_release, model):
 
 
 def test_get_refresh_current_channel_step(model):
-    """Expect an pre-upgrade for application that does need to refresh the current channel."""
+    """Expect a pre-upgrade step for application that needs to refresh the current channel."""
     app = OpenStackApplication(
         name="app",
         can_upgrade_to="ch:amd64/focal/my-app-723",
@@ -569,7 +569,7 @@ def test_get_refresh_current_channel_step(model):
 def test_get_refresh_charm_step_skip(
     mock_ch_migration, mock_change_os_channels, mock_refresh_current_channel, model
 ):
-    """Expect an empty pre-upgrade for application that does not need to refresh."""
+    """Expect an empty pre-upgrade step for application that does not need to refresh."""
     target = OpenStackRelease("victoria")
 
     app = OpenStackApplication(
@@ -600,7 +600,7 @@ def test_get_refresh_charm_step_skip(
 def test_get_refresh_charm_step_refresh_current_channel(
     mock_ch_migration, mock_change_os_channels, mock_refresh_current_channel, model
 ):
-    """Expect an pre-upgrade for application that does need to refresh current channel."""
+    """Expect a pre-upgrade step for application that needs to refresh current channel."""
     target = OpenStackRelease("victoria")
 
     app = OpenStackApplication(
@@ -641,7 +641,7 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
     mock_refresh_current_channel,
     model,
 ):
-    """Expect an pre-upgrade for application that does need to change to OpenStack channel."""
+    """Expect a pre-upgrade step for application that needs to change to OpenStack channel."""
     current_os_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
 
@@ -686,7 +686,7 @@ def test_get_refresh_charm_step_charmhub_migration(
     mock_refresh_current_channel,
     model,
 ):
-    """Expect an pre-upgrade for application that does need to migrate to charmhub."""
+    """Expect a pre-upgrade step for application that needs to migrate to charmhub."""
     current_os_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
 
@@ -728,7 +728,7 @@ def test_get_refresh_charm_step_charmhub_migration(
         ("", "wallaby/stable", False),
     ],
 )
-def test_need_to_refresh(model, can_upgrade_to, channel, exp_result):
+def test_need_current_channel_refresh(model, can_upgrade_to, channel, exp_result):
     """Test when the application needs to refresh."""
     target = OpenStackRelease("victoria")
 
@@ -746,4 +746,4 @@ def test_need_to_refresh(model, can_upgrade_to, channel, exp_result):
         units={},
         workload_version="1",
     )
-    assert app._need_to_refresh(target) is exp_result
+    assert app._need_current_channel_refresh(target) is exp_result

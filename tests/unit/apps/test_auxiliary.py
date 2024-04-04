@@ -1282,7 +1282,7 @@ def test_ceph_osd_upgrade_plan(model):
 )
 @patch("cou.apps.auxiliary.AuxiliaryApplication._verify_channel", return_value=None)
 @patch("cou.apps.auxiliary.TRACK_TO_OPENSTACK_MAPPING")
-def test_need_to_refresh_auxiliary(
+def test_need_current_channel_refresh_auxiliary(
     mock_track_os_mapping, _, model, can_upgrade_to, compatible_os_releases, exp_result
 ):
     mock_track_os_mapping.__getitem__.return_value = compatible_os_releases
@@ -1291,4 +1291,4 @@ def test_need_to_refresh_auxiliary(
     app = AuxiliaryApplication(
         app_name, can_upgrade_to, app_name, "3.9/stable", {}, {}, model, "ch", "focal", [], {}, "1"
     )
-    assert app._need_to_refresh(target) is exp_result
+    assert app._need_current_channel_refresh(target) is exp_result

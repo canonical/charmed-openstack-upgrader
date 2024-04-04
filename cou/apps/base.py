@@ -540,12 +540,15 @@ class OpenStackApplication(Application):
             return self._get_charmhub_migration_step()
         if self.channel == LATEST_STABLE:
             return self._get_change_to_openstack_channels_step()
-        if self._need_to_refresh(target):
+        if self._need_current_channel_refresh(target):
             return self._get_refresh_current_channel_step()
+        logger.info(
+            "'%s' does not need to refresh the current channel: %s", self.name, self.channel
+        )
         return PreUpgradeStep()
 
     def _get_charmhub_migration_step(self) -> PreUpgradeStep:
-        """Get the step for charm hub migration from charm store if necessary.
+        """Get the step for charm hub migration from charm store.
 
         :return: Step for charmhub migration
         :rtype: PreUpgradeStep
@@ -558,7 +561,7 @@ class OpenStackApplication(Application):
         )
 
     def _get_change_to_openstack_channels_step(self) -> PreUpgradeStep:
-        """Get the step for changing to OpenStack channels if necessary.
+        """Get the step for changing to OpenStack channels.
 
         :return: Step for changing to OpenStack channels
         :rtype: PreUpgradeStep
@@ -588,7 +591,7 @@ class OpenStackApplication(Application):
             coro=self.model.upgrade_charm(self.name, self.channel),
         )
 
-    def _need_to_refresh(self, target: OpenStackRelease) -> bool:
+    def _need_current_channel_refresh(self, target: OpenStackRelease) -> bool:
         """Check if the application needs to refresh the current channel.
 
         :param target: OpenStack release as target to upgrade.

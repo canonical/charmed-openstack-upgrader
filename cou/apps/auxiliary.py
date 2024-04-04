@@ -153,7 +153,7 @@ class AuxiliaryApplication(OpenStackApplication):
             )
         return super().generate_upgrade_plan(target, force, None)
 
-    def _need_to_refresh(self, target: OpenStackRelease) -> bool:
+    def _need_current_channel_refresh(self, target: OpenStackRelease) -> bool:
         """Check if the application needs to refresh the current channel.
 
         :param target: OpenStack release as target to upgrade.
