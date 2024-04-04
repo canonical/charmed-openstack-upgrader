@@ -1,0 +1,157 @@
+plan: |
+    Upgrade cloud from 'ussuri' to 'victoria'
+        Verify that all OpenStack applications are in idle state
+        Back up MySQL databases
+        Control Plane principal(s) upgrade plan
+            Upgrade plan for 'keystone' to 'victoria'
+                Upgrade software packages of 'keystone' from the current APT repositories
+                    Upgrade software packages on unit 'keystone/0'
+                Refresh 'keystone' to the latest revision of 'ussuri/stable'
+                Change charm config of 'keystone' 'action-managed-upgrade' to 'False'
+                Upgrade 'keystone' to the new channel: 'victoria/stable'
+                Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 1800s for model 'base' to reach the idle state
+                Verify that the workload of 'keystone' has been upgraded on units: keystone/0
+        Control Plane subordinate(s) upgrade plan
+            Upgrade plan for 'keystone-ldap' to 'victoria'
+                Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
+                Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
+        Upgrading all applications deployed on machines with hypervisor.
+            Upgrade plan for 'az-0' to 'victoria'
+                Disable nova-compute scheduler from unit: 'nova-compute/0'
+                Upgrade software packages of 'nova-compute' from the current APT repositories
+                    Upgrade software packages on unit 'nova-compute/0'
+                Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
+                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
+                Upgrade plan for units: nova-compute/0
+                    Upgrade plan for unit 'nova-compute/0'
+                        Verify that unit 'nova-compute/0' has no VMs running
+                        ├── Pause the unit: 'nova-compute/0'
+                        ├── Upgrade the unit: 'nova-compute/0'
+                        ├── Resume the unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/0'
+                Wait for up to 1800s for model 'base' to reach the idle state
+                Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
+        Remaining Data Plane principal(s) upgrade plan
+            Upgrade plan for 'ceph-osd' to 'victoria'
+                Verify that all 'nova-compute' units has been upgraded
+                Upgrade software packages of 'ceph-osd' from the current APT repositories
+                    Upgrade software packages on unit 'ceph-osd/0'
+                Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'ceph-osd' to reach the idle state
+                Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
+        Data Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
+
+applications:
+  keystone:
+    can_upgrade_to: ussuri/stable
+    charm: keystone
+    channel: ussuri/stable
+    config:
+      openstack-origin:
+        value: distro
+      action-managed-upgrade:
+        value: true
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 17.0.1
+    units:
+      keystone/0:
+        name: keystone/0
+        machine: '0'
+        workload_version: 17.0.1
+        os_version: ussuri
+    machines:
+      '0':
+        id: '0'
+        apps: !!python/tuple ['keystone', 'keystone-ldap']
+        az: az-0
+
+  keystone-ldap:
+    can_upgrade_to: ussuri/stable
+    charm: keystone-ldap
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - keystone
+    workload_version: 17.0.1
+    units: {}
+    machines:
+      '0':
+        id: '0'
+        apps: !!python/tuple ['keystone', 'keystone-ldap']
+        az: az-0
+
+  ceph-osd:
+    can_upgrade_to: octopus/stable
+    charm: ceph-osd
+    channel: octopus/stable
+    config:
+      source:
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 17.0.1
+    units:
+      ceph-osd/0:
+        name: ceph-osd/0
+        machine: '2'
+        workload_version: 17.0.1
+        os_version: xena
+    machines:
+      '2':
+        id: '2'
+        apps: !!python/tuple ['ceph-osd']
+        az: az-0
+
+  nova-compute:
+    can_upgrade_to: ussuri/stable
+    charm: nova-compute
+    channel: ussuri/stable
+    config:
+      source:
+        value: distro
+      action-managed-upgrade:
+        value: false
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 21.0.0
+    units:
+      nova-compute/0:
+        name: nova-compute/0
+        machine: '1'
+        workload_version: 21.0.0
+        os_version: ussuri
+    machines:
+      '1':
+        id: '1'
+        apps: !!python/tuple ['nova-compute', 'ovn-chassis']
+        az: az-0
+
+  ovn-chassis:
+    can_upgrade_to: 22.03/stable
+    charm: ovn-chassis
+    channel: 22.03/stable
+    config:
+      enable-version-pinning:
+        value: false
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nova-compute
+    workload_version: '22.3'
+    units: {}
+    machines:
+      '1':
+        id: '1'
+        apps: !!python/tuple ['nova-compute', 'ovn-chassis']
+        az: az-0

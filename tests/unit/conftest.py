@@ -12,36 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
-from juju.client.client import FullStatus
 
 from cou.commands import CLIargs
-
-
-def get_status():
-    """Help function to load Juju status from json file."""
-    current_path = Path(__file__).parent.resolve()
-    with open(current_path / "jujustatus.json", "r") as file:
-        status = file.read().rstrip()
-
-    return FullStatus.from_json(status)
-
-
-async def get_charm_name(value: str):
-    """Help function to get charm name."""
-    return value
+from cou.utils.juju_utils import Model
+from tests.unit.utils import get_charm_name, get_status
 
 
 @pytest.fixture
-def model():
+def model() -> AsyncMock:
     """Define test Model object."""
     model_name = "test_model"
-    from cou.utils import juju_utils
 
-    model = AsyncMock(spec_set=juju_utils.Model)
+    model = AsyncMock(spec_set=Model)
     type(model).name = PropertyMock(return_value=model_name)
     model.run_on_unit = AsyncMock()
     model.run_action = AsyncMock()
