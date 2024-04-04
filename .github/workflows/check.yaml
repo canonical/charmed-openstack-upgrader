@@ -17,15 +17,53 @@ concurrency:
 
 jobs:
   lint-unit:
-    name: Lint checkers and unit tests
-    uses: canonical/bootstack-actions/.github/workflows/lint-unit.yaml@v2
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.10']
-    with:
-      python-version: ${{ matrix.python-version }}
-      tox-version: '<4'
+    name: Lint checkers and Unit tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install tox
+    - name: Run lint checkers
+      run: tox -e lint
+    - name: Run unit tests
+      run: tox -e unit
+    - name: Save PR number to file
+      run: echo ${{ github.event.number }} > PR_NUMBER.txt
+    - name: Archive PR number
+      uses: actions/upload-artifact@v4
+      with:
+        name: PR_NUMBER
+        path: PR_NUMBER.txt
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: ./tests/unit/report/coverage.xml
+
+  mocked-plans:
+    name: Mocked plans tests
+    needs: lint-unit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install tox
+    - name: Run mocked-plans tests
+      run: tox -e mocked-plans
 
   snap-build:
     name: Build snap package
@@ -37,7 +75,7 @@ jobs:
         with:
           submodules: true
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - name: Install tox
@@ -53,7 +91,7 @@ jobs:
       - name: Build snap
         run: make build
       - name: Upload the built snap as an artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: SNAP_FILE
           path: charmed-openstack-upgrader.snap
@@ -68,7 +106,7 @@ jobs:
         with:
           submodules: true
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - name: Setup Juju 2.9/stable environment
@@ -83,7 +121,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install tox
       - name: Download snap file artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: SNAP_FILE
       - name: Run func tests

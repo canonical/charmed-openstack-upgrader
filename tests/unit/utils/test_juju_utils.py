@@ -639,35 +639,46 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     app1  20.04    active      3  app    stable    28  no
     app2  20.04    active      1  app    stable    24  no
     app3  20.04    active      1  app    stable    24  no
+    app4  20.04    active      1  app    stable    24  no
 
-    Unit     Workload  Agent  Machine  Public address  Ports  Message
-    app1/0*  active    idle   0        10.147.4.1
-    app1/1   active    idle   1        10.147.4.2
-    app1/2   active    idle   2        10.147.4.3
-    app2/0*  active    idle   0        10.147.4.1
-    app3/0*  active    idle   1        10.147.4.2
+    Unit      Workload  Agent  Machine  Public address  Ports  Message
+    app1/0*   active    idle   0        10.147.4.1
+    app1/1    active    idle   1        10.147.4.2
+    app1/2    active    idle   2        10.147.4.3
+    app2/0*   active    idle   0        10.147.4.1
+      app4/0* active    idle            10.147.4.1
+    app3/0*   active    idle   1        10.147.4.2
 
     Machine  State    Address     Inst id        Base          AZ  Message
     0        started  10.147.4.1  juju-62c6c2-0  ubuntu@20.04       Running
     1        started  10.147.4.2  juju-62c6c2-1  ubuntu@20.04       Running
     2        started  10.147.4.3  juju-62c6c2-2  ubuntu@20.04       Running
     """
-    exp_apps = ["app1", "app2", "app3"]
-    # definy AsyncMock for app.get_config, so it can be awaited
-    for app in exp_apps:
-        mocked_model.applications[app].get_config = AsyncMock()
-
+    exp_apps = ["app1", "app2", "app3", "app4"]
     exp_machines = {
         "0": juju_utils.Machine("0", ()),
         "1": juju_utils.Machine("1", ()),
         "2": juju_utils.Machine("2", ()),
     }
-    exp_units = {
+    exp_units_from_status = {
         "app1": dict([_generate_unit_status("app1", i, f"{i}") for i in range(3)]),
         "app2": dict([_generate_unit_status("app2", 0, "0")]),
         "app3": dict([_generate_unit_status("app3", 0, "1")]),
+        "app4": {},  # subordinate application has no units defined in juju status
     }
-    full_status_apps = {app: _generate_app_status(exp_units[app]) for app in exp_apps}
+    exp_units = {
+        "app1": [_generate_juju_unit("app1", f"{i}") for i in range(3)],
+        "app2": [_generate_juju_unit("app2", "0")],
+        "app3": [_generate_juju_unit("app3", "0")],
+        "app4": [_generate_juju_unit("app4", "0")],
+    }
+
+    mocked_model.applications = {app: MagicMock(spec_set=Application)() for app in exp_apps}
+    for app in exp_apps:
+        mocked_model.applications[app].get_config = AsyncMock()
+        mocked_model.applications[app].units = exp_units[app]
+
+    full_status_apps = {app: _generate_app_status(exp_units_from_status[app]) for app in exp_apps}
     mock_get_status.return_value.applications = full_status_apps
     mock_get_machines.return_value = exp_machines
 
@@ -679,16 +690,14 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             charm=mocked_model.applications[app].charm_name,
             channel=status.charm_channel,
             config=mocked_model.applications[app].get_config.return_value,
-            machines={
-                unit.machine: exp_machines[unit.machine] for unit in exp_units[app].values()
-            },
+            machines={unit.machine.id: exp_machines[unit.machine.id] for unit in exp_units[app]},
             model=model,
             origin=status.charm.split(":")[0],
             series=status.series,
             subordinate_to=status.subordinate_to,
             units={
                 name: juju_utils.Unit(name, exp_machines[unit.machine], unit.workload_version)
-                for name, unit in exp_units[app].items()
+                for name, unit in exp_units_from_status[app].items()
             },
             workload_version=status.workload_version,
         )
@@ -697,7 +706,22 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
 
     apps = await model.get_applications()
 
+    # check mocked objects
     mock_get_status.assert_awaited_once_with()
     mock_get_machines.assert_awaited_once_with()
-    (mocked_model.applications[app].assert_awaited_once_with(app) for app in full_status_apps)
+    for app in full_status_apps:
+        mocked_model.applications[app].get_config.assert_awaited_once_with()
+
+    # check expected output
     assert apps == exp_apps
+
+    # check number of units
+    assert len(apps["app1"].units) == 3
+    assert len(apps["app2"].units) == 1
+    assert len(apps["app3"].units) == 1
+    assert len(apps["app4"].units) == 0
+    # check number of machines
+    assert len(apps["app1"].machines) == 3
+    assert len(apps["app2"].machines) == 1
+    assert len(apps["app3"].machines) == 1
+    assert len(apps["app4"].machines) == 1

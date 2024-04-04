@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module to provide helper for writing unit tests."""
+from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock
+
+from juju.client.client import FullStatus
 
 from cou.steps import BaseStep
 from cou.utils.juju_utils import Machine
@@ -38,3 +41,17 @@ def dedent_plan(plan: str) -> str:
     result = dedent(plan)
     result = result.replace("    ", "\t")  # replace 4 spaces with tap
     return result
+
+
+def get_status():
+    """Help function to load Juju status from json file."""
+    current_path = Path(__file__).parent.resolve()
+    with open(current_path / "jujustatus.json", "r") as file:
+        status = file.read().rstrip()
+
+    return FullStatus.from_json(status)
+
+
+async def get_charm_name(value: str):
+    """Help function to get charm name."""
+    return value

@@ -355,7 +355,10 @@ class Model:
                 charm=model.applications[app].charm_name,
                 channel=status.charm_channel,
                 config=await model.applications[app].get_config(),
-                machines={unit.machine: machines[unit.machine] for unit in status.units.values()},
+                machines={
+                    unit.machine.id: machines[unit.machine.id]
+                    for unit in model.applications[app].units
+                },
                 model=self,
                 origin=status.charm.split(":")[0],
                 series=status.series,
