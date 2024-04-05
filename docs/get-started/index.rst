@@ -21,7 +21,7 @@ your OpenStack model.
 
 Installation
 ------------
-Install the **COU** snap from the `snap store`_:
+Install the **COU** snap from the `Snap Store`_:
 
 .. code:: bash
     
@@ -31,4 +31,4 @@ Install the **COU** snap from the `snap store`_:
 .. _Charmed OpenStack: https://ubuntu.com/openstack/docs
 .. _Juju: https://juju.is/docs/juju
 .. _User access levels: https://juju.is/docs/juju/user-permissions
-.. _snap store: https://snapcraft.io/
+.. _Snap Store: https://snapcraft.io/

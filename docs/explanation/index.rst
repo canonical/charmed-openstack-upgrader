@@ -2,8 +2,8 @@
 Explanation
 ===========
 
-This section provides additional information about the upgrade stages, implementation,
-and known issues.
+This section provides additional information about the upgrade stages, scopes,
+and the implementation.
 
 .. toctree::
    :maxdepth: 1
