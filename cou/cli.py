@@ -23,12 +23,17 @@ from signal import SIGINT, SIGTERM
 from juju.errors import JujuError
 
 from cou.commands import CLIargs, parse_args
-from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
+from cou.exceptions import (
+    COUException,
+    HighestReleaseAchieved,
+    RunUpgradeError,
+    TimeoutException,
+)
 from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
-from cou.steps.plan import generate_plan
+from cou.steps.plan import PlanWarnings, generate_plan
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import Model
@@ -108,7 +113,7 @@ async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
 
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Generated upgrade plan.
+    :return: The generated upgrade plan.
     :rtype: UpgradePlan
     """
     model = Model(args.model_name)
@@ -137,6 +142,15 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     """
     upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
+
+    if warnings := PlanWarnings.messages:
+        logger.warning("%s", "\n".join(warnings))
+        logger.warning(
+            "Running upgrades will not be possible until problems indicated in the warnings "
+            "are resolved."
+        )
+        return
+
     print(
         "Please note that the actual upgrade steps could be different if the cloud state "
         "changes because the plan will be re-calculated at upgrade time."
@@ -148,9 +162,17 @@ async def run_upgrade(args: CLIargs) -> None:
 
     :param args: CLI arguments
     :type args: CLIargs
+    :raises RunUpgradeError: When some applications failed to generate their plans.
     """
     upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
+
+    if warnings := PlanWarnings.messages:
+        logger.warning("%s", "\n".join(warnings))
+        raise RunUpgradeError(  # this will be caught as a COUException in entrypoint
+            "Cannot run upgrades. Please resolve the problems indicated in the warnings "
+            "before proceeding."
+        )
 
     if args.prompt and not await continue_upgrade():
         return

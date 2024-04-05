@@ -339,6 +339,8 @@ class OpenStackApplication(Application):
         :type units: Optional[list[Unit]], optional
         :raises ApplicationError: When application is wrongly configured.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
+        :raises MismatchedOpenStackVersions: When the units of the app are running
+                                             different OpenStack versions.
         """
         self._check_channel()
         self._check_application_target(target)
@@ -777,7 +779,7 @@ class OpenStackApplication(Application):
         :param units: Units to generate upgrade plan
         :type units: Optional[list[Unit]]
         :raises MismatchedOpenStackVersions: When the units of the app are running
-                                             different OpenStack versions
+                                             different OpenStack versions.
         """
         if units:
             return
