@@ -160,6 +160,31 @@ class HypervisorUpgradePlanner:
 
         return azs
 
+    def _upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, group: HypervisorGroup
+    ) -> None:
+        """Run sanity checks before generating upgrade plan for hypervisor group.
+
+        :param target: OpenStack codename to upgrade.
+        :type target: OpenStackRelease
+        :param group: HypervisorGroup object
+        :type group: HypervisorGroup
+        """
+        for app in self.apps:
+            if app.name not in group.app_units:
+                logger.debug(
+                    "skipping application %s because it is not part of group %s",
+                    app.name,
+                    group.name,
+                )
+                continue
+
+            units = group.app_units[app.name]
+            logger.info("running sanoty checks for %s units of %s app", app.name, units)
+            # Note(rgildein): We don't catch the error here because we shouldn't generate any
+            #                 update plan if sanity checks for any application in the group fails.
+            app.upgrade_plan_sanity_checks(target, units)
+
     def _generate_pre_upgrade_steps(
         self, target: OpenStackRelease, group: HypervisorGroup
     ) -> list[PreUpgradeStep]:
@@ -216,7 +241,6 @@ class HypervisorUpgradePlanner:
 
             units = group.app_units[app.name]
             logger.info("generating upgrade steps for %s units of %s app", app.name, units)
-
             steps.extend(app.upgrade_steps(target, units, force))
 
         return steps
@@ -269,6 +293,9 @@ class HypervisorUpgradePlanner:
             hypervisor_plan = HypervisorUpgradePlan(
                 f"Upgrade plan for '{group.name}' to '{target}'"
             )
+            # snity checks
+            logger.debug("running sanity checks for %s AZ", az)
+            self._upgrade_plan_sanity_checks(target, group)
 
             # pre upgrade steps
             logger.debug("generating pre-upgrade steps for %s AZ", az)
