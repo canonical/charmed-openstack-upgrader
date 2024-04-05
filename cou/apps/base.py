@@ -337,7 +337,7 @@ class OpenStackApplication(Application):
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[Unit]], optional
-        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        :raises ApplicationError: When application is wrongly configured.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         """
         self._check_channel()
