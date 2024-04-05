@@ -310,7 +310,7 @@ def test_check_channel(_, origin):
 
 @patch("cou.apps.base.OpenStackApplication.is_valid_track", return_value=False)
 def test_check_channel_error(_):
-    """Test function to verify that enable-auto-restarts is disabled."""
+    """Test function to verify validity of the charm channel when it's not valid."""
     name = "app"
     channel = "stable"
     series = "focal"
