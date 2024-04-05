@@ -85,7 +85,7 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             description=f"Refresh '{app.name}' to the latest revision of "
             f"'{target.previous_release}/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
+            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
@@ -126,7 +126,7 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
         PreUpgradeStep(
             f"Refresh '{app.name}' to the latest revision of '{target.previous_release}/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable", switch=None),
+            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable"),
         ),
         UpgradeStep(
             f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'",
@@ -185,6 +185,7 @@ nova-compute/0
                 Verify that all 'nova-compute' units has been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Upgrade software packages on unit 'ceph-osd/0'
+                Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
@@ -271,11 +272,11 @@ nova-compute/0
         units={
             "ceph-osd/0": Unit(
                 name="ceph-osd/0",
-                workload_version="17.0.1",
+                workload_version="15.2.0",
                 machine=machines["2"],
             )
         },
-        workload_version="17.0.1",
+        workload_version="15.2.0",
     )
 
     ovn_chassis = OvnSubordinate(
@@ -340,6 +341,7 @@ nova-compute/0
                 Verify that all 'nova-compute' units has been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Upgrade software packages on unit 'ceph-osd/0'
+                Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0

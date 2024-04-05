@@ -46,19 +46,17 @@ class SubordinateBase(OpenStackApplication):
                 f"than {target}. Ignoring."
             )
 
-    def pre_upgrade_steps(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[PreUpgradeStep]:
-        """Pre Upgrade steps planning.
+    def _get_upgrade_current_release_packages_step(
+        self, units: Optional[list[Unit]]
+    ) -> PreUpgradeStep:
+        """Get step for upgrading software packages to the latest of the current release.
 
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
         :param units: Units to generate upgrade plan
         :type units: Optional[list[Unit]]
-        :return: List of pre upgrade steps.
-        :rtype: list[PreUpgradeStep]
+        :return: Step for upgrading software packages to the latest of the current release.
+        :rtype: PreUpgradeStep
         """
-        return [self._get_refresh_charm_step(target)]
+        return PreUpgradeStep()
 
     def upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]], force: bool
