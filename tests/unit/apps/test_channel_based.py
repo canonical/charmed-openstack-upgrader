@@ -201,7 +201,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
@@ -275,7 +275,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
@@ -358,7 +358,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",

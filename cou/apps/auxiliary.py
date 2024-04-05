@@ -53,31 +53,31 @@ class AuxiliaryApplication(OpenStackApplication):
             logger.debug("'%s' has been installed from the charm store", self.name)
             return True
 
-        track = self._get_track_from_channel(charm_channel)
-        return (self.charm, self.series, track) in TRACK_TO_OPENSTACK_MAPPING
+        current_track = self._get_track_from_channel(charm_channel)
+        possible_tracks = OPENSTACK_TO_TRACK_MAPPING.get(
+            (self.charm, self.series, self.current_os_release.codename), []
+        )
+        return (
+            self.charm,
+            self.series,
+            current_track,
+        ) in TRACK_TO_OPENSTACK_MAPPING and len(possible_tracks) > 0
 
     @property
-    def possible_current_channels(self) -> list[str]:
-        """Return the possible current channels based on the series and current OpenStack release.
+    def expected_current_channel(self) -> str:
+        """Return the expected current channel.
 
-        :return: The possible current channels for the application.
-        :rtype: list[str]
-        :raises ApplicationError: When cannot find tracks.
+        Expected current channel is the channel that the application is suppose to be using based
+        on the current series, workload version and, by consequence, the OpenStack release
+        identified.
+        :return: The expected current channel of the application. E.g: "3.9/stable"
+        :rtype: str
         """
-        tracks = OPENSTACK_TO_TRACK_MAPPING.get(
+        *_, track = OPENSTACK_TO_TRACK_MAPPING[
             (self.charm, self.series, self.current_os_release.codename)
-        )
-        if tracks:
-            return [f"{track}/stable" for track in tracks]
+        ]
 
-        raise ApplicationError(
-            (
-                f"Cannot find a suitable '{self.charm}' charm channel for "
-                f"{self.current_os_release.codename} on series '{self.series}'. "
-                "Please take a look at the documentation: "
-                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
-            )
-        )
+        return f"{track}/stable"
 
     def target_channel(self, target: OpenStackRelease) -> str:
         """Return the appropriate channel for the passed OpenStack target.
@@ -124,7 +124,6 @@ class AuxiliaryApplication(OpenStackApplication):
 
         track: str = self._get_track_from_channel(self.channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
-        # channel setter already validate if it is a valid channel.
         return max(compatible_os_releases)
 
     def generate_upgrade_plan(
@@ -153,6 +152,20 @@ class AuxiliaryApplication(OpenStackApplication):
                 self.name,
             )
         return super().generate_upgrade_plan(target, force, None)
+
+    def _need_current_channel_refresh(self, target: OpenStackRelease) -> bool:
+        """Check if the application needs to refresh the current channel.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: True if needs to refresh, False otherwise
+        :rtype: bool
+        """
+        track: str = self._get_track_from_channel(self.channel)
+        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
+        return bool(self.can_upgrade_to) and any(
+            os_release <= target for os_release in compatible_os_releases
+        )
 
 
 @AppFactory.register_application(["rabbitmq-server"])
