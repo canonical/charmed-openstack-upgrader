@@ -299,7 +299,7 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
 @pytest.mark.parametrize("origin", ["cs", "ch"])
 @patch("cou.apps.base.OpenStackApplication.is_valid_track", return_value=True)
 def test_check_channel(_, origin):
-    """Test function to verify that enable-auto-restarts is disabled."""
+    """Test function to verify validity of the charm channel."""
     app_name = "app"
     app = OpenStackApplication(
         app_name, "", app_name, "stable", {}, {}, MagicMock(), origin, "focal", [], {}, "1"
