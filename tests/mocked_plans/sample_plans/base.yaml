@@ -39,6 +39,7 @@ plan: |
                 Verify that all 'nova-compute' units has been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Upgrade software packages on unit 'ceph-osd/0'
+                Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
@@ -99,13 +100,13 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    workload_version: 17.0.1
+    workload_version: 15.2.0
     units:
       ceph-osd/0:
         name: ceph-osd/0
         machine: '2'
-        workload_version: 17.0.1
-        os_version: xena
+        workload_version: 15.2.0
+        os_version: victoria
     machines:
       '2':
         id: '2'

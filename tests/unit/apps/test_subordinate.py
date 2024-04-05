@@ -71,7 +71,7 @@ def test_generate_upgrade_plan(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
@@ -122,7 +122,6 @@ def test_channel_valid(model, channel):
     [
         "focal/edge",
         "latest/edge",
-        "latest/stable",
         "something/stable",
     ],
 )
@@ -224,7 +223,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_os}/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{from_os}/stable", switch=None),
+            coro=model.upgrade_charm(app.name, f"{from_os}/stable"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: '{to_os}/stable'",
@@ -271,7 +270,7 @@ def test_generate_plan_in_same_version(model, from_to):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '{from_to}/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{from_to}/stable", switch=None),
+            coro=model.upgrade_charm(app.name, f"{from_to}/stable"),
         ),
     ]
     expected_plan.add_steps(upgrade_steps)
