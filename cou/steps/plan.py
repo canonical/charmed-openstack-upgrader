@@ -25,12 +25,12 @@ from cou.apps.auxiliary import (  # noqa: F401
     AuxiliaryApplication,
     CephMon,
     CephOsd,
-    OvnPrincipal,
+    OVNPrincipal,
     RabbitMQServer,
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     AuxiliarySubordinateApplication,
-    OvnSubordinate,
+    OVNSubordinate,
 )
 from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import ChannelBasedApplication  # noqa: F401

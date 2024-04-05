@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary subordinate application class."""
-from cou.apps.auxiliary import AuxiliaryApplication, Ovn
+from cou.apps.auxiliary import OVN, AuxiliaryApplication
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBase
 from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
@@ -36,12 +36,12 @@ class AuxiliarySubordinateApplication(SubordinateBase, AuxiliaryApplication):
 
 
 @AppFactory.register_application(["ovn-chassis"])
-class OvnSubordinate(Ovn, AuxiliarySubordinateApplication):
-    """Ovn subordinate application class."""
+class OVNSubordinate(OVN, AuxiliarySubordinateApplication):
+    """OVN subordinate application class."""
 
     def _check_ovn_support(self) -> None:
         """Check OVN version.
 
         :raises ApplicationError: When workload version is lower than 22.03.0.
         """
-        OvnSubordinate._validate_ovn_support(self.workload_version)
+        OVNSubordinate._validate_ovn_support(self.workload_version)
