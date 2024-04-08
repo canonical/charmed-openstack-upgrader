@@ -435,7 +435,12 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
     Using OpenStack release version that is not on openstack_to_track_mapping.csv table.
     """
     current_os_release.return_value = OpenStackRelease("diablo")
-
+    exp_error_msg = (
+        "Channel: 3.8/stable for charm 'rabbitmq-server' on series 'focal' is currently not "
+        "supported in this tool. Please take a look at the documentation: "
+        "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if you "
+        "are using the right track."
+    )
     machines = {"0": MagicMock(spec_set=Machine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
@@ -458,7 +463,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
         workload_version="3.8",
     )
 
-    with pytest.raises(ApplicationError):
+    with pytest.raises(ApplicationError, match=exp_error_msg):
         app._check_channel()
 
 
