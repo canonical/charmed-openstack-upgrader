@@ -46,20 +46,16 @@ def test_upgrade_plan_sanity_checks():
     """Test run app sanity checks."""
     target = OpenStackRelease("victoria")
     machines = [Machine(f"{i}", (), f"az{i}") for i in range(3)]
-    app_units = {
-        "app1": [Unit(f"app1/{i}", machines[i], "1") for i in range(3)],
-        "app2": [Unit(f"app2/{i}", machines[i], "1") for i in range(3)],
-    }
-    apps = [_generate_app("app1"), _generate_app("app2"), _generate_app("app3")]
-    # Note(rgildein): it contains only two apps, so app3 should be skipped
-    group = HypervisorGroup("test", app_units)
-    planner = HypervisorUpgradePlanner(apps, machines)
+    app1 = _generate_app("app1")
+    app1.units = {f"app1/{i}": Unit(f"app1/{i}", machines[i], "1") for i in range(3)}
+    app2 = _generate_app("app2")
+    app1.units = {f"app2/{i}": Unit(f"app2/{i}", machines[i], "1") for i in range(3)}
+    planner = HypervisorUpgradePlanner([app1, app2], machines)
 
-    planner._upgrade_plan_sanity_checks(target, group)
+    planner._upgrade_plan_sanity_checks(target)
 
-    apps[0].upgrade_plan_sanity_checks.assert_called_once_with(target, app_units["app1"])
-    apps[1].upgrade_plan_sanity_checks.assert_called_once_with(target, app_units["app2"])
-    apps[2].upgrade_plan_sanity_checks.assert_not_called()
+    app1.upgrade_plan_sanity_checks.assert_called_once_with(target, list(app1.units.values()))
+    app2.upgrade_plan_sanity_checks.assert_called_once_with(target, list(app2.units.values()))
 
 
 def test_generate_pre_upgrade_steps():
@@ -153,7 +149,7 @@ def test_generate_upgrade_plan(
 
     plan = planner.generate_upgrade_plan(target, False)
 
-    sanity_checks.assert_called_once_with(target, group)
+    sanity_checks.assert_called_once_with(target)
     pre_upgrade_steps.assert_called_once_with(target, group)
     upgrade_steps.assert_called_once_with(target, False, group)
     post_upgrade_steps.assert_called_once_with(target, group)
