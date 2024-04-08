@@ -794,12 +794,27 @@ class OpenStackApplication(Application):
         if (
             self.current_os_release >= target
             and not self.can_upgrade_to
-            and self.apt_source_codename >= target
+            and not self._need_origin_setting_update(target)
         ):
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "
                 f"than {target}. Ignoring."
             )
+
+    def _need_origin_setting_update(self, target: OpenStackRelease) -> bool:
+        """Check if application needs to update origin setting for a certain target.
+
+        Applications with configuration equal or bigger than the target or without origin setting,
+        does not need to change origin setting.
+        Applications with empty origin setting need to update the configuration.
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: True if needs to change origin setting, False otherwise.
+        :rtype: bool
+        """
+        if self.origin_setting and self.os_origin == "":
+            return True
+        return self.apt_source_codename < target if self.apt_source_codename else False
 
     def _check_mismatched_versions(self, units: Optional[list[Unit]]) -> None:
         """Check that there are no mismatched versions on app units.

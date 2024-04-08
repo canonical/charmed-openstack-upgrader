@@ -772,3 +772,39 @@ def test_need_current_channel_refresh(model, can_upgrade_to, channel, exp_result
         workload_version="1",
     )
     assert app._need_current_channel_refresh(target) is exp_result
+
+
+@pytest.mark.parametrize(
+    "config, exp_result",
+    [
+        ({"source": {"value": "distro"}}, True),
+        # app with empty origin setting
+        ({"source": {"value": ""}}, True),
+        ({"openstack-origin": {"value": "distro"}}, True),
+        # app without origin setting
+        ({}, False),
+        # app with origin setting equal to the target
+        ({"source": {"value": "cloud:focal-victoria"}}, False),
+        # app with origin setting bigger than the target
+        ({"source": {"value": "cloud:focal-wallaby"}}, False),
+    ],
+)
+def test_need_origin_setting_update(config, exp_result, model):
+    """Test when the application needs to update the origin setting."""
+    target = OpenStackRelease("victoria")
+
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel="ussuri/stable",
+        config=config,
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+    assert app._need_origin_setting_update(target) is exp_result
