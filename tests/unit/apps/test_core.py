@@ -134,39 +134,6 @@ def test_application_empty_origin_config(model):
     assert app.apt_source_codename is None
 
 
-def test_application_unexpected_channel(model):
-    """Test Keystone application with unexpected channel."""
-    target = OpenStackRelease("xena")
-    exp_msg = (
-        "'keystone' has unexpected channel: 'ussuri/stable' for the current workload version "
-        "and OpenStack release: 'wallaby'. Possible channels are: wallaby/stable"
-    )
-    machines = {"0": MagicMock(spec_set=Machine)}
-    app = Keystone(
-        name="keystone",
-        can_upgrade_to="ussuri/stable",
-        charm="keystone",
-        channel="ussuri/stable",
-        config={"source": {"value": ""}},
-        machines=machines,
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units={
-            "keystone/0": Unit(
-                name="keystone/0",
-                workload_version="19.0.1",
-                machine=machines["0"],
-            )
-        },
-        workload_version="19.1.0",
-    )
-
-    with pytest.raises(ApplicationError, match=exp_msg):
-        app.generate_upgrade_plan(target, False)
-
-
 @pytest.mark.parametrize(
     "source_value",
     ["ppa:myteam/ppa", "cloud:xenial-proposed/ocata", "http://my.archive.com/ubuntu main"],
@@ -330,7 +297,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
@@ -461,7 +428,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     machines = {"0": MagicMock(spec_set=Machine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to="victoria/stable",
+        can_upgrade_to="",
         charm="keystone",
         channel="victoria/stable",
         config={
@@ -579,7 +546,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
@@ -693,7 +660,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'ussuri/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
@@ -884,7 +851,7 @@ def _generate_nova_compute_app(model):
     channel = "ussuri/stable"
 
     units = {
-        f"nova-compute/{unit_num}": Unit(f"nova-compute/{unit_num}", MagicMock(), MagicMock())
+        f"nova-compute/{unit_num}": Unit(f"nova-compute/{unit_num}", MagicMock(), "21.0.1")
         for unit_num in range(3)
     }
     app = NovaCompute(

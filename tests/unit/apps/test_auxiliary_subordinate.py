@@ -79,7 +79,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "8.0/stable"),
         ),
     )
 
@@ -194,7 +194,7 @@ def test_ovn_subordinate_upgrade_plan(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "22.03/stable"),
         )
     ]
     expected_plan.add_steps(upgrade_steps)
@@ -261,7 +261,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "octopus/stable"),
         )
     ]
 
@@ -299,7 +299,7 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "pacific/stable"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",

@@ -13,8 +13,10 @@
 # limitations under the License.
 
 """Upgrade planning utilities."""
+from __future__ import annotations
 
 import logging
+from typing import Optional, Union
 
 # NOTE we need to import the modules to register the charms with the register_application
 # decorator
@@ -36,6 +38,7 @@ from cou.apps.core import Keystone, Octavia, Swift  # noqa: F401
 from cou.apps.subordinate import SubordinateApplication, SubordinateBase  # noqa: F401
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
+    COUException,
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
@@ -55,6 +58,24 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
+class PlanWarnings:  # pylint: disable=too-few-public-methods
+    """Representation of a collection of warning messages from plan generation.
+
+    This class holds all warning messages returned by applications when generating a plan.
+    """
+
+    messages: list[str] = []
+
+    @classmethod
+    def add_message(cls, message: str) -> None:
+        """Add a new warning message to the collection.
+
+        :param message: A warning message to be stored.
+        :type message: str
+        """
+        cls.messages.append(message)
+
+
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
     """Generate plan for upgrade.
 
@@ -62,7 +83,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :return: Plan with all upgrade steps necessary based on the Analysis.
+    :return: A plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """
     _pre_plan_sanity_checks(args, analysis_result)
@@ -99,8 +120,8 @@ async def _generate_data_plane_plan(
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :return: A list containing the upgrade plan for hypervisors, principals and subordinates
-             data-plane applications.
+    :return: A list of the upgrade plans for hypervisors, principals and subordinates
+        data-plane applications.
     :rtype: list[UpgradePlan]
     """
     hypervisor_apps, non_hypervisors_apps = _separate_hypervisors_apps(
@@ -419,7 +440,7 @@ def _generate_control_plane_plan(
     :type apps: list[OpenStackApplication]
     :param force: Whether the plan generation should be forced
     :type force: bool
-    :return: Principal and Subordinate upgrade plan.
+    :return: A list containing control plane (Principal and Subordinate) upgrade plans.
     :rtype: list[UpgradePlan]
     """
     principal_upgrade_plan = _create_upgrade_group(
@@ -437,7 +458,9 @@ def _generate_control_plane_plan(
     )
 
     logger.debug("Generation of the control plane upgrade plan complete")
-    return [principal_upgrade_plan, subordinate_upgrade_plan]
+    control_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
+
+    return control_plane_upgrade_plan
 
 
 def _separate_hypervisors_apps(
@@ -488,7 +511,11 @@ async def _generate_data_plane_hypervisors_plan(
     hypervisors_machines = await _filter_hypervisors_machines(args, analysis_result)
     logger.info("Hypervisors selected: %s", hypervisors_machines)
     hypervisor_planner = HypervisorUpgradePlanner(apps, hypervisors_machines)
-    hypervisor_plan = hypervisor_planner.generate_upgrade_plan(target, args.force)
+    # NOTE(agileshaw): Assign an empty UpgradePlan for hypervisor_plan if _generate_instance_plan
+    #                  returns None
+    hypervisor_plan = _generate_instance_plan(
+        hypervisor_planner, target, args.force
+    ) or UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
     logger.debug("Generation of the hypervisors upgrade plan completed")
     return hypervisor_plan
 
@@ -506,23 +533,27 @@ def _generate_data_plane_remaining_plan(
     :type apps: list[OpenStackApplication]
     :param force: Whether the plan generation should be forced
     :type force: bool
-    :return: A list containing the upgrade plan for principals and subordinates data-plane apps.
+    :return: A list of data plane (non-hypervisors Principal and Subordinate) upgrade plans.
     :rtype: list[UpgradePlan]
     """
-    return [
-        _create_upgrade_group(
-            apps=[app for app in apps if app.is_subordinate is False],
-            description="Remaining Data Plane principal(s) upgrade plan",
-            target=target,
-            force=force,
-        ),
-        _create_upgrade_group(
-            apps=[app for app in apps if app.is_subordinate],
-            description="Data Plane subordinate(s) upgrade plan",
-            target=target,
-            force=force,
-        ),
-    ]
+    principal_upgrade_plan = _create_upgrade_group(
+        apps=[app for app in apps if app.is_subordinate is False],
+        description="Remaining Data Plane principal(s) upgrade plan",
+        target=target,
+        force=force,
+    )
+
+    subordinate_upgrade_plan = _create_upgrade_group(
+        apps=[app for app in apps if app.is_subordinate],
+        description="Data Plane subordinate(s) upgrade plan",
+        target=target,
+        force=force,
+    )
+
+    logger.debug("Generation of remaining data plane upgrade plan complete")
+    data_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
+
+    return data_plane_upgrade_plan
 
 
 async def _filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> list[Machine]:
@@ -593,6 +624,9 @@ def _create_upgrade_group(
 ) -> UpgradePlan:
     """Create upgrade group.
 
+    COUExceptions (except HaltUpgradePlanGeneration) raised by application will be stored
+    in the PlanWarnings object.
+
     :param apps: Apps to create the group.
     :type apps: list[OpenStackApplication]
     :param target: Target OpenStack release.
@@ -602,20 +636,57 @@ def _create_upgrade_group(
     :param force: Whether the plan generation should be forced
     :type force: bool
     :raises Exception: When cannot generate upgrade plan.
-    :return: Upgrade group.
+    :return: Upgrade plan of an upgrade group.
     :rtype: UpgradePlan
     """
     group_upgrade_plan = UpgradePlan(description)
+
     for app in apps:
-        try:
-            app_upgrade_plan = app.generate_upgrade_plan(target, force)
+        if app_upgrade_plan := _generate_instance_plan(app, target, force):
             group_upgrade_plan.add_step(app_upgrade_plan)
-        except HaltUpgradePlanGeneration as exc:
-            # we do not care if applications halt the upgrade plan generation
-            # for some known reason.
-            logger.debug("'%s' halted the upgrade planning generation: %s", app.name, exc)
-        except Exception as exc:
-            logger.error("Cannot generate upgrade plan for '%s': %s", app.name, exc)
-            raise
 
     return group_upgrade_plan
+
+
+def _generate_instance_plan(
+    instance: Union[HypervisorUpgradePlanner, OpenStackApplication],
+    target: OpenStackRelease,
+    force: bool,
+) -> Optional[UpgradePlan]:
+    """Generate upgrade plan for an instance and handle exceptions.
+
+    COUExceptions (except HaltUpgradePlanGeneration) raised by application will be stored
+    in the PlanWarnings object.
+
+    :param instance: An OpenStackApplication or HypervisorUpgradePlanner instance to generate
+                     plan for.
+    :type instance: Union[HypervisorUpgradePlanner, OpenStackApplication]
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :raises Exception: When cannot generate upgrade plan.
+    :return: Upgrade plan of an instance.
+    :rtype: Optional[UpgradePlan]:
+    """
+    instance_id = (
+        instance.name
+        if isinstance(instance, OpenStackApplication)
+        else "Hypervisors Groups:" + ", ".join(instance.get_azs(target).keys())
+    )
+
+    try:
+        instance_upgrade_plan = instance.generate_upgrade_plan(target, force)
+        return instance_upgrade_plan
+    except HaltUpgradePlanGeneration as exc:
+        # we do not care if applications halt the upgrade plan generation
+        # for some known reason.
+        logger.debug("'%s' halted the upgrade planning generation: %s", instance_id, exc)
+    except COUException as exc:
+        logger.debug("Cannot generate plan for '%s'\n\t%s", instance_id, exc)
+        PlanWarnings.add_message(f"Cannot generate plan for '{instance_id}'\n\t{exc}")
+    except Exception as exc:
+        logger.error("Cannot generate upgrade plan for '%s': %s", instance_id, exc)
+        raise
+
+    return None
