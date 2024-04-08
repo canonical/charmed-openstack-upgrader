@@ -373,6 +373,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
     exp_msg = f"'{charm}' with workload version {version} has no compatible OpenStack release."
 
     machines = {"0": MagicMock(spec_set=Machine)}
+    unit = Unit(name=f"{charm}/0", workload_version=version, machine=machines["0"])
     app = RabbitMQServer(
         name=charm,
         can_upgrade_to="3.8/stable",
@@ -384,18 +385,12 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={
-            f"{charm}/0": Unit(
-                name=f"{charm}/0",
-                workload_version=version,
-                machine=machines["0"],
-            )
-        },
+        units={unit.name: unit},
         workload_version=version,
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app._check_channel()
+        app.get_latest_os_version(unit)
 
 
 def test_auxiliary_raise_error_unknown_series(model):
