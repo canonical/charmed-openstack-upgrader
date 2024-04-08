@@ -19,7 +19,7 @@ import pytest
 
 from cou.apps.auxiliary_subordinate import (
     AuxiliarySubordinateApplication,
-    OvnSubordinate,
+    OVNSubordinate,
 )
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
@@ -89,9 +89,9 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
 
 
 def test_ovn_subordinate(model):
-    """Test the correctness of instantiating OvnSubordinate."""
+    """Test the correctness of instantiating OVNSubordinate."""
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnSubordinate(
+    app = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
@@ -115,7 +115,7 @@ def test_ovn_subordinate(model):
 
 
 def test_ovn_workload_ver_lower_than_22_subordinate(model):
-    """Test the OvnSubordinate with lower version than 22."""
+    """Test the OVNSubordinate with lower version than 22."""
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=Machine)}
     exp_msg = (
@@ -124,7 +124,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
         "https://docs.openstack.org/charm-guide/latest/project/procedures/"
         "ovn-upgrade-2203.html"
     )
-    app = OvnSubordinate(
+    app = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
@@ -144,12 +144,12 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
 
 
 def test_ovn_version_pinning_subordinate(model):
-    """Test the OvnSubordinate when enable-version-pinning is set to True."""
+    """Test the OVNSubordinate when enable-version-pinning is set to True."""
     charm = "ovn-chassis"
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=Machine)}
     exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
-    app = OvnSubordinate(
+    app = OVNSubordinate(
         name=charm,
         can_upgrade_to="22.03/stable",
         charm=charm,
@@ -165,14 +165,14 @@ def test_ovn_version_pinning_subordinate(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.upgrade_plan_sanity_checks(target, [])
+        app.generate_upgrade_plan(target, False)
 
 
 def test_ovn_subordinate_upgrade_plan(model):
-    """Test generating plan for OvnSubordinate."""
+    """Test generating plan for OVNSubordinate."""
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnSubordinate(
+    app = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
@@ -205,7 +205,7 @@ def test_ovn_subordinate_upgrade_plan(model):
 
 
 def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
-    """Test generating plan for OvnSubordinate failing.
+    """Test generating plan for OVNSubordinate failing.
 
     The ovn chassis 22.03 is considered yoga. If it's not necessary to upgrade the charm code,
     there is no steps to upgrade.
@@ -216,7 +216,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
     )
     target = OpenStackRelease("victoria")
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnSubordinate(
+    app = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="",
         charm="ovn-chassis",

@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, PropertyMock, call, patch
 import pytest
 
 from cou.apps.auxiliary import CephMon, CephOsd
-from cou.apps.auxiliary_subordinate import OvnSubordinate
+from cou.apps.auxiliary_subordinate import OVNSubordinate
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone, NovaCompute
 from cou.apps.subordinate import SubordinateApplication
@@ -279,7 +279,7 @@ nova-compute/0
         workload_version="15.2.0",
     )
 
-    ovn_chassis = OvnSubordinate(
+    ovn_chassis = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
@@ -440,7 +440,7 @@ nova-compute/0
         workload_version="17.0.1",
     )
 
-    ovn_chassis = OvnSubordinate(
+    ovn_chassis = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
@@ -1354,7 +1354,7 @@ def test_separate_hypervisors_apps(model):
     )
 
     # subordinates are considered as non-hypervisors
-    ovn_chassis = OvnSubordinate(
+    ovn_chassis = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
         charm="ovn-chassis",
@@ -1484,7 +1484,7 @@ def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
     ceph_osd = MagicMock(spec_set=CephOsd)()
     ceph_osd.is_subordinate = False
 
-    ovn_chassis = MagicMock(spec_set=OvnSubordinate)()
+    ovn_chassis = MagicMock(spec_set=OVNSubordinate)()
     ovn_chassis.is_subordinate = True
 
     cou_plan._generate_data_plane_remaining_plan(target, [ceph_osd, ovn_chassis], force)
