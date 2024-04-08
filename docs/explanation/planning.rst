@@ -52,6 +52,11 @@ The plan has a tree structure with six main sections:
             (if ceph exists) Ensure correctness of 'require-osd-release' option in 'ceph-mon'
     ...
 
+
+The above demonstrates a complete cloud upgrade plan. However, it's also possible to
+target a specific subset of the cloud. For more information, please refer to
+:doc:`Upgrade Groups <./upgrade-groups>`. 
+
 The **pre-upgrade** steps prepare COU for the upgrade process, which includes
 verifying the states or configurations of the applications, units, or of the
 OpenStack cloud.
