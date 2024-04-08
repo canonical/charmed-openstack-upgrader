@@ -7,8 +7,9 @@ Environment Variables
 * **COU_TIMEOUT** - defines timeout for **COU** retry policy. The default value is 10 seconds.
 * **COU_MODEL_RETRIES** - defines how many times to retry the connection to Juju model before
   giving up. The default value is 5 times.
-* **COU_MODEL_RETRY_BACKOFF** - defines number of seconds to increase the wait between
-  connection to the Juju model retry attempts. The default value is 2 seconds.
+* **COU_MODEL_RETRY_BACKOFF** - defines by how many seconds the wait between juju model
+  connection retry attempts will be increased every time an attempt fails. The default value
+  is 2 seconds.
 * **COU_STANDARD_IDLE_TIMEOUT** - defines how long **COU** will wait for an application to settle
   to **active/idle** and declare the upgrade complete. The default value is 300 seconds.
 * **COU_LONG_IDLE_TIMEOUT** - a longer version of **COU_STANDARD_IDLE_TIMEOUT** for applications

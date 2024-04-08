@@ -59,12 +59,13 @@ their upgrade order):
 - ceph-osd
 - **data-plane** subordinate applications
 
-**Note:** 
+**Note:**
+
 - It's essential to complete the upgrade of the **control-plane** components before
-proceeding to any **data-plane** components to ensure cloud functionality.
+  proceeding to any **data-plane** components to ensure cloud functionality.
 - Swift applications like **swift-proxy** and **swift-storage** are recognised as
-valid components of the OpenStack **data-plane**. However, they are not supported
-by COU. Therefore, manual upgrades are needed.
+  valid components of the OpenStack **data-plane**. However, they are not supported
+  by COU. Therefore, manual upgrades are needed.
 
 Hypervisors
 -----------

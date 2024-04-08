@@ -172,7 +172,7 @@ Run non-interactive upgrades
 ----------------------------
 
 **COU** provides a non-interactive mode which suppresses user prompts and automatically
-continue executing each planned step. This option allows **COU** to be used by scripts
+continues executing each planned step. This option allows **COU** to be used by scripts
 or during upgrade testing. A quiet mode switch is also offered, which suppresses all
 logs and only prints important information including the generated plan and critical
 messages like the completion of the upgrade.
