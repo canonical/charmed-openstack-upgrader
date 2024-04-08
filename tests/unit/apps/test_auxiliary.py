@@ -21,7 +21,7 @@ from cou.apps.auxiliary import (
     CephMon,
     CephOsd,
     MysqlInnodbCluster,
-    OvnPrincipal,
+    OVNPrincipal,
     RabbitMQServer,
 )
 from cou.apps.core import NovaCompute
@@ -738,10 +738,10 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
 
 
 def test_ovn_principal(model):
-    """Test the correctness of instantiating OvnPrincipal."""
+    """Test the correctness of instantiating OVNPrincipal."""
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnPrincipal(
+    app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.06/stable",
         charm=charm,
@@ -770,7 +770,7 @@ def test_ovn_principal(model):
 
 
 def test_ovn_workload_ver_lower_than_22_principal(model):
-    """Test the OvnPrincipal with lower version than 22."""
+    """Test the OVNPrincipal with lower version than 22."""
     target = OpenStackRelease("victoria")
     charm = "ovn-central"
     exp_msg = (
@@ -780,7 +780,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
         "ovn-upgrade-2203.html"
     )
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnPrincipal(
+    app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.03/stable",
         charm=charm,
@@ -806,12 +806,12 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
 
 
 def test_ovn_version_pinning_principal(model):
-    """Test the OvnPrincipal when enable-version-pinning is set to True."""
+    """Test the OVNPrincipal when enable-version-pinning is set to True."""
     target = OpenStackRelease("victoria")
-    charm = "ovn-central"
+    charm = "ovn-dedicated-chassis"
     exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnPrincipal(
+    app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.03/stable",
         charm=charm,
@@ -838,7 +838,7 @@ def test_ovn_version_pinning_principal(model):
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])
 def test_ovn_no_compatible_os_release(channel, model):
-    """Test the OvnPrincipal with not compatible os release."""
+    """Test the OVNPrincipal with not compatible os release."""
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=Machine)}
     exp_msg = (
@@ -847,37 +847,100 @@ def test_ovn_no_compatible_os_release(channel, model):
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
-    app = OvnPrincipal(
-        name=charm,
-        can_upgrade_to="quincy/stable",
-        charm=charm,
-        channel=channel,
-        config={"source": {"value": "distro"}},
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app = OVNPrincipal(
+            name=charm,
+            can_upgrade_to="quincy/stable",
+            charm=charm,
+            channel=channel,
+            config={"source": {"value": "distro"}},
+            machines=machines,
+            model=model,
+            origin="ch",
+            series="focal",
+            subordinate_to=[],
+            units={
+                f"{charm}/0": Unit(
+                    name=f"{charm}/0",
+                    workload_version="22.03",
+                    machine=machines["0"],
+                )
+            },
+            workload_version="22.03",
+        )
+        app._check_channel()
+
+
+@pytest.mark.parametrize(
+    "app, config",
+    [
+        (
+            "ovn-dedicated-chassis",
+            {"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
+        ),
+        # ovn-central doesn't have enable-version-pinning configuration
+        ("ovn-central", {"source": {"value": "distro"}}),
+    ],
+)
+def test_ovn_check_version_pinning_version_pinning_config_False(app, config, model):
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = OVNPrincipal(
+        name=app,
+        can_upgrade_to="",
+        charm=app,
+        channel="22.03/stable",
+        config=config,
         machines=machines,
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
         units={
-            f"{charm}/0": Unit(
-                name=f"{charm}/0",
+            f"{app}/0": Unit(
+                name=f"{app}/0",
                 workload_version="22.03",
                 machine=machines["0"],
             )
         },
         workload_version="22.03",
     )
+    assert app._check_version_pinning() is None
 
+
+def test_ovn_check_version_pinning_version_pinning_config_True(model):
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = OVNPrincipal(
+        name="ovn-dedicated-chassis",
+        can_upgrade_to="",
+        charm="ovn-dedicated-chassis",
+        channel="22.03/stable",
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": True}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "ovn-dedicated-chassis/0": Unit(
+                name="ovn-dedicated-chassis/0",
+                workload_version="22.03",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03",
+    )
+    exp_msg = f"Cannot upgrade '{app.name}'. 'enable-version-pinning' must be set to 'false'."
     with pytest.raises(ApplicationError, match=exp_msg):
-        app._check_channel()
+        app._check_version_pinning()
 
 
 def test_ovn_principal_upgrade_plan(model):
-    """Test generating plan for OvnPrincipal."""
+    """Test generating plan for OVNPrincipal."""
     target = OpenStackRelease("victoria")
-    charm = "ovn-central"
+    charm = "ovn-dedicated-chassis"
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnPrincipal(
+    app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.06/stable",
         charm=charm,
