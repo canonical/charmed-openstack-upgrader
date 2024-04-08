@@ -25,12 +25,12 @@ from cou.apps.auxiliary import (  # noqa: F401
     AuxiliaryApplication,
     CephMon,
     CephOsd,
-    OvnPrincipal,
+    OVNPrincipal,
     RabbitMQServer,
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     AuxiliarySubordinateApplication,
-    OvnSubordinate,
+    OVNSubordinate,
 )
 from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import ChannelBasedApplication  # noqa: F401
@@ -52,7 +52,7 @@ from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
-from cou.utils.nova_compute import get_empty_hypervisors
+from cou.utils.nova_compute import get_empty_hypervisors, stringify_units
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -509,6 +509,7 @@ async def _generate_data_plane_hypervisors_plan(
     :rtype: UpgradePlan
     """
     hypervisors_machines = await _filter_hypervisors_machines(args, analysis_result)
+    logger.info("Hypervisors selected: %s", hypervisors_machines)
     hypervisor_planner = HypervisorUpgradePlanner(apps, hypervisors_machines)
     # NOTE(agileshaw): Assign an empty UpgradePlan for hypervisor_plan if _generate_instance_plan
     #                  returns None
@@ -593,29 +594,18 @@ async def _get_upgradable_hypervisors_machines(
     )
 
     if cli_force:
+        logger.info("Selected all hypervisors: %s", stringify_units(nova_compute_units))
         return nova_compute_machines
 
-    empty_hypervisors = await get_empty_hypervisors(nova_compute_units, analysis_result.model)
-
-    machine_to_unit_name = {
-        machine.machine_id: unit.name
-        for unit, machine in zip(nova_compute_units, nova_compute_machines)
-    }
-    empty_hypervisor_ids = {machine.machine_id for machine in empty_hypervisors}
-    all_hypervisor_ids = {machine.machine_id for machine in nova_compute_machines}
-    skipped_hypervisor_ids = all_hypervisor_ids - empty_hypervisor_ids
-
-    skipped_unit_names = ", ".join(
-        machine_to_unit_name[machine_id] for machine_id in sorted(skipped_hypervisor_ids)
+    empty_units, empty_machines = await get_empty_hypervisors(
+        nova_compute_units, analysis_result.model
     )
-    logger.info("Skipped (non-empty) hypervisors: %s", skipped_unit_names)
+    skipped_units = set(nova_compute_units) - set(empty_units)
 
-    selected_unit_names = ", ".join(
-        machine_to_unit_name[machine_id] for machine_id in sorted(empty_hypervisor_ids)
-    )
-    logger.info("Selected (empty) hypervisors: %s", selected_unit_names)
+    logger.info("Found non-empty hypervisors: %s", stringify_units(skipped_units))
+    logger.info("Selected hypervisors: %s", stringify_units(empty_units))
 
-    return empty_hypervisors
+    return empty_machines
 
 
 def _get_nova_compute_units_and_machines(

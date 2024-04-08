@@ -69,7 +69,7 @@ async def test_get_empty_hypervisors(
     mock_instance_count, hypervisors_count, expected_result, model
 ):
     mock_instance_count.side_effect = [count for _, count in hypervisors_count]
-    result = await nova_compute.get_empty_hypervisors(
+    _, result = await nova_compute.get_empty_hypervisors(
         [_mock_nova_unit(nova_unit) for nova_unit, _ in hypervisors_count], model
     )
     assert {machine.machine_id for machine in result} == expected_result
