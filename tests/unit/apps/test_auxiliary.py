@@ -151,7 +151,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.8/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "3.8/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "3.8/stable"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
@@ -227,8 +227,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "3.9/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -298,8 +297,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
-            description=f"Migrate '{app.name}' from charmstore to charmhub",
-            parallel=False,
+            f"Migrate '{app.name}' from charmstore to charmhub",
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
         UpgradeStep(
@@ -330,7 +328,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     expected_plan.add_steps(upgrade_steps)
 
     upgrade_plan = app.generate_upgrade_plan(target, False)
-
     assert_steps(upgrade_plan, expected_plan)
 
 
@@ -396,8 +393,9 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
         },
         workload_version=version,
     )
+
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.get_latest_os_version(app.units[f"{charm}/0"])
+        app._check_channel()
 
 
 def test_auxiliary_raise_error_unknown_series(model):
@@ -466,7 +464,7 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
     )
 
     with pytest.raises(ApplicationError):
-        app.possible_current_channels
+        app._check_channel()
 
 
 def test_auxiliary_raise_halt_upgrade(model):
@@ -621,7 +619,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'pacific/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "pacific/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "pacific/stable"),
         ),
         PreUpgradeStep(
             description="Ensure that the 'require-osd-release' option matches the 'ceph-osd' "
@@ -705,7 +703,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "octopus/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "octopus/stable"),
         ),
         PreUpgradeStep(
             "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version",
@@ -921,7 +919,7 @@ def test_ovn_principal_upgrade_plan(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "22.03/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "22.03/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -994,7 +992,7 @@ def test_mysql_innodb_cluster_upgrade(model):
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "8.0/stable", switch=None),
+            coro=model.upgrade_charm(app.name, "8.0/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -1028,19 +1026,27 @@ def test_mysql_innodb_cluster_upgrade(model):
 def test_ceph_osd_pre_upgrade_steps(mock_pre_upgrade_steps, target, model):
     """Test Ceph-osd pre upgrade steps."""
     mock_pre_upgrade_steps.return_value = [MagicMock(spec_set=UpgradeStep)()]
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     app = CephOsd(
         name="ceph-osd",
         can_upgrade_to="octopus/stable",
         charm="ceph-osd",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
-        machines={},
+        machines=machines,
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={},
-        workload_version="17.0.1",
+        units={
+            f"ceph-osd/{i}": Unit(
+                name=f"ceph-osd/{i}",
+                workload_version="15.2.0",
+                machine=machines[f"{i}"],
+            )
+            for i in range(3)
+        },
+        workload_version="15.2.0",
     )
     steps = app.pre_upgrade_steps(target, None)
 
@@ -1055,30 +1061,36 @@ def test_ceph_osd_pre_upgrade_steps(mock_pre_upgrade_steps, target, model):
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
-async def test_ceph_osd_verify_nova_compute_no_app(mock_lookup, model):
+async def test_ceph_osd_verify_nova_compute_no_app(model):
     """Test Ceph-osd verifying all nova computes."""
     target = OpenStackRelease("victoria")
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     app = CephOsd(
         name="ceph-osd",
         can_upgrade_to="octopus/stable",
         charm="ceph-osd",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
-        machines={},
+        machines=machines,
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={},
-        workload_version="17.0.1",
+        units={
+            f"ceph-osd/{i}": Unit(
+                name=f"ceph-osd/{i}",
+                workload_version="15.2.0",
+                machine=machines[f"{i}"],
+            )
+            for i in range(3)
+        },
+        workload_version="15.2.0",
     )
     model.get_applications.return_value = [app]
 
     await app._verify_nova_compute(target)
 
     model.get_applications.assert_awaited_once_with()
-    mock_lookup.assert_not_called()
 
 
 @patch("cou.apps.base.OpenStackApplication.generate_upgrade_plan")
@@ -1134,6 +1146,7 @@ def test_auxiliary_upgrade_by_unit(mock_super, model):
 async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
     """Test Ceph-osd verifying all nova computes."""
     target = OpenStackRelease("victoria")
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     mock_lookup.return_value = [target]
     nova_compute = MagicMock(spec_set=NovaCompute)()
     nova_compute.charm = "nova-compute"
@@ -1144,12 +1157,19 @@ async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
         charm="ceph-osd",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
-        machines={},
+        machines=machines,
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={},
+        units={
+            f"ceph-osd/{i}": Unit(
+                name=f"ceph-osd/{i}",
+                workload_version="17.0.1",
+                machine=machines[f"{i}"],
+            )
+            for i in range(3)
+        },
         workload_version="17.0.1",
     )
     model.get_applications.return_value = [app, nova_compute]
@@ -1157,7 +1177,7 @@ async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
     await app._verify_nova_compute(target)
 
     model.get_applications.assert_awaited_once_with()
-    mock_lookup.assert_called_once_with("nova-compute", "22.0.0")
+    mock_lookup.assert_any_call("nova-compute", "22.0.0")
 
 
 @pytest.mark.asyncio
@@ -1166,6 +1186,7 @@ async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
     """Test Ceph-osd verifying all nova computes."""
     mock_lookup.return_value = [OpenStackRelease("ussuri")]
     target = OpenStackRelease("victoria")
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     nova_compute = MagicMock(spec_set=NovaCompute)()
     nova_compute.charm = "nova-compute"
     nova_compute.units = {"nova-compute/0": Unit("nova-compute/0", None, "22.0.0")}
@@ -1175,12 +1196,19 @@ async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
         charm="ceph-osd",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
-        machines={},
+        machines=machines,
         model=model,
         origin="ch",
         series="focal",
         subordinate_to=[],
-        units={},
+        units={
+            f"ceph-osd/{i}": Unit(
+                name=f"ceph-osd/{i}",
+                workload_version="17.0.1",
+                machine=machines[f"{i}"],
+            )
+            for i in range(3)
+        },
         workload_version="17.0.1",
     )
     model.get_applications.return_value = [app, nova_compute]
@@ -1199,6 +1227,7 @@ def test_ceph_osd_upgrade_plan(model):
             Upgrade software packages on unit 'ceph-osd/0'
             Upgrade software packages on unit 'ceph-osd/1'
             Upgrade software packages on unit 'ceph-osd/2'
+        Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
         Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
         Wait for up to 300s for app 'ceph-osd' to reach the idle state
         Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
@@ -1220,14 +1249,53 @@ def test_ceph_osd_upgrade_plan(model):
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
-                workload_version="17.0.1",
+                workload_version="15.2.0",
                 machine=machines[f"{i}"],
             )
             for i in range(3)
         },
-        workload_version="17.0.1",
+        workload_version="15.2.0",
     )
 
     plan = ceph_osd.generate_upgrade_plan(target, False)
 
     assert str(plan) == exp_plan
+
+
+@pytest.mark.parametrize(
+    "can_upgrade_to, compatible_os_releases, exp_result",
+    [
+        (
+            "ch:amd64/focal/my-app-723",
+            [OpenStackRelease("ussuri"), OpenStackRelease("victoria")],
+            True,
+        ),
+        (
+            "ch:amd64/focal/my-app-723",
+            [OpenStackRelease("victoria")],
+            True,
+        ),
+        # compatible_os_releases bigger than target
+        (
+            "ch:amd64/focal/my-app-723",
+            [OpenStackRelease("wallaby"), OpenStackRelease("xena")],
+            False,
+        ),
+        (
+            "",
+            [OpenStackRelease("ussuri"), OpenStackRelease("victoria")],
+            False,
+        ),
+    ],
+)
+@patch("cou.apps.auxiliary.TRACK_TO_OPENSTACK_MAPPING")
+def test_need_current_channel_refresh_auxiliary(
+    mock_track_os_mapping, model, can_upgrade_to, compatible_os_releases, exp_result
+):
+    mock_track_os_mapping.__getitem__.return_value = compatible_os_releases
+    target = OpenStackRelease("victoria")
+    app_name = "app"
+    app = AuxiliaryApplication(
+        app_name, can_upgrade_to, app_name, "3.9/stable", {}, {}, model, "ch", "focal", [], {}, "1"
+    )
+    assert app._need_current_channel_refresh(target) is exp_result
