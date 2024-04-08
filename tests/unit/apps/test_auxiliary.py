@@ -367,7 +367,7 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
 
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
-    """Test auxiliary upgrade plan with unknown version."""
+    """Test auxiliary application with unknown workload version."""
     version = "80.5"
     charm = "rabbitmq-server"
     exp_msg = f"'{charm}' with workload version {version} has no compatible OpenStack release."
@@ -399,7 +399,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
 
 
 def test_auxiliary_raise_error_unknown_series(model):
-    """Test auxiliary upgrade plan with unknown series."""
+    """Test auxiliary application with unknown series."""
     series = "foo"
     channel = "3.8/stable"
     exp_msg = (
