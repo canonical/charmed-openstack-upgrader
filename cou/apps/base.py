@@ -132,14 +132,14 @@ class OpenStackApplication(Application):
         return yaml.dump(summary, sort_keys=False)
 
     @property
-    def apt_source_codename(self) -> Optional[OpenStackRelease]:
+    def apt_source_codename(self) -> OpenStackRelease:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
         :raises ApplicationError: When origin setting is not valid.
-        :return: OpenStackRelease object or None if the app doesn't have os_origin config.
-        :rtype: Optional[OpenStackRelease]
+        :return: OpenStackRelease object.
+        :rtype: OpenStackRelease
         """
-        #  Means that the charm doesn't have "source" or "openstack-origin" config.
+        #  means that the charm doesn't have origin setting config or is using empty string.
         if not self.os_origin:
             return self.current_os_release
 
