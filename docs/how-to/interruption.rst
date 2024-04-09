@@ -2,14 +2,14 @@
 Interrupt and resume an upgrade
 ===============================
 
-Since a partially executed upgrade step can leave the cloud in an inconsistent state,
-**COU** ensures upgrades can be interrupted only in between steps. By doing so, upgrades
-can be safely stopped and resumed later on.
+Because a partially executed upgrade step can leave the cloud in an inconsistent state,
+**COU** ensures that upgrades can only be interrupted between steps. This approach allows
+upgrades to be safely stopped and resumed later on.
 
 Abort
 -----
 
-In interactive mode, the user must approve each step, and has a chance to interrupt
+In interactive mode, the user must approve each step and has the option to interrupt
 the process at any prompt.
 
 Usage example:
@@ -41,8 +41,8 @@ Usage example:
 SIGINT or SIGTERM signals
 -------------------------
 
-**COU** will exit upon receiving SIGINT or SIGTERM signals, but if the upgrade is already
-in progress one of two behaviours will occur. If SIGINT or SIGTERM is sent only once
+**COU** will exit upon receiving SIGINT or SIGTERM signals. If the upgrade is already
+in progress, one of two behaviours will occur. If SIGINT or SIGTERM is sent only once
 (e.g. by pressing *ctrl+c* once), currently running steps will be allowed to finish,
 but any further upgrade step will be cancelled. If **COU** receives two or more SIGINTs
 (e.g. by pressing *ctrl+c* multiple times) or SIGTERMs, the upgrade will be cancelled

@@ -2,7 +2,7 @@
 Reference
 =========
 
-This section explains the list of available commands and environmental variables.
+This section outlines the available commands, environmental variables, and known issues.
 
 .. toctree::
    :maxdepth: 1
