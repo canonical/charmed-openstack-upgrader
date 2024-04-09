@@ -800,7 +800,6 @@ def test_extract_from_uca_source_raise(model):
 )
 def test_apt_source_codename(config, exp_result, model):
     """Test application with empty or without origin setting."""
-    # apt_source_codename will have OpenStack release considering the workload version.
     machines = {"0": MagicMock(spec_set=Machine)}
 
     app = OpenStackApplication(
@@ -830,11 +829,7 @@ def test_apt_source_codename(config, exp_result, model):
 @pytest.mark.parametrize(
     "config",
     [
-        {
-            "source": {
-                "value": "",
-            }
-        },
+        {"source": {"value": ""}},
         {},
     ],
 )

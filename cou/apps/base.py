@@ -140,7 +140,7 @@ class OpenStackApplication(Application):
         :rtype: Optional[OpenStackRelease]
         """
         #  Means that the charm doesn't have "source" or "openstack-origin" config.
-        if self.origin_setting is None or self.os_origin == "":
+        if not self.os_origin:
             return self.current_os_release
 
         if self.os_origin.startswith("cloud"):
