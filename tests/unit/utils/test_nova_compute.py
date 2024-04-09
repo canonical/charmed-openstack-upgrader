@@ -124,12 +124,12 @@ def construct_expected_logs(hypervisors_count):
     selected_log = (
         "cou.utils.nova_compute",
         logging.INFO,
-        f"Selected hypervisors: {selected_hypervisors_str}"
+        f"Selected hypervisors: {selected_hypervisors_str}",
     )
     non_empty_log = (
         "cou.utils.nova_compute",
         logging.INFO,
-        f"Found non-empty hypervisors: {non_empty_hypervisors_str}"
+        f"Found non-empty hypervisors: {non_empty_hypervisors_str}",
     )
 
     return non_empty_log, selected_log
