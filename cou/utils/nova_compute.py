@@ -44,7 +44,7 @@ async def get_empty_hypervisors(units: list[Unit], model: Model) -> list[Machine
         if instance_count == 0:
             empty_units.add(unit)
             empty_machines.append(unit.machine)
-    
+
     skipped_units = set(units) - empty_units
 
     logger.info("Found non-empty hypervisors: %s", stringify_units(skipped_units))
