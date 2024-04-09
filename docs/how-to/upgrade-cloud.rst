@@ -70,7 +70,7 @@ It's also possible to target specific Juju **availability-zones** or **machines*
     # upgrade for hypervisors with machine ID 0 and 1 (unless they're hosting VMs)
     cou upgrade hypervisors --machine "0, 1"
 
-    # upgrade for all empty hypervisors that are into zone-1
+    # upgrade for all empty hypervisors that are in zone-1
     cou upgrade hypervisors --availability-zone=zone-1
 
 **Note:**
@@ -107,13 +107,7 @@ upgrading if this is undesirable.
 Run interactive upgrades
 ------------------------
 
-Use the **upgrade** command to automatically plan and execute the upgrade of your
-cloud. This command runs upgrade in interactive mode by default, requiring the user
-to confirm each step.
-
-.. code:: bash
-
-    cou upgrade
+By default, **COU** runs upgrade in an interactive mode,  prompting the user to confirm each step.
 
 Usage example
 ~~~~~~~~~~~~~
@@ -178,9 +172,10 @@ Run non-interactive upgrades
 ----------------------------
 
 **COU** provides a non-interactive mode which suppresses user prompts and automatically
-continue executing each planned steps. This option allows **COU** to be used by scripts
-or during upgrade testing. A quiet mode switch is also offered, which will only output
-error logs and a completion message to STDOUT.
+continues executing each planned step. This option allows **COU** to be used by scripts
+or during upgrade testing. A quiet mode switch is also offered, which suppresses all
+logs and only prints important information including the generated plan and critical
+messages like the completion of the upgrade.
 
 Usage examples
 ~~~~~~~~~~~~~~
@@ -194,7 +189,7 @@ Non-interactive mode:
     Connected to 'test-model' ✔
     Analyzing cloud... ✔
     Generating upgrade plan... ✔
-    ...
+    ...  # the generated plan
     Running cloud upgrade...
     Verify that all OpenStack applications are in idle state ✔
     Back up MySQL databases ✔
@@ -209,4 +204,8 @@ Non-interactive and quiet mode:
 .. terminal::
     :input: cou upgrade --auto-approve --quiet
 
+    Upgrade cloud from 'ussuri' to 'victoria'
+        Verify that all OpenStack applications are in idle state
+        Back up MySQL databases
+        ...
     Upgrade completed.
