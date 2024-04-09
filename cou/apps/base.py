@@ -135,39 +135,41 @@ class OpenStackApplication(Application):
     def apt_source_codename(self) -> Optional[OpenStackRelease]:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
-        :raises ApplicationError: If os_origin_parsed is not a valid OpenStack release or os_origin
-            is in an unexpected format (ppa, url, etc).
+        :raises ApplicationError: When origin setting is not valid.
         :return: OpenStackRelease object or None if the app doesn't have os_origin config.
         :rtype: Optional[OpenStackRelease]
         """
-        os_origin_parsed: Optional[str]
-        # that means that the charm doesn't have "source" or "openstack-origin" config.
-        if self.origin_setting is None:
-            return None
+        #  Means that the charm doesn't have "source" or "openstack-origin" config.
+        if self.origin_setting is None or self.os_origin == "":
+            return self.current_os_release
 
-        # Ex: "cloud:focal-ussuri" will result in "ussuri"
         if self.os_origin.startswith("cloud"):
-            *_, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
-            try:
-                return OpenStackRelease(os_origin_parsed)
-            except ValueError as exc:
-                raise ApplicationError(
-                    f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
-                ) from exc
+            return self._extract_from_uca_source()
 
-        elif self.os_origin == "distro":
+        if self.os_origin == "distro":
             # find the OpenStack release based on ubuntu series
-            os_origin_parsed = DISTRO_TO_OPENSTACK_MAPPING[self.series]
+            return OpenStackRelease(DISTRO_TO_OPENSTACK_MAPPING[self.series])
+
+        # probably because user set a ppa or an url
+        raise ApplicationError(
+            f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
+        )
+
+    def _extract_from_uca_source(self) -> OpenStackRelease:
+        """Extract the OpenStack release from Ubuntu Cloud Archive (UCA) sources.
+
+        :raises ApplicationError: When origin setting is not valid.
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        # Ex: "cloud:focal-ussuri" will result in "ussuri"
+        *_, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
+        try:
             return OpenStackRelease(os_origin_parsed)
-
-        elif self.os_origin == "":
-            return None
-
-        else:
-            # probably because user set a ppa or an url
+        except ValueError as exc:
             raise ApplicationError(
                 f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
-            )
+            ) from exc
 
     @property
     def channel_codename(self) -> OpenStackRelease:
@@ -199,7 +201,6 @@ class OpenStackApplication(Application):
         if origin := self.origin_setting:
             return self.config[origin].get("value", "")
 
-        logger.warning("Failed to get origin for %s, no origin config found", self.name)
         return ""
 
     @property
@@ -213,6 +214,7 @@ class OpenStackApplication(Application):
             if origin in self.config:
                 return origin
 
+        logger.debug("%s, has no origin setting config", self.name)
         return None
 
     @property
@@ -794,27 +796,12 @@ class OpenStackApplication(Application):
         if (
             self.current_os_release >= target
             and not self.can_upgrade_to
-            and not self._need_origin_setting_update(target)
+            and self.apt_source_codename >= target
         ):
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "
                 f"than {target}. Ignoring."
             )
-
-    def _need_origin_setting_update(self, target: OpenStackRelease) -> bool:
-        """Check if application needs to update origin setting for a certain target.
-
-        Applications with configuration equal or bigger than the target or without origin setting,
-        does not need to change origin setting.
-        Applications with empty origin setting need to update the configuration.
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :return: True if needs to change origin setting, False otherwise.
-        :rtype: bool
-        """
-        if self.origin_setting and self.os_origin == "":
-            return True
-        return self.apt_source_codename < target if self.apt_source_codename else False
 
     def _check_mismatched_versions(self, units: Optional[list[Unit]]) -> None:
         """Check that there are no mismatched versions on app units.

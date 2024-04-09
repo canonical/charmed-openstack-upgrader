@@ -743,61 +743,20 @@ def test_get_refresh_charm_step_charmhub_migration(
 
 
 @pytest.mark.parametrize(
-    "can_upgrade_to, channel, exp_result",
-    [
-        ("", "ussuri/stable", False),
-        ("ch:amd64/focal/my-app-723", "ussuri/stable", True),
-        ("ch:amd64/focal/my-app-723", "victoria/stable", True),
-        # when channel_codename is bigger than target it's not necessary to refresh
-        ("ch:amd64/focal/my-app-723", "wallaby/stable", False),
-        ("", "wallaby/stable", False),
-    ],
-)
-def test_need_current_channel_refresh(model, can_upgrade_to, channel, exp_result):
-    """Test when the application needs to refresh."""
-    target = OpenStackRelease("victoria")
-
-    app = OpenStackApplication(
-        name="app",
-        can_upgrade_to=can_upgrade_to,
-        charm="app",
-        channel=channel,
-        config={},
-        machines={},
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        units={},
-        workload_version="1",
-    )
-    assert app._need_current_channel_refresh(target) is exp_result
-
-
-@pytest.mark.parametrize(
     "config, exp_result",
     [
-        ({"source": {"value": "distro"}}, True),
-        # app with empty origin setting
-        ({"source": {"value": ""}}, True),
-        ({"openstack-origin": {"value": "distro"}}, True),
-        # app without origin setting
-        ({}, False),
-        # app with origin setting equal to the target
-        ({"source": {"value": "cloud:focal-victoria"}}, False),
-        # app with origin setting bigger than the target
-        ({"source": {"value": "cloud:focal-wallaby"}}, False),
+        ({"source": {"value": "cloud:focal-victoria"}}, "victoria"),
+        ({"openstack-origin": {"value": "cloud:focal-wallaby"}}, "wallaby"),
+        ({"source": {"value": "cloud:focal-xena"}}, "xena"),
     ],
 )
-def test_need_origin_setting_update(config, exp_result, model):
-    """Test when the application needs to update the origin setting."""
-    target = OpenStackRelease("victoria")
-
+def test_extract_from_uca_source(model, config, exp_result):
+    """Test extraction from uca sources."""
     app = OpenStackApplication(
         name="app",
         can_upgrade_to="",
         charm="app",
-        channel="ussuri/stable",
+        channel=f"{exp_result}/stable",
         config=config,
         machines={},
         model=model,
@@ -807,4 +766,138 @@ def test_need_origin_setting_update(config, exp_result, model):
         units={},
         workload_version="1",
     )
-    assert app._need_origin_setting_update(target) is exp_result
+    assert app._extract_from_uca_source() == exp_result
+
+
+def test_extract_from_uca_source_raise(model):
+    """Test extraction from uca sources raises ApplicationError with invalid value."""
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel="ussuri/stable",
+        config={"source": {"value": "cloud:focal-foo"}},
+        machines={},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+    exp_msg = "'app' has an invalid 'source': cloud:focal-foo"
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app._extract_from_uca_source()
+
+
+@pytest.mark.parametrize(
+    "config, exp_result",
+    [
+        ({"source": {"value": "distro"}}, "ussuri"),
+        ({"openstack-origin": {"value": "cloud:focal-victoria"}}, "victoria"),
+        ({"source": {"value": "cloud:focal-wallaby"}}, "wallaby"),
+    ],
+)
+def test_apt_source_codename(config, exp_result, model):
+    """Test application with empty or without origin setting."""
+    # apt_source_codename will have OpenStack release considering the workload version.
+    machines = {"0": MagicMock(spec_set=Machine)}
+
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel="ussuri/stable",
+        config=config,
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "app/0": Unit(
+                name="app/0",
+                workload_version="1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="1",
+    )
+
+    app.apt_source_codename == exp_result
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {
+            "source": {
+                "value": "",
+            }
+        },
+        {},
+    ],
+)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_apt_source_codename_empty_or_without_origin_setting(mock_os_release, config, model):
+    """Test application with empty or without origin setting."""
+    # apt_source_codename will have OpenStack release considering the workload version.
+    exp_result = OpenStackRelease("ussuri")
+    mock_os_release.return_value = exp_result
+    machines = {"0": MagicMock(spec_set=Machine)}
+
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel="ussuri/stable",
+        config=config,
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "app/0": Unit(
+                name="app/0",
+                workload_version="1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="1",
+    )
+
+    app.apt_source_codename == exp_result
+
+
+@pytest.mark.parametrize(
+    "source_value",
+    ["ppa:my-team/ppa", "http://my.archive.com/ubuntu main"],
+)
+def test_apt_source_codename_unknown_source(source_value, model):
+    """Test application with unknown origin setting."""
+    machines = {"0": MagicMock(spec_set=Machine)}
+    exp_msg = f"'app' has an invalid 'source': {source_value}"
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel="ussuri/stable",
+        config={"source": {"value": source_value}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "app/0": Unit(
+                name="app/0",
+                workload_version="1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="1",
+    )
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.apt_source_codename
