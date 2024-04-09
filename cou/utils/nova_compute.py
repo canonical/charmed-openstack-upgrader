@@ -99,8 +99,8 @@ async def verify_empty_hypervisor(unit: Unit, model: Model) -> None:
 def stringify_units(units: Iterable[Unit]) -> str:
     """Convert Units into a comma-separatedstring of unit names, sorted alphabetically.
 
-    :param units: A list of Unit objects to be converted.
-    :type units: List[Unit]
+    :param units: A iterable of Unit objects to be converted.
+    :type units: Iterable[Unit]
     :return: A comma-separated string of sorted unit names.
     :rtype: str
     """
