@@ -7,8 +7,8 @@ barbican
 ceilometer
 ceph
 colocated
-COU
 cou
+COU
 COUModel
 ctrl
 enablement
@@ -24,8 +24,8 @@ minimize
 mon
 mysql
 octavia
-OpenStack
 openstack
+OpenStack
 OpenStackApplication
 osd
 ovn

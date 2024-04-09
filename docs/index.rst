@@ -10,8 +10,6 @@ running cloud and proposes an upgrade plan to the next available OpenStack relea
 
 Notes:
 
-- Currently only control plane upgrades are supported.
-
 - The tool supports upgrades from focal-ussuri to focal-yoga.
 
 Source code available on `Github`_.
@@ -37,7 +35,7 @@ In this documentation
    
    .. grid-item:: :doc:`Explanation <explanation/index>`
 
-      **Additional information** - details of upgrade phases defined in **COU**
+      **Additional information** - details of upgrade phases and scopes defined in **COU**
 
 ---------
 
