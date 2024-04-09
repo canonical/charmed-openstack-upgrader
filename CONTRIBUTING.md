@@ -1,6 +1,6 @@
 # Contributing to Charmed OpenStack Upgrader (COU)
 
-Thank you for your interest in helping us with improving **COU**! We're open to
+Thank you for your interest in helping us improve **COU**! We're open to
 community contributions, suggestions, fixes, and feedback. This documentation
 will assist you in navigating through our processes.
 
@@ -55,7 +55,7 @@ Please adhere to the following guidelines prior to submitting your changes:
     make linkcheck
     ``` 
 - Commit messages should be well-structured and provide a meaningful explanation
-- of the changes made
+  of the changes made
 - Commits must be signed (refer to the [Prerequisites](#prerequisites) section)
 
 ## Find issues to work on
@@ -66,7 +66,7 @@ starting with issues labeled "good first issue." If you're interested in
 enhancing our documentation, you can filter issues using the "documentation"
 label to find issues specifically related to documentation improvement.
   
-Once you decided which issue to work on, you can express your interest by posting
-a comment on it. When you submit your proposed fix for an issue, link your PR to
-the issue with one of the supported
+Once you have decided which issue to work on, you can express your interest by
+posting a comment on it. When you submit your proposed fix for an issue, link
+your PR to the issue with one of the supported
 [keywords](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
