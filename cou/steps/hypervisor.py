@@ -277,7 +277,7 @@ class HypervisorUpgradePlanner:
         :return: Full upgrade plan
         :rtype: UpgradePlan
         """
-        # snity checks
+        # sanity checks
         logger.debug("running sanity checks")
         self._upgrade_plan_sanity_checks(target)
 
