@@ -34,7 +34,7 @@ Output example
                 Upgrade software packages of 'keystone' from the current APT repositories
                     Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
-                Change charm config of 'keystone' 'action-managed-upgrade' to False
+                Change charm config of 'keystone' 'action-managed-upgrade' to 'False'
                 Upgrade 'keystone' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 1800s for model 'test_model' to reach the idle state
@@ -45,25 +45,25 @@ Output example
                 Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for 'az-1' to 'victoria'
+                Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Change charm config of 'nova-compute' 'action-managed-upgrade' to True
+                Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
                 Upgrade 'nova-compute' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Upgrade plan for unit 'nova-compute/0'
-                        Disable nova-compute scheduler from unit: 'nova-compute/0'
                         Verify that unit 'nova-compute/0' has no VMs running
                         ├── Pause the unit: 'nova-compute/0'
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
-                        Enable nova-compute scheduler from unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/0'
                 Wait for up to 1800s for model 'test_model' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
         Remaining Data Plane principal(s) upgrade plan
             Upgrade plan for 'ceph-osd' to 'victoria'
-                Verify that all 'nova-compute' units had been upgraded
+                Verify that all 'nova-compute' units has been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Upgrade software packages on unit 'ceph-osd/0'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
@@ -117,7 +117,7 @@ It's also possible to target specific Juju **availability-zones** or **machines*
     # plan for hypervisors with machine ID 0 and 1 (unless they're hosting VMs)
     cou plan hypervisors --machine "0, 1"
 
-    # plan for all empty hypervisors that are into zone-1
+    # plan for all empty hypervisors that are in zone-1
     cou plan hypervisors --availability-zone=zone-1
 
 **Note:**

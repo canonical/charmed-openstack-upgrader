@@ -2,14 +2,16 @@
 Commands
 ========
 
-**COU** offers only two commands; bash completion further simplifies its usage.
+**COU** provides commands to specify the type of operation to perform, as well as commands
+to define the scope of the operation. The bash completion feature facilitates the usage of
+these commands, simplifying interaction with the tool.
 
 Plan
 ----
 
 The **plan** command will analyse the cloud and output a human-readable representation
 of the proposed upgrade plan. It does not require any interaction. Refer to the
-output below for a description of all allowed options.
+output below for the description of all available options.
 
 .. terminal:: 
     :input: cou plan --help
