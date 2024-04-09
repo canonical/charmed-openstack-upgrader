@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -66,13 +66,19 @@ async def test_get_instance_count_invalid_result(model, result_key, value):
 @pytest.mark.asyncio
 @patch("cou.utils.nova_compute.get_instance_count")
 async def test_get_empty_hypervisors(
-    mock_instance_count, hypervisors_count, expected_result, model
+    mock_instance_count, hypervisors_count, expected_result, model, caplog
 ):
     mock_instance_count.side_effect = [count for _, count in hypervisors_count]
-    _, result = await nova_compute.get_empty_hypervisors(
-        [_mock_nova_unit(nova_unit) for nova_unit, _ in hypervisors_count], model
-    )
+    non_empty_log, selected_log = construct_expected_logs(hypervisors_count)
+
+    with caplog.at_level(logging.INFO):
+        result = await nova_compute.get_empty_hypervisors(
+            [_mock_nova_unit(nova_unit) for nova_unit, _ in hypervisors_count], model
+        )
+
     assert {machine.machine_id for machine in result} == expected_result
+    assert non_empty_log in caplog.record_tuples
+    assert selected_log in caplog.record_tuples
 
 
 @pytest.mark.parametrize("instance_count", [1, 10, 50])
@@ -106,3 +112,16 @@ def _mock_nova_unit(nova_unit):
     mock_nova_unit.machine = nova_machine
 
     return mock_nova_unit
+
+
+def construct_expected_logs(hypervisors_count):
+    selected_hypervisors = [f"nova-compute/{i}" for i, count in hypervisors_count if count == 0]
+    non_empty_hypervisors = [f"nova-compute/{i}" for i, count in hypervisors_count if count != 0]
+
+    selected_hypervisors_str = ", ".join(selected_hypervisors)
+    non_empty_hypervisors_str = ", ".join(non_empty_hypervisors)
+
+    selected_log = ("cou.utils.nova_compute", logging.INFO, f"Selected hypervisors: {selected_hypervisors_str}")
+    non_empty_log = ("cou.utils.nova_compute", logging.INFO, f"Found non-empty hypervisors: {non_empty_hypervisors_str}")
+
+    return non_empty_log, selected_log

@@ -24,28 +24,33 @@ from cou.utils.juju_utils import Machine, Model, Unit
 logger = logging.getLogger(__name__)
 
 
-async def get_empty_hypervisors(
-    units: list[Unit], model: Model
-) -> tuple[list[Unit], list[Machine]]:
+async def get_empty_hypervisors(units: list[Unit], model: Model) -> list[Machine]:
     """Get the empty hypervisors in the model.
 
     :param units: All nova-compute units.
     :type units: list[Unit]
     :param model: Model object
     :type model: Model
-    :return: A tuple containing a list of just the empty hypervisors Units
-            and a list of mahines.
-    :rtype: tuple[list[Unit], list[Machine]]:
+    :return: List with just the empty hypervisors machines.
+    :rtype: list[Machine]
     """
     tasks = [get_instance_count(unit.name, model) for unit in units]
     instances = await asyncio.gather(*tasks)
     units_instances = zip(units, instances)
-    empty_units, empty_machines = [], []
+    empty_units = set()
+    empty_machines = []
+
     for unit, instance_count in units_instances:
         if instance_count == 0:
-            empty_units.append(unit)
+            empty_units.add(unit)
             empty_machines.append(unit.machine)
-    return empty_units, empty_machines
+    
+    skipped_units = set(units) - empty_units
+
+    logger.info("Found non-empty hypervisors: %s", stringify_units(skipped_units))
+    logger.info("Selected hypervisors: %s", stringify_units(empty_units))
+
+    return empty_machines
 
 
 async def get_instance_count(unit: str, model: Model) -> int:
@@ -104,5 +109,5 @@ def stringify_units(units: Iterable[Unit]) -> str:
     :return: A comma-separated string of sorted unit names.
     :rtype: str
     """
-    sorted_unit_names = sorted([unit.name for unit in units], key=lambda name: name)
+    sorted_unit_names = sorted([unit.name for unit in units])
     return ", ".join(sorted_unit_names)

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
 from unittest.mock import MagicMock, PropertyMock, call, patch
 
 import pytest
@@ -989,7 +988,7 @@ async def test_get_upgradable_hypervisors_machines(
     analysis_result = MagicMock(spec_set=Analysis)()
     analysis_result.data_plane_machines = analysis_result.machines = machines
     analysis_result.apps_data_plane = [nova_compute]
-    mock_empty_hypervisors.return_value = [], {
+    mock_empty_hypervisors.return_value = {
         machines[f"{machine_id}"] for machine_id in empty_hypervisors
     }
     hypervisors_possible_to_upgrade = await cou_plan._get_upgradable_hypervisors_machines(
@@ -1576,66 +1575,3 @@ def test_create_upgrade_plan_failed():
 
     with pytest.raises(Exception, match="test"):
         cou_plan._create_upgrade_group([app], "victoria", "test", False)
-
-
-@pytest.mark.parametrize(
-    "cli_force, empty_hypervisors, expected_logs",
-    [
-        (
-            True,
-            {},
-            [
-                (
-                    "cou.steps.plan",
-                    logging.INFO,
-                    "Selected all hypervisors: nova-compute/0, nova-compute/1, nova-compute/2",
-                )
-            ],
-        ),
-        (
-            False,
-            {1},
-            [
-                (
-                    "cou.steps.plan",
-                    logging.INFO,
-                    "Found non-empty hypervisors: nova-compute/0, nova-compute/2",
-                ),
-                ("cou.steps.plan", logging.INFO, "Selected hypervisors: nova-compute/1"),
-            ],
-        ),
-    ],
-)
-@pytest.mark.asyncio
-@patch("cou.steps.plan._get_nova_compute_units_and_machines")
-@patch("cou.steps.plan.get_empty_hypervisors")
-async def test_log_upgradable_hypervisors(
-    mock_empty_hypervisors,
-    mock_all_hypervisors,
-    cli_force,
-    empty_hypervisors,
-    expected_logs,
-    caplog,
-):
-    all_machines = [Machine(str(i), (), ()) for i in range(1, 4)]
-    empty_machines = [Machine(str(i + 1), (), ()) for i in empty_hypervisors]
-    all_units = [
-        Unit(
-            name=f"nova-compute/{i}",
-            machine=all_machines[i],
-            workload_version="21.0.0",
-        )
-        for i in range(len(all_machines))
-    ]
-    empty_units = [unit for unit in all_units if unit.machine in empty_machines]
-
-    analysis_result = MagicMock(spec_set=Analysis)()
-
-    mock_all_hypervisors.return_value = all_units, all_machines
-    mock_empty_hypervisors.return_value = empty_units, empty_machines
-
-    with caplog.at_level(logging.INFO):
-        await cou_plan._get_upgradable_hypervisors_machines(cli_force, analysis_result)
-
-    for expected_log in expected_logs:
-        assert expected_log in caplog.record_tuples

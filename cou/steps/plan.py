@@ -597,15 +597,7 @@ async def _get_upgradable_hypervisors_machines(
         logger.info("Selected all hypervisors: %s", stringify_units(nova_compute_units))
         return nova_compute_machines
 
-    empty_units, empty_machines = await get_empty_hypervisors(
-        nova_compute_units, analysis_result.model
-    )
-    skipped_units = set(nova_compute_units) - set(empty_units)
-
-    logger.info("Found non-empty hypervisors: %s", stringify_units(skipped_units))
-    logger.info("Selected hypervisors: %s", stringify_units(empty_units))
-
-    return empty_machines
+    return await get_empty_hypervisors(nova_compute_units, analysis_result.model)
 
 
 def _get_nova_compute_units_and_machines(
