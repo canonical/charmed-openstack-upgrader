@@ -769,14 +769,15 @@ def test_extract_from_uca_source(model, config, exp_result):
     assert app._extract_from_uca_source() == exp_result
 
 
-def test_extract_from_uca_source_raise(model):
+@pytest.mark.parametrize("wrong_uca", ["cloud:focal-foo", "cloud:focal"])
+def test_extract_from_uca_source_raise(wrong_uca, model):
     """Test extraction from uca sources raises ApplicationError with invalid value."""
     app = OpenStackApplication(
         name="app",
         can_upgrade_to="",
         charm="app",
         channel="ussuri/stable",
-        config={"source": {"value": "cloud:focal-foo"}},
+        config={"source": {"value": wrong_uca}},
         machines={},
         model=model,
         origin="ch",
@@ -785,7 +786,7 @@ def test_extract_from_uca_source_raise(model):
         units={},
         workload_version="1",
     )
-    exp_msg = "'app' has an invalid 'source': cloud:focal-foo"
+    exp_msg = f"'app' has an invalid 'source': {wrong_uca}"
     with pytest.raises(ApplicationError, match=exp_msg):
         app._extract_from_uca_source()
 

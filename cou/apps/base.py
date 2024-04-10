@@ -150,7 +150,7 @@ class OpenStackApplication(Application):
             # find the OpenStack release based on ubuntu series
             return OpenStackRelease(DISTRO_TO_OPENSTACK_MAPPING[self.series])
 
-        # probably because user set a ppa or an url
+        # probably because user set a ppa or a url
         raise ApplicationError(
             f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
         )
@@ -162,9 +162,9 @@ class OpenStackApplication(Application):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        # Ex: "cloud:focal-ussuri" will result in "ussuri"
-        *_, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
+        # Ex: "cloud:focal-victoria" will result in "victoria"
         try:
+            _, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
             return OpenStackRelease(os_origin_parsed)
         except ValueError as exc:
             raise ApplicationError(
@@ -214,7 +214,7 @@ class OpenStackApplication(Application):
             if origin in self.config:
                 return origin
 
-        logger.debug("%s, has no origin setting config", self.name)
+        logger.debug("%s has no origin setting config", self.name)
         return None
 
     @property
