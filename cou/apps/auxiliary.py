@@ -275,9 +275,9 @@ class OVN(AuxiliaryApplication):
         :raises MismatchedOpenStackVersions: When the units of the app are running different
                                              OpenStack versions.
         """
-        super().upgrade_plan_sanity_checks(target, units)
         self._check_ovn_support()
         self._check_version_pinning()
+        super().upgrade_plan_sanity_checks(target, units)
 
 
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
