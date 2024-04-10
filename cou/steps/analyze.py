@@ -20,8 +20,11 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from cou.apps.base import OpenStackApplication
+from cou.apps.channel_based import ChannelBasedApplication
 from cou.apps.factory import AppFactory
+from cou.apps.subordinate import SubordinateBase
 from cou.utils import juju_utils
+from cou.utils.app_utils import stringify_class
 from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -164,7 +167,21 @@ class Analysis:
         :return: OpenStack release.
         :rtype: Optional[OpenStackRelease]
         """
-        return min((app.current_os_release for app in apps), default=None)
+        # NOTE(gabrielcocenza) Apps based on channels to identify OpenStack release cannot
+        # be considered when using latest/stable or charmstore because it's not reliable and
+        # will be considered as Ussuri.
+        apps_skipped = {
+            app
+            for app in apps
+            if isinstance(app, (ChannelBasedApplication, SubordinateBase))
+            and not app.using_release_channel
+        }
+        if apps_skipped:
+            logger.debug(
+                "%s were skipped from calculating cloud OpenStack release",
+                stringify_class(apps_skipped),
+            )
+        return min((app.current_os_release for app in set(apps) - apps_skipped), default=None)
 
     def _get_minimum_cloud_os_release(self) -> Optional[OpenStackRelease]:
         """Get the current minimum OpenStack release in the cloud.

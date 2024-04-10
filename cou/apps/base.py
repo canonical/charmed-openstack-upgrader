@@ -176,6 +176,13 @@ class OpenStackApplication(Application):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
+        if not self.using_release_channel:
+            logger.debug(
+                "'%s' cannot determine OpenStack release by the channel and "
+                "will be considered as Ussuri.",
+                self.name,
+            )
+            return OpenStackRelease("ussuri")
         # get the OpenStack release from the channel track of the application.
         return OpenStackRelease(self._get_track_from_channel(self.channel))
 
@@ -241,6 +248,16 @@ class OpenStackApplication(Application):
             os_versions[os_version].append(unit.name)
 
         return dict(os_versions)
+
+    @property
+    def using_release_channel(self) -> bool:
+        """Check if application is using release channel.
+
+        E.g of release channels: ussuri/stable, pacific/stable
+        :return: True if it is using, False otherwise
+        :rtype: bool
+        """
+        return not (self.is_from_charm_store or self.channel == LATEST_STABLE)
 
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
@@ -515,7 +532,7 @@ class OpenStackApplication(Application):
         if self.is_from_charm_store:
             return self._get_charmhub_migration_step()
         if self.channel == LATEST_STABLE:
-            return self._get_change_to_openstack_channels_step()
+            return self._get_change_to_openstack_channels_step(target)
         if self._need_current_channel_refresh(target):
             return self._get_refresh_current_channel_step()
         logger.info(
@@ -536,24 +553,32 @@ class OpenStackApplication(Application):
             ),
         )
 
-    def _get_change_to_openstack_channels_step(self) -> PreUpgradeStep:
+    def _get_change_to_openstack_channels_step(self, target: OpenStackRelease) -> PreUpgradeStep:
         """Get the step for changing to OpenStack channels.
 
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
         :return: Step for changing to OpenStack channels
         :rtype: PreUpgradeStep
         """
+        expected_current_channel = (
+            self.expected_current_channel
+            if self.using_release_channel
+            else f"{target.previous_release}/stable"
+        )
         logger.warning(
-            "Changing '%s' channel from %s to %s. This may be a charm downgrade, "
+            "Changing '%s' channel from %s to %s to upgrade to %s. This may be a charm downgrade, "
             "which is generally not supported.",
             self.name,
             self.channel,
-            self.expected_current_channel,
+            expected_current_channel,
+            target,
         )
         return PreUpgradeStep(
             f"WARNING: Changing '{self.name}' channel from {self.channel} to "
-            f"{self.expected_current_channel}. This may be a charm downgrade, "
+            f"{expected_current_channel}. This may be a charm downgrade, "
             "which is generally not supported.",
-            coro=self.model.upgrade_charm(self.name, self.expected_current_channel),
+            coro=self.model.upgrade_charm(self.name, expected_current_channel),
         )
 
     def _get_refresh_current_channel_step(self) -> PreUpgradeStep:
@@ -741,11 +766,7 @@ class OpenStackApplication(Application):
 
         :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
         """
-        if (
-            self.is_from_charm_store
-            or self.channel == LATEST_STABLE
-            or self.is_valid_track(self.channel)
-        ):
+        if not self.using_release_channel or self.is_valid_track(self.channel):
             logger.debug("%s app has proper channel %s", self.name, self.channel)
             return
 

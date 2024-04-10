@@ -15,7 +15,7 @@
 """Application utilities."""
 import json
 import logging
-from typing import Optional
+from typing import Iterable, Optional, Protocol, TypeVar
 
 from cou.exceptions import RunUpgradeError
 from cou.utils.juju_utils import Model
@@ -133,3 +133,24 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
     logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
 
     return current_osd_release
+
+
+class NamedClass(Protocol):  # pylint: disable=too-few-public-methods
+    """Class to help lint allowing stringify any object containing name."""
+
+    name: str
+
+
+NM = TypeVar("NM", bound=NamedClass)
+
+
+def stringify_class(instances: Iterable[NM]) -> str:
+    """Convert any class with name attribute into a comma-separated string of names, sorted.
+
+    :param instances: An iterable of NamedClass objects to be converted.
+    :type instances: Iterable[NamedClass]
+    :return: A comma-separated string of sorted unit names.
+    :rtype: str
+    """
+    sorted_names = sorted([instance.name for instance in instances])
+    return ", ".join(sorted_names)

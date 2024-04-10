@@ -59,6 +59,38 @@ def test_application_versionless(model):
     assert app.get_latest_os_version(units["glance-simplestreams-sync/0"]) == app.channel_codename
 
 
+def test_channel_based_application_latest_stable(model):
+    """Test application without version."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": MagicMock(spec_set=Machine)}
+    units = {
+        "glance-simplestreams-sync/0": Unit(
+            name="glance-simplestreams-sync/0",
+            workload_version="",
+            machine=machines["0"],
+        )
+    }
+    app = ChannelBasedApplication(
+        name="glance-simplestreams-sync",
+        can_upgrade_to="",
+        charm="glance-simplestreams-sync",
+        channel="latest/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="",
+    )
+    plan = app.generate_upgrade_plan(target, False)
+    print(plan)
+    assert 1 == 0
+
+
 def test_application_gnocchi_ussuri(model):
     """Test the Gnocchi ChannelBasedApplication with Ussuri."""
     machines = {"0": MagicMock(spec_set=Machine)}
