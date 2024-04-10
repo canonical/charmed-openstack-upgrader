@@ -504,6 +504,59 @@ def test_auxiliary_raise_halt_upgrade(model):
         app.generate_upgrade_plan(target, False)
 
 
+def test_auxiliary_no_origin_setting_raise_halt_upgrade(model):
+    """Test auxiliary without origin setting raise halt the plan if necessary."""
+    target = OpenStackRelease("victoria")
+    charm = "vault"
+    exp_msg = (
+        f"Application '{charm}' already configured for release equal to or greater than {target}. "
+        "Ignoring."
+    )
+    machines = {
+        "0": MagicMock(spec_set=Machine),
+        "1": MagicMock(spec_set=Machine),
+        "2": MagicMock(spec_set=Machine),
+    }
+    app = AuxiliaryApplication(
+        name=charm,
+        # no channel to refresh
+        can_upgrade_to="",
+        charm=charm,
+        channel="1.7/stable",
+        # no origin setting
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="1.7",
+                machine=machines["0"],
+            ),
+            f"{charm}/1": Unit(
+                name=f"{charm}/1",
+                workload_version="1.7",
+                machine=machines["1"],
+            ),
+            f"{charm}/2": Unit(
+                name=f"{charm}/2",
+                workload_version="1.7",
+                machine=machines["2"],
+            ),
+        },
+        workload_version="1.7",
+    )
+
+    # current OpenStack release is bigger than target
+    assert app.current_os_release == OpenStackRelease("yoga")
+
+    with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
+        app._check_application_target(target)
+
+
 def test_auxiliary_no_suitable_channel(model):
     """Test auxiliary upgrade plan not suitable channel.
 
@@ -1160,7 +1213,7 @@ async def test_ceph_osd_verify_nova_compute_no_app(model):
 def test_auxiliary_upgrade_by_unit(mock_super, model):
     """Test generating plan with units doesn't create unit Upgrade steps."""
     target = OpenStackRelease("victoria")
-    charm = "vault"
+    charm = "my-app"
     machines = {
         "0": MagicMock(spec_set=Machine),
         "1": MagicMock(spec_set=Machine),
