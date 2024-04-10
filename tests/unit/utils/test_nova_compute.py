@@ -82,10 +82,10 @@ async def test_get_empty_hypervisors(
         [f"nova-compute/{i}" for i, count in hypervisors_count if count != 0]
     )
 
-    mock_logger.info.assert_has_calls([call("Selected hypervisors: %s", selected_hypervisors)])
+    mock_logger.info.assert_called_once_with("Selected hypervisors: %s", selected_hypervisors)
     if non_empty_hypervisors:
-        mock_logger.warning.assert_has_calls(
-            [call("Found non-empty hypervisors: %s", non_empty_hypervisors)]
+        mock_logger.warning.assert_called_once_with(
+            "Found non-empty hypervisors: %s", non_empty_hypervisors
         )
 
 
