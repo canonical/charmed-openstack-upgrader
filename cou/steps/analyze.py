@@ -125,7 +125,7 @@ class Analysis:
         for name, app in juju_applications.items():
             if os_app := AppFactory.create(app):
                 apps.add(os_app)
-                logger.info("found %s application:\n%s", name, os_app)
+                logger.info("Found %s application:\n%s", name, os_app)
 
         # mypy complains that apps can have None, but we already removed.
         apps_to_upgrade_in_order = {
