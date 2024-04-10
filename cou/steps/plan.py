@@ -50,9 +50,9 @@ from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
-from cou.utils.app_utils import set_require_osd_release_option
+from cou.utils.app_utils import set_require_osd_release_option, stringify_units
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
-from cou.utils.nova_compute import get_empty_hypervisors, stringify_units
+from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 
 logger = logging.getLogger(__name__)

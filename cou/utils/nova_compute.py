@@ -16,9 +16,9 @@
 
 import asyncio
 import logging
-from typing import Iterable
 
 from cou.exceptions import HaltUpgradeExecution
+from cou.utils.app_utils import stringify_units
 from cou.utils.juju_utils import Machine, Model, Unit
 
 logger = logging.getLogger(__name__)
@@ -37,20 +37,14 @@ async def get_empty_hypervisors(units: list[Unit], model: Model) -> list[Machine
     tasks = [get_instance_count(unit.name, model) for unit in units]
     instances = await asyncio.gather(*tasks)
     units_instances = zip(units, instances)
-    empty_units = set()
-    empty_machines = []
-
-    for unit, instance_count in units_instances:
-        if instance_count == 0:
-            empty_units.add(unit)
-            empty_machines.append(unit.machine)
-
+    empty_units = {unit for unit, instances in units_instances if instances == 0}
     skipped_units = set(units) - empty_units
 
-    logger.info("Found non-empty hypervisors: %s", stringify_units(skipped_units))
+    if skipped_units:
+        logger.warning("Found non-empty hypervisors: %s", stringify_units(skipped_units))
     logger.info("Selected hypervisors: %s", stringify_units(empty_units))
 
-    return empty_machines
+    return [unit.machine for unit in empty_units]
 
 
 async def get_instance_count(unit: str, model: Model) -> int:
@@ -99,15 +93,3 @@ async def verify_empty_hypervisor(unit: Unit, model: Model) -> None:
             unit_instance_count,
         )
         raise HaltUpgradeExecution(f"Unit: {unit.name} has {unit_instance_count} VMs running")
-
-
-def stringify_units(units: Iterable[Unit]) -> str:
-    """Convert Units into a comma-separated string of unit names, sorted alphabetically.
-
-    :param units: An iterable of Unit objects to be converted.
-    :type units: Iterable[Unit]
-    :return: A comma-separated string of sorted unit names.
-    :rtype: str
-    """
-    sorted_unit_names = sorted([unit.name for unit in units])
-    return ", ".join(sorted_unit_names)

@@ -15,10 +15,10 @@
 """Application utilities."""
 import json
 import logging
-from typing import Optional
+from typing import Iterable, Optional
 
 from cou.exceptions import RunUpgradeError
-from cou.utils.juju_utils import Model
+from cou.utils.juju_utils import Model, Unit
 from cou.utils.openstack import CEPH_RELEASES
 
 logger = logging.getLogger(__name__)
@@ -133,3 +133,15 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
     logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
 
     return current_osd_release
+
+
+def stringify_units(units: Iterable[Unit]) -> str:
+    """Convert Units into a comma-separated string of unit names, sorted alphabetically.
+
+    :param units: An iterable of Unit objects to be converted.
+    :type units: Iterable[Unit]
+    :return: A comma-separated string of sorted unit names.
+    :rtype: str
+    """
+    sorted_unit_names = sorted([unit.name for unit in units])
+    return ", ".join(sorted_unit_names)
