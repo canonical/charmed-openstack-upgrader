@@ -121,10 +121,12 @@ class Analysis:
         :rtype: List[OpenStackApplication]
         """
         juju_applications = await model.get_applications()
-        apps = {AppFactory.create(app) for app in juju_applications.values()}
+        apps = set()
+        for name, app in juju_applications.items():
+            if os_app := AppFactory.create(app):
+                apps.add(os_app)
+                logger.info("found OpenStack application:\n%s", os_app)
 
-        # remove non-supported charms that return None on AppFactory.create
-        apps.discard(None)
         # mypy complains that apps can have None, but we already removed.
         apps_to_upgrade_in_order = {
             app for app in apps if app.charm in UPGRADE_ORDER  # type: ignore
