@@ -129,18 +129,18 @@ class Analysis:
 
         # mypy complains that apps can have None, but we already removed.
         apps_to_upgrade_in_order = {
-            app for app in apps if app.charm in UPGRADE_ORDER  # type: ignore
+            app for app in apps if app.charm in UPGRADE_ORDER
         }
         other_o7k_apps = apps - apps_to_upgrade_in_order
         sorted_apps_to_upgrade_in_order = sorted(
             apps_to_upgrade_in_order,
-            key=lambda app: UPGRADE_ORDER.index(app.charm),  # type: ignore
+            key=lambda app: UPGRADE_ORDER.index(app.charm),
         )
         # order by charm name to have a predictable upgrade sequence of others o7k charms.
         other_o7k_apps_sorted_by_name = sorted(
-            other_o7k_apps, key=lambda app: app.charm  # type: ignore
+            other_o7k_apps, key=lambda app: app.charm
         )
-        return sorted_apps_to_upgrade_in_order + other_o7k_apps_sorted_by_name  # type: ignore
+        return sorted_apps_to_upgrade_in_order + other_o7k_apps_sorted_by_name
 
     def __str__(self) -> str:
         """Dump as string.
