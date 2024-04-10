@@ -68,10 +68,6 @@ class OpenStackApplication(Application):
     wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
 
-    def __post_init__(self) -> None:
-        """Initialize the Application dataclass."""
-        self._verify_channel()
-
     def __hash__(self) -> int:
         """Hash magic method for Application.
 
@@ -135,64 +131,45 @@ class OpenStackApplication(Application):
 
         return yaml.dump(summary, sort_keys=False)
 
-    def _verify_channel(self) -> None:
-        """Verify app channel from current data.
-
-        :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
-        """
-        if (
-            self.is_from_charm_store
-            or self.channel == LATEST_STABLE
-            or self.is_valid_track(self.channel)
-        ):
-            logger.debug("%s app has proper channel %s", self.name, self.channel)
-            return
-
-        raise ApplicationError(
-            f"Channel: {self.channel} for charm '{self.charm}' on series "
-            f"'{self.series}' is currently not supported in this tool. Please take a look at the "
-            "documentation: "
-            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
-            "you are using the right track."
-        )
-
     @property
-    def apt_source_codename(self) -> Optional[OpenStackRelease]:
+    def apt_source_codename(self) -> OpenStackRelease:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
-        :raises ApplicationError: If os_origin_parsed is not a valid OpenStack release or os_origin
-            is in an unexpected format (ppa, url, etc).
-        :return: OpenStackRelease object or None if the app doesn't have os_origin config.
-        :rtype: Optional[OpenStackRelease]
+        :raises ApplicationError: When origin setting is not valid.
+        :return: OpenStackRelease object.
+        :rtype: OpenStackRelease
         """
-        os_origin_parsed: Optional[str]
-        # that means that the charm doesn't have "source" or "openstack-origin" config.
-        if self.origin_setting is None:
-            return None
+        #  means that the charm doesn't have origin setting config or is using empty string.
+        if not self.os_origin:
+            return self.current_os_release
 
-        # Ex: "cloud:focal-ussuri" will result in "ussuri"
         if self.os_origin.startswith("cloud"):
-            *_, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
-            try:
-                return OpenStackRelease(os_origin_parsed)
-            except ValueError as exc:
-                raise ApplicationError(
-                    f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
-                ) from exc
+            return self._extract_from_uca_source()
 
-        elif self.os_origin == "distro":
+        if self.os_origin == "distro":
             # find the OpenStack release based on ubuntu series
-            os_origin_parsed = DISTRO_TO_OPENSTACK_MAPPING[self.series]
+            return OpenStackRelease(DISTRO_TO_OPENSTACK_MAPPING[self.series])
+
+        # probably because user set a ppa or a url
+        raise ApplicationError(
+            f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
+        )
+
+    def _extract_from_uca_source(self) -> OpenStackRelease:
+        """Extract the OpenStack release from Ubuntu Cloud Archive (UCA) sources.
+
+        :raises ApplicationError: When origin setting is not valid.
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        # Ex: "cloud:focal-victoria" will result in "victoria"
+        try:
+            _, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
             return OpenStackRelease(os_origin_parsed)
-
-        elif self.os_origin == "":
-            return None
-
-        else:
-            # probably because user set a ppa or an url
+        except ValueError as exc:
             raise ApplicationError(
                 f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
-            )
+            ) from exc
 
     @property
     def channel_codename(self) -> OpenStackRelease:
@@ -224,7 +201,6 @@ class OpenStackApplication(Application):
         if origin := self.origin_setting:
             return self.config[origin].get("value", "")
 
-        logger.warning("Failed to get origin for %s, no origin config found", self.name)
         return ""
 
     @property
@@ -238,6 +214,7 @@ class OpenStackApplication(Application):
             if origin in self.config:
                 return origin
 
+        logger.debug("%s has no origin setting config", self.name)
         return None
 
     @property
@@ -367,11 +344,12 @@ class OpenStackApplication(Application):
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[Unit]], optional
-        :raises ApplicationError: When enable-auto-restarts is not enabled.
+        :raises ApplicationError: When application is wrongly configured.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :raises MismatchedOpenStackVersions: When the units of the app are running
                                              different OpenStack versions.
         """
+        self._check_channel()
         self._check_application_target(target)
         self._check_mismatched_versions(units)
         self._check_auto_restarts()
@@ -758,6 +736,27 @@ class OpenStackApplication(Application):
             description=description,
             parallel=False,
             coro=self.model.wait_for_active_idle(self.wait_timeout, apps=apps),
+        )
+
+    def _check_channel(self) -> None:
+        """Check app channel from current data.
+
+        :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
+        """
+        if (
+            self.is_from_charm_store
+            or self.channel == LATEST_STABLE
+            or self.is_valid_track(self.channel)
+        ):
+            logger.debug("%s app has proper channel %s", self.name, self.channel)
+            return
+
+        raise ApplicationError(
+            f"Channel: {self.channel} for charm '{self.charm}' on series "
+            f"'{self.series}' is currently not supported in this tool. Please take a look at the "
+            "documentation: "
+            "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
+            "you are using the right track."
         )
 
     def _check_auto_restarts(self) -> None:

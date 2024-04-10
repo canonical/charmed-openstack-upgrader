@@ -218,8 +218,8 @@ class CephMon(AuxiliaryApplication):
         )
 
 
-class Ovn(AuxiliaryApplication):
-    """Ovn generic application class."""
+class OVN(AuxiliaryApplication):
+    """OVN generic application class."""
 
     @abc.abstractmethod
     def _check_ovn_support(self) -> None:
@@ -250,6 +250,12 @@ class Ovn(AuxiliaryApplication):
 
         :raises ApplicationError: When version pinning is True
         """
+        if "enable-version-pinning" not in self.config:
+            logger.debug(
+                "OVN application: '%s' does not offer the 'enable-version-pinning' configuration.",
+                self.name,
+            )
+            return
         if self.config["enable-version-pinning"].get("value"):
             raise ApplicationError(
                 f"Cannot upgrade '{self.name}'. 'enable-version-pinning' must be set to 'false'."
@@ -269,14 +275,14 @@ class Ovn(AuxiliaryApplication):
         :raises MismatchedOpenStackVersions: When the units of the app are running different
                                              OpenStack versions.
         """
-        super().upgrade_plan_sanity_checks(target, units)
         self._check_ovn_support()
         self._check_version_pinning()
+        super().upgrade_plan_sanity_checks(target, units)
 
 
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
-class OvnPrincipal(Ovn):
-    """Ovn principal application class."""
+class OVNPrincipal(OVN):
+    """OVN principal application class."""
 
     def _check_ovn_support(self) -> None:
         """Check OVN version.
@@ -284,7 +290,7 @@ class OvnPrincipal(Ovn):
         :raises ApplicationError: When workload version is lower than 22.03.0.
         """
         for unit in self.units.values():
-            OvnPrincipal._validate_ovn_support(unit.workload_version)
+            OVNPrincipal._validate_ovn_support(unit.workload_version)
 
 
 @AppFactory.register_application(["mysql-innodb-cluster"])

@@ -10,8 +10,6 @@ running cloud and proposes an upgrade plan to the next available OpenStack relea
 
 Notes:
 
-- Currently only control plane upgrades are supported.
-
 - The tool supports upgrades from focal-ussuri to focal-yoga.
 
 Source code available on `Github`_.
@@ -37,8 +35,21 @@ In this documentation
    
    .. grid-item:: :doc:`Explanation <explanation/index>`
 
-      **Additional information** - details of upgrade phases defined in **COU**
+      **Additional information** - details of upgrade phases and scopes defined in **COU**
 
+---------
+
+Project and community
+---------------------
+
+COU is a member of the Ubuntu family. It's an open source project that
+warmly welcomes community contributions, suggestions, fixes and
+constructive feedback.
+
+* We follow the Ubuntu community `Code of conduct`_
+* Contribute to the project on `GitHub`_ (documentation contributions go under
+  the **docs/** directory)
+* GitHub is also our central hub for bug tracking and issue management
 
 .. toctree::
    :hidden:

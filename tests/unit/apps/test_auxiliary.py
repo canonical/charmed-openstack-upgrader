@@ -21,7 +21,7 @@ from cou.apps.auxiliary import (
     CephMon,
     CephOsd,
     MysqlInnodbCluster,
-    OvnPrincipal,
+    OVNPrincipal,
     RabbitMQServer,
 )
 from cou.apps.core import NovaCompute
@@ -341,61 +341,60 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
         "to see if you are using the right track."
     )
     machines = {"0": MagicMock(spec_set=Machine)}
+    app = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="3.9/stable",
+        charm="rabbitmq-server",
+        channel=channel,
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.8",
+                machine=machines["0"],
+            )
+        },
+        workload_version="3.8",
+    )
+
     with pytest.raises(ApplicationError, match=exp_msg):
-        RabbitMQServer(
-            name="rabbitmq-server",
-            can_upgrade_to="3.9/stable",
-            charm="rabbitmq-server",
-            channel=channel,
-            config={"source": {"value": "distro"}},
-            machines=machines,
-            model=model,
-            origin="ch",
-            series="focal",
-            subordinate_to=[],
-            units={
-                "rabbitmq-server/0": Unit(
-                    name="rabbitmq-server/0",
-                    workload_version="3.8",
-                    machine=machines["0"],
-                )
-            },
-            workload_version="3.8",
-        )
+        app._check_channel()
 
 
 def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
-    """Test auxiliary upgrade plan with unknown version."""
+    """Test auxiliary application with unknown workload version."""
     version = "80.5"
     charm = "rabbitmq-server"
     exp_msg = f"'{charm}' with workload version {version} has no compatible OpenStack release."
 
     machines = {"0": MagicMock(spec_set=Machine)}
+    unit = Unit(name=f"{charm}/0", workload_version=version, machine=machines["0"])
+    app = RabbitMQServer(
+        name=charm,
+        can_upgrade_to="3.8/stable",
+        charm=charm,
+        channel="3.8/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={unit.name: unit},
+        workload_version=version,
+    )
+
     with pytest.raises(ApplicationError, match=exp_msg):
-        RabbitMQServer(
-            name=charm,
-            can_upgrade_to="3.8/stable",
-            charm=charm,
-            channel="3.8/stable",
-            config={"source": {"value": "distro"}},
-            machines=machines,
-            model=model,
-            origin="ch",
-            series="focal",
-            subordinate_to=[],
-            units={
-                f"{charm}/0": Unit(
-                    name=f"{charm}/0",
-                    workload_version=version,
-                    machine=machines["0"],
-                )
-            },
-            workload_version=version,
-        )
+        app.get_latest_os_version(unit)
 
 
 def test_auxiliary_raise_error_unknown_series(model):
-    """Test auxiliary upgrade plan with unknown series."""
+    """Test auxiliary application with unknown series."""
     series = "foo"
     channel = "3.8/stable"
     exp_msg = (
@@ -405,27 +404,28 @@ def test_auxiliary_raise_error_unknown_series(model):
         "to see if you are using the right track."
     )
     machines = {"0": MagicMock(spec_set=Machine)}
+    app = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="3.9/stable",
+        charm="rabbitmq-server",
+        channel=channel,
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series=series,
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.8",
+                machine=machines["0"],
+            )
+        },
+        workload_version="3.8",
+    )
     with pytest.raises(ApplicationError, match=exp_msg):
-        RabbitMQServer(
-            name="rabbitmq-server",
-            can_upgrade_to="3.9/stable",
-            charm="rabbitmq-server",
-            channel=channel,
-            config={"source": {"value": "distro"}},
-            machines=machines,
-            model=model,
-            origin="ch",
-            series=series,
-            subordinate_to=[],
-            units={
-                "rabbitmq-server/0": Unit(
-                    name="rabbitmq-server/0",
-                    workload_version="3.8",
-                    machine=machines["0"],
-                )
-            },
-            workload_version="3.8",
-        )
+        app._check_channel()
 
 
 @patch("cou.apps.core.OpenStackApplication.current_os_release")
@@ -435,29 +435,36 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
     Using OpenStack release version that is not on openstack_to_track_mapping.csv table.
     """
     current_os_release.return_value = OpenStackRelease("diablo")
-
+    exp_error_msg = (
+        "Channel: 3.8/stable for charm 'rabbitmq-server' on series 'focal' is currently not "
+        "supported in this tool. Please take a look at the documentation: "
+        "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if you "
+        "are using the right track."
+    )
     machines = {"0": MagicMock(spec_set=Machine)}
-    with pytest.raises(ApplicationError):
-        RabbitMQServer(
-            name="rabbitmq-server",
-            can_upgrade_to="",
-            charm="rabbitmq-server",
-            channel="3.8/stable",
-            config={"source": {"value": "distro"}},
-            machines=machines,
-            model=model,
-            origin="ch",
-            series="focal",
-            subordinate_to=[],
-            units={
-                "rabbitmq-server/0": Unit(
-                    name="rabbitmq-server/0",
-                    workload_version="3.8",
-                    machine=machines["0"],
-                )
-            },
-            workload_version="3.8",
-        )
+    app = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="",
+        charm="rabbitmq-server",
+        channel="3.8/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.8",
+                machine=machines["0"],
+            )
+        },
+        workload_version="3.8",
+    )
+
+    with pytest.raises(ApplicationError, match=exp_error_msg):
+        app._check_channel()
 
 
 def test_auxiliary_raise_halt_upgrade(model):
@@ -495,6 +502,59 @@ def test_auxiliary_raise_halt_upgrade(model):
 
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
         app.generate_upgrade_plan(target, False)
+
+
+def test_auxiliary_no_origin_setting_raise_halt_upgrade(model):
+    """Test auxiliary without origin setting raise halt the plan if necessary."""
+    target = OpenStackRelease("victoria")
+    charm = "vault"
+    exp_msg = (
+        f"Application '{charm}' already configured for release equal to or greater than {target}. "
+        "Ignoring."
+    )
+    machines = {
+        "0": MagicMock(spec_set=Machine),
+        "1": MagicMock(spec_set=Machine),
+        "2": MagicMock(spec_set=Machine),
+    }
+    app = AuxiliaryApplication(
+        name=charm,
+        # no channel to refresh
+        can_upgrade_to="",
+        charm=charm,
+        channel="1.7/stable",
+        # no origin setting
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="1.7",
+                machine=machines["0"],
+            ),
+            f"{charm}/1": Unit(
+                name=f"{charm}/1",
+                workload_version="1.7",
+                machine=machines["1"],
+            ),
+            f"{charm}/2": Unit(
+                name=f"{charm}/2",
+                workload_version="1.7",
+                machine=machines["2"],
+            ),
+        },
+        workload_version="1.7",
+    )
+
+    # current OpenStack release is bigger than target
+    assert app.current_os_release == OpenStackRelease("yoga")
+
+    with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
+        app._check_application_target(target)
 
 
 def test_auxiliary_no_suitable_channel(model):
@@ -731,10 +791,10 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
 
 
 def test_ovn_principal(model):
-    """Test the correctness of instantiating OvnPrincipal."""
+    """Test the correctness of instantiating OVNPrincipal."""
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnPrincipal(
+    app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.06/stable",
         charm=charm,
@@ -763,7 +823,7 @@ def test_ovn_principal(model):
 
 
 def test_ovn_workload_ver_lower_than_22_principal(model):
-    """Test the OvnPrincipal with lower version than 22."""
+    """Test the OVNPrincipal with lower version than 22."""
     target = OpenStackRelease("victoria")
     charm = "ovn-central"
     exp_msg = (
@@ -773,7 +833,7 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
         "ovn-upgrade-2203.html"
     )
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnPrincipal(
+    app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.03/stable",
         charm=charm,
@@ -799,12 +859,12 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
 
 
 def test_ovn_version_pinning_principal(model):
-    """Test the OvnPrincipal when enable-version-pinning is set to True."""
+    """Test the OVNPrincipal when enable-version-pinning is set to True."""
     target = OpenStackRelease("victoria")
-    charm = "ovn-central"
+    charm = "ovn-dedicated-chassis"
     exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnPrincipal(
+    app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.03/stable",
         charm=charm,
@@ -831,7 +891,7 @@ def test_ovn_version_pinning_principal(model):
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])
 def test_ovn_no_compatible_os_release(channel, model):
-    """Test the OvnPrincipal with not compatible os release."""
+    """Test the OVNPrincipal with not compatible os release."""
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=Machine)}
     exp_msg = (
@@ -842,7 +902,7 @@ def test_ovn_no_compatible_os_release(channel, model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        OvnPrincipal(
+        app = OVNPrincipal(
             name=charm,
             can_upgrade_to="quincy/stable",
             charm=charm,
@@ -862,14 +922,78 @@ def test_ovn_no_compatible_os_release(channel, model):
             },
             workload_version="22.03",
         )
+        app._check_channel()
+
+
+@pytest.mark.parametrize(
+    "app, config",
+    [
+        (
+            "ovn-dedicated-chassis",
+            {"source": {"value": "distro"}, "enable-version-pinning": {"value": False}},
+        ),
+        # ovn-central doesn't have enable-version-pinning configuration
+        ("ovn-central", {"source": {"value": "distro"}}),
+    ],
+)
+def test_ovn_check_version_pinning_version_pinning_config_False(app, config, model):
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = OVNPrincipal(
+        name=app,
+        can_upgrade_to="",
+        charm=app,
+        channel="22.03/stable",
+        config=config,
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{app}/0": Unit(
+                name=f"{app}/0",
+                workload_version="22.03",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03",
+    )
+    assert app._check_version_pinning() is None
+
+
+def test_ovn_check_version_pinning_version_pinning_config_True(model):
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = OVNPrincipal(
+        name="ovn-dedicated-chassis",
+        can_upgrade_to="",
+        charm="ovn-dedicated-chassis",
+        channel="22.03/stable",
+        config={"source": {"value": "distro"}, "enable-version-pinning": {"value": True}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "ovn-dedicated-chassis/0": Unit(
+                name="ovn-dedicated-chassis/0",
+                workload_version="22.03",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03",
+    )
+    exp_msg = f"Cannot upgrade '{app.name}'. 'enable-version-pinning' must be set to 'false'."
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app._check_version_pinning()
 
 
 def test_ovn_principal_upgrade_plan(model):
-    """Test generating plan for OvnPrincipal."""
+    """Test generating plan for OVNPrincipal."""
     target = OpenStackRelease("victoria")
-    charm = "ovn-central"
+    charm = "ovn-dedicated-chassis"
     machines = {"0": MagicMock(spec_set=Machine)}
-    app = OvnPrincipal(
+    app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.06/stable",
         charm=charm,
@@ -1089,7 +1213,7 @@ async def test_ceph_osd_verify_nova_compute_no_app(model):
 def test_auxiliary_upgrade_by_unit(mock_super, model):
     """Test generating plan with units doesn't create unit Upgrade steps."""
     target = OpenStackRelease("victoria")
-    charm = "vault"
+    charm = "my-app"
     machines = {
         "0": MagicMock(spec_set=Machine),
         "1": MagicMock(spec_set=Machine),
@@ -1280,10 +1404,9 @@ def test_ceph_osd_upgrade_plan(model):
         ),
     ],
 )
-@patch("cou.apps.auxiliary.AuxiliaryApplication._verify_channel", return_value=None)
 @patch("cou.apps.auxiliary.TRACK_TO_OPENSTACK_MAPPING")
 def test_need_current_channel_refresh_auxiliary(
-    mock_track_os_mapping, _, model, can_upgrade_to, compatible_os_releases, exp_result
+    mock_track_os_mapping, model, can_upgrade_to, compatible_os_releases, exp_result
 ):
     mock_track_os_mapping.__getitem__.return_value = compatible_os_releases
     target = OpenStackRelease("victoria")
