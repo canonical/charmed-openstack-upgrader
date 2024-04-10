@@ -14,7 +14,7 @@
 
 """Test hypervisor package."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import NovaCompute
@@ -46,16 +46,20 @@ def test_upgrade_plan_sanity_checks():
     """Test run app sanity checks."""
     target = OpenStackRelease("victoria")
     machines = [Machine(f"{i}", (), f"az{i}") for i in range(3)]
-    app1 = _generate_app("app1")
-    app1.units = {f"app1/{i}": Unit(f"app1/{i}", machines[i], "1") for i in range(3)}
-    app2 = _generate_app("app2")
-    app1.units = {f"app2/{i}": Unit(f"app2/{i}", machines[i], "1") for i in range(3)}
-    planner = HypervisorUpgradePlanner([app1, app2], machines)
+    app_units = {
+        "app1": [Unit(f"app1/{i}", machines[i], "1") for i in range(3)],
+        "app2": [Unit(f"app2/{i}", machines[i], "1") for i in range(3)],
+    }
+    apps = [_generate_app("app1"), _generate_app("app2"), _generate_app("app3")]
+    # Note(rgildein): it contains only two apps, so app3 should be skipped
+    group = HypervisorGroup("test", app_units)
+    planner = HypervisorUpgradePlanner(apps, machines)
 
-    planner._upgrade_plan_sanity_checks(target)
+    planner._upgrade_plan_sanity_checks(target, group)
 
-    app1.upgrade_plan_sanity_checks.assert_called_once_with(target, list(app1.units.values()))
-    app2.upgrade_plan_sanity_checks.assert_called_once_with(target, list(app2.units.values()))
+    apps[0].upgrade_plan_sanity_checks.assert_called_once_with(target, app_units["app1"])
+    apps[1].upgrade_plan_sanity_checks.assert_called_once_with(target, app_units["app2"])
+    apps[2].upgrade_plan_sanity_checks.assert_not_called()
 
 
 def test_generate_pre_upgrade_steps():
@@ -137,8 +141,9 @@ def test_generate_upgrade_plan(
 ):
     """Test generating upgrade plan with hypervisors upgrade planer."""
     target = OpenStackRelease("victoria")
-    group = MagicMock(spec_set=HypervisorGroup)()
-    get_azs.return_value = {"az0": group}
+    group1 = MagicMock(spec_set=HypervisorGroup)()
+    group2 = MagicMock(spec_set=HypervisorGroup)()
+    get_azs.return_value = {"az0": group1, "az1": group2}
     # Note(rgildein): We need to define return value, because plan will not add empty steps.
     pre_upgrade_steps.return_value = [PreUpgradeStep("pre-upgrade", coro=AsyncMock())]
     upgrade_steps.return_value = [UpgradeStep("upgrade", coro=AsyncMock())]
@@ -149,15 +154,15 @@ def test_generate_upgrade_plan(
 
     plan = planner.generate_upgrade_plan(target, False)
 
-    sanity_checks.assert_called_once_with(target)
-    pre_upgrade_steps.assert_called_once_with(target, group)
-    upgrade_steps.assert_called_once_with(target, False, group)
-    post_upgrade_steps.assert_called_once_with(target, group)
+    sanity_checks.assert_has_calls([call(target, group1), call(target, group2)])
+    pre_upgrade_steps.assert_has_calls([call(target, group1), call(target, group2)])
+    upgrade_steps.assert_has_calls([call(target, False, group1), call(target, False, group2)])
+    post_upgrade_steps.assert_has_calls([call(target, group1), call(target, group2)])
 
     assert plan.description == "Upgrading all applications deployed on machines with hypervisor."
-    assert len(plan.sub_steps) == 1
+    assert len(plan.sub_steps) == 2
     assert isinstance(plan.sub_steps[0], HypervisorUpgradePlan)
-    assert plan.sub_steps[0].description == f"Upgrade plan for '{group.name}' to '{target}'"
+    assert plan.sub_steps[0].description == f"Upgrade plan for '{group1.name}' to '{target}'"
     assert (
         plan.sub_steps[0].sub_steps
         == pre_upgrade_steps.return_value

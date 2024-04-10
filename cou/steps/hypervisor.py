@@ -160,19 +160,30 @@ class HypervisorUpgradePlanner:
 
         return azs
 
-    def _upgrade_plan_sanity_checks(self, target: OpenStackRelease) -> None:
-        """Run sanity checks for al applications.
+    def _upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, group: HypervisorGroup
+    ) -> None:
+        """Run sanity checks before generating upgrade plan for hypervisor group.
 
         :param target: OpenStack codename to upgrade.
         :type target: OpenStackRelease
+        :param group: HypervisorGroup object
+        :type group: HypervisorGroup
         """
         for app in self.apps:
-            logger.info("running sanity checks for '%s'", app.name)
+            if app.name not in group.app_units:
+                logger.debug(
+                    "skipping application %s because it is not part of group %s",
+                    app.name,
+                    group.name,
+                )
+                continue
+
+            units = group.app_units[app.name]
+            logger.info("running sanity checks for %s units of %s app", app.name, units)
             # Note(rgildein): We don't catch the error here because we shouldn't generate any
             #                 update plan if sanity checks for any application fails.
-            # Note(rgildein): Running sanity checks for all units of applications. We cannot pass
-            #                 None here, since _check_mismatched_versions could be raised.
-            app.upgrade_plan_sanity_checks(target, list(app.units.values()))
+            app.upgrade_plan_sanity_checks(target, units)
 
     def _generate_pre_upgrade_steps(
         self, target: OpenStackRelease, group: HypervisorGroup
@@ -277,15 +288,15 @@ class HypervisorUpgradePlanner:
         :return: Full upgrade plan
         :rtype: UpgradePlan
         """
-        # sanity checks
-        logger.debug("running sanity checks")
-        self._upgrade_plan_sanity_checks(target)
-
         plan = UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
         for az, group in self.get_azs(target).items():
             hypervisor_plan = HypervisorUpgradePlan(
                 f"Upgrade plan for '{group.name}' to '{target}'"
             )
+
+            # sanity checks
+            logger.debug("running sanity checks for %s AZ", az)
+            self._upgrade_plan_sanity_checks(target, group)
 
             # pre upgrade steps
             logger.debug("generating pre-upgrade steps for %s AZ", az)
