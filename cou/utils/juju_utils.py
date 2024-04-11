@@ -280,7 +280,7 @@ class Model:
                 apps=tuple(
                     unit.application
                     for unit in self._model.units.values()
-                    if unit.machine.id == machine.id
+                    if hasattr(unit.machine, "id") and unit.machine.id == machine.id
                 ),
                 az=machine.hardware_characteristics.get("availability-zone"),
             )
@@ -370,6 +370,7 @@ class Model:
                 workload_version=status.workload_version,
             )
             for app, status in full_status.applications.items()
+            if status.status.info != "waiting for machine"
         }
 
     @retry(no_retry_exceptions=(ApplicationNotFound,))
