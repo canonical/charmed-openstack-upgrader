@@ -18,6 +18,7 @@ import pytest
 
 from cou.apps.auxiliary import RabbitMQServer
 from cou.apps.base import OpenStackApplication
+from cou.apps.channel_based import ChannelBasedApplication
 from cou.apps.core import Keystone
 from cou.apps.subordinate import SubordinateApplication
 from cou.steps import analyze
@@ -536,3 +537,153 @@ def test_split_apps(exp_control_plane, exp_data_plane):
     control_plane, data_plane = Analysis._split_apps(all_apps)
     assert exp_control_plane == control_plane
     assert exp_data_plane == data_plane
+
+
+def test_min_os_release_apps_release_channel(model):
+    """Test to evaluate the Openstack release using release channels on apps."""
+    machines = {f"{i}": generate_cou_machine(f"{i}") for i in range(3)}
+    keystone = Keystone(
+        name="keystone",
+        can_upgrade_to="",
+        charm="keystone",
+        channel="wallaby/stable",
+        config={"source": {"value": "cloud:focal-wallaby"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "keystone/0": Unit(
+                name="keystone/0",
+                workload_version="19.1.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="19.1.0",
+    )
+
+    ch_subordinate_using_release = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to="",
+        charm="keystone-ldap",
+        channel="victoria/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["keystone"],
+        units={},
+        workload_version="1",
+    )
+
+    channel_app_using_release = ChannelBasedApplication(
+        name="channel_app_using_release",
+        can_upgrade_to="",
+        charm="channel_app_using_release",
+        channel="ussuri/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "channel_app_using_release": Unit(
+                name="channel_app_using_release",
+                workload_version="",
+                machine=machines["1"],
+            )
+        },
+        workload_version="",
+    )
+
+    assert keystone.current_os_release == "wallaby"
+    assert ch_subordinate_using_release.current_os_release == "victoria"
+    assert channel_app_using_release.current_os_release == "ussuri"
+
+    # channel_app_using_release and ch_subordinate_using_release are considered because are
+    # using release channel
+    assert (
+        Analysis.min_os_release_apps(
+            [keystone, channel_app_using_release, ch_subordinate_using_release]
+        )
+        == "ussuri"
+    )
+
+    assert Analysis.min_os_release_apps([keystone, ch_subordinate_using_release]) == "victoria"
+
+
+def test_min_os_release_apps_not_release_channel(model):
+    """Test to evaluate the Openstack release not using release channels on apps."""
+    machines = {f"{i}": generate_cou_machine(f"{i}") for i in range(3)}
+    keystone_latest_stable = Keystone(
+        name="keystone",
+        can_upgrade_to="",
+        charm="keystone",
+        channel="latest/stable",
+        config={"source": {"value": "cloud:focal-wallaby"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "keystone/0": Unit(
+                name="keystone/0",
+                workload_version="19.1.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="19.1.0",
+    )
+
+    cs_subordinate = SubordinateApplication(
+        name="keystone-ldap",
+        can_upgrade_to="",
+        charm="keystone-ldap",
+        channel="stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="cs",
+        series="focal",
+        subordinate_to=["keystone"],
+        units={},
+        workload_version="1",
+    )
+
+    channel_app_latest_stable = ChannelBasedApplication(
+        name="channel_app_latest_stable",
+        can_upgrade_to="",
+        charm="channel_app_latest_stable",
+        channel="latest/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "channel_app_latest_stable/0": Unit(
+                name="channel_app_latest_stable/0",
+                workload_version="",
+                machine=machines["1"],
+            )
+        },
+        workload_version="",
+    )
+
+    assert keystone_latest_stable.current_os_release == "wallaby"
+    assert cs_subordinate.current_os_release == "ussuri"
+    assert channel_app_latest_stable.current_os_release == "ussuri"
+
+    # channel_app_latest_stable is skipped because is using latest/stable
+    # cs_subordinate is disconsidered because is from charmstore
+    assert (
+        Analysis.min_os_release_apps(
+            [keystone_latest_stable, channel_app_latest_stable, cs_subordinate]
+        )
+        == "wallaby"
+    )

@@ -23,7 +23,7 @@ from cou.steps import (
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import assert_steps
+from tests.unit.utils import assert_steps, dedent_plan
 
 
 def test_application_versionless(model):
@@ -61,7 +61,20 @@ def test_application_versionless(model):
 
 def test_channel_based_application_latest_stable(model):
     """Test application without version."""
-    target = OpenStackRelease("victoria")
+    target = OpenStackRelease("wallaby")
+
+    exp_plan = dedent_plan(
+        """\
+        Upgrade plan for 'glance-simplestreams-sync' to 'wallaby'
+            Upgrade software packages of 'glance-simplestreams-sync' from the current APT repositories
+                Upgrade software packages on unit 'glance-simplestreams-sync/0'
+            WARNING: Changing 'glance-simplestreams-sync' channel from latest/stable to victoria/stable. \
+This may be a charm downgrade, which is generally not supported.
+            Upgrade 'glance-simplestreams-sync' to the new channel: 'wallaby/stable'
+            Change charm config of 'glance-simplestreams-sync' 'openstack-origin' to 'cloud:focal-wallaby'
+    """  # noqa: E501 line too long
+    )
+
     machines = {"0": MagicMock(spec_set=Machine)}
     units = {
         "glance-simplestreams-sync/0": Unit(
@@ -86,9 +99,12 @@ def test_channel_based_application_latest_stable(model):
         units=units,
         workload_version="",
     )
+    # app is considered ussuri because is using latest/stable, but it won't be considered to
+    # calculate the cloud minimum OpenStack release. It will refresh the charm channel to whatever
+    # the minimum version of other components.
+    assert app.current_os_release == "ussuri"
     plan = app.generate_upgrade_plan(target, False)
-    print(plan)
-    assert 1 == 0
+    assert str(plan) == exp_plan
 
 
 def test_application_gnocchi_ussuri(model):

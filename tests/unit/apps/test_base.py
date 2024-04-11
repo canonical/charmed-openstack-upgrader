@@ -541,6 +541,7 @@ def test_get_charmhub_migration_step(current_os_release, model):
 def test_get_change_to_openstack_channels_step(current_os_release, model):
     """Applications using latest/stable should be switched to a release-specific channel."""
     current_os_release.return_value = OpenStackRelease("ussuri")
+    target = OpenStackRelease("victoria")
 
     app = OpenStackApplication(
         name="app",
@@ -556,7 +557,7 @@ def test_get_change_to_openstack_channels_step(current_os_release, model):
         units={},
         workload_version="1",
     )
-    assert app._get_change_to_openstack_channels_step() == PreUpgradeStep(
+    assert app._get_change_to_openstack_channels_step(target) == PreUpgradeStep(
         f"WARNING: Changing '{app.name}' channel from {app.channel} to "
         f"{app.expected_current_channel}. This may be a charm downgrade, "
         "which is generally not supported.",
@@ -696,7 +697,7 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
     assert app._get_refresh_charm_step(target) == expected_result
 
     mock_ch_migration.assert_not_called()
-    mock_change_os_channels.assert_called_once()
+    mock_change_os_channels.assert_called_once_with(target)
     mock_refresh_current_channel.assert_not_called()
 
 
@@ -772,3 +773,27 @@ def test_need_current_channel_refresh(model, can_upgrade_to, channel, exp_result
         workload_version="1",
     )
     assert app._need_current_channel_refresh(target) is exp_result
+
+
+@pytest.mark.parametrize(
+    "channel, origin, exp_result",
+    [("latest/stable", "ch", False), ("ussuri/stable", "ch", True), ("stable", "cs", False)],
+)
+def test_using_release_channel(model, channel, origin, exp_result):
+    """Test if application is using release channel."""
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+
+    assert app.using_release_channel is exp_result

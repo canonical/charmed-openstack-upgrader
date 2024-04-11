@@ -162,6 +162,9 @@ class Analysis:
     def min_os_release_apps(apps: list[OpenStackApplication]) -> Optional[OpenStackRelease]:
         """Get the minimal OpenStack release from a list of applications.
 
+        - subordinates or channel based apps are not considered if not using release channels
+        - other apps are considered even if not using release channels
+
         :param apps: Applications.
         :type apps: list[OpenStackApplication]
         :return: OpenStack release.
