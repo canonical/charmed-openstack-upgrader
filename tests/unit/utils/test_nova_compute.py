@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -64,15 +63,30 @@ async def test_get_instance_count_invalid_result(model, result_key, value):
     ],
 )
 @pytest.mark.asyncio
+@patch("cou.utils.nova_compute.logger")
 @patch("cou.utils.nova_compute.get_instance_count")
 async def test_get_empty_hypervisors(
-    mock_instance_count, hypervisors_count, expected_result, model
+    mock_instance_count, mock_logger, hypervisors_count, expected_result, model
 ):
     mock_instance_count.side_effect = [count for _, count in hypervisors_count]
     result = await nova_compute.get_empty_hypervisors(
         [_mock_nova_unit(nova_unit) for nova_unit, _ in hypervisors_count], model
     )
+
     assert {machine.machine_id for machine in result} == expected_result
+
+    selected_hypervisors = ", ".join(
+        [f"nova-compute/{i}" for i, count in hypervisors_count if count == 0]
+    )
+    non_empty_hypervisors = ", ".join(
+        [f"nova-compute/{i}" for i, count in hypervisors_count if count != 0]
+    )
+
+    mock_logger.info.assert_called_once_with("Selected hypervisors: %s", selected_hypervisors)
+    if non_empty_hypervisors:
+        mock_logger.warning.assert_called_once_with(
+            "Found non-empty hypervisors: %s", non_empty_hypervisors
+        )
 
 
 @pytest.mark.parametrize("instance_count", [1, 10, 50])
