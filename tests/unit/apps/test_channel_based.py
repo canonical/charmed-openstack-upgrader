@@ -60,7 +60,7 @@ def test_application_versionless(model):
 
 
 def test_channel_based_application_latest_stable(model):
-    """Test application without version."""
+    """Test channel based application using latest/stable channel."""
     target = OpenStackRelease("wallaby")
 
     exp_plan = dedent_plan(
