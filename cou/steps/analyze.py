@@ -24,7 +24,7 @@ from cou.apps.channel_based import ChannelBasedApplication
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateBase
 from cou.utils import juju_utils
-from cou.utils.app_utils import stringify_class
+from cou.utils.app_utils import stringify_classes
 from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ class Analysis:
         if apps_skipped:
             logger.debug(
                 "%s were skipped from calculating cloud OpenStack release",
-                stringify_class(apps_skipped),
+                stringify_classes(apps_skipped),
             )
         return min((app.current_os_release for app in set(apps) - apps_skipped), default=None)
 

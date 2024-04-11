@@ -18,6 +18,7 @@ import asyncio
 import logging
 
 from cou.exceptions import HaltUpgradeExecution
+from cou.utils.app_utils import stringify_classes
 from cou.utils.juju_utils import Machine, Model, Unit
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,14 @@ async def get_empty_hypervisors(units: list[Unit], model: Model) -> list[Machine
     tasks = [get_instance_count(unit.name, model) for unit in units]
     instances = await asyncio.gather(*tasks)
     units_instances = zip(units, instances)
-    return [unit.machine for unit, instances in units_instances if instances == 0]
+    empty_units = {unit for unit, instances in units_instances if instances == 0}
+    skipped_units = set(units) - empty_units
+
+    if skipped_units:
+        logger.warning("Found non-empty hypervisors: %s", stringify_classes(skipped_units))
+    logger.info("Selected hypervisors: %s", stringify_classes(empty_units))
+
+    return [unit.machine for unit in empty_units]
 
 
 async def get_instance_count(unit: str, model: Model) -> int:
