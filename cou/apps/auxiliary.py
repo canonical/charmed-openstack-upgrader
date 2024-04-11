@@ -112,13 +112,9 @@ class AuxiliaryApplication(OpenStackApplication):
         :raises ApplicationError: When cannot identify suitable OpenStack release codename
                                   based on the track of the charm channel.
         """
-        if self.is_from_charm_store:
+        if not self.using_release_channel:
             logger.debug(
-                (
-                    "'Application %s' installed from charm store; assuming Ussuri as the "
-                    "underlying version."
-                ),
-                self.name,
+                "%s cannot determine OpenStack release by channel. Assuming as Ussuri", self.name
             )
             return OpenStackRelease("ussuri")
 

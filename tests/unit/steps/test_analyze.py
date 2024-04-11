@@ -542,6 +542,7 @@ def test_split_apps(exp_control_plane, exp_data_plane):
 def test_min_os_release_apps_release_channel(model):
     """Test to evaluate the Openstack release using release channels on apps."""
     machines = {f"{i}": generate_cou_machine(f"{i}") for i in range(3)}
+
     keystone = Keystone(
         name="keystone",
         can_upgrade_to="",
@@ -561,6 +562,27 @@ def test_min_os_release_apps_release_channel(model):
             )
         },
         workload_version="19.1.0",
+    )
+
+    rmq = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="",
+        charm="rabbitmq-server",
+        channel="3.8/stable",
+        config={"source": {"value": "cloud:focal-wallaby"}},
+        machines={"2": machines["2"]},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.8",
+                machine=machines["2"],
+            )
+        },
+        workload_version="3.8",
     )
 
     ch_subordinate_using_release = SubordinateApplication(
@@ -600,19 +622,29 @@ def test_min_os_release_apps_release_channel(model):
     )
 
     assert keystone.current_os_release == "wallaby"
+    assert keystone.channel_codename == "wallaby"
+
+    assert rmq.current_os_release == "yoga"
+    assert rmq.channel_codename == "yoga"
+
     assert ch_subordinate_using_release.current_os_release == "victoria"
+    assert ch_subordinate_using_release.channel_codename == "victoria"
+
     assert channel_app_using_release.current_os_release == "ussuri"
+    assert channel_app_using_release.channel_codename == "ussuri"
 
     # channel_app_using_release and ch_subordinate_using_release are considered because are
     # using release channel
     assert (
         Analysis.min_os_release_apps(
-            [keystone, channel_app_using_release, ch_subordinate_using_release]
+            [keystone, rmq, channel_app_using_release, ch_subordinate_using_release]
         )
         == "ussuri"
     )
 
-    assert Analysis.min_os_release_apps([keystone, ch_subordinate_using_release]) == "victoria"
+    assert (
+        Analysis.min_os_release_apps([keystone, rmq, ch_subordinate_using_release]) == "victoria"
+    )
 
 
 def test_min_os_release_apps_not_release_channel(model):
@@ -637,6 +669,27 @@ def test_min_os_release_apps_not_release_channel(model):
             )
         },
         workload_version="19.1.0",
+    )
+
+    rmq_latest_stable = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="",
+        charm="rabbitmq-server",
+        channel="latest/stable",
+        config={"source": {"value": "distro"}},
+        machines={"0": machines["0"]},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.8",
+                machine=machines["0"],
+            )
+        },
+        workload_version="3.8",
     )
 
     cs_subordinate = SubordinateApplication(
@@ -676,14 +729,29 @@ def test_min_os_release_apps_not_release_channel(model):
     )
 
     assert keystone_latest_stable.current_os_release == "wallaby"
+    assert keystone_latest_stable.channel_codename == "ussuri"
+
+    assert rmq_latest_stable.current_os_release == "yoga"
+    assert rmq_latest_stable.channel_codename == "ussuri"
+
     assert cs_subordinate.current_os_release == "ussuri"
+    assert cs_subordinate.channel_codename == "ussuri"
+
     assert channel_app_latest_stable.current_os_release == "ussuri"
+    assert channel_app_latest_stable.channel_codename == "ussuri"
 
     # channel_app_latest_stable is skipped because is using latest/stable
     # cs_subordinate is disconsidered because is from charmstore
     assert (
         Analysis.min_os_release_apps(
-            [keystone_latest_stable, channel_app_latest_stable, cs_subordinate]
+            [keystone_latest_stable, rmq_latest_stable, channel_app_latest_stable, cs_subordinate]
         )
         == "wallaby"
+    )
+
+    assert (
+        Analysis.min_os_release_apps(
+            [rmq_latest_stable, channel_app_latest_stable, cs_subordinate]
+        )
+        == "yoga"
     )

@@ -180,11 +180,10 @@ class OpenStackApplication(Application):
         """
         if not self.using_release_channel:
             logger.debug(
-                "'%s' cannot determine OpenStack release by the channel and "
-                "will be considered as Ussuri.",
-                self.name,
+                "%s cannot determine OpenStack release by channel. Assuming as Ussuri", self.name
             )
             return OpenStackRelease("ussuri")
+
         # get the OpenStack release from the channel track of the application.
         return OpenStackRelease(self._get_track_from_channel(self.channel))
 
