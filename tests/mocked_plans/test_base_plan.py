@@ -22,11 +22,21 @@ from cou.steps.plan import generate_plan
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "file_name",
+    [
+        "base.yaml",
+        "ceph-osd-with-nova-compute-focal.yaml",
+        "ceph-osd-with-nova-compute-jammy.yaml",
+        "example-cloud-1.yaml",
+        "example-cloud-2.yaml",
+    ],
+)
 @patch("cou.utils.nova_compute.get_instance_count", return_value=0)
-async def test_base_plan(_, sample_plans):
+async def test_base_plan(_, file_name, sample_plans):
     """Testing the base plans."""
     args = CLIargs("plan", auto_approve=True)
-    model, exp_plan = sample_plans["base.yaml"]
+    model, exp_plan = sample_plans[file_name]
 
     analysis_results = await Analysis.create(model)
     plan = await generate_plan(analysis_results, args)
