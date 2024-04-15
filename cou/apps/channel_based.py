@@ -38,6 +38,24 @@ class ChannelBasedApplication(OpenStackApplication):
         """
         return self.channel_codename
 
+    def expected_current_channel(self, target: OpenStackRelease) -> str:
+        """Return the expected current channel.
+
+        Expected current channel is the channel that the application is suppose to be using based
+        on the current series, workload version and, by consequence, the OpenStack release
+        identified.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :return: The expected current channel of the application. E.g: "ussuri/stable"
+        :rtype: str
+        """
+        return (
+            f"{target.previous_release}/stable"
+            if self.using_non_release_channel
+            else f"{self.current_os_release.codename}/stable"
+        )
+
     @property
     def current_os_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.

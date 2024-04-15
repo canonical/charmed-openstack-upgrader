@@ -50,7 +50,7 @@ from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
-from cou.utils.app_utils import set_require_osd_release_option, stringify_classes
+from cou.utils.app_utils import set_require_osd_release_option, stringify_objects
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
@@ -594,7 +594,7 @@ async def _get_upgradable_hypervisors_machines(
     )
 
     if cli_force:
-        logger.info("Selected all hypervisors: %s", stringify_classes(nova_compute_units))
+        logger.info("Selected all hypervisors: %s", stringify_objects(nova_compute_units))
         return nova_compute_machines
 
     return await get_empty_hypervisors(nova_compute_units, analysis_result.model)

@@ -135,13 +135,13 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
     return current_osd_release
 
 
-def stringify_classes(instances: Iterable[Any]) -> str:
-    """Convert any iterable of classes into a comma-separated string of names, sorted.
+def stringify_objects(objs: Iterable[Any]) -> str:
+    """Convert any iterable of objects into a comma-separated string of names, sorted.
 
-    :param instances: An iterable of objects to be converted that has name attribute.
-    :type instances: Iterable[NamedClass]
+    :param objs: An iterable of objects to be converted that has name attribute.
+    :type objs: Iterable[Any]
     :return: A comma-separated string of sorted unit names.
     :rtype: str
     """
-    sorted_names = sorted([instance.name for instance in instances if hasattr(instance, "name")])
+    sorted_names = sorted([obj.name for obj in objs if hasattr(obj, "name")])
     return ", ".join(sorted_names)

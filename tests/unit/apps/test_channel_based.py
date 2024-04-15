@@ -99,9 +99,9 @@ This may be a charm downgrade, which is generally not supported.
         units=units,
         workload_version="",
     )
-    # app is considered ussuri because is using latest/stable, but it won't be considered to
-    # calculate the cloud minimum OpenStack release. It will refresh the charm channel to whatever
-    # the minimum version of other components.
+    # app is considered as ussuri because it's using latest/stable, but it won't be considered when
+    # calculating the cloud minimum OpenStack release. It will refresh the charm channel to
+    # whatever the minimum version of other components are.
     assert app.current_os_release == "ussuri"
     plan = app.generate_upgrade_plan(target, False)
     assert str(plan) == exp_plan

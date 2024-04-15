@@ -633,7 +633,7 @@ def test_min_os_release_apps_release_channel(model):
     assert channel_app_using_release.current_os_release == "ussuri"
     assert channel_app_using_release.channel_codename == "ussuri"
 
-    # channel_app_using_release and ch_subordinate_using_release are considered because are
+    # channel_app_using_release and ch_subordinate_using_release are considered because they are
     # using release channel
     assert (
         Analysis.min_os_release_apps(
@@ -740,8 +740,8 @@ def test_min_os_release_apps_not_release_channel(model):
     assert channel_app_latest_stable.current_os_release == "ussuri"
     assert channel_app_latest_stable.channel_codename == "ussuri"
 
-    # channel_app_latest_stable is skipped because is using latest/stable
-    # cs_subordinate is disconsidered because is from charmstore
+    # channel_app_latest_stable is skipped because it's using latest/stable
+    # cs_subordinate is not considered because it's from charmstore
     assert (
         Analysis.min_os_release_apps(
             [keystone_latest_stable, rmq_latest_stable, channel_app_latest_stable, cs_subordinate]

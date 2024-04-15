@@ -515,6 +515,7 @@ def test_check_mismatched_versions(mock_os_release_units, model):
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
 def test_get_charmhub_migration_step(current_os_release, model):
     """Switch applications installed from charm store to a charmhub channel."""
+    target = OpenStackRelease("victoria")
     current_os_release.return_value = OpenStackRelease("ussuri")
 
     app = OpenStackApplication(
@@ -531,9 +532,11 @@ def test_get_charmhub_migration_step(current_os_release, model):
         units={},
         workload_version="1",
     )
-    assert app._get_charmhub_migration_step() == PreUpgradeStep(
+    assert app._get_charmhub_migration_step(target) == PreUpgradeStep(
         f"Migrate '{app.name}' from charmstore to charmhub",
-        coro=model.upgrade_charm(app.name, app.expected_current_channel, switch=f"ch:{app.charm}"),
+        coro=model.upgrade_charm(
+            app.name, app.expected_current_channel(target), switch=f"ch:{app.charm}"
+        ),
     )
 
 
@@ -559,9 +562,9 @@ def test_get_change_to_openstack_channels_step(current_os_release, model):
     )
     assert app._get_change_to_openstack_channels_step(target) == PreUpgradeStep(
         f"WARNING: Changing '{app.name}' channel from {app.channel} to "
-        f"{app.expected_current_channel}. This may be a charm downgrade, "
+        f"{app.expected_current_channel(target)}. This may be a charm downgrade, "
         "which is generally not supported.",
-        coro=model.upgrade_charm(app.name, app.expected_current_channel),
+        coro=model.upgrade_charm(app.name, app.expected_current_channel(target)),
     )
 
 
@@ -902,9 +905,9 @@ def test_apt_source_codename_unknown_source(source_value, model):
 
 @pytest.mark.parametrize(
     "channel, origin, exp_result",
-    [("latest/stable", "ch", False), ("ussuri/stable", "ch", True), ("stable", "cs", False)],
+    [("latest/stable", "ch", True), ("ussuri/stable", "ch", False), ("stable", "cs", True)],
 )
-def test_using_release_channel(model, channel, origin, exp_result):
+def test_using_non_release_channel(model, channel, origin, exp_result):
     """Test if application is using release channel."""
     app = OpenStackApplication(
         name="app",
@@ -921,4 +924,4 @@ def test_using_release_channel(model, channel, origin, exp_result):
         workload_version="1",
     )
 
-    assert app.using_release_channel is exp_result
+    assert app.using_non_release_channel is exp_result
