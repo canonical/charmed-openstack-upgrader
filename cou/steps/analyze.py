@@ -20,9 +20,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from cou.apps.base import OpenStackApplication
-from cou.apps.channel_based import ChannelBasedApplication
 from cou.apps.factory import AppFactory
-from cou.apps.subordinate import SubordinateBase
 from cou.utils import juju_utils
 from cou.utils.app_utils import stringify_objects
 from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
@@ -171,10 +169,7 @@ class Analysis:
         # be considered when on 'latest/stable' or from Charmstore because it's not reliable and
         # will be considered as Ussuri.
         apps_skipped = {
-            app
-            for app in apps
-            if isinstance(app, (ChannelBasedApplication, SubordinateBase))
-            and app.using_non_release_channel
+            app for app in apps if app.based_on_channel and app.using_non_release_channel
         }
         if apps_skipped:
             logger.debug(

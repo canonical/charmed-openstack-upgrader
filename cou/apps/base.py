@@ -67,6 +67,9 @@ class OpenStackApplication(Application):
     packages_to_hold: Optional[list] = field(default=None, init=False)
     wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
+    # OpenStack apps rely on the workload version of the packages to evaluate current OpenStack
+    # release
+    based_on_channel = False
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
