@@ -14,4 +14,4 @@ Environment Variables
   to **active/idle** and declare the upgrade complete. The default value is 300 seconds.
 * **COU_LONG_IDLE_TIMEOUT** - a longer version of **COU_STANDARD_IDLE_TIMEOUT** for applications
   that are known to need more time than usual to upgrade, such as Keystone and Octavia. The
-  default value is 1800 seconds.
+  default value is 2400 seconds.
