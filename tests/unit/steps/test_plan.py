@@ -152,7 +152,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade software packages of 'keystone' from the current APT repositories
                     Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
-                Change charm config of 'keystone' 'action-managed-upgrade' to 'False'
+                Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'keystone' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 1800s for model 'test_model' to reach the idle state
@@ -167,7 +167,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
+                Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
@@ -192,7 +192,7 @@ nova-compute/0
         Data Plane subordinate(s) upgrade plan
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
-    """
+    """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
     cli_args.force = False
@@ -323,7 +323,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
+                Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
@@ -348,7 +348,7 @@ nova-compute/0
         Data Plane subordinate(s) upgrade plan
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
-    """
+    """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
     cli_args.force = False
