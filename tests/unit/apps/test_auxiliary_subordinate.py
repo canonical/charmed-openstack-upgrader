@@ -342,5 +342,5 @@ This may be a charm downgrade, which is generally not supported.
         units={},
         workload_version="",
     )
-    plan = app.generate_upgrade_plan(target, False)
+    plan = app.generate_upgrade_plan(target, force=False)
     assert str(plan) == exp_plan
