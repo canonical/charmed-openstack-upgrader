@@ -12,6 +12,8 @@
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from cou.apps.channel_based import ChannelBasedApplication
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -439,3 +441,47 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
     upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
+
+
+@pytest.mark.parametrize(
+    "channel, origin, release_target, exp_current_channel",
+    [
+        # using latest/stable will always be N-1 from the target
+        ("latest/stable", "ch", "victoria", "ussuri/stable"),
+        ("latest/stable", "ch", "wallaby", "victoria/stable"),
+        ("latest/stable", "ch", "xena", "wallaby/stable"),
+        ("latest/stable", "ch", "yoga", "xena/stable"),
+        # from charmstore will always be N-1 from the target
+        ("latest", "cs", "victoria", "ussuri/stable"),
+        ("latest", "cs", "wallaby", "victoria/stable"),
+        ("latest", "cs", "xena", "wallaby/stable"),
+        ("latest", "cs", "yoga", "xena/stable"),
+        # when using release channel will always point to the channel track
+        ("ussuri/stable", "ch", "victoria", "ussuri/stable"),
+        ("victoria/stable", "ch", "wallaby", "victoria/stable"),
+        ("wallaby/stable", "ch", "xena", "wallaby/stable"),
+        ("xena/stable", "ch", "yoga", "xena/stable"),
+    ],
+)
+def test_expected_current_channel_channel_based(
+    model, channel, origin, release_target, exp_current_channel
+):
+    """Test expected current channel for channel base apps."""
+    target = OpenStackRelease(release_target)
+    app = ChannelBasedApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+
+    # expected_current_channel changes if the charm needs crossgrade
+    assert app.expected_current_channel(target) == exp_current_channel

@@ -15,7 +15,7 @@
 """Application utilities."""
 import json
 import logging
-from typing import Any, Iterable, Optional
+from typing import Optional
 
 from cou.exceptions import RunUpgradeError
 from cou.utils.juju_utils import Model
@@ -133,15 +133,3 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
     logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
 
     return current_osd_release
-
-
-def stringify_objects(objs: Iterable[Any]) -> str:
-    """Convert any iterable of objects into a comma-separated string of names, sorted.
-
-    :param objs: An iterable of objects to be converted that has name attribute.
-    :type objs: Iterable[Any]
-    :return: A comma-separated string of sorted unit names.
-    :rtype: str
-    """
-    sorted_names = sorted([obj.name for obj in objs if hasattr(obj, "name")])
-    return ", ".join(sorted_names)

@@ -725,3 +725,8 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     assert len(apps["app2"].machines) == 1
     assert len(apps["app3"].machines) == 1
     assert len(apps["app4"].machines) == 1
+
+
+def test_unit_repr():
+    unit = juju_utils.Unit(name="foo/0", machine=MagicMock(), workload_version="1")
+    assert repr(unit) == "foo/0"

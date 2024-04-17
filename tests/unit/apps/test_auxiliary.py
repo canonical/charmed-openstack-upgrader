@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary application class."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
@@ -1415,3 +1415,35 @@ def test_need_current_channel_refresh_auxiliary(
         app_name, can_upgrade_to, app_name, "3.9/stable", {}, {}, model, "ch", "focal", [], {}, "1"
     )
     assert app._need_current_channel_refresh(target) is exp_result
+
+
+@pytest.mark.parametrize(
+    "channel, origin",
+    [
+        ("latest/stable", "ch"),
+        ("latest", "cs"),
+        ("octopus/stable", "ch"),
+        ("pacific/stable", "ch"),
+    ],
+)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_expected_current_channel_auxiliary(mock_os_release, model, channel, origin):
+    """Expected current channel is based on the OpenStack release of the workload version."""
+    target = OpenStackRelease("wallaby")
+    mock_os_release.return_value = OpenStackRelease("victoria")
+    ceph_osd = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="15.2.0",
+    )
+    # expected_current_channel is indifferent if the charm needs crossgrade
+    assert ceph_osd.expected_current_channel(target) == "octopus/stable"

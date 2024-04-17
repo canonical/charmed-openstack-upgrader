@@ -562,8 +562,7 @@ def test_get_change_to_openstack_channels_step(current_os_release, model):
     )
     assert app._get_change_to_openstack_channels_step(target) == PreUpgradeStep(
         f"WARNING: Changing '{app.name}' channel from {app.channel} to "
-        f"{app.expected_current_channel(target)}. This may be a charm downgrade, "
-        "which is generally not supported.",
+        "ussuri/stable. This may be a charm downgrade, which is generally not supported.",
         coro=model.upgrade_charm(app.name, app.expected_current_channel(target)),
     )
 
@@ -905,10 +904,16 @@ def test_apt_source_codename_unknown_source(source_value, model):
 
 @pytest.mark.parametrize(
     "channel, origin, exp_result",
-    [("latest/stable", "ch", True), ("ussuri/stable", "ch", False), ("stable", "cs", True)],
+    [
+        ("latest/stable", "ch", True),
+        ("ussuri/stable", "ch", False),
+        ("stable", "cs", True),
+        ("latest/edge", "ch", False),
+        ("foo/stable", "ch", False),
+    ],
 )
-def test_using_non_release_channel(model, channel, origin, exp_result):
-    """Test if application is using release channel."""
+def test_need_crossgrade(model, channel, origin, exp_result):
+    """Test if application need a crossgrade."""
     app = OpenStackApplication(
         name="app",
         can_upgrade_to="",
@@ -924,4 +929,32 @@ def test_using_non_release_channel(model, channel, origin, exp_result):
         workload_version="1",
     )
 
-    assert app.using_non_release_channel is exp_result
+    assert app.need_crossgrade is exp_result
+
+
+@pytest.mark.parametrize(
+    "channel, origin", [("latest/stable", "ch"), ("latest", "cs"), ("victoria/stable", "ch")]
+)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_expected_current_channel(mock_os_release, model, channel, origin):
+    """Expected current channel is based on the OpenStack release of the workload version."""
+    mock_os_release.return_value = OpenStackRelease("victoria")
+    target = OpenStackRelease("wallaby")
+
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+
+    # expected_current_channel is indifferent if the charm needs crossgrade
+    assert app.expected_current_channel(target) == "victoria/stable"

@@ -18,7 +18,6 @@ import asyncio
 import logging
 
 from cou.exceptions import HaltUpgradeExecution
-from cou.utils.app_utils import stringify_objects
 from cou.utils.juju_utils import Machine, Model, Unit
 
 logger = logging.getLogger(__name__)
@@ -41,8 +40,10 @@ async def get_empty_hypervisors(units: list[Unit], model: Model) -> list[Machine
     skipped_units = set(units) - empty_units
 
     if skipped_units:
-        logger.warning("Found non-empty hypervisors: %s", stringify_objects(skipped_units))
-    logger.info("Selected hypervisors: %s", stringify_objects(empty_units))
+        logger.warning(
+            "Found non-empty hypervisors: %s", sorted(skipped_units, key=lambda unit: unit.name)
+        )
+    logger.info("Selected hypervisors: %s", sorted(empty_units, key=lambda unit: unit.name))
 
     return [unit.machine for unit in empty_units]
 

@@ -134,6 +134,14 @@ class OpenStackApplication(Application):
 
         return yaml.dump(summary, sort_keys=False)
 
+    def __repr__(self) -> str:
+        """App representation.
+
+        :return: Name of the application
+        :rtype: str
+        """
+        return self.name
+
     @property
     def apt_source_codename(self) -> OpenStackRelease:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
@@ -181,10 +189,10 @@ class OpenStackApplication(Application):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        if self.using_non_release_channel:
+        if self.need_crossgrade:
             logger.debug(
                 "Cannot determine the OpenStack release of '%s' "
-                "via its channel. Assuming as Ussuri",
+                "via its channel. Assuming Ussuri",
                 self.name,
             )
             return OpenStackRelease("ussuri")
@@ -228,17 +236,21 @@ class OpenStackApplication(Application):
         logger.debug("%s has no origin setting config", self.name)
         return None
 
-    def expected_current_channel(self, _target: OpenStackRelease) -> str:
+    def expected_current_channel(self, target: OpenStackRelease) -> str:
         """Return the expected current channel.
 
-        Expected current channel is the channel that the application is suppose to be using based
+        Expected current channel is the channel that the application is supposed to be using based
         on the current series, workload version and, by consequence, the OpenStack release
         identified.
 
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
         :return: The expected current channel of the application. E.g: "ussuri/stable"
         :rtype: str
         """
-        return f"{self.current_os_release.codename}/stable"
+        if self.need_crossgrade and self.based_on_channel:
+            return f"{target.previous_release}/stable"
+        return f"{self.current_os_release}/stable"
 
     @property
     def os_release_units(self) -> dict[OpenStackRelease, list[str]]:
@@ -255,12 +267,10 @@ class OpenStackApplication(Application):
         return dict(os_versions)
 
     @property
-    def using_non_release_channel(self) -> bool:
-        """Check if application is using non release channel.
+    def need_crossgrade(self) -> bool:
+        """Check if need a charm crossgrade.
 
-        E.g of non release channels: latest/stable
-        E.g of release channels: ussuri/stable
-        :return: True if it is using, False otherwise
+        :return: True if necessary, False otherwise
         :rtype: bool
         """
         return self.is_from_charm_store or self.channel == LATEST_STABLE
@@ -277,7 +287,7 @@ class OpenStackApplication(Application):
             OpenStackRelease(self._get_track_from_channel(charm_channel))
             return True
         except ValueError:
-            return self.is_from_charm_store
+            return False
 
     def get_latest_os_version(self, unit: Unit) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
@@ -769,7 +779,7 @@ class OpenStackApplication(Application):
 
         :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
         """
-        if self.using_non_release_channel or self.is_valid_track(self.channel):
+        if self.need_crossgrade or self.is_valid_track(self.channel):
             logger.debug("%s app has proper channel %s", self.name, self.channel)
             return
 
