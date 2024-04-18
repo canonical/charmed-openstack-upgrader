@@ -94,14 +94,14 @@ def test_application_get_latest_os_version_failed(mock_find_compatible_versions,
         (
             {"action-managed-upgrade": {"value": False}},
             True,
-            "Change charm config of 'my_app' 'action-managed-upgrade' to 'True'",
+            "Change charm config of 'my_app' 'action-managed-upgrade' from 'False' to 'True'",
         ),
         ({"action-managed-upgrade": {"value": False}}, False, None),
         ({"action-managed-upgrade": {"value": True}}, True, None),
         (
             {"action-managed-upgrade": {"value": True}},
             False,
-            "Change charm config of 'my_app' 'action-managed-upgrade' to 'False'",
+            "Change charm config of 'my_app' 'action-managed-upgrade' from 'True' to 'False'",
         ),
     ],
 )
@@ -113,7 +113,7 @@ def test_set_action_managed_upgrade(charm_config, enable, exp_description, model
         # Note (rgildein): we need to set exp_step here, since we need to use model fixture
         exp_step = UpgradeStep(
             description=exp_description,
-            coro=model.set_application_config(app_name, {"action-managed-upgrade": enable}),
+            coro=model.set_application_config(app_name, {"action-managed-upgrade": str(enable)}),
         )
     else:
         exp_step = UpgradeStep()
