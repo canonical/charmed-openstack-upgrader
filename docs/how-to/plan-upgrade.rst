@@ -37,7 +37,7 @@ Output example
                 Change charm config of 'keystone' 'action-managed-upgrade' to 'False'
                 Upgrade 'keystone' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
-                Wait for up to 1800s for model 'test_model' to reach the idle state
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
@@ -59,7 +59,7 @@ Output example
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
                 Enable nova-compute scheduler from unit: 'nova-compute/0'
-                Wait for up to 1800s for model 'test_model' to reach the idle state
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
         Remaining Data Plane principal(s) upgrade plan
             Upgrade plan for 'ceph-osd' to 'victoria'

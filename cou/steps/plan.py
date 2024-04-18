@@ -369,9 +369,9 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             coro=analysis_result.model.wait_for_active_idle(
                 # NOTE (rgildein): We need to DEFAULT_TIMEOUT so it's possible to change if
                 # a network is too slow, this could cause an issue.
-                # We are using max function to ensure timeout is always at least 11 (1 second
+                # We are using max function to ensure timeout is always at least 120 (110 seconds
                 # higher than the idle_period to prevent false negative).
-                timeout=max(DEFAULT_TIMEOUT + 1, 11),
+                timeout=max(DEFAULT_TIMEOUT, 120),
                 idle_period=10,
                 raise_on_blocked=True,
             ),
