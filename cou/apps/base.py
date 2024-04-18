@@ -645,15 +645,19 @@ class OpenStackApplication(Application):
             )
             return UpgradeStep()
 
-        if self.config["action-managed-upgrade"].get("value") == enable:
+        amu_config = self.config["action-managed-upgrade"].get("value")
+        if amu_config == enable:
             logger.debug(
                 "%s application already has action-managed-upgrade set to %s", self.name, enable
             )
             return UpgradeStep()
 
         return UpgradeStep(
-            f"Change charm config of '{self.name}' 'action-managed-upgrade' to '{enable}'",
-            coro=self.model.set_application_config(self.name, {"action-managed-upgrade": enable}),
+            f"Change charm config of '{self.name}' 'action-managed-upgrade' "
+            f"from '{amu_config}' to '{enable}'",
+            coro=self.model.set_application_config(
+                self.name, {"action-managed-upgrade": str(enable)}
+            ),
         )
 
     def _get_pause_unit_step(self, unit: Unit, dependent: bool = False) -> UnitUpgradeStep:
