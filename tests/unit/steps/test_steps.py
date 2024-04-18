@@ -140,11 +140,11 @@ def test_step_str():
 def test_step_str_dependent():
     """Test BaseStep string representation."""
     expected = (
-        f"a\n\ta.a\n\t\t{DEPENDENCY_DESCRIPTION_PREFIX}a.a.a\n"
-        f"\t\t{DEPENDENCY_DESCRIPTION_PREFIX}a.a.b\n\ta.b\n"
+        f"a\n\ta.a\n\t\tΨ {DEPENDENCY_DESCRIPTION_PREFIX}a.a.a\n"
+        f"\t\tΨ {DEPENDENCY_DESCRIPTION_PREFIX}a.a.b\n\ta.b\n"
     )
     plan = BaseStep(description="a")
-    sub_step = BaseStep(description="a.a")
+    sub_step = BaseStep(description="a.a", parallel=True)
     sub_step.sub_steps = [
         BaseStep(description="a.a.a", coro=mock_coro("a.a.a"), dependent=True),
         BaseStep(description="a.a.b", coro=mock_coro("a.a.b"), dependent=True),

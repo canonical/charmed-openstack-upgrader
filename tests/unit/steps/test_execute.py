@@ -449,23 +449,23 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             """
         test plan
             parallel
-                parallel.0
+                Ψ parallel.0
                     parallel.0.0
                     parallel.0.1
                     parallel.0.2
-                parallel.1
+                Ψ parallel.1
                     parallel.1.0
                     parallel.1.1
                     parallel.1.2
-                parallel.2
+                Ψ parallel.2
                     parallel.2.0
                     parallel.2.1
                     parallel.2.2
-                parallel.3
+                Ψ parallel.3
                     parallel.3.0
                     parallel.3.1
                     parallel.3.2
-                parallel.4
+                Ψ parallel.4
                     parallel.4.0
                     parallel.4.1
                     parallel.4.2

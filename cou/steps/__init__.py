@@ -131,11 +131,19 @@ class BaseStep:
         """
         result = ""
         tab = "\t"
-        steps_to_visit = [(self, 0)]
+        parallel_char = "Ψ "
+        steps_to_visit = [(self, 0, 0)]
         while steps_to_visit:
-            step, indent = steps_to_visit.pop()
-            result += f"{tab * indent}{step.description}{os.linesep}" if step else ""
-            steps_to_visit.extend([(s, indent + 1) for s in reversed(step.sub_steps)])
+            step, indent, parallel = steps_to_visit.pop()
+            result += (
+                f"{tab * indent}{parallel_char if parallel else ''}{step.description}{os.linesep}"
+                if step
+                else ""
+            )
+            steps_to_visit.extend(
+                [(s, indent + 1, step.parallel) for s in reversed(step.sub_steps)]
+            )
+            # breakpoint()
 
         return result
 
@@ -337,8 +345,8 @@ class ApplicationUpgradePlan(UpgradePlan):
 class HypervisorUpgradePlan(BaseStep):
     """Represents the plan for hypervisor upgrade.
 
-    This class is intended to be used as a group for unit-level upgrade steps, which are
-    grouped by a single hypervisor. It doesn't accept coroutine or parallel as inputs.
+    This class is intended to be used as a group by AZs. It doesn't accept coroutine or parallel
+    as inputs.
 
     All sub-steps will run in parallel.
     """
@@ -351,7 +359,7 @@ class HypervisorUpgradePlan(BaseStep):
         :param description: Description of the step.
         :type description: str
         """
-        super().__init__(description=description, parallel=True, coro=None)
+        super().__init__(description=description, parallel=False, coro=None)
 
 
 class UpgradeStep(BaseStep):
