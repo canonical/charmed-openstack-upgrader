@@ -25,8 +25,24 @@ from cou.utils.openstack import SUBORDINATES, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-class SubordinateBase(OpenStackApplication):
+@AppFactory.register_application(SUBORDINATES)
+class SubordinateApplication(OpenStackApplication):
     """Subordinate base class."""
+
+    # subordinate apps rely on the channel to evaluate current OpenStack release
+    based_on_channel = True
+
+    @property
+    def current_os_release(self) -> OpenStackRelease:
+        """Infer the OpenStack release from subordinate charm's channel.
+
+        We cannot determine the OpenStack release base on workload packages because the principal
+        charm has already upgraded the packages.
+
+        :return: OpenStackRelease object.
+        :rtype: OpenStackRelease
+        """
+        return self.channel_codename
 
     def _check_application_target(self, target: OpenStackRelease) -> None:
         """Check if the application is already upgraded.
@@ -87,27 +103,3 @@ class SubordinateBase(OpenStackApplication):
         :rtype: list[PostUpgradeStep]
         """
         return []
-
-
-@AppFactory.register_application(SUBORDINATES)
-class SubordinateApplication(SubordinateBase):
-    """Subordinate application class."""
-
-    @property
-    def current_os_release(self) -> OpenStackRelease:
-        """Infer the OpenStack release from subordinate charm's channel.
-
-        We cannot determine the OpenStack release base on workload packages because the principal
-        charm has already upgraded the packages.
-
-        :return: OpenStackRelease object.
-        :rtype: OpenStackRelease
-        """
-        if self.is_from_charm_store:
-            logger.debug(
-                "'%s' is from charm store and will be considered with channel codename as ussuri",
-                self.name,
-            )
-            return OpenStackRelease("ussuri")
-
-        return OpenStackRelease(self._get_track_from_channel(self.channel))

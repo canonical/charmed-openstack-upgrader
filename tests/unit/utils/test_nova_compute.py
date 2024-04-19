@@ -69,18 +69,16 @@ async def test_get_empty_hypervisors(
     mock_instance_count, mock_logger, hypervisors_count, expected_result, model
 ):
     mock_instance_count.side_effect = [count for _, count in hypervisors_count]
-    result = await nova_compute.get_empty_hypervisors(
-        [_mock_nova_unit(nova_unit) for nova_unit, _ in hypervisors_count], model
-    )
+    selected_hypervisors = [
+        _mock_nova_unit(nova_unit) for nova_unit, count in hypervisors_count if count == 0
+    ]
+    non_empty_hypervisors = [
+        _mock_nova_unit(nova_unit) for nova_unit, count in hypervisors_count if count != 0
+    ]
+    units = sorted(selected_hypervisors + non_empty_hypervisors, key=lambda unit: unit.name)
+    result = await nova_compute.get_empty_hypervisors(units, model)
 
     assert {machine.machine_id for machine in result} == expected_result
-
-    selected_hypervisors = ", ".join(
-        [f"nova-compute/{i}" for i, count in hypervisors_count if count == 0]
-    )
-    non_empty_hypervisors = ", ".join(
-        [f"nova-compute/{i}" for i, count in hypervisors_count if count != 0]
-    )
 
     mock_logger.info.assert_called_once_with("Selected hypervisors: %s", selected_hypervisors)
     if non_empty_hypervisors:

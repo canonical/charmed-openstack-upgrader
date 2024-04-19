@@ -14,25 +14,13 @@
 """Auxiliary subordinate application class."""
 from cou.apps.auxiliary import OVN, AuxiliaryApplication
 from cou.apps.factory import AppFactory
-from cou.apps.subordinate import SubordinateBase
-from cou.utils.openstack import AUXILIARY_SUBORDINATES, OpenStackRelease
+from cou.apps.subordinate import SubordinateApplication
+from cou.utils.openstack import AUXILIARY_SUBORDINATES
 
 
 @AppFactory.register_application(AUXILIARY_SUBORDINATES)
-class AuxiliarySubordinateApplication(SubordinateBase, AuxiliaryApplication):
+class AuxiliarySubordinateApplication(SubordinateApplication, AuxiliaryApplication):
     """Auxiliary subordinate application class."""
-
-    @property
-    def current_os_release(self) -> OpenStackRelease:
-        """Infer the OpenStack release from subordinate charm's channel.
-
-        We cannot determine the OpenStack release base on workload packages because the principal
-        charm has already upgraded the packages.
-
-        :return: OpenStackRelease object.
-        :rtype: OpenStackRelease
-        """
-        return self.channel_codename
 
 
 @AppFactory.register_application(["ovn-chassis"])

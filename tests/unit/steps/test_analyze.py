@@ -18,6 +18,7 @@ import pytest
 
 from cou.apps.auxiliary import RabbitMQServer
 from cou.apps.base import OpenStackApplication
+from cou.apps.channel_based import ChannelBasedApplication
 from cou.apps.core import Keystone
 from cou.apps.subordinate import SubordinateApplication
 from cou.steps import analyze
@@ -536,3 +537,64 @@ def test_split_apps(exp_control_plane, exp_data_plane):
     control_plane, data_plane = Analysis._split_apps(all_apps)
     assert exp_control_plane == control_plane
     assert exp_data_plane == data_plane
+
+
+@pytest.mark.parametrize(
+    "channel_keystone, channel_gnocchi, origin, exp_release",
+    [
+        # when a channel based app (e.g: gnocchi) doesn't need to crossgrade, it's considered on
+        # the calculation of the cloud OpenStack release
+        ("wallaby/stable", "ussuri/stable", "ch", "ussuri"),
+        # when a channel based app (e.g: gnocchi, subordinates and etc) need to crossgrade,
+        # it's NOT considered on the calculation of the cloud OpenStack release
+        ("latest", "latest", "cs", "wallaby"),
+        ("latest/stable", "latest/stable", "ch", "wallaby"),
+    ],
+)
+def test_min_os_release_apps(model, channel_keystone, channel_gnocchi, origin, exp_release):
+    """Test to evaluate the Openstack release from a list of apps."""
+    machines = {f"{i}": generate_cou_machine(f"{i}") for i in range(3)}
+
+    keystone = Keystone(
+        name="keystone",
+        can_upgrade_to="",
+        charm="keystone",
+        channel=channel_keystone,
+        config={"source": {"value": "cloud:focal-wallaby"}},
+        machines=machines,
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={
+            "keystone/0": Unit(
+                name="keystone/0",
+                workload_version="19.1.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="19.1.0",
+    )
+
+    gnocchi = ChannelBasedApplication(
+        name="gnocchi",
+        can_upgrade_to="",
+        charm="gnocchi",
+        channel=channel_gnocchi,
+        config={},
+        machines=machines,
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={
+            "gnocchi": Unit(
+                name="gnocchi/0",
+                workload_version="4.3.0",
+                machine=machines["1"],
+            )
+        },
+        workload_version="4.3.0",
+    )
+
+    assert Analysis.min_os_release_apps([keystone, gnocchi]) == exp_release
