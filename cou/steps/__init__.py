@@ -78,7 +78,9 @@ class BaseStep:
 
         :param description: Description of the step.
         :type description: str
-        :param parallel: Define if step should run on parallel or not.
+        :param parallel: Define if the sub-steps should run on parallel or not. Note that the step
+        itself will not run on parallel, just the sub-steps will. Each sub-step is also responsible
+        to define if their sub-steps will run sequentially or in parallel.
         :type parallel: bool
         :param coro: Step coroutine
         :type coro: Optional[coroutine]
@@ -143,7 +145,6 @@ class BaseStep:
             steps_to_visit.extend(
                 [(s, indent + 1, step.parallel) for s in reversed(step.sub_steps)]
             )
-            # breakpoint()
 
         return result
 
@@ -346,9 +347,8 @@ class HypervisorUpgradePlan(BaseStep):
     """Represents the plan for hypervisor upgrade.
 
     This class is intended to be used as a group by AZs. It doesn't accept coroutine or parallel
-    as inputs.
-
-    All sub-steps will run in parallel.
+    arguments as inputs. AZ groups will run sequentially and the units within the AZ will run on
+    parallel.
     """
 
     prompt: bool = False

@@ -73,9 +73,10 @@ successfully.
 The plan can also be obtained without the need to perform a cloud upgrade using
 the **plan** command. See :doc:`Plan an upgrade <../how-to/plan-upgrade>`.
 
-The Greek letter Psi `Ψ` means that the step will run in parallel compared with other steps in the
-same level. In the example above on the `data-plane hypervisors upgrade`, `unit 1` will run on
-parallel compared with `unit K`, but their `upgrade steps A to Z` will run sequentially.
+The Greek letter Psi `Ψ` indicates that the step and its sub-steps will run in parallel with other
+steps in the same level. In the example above, within the `data-plane hypervisors upgrade`, the
+`unit 1` step will run in parallel with the `unit K` step, but their `upgrade steps A to Z`
+sub-steps will run sequentially.
 
 Different upgrade strategies are chosen for control-plane and data-plane applications
 when preparing the plan. For details, please refer to :doc:`Upgrade <./upgrade>`.
