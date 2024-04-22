@@ -156,12 +156,24 @@ class Analysis:
     def min_os_release_apps(apps: list[OpenStackApplication]) -> Optional[OpenStackRelease]:
         """Get the minimal OpenStack release from a list of applications.
 
+        - subordinates or channel based apps are not considered if not using release channels
+        - other apps are considered even if not using release channels
+
         :param apps: Applications.
         :type apps: list[OpenStackApplication]
         :return: OpenStack release.
         :rtype: Optional[OpenStackRelease]
         """
-        return min((app.current_os_release for app in apps), default=None)
+        # NOTE(gabrielcocenza) Apps based on channels to identify OpenStack release cannot
+        # be considered when on 'latest/stable' or from Charmstore because it's not reliable and
+        # will be considered as Ussuri.
+        apps_skipped = {app for app in apps if app.based_on_channel and app.need_crossgrade}
+        if apps_skipped:
+            logger.debug(
+                "%s were skipped from calculating cloud OpenStack release",
+                sorted(apps_skipped, key=lambda app: app.name),
+            )
+        return min((app.current_os_release for app in set(apps) - apps_skipped), default=None)
 
     def _get_minimum_cloud_os_release(self) -> Optional[OpenStackRelease]:
         """Get the current minimum OpenStack release in the cloud.

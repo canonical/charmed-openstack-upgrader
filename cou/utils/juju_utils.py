@@ -150,6 +150,14 @@ class Unit:
     machine: Machine
     workload_version: str
 
+    def __repr__(self) -> str:
+        """App representation.
+
+        :return: Name of the application
+        :rtype: str
+        """
+        return self.name
+
 
 @dataclass(frozen=True)
 class Application:
