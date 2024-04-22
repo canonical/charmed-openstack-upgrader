@@ -15,6 +15,7 @@
 """Base application class."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from collections import defaultdict
@@ -350,6 +351,11 @@ class OpenStackApplication(Application):
         :type units: list[Unit]
         :raises ApplicationError: When the workload version of the charm doesn't upgrade.
         """
+        # NOTE (gabrielcocenza) force the update-status hook on units
+        # to update the workload version
+        tasks = [self.model.run_on_unit(unit.name, "hooks/update-status") for unit in units]
+        await asyncio.gather(*tasks)
+
         status = await self.model.get_status()
         app_status = status.applications.get(self.name)
         units_not_upgraded = []
@@ -363,7 +369,8 @@ class OpenStackApplication(Application):
 
         if units_not_upgraded:
             raise ApplicationError(
-                f"Cannot upgrade units '{', '.join(units_not_upgraded)}' to {target}."
+                f"Cannot upgrade unit(s) '{', '.join(units_not_upgraded)}' to {target}. "
+                "Try again in some minutes to see if the unit(s) have been upgraded."
             )
 
     def upgrade_plan_sanity_checks(
