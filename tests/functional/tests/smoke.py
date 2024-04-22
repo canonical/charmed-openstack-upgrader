@@ -153,7 +153,7 @@ class SmokeTest(unittest.TestCase):
             "\t\t\t\tUpgrade software packages on unit 'mysql-innodb-cluster/2'\n"
             "\t\t\tChange charm config of 'mysql-innodb-cluster' 'source' to "
             "'cloud:focal-victoria'\n"
-            "\t\t\tWait for up to 1800s for app 'mysql-innodb-cluster' to reach the idle state\n"
+            "\t\t\tWait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state\n"
             "\t\t\tVerify that the workload of 'mysql-innodb-cluster' has been upgraded on units: "
             "mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2\n"
         )

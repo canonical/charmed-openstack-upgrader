@@ -94,14 +94,14 @@ def test_application_get_latest_os_version_failed(mock_find_compatible_versions,
         (
             {"action-managed-upgrade": {"value": False}},
             True,
-            "Change charm config of 'my_app' 'action-managed-upgrade' to 'True'",
+            "Change charm config of 'my_app' 'action-managed-upgrade' from 'False' to 'True'",
         ),
         ({"action-managed-upgrade": {"value": False}}, False, None),
         ({"action-managed-upgrade": {"value": True}}, True, None),
         (
             {"action-managed-upgrade": {"value": True}},
             False,
-            "Change charm config of 'my_app' 'action-managed-upgrade' to 'False'",
+            "Change charm config of 'my_app' 'action-managed-upgrade' from 'True' to 'False'",
         ),
     ],
 )
@@ -113,7 +113,7 @@ def test_set_action_managed_upgrade(charm_config, enable, exp_description, model
         # Note (rgildein): we need to set exp_step here, since we need to use model fixture
         exp_step = UpgradeStep(
             description=exp_description,
-            coro=model.set_application_config(app_name, {"action-managed-upgrade": enable}),
+            coro=model.set_application_config(app_name, {"action-managed-upgrade": str(enable)}),
         )
     else:
         exp_step = UpgradeStep()
@@ -515,6 +515,7 @@ def test_check_mismatched_versions(mock_os_release_units, model):
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
 def test_get_charmhub_migration_step(current_os_release, model):
     """Switch applications installed from charm store to a charmhub channel."""
+    target = OpenStackRelease("victoria")
     current_os_release.return_value = OpenStackRelease("ussuri")
 
     app = OpenStackApplication(
@@ -531,9 +532,11 @@ def test_get_charmhub_migration_step(current_os_release, model):
         units={},
         workload_version="1",
     )
-    assert app._get_charmhub_migration_step() == PreUpgradeStep(
+    assert app._get_charmhub_migration_step(target) == PreUpgradeStep(
         f"Migrate '{app.name}' from charmstore to charmhub",
-        coro=model.upgrade_charm(app.name, app.expected_current_channel, switch=f"ch:{app.charm}"),
+        coro=model.upgrade_charm(
+            app.name, app.expected_current_channel(target), switch=f"ch:{app.charm}"
+        ),
     )
 
 
@@ -541,6 +544,7 @@ def test_get_charmhub_migration_step(current_os_release, model):
 def test_get_change_to_openstack_channels_step(current_os_release, model):
     """Applications using latest/stable should be switched to a release-specific channel."""
     current_os_release.return_value = OpenStackRelease("ussuri")
+    target = OpenStackRelease("victoria")
 
     app = OpenStackApplication(
         name="app",
@@ -556,11 +560,10 @@ def test_get_change_to_openstack_channels_step(current_os_release, model):
         units={},
         workload_version="1",
     )
-    assert app._get_change_to_openstack_channels_step() == PreUpgradeStep(
+    assert app._get_change_to_openstack_channels_step(target) == PreUpgradeStep(
         f"WARNING: Changing '{app.name}' channel from {app.channel} to "
-        f"{app.expected_current_channel}. This may be a charm downgrade, "
-        "which is generally not supported.",
-        coro=model.upgrade_charm(app.name, app.expected_current_channel),
+        "ussuri/stable. This may be a charm downgrade, which is generally not supported.",
+        coro=model.upgrade_charm(app.name, app.expected_current_channel(target)),
     )
 
 
@@ -696,7 +699,7 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
     assert app._get_refresh_charm_step(target) == expected_result
 
     mock_ch_migration.assert_not_called()
-    mock_change_os_channels.assert_called_once()
+    mock_change_os_channels.assert_called_once_with(target)
     mock_refresh_current_channel.assert_not_called()
 
 
@@ -897,3 +900,61 @@ def test_apt_source_codename_unknown_source(source_value, model):
 
     with pytest.raises(ApplicationError, match=exp_msg):
         app.apt_source_codename
+
+
+@pytest.mark.parametrize(
+    "channel, origin, exp_result",
+    [
+        ("latest/stable", "ch", True),
+        ("ussuri/stable", "ch", False),
+        ("stable", "cs", True),
+        ("latest/edge", "ch", False),
+        ("foo/stable", "ch", False),
+    ],
+)
+def test_need_crossgrade(model, channel, origin, exp_result):
+    """Test if application need a crossgrade."""
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+
+    assert app.need_crossgrade is exp_result
+
+
+@pytest.mark.parametrize(
+    "channel, origin", [("latest/stable", "ch"), ("latest", "cs"), ("victoria/stable", "ch")]
+)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_expected_current_channel(mock_os_release, model, channel, origin):
+    """Expected current channel is based on the OpenStack release of the workload version."""
+    mock_os_release.return_value = OpenStackRelease("victoria")
+    target = OpenStackRelease("wallaby")
+
+    app = OpenStackApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1",
+    )
+
+    # expected_current_channel is indifferent if the charm needs crossgrade
+    assert app.expected_current_channel(target) == "victoria/stable"

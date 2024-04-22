@@ -56,9 +56,9 @@ def generate_expected_upgrade_plan_principal(app, target, model):
     if app.charm in ["rabbitmq-server", "ceph-mon", "keystone"]:
         # apps waiting for whole model
         wait_step = PostUpgradeStep(
-            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(1800, apps=None),
+            coro=model.wait_for_active_idle(2400, apps=None),
         )
     else:
         wait_step = PostUpgradeStep(
@@ -152,10 +152,10 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade software packages of 'keystone' from the current APT repositories
                     Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
-                Change charm config of 'keystone' 'action-managed-upgrade' to 'False'
+                Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'keystone' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
-                Wait for up to 1800s for model 'test_model' to reach the idle state
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
@@ -167,7 +167,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
+                Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
@@ -177,7 +177,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
                 Enable nova-compute scheduler from unit: 'nova-compute/0'
-                Wait for up to 1800s for model 'test_model' to reach the idle state
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: \
 nova-compute/0
         Remaining Data Plane principal(s) upgrade plan
@@ -192,7 +192,7 @@ nova-compute/0
         Data Plane subordinate(s) upgrade plan
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
-    """
+    """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
     cli_args.force = False
@@ -323,7 +323,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
+                Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
@@ -333,7 +333,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
                 Enable nova-compute scheduler from unit: 'nova-compute/0'
-                Wait for up to 1800s for model 'test_model' to reach the idle state
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: \
 nova-compute/0
         Remaining Data Plane principal(s) upgrade plan
@@ -348,7 +348,7 @@ nova-compute/0
         Data Plane subordinate(s) upgrade plan
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
-    """
+    """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
     cli_args.force = False
@@ -1020,7 +1020,7 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
             coro=mock_analysis_result.model.wait_for_active_idle(
-                timeout=11, idle_period=10, raise_on_blocked=True
+                timeout=120, idle_period=10, raise_on_blocked=True
             ),
         )
     )

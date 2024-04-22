@@ -35,7 +35,7 @@ from cou.apps.auxiliary_subordinate import (  # noqa: F401
 from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import ChannelBasedApplication  # noqa: F401
 from cou.apps.core import Keystone, Octavia, Swift  # noqa: F401
-from cou.apps.subordinate import SubordinateApplication, SubordinateBase  # noqa: F401
+from cou.apps.subordinate import SubordinateApplication  # noqa: F401
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     COUException,
@@ -50,7 +50,7 @@ from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
-from cou.utils.app_utils import set_require_osd_release_option, stringify_units
+from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
@@ -369,9 +369,9 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             coro=analysis_result.model.wait_for_active_idle(
                 # NOTE (rgildein): We need to DEFAULT_TIMEOUT so it's possible to change if
                 # a network is too slow, this could cause an issue.
-                # We are using max function to ensure timeout is always at least 11 (1 second
+                # We are using max function to ensure timeout is always at least 120 (110 seconds
                 # higher than the idle_period to prevent false negative).
-                timeout=max(DEFAULT_TIMEOUT + 1, 11),
+                timeout=max(DEFAULT_TIMEOUT, 120),
                 idle_period=10,
                 raise_on_blocked=True,
             ),
@@ -594,7 +594,9 @@ async def _get_upgradable_hypervisors_machines(
     )
 
     if cli_force:
-        logger.info("Selected all hypervisors: %s", stringify_units(nova_compute_units))
+        logger.info(
+            "Selected all hypervisors: %s", sorted(nova_compute_units, key=lambda unit: unit.name)
+        )
         return nova_compute_machines
 
     return await get_empty_hypervisors(nova_compute_units, analysis_result.model)

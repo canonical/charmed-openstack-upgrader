@@ -212,9 +212,10 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
+            "from 'True' to 'False'",
             parallel=False,
-            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": str(False)}),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
@@ -230,9 +231,9 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(1800, apps=None),
+            coro=model.wait_for_active_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -296,9 +297,10 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone"),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
+            "from 'True' to 'False'",
             parallel=False,
-            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": str(False)}),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
@@ -314,9 +316,9 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(1800, apps=None),
+            coro=model.wait_for_active_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -379,9 +381,10 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     upgrade_steps = [
         upgrade_packages,
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
+            "from 'True' to 'False'",
             parallel=False,
-            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": str(False)}),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -392,9 +395,9 @@ def test_upgrade_plan_channel_on_next_os_release(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(1800, apps=None),
+            coro=model.wait_for_active_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -461,9 +464,10 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
-            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
+            description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
+            "from 'True' to 'False'",
             parallel=False,
-            coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
+            coro=model.set_application_config(app.name, {"action-managed-upgrade": str(False)}),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
@@ -471,9 +475,9 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(1800, apps=None),
+            coro=model.wait_for_active_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -588,9 +592,9 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 1800s for model '{model.name}' to reach the idle state",
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(1800, apps=None),
+            coro=model.wait_for_active_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -787,7 +791,7 @@ def test_nova_compute_upgrade_plan(model):
             Upgrade software packages on unit 'nova-compute/1'
             Upgrade software packages on unit 'nova-compute/2'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-        Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
+        Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'nova-compute' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
@@ -809,7 +813,7 @@ def test_nova_compute_upgrade_plan(model):
         Enable nova-compute scheduler from unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/1'
         Enable nova-compute scheduler from unit: 'nova-compute/2'
-        Wait for up to 1800s for model 'test_model' to reach the idle state
+        Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
     )
@@ -852,7 +856,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Upgrade software packages on unit 'nova-compute/0'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-        Change charm config of 'nova-compute' 'action-managed-upgrade' to 'True'
+        Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'nova-compute' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0
@@ -862,7 +866,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/0'
-        Wait for up to 1800s for model 'test_model' to reach the idle state
+        Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
     )
@@ -954,7 +958,7 @@ def test_cinder_upgrade_plan_single_unit(model):
         Upgrade software packages of 'cinder' from the current APT repositories
             Upgrade software packages on unit 'cinder/0'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
-        Change charm config of 'cinder' 'action-managed-upgrade' to 'True'
+        Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'cinder' to the new channel: 'victoria/stable'
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
         Upgrade plan for units: cinder/0

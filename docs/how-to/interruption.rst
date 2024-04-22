@@ -33,7 +33,7 @@ Usage example:
             Upgrade software packages on unit 'keystone/2'
         Upgrade 'keystone' to the new channel: 'victoria/stable'
         Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
-        Wait for up to 1800s for model 'test-model' to reach the idle state
+        Wait for up to 2400s for model 'test-model' to reach the idle state
         Verify that the workload of 'keystone' has been upgraded
 
     Would you like to start the upgrade? Continue (y/N): n

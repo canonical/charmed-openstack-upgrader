@@ -63,19 +63,26 @@ class AuxiliaryApplication(OpenStackApplication):
             current_track,
         ) in TRACK_TO_OPENSTACK_MAPPING and len(possible_tracks) > 0
 
-    @property
-    def expected_current_channel(self) -> str:
+    def expected_current_channel(self, target: OpenStackRelease) -> str:
         """Return the expected current channel.
 
-        Expected current channel is the channel that the application is suppose to be using based
+        Expected current channel is the channel that the application is supposed to be using based
         on the current series, workload version and, by consequence, the OpenStack release
         identified.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
         :return: The expected current channel of the application. E.g: "3.9/stable"
         :rtype: str
         """
-        *_, track = OPENSTACK_TO_TRACK_MAPPING[
-            (self.charm, self.series, self.current_os_release.codename)
-        ]
+        if self.need_crossgrade and self.based_on_channel:
+            *_, track = OPENSTACK_TO_TRACK_MAPPING[
+                (self.charm, self.series, f"{target.previous_release}")
+            ]
+        else:
+            *_, track = OPENSTACK_TO_TRACK_MAPPING[
+                (self.charm, self.series, self.current_os_release.codename)
+            ]
 
         return f"{track}/stable"
 
@@ -112,12 +119,9 @@ class AuxiliaryApplication(OpenStackApplication):
         :raises ApplicationError: When cannot identify suitable OpenStack release codename
                                   based on the track of the charm channel.
         """
-        if self.is_from_charm_store:
+        if self.need_crossgrade:
             logger.debug(
-                (
-                    "'Application %s' installed from charm store; assuming Ussuri as the "
-                    "underlying version."
-                ),
+                "Cannot determine the OpenStack release of '%s' via its channel. Assuming Ussuri",
                 self.name,
             )
             return OpenStackRelease("ussuri")

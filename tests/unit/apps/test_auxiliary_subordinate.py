@@ -25,7 +25,7 @@ from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import Machine
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import assert_steps
+from tests.unit.utils import assert_steps, dedent_plan
 
 
 def test_auxiliary_subordinate(model):
@@ -312,3 +312,35 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
     upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
+
+
+def test_auxiliary_subordinate_latest_stable(model):
+    target = OpenStackRelease("victoria")
+
+    exp_plan = dedent_plan(
+        """\
+        Upgrade plan for 'keystone-hacluster' to 'victoria'
+            WARNING: Changing 'keystone-hacluster' channel from latest/stable to 2.4/stable. \
+This may be a charm downgrade, which is generally not supported.
+            Upgrade 'keystone-hacluster' to the new channel: '2.4/stable'
+    """
+    )
+
+    machines = {"0": MagicMock(spec_set=Machine)}
+
+    app = AuxiliarySubordinateApplication(
+        name="keystone-hacluster",
+        can_upgrade_to="ch:amd64/focal/hacluster-131",
+        charm="hacluster",
+        channel="latest/stable",
+        config={},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="",
+    )
+    plan = app.generate_upgrade_plan(target, force=False)
+    assert str(plan) == exp_plan
