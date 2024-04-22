@@ -394,17 +394,17 @@ def test_hypervisor_upgrade_plan(model):
     Upgrading all applications deployed on machines with hypervisor.
         Upgrade plan for 'az-0' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
-                Upgrade software packages on unit 'cinder/0'
+                Ψ Upgrade software packages on unit 'cinder/0'
             Refresh 'cinder' to the latest revision of 'ussuri/stable'
             Disable nova-compute scheduler from unit: 'nova-compute/0'
             Upgrade software packages of 'nova-compute' from the current APT repositories
-                Upgrade software packages on unit 'nova-compute/0'
+                Ψ Upgrade software packages on unit 'nova-compute/0'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
             Upgrade 'cinder' to the new channel: 'victoria/stable'
             Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
             Upgrade plan for units: cinder/0
-                Upgrade plan for unit 'cinder/0'
+                Ψ Upgrade plan for unit 'cinder/0'
                     Pause the unit: 'cinder/0'
                     Upgrade the unit: 'cinder/0'
                     Resume the unit: 'cinder/0'
@@ -412,7 +412,7 @@ def test_hypervisor_upgrade_plan(model):
             Upgrade 'nova-compute' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/0
-                Upgrade plan for unit 'nova-compute/0'
+                Ψ Upgrade plan for unit 'nova-compute/0'
                     Verify that unit 'nova-compute/0' has no VMs running
                     ├── Pause the unit: 'nova-compute/0'
                     ├── Upgrade the unit: 'nova-compute/0'
@@ -425,13 +425,13 @@ def test_hypervisor_upgrade_plan(model):
         Upgrade plan for 'az-1' to 'victoria'
             Disable nova-compute scheduler from unit: 'nova-compute/1'
             Upgrade software packages of 'nova-compute' from the current APT repositories
-                Upgrade software packages on unit 'nova-compute/1'
+                Ψ Upgrade software packages on unit 'nova-compute/1'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
             Upgrade 'nova-compute' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/1
-                Upgrade plan for unit 'nova-compute/1'
+                Ψ Upgrade plan for unit 'nova-compute/1'
                     Verify that unit 'nova-compute/1' has no VMs running
                     ├── Pause the unit: 'nova-compute/1'
                     ├── Upgrade the unit: 'nova-compute/1'
@@ -442,13 +442,13 @@ def test_hypervisor_upgrade_plan(model):
         Upgrade plan for 'az-2' to 'victoria'
             Disable nova-compute scheduler from unit: 'nova-compute/2'
             Upgrade software packages of 'nova-compute' from the current APT repositories
-                Upgrade software packages on unit 'nova-compute/2'
+                Ψ Upgrade software packages on unit 'nova-compute/2'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
             Upgrade 'nova-compute' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/2
-                Upgrade plan for unit 'nova-compute/2'
+                Ψ Upgrade plan for unit 'nova-compute/2'
                     Verify that unit 'nova-compute/2' has no VMs running
                     ├── Pause the unit: 'nova-compute/2'
                     ├── Upgrade the unit: 'nova-compute/2'
@@ -521,17 +521,17 @@ def test_hypervisor_upgrade_plan_single_machine(model):
     Upgrading all applications deployed on machines with hypervisor.
         Upgrade plan for 'az-0' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
-                Upgrade software packages on unit 'cinder/0'
+                Ψ Upgrade software packages on unit 'cinder/0'
             Refresh 'cinder' to the latest revision of 'ussuri/stable'
             Disable nova-compute scheduler from unit: 'nova-compute/0'
             Upgrade software packages of 'nova-compute' from the current APT repositories
-                Upgrade software packages on unit 'nova-compute/0'
+                Ψ Upgrade software packages on unit 'nova-compute/0'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
             Upgrade 'cinder' to the new channel: 'victoria/stable'
             Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
             Upgrade plan for units: cinder/0
-                Upgrade plan for unit 'cinder/0'
+                Ψ Upgrade plan for unit 'cinder/0'
                     Pause the unit: 'cinder/0'
                     Upgrade the unit: 'cinder/0'
                     Resume the unit: 'cinder/0'
@@ -539,7 +539,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
             Upgrade 'nova-compute' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/0
-                Upgrade plan for unit 'nova-compute/0'
+                Ψ Upgrade plan for unit 'nova-compute/0'
                     Verify that unit 'nova-compute/0' has no VMs running
                     ├── Pause the unit: 'nova-compute/0'
                     ├── Upgrade the unit: 'nova-compute/0'
@@ -611,9 +611,9 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
     Upgrading all applications deployed on machines with hypervisor.
         Upgrade plan for 'az-1' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
-                Upgrade software packages on unit 'cinder/1'
+                Ψ Upgrade software packages on unit 'cinder/1'
             Upgrade plan for units: cinder/1
-                Upgrade plan for unit 'cinder/1'
+                Ψ Upgrade plan for unit 'cinder/1'
                     Pause the unit: 'cinder/1'
                     Upgrade the unit: 'cinder/1'
                     Resume the unit: 'cinder/1'
@@ -621,17 +621,17 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
             Verify that the workload of 'cinder' has been upgraded on units: cinder/1
         Upgrade plan for 'az-2' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
-                Upgrade software packages on unit 'cinder/2'
+                Ψ Upgrade software packages on unit 'cinder/2'
             Disable nova-compute scheduler from unit: 'nova-compute/2'
             Upgrade software packages of 'nova-compute' from the current APT repositories
-                Upgrade software packages on unit 'nova-compute/2'
+                Ψ Upgrade software packages on unit 'nova-compute/2'
             Upgrade plan for units: cinder/2
-                Upgrade plan for unit 'cinder/2'
+                Ψ Upgrade plan for unit 'cinder/2'
                     Pause the unit: 'cinder/2'
                     Upgrade the unit: 'cinder/2'
                     Resume the unit: 'cinder/2'
             Upgrade plan for units: nova-compute/2
-                Upgrade plan for unit 'nova-compute/2'
+                Ψ Upgrade plan for unit 'nova-compute/2'
                     Verify that unit 'nova-compute/2' has no VMs running
                     ├── Pause the unit: 'nova-compute/2'
                     ├── Upgrade the unit: 'nova-compute/2'

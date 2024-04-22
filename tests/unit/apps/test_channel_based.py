@@ -69,7 +69,7 @@ def test_channel_based_application_latest_stable(model):
         """\
         Upgrade plan for 'glance-simplestreams-sync' to 'wallaby'
             Upgrade software packages of 'glance-simplestreams-sync' from the current APT repositories
-                Upgrade software packages on unit 'glance-simplestreams-sync/0'
+                Ψ Upgrade software packages on unit 'glance-simplestreams-sync/0'
             WARNING: Changing 'glance-simplestreams-sync' channel from latest/stable to victoria/stable. \
 This may be a charm downgrade, which is generally not supported.
             Upgrade 'glance-simplestreams-sync' to the new channel: 'wallaby/stable'

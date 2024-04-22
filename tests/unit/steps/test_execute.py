@@ -417,9 +417,9 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             for j in range(3):
                 sub_step.add_step(
                     UpgradeStep(
-                        f"parallel.{i}.{j}",
+                        f"sequential.{i}.{j}",
                         parallel=False,
-                        coro=append(f"parallel.{i}.{j}"),
+                        coro=append(f"sequential.{i}.{j}"),
                     )
                 )
 
@@ -449,26 +449,26 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
             """
         test plan
             parallel
-                parallel.0
-                    parallel.0.0
-                    parallel.0.1
-                    parallel.0.2
-                parallel.1
-                    parallel.1.0
-                    parallel.1.1
-                    parallel.1.2
-                parallel.2
-                    parallel.2.0
-                    parallel.2.1
-                    parallel.2.2
-                parallel.3
-                    parallel.3.0
-                    parallel.3.1
-                    parallel.3.2
-                parallel.4
-                    parallel.4.0
-                    parallel.4.1
-                    parallel.4.2
+                Ψ parallel.0
+                    sequential.0.0
+                    sequential.0.1
+                    sequential.0.2
+                Ψ parallel.1
+                    sequential.1.0
+                    sequential.1.1
+                    sequential.1.2
+                Ψ parallel.2
+                    sequential.2.0
+                    sequential.2.1
+                    sequential.2.2
+                Ψ parallel.3
+                    sequential.3.0
+                    sequential.3.1
+                    sequential.3.2
+                Ψ parallel.4
+                    sequential.4.0
+                    sequential.4.1
+                    sequential.4.2
             sequential
                 sequential.0
                     sequential.0.0
@@ -519,25 +519,25 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
         exp_results = [
             "parallel",
             "parallel.0",
-            "parallel.0.0",
-            "parallel.0.1",
-            "parallel.0.2",
+            "sequential.0.0",
+            "sequential.0.1",
+            "sequential.0.2",
             "parallel.1",
-            "parallel.1.0",
-            "parallel.1.1",
-            "parallel.1.2",
+            "sequential.1.0",
+            "sequential.1.1",
+            "sequential.1.2",
             "parallel.2",
-            "parallel.2.0",
-            "parallel.2.1",
-            "parallel.2.2",
+            "sequential.2.0",
+            "sequential.2.1",
+            "sequential.2.2",
             "parallel.3",
-            "parallel.3.0",
-            "parallel.3.1",
-            "parallel.3.2",
+            "sequential.3.0",
+            "sequential.3.1",
+            "sequential.3.2",
             "parallel.4",
-            "parallel.4.0",
-            "parallel.4.1",
-            "parallel.4.2",
+            "sequential.4.0",
+            "sequential.4.1",
+            "sequential.4.2",
         ]
 
         await apply_step(self.plan, prompt=False)
@@ -549,8 +549,10 @@ class TestFullApplyPlan(unittest.IsolatedAsyncioTestCase):
 
         # checking if sub-step of each parallel step is run sequentially
         for i in range(5):
-            sub_step_order = [result for result in results if result.startswith(f"parallel.{i}.")]
-            exp_sub_step_order = [f"parallel.{i}.{j}" for j in range(3)]
+            sub_step_order = [
+                result for result in results if result.startswith(f"sequential.{i}.")
+            ]
+            exp_sub_step_order = [f"sequential.{i}.{j}" for j in range(3)]
             self.assertListEqual(sub_step_order, exp_sub_step_order)
 
         # checking if each result is in expected results and if lists are same length

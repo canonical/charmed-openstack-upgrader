@@ -33,11 +33,15 @@ The plan has a tree structure with six main sections:
                 availability zone 1
                     pre-upgrade steps
                     upgrade steps
-                        unit 1
-                            unit upgrade steps
+                        Ψ unit 1
+                            unit upgrade step A
+                            ...
+                            unit upgrade step Z
                         ...
-                        unit K
-                            unit upgrade steps
+                        Ψ unit K
+                            unit upgrade step A
+                            ...
+                            unit upgrade step Z
                     post-upgrade steps
                 ...
                 availability zone N
@@ -55,7 +59,7 @@ The plan has a tree structure with six main sections:
 
 The above demonstrates a complete cloud upgrade plan. However, it's also possible to
 target a specific subset of the cloud. For more information, please refer to
-:doc:`Upgrade Groups <./upgrade-groups>`. 
+:doc:`Upgrade Groups <./upgrade-groups>`.
 
 The **pre-upgrade** steps prepare COU for the upgrade process, which includes
 verifying the states or configurations of the applications, units, or of the
@@ -68,6 +72,11 @@ successfully.
 
 The plan can also be obtained without the need to perform a cloud upgrade using
 the **plan** command. See :doc:`Plan an upgrade <../how-to/plan-upgrade>`.
+
+The Greek letter Psi `Ψ` indicates that the step and its sub-steps will run in parallel with other
+steps in the same level. In the example above, within the `data-plane hypervisors upgrade`, the
+`unit 1` step will run in parallel with the `unit K` step, but their `upgrade steps A to Z`
+sub-steps will run sequentially.
 
 Different upgrade strategies are chosen for control-plane and data-plane applications
 when preparing the plan. For details, please refer to :doc:`Upgrade <./upgrade>`.
