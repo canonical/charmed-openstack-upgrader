@@ -75,3 +75,20 @@ def get_sample_plan(source: Path) -> tuple[Model, str]:
     model.get_applications = AsyncMock(return_value=applications)
 
     return model, dedent_plan(data["plan"])
+
+
+def sample_plans() -> dict[str, tuple[Model, str]]:
+    """Fixture that returns all sample plans in a directory.
+
+    This fixture returns a dictionary with the filename as the key and
+    a tuple consisting of a cou.utils.juju_utils.Model object and the
+    expected plan in string format as the value. The get_applications
+    function of this Model object returns the applications read from a
+    YAML file, from which the expected plan is also parsed.
+    """
+    directory = Path(__file__).parent / "sample_plans"
+
+    return [
+        (sample_file.name, get_sample_plan(sample_file))
+        for sample_file in directory.glob("*.yaml")
+    ]

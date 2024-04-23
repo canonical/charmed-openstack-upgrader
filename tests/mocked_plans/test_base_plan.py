@@ -15,6 +15,7 @@
 from unittest.mock import patch
 
 import pytest
+from utils import sample_plans
 
 from cou.commands import CLIargs
 from cou.steps.analyze import Analysis
@@ -22,13 +23,12 @@ from cou.steps.plan import generate_plan
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("file_name, model_exp_plan", sample_plans())
 @patch("cou.utils.nova_compute.get_instance_count", return_value=0)
-async def test_base_plan(_, sample_plans):
+async def test_base_plan(_, file_name, model_exp_plan):
     """Testing the base plans."""
     args = CLIargs("plan", auto_approve=True)
-    model, exp_plan = sample_plans["base.yaml"]
-
+    model, exp_plan = model_exp_plan
     analysis_results = await Analysis.create(model)
     plan = await generate_plan(analysis_results, args)
-
-    assert str(plan) == exp_plan
+    assert str(plan) == exp_plan, f"{file_name} failed"
