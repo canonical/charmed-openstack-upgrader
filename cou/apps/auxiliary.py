@@ -128,6 +128,15 @@ class AuxiliaryApplication(OpenStackApplication):
 
         track: str = self._get_track_from_channel(self.channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
+
+        if not compatible_os_releases:
+            raise ApplicationError(
+                f"Channel: {self.channel} for charm '{self.charm}' on series '{self.series}' is "
+                f"currently not supported in this tool. Please take a look at the documentation: "
+                "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see "
+                "if you are using the right track."
+            )
+
         return max(compatible_os_releases)
 
     def generate_upgrade_plan(

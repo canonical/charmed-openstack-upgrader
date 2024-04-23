@@ -344,3 +344,33 @@ This may be a charm downgrade, which is generally not supported.
     )
     plan = app.generate_upgrade_plan(target, force=False)
     assert str(plan) == exp_plan
+
+
+def test_auxiliary_subordinate_channel_codename_raise(model):
+    app = AuxiliarySubordinateApplication(
+        name="ceph-dashboard",
+        can_upgrade_to="",
+        charm="ceph-dashboard",
+        channel="luminous/stable",
+        config={},
+        machines={"0": MagicMock(spec_set=Machine)},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        units={},
+        workload_version="",
+    )
+
+    exp_msg = (
+        "Channel: luminous/stable for charm 'ceph-dashboard' on series 'focal' is currently "
+        "not supported in this tool. Please take a look at the documentation: "
+        "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
+        "to see if you are using the right track."
+    )
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.channel_codename
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.current_os_release
