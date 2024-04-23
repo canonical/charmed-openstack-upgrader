@@ -369,8 +369,9 @@ class OpenStackApplication(Application):
 
         if units_not_upgraded:
             raise ApplicationError(
-                f"Cannot upgrade unit(s) '{', '.join(units_not_upgraded)}' to {target}. "
-                "Try again in some minutes to see if the unit(s) have been upgraded."
+                f"Unit(s) '{', '.join(units_not_upgraded)}' did not complete the upgrade to "
+                f"{target}. Some local processes may still be executing; you may try re-running "
+                "COU in a few minutes."
             )
 
     def upgrade_plan_sanity_checks(
