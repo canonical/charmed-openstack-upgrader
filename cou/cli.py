@@ -205,7 +205,6 @@ async def _run_command(args: CLIargs) -> None:
 
 def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
-    completed_successfully = False
     try:
         args = parse_args(sys.argv[1:])
 
@@ -226,6 +225,10 @@ def entrypoint() -> None:
     except COUException as exc:
         progress_indicator.fail()
         logger.error(exc)
+        logger.error(
+            "See the known issues at https://canonical-charmed-openstack-upgrader.readthedocs-"
+            "hosted.com/en/stable/reference/known-issues/"
+        )
         sys.exit(1)
     except JujuError as exc:
         progress_indicator.fail()
@@ -242,12 +245,5 @@ def entrypoint() -> None:
         logger.error("Unexpected error occurred.")
         logger.exception(exc)
         sys.exit(2)
-    else:
-        completed_successfully = True
     finally:
-        if not completed_successfully:
-            logger.error(
-                "See the known issues at https://canonical-charmed-openstack-upgrader.readthedocs-"
-                "hosted.com/en/stable/reference/known-issues/"
-            )
         progress_indicator.stop()
