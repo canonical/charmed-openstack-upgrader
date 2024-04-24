@@ -363,8 +363,8 @@ def test_auxiliary_subordinate_channel_codename_raise(model):
     )
 
     exp_msg = (
-        "Channel: luminous/stable for charm 'ceph-dashboard' on series 'focal' is currently "
-        "not supported in this tool. Please take a look at the documentation: "
+        "Channel: luminous/stable for charm 'ceph-dashboard' on series 'focal' is not supported "
+        "by COU. Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )

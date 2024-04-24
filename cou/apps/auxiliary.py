@@ -132,7 +132,7 @@ class AuxiliaryApplication(OpenStackApplication):
         if not compatible_os_releases:
             raise ApplicationError(
                 f"Channel: {self.channel} for charm '{self.charm}' on series '{self.series}' is "
-                f"currently not supported in this tool. Please take a look at the documentation: "
+                f"not supported by COU. Please take a look at the documentation: "
                 "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see "
                 "if you are using the right track."
             )

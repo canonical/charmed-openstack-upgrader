@@ -315,8 +315,8 @@ def test_check_channel_error(_):
     channel = "stable"
     series = "focal"
     exp_error_msg = (
-        f"Channel: {channel} for charm '{name}' on series '{series}' is currently not supported "
-        "in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm '{name}' on series '{series}' is not supported by COU. "
+        "Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if you "
         "are using the right track."
     )

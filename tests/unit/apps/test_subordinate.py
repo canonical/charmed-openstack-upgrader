@@ -129,8 +129,8 @@ def test_channel_setter_invalid(model, channel):
     """Test unsuccessful validation of channel upgrade plan for SubordinateApplication."""
     machines = {"0": MagicMock(spec_set=Machine)}
     exp_error_msg = (
-        f"Channel: {channel} for charm 'keystone-ldap' on series 'focal' is currently not "
-        "supported in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm 'keystone-ldap' on series 'focal' is not supported by COU. "
+        "Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if you "
         "are using the right track."
     )
