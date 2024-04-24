@@ -335,8 +335,8 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
     """Test auxiliary upgrade plan with unknown track."""
     channel = "2.0/stable"
     exp_msg = (
-        f"Channel: {channel} for charm 'rabbitmq-server' on series 'focal' is currently "
-        "not supported in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm 'rabbitmq-server' on series 'focal' is not supported by "
+        "COU. Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
@@ -398,8 +398,8 @@ def test_auxiliary_raise_error_unknown_series(model):
     series = "foo"
     channel = "3.8/stable"
     exp_msg = (
-        f"Channel: {channel} for charm 'rabbitmq-server' on series '{series}' is currently "
-        "not supported in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm 'rabbitmq-server' on series '{series}' is not supported by "
+        "COU. Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
@@ -436,8 +436,8 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
     """
     current_os_release.return_value = OpenStackRelease("diablo")
     exp_error_msg = (
-        "Channel: 3.8/stable for charm 'rabbitmq-server' on series 'focal' is currently not "
-        "supported in this tool. Please take a look at the documentation: "
+        "Channel: 3.8/stable for charm 'rabbitmq-server' on series 'focal' is not supported by "
+        "COU. Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if you "
         "are using the right track."
     )
@@ -895,8 +895,8 @@ def test_ovn_no_compatible_os_release(channel, model):
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=Machine)}
     exp_msg = (
-        f"Channel: {channel} for charm '{charm}' on series 'focal' is currently "
-        "not supported in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm '{charm}' on series 'focal' is not supported by COU. "
+        "Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )

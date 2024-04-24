@@ -124,7 +124,10 @@ async def test_application_verify_workload_upgrade(model):
 async def test_application_verify_workload_upgrade_fail(model):
     """Test Kyestone application check unsuccessful upgrade."""
     target = OpenStackRelease("victoria")
-    exp_msg = "Cannot upgrade units 'keystone/0' to victoria."
+    exp_msg = (
+        r"Unit\(s\) 'keystone/0' did not complete the upgrade to victoria. Some local processes "
+        r"may still be executing; you may try re-running COU in a few minutes."
+    )
     machines = {"0": MagicMock(spec_set=Machine)}
     app = Keystone(
         name="keystone",
