@@ -225,6 +225,10 @@ def entrypoint() -> None:
     except COUException as exc:
         progress_indicator.fail()
         logger.error(exc)
+        logger.error(
+            "See the known issues at https://canonical-charmed-openstack-upgrader.readthedocs-"
+            "hosted.com/en/stable/reference/known-issues/"
+        )
         sys.exit(1)
     except JujuError as exc:
         progress_indicator.fail()
