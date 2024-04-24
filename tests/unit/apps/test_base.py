@@ -541,7 +541,7 @@ def test_get_charmhub_migration_step(current_os_release, model):
 
 
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_get_change_to_openstack_channels_step(current_os_release, model):
+def test_get_change_channel_possible_downgrade_step(current_os_release, model):
     """Applications using latest/stable should be switched to a release-specific channel."""
     current_os_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
@@ -560,10 +560,12 @@ def test_get_change_to_openstack_channels_step(current_os_release, model):
         units={},
         workload_version="1",
     )
-    assert app._get_change_to_openstack_channels_step(target) == PreUpgradeStep(
-        f"WARNING: Changing '{app.name}' channel from {app.channel} to "
+    assert app._get_change_channel_possible_downgrade_step(
+        target, app.expected_current_channel(target), PreUpgradeStep
+    ) == PreUpgradeStep(
+        f"WARNING: Changing '{app.name}' channel from latest/stable to "
         "ussuri/stable. This may be a charm downgrade, which is generally not supported.",
-        coro=model.upgrade_charm(app.name, app.expected_current_channel(target)),
+        coro=model.upgrade_charm(app.name, "ussuri/stable"),
     )
 
 
@@ -592,7 +594,7 @@ def test_get_refresh_current_channel_step(model):
 
 
 @patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
-@patch("cou.apps.base.OpenStackApplication._get_change_to_openstack_channels_step")
+@patch("cou.apps.base.OpenStackApplication._get_change_channel_possible_downgrade_step")
 @patch("cou.apps.base.OpenStackApplication._get_charmhub_migration_step")
 def test_get_refresh_charm_step_skip(
     mock_ch_migration, mock_change_os_channels, mock_refresh_current_channel, model
@@ -621,7 +623,7 @@ def test_get_refresh_charm_step_skip(
 
 
 @patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
-@patch("cou.apps.base.OpenStackApplication._get_change_to_openstack_channels_step")
+@patch("cou.apps.base.OpenStackApplication._get_change_channel_possible_downgrade_step")
 @patch(
     "cou.apps.base.OpenStackApplication._get_charmhub_migration_step",
 )
@@ -659,7 +661,7 @@ def test_get_refresh_charm_step_refresh_current_channel(
 
 
 @patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
-@patch("cou.apps.base.OpenStackApplication._get_change_to_openstack_channels_step")
+@patch("cou.apps.base.OpenStackApplication._get_change_channel_possible_downgrade_step")
 @patch("cou.apps.base.OpenStackApplication._get_charmhub_migration_step")
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
 def test_get_refresh_charm_step_change_to_openstack_channels(
@@ -704,7 +706,7 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
 
 
 @patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
-@patch("cou.apps.base.OpenStackApplication._get_change_to_openstack_channels_step")
+@patch("cou.apps.base.OpenStackApplication._get_change_channel_possible_downgrade_step")
 @patch("cou.apps.base.OpenStackApplication._get_charmhub_migration_step")
 @patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
 def test_get_refresh_charm_step_charmhub_migration(

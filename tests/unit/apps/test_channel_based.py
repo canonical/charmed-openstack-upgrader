@@ -58,7 +58,10 @@ def test_application_versionless(model):
 
     assert app.current_os_release == "ussuri"
     assert app.is_versionless is True
-    assert app.get_latest_os_version(units["glance-simplestreams-sync/0"]) == app.channel_codename
+    assert (
+        app.get_latest_os_version(units["glance-simplestreams-sync/0"])
+        == app.current_channel_os_release
+    )
 
 
 def test_channel_based_application_latest_stable(model):
@@ -72,7 +75,7 @@ def test_channel_based_application_latest_stable(model):
                 Ψ Upgrade software packages on unit 'glance-simplestreams-sync/0'
             WARNING: Changing 'glance-simplestreams-sync' channel from latest/stable to victoria/stable. \
 This may be a charm downgrade, which is generally not supported.
-            Upgrade 'glance-simplestreams-sync' to the new channel: 'wallaby/stable'
+            Upgrade 'glance-simplestreams-sync' from 'ussuri/stable' to the new channel: 'wallaby/stable'
             Change charm config of 'glance-simplestreams-sync' 'openstack-origin' to 'cloud:focal-wallaby'
     """  # noqa: E501 line too long
     )
@@ -254,7 +257,7 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: 'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
@@ -328,7 +331,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: 'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
@@ -411,7 +414,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: 'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),

@@ -49,9 +49,6 @@ class AuxiliaryApplication(OpenStackApplication):
         :return: True if valid, False otherwise.
         :rtype: bool
         """
-        if self.is_from_charm_store:
-            logger.debug("'%s' has been installed from the charm store", self.name)
-            return True
 
         current_track = self._get_track_from_channel(charm_channel)
         possible_tracks = OPENSTACK_TO_TRACK_MAPPING.get(
@@ -107,26 +104,15 @@ class AuxiliaryApplication(OpenStackApplication):
             )
         )
 
-    @property
-    def channel_codename(self) -> OpenStackRelease:
-        """Identify the OpenStack release set in the charm channel.
+    def _get_os_release_from_channel(self, channel: str) -> OpenStackRelease:
+        """Get the OpenStack release from a channel
 
-        Auxiliary charms can have multiple compatible OpenStack releases. In
-        that case, return the latest compatible OpenStack version.
-
-        :return: OpenStackRelease object
+        :param channel: channel to get the release
+        :type channel: str
+        :return: OpenStack release that the channel points to
         :rtype: OpenStackRelease
-        :raises ApplicationError: When cannot identify suitable OpenStack release codename
-                                  based on the track of the charm channel.
         """
-        if self.need_crossgrade:
-            logger.debug(
-                "Cannot determine the OpenStack release of '%s' via its channel. Assuming Ussuri",
-                self.name,
-            )
-            return OpenStackRelease("ussuri")
-
-        track: str = self._get_track_from_channel(self.channel)
+        track: str = self._get_track_from_channel(channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
 
         if not compatible_os_releases:

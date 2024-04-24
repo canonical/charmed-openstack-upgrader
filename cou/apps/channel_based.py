@@ -39,7 +39,7 @@ class ChannelBasedApplication(OpenStackApplication):
         :return: The latest compatible OpenStack release.
         :rtype: OpenStackRelease
         """
-        return self.channel_codename
+        return self.current_channel_os_release
 
     @property
     def current_os_release(self) -> OpenStackRelease:
@@ -48,7 +48,7 @@ class ChannelBasedApplication(OpenStackApplication):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        return self.channel_codename
+        return self.current_channel_os_release
 
     @property
     def is_versionless(self) -> bool:

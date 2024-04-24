@@ -42,7 +42,7 @@ class SubordinateApplication(OpenStackApplication):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        return self.channel_codename
+        return self.current_channel_os_release
 
     def _check_application_target(self, target: OpenStackRelease) -> None:
         """Check if the application is already upgraded.

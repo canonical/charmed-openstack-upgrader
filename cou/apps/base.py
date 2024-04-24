@@ -20,7 +20,7 @@ import logging
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import yaml
 
@@ -184,7 +184,7 @@ class OpenStackApplication(Application):
             ) from exc
 
     @property
-    def channel_codename(self) -> OpenStackRelease:
+    def current_channel_os_release(self) -> OpenStackRelease:
         """Identify the OpenStack release set in the charm channel.
 
         :return: OpenStackRelease object
@@ -197,9 +197,17 @@ class OpenStackApplication(Application):
                 self.name,
             )
             return OpenStackRelease("ussuri")
+        return self._get_os_release_from_channel(self.channel)
 
-        # get the OpenStack release from the channel track of the application.
-        return OpenStackRelease(self._get_track_from_channel(self.channel))
+    def _get_os_release_from_channel(self, channel: str) -> OpenStackRelease:
+        """Get the OpenStack release from a channel
+
+        :param channel: channel to get the release
+        :type channel: str
+        :return: OpenStack release that the channel points to
+        :rtype: OpenStackRelease
+        """
+        return OpenStackRelease(self._get_track_from_channel(channel))
 
     @property
     def current_os_release(self) -> OpenStackRelease:
@@ -331,6 +339,9 @@ class OpenStackApplication(Application):
         :rtype: str
         """
         return f"{target.codename}/stable"
+
+    def target_channel_os_release(self, target) -> OpenStackRelease:
+        return self._get_os_release_from_channel(self.target_channel(target))
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -556,7 +567,9 @@ class OpenStackApplication(Application):
         if self.is_from_charm_store:
             return self._get_charmhub_migration_step(target)
         if self.channel == LATEST_STABLE:
-            return self._get_change_to_openstack_channels_step(target)
+            return self._get_change_channel_possible_downgrade_step(
+                target, self.expected_current_channel(target), PreUpgradeStep
+            )
         if self._need_current_channel_refresh(target):
             return self._get_refresh_current_channel_step()
         logger.info(
@@ -579,12 +592,14 @@ class OpenStackApplication(Application):
             ),
         )
 
-    def _get_change_to_openstack_channels_step(self, target: OpenStackRelease) -> PreUpgradeStep:
-        """Get the step for changing to an OpenStack channel.
+    def _get_change_channel_possible_downgrade_step(
+        self, target: OpenStackRelease, channel: str, step: Union[PreUpgradeStep, UpgradeStep]
+    ) -> Union[PreUpgradeStep, UpgradeStep]:
+        """Get the step for changing to a channel that can be a downgrade.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :return: Step for changing to OpenStack channels
+        :return: Step for changing to a channel that can be a downgrade
         :rtype: PreUpgradeStep
         """
         logger.warning(
@@ -592,15 +607,14 @@ class OpenStackApplication(Application):
             "which is generally not supported.",
             self.name,
             self.channel,
-            self.expected_current_channel(target),
+            channel,
             target,
         )
-        return PreUpgradeStep(
+        msg = (
             f"WARNING: Changing '{self.name}' channel from {self.channel} to "
-            f"{self.expected_current_channel(target)}. This may be a charm downgrade, "
-            "which is generally not supported.",
-            coro=self.model.upgrade_charm(self.name, self.expected_current_channel(target)),
+            f"{channel}. This may be a charm downgrade, which is generally not supported."
         )
+        return step(msg, coro=self.model.upgrade_charm(self.name, channel))
 
     def _get_refresh_current_channel_step(self) -> PreUpgradeStep:
         """Get step for refreshing the current channel.
@@ -621,7 +635,7 @@ class OpenStackApplication(Application):
         :return: True if needs to refresh, False otherwise
         :rtype: bool
         """
-        return bool(self.can_upgrade_to) and self.channel_codename <= target
+        return bool(self.can_upgrade_to) and self.current_channel_os_release <= target
 
     def _get_upgrade_charm_step(self, target: OpenStackRelease) -> UpgradeStep:
         """Get step for upgrading the charm.
@@ -631,12 +645,19 @@ class OpenStackApplication(Application):
         :return: Step for upgrading the charm.
         :rtype: UpgradeStep
         """
-        if self.channel != self.target_channel(target):
+        if self.current_channel_os_release <= self.target_channel_os_release(
+            target
+        ) and self.channel != self.target_channel(target):
             return UpgradeStep(
-                description=f"Upgrade '{self.name}' to the new channel: "
+                description=f"Upgrade '{self.name}' from '{self.channel}' to the new channel: "
                 f"'{self.target_channel(target)}'",
                 coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
             )
+        if self.current_channel_os_release > self.target_channel_os_release(target):
+            return self._get_change_channel_possible_downgrade_step(
+                target, self.target_channel(target), UpgradeStep
+            )
+        logger.debug("%s does not need to upgrade the channel", self.name)
         return UpgradeStep()
 
     def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:

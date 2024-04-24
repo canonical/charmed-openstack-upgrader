@@ -70,7 +70,7 @@ def test_auxiliary_app(model):
     assert app.is_valid_track(app.channel) is True
     assert app.os_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.channel_codename == "yoga"
+    assert app.current_channel_os_release == "yoga"
     assert app.is_subordinate is False
     assert app.current_os_release == "yoga"
 
@@ -100,10 +100,10 @@ def test_auxiliary_app_cs(model):
     )
 
     assert app.channel == "stable"
-    assert app.is_valid_track(app.channel) is True
+    assert app.is_valid_track(app.channel) is False
     assert app.os_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.channel_codename == "ussuri"
+    assert app.current_channel_os_release == "ussuri"
     assert app.current_os_release == "yoga"
 
 
@@ -154,7 +154,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             coro=model.upgrade_charm(app.name, "3.8/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
+            description=f"Upgrade '{app.name}' from '3.8/stable' to the new channel: '3.9/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
@@ -262,7 +262,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     machines = {"0": MagicMock(spec_set=Machine)}
     app = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to="3.9/stable",
+        can_upgrade_to="cs:rabbitmq-server",
         charm="rabbitmq-server",
         channel="stable",
         config={"source": {"value": "distro"}},
@@ -301,7 +301,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
+            description=f"Upgrade '{app.name}' from 'stable' to the new channel: '3.9/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
@@ -624,7 +624,7 @@ def test_ceph_mon_app(model):
     assert app.os_origin == "cloud:focal-xena"
     assert app.get_latest_os_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
     assert app.apt_source_codename == "xena"
-    assert app.channel_codename == "xena"
+    assert app.current_channel_os_release == "xena"
     assert app.is_subordinate is False
 
 
@@ -681,7 +681,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",
+            description=f"Upgrade '{app.name}' from 'pacific/stable' to the new channel: 'quincy/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
@@ -817,7 +817,7 @@ def test_ovn_principal(model):
     assert app.channel == "22.03/stable"
     assert app.os_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.channel_codename == "yoga"
+    assert app.current_channel_os_release == "yoga"
     assert app.current_os_release == "yoga"
     assert app.is_subordinate is False
 
@@ -1447,3 +1447,33 @@ def test_expected_current_channel_auxiliary(mock_os_release, model, channel, ori
     )
     # expected_current_channel is indifferent if the charm needs crossgrade
     assert ceph_osd.expected_current_channel(target) == "octopus/stable"
+
+
+def test_auxiliary_wrong_channel(model):
+    """Test when an auxiliary charm is with a channel that doesn't match the workload version."""
+    target = OpenStackRelease("victoria")
+    charm = "ceph-mon"
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = CephMon(
+        name=charm,
+        can_upgrade_to="asfd",
+        charm=charm,
+        channel="quincy/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="15.2.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="15.2.0",
+    )
+    plan = app.generate_upgrade_plan(target, force=False)
+    print(plan)
+    assert 0
