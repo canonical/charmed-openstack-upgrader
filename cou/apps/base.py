@@ -797,8 +797,7 @@ class OpenStackApplication(Application):
 
         raise ApplicationError(
             f"Channel: {self.channel} for charm '{self.charm}' on series "
-            f"'{self.series}' is currently not supported in this tool. Please take a look at the "
-            "documentation: "
+            f"'{self.series}' is not supported by COU. Please take a look at the documentation: "
             "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
             "you are using the right track."
         )
