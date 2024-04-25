@@ -15,7 +15,6 @@
 from unittest.mock import patch
 
 import pytest
-from utils import sample_plans
 
 from cou.commands import CLIargs
 from cou.steps.analyze import Analysis
@@ -23,15 +22,11 @@ from cou.steps.plan import generate_plan
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "file_name, model, exp_plan",
-    sample_plans(),
-    ids=[file_name for file_name, *_ in sample_plans()],
-)
 @patch("cou.utils.nova_compute.get_instance_count", return_value=0)
-async def test_base_plan(_, file_name, model, exp_plan):
-    """Testing the base plans."""
+async def test_plans_with_empty_hypervisors(_, sample_plans):
+    """Testing all the plans on sample_plans folder considering all hypervisors empty."""
+    model, exp_plan = sample_plans
     args = CLIargs("plan", auto_approve=True)
     analysis_results = await Analysis.create(model)
     plan = await generate_plan(analysis_results, args)
-    assert str(plan) == exp_plan, f"{file_name} failed"
+    assert str(plan) == exp_plan

@@ -21,7 +21,7 @@ from cou.utils.juju_utils import Application, Machine, Model, Unit
 from tests.unit.utils import dedent_plan
 
 
-def get_sample_plan(source: Path) -> tuple[str, Model, str]:
+def get_sample_plan(source: Path) -> tuple[Model, str]:
     """Help function to get dict of Applications and expected upgrade plan from file.
 
     This function can load applications from yaml format, where each app is string representation
@@ -74,17 +74,10 @@ def get_sample_plan(source: Path) -> tuple[str, Model, str]:
     type(model).name = PropertyMock(return_value=source.stem)
     model.get_applications = AsyncMock(return_value=applications)
 
-    return source.name, model, dedent_plan(data["plan"])
+    return model, dedent_plan(data["plan"])
 
 
-def sample_plans() -> list[tuple[str, Model, str]]:
-    """Return all sample plans in a directory.
-
-    This function return a list of tuples consisting of the filename, a cou.utils.juju_utils.Model
-    object and the expected plan in string format as the value. The get_applications function of
-    this Model object returns the applications read from a YAML file, from which the expected plan
-    is also parsed.
-    """
+def get_sample_files() -> list[Path]:
+    """Get all the yaml files on the sample_plans folder."""
     directory = Path(__file__).parent / "sample_plans"
-
-    return [get_sample_plan(sample_file) for sample_file in directory.glob("*.yaml")]
+    return [sample_file for sample_file in directory.glob("*.yaml")]
