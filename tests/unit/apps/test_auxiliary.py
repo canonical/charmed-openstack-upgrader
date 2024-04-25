@@ -1472,7 +1472,7 @@ def test_auxiliary_wrong_channel(model):
     )
 
     # plan will warn that channel will change from quincy to octopus to match the workload version,
-    # but this can be a downgrade. COU are adjusting the channel based
+    # but this can be a downgrade.
     exp_plan = dedent_plan(
         """\
     Upgrade plan for 'ceph-mon' to 'victoria'
