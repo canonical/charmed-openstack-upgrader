@@ -49,7 +49,6 @@ class AuxiliaryApplication(OpenStackApplication):
         :return: True if valid, False otherwise.
         :rtype: bool
         """
-
         current_track = self._get_track_from_channel(charm_channel)
         possible_tracks = OPENSTACK_TO_TRACK_MAPPING.get(
             (self.charm, self.series, self.current_os_release.codename), []
@@ -105,12 +104,16 @@ class AuxiliaryApplication(OpenStackApplication):
         )
 
     def _get_os_release_from_channel(self, channel: str) -> OpenStackRelease:
-        """Get the OpenStack release from a channel
+        """Get the OpenStack release from a channel.
+
+        Auxiliary charms can have multiple compatible OpenStack releases. In that case, return the
+        latest compatible OpenStack version.
 
         :param channel: channel to get the release
         :type channel: str
         :return: OpenStack release that the channel points to
         :rtype: OpenStackRelease
+        :raises ApplicationError: When cannot identify suitable OpenStack release codename
         """
         track: str = self._get_track_from_channel(channel)
         compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]

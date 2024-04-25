@@ -74,7 +74,8 @@ def test_generate_upgrade_plan(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
+            "'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
@@ -169,7 +170,7 @@ def test_generate_plan_ch_migration(model, channel):
         name="keystone-ldap",
         can_upgrade_to="wallaby/stable",
         charm="keystone-ldap",
-        channel=f"ussuri/{channel}",
+        channel=channel,
         config={},
         machines=machines,
         model=model,
@@ -177,7 +178,7 @@ def test_generate_plan_ch_migration(model, channel):
         series="focal",
         subordinate_to=["nova-compute"],
         units={},
-        workload_version="18.1.0",
+        workload_version="",
     )
     expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
     upgrade_steps = [
@@ -187,7 +188,8 @@ def test_generate_plan_ch_migration(model, channel):
             coro=model.upgrade_charm(app.name, "victoria/stable", switch="ch:keystone-ldap"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'wallaby/stable'",
+            description=f"Upgrade '{app.name}' from 'victoria/stable' to the new channel: "
+            "'wallaby/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "wallaby/stable"),
         ),
@@ -233,7 +235,8 @@ def test_generate_plan_from_to(model, from_os, to_os):
             coro=model.upgrade_charm(app.name, f"{from_os}/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: '{to_os}/stable'",
+            description=f"Upgrade '{app.name}' from '{from_os}/stable' to the new channel: "
+            f"'{to_os}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{to_os}/stable"),
         ),

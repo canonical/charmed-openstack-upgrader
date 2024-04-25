@@ -20,7 +20,7 @@ import logging
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Optional, Union
+from typing import Any, Coroutine, Optional
 
 import yaml
 
@@ -200,7 +200,7 @@ class OpenStackApplication(Application):
         return self._get_os_release_from_channel(self.channel)
 
     def _get_os_release_from_channel(self, channel: str) -> OpenStackRelease:
-        """Get the OpenStack release from a channel
+        """Get the OpenStack release from a channel.
 
         :param channel: channel to get the release
         :type channel: str
@@ -339,9 +339,6 @@ class OpenStackApplication(Application):
         :rtype: str
         """
         return f"{target.codename}/stable"
-
-    def target_channel_os_release(self, target) -> OpenStackRelease:
-        return self._get_os_release_from_channel(self.target_channel(target))
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -567,9 +564,11 @@ class OpenStackApplication(Application):
         if self.is_from_charm_store:
             return self._get_charmhub_migration_step(target)
         if self.channel == LATEST_STABLE:
-            return self._get_change_channel_possible_downgrade_step(
-                target, self.expected_current_channel(target), PreUpgradeStep
+            description, coro = self._get_change_channel_possible_downgrade_step(
+                target, self.expected_current_channel(target)
             )
+            return PreUpgradeStep(description=description, coro=coro)
+
         if self._need_current_channel_refresh(target):
             return self._get_refresh_current_channel_step()
         logger.info(
@@ -593,14 +592,16 @@ class OpenStackApplication(Application):
         )
 
     def _get_change_channel_possible_downgrade_step(
-        self, target: OpenStackRelease, channel: str, step: Union[PreUpgradeStep, UpgradeStep]
-    ) -> Union[PreUpgradeStep, UpgradeStep]:
+        self, target: OpenStackRelease, channel: str
+    ) -> tuple[str, Coroutine]:
         """Get the step for changing to a channel that can be a downgrade.
 
-        :param target: OpenStack release as target to upgrade.
+        :param target:  OpenStack release as target to upgrade
         :type target: OpenStackRelease
-        :return: Step for changing to a channel that can be a downgrade
-        :rtype: PreUpgradeStep
+        :param channel: channel to upgrade
+        :type channel: str
+        :return: tuple containing the message and the coroutine.
+        :rtype: tuple[str, Coroutine]
         """
         logger.warning(
             "Changing '%s' channel from %s to %s to upgrade to %s. This may be a charm downgrade, "
@@ -614,7 +615,7 @@ class OpenStackApplication(Application):
             f"WARNING: Changing '{self.name}' channel from {self.channel} to "
             f"{channel}. This may be a charm downgrade, which is generally not supported."
         )
-        return step(msg, coro=self.model.upgrade_charm(self.name, channel))
+        return msg, self.model.upgrade_charm(self.name, channel)
 
     def _get_refresh_current_channel_step(self) -> PreUpgradeStep:
         """Get step for refreshing the current channel.
@@ -645,18 +646,27 @@ class OpenStackApplication(Application):
         :return: Step for upgrading the charm.
         :rtype: UpgradeStep
         """
-        if self.current_channel_os_release <= self.target_channel_os_release(
-            target
-        ) and self.channel != self.target_channel(target):
+        channel = self.expected_current_channel(target) if self.need_crossgrade else self.channel
+
+        if (
+            self.current_channel_os_release <= self.current_os_release
+            and channel != self.target_channel(target)
+        ):
             return UpgradeStep(
-                description=f"Upgrade '{self.name}' from '{self.channel}' to the new channel: "
+                description=f"Upgrade '{self.name}' from '{channel}' to the new channel: "
                 f"'{self.target_channel(target)}'",
                 coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
             )
-        if self.current_channel_os_release > self.target_channel_os_release(target):
-            return self._get_change_channel_possible_downgrade_step(
-                target, self.target_channel(target), UpgradeStep
+
+        if (
+            self.current_channel_os_release > self.current_os_release
+            and channel != self.target_channel(target)
+        ):
+            description, coro = self._get_change_channel_possible_downgrade_step(
+                target, self.target_channel(target)
             )
+            return UpgradeStep(description=description, coro=coro)
+
         logger.debug("%s does not need to upgrade the channel", self.name)
         return UpgradeStep()
 

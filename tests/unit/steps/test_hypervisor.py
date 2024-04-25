@@ -401,7 +401,7 @@ def test_hypervisor_upgrade_plan(model):
                 Ψ Upgrade software packages on unit 'nova-compute/0'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'cinder' to the new channel: 'victoria/stable'
+            Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
             Upgrade plan for units: cinder/0
                 Ψ Upgrade plan for unit 'cinder/0'
@@ -409,7 +409,7 @@ def test_hypervisor_upgrade_plan(model):
                     Upgrade the unit: 'cinder/0'
                     Resume the unit: 'cinder/0'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/0
                 Ψ Upgrade plan for unit 'nova-compute/0'
@@ -428,7 +428,7 @@ def test_hypervisor_upgrade_plan(model):
                 Ψ Upgrade software packages on unit 'nova-compute/1'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/1
                 Ψ Upgrade plan for unit 'nova-compute/1'
@@ -445,7 +445,7 @@ def test_hypervisor_upgrade_plan(model):
                 Ψ Upgrade software packages on unit 'nova-compute/2'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/2
                 Ψ Upgrade plan for unit 'nova-compute/2'
@@ -528,7 +528,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
                 Ψ Upgrade software packages on unit 'nova-compute/0'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'cinder' to the new channel: 'victoria/stable'
+            Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
             Upgrade plan for units: cinder/0
                 Ψ Upgrade plan for unit 'cinder/0'
@@ -536,7 +536,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
                     Upgrade the unit: 'cinder/0'
                     Resume the unit: 'cinder/0'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/0
                 Ψ Upgrade plan for unit 'nova-compute/0'

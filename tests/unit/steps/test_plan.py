@@ -93,7 +93,8 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'",
+            description=f"Upgrade '{app.name}' from '{target.previous_release}/stable' "
+            f"to the new channel: '{target.codename}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
@@ -129,7 +130,8 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
             coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable"),
         ),
         UpgradeStep(
-            f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'",
+            f"Upgrade '{app.name}' from '{target.previous_release}/stable' to the new channel: "
+            f"'{target.codename}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
@@ -153,14 +155,14 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                     Ψ Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
                 Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'keystone' to the new channel: 'victoria/stable'
+                Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
-                Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
+                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -168,7 +170,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Ψ Upgrade plan for unit 'nova-compute/0'
@@ -316,7 +318,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
-                Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
+                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -324,7 +326,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Ψ Upgrade plan for unit 'nova-compute/0'

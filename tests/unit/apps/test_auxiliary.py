@@ -301,11 +301,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' from 'stable' to the new channel: '3.9/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "3.9/stable"),
-        ),
-        UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
@@ -681,7 +676,8 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' from 'pacific/stable' to the new channel: 'quincy/stable'",
+            description=f"Upgrade '{app.name}' from 'pacific/stable' "
+            "to the new channel: 'quincy/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
@@ -1456,7 +1452,7 @@ def test_auxiliary_wrong_channel(model):
     machines = {"0": MagicMock(spec_set=Machine)}
     app = CephMon(
         name=charm,
-        can_upgrade_to="asfd",
+        can_upgrade_to="",
         charm=charm,
         channel="quincy/stable",
         config={"source": {"value": "distro"}},
@@ -1474,6 +1470,20 @@ def test_auxiliary_wrong_channel(model):
         },
         workload_version="15.2.0",
     )
+
+    # plan will warn that channel will change from quincy to octopus to match the workload version,
+    # but this can be a downgrade. COU are adjusting the channel based
+    exp_plan = dedent_plan(
+        """\
+    Upgrade plan for 'ceph-mon' to 'victoria'
+        Upgrade software packages of 'ceph-mon' from the current APT repositories
+            Ψ Upgrade software packages on unit 'ceph-mon/0'
+        Ensure that the 'require-osd-release' option matches the 'ceph-osd' version
+        WARNING: Changing 'ceph-mon' channel from quincy/stable to octopus/stable. This may be a charm downgrade, which is generally not supported.
+        Change charm config of 'ceph-mon' 'source' to 'cloud:focal-victoria'
+        Wait for up to 2400s for model 'test_model' to reach the idle state
+        Verify that the workload of 'ceph-mon' has been upgraded on units: ceph-mon/0
+    """  # noqa: E501 line too long
+    )
     plan = app.generate_upgrade_plan(target, force=False)
-    print(plan)
-    assert 0
+    assert str(plan) == exp_plan
