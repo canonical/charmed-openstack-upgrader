@@ -141,7 +141,7 @@ class SmokeTest(unittest.TestCase):
             "\t\t\tUpgrade software packages of 'designate-bind' "
             "from the current APT repositories\n"
             "\t\t\t\tΨ Upgrade software packages on unit 'designate-bind/0'\n"
-            "\t\t\tUpgrade 'designate-bind' from 'ussuri/stable' to the new channel:"
+            "\t\t\tUpgrade 'designate-bind' from 'ussuri/stable' to the new channel: "
             "'victoria/stable'\n"
             "\t\t\tWait for up to 300s for app 'designate-bind' to reach the idle state\n"
             "\t\t\tVerify that the workload of 'designate-bind' has been upgraded on units:"
