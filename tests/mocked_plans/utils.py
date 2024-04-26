@@ -21,7 +21,7 @@ from cou.utils.juju_utils import Application, Machine, Model, Unit
 from tests.unit.utils import dedent_plan
 
 
-def get_sample_plan(source: Path) -> tuple[Model, str]:
+def parse_sample_plan_file(source: Path) -> tuple[Model, str]:
     """Help function to get dict of Applications and expected upgrade plan from file.
 
     This function can load applications from yaml format, where each app is string representation
@@ -80,4 +80,4 @@ def get_sample_plan(source: Path) -> tuple[Model, str]:
 def get_sample_files() -> list[Path]:
     """Get all the yaml files on the sample_plans folder."""
     directory = Path(__file__).parent / "sample_plans"
-    return [sample_file for sample_file in directory.glob("*.yaml")]
+    return (sample_file for sample_file in directory.glob("*.yaml"))

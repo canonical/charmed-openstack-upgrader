@@ -15,15 +15,15 @@
 import pytest
 
 from cou.utils.juju_utils import Model
-from tests.mocked_plans.utils import get_sample_files, get_sample_plan
+from tests.mocked_plans.utils import get_sample_files, parse_sample_plan_file
 
 
 @pytest.fixture(params=get_sample_files(), ids=[path.name for path in get_sample_files()])
-def sample_plans(request) -> tuple[Model, str]:
-    """Return all sample plans in a directory.
+def sample_plan(request) -> tuple[Model, str]:
+    """Return a sample plan from the sample_plans directory.
 
     This parametrized fixture return a tuple with a cou.utils.juju_utils.Model object and the
     expected plan in string format as the value. The get_applications function of this Model object
     returns the applications read from a YAML file, from which the expected plan is also parsed.
     """
-    return get_sample_plan(request.param)
+    return parse_sample_plan_file(request.param)
