@@ -13,6 +13,7 @@
 # limitations under the License.
 """Module to provide helper functions for writing mock upgrade tests."""
 from pathlib import Path
+from typing import Generator
 from unittest.mock import AsyncMock, PropertyMock
 
 import yaml
@@ -77,7 +78,7 @@ def parse_sample_plan_file(source: Path) -> tuple[Model, str]:
     return model, dedent_plan(data["plan"])
 
 
-def get_sample_files() -> list[Path]:
+def get_sample_files() -> Generator[Path, None, None]:
     """Get all the yaml files on the sample_plans folder."""
     directory = Path(__file__).parent / "sample_plans"
     return (sample_file for sample_file in directory.glob("*.yaml"))
