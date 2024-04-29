@@ -12,26 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-
 import pytest
 
 from cou.utils.juju_utils import Model
-from tests.mocked_plans.utils import get_sample_plan
+from tests.mocked_plans.utils import get_sample_files, parse_sample_plan_file
 
 
-@pytest.fixture(scope="session")
-def sample_plans() -> dict[str, tuple[Model, str]]:
-    """Fixture that returns all sample plans in a directory.
+@pytest.fixture(params=get_sample_files(), ids=[path.name for path in get_sample_files()])
+def sample_plan(request) -> tuple[Model, str]:
+    """Return a sample plan from the sample_plans directory.
 
-    This fixture returns a dictionary with the filename as the key and
-    a tuple consisting of a cou.utils.juju_utils.Model object and the
-    expected plan in string format as the value. The get_applications
-    function of this Model object returns the applications read from a
-    YAML file, from which the expected plan is also parsed.
+    This parametrized fixture return a tuple with a cou.utils.juju_utils.Model object and the
+    expected plan in string format as the value. The get_applications function of this Model object
+    returns the applications read from a YAML file, from which the expected plan is also parsed.
     """
-    directory = Path(__file__).parent / "sample_plans"
-
-    yield {
-        sample_file.name: get_sample_plan(sample_file) for sample_file in directory.glob("*.yaml")
-    }
+    return parse_sample_plan_file(request.param)
