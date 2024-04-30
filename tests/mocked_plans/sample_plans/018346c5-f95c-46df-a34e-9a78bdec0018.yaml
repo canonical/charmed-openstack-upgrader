@@ -272,7 +272,7 @@ plan: |
             Upgrade plan for 'octavia-diskimage-retrofit' to 'victoria'
                 Upgrade 'octavia-diskimage-retrofit' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
-            Upgrade plan for 'zone2' to 'victoria'
+            Upgrade plan for [cinder-volume/0, cinder-volume/2, cinder-volume/3, cinder-volume/9, nova-compute-kvm/0, nova-compute-kvm/2, nova-compute-kvm/3, nova-compute-kvm/9] in 'zone2' to 'victoria'
                 Upgrade software packages of 'cinder-volume' from the current APT repositories
                     Ψ Upgrade software packages on unit 'cinder-volume/0'
                     Ψ Upgrade software packages on unit 'cinder-volume/2'
@@ -339,7 +339,7 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/9'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/0, nova-compute-kvm/2, nova-compute-kvm/3, nova-compute-kvm/9
-            Upgrade plan for 'zone3' to 'victoria'
+            Upgrade plan for [cinder-volume/1, cinder-volume/10, cinder-volume/11, cinder-volume/5, nova-compute-kvm/1, nova-compute-kvm/10, nova-compute-kvm/11, nova-compute-kvm/5] in 'zone3' to 'victoria'
                 Upgrade software packages of 'cinder-volume' from the current APT repositories
                     Ψ Upgrade software packages on unit 'cinder-volume/1'
                     Ψ Upgrade software packages on unit 'cinder-volume/10'
@@ -406,7 +406,7 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/5'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/1, nova-compute-kvm/10, nova-compute-kvm/11, nova-compute-kvm/5
-            Upgrade plan for 'zone1' to 'victoria'
+            Upgrade plan for [cinder-volume/4, cinder-volume/6, cinder-volume/7, cinder-volume/8, nova-compute-kvm/4, nova-compute-kvm/6, nova-compute-kvm/7, nova-compute-kvm/8] in 'zone1' to 'victoria'
                 Upgrade software packages of 'cinder-volume' from the current APT repositories
                     Ψ Upgrade software packages on unit 'cinder-volume/4'
                     Ψ Upgrade software packages on unit 'cinder-volume/6'

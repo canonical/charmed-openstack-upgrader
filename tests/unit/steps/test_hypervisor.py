@@ -162,7 +162,7 @@ def test_generate_upgrade_plan(
     assert plan.description == "Upgrading all applications deployed on machines with hypervisor."
     assert len(plan.sub_steps) == 2
     assert isinstance(plan.sub_steps[0], HypervisorUpgradePlan)
-    assert plan.sub_steps[0].description == f"Upgrade plan for '{group1.name}' to '{target}'"
+    assert plan.sub_steps[0].description == f"Upgrade plan for [] in '{group1.name}' to '{target}'"
     assert (
         plan.sub_steps[0].sub_steps
         == pre_upgrade_steps.return_value
@@ -392,7 +392,7 @@ def test_hypervisor_upgrade_plan(model):
     exp_plan = dedent_plan(
         """\
     Upgrading all applications deployed on machines with hypervisor.
-        Upgrade plan for 'az-0' to 'victoria'
+        Upgrade plan for [cinder/0, nova-compute/0] in 'az-0' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
                 Ψ Upgrade software packages on unit 'cinder/0'
             Refresh 'cinder' to the latest revision of 'ussuri/stable'
@@ -422,7 +422,7 @@ def test_hypervisor_upgrade_plan(model):
             Enable nova-compute scheduler from unit: 'nova-compute/0'
             Wait for up to 2400s for model 'test_model' to reach the idle state
             Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
-        Upgrade plan for 'az-1' to 'victoria'
+        Upgrade plan for [nova-compute/1] in 'az-1' to 'victoria'
             Disable nova-compute scheduler from unit: 'nova-compute/1'
             Upgrade software packages of 'nova-compute' from the current APT repositories
                 Ψ Upgrade software packages on unit 'nova-compute/1'
@@ -439,7 +439,7 @@ def test_hypervisor_upgrade_plan(model):
             Enable nova-compute scheduler from unit: 'nova-compute/1'
             Wait for up to 2400s for model 'test_model' to reach the idle state
             Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/1
-        Upgrade plan for 'az-2' to 'victoria'
+        Upgrade plan for [nova-compute/2] in 'az-2' to 'victoria'
             Disable nova-compute scheduler from unit: 'nova-compute/2'
             Upgrade software packages of 'nova-compute' from the current APT repositories
                 Ψ Upgrade software packages on unit 'nova-compute/2'
@@ -519,7 +519,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
     exp_plan = dedent_plan(
         """\
     Upgrading all applications deployed on machines with hypervisor.
-        Upgrade plan for 'az-0' to 'victoria'
+        Upgrade plan for [cinder/0, nova-compute/0] in 'az-0' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
                 Ψ Upgrade software packages on unit 'cinder/0'
             Refresh 'cinder' to the latest revision of 'ussuri/stable'
@@ -609,7 +609,7 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
     exp_plan = dedent_plan(
         """\
     Upgrading all applications deployed on machines with hypervisor.
-        Upgrade plan for 'az-1' to 'victoria'
+        Upgrade plan for [cinder/1] in 'az-1' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
                 Ψ Upgrade software packages on unit 'cinder/1'
             Upgrade plan for units: cinder/1
@@ -619,7 +619,7 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
                     Resume the unit: 'cinder/1'
             Wait for up to 300s for app 'cinder' to reach the idle state
             Verify that the workload of 'cinder' has been upgraded on units: cinder/1
-        Upgrade plan for 'az-2' to 'victoria'
+        Upgrade plan for [cinder/2, nova-compute/2] in 'az-2' to 'victoria'
             Upgrade software packages of 'cinder' from the current APT repositories
                 Ψ Upgrade software packages on unit 'cinder/2'
             Disable nova-compute scheduler from unit: 'nova-compute/2'
