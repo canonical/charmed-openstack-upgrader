@@ -1041,3 +1041,44 @@ def test_swift_application_not_supported(model):
 
     with pytest.raises(ApplicationNotSupported, match=exp_error):
         app.generate_upgrade_plan(target, False)
+
+
+def test_core_wrong_channel(model):
+    """Test when an OpenStack charm is with a channel that doesn't match the workload version."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": MagicMock(spec_set=Machine)}
+    app = Keystone(
+        name="keystone",
+        can_upgrade_to="ussuri/stable",
+        charm="keystone",
+        channel="wallaby/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "keystone/0": Unit(
+                name="keystone/0",
+                workload_version="17.0.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="17.1.0",
+    )
+
+    # plan will raise exception because the channel is on wallaby and was expected to be on ussuri
+    # or victoria. The user will need manual intervention
+
+    exp_msg = (
+        r"'keystone' has the channel ahead from expected\. The channel 'wallaby/stable' doesn't "
+        r"match with the expected 'ussuri/stable' or with the target channel 'victoria/stable'\. "
+        r"Manual intervention is required\."
+    )
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.generate_upgrade_plan(target, force=False)
