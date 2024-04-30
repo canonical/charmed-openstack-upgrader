@@ -9,7 +9,6 @@ plan: |
                     Ψ Upgrade software packages on unit 'rabbitmq-server/1'
                     Ψ Upgrade software packages on unit 'rabbitmq-server/2'
                 WARNING: Changing 'rabbitmq-server' channel from latest/stable to 3.9/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'rabbitmq-server' to the new channel: '3.9/stable'
                 Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'rabbitmq-server' has been upgraded on units: rabbitmq-server/0, rabbitmq-server/1, rabbitmq-server/2
@@ -20,7 +19,6 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceph-mon/2'
                 WARNING: Changing 'ceph-mon' channel from latest/stable to octopus/stable. This may be a charm downgrade, which is generally not supported.
                 Ensure that the 'require-osd-release' option matches the 'ceph-osd' version
-                Upgrade 'ceph-mon' to the new channel: 'octopus/stable'
                 Change charm config of 'ceph-mon' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'ceph-mon' has been upgraded on units: ceph-mon/0, ceph-mon/1, ceph-mon/2
@@ -30,7 +28,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'keystone/1'
                     Ψ Upgrade software packages on unit 'keystone/2'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
-                Upgrade 'keystone' to the new channel: 'victoria/stable'
+                Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0, keystone/1, keystone/2
@@ -40,7 +38,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'aodh/1'
                     Ψ Upgrade software packages on unit 'aodh/2'
                 Refresh 'aodh' to the latest revision of 'ussuri/stable'
-                Upgrade 'aodh' to the new channel: 'victoria/stable'
+                Upgrade 'aodh' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'aodh' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'aodh' to reach the idle state
                 Verify that the workload of 'aodh' has been upgraded on units: aodh/0, aodh/1, aodh/2
@@ -50,7 +48,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceilometer/1'
                     Ψ Upgrade software packages on unit 'ceilometer/2'
                 Refresh 'ceilometer' to the latest revision of 'ussuri/stable'
-                Upgrade 'ceilometer' to the new channel: 'victoria/stable'
+                Upgrade 'ceilometer' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'ceilometer' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceilometer' to reach the idle state
                 Verify that the workload of 'ceilometer' has been upgraded on units: ceilometer/0, ceilometer/1, ceilometer/2
@@ -60,7 +58,6 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceph-radosgw/1'
                     Ψ Upgrade software packages on unit 'ceph-radosgw/2'
                 WARNING: Changing 'ceph-radosgw' channel from latest/stable to octopus/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'ceph-radosgw' to the new channel: 'octopus/stable'
                 Change charm config of 'ceph-radosgw' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-radosgw' to reach the idle state
                 Verify that the workload of 'ceph-radosgw' has been upgraded on units: ceph-radosgw/0, ceph-radosgw/1, ceph-radosgw/2
@@ -70,7 +67,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'cinder/1'
                     Ψ Upgrade software packages on unit 'cinder/2'
                 Refresh 'cinder' to the latest revision of 'ussuri/stable'
-                Upgrade 'cinder' to the new channel: 'victoria/stable'
+                Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'cinder' to reach the idle state
                 Verify that the workload of 'cinder' has been upgraded on units: cinder/0, cinder/1, cinder/2
@@ -80,7 +77,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'designate/2'
                     Ψ Upgrade software packages on unit 'designate/3'
                 Refresh 'designate' to the latest revision of 'ussuri/stable'
-                Upgrade 'designate' to the new channel: 'victoria/stable'
+                Upgrade 'designate' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'designate' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'designate' to reach the idle state
                 Verify that the workload of 'designate' has been upgraded on units: designate/1, designate/2, designate/3
@@ -89,7 +86,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'designate-bind/0'
                     Ψ Upgrade software packages on unit 'designate-bind/1'
                     Ψ Upgrade software packages on unit 'designate-bind/2'
-                Upgrade 'designate-bind' to the new channel: 'victoria/stable'
+                Upgrade 'designate-bind' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'designate-bind' to reach the idle state
                 Verify that the workload of 'designate-bind' has been upgraded on units: designate-bind/0, designate-bind/1, designate-bind/2
             Upgrade plan for 'glance' to 'victoria'
@@ -98,7 +95,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'glance/1'
                     Ψ Upgrade software packages on unit 'glance/2'
                 Refresh 'glance' to the latest revision of 'ussuri/stable'
-                Upgrade 'glance' to the new channel: 'victoria/stable'
+                Upgrade 'glance' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'glance' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'glance' to reach the idle state
                 Verify that the workload of 'glance' has been upgraded on units: glance/0, glance/1, glance/2
@@ -108,7 +105,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'gnocchi/1'
                     Ψ Upgrade software packages on unit 'gnocchi/2'
                 Refresh 'gnocchi' to the latest revision of 'ussuri/stable'
-                Upgrade 'gnocchi' to the new channel: 'victoria/stable'
+                Upgrade 'gnocchi' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'gnocchi' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'gnocchi' to reach the idle state
                 Verify that the workload of 'gnocchi' has been upgraded on units: gnocchi/0, gnocchi/1, gnocchi/2
@@ -118,7 +115,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'heat/1'
                     Ψ Upgrade software packages on unit 'heat/2'
                 Refresh 'heat' to the latest revision of 'ussuri/stable'
-                Upgrade 'heat' to the new channel: 'victoria/stable'
+                Upgrade 'heat' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'heat' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'heat' to reach the idle state
                 Verify that the workload of 'heat' has been upgraded on units: heat/0, heat/1, heat/2
@@ -128,7 +125,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'neutron-api/1'
                     Ψ Upgrade software packages on unit 'neutron-api/2'
                 Refresh 'neutron-api' to the latest revision of 'ussuri/stable'
-                Upgrade 'neutron-api' to the new channel: 'victoria/stable'
+                Upgrade 'neutron-api' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'neutron-api' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'neutron-api' to reach the idle state
                 Verify that the workload of 'neutron-api' has been upgraded on units: neutron-api/0, neutron-api/1, neutron-api/2
@@ -138,7 +135,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'placement/4'
                     Ψ Upgrade software packages on unit 'placement/5'
                 Refresh 'placement' to the latest revision of 'ussuri/stable'
-                Upgrade 'placement' to the new channel: 'victoria/stable'
+                Upgrade 'placement' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'placement' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'placement' to reach the idle state
                 Verify that the workload of 'placement' has been upgraded on units: placement/3, placement/4, placement/5
@@ -148,7 +145,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-cloud-controller/1'
                     Ψ Upgrade software packages on unit 'nova-cloud-controller/2'
                 Refresh 'nova-cloud-controller' to the latest revision of 'ussuri/stable'
-                Upgrade 'nova-cloud-controller' to the new channel: 'victoria/stable'
+                Upgrade 'nova-cloud-controller' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-cloud-controller' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'nova-cloud-controller' to reach the idle state
                 Verify that the workload of 'nova-cloud-controller' has been upgraded on units: nova-cloud-controller/0, nova-cloud-controller/1, nova-cloud-controller/2
@@ -158,7 +155,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'openstack-dashboard/1'
                     Ψ Upgrade software packages on unit 'openstack-dashboard/2'
                 Refresh 'openstack-dashboard' to the latest revision of 'ussuri/stable'
-                Upgrade 'openstack-dashboard' to the new channel: 'victoria/stable'
+                Upgrade 'openstack-dashboard' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'openstack-dashboard' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'openstack-dashboard' to reach the idle state
                 Verify that the workload of 'openstack-dashboard' has been upgraded on units: openstack-dashboard/0, openstack-dashboard/1, openstack-dashboard/2
@@ -168,14 +165,14 @@ plan: |
                     Ψ Upgrade software packages on unit 'octavia/8'
                     Ψ Upgrade software packages on unit 'octavia/9'
                 Refresh 'octavia' to the latest revision of 'ussuri/stable'
-                Upgrade 'octavia' to the new channel: 'victoria/stable'
+                Upgrade 'octavia' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'octavia' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'octavia' to reach the idle state
                 Verify that the workload of 'octavia' has been upgraded on units: octavia/10, octavia/8, octavia/9
             Upgrade plan for 'glance-simplestreams-sync' to 'victoria'
                 Upgrade software packages of 'glance-simplestreams-sync' from the current APT repositories
                     Ψ Upgrade software packages on unit 'glance-simplestreams-sync/0'
-                Upgrade 'glance-simplestreams-sync' to the new channel: 'victoria/stable'
+                Upgrade 'glance-simplestreams-sync' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'glance-simplestreams-sync' 'source' to 'cloud:focal-victoria'
             Upgrade plan for 'mysql-innodb-cluster' to 'victoria'
                 Upgrade software packages of 'mysql-innodb-cluster' from the current APT repositories
@@ -190,55 +187,40 @@ plan: |
             Upgrade plan for 'ceph-dashboard' to 'victoria'
                 Refresh 'ceph-dashboard' to the latest revision of 'octopus/stable'
             Upgrade plan for 'cinder-ceph' to 'victoria'
-                Upgrade 'cinder-ceph' to the new channel: 'victoria/stable'
+                Upgrade 'cinder-ceph' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'hacluster-aodh' to 'victoria'
                 WARNING: Changing 'hacluster-aodh' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-aodh' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-ceilometer' to 'victoria'
                 WARNING: Changing 'hacluster-ceilometer' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-ceilometer' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-cinder' to 'victoria'
                 WARNING: Changing 'hacluster-cinder' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-cinder' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-designate' to 'victoria'
                 WARNING: Changing 'hacluster-designate' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-designate' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-glance' to 'victoria'
                 WARNING: Changing 'hacluster-glance' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-glance' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-gnocchi' to 'victoria'
                 WARNING: Changing 'hacluster-gnocchi' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-gnocchi' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-heat' to 'victoria'
                 WARNING: Changing 'hacluster-heat' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-heat' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-horizon' to 'victoria'
                 WARNING: Changing 'hacluster-horizon' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-horizon' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-keystone' to 'victoria'
                 WARNING: Changing 'hacluster-keystone' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-keystone' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-neutron' to 'victoria'
                 WARNING: Changing 'hacluster-neutron' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-neutron' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-nova' to 'victoria'
                 WARNING: Changing 'hacluster-nova' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-nova' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-octavia' to 'victoria'
                 WARNING: Changing 'hacluster-octavia' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-octavia' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-placement' to 'victoria'
                 WARNING: Changing 'hacluster-placement' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-placement' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-radosgw' to 'victoria'
                 WARNING: Changing 'hacluster-radosgw' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-radosgw' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-vault' to 'victoria'
                 WARNING: Changing 'hacluster-vault' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'hacluster-vault' to the new channel: '2.4/stable'
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 WARNING: Changing 'keystone-ldap' channel from latest/stable to ussuri/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
+                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'aodh-mysql-router' to 'victoria'
                 Refresh 'aodh-mysql-router' to the latest revision of '8.0/stable'
             Upgrade plan for 'cinder-mysql-router' to 'victoria'
@@ -266,11 +248,11 @@ plan: |
             Upgrade plan for 'vault-mysql-router' to 'victoria'
                 Refresh 'vault-mysql-router' to the latest revision of '8.0/stable'
             Upgrade plan for 'neutron-openvswitch-octavia' to 'victoria'
-                Upgrade 'neutron-openvswitch-octavia' to the new channel: 'victoria/stable'
+                Upgrade 'neutron-openvswitch-octavia' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'octavia-dashboard' to 'victoria'
-                Upgrade 'octavia-dashboard' to the new channel: 'victoria/stable'
+                Upgrade 'octavia-dashboard' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'octavia-diskimage-retrofit' to 'victoria'
-                Upgrade 'octavia-diskimage-retrofit' to the new channel: 'victoria/stable'
+                Upgrade 'octavia-diskimage-retrofit' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for 'zone2' to 'victoria'
                 Upgrade software packages of 'cinder-volume' from the current APT repositories
@@ -289,7 +271,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/3'
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/9'
                 Refresh 'nova-compute-kvm' to the latest revision of 'ussuri/stable'
-                Upgrade 'cinder-volume' to the new channel: 'victoria/stable'
+                Upgrade 'cinder-volume' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'cinder-volume' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: cinder-volume/0, cinder-volume/2, cinder-volume/3, cinder-volume/9
                     Ψ Upgrade plan for unit 'cinder-volume/0'
@@ -308,7 +290,7 @@ plan: |
                         Pause the unit: 'cinder-volume/9'
                         Upgrade the unit: 'cinder-volume/9'
                         Resume the unit: 'cinder-volume/9'
-                Upgrade 'nova-compute-kvm' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute-kvm' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute-kvm' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute-kvm/0, nova-compute-kvm/2, nova-compute-kvm/3, nova-compute-kvm/9
                     Ψ Upgrade plan for unit 'nova-compute-kvm/0'
@@ -356,7 +338,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/11'
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/5'
                 Refresh 'nova-compute-kvm' to the latest revision of 'ussuri/stable'
-                Upgrade 'cinder-volume' to the new channel: 'victoria/stable'
+                Upgrade 'cinder-volume' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'cinder-volume' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: cinder-volume/1, cinder-volume/10, cinder-volume/11, cinder-volume/5
                     Ψ Upgrade plan for unit 'cinder-volume/1'
@@ -375,7 +357,7 @@ plan: |
                         Pause the unit: 'cinder-volume/5'
                         Upgrade the unit: 'cinder-volume/5'
                         Resume the unit: 'cinder-volume/5'
-                Upgrade 'nova-compute-kvm' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute-kvm' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute-kvm' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute-kvm/1, nova-compute-kvm/10, nova-compute-kvm/11, nova-compute-kvm/5
                     Ψ Upgrade plan for unit 'nova-compute-kvm/1'
@@ -423,7 +405,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/7'
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/8'
                 Refresh 'nova-compute-kvm' to the latest revision of 'ussuri/stable'
-                Upgrade 'cinder-volume' to the new channel: 'victoria/stable'
+                Upgrade 'cinder-volume' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'cinder-volume' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: cinder-volume/4, cinder-volume/6, cinder-volume/7, cinder-volume/8
                     Ψ Upgrade plan for unit 'cinder-volume/4'
@@ -442,7 +424,7 @@ plan: |
                         Pause the unit: 'cinder-volume/8'
                         Upgrade the unit: 'cinder-volume/8'
                         Resume the unit: 'cinder-volume/8'
-                Upgrade 'nova-compute-kvm' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute-kvm' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute-kvm' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute-kvm/4, nova-compute-kvm/6, nova-compute-kvm/7, nova-compute-kvm/8
                     Ψ Upgrade plan for unit 'nova-compute-kvm/4'
@@ -481,20 +463,19 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceph-osd/1'
                     Ψ Upgrade software packages on unit 'ceph-osd/2'
                 WARNING: Changing 'ceph-osd' channel from latest/stable to octopus/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'ceph-osd' to the new channel: 'octopus/stable'
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
         Data Plane subordinate(s) upgrade plan
             Upgrade plan for 'ceilometer-agent' to 'victoria'
                 Refresh 'ceilometer-agent' to the latest revision of 'ussuri/stable'
-                Upgrade 'ceilometer-agent' to the new channel: 'victoria/stable'
+                Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'cinder-lvm-fast' to 'victoria'
-                Upgrade 'cinder-lvm-fast' to the new channel: 'victoria/stable'
+                Upgrade 'cinder-lvm-fast' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'cinder-lvm-fast2' to 'victoria'
-                Upgrade 'cinder-lvm-fast2' to the new channel: 'victoria/stable'
+                Upgrade 'cinder-lvm-fast2' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'cinder-lvm-slow' to 'victoria'
-                Upgrade 'cinder-lvm-slow' to the new channel: 'victoria/stable'
+                Upgrade 'cinder-lvm-slow' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'cinder-volume-mysql-router' to 'victoria'
                 Refresh 'cinder-volume-mysql-router' to the latest revision of '8.0/stable'
 

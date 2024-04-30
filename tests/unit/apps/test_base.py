@@ -561,16 +561,18 @@ def test_get_change_channel_possible_downgrade_step(current_os_release, model):
         units={},
         workload_version="1",
     )
-    description, _ = app._get_change_channel_possible_downgrade_step(
-        target, app.expected_current_channel(target)
-    )
 
-    exp_description = (
+    description = (
         f"WARNING: Changing '{app.name}' channel from latest/stable to "
         "ussuri/stable. This may be a charm downgrade, which is generally not supported."
     )
-    assert description == exp_description
-    model.upgrade_charm.assert_called_once_with(app.name, "ussuri/stable")
+
+    assert app._get_change_channel_possible_downgrade_step(
+        target, app.expected_current_channel(target)
+    ) == PreUpgradeStep(
+        description=description,
+        coro=model.upgrade_charm(app.name, app.expected_current_channel(target)),
+    )
 
 
 def test_get_refresh_current_channel_step(model):
@@ -700,12 +702,11 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
     )
 
     coro = model.upgrade_charm(app.name, app.expected_current_channel)
+    expected_step = PreUpgradeStep(description=description, coro=coro)
 
-    mock_possible_downgrade_step.return_value = (description, coro)
+    mock_possible_downgrade_step.return_value = expected_step
 
-    expected_result = PreUpgradeStep(description=description, coro=coro)
-
-    assert app._get_refresh_charm_step(target) == expected_result
+    assert app._get_refresh_charm_step(target) == expected_step
 
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_called_once_with(target, "ussuri/stable")
