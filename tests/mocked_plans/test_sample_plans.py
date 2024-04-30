@@ -23,12 +23,10 @@ from cou.steps.plan import generate_plan
 
 @pytest.mark.asyncio
 @patch("cou.utils.nova_compute.get_instance_count", return_value=0)
-async def test_base_plan(_, sample_plans):
-    """Testing the base plans."""
+async def test_plans_with_empty_hypervisors(_, sample_plan):
+    """Testing all the plans on sample_plans folder considering all hypervisors empty."""
+    model, exp_plan = sample_plan
     args = CLIargs("plan", auto_approve=True)
-    model, exp_plan = sample_plans["base.yaml"]
-
     analysis_results = await Analysis.create(model)
     plan = await generate_plan(analysis_results, args)
-
     assert str(plan) == exp_plan

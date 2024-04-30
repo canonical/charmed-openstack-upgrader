@@ -1,0 +1,6319 @@
+plan: |
+    Upgrade cloud from 'ussuri' to 'victoria'
+        Verify that all OpenStack applications are in idle state
+        Back up MySQL databases
+        Control Plane principal(s) upgrade plan
+            Upgrade plan for 'rabbitmq-server' to 'victoria'
+                Upgrade software packages of 'rabbitmq-server' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'rabbitmq-server/0'
+                    Ψ Upgrade software packages on unit 'rabbitmq-server/1'
+                    Ψ Upgrade software packages on unit 'rabbitmq-server/2'
+                Refresh 'rabbitmq-server' to the latest revision of '3.8/stable'
+                Upgrade 'rabbitmq-server' to the new channel: '3.9/stable'
+                Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
+                Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
+                Verify that the workload of 'rabbitmq-server' has been upgraded on units: rabbitmq-server/0, rabbitmq-server/1, rabbitmq-server/2
+            Upgrade plan for 'ceph-mon' to 'victoria'
+                Upgrade software packages of 'ceph-mon' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'ceph-mon/0'
+                    Ψ Upgrade software packages on unit 'ceph-mon/1'
+                    Ψ Upgrade software packages on unit 'ceph-mon/2'
+                Refresh 'ceph-mon' to the latest revision of 'octopus/stable'
+                Ensure that the 'require-osd-release' option matches the 'ceph-osd' version
+                Change charm config of 'ceph-mon' 'source' to 'cloud:focal-victoria'
+                Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
+                Verify that the workload of 'ceph-mon' has been upgraded on units: ceph-mon/0, ceph-mon/1, ceph-mon/2
+            Upgrade plan for 'keystone' to 'victoria'
+                Upgrade software packages of 'keystone' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'keystone/0'
+                    Ψ Upgrade software packages on unit 'keystone/1'
+                    Ψ Upgrade software packages on unit 'keystone/2'
+                Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'keystone' to the new channel: 'victoria/stable'
+                Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
+                Verify that the workload of 'keystone' has been upgraded on units: keystone/0, keystone/1, keystone/2
+            Upgrade plan for 'aodh' to 'victoria'
+                Upgrade software packages of 'aodh' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'aodh/0'
+                    Ψ Upgrade software packages on unit 'aodh/1'
+                    Ψ Upgrade software packages on unit 'aodh/2'
+                Change charm config of 'aodh' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'aodh' to the new channel: 'victoria/stable'
+                Change charm config of 'aodh' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'aodh' to reach the idle state
+                Verify that the workload of 'aodh' has been upgraded on units: aodh/0, aodh/1, aodh/2
+            Upgrade plan for 'barbican' to 'victoria'
+                Upgrade software packages of 'barbican' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'barbican/0'
+                    Ψ Upgrade software packages on unit 'barbican/1'
+                    Ψ Upgrade software packages on unit 'barbican/2'
+                Change charm config of 'barbican' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'barbican' to the new channel: 'victoria/stable'
+                Change charm config of 'barbican' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'barbican' to reach the idle state
+                Verify that the workload of 'barbican' has been upgraded on units: barbican/0, barbican/1, barbican/2
+            Upgrade plan for 'ceilometer' to 'victoria'
+                Upgrade software packages of 'ceilometer' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'ceilometer/0'
+                    Ψ Upgrade software packages on unit 'ceilometer/1'
+                    Ψ Upgrade software packages on unit 'ceilometer/2'
+                Change charm config of 'ceilometer' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'ceilometer' to the new channel: 'victoria/stable'
+                Change charm config of 'ceilometer' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'ceilometer' to reach the idle state
+                Verify that the workload of 'ceilometer' has been upgraded on units: ceilometer/0, ceilometer/1, ceilometer/2
+            Upgrade plan for 'ceph-radosgw' to 'victoria'
+                Upgrade software packages of 'ceph-radosgw' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'ceph-radosgw/0'
+                    Ψ Upgrade software packages on unit 'ceph-radosgw/1'
+                    Ψ Upgrade software packages on unit 'ceph-radosgw/2'
+                Refresh 'ceph-radosgw' to the latest revision of 'octopus/stable'
+                Change charm config of 'ceph-radosgw' 'source' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'ceph-radosgw' to reach the idle state
+                Verify that the workload of 'ceph-radosgw' has been upgraded on units: ceph-radosgw/0, ceph-radosgw/1, ceph-radosgw/2
+            Upgrade plan for 'cinder' to 'victoria'
+                Upgrade software packages of 'cinder' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'cinder/0'
+                    Ψ Upgrade software packages on unit 'cinder/1'
+                    Ψ Upgrade software packages on unit 'cinder/2'
+                Change charm config of 'cinder' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'cinder' to the new channel: 'victoria/stable'
+                Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'cinder' to reach the idle state
+                Verify that the workload of 'cinder' has been upgraded on units: cinder/0, cinder/1, cinder/2
+            Upgrade plan for 'designate' to 'victoria'
+                Upgrade software packages of 'designate' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'designate/0'
+                    Ψ Upgrade software packages on unit 'designate/1'
+                    Ψ Upgrade software packages on unit 'designate/2'
+                Change charm config of 'designate' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'designate' to the new channel: 'victoria/stable'
+                Change charm config of 'designate' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'designate' to reach the idle state
+                Verify that the workload of 'designate' has been upgraded on units: designate/0, designate/1, designate/2
+            Upgrade plan for 'designate-bind' to 'victoria'
+                Upgrade software packages of 'designate-bind' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'designate-bind/0'
+                    Ψ Upgrade software packages on unit 'designate-bind/1'
+                Refresh 'designate-bind' to the latest revision of 'ussuri/stable'
+                Upgrade 'designate-bind' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'designate-bind' to reach the idle state
+                Verify that the workload of 'designate-bind' has been upgraded on units: designate-bind/0, designate-bind/1
+            Upgrade plan for 'glance' to 'victoria'
+                Upgrade software packages of 'glance' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'glance/0'
+                    Ψ Upgrade software packages on unit 'glance/1'
+                    Ψ Upgrade software packages on unit 'glance/2'
+                Refresh 'glance' to the latest revision of 'ussuri/stable'
+                Change charm config of 'glance' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'glance' to the new channel: 'victoria/stable'
+                Change charm config of 'glance' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'glance' to reach the idle state
+                Verify that the workload of 'glance' has been upgraded on units: glance/0, glance/1, glance/2
+            Upgrade plan for 'gnocchi' to 'victoria'
+                Upgrade software packages of 'gnocchi' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'gnocchi/0'
+                    Ψ Upgrade software packages on unit 'gnocchi/1'
+                    Ψ Upgrade software packages on unit 'gnocchi/2'
+                Change charm config of 'gnocchi' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'gnocchi' to the new channel: 'victoria/stable'
+                Change charm config of 'gnocchi' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'gnocchi' to reach the idle state
+                Verify that the workload of 'gnocchi' has been upgraded on units: gnocchi/0, gnocchi/1, gnocchi/2
+            Upgrade plan for 'heat' to 'victoria'
+                Upgrade software packages of 'heat' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'heat/0'
+                    Ψ Upgrade software packages on unit 'heat/1'
+                    Ψ Upgrade software packages on unit 'heat/2'
+                Change charm config of 'heat' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'heat' to the new channel: 'victoria/stable'
+                Change charm config of 'heat' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'heat' to reach the idle state
+                Verify that the workload of 'heat' has been upgraded on units: heat/0, heat/1, heat/2
+            Upgrade plan for 'neutron-api' to 'victoria'
+                Upgrade software packages of 'neutron-api' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'neutron-api/0'
+                    Ψ Upgrade software packages on unit 'neutron-api/1'
+                    Ψ Upgrade software packages on unit 'neutron-api/2'
+                Change charm config of 'neutron-api' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'neutron-api' to the new channel: 'victoria/stable'
+                Change charm config of 'neutron-api' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'neutron-api' to reach the idle state
+                Verify that the workload of 'neutron-api' has been upgraded on units: neutron-api/0, neutron-api/1, neutron-api/2
+            Upgrade plan for 'ovn-central' to 'victoria'
+                Upgrade software packages of 'ovn-central' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'ovn-central/0'
+                    Ψ Upgrade software packages on unit 'ovn-central/1'
+                    Ψ Upgrade software packages on unit 'ovn-central/2'
+                WARNING: Changing 'ovn-central' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+                Upgrade 'ovn-central' to the new channel: '22.03/stable'
+                Change charm config of 'ovn-central' 'source' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'ovn-central' to reach the idle state
+                Verify that the workload of 'ovn-central' has been upgraded on units: ovn-central/0, ovn-central/1, ovn-central/2
+            Upgrade plan for 'placement' to 'victoria'
+                Upgrade software packages of 'placement' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'placement/0'
+                    Ψ Upgrade software packages on unit 'placement/1'
+                    Ψ Upgrade software packages on unit 'placement/2'
+                Change charm config of 'placement' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'placement' to the new channel: 'victoria/stable'
+                Change charm config of 'placement' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'placement' to reach the idle state
+                Verify that the workload of 'placement' has been upgraded on units: placement/0, placement/1, placement/2
+            Upgrade plan for 'nova-cloud-controller' to 'victoria'
+                Upgrade software packages of 'nova-cloud-controller' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'nova-cloud-controller/0'
+                    Ψ Upgrade software packages on unit 'nova-cloud-controller/1'
+                    Ψ Upgrade software packages on unit 'nova-cloud-controller/2'
+                Change charm config of 'nova-cloud-controller' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'nova-cloud-controller' to the new channel: 'victoria/stable'
+                Change charm config of 'nova-cloud-controller' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'nova-cloud-controller' to reach the idle state
+                Verify that the workload of 'nova-cloud-controller' has been upgraded on units: nova-cloud-controller/0, nova-cloud-controller/1, nova-cloud-controller/2
+            Upgrade plan for 'openstack-dashboard' to 'victoria'
+                Upgrade software packages of 'openstack-dashboard' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'openstack-dashboard/0'
+                    Ψ Upgrade software packages on unit 'openstack-dashboard/1'
+                    Ψ Upgrade software packages on unit 'openstack-dashboard/2'
+                Refresh 'openstack-dashboard' to the latest revision of 'ussuri/stable'
+                Change charm config of 'openstack-dashboard' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'openstack-dashboard' to the new channel: 'victoria/stable'
+                Change charm config of 'openstack-dashboard' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'openstack-dashboard' to reach the idle state
+                Verify that the workload of 'openstack-dashboard' has been upgraded on units: openstack-dashboard/0, openstack-dashboard/1, openstack-dashboard/2
+            Upgrade plan for 'octavia' to 'victoria'
+                Upgrade software packages of 'octavia' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'octavia/0'
+                    Ψ Upgrade software packages on unit 'octavia/1'
+                    Ψ Upgrade software packages on unit 'octavia/2'
+                Change charm config of 'octavia' 'action-managed-upgrade' from 'True' to 'False'
+                Upgrade 'octavia' to the new channel: 'victoria/stable'
+                Change charm config of 'octavia' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 2400s for app 'octavia' to reach the idle state
+                Verify that the workload of 'octavia' has been upgraded on units: octavia/0, octavia/1, octavia/2
+            Upgrade plan for 'glance-simplestreams-sync' to 'victoria'
+                Upgrade software packages of 'glance-simplestreams-sync' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'glance-simplestreams-sync/0'
+                Upgrade 'glance-simplestreams-sync' to the new channel: 'victoria/stable'
+                Change charm config of 'glance-simplestreams-sync' 'source' to 'cloud:focal-victoria'
+            Upgrade plan for 'mysql-innodb-cluster' to 'victoria'
+                Upgrade software packages of 'mysql-innodb-cluster' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'mysql-innodb-cluster/0'
+                    Ψ Upgrade software packages on unit 'mysql-innodb-cluster/1'
+                    Ψ Upgrade software packages on unit 'mysql-innodb-cluster/2'
+                Refresh 'mysql-innodb-cluster' to the latest revision of '8.0/stable'
+                Change charm config of 'mysql-innodb-cluster' 'source' to 'cloud:focal-victoria'
+                Wait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state
+                Verify that the workload of 'mysql-innodb-cluster' has been upgraded on units: mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2
+            Upgrade plan for 'vault' to 'victoria'
+                Upgrade software packages of 'vault' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'vault/0'
+                    Ψ Upgrade software packages on unit 'vault/1'
+                    Ψ Upgrade software packages on unit 'vault/2'
+                Refresh 'vault' to the latest revision of '1.7/stable'
+                Wait for up to 300s for app 'vault' to reach the idle state
+                Verify that the workload of 'vault' has been upgraded on units: vault/0, vault/1, vault/2
+        Control Plane subordinate(s) upgrade plan
+            Upgrade plan for 'barbican-vault' to 'victoria'
+                Upgrade 'barbican-vault' to the new channel: 'victoria/stable'
+            Upgrade plan for 'ceph-dashboard' to 'victoria'
+                Refresh 'ceph-dashboard' to the latest revision of 'octopus/stable'
+            Upgrade plan for 'cinder-ceph' to 'victoria'
+                Refresh 'cinder-ceph' to the latest revision of 'ussuri/stable'
+                Upgrade 'cinder-ceph' to the new channel: 'victoria/stable'
+            Upgrade plan for 'hacluster-aodh' to 'victoria'
+                Refresh 'hacluster-aodh' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-aodh' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-barbican' to 'victoria'
+                Refresh 'hacluster-barbican' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-barbican' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-ceilometer' to 'victoria'
+                Refresh 'hacluster-ceilometer' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-ceilometer' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-ceph-radosgw' to 'victoria'
+                Refresh 'hacluster-ceph-radosgw' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-ceph-radosgw' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-cinder' to 'victoria'
+                Refresh 'hacluster-cinder' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-cinder' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-designate' to 'victoria'
+                Refresh 'hacluster-designate' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-designate' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-glance' to 'victoria'
+                Refresh 'hacluster-glance' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-glance' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-gnocchi' to 'victoria'
+                Refresh 'hacluster-gnocchi' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-gnocchi' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-heat' to 'victoria'
+                Refresh 'hacluster-heat' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-heat' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-keystone' to 'victoria'
+                Refresh 'hacluster-keystone' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-keystone' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-neutron-api' to 'victoria'
+                Refresh 'hacluster-neutron-api' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-neutron-api' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-nova-cloud-controller' to 'victoria'
+                Refresh 'hacluster-nova-cloud-controller' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-nova-cloud-controller' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-octavia' to 'victoria'
+                Refresh 'hacluster-octavia' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-octavia' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-openstack-dashboard' to 'victoria'
+                Refresh 'hacluster-openstack-dashboard' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-openstack-dashboard' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-placement' to 'victoria'
+                Refresh 'hacluster-placement' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-placement' to the new channel: '2.4/stable'
+            Upgrade plan for 'hacluster-vault' to 'victoria'
+                Refresh 'hacluster-vault' to the latest revision of '2.0.3/stable'
+                Upgrade 'hacluster-vault' to the new channel: '2.4/stable'
+            Upgrade plan for 'openstack-loadbalancer-hacluster' to 'victoria'
+                WARNING: Changing 'openstack-loadbalancer-hacluster' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+                Upgrade 'openstack-loadbalancer-hacluster' to the new channel: '2.4/stable'
+            Upgrade plan for 'keystone-saml-mellon' to 'victoria'
+                Upgrade 'keystone-saml-mellon' to the new channel: 'victoria/stable'
+            Upgrade plan for 'aodh-mysql-router' to 'victoria'
+                Refresh 'aodh-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'barbican-mysql-router' to 'victoria'
+                Refresh 'barbican-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'cinder-mysql-router' to 'victoria'
+                Refresh 'cinder-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'designate-mysql-router' to 'victoria'
+                Refresh 'designate-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'glance-mysql-router' to 'victoria'
+                Refresh 'glance-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'gnocchi-mysql-router' to 'victoria'
+                Refresh 'gnocchi-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'heat-mysql-router' to 'victoria'
+                Refresh 'heat-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'keystone-mysql-router' to 'victoria'
+                Refresh 'keystone-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'neutron-api-mysql-router' to 'victoria'
+                Refresh 'neutron-api-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'nova-cloud-controller-mysql-router' to 'victoria'
+                Refresh 'nova-cloud-controller-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'octavia-mysql-router' to 'victoria'
+                Refresh 'octavia-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'openstack-dashboard-mysql-router' to 'victoria'
+                Refresh 'openstack-dashboard-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'placement-mysql-router' to 'victoria'
+                Refresh 'placement-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'vault-mysql-router' to 'victoria'
+                Refresh 'vault-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'neutron-api-plugin-ovn' to 'victoria'
+                Upgrade 'neutron-api-plugin-ovn' to the new channel: 'victoria/stable'
+            Upgrade plan for 'octavia-dashboard' to 'victoria'
+                Upgrade 'octavia-dashboard' to the new channel: 'victoria/stable'
+            Upgrade plan for 'octavia-diskimage-retrofit' to 'victoria'
+                Refresh 'octavia-diskimage-retrofit' to the latest revision of 'ussuri/stable'
+                Upgrade 'octavia-diskimage-retrofit' to the new channel: 'victoria/stable'
+            Upgrade plan for 'octavia-ovn-chassis' to 'victoria'
+                WARNING: Changing 'octavia-ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+                Upgrade 'octavia-ovn-chassis' to the new channel: '22.03/stable'
+        Upgrading all applications deployed on machines with hypervisor.
+            Upgrade plan for 'az1' to 'victoria'
+                Disable nova-compute scheduler from unit: 'nova-compute/0'
+                Disable nova-compute scheduler from unit: 'nova-compute/2'
+                Disable nova-compute scheduler from unit: 'nova-compute/3'
+                Upgrade software packages of 'nova-compute' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'nova-compute/0'
+                    Ψ Upgrade software packages on unit 'nova-compute/2'
+                    Ψ Upgrade software packages on unit 'nova-compute/3'
+                Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
+                Upgrade plan for units: nova-compute/0, nova-compute/2, nova-compute/3
+                    Ψ Upgrade plan for unit 'nova-compute/0'
+                        Verify that unit 'nova-compute/0' has no VMs running
+                        ├── Pause the unit: 'nova-compute/0'
+                        ├── Upgrade the unit: 'nova-compute/0'
+                        ├── Resume the unit: 'nova-compute/0'
+                    Ψ Upgrade plan for unit 'nova-compute/2'
+                        Verify that unit 'nova-compute/2' has no VMs running
+                        ├── Pause the unit: 'nova-compute/2'
+                        ├── Upgrade the unit: 'nova-compute/2'
+                        ├── Resume the unit: 'nova-compute/2'
+                    Ψ Upgrade plan for unit 'nova-compute/3'
+                        Verify that unit 'nova-compute/3' has no VMs running
+                        ├── Pause the unit: 'nova-compute/3'
+                        ├── Upgrade the unit: 'nova-compute/3'
+                        ├── Resume the unit: 'nova-compute/3'
+                Enable nova-compute scheduler from unit: 'nova-compute/0'
+                Enable nova-compute scheduler from unit: 'nova-compute/2'
+                Enable nova-compute scheduler from unit: 'nova-compute/3'
+                Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
+                Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/2, nova-compute/3
+            Upgrade plan for 'az3' to 'victoria'
+                Disable nova-compute scheduler from unit: 'nova-compute/1'
+                Disable nova-compute scheduler from unit: 'nova-compute/6'
+                Disable nova-compute scheduler from unit: 'nova-compute/8'
+                Upgrade software packages of 'nova-compute' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'nova-compute/1'
+                    Ψ Upgrade software packages on unit 'nova-compute/6'
+                    Ψ Upgrade software packages on unit 'nova-compute/8'
+                Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
+                Upgrade plan for units: nova-compute/1, nova-compute/6, nova-compute/8
+                    Ψ Upgrade plan for unit 'nova-compute/1'
+                        Verify that unit 'nova-compute/1' has no VMs running
+                        ├── Pause the unit: 'nova-compute/1'
+                        ├── Upgrade the unit: 'nova-compute/1'
+                        ├── Resume the unit: 'nova-compute/1'
+                    Ψ Upgrade plan for unit 'nova-compute/6'
+                        Verify that unit 'nova-compute/6' has no VMs running
+                        ├── Pause the unit: 'nova-compute/6'
+                        ├── Upgrade the unit: 'nova-compute/6'
+                        ├── Resume the unit: 'nova-compute/6'
+                    Ψ Upgrade plan for unit 'nova-compute/8'
+                        Verify that unit 'nova-compute/8' has no VMs running
+                        ├── Pause the unit: 'nova-compute/8'
+                        ├── Upgrade the unit: 'nova-compute/8'
+                        ├── Resume the unit: 'nova-compute/8'
+                Enable nova-compute scheduler from unit: 'nova-compute/1'
+                Enable nova-compute scheduler from unit: 'nova-compute/6'
+                Enable nova-compute scheduler from unit: 'nova-compute/8'
+                Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
+                Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/1, nova-compute/6, nova-compute/8
+            Upgrade plan for 'az2' to 'victoria'
+                Disable nova-compute scheduler from unit: 'nova-compute/4'
+                Disable nova-compute scheduler from unit: 'nova-compute/5'
+                Disable nova-compute scheduler from unit: 'nova-compute/7'
+                Upgrade software packages of 'nova-compute' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'nova-compute/4'
+                    Ψ Upgrade software packages on unit 'nova-compute/5'
+                    Ψ Upgrade software packages on unit 'nova-compute/7'
+                Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
+                Upgrade plan for units: nova-compute/4, nova-compute/5, nova-compute/7
+                    Ψ Upgrade plan for unit 'nova-compute/4'
+                        Verify that unit 'nova-compute/4' has no VMs running
+                        ├── Pause the unit: 'nova-compute/4'
+                        ├── Upgrade the unit: 'nova-compute/4'
+                        ├── Resume the unit: 'nova-compute/4'
+                    Ψ Upgrade plan for unit 'nova-compute/5'
+                        Verify that unit 'nova-compute/5' has no VMs running
+                        ├── Pause the unit: 'nova-compute/5'
+                        ├── Upgrade the unit: 'nova-compute/5'
+                        ├── Resume the unit: 'nova-compute/5'
+                    Ψ Upgrade plan for unit 'nova-compute/7'
+                        Verify that unit 'nova-compute/7' has no VMs running
+                        ├── Pause the unit: 'nova-compute/7'
+                        ├── Upgrade the unit: 'nova-compute/7'
+                        ├── Resume the unit: 'nova-compute/7'
+                Enable nova-compute scheduler from unit: 'nova-compute/4'
+                Enable nova-compute scheduler from unit: 'nova-compute/5'
+                Enable nova-compute scheduler from unit: 'nova-compute/7'
+                Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
+                Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/4, nova-compute/5, nova-compute/7
+        Remaining Data Plane principal(s) upgrade plan
+            Upgrade plan for 'ceph-osd' to 'victoria'
+                Verify that all 'nova-compute' units has been upgraded
+                Upgrade software packages of 'ceph-osd' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'ceph-osd/0'
+                    Ψ Upgrade software packages on unit 'ceph-osd/1'
+                    Ψ Upgrade software packages on unit 'ceph-osd/2'
+                    Ψ Upgrade software packages on unit 'ceph-osd/3'
+                    Ψ Upgrade software packages on unit 'ceph-osd/4'
+                    Ψ Upgrade software packages on unit 'ceph-osd/5'
+                    Ψ Upgrade software packages on unit 'ceph-osd/6'
+                    Ψ Upgrade software packages on unit 'ceph-osd/7'
+                    Ψ Upgrade software packages on unit 'ceph-osd/8'
+                Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
+                Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'ceph-osd' to reach the idle state
+                Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2, ceph-osd/3, ceph-osd/4, ceph-osd/5, ceph-osd/6, ceph-osd/7, ceph-osd/8
+        Data Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ceilometer-agent' to 'victoria'
+                Upgrade 'ceilometer-agent' to the new channel: 'victoria/stable'
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                WARNING: Changing 'ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+                Upgrade 'ovn-chassis' to the new channel: '22.03/stable'
+
+applications:
+  rabbitmq-server:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/rabbitmq-server-176
+    charm: rabbitmq-server
+    channel: 3.8/stable
+    config:
+      enable-auto-restarts:
+        default: true
+        description: 'Allow the charm and packages to restart services automatically
+          when
+
+          required.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      source:
+        description: "Optional configuration to support use of additional sources such\
+          \ as:\n.\n  - ppa:myteam/ppa\n  - cloud:xenial-proposed/ocata\n  - http://my.archive.com/ubuntu\
+          \ main\n.\nThe last option should be used in conjunction with the key configuration\n\
+          option.\n.\nChanging the source option on already deployed service/application\
+          \ will\ntrigger the upgrade.\n"
+        source: user
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 3.8.2
+    units:
+      rabbitmq-server/0:
+        name: rabbitmq-server/0
+        machine: 3/lxd/7
+        workload_version: 3.8.2
+        os_version: yoga
+      rabbitmq-server/1:
+        name: rabbitmq-server/1
+        machine: 7/lxd/7
+        workload_version: 3.8.2
+        os_version: yoga
+      rabbitmq-server/2:
+        name: rabbitmq-server/2
+        machine: 8/lxd/7
+        workload_version: 3.8.2
+        os_version: yoga
+    machines:
+      8/lxd/7:
+        id: 8/lxd/7
+        apps: !!python/tuple
+        - rabbitmq-server
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - logrotated
+        az: az3
+      7/lxd/7:
+        id: 7/lxd/7
+        apps: !!python/tuple
+        - rabbitmq-server
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - logrotated
+        az: az2
+      3/lxd/7:
+        id: 3/lxd/7
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - rabbitmq-server
+        - landscape-client
+        - logrotated
+        az: az1
+
+  ceph-mon:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/ceph-mon-194
+    charm: ceph-mon
+    channel: octopus/stable
+    config:
+      source:
+        default: cloud:focal-ussuri
+        description: "Optional configuration to support use of additional sources such\
+          \ as:\n.\n  - ppa:myteam/ppa\n  - cloud:bionic-ussuri\n  - cloud:xenial-proposed/queens\n\
+          \  - http://my.archive.com/ubuntu main\n.\nThe last option should be used\
+          \ in conjunction with the key configuration\noption.\n"
+        source: user
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 15.2.16
+    units:
+      ceph-mon/0:
+        name: ceph-mon/0
+        machine: 2/lxd/1
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-mon/1:
+        name: ceph-mon/1
+        machine: 5/lxd/1
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-mon/2:
+        name: ceph-mon/2
+        machine: 6/lxd/1
+        workload_version: 15.2.16
+        os_version: victoria
+    machines:
+      2/lxd/1:
+        id: 2/lxd/1
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-mon
+        - ceph-dashboard
+        - logrotated
+        az: az1
+      6/lxd/1:
+        id: 6/lxd/1
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-mon
+        - ceph-dashboard
+        - logrotated
+        az: az3
+      5/lxd/1:
+        id: 5/lxd/1
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-mon
+        - ceph-dashboard
+        - logrotated
+        az: az2
+
+  keystone:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: keystone
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          NOTE: updating this setting to a source that is known to provide
+
+          a later version of OpenStack will trigger a software upgrade unless
+
+          action-managed-upgrade is set to True.
+
+          NOTE: a corresponding public key from keyserver.ubuntu.com can be used
+
+          when specifying a repository by appending the key separated by a | when
+
+          entering the deb url sources entry, i.e.
+
+          openstack-origin="deb <DEB URL>|<PUB KEY>"
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 17.0.1
+    units:
+      keystone/0:
+        name: keystone/0
+        machine: 0/lxd/3
+        workload_version: 17.0.1
+        os_version: ussuri
+      keystone/1:
+        name: keystone/1
+        machine: 1/lxd/3
+        workload_version: 17.0.1
+        os_version: ussuri
+      keystone/2:
+        name: keystone/2
+        machine: 4/lxd/3
+        workload_version: 17.0.1
+        os_version: ussuri
+    machines:
+      1/lxd/3:
+        id: 1/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-keystone
+        - keystone-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az3
+      0/lxd/3:
+        id: 0/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-keystone
+        - keystone-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az1
+      4/lxd/3:
+        id: 4/lxd/3
+        apps: !!python/tuple
+        - keystone-mysql-router
+        - public-policy-routing
+        - hacluster-keystone
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az2
+
+  aodh:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: aodh
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: "Repository from which to install OpenStack.\n\nMay be one of the\
+          \ following:\n\n  distro (default)\n  ppa:somecustom/ppa (PPA name must include\
+          \ OpenStack Release)\n  deb url sources entry|key id\n  or a supported Ubuntu\
+          \ Cloud Archive pocket.\n\nSupported Ubuntu Cloud Archive pockets include:\n\
+          \n  cloud:trusty-liberty\n  cloud:trusty-juno\n  cloud:trusty-kilo\n  cloud:trusty-liberty\n\
+          \  cloud:trusty-mitaka\n\nNote that updating this setting to a source that\
+          \ is known to\nprovide a later version of OpenStack will trigger a software\n\
+          upgrade.\n"
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 10.0.0
+    units:
+      aodh/0:
+        name: aodh/0
+        machine: 2/lxd/0
+        workload_version: 10.0.0
+        os_version: ussuri
+      aodh/1:
+        name: aodh/1
+        machine: 5/lxd/0
+        workload_version: 10.0.0
+        os_version: ussuri
+      aodh/2:
+        name: aodh/2
+        machine: 6/lxd/0
+        workload_version: 10.0.0
+        os_version: ussuri
+    machines:
+      5/lxd/0:
+        id: 5/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - aodh-mysql-router
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az2
+      2/lxd/0:
+        id: 2/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - aodh-mysql-router
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az1
+      6/lxd/0:
+        id: 6/lxd/0
+        apps: !!python/tuple
+        - aodh-mysql-router
+        - public-policy-routing
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az3
+
+  barbican:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: barbican
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: "Repository from which to install OpenStack.\n\nMay be one of the\
+          \ following:\n\n  distro (default)\n  ppa:somecustom/ppa (PPA name must include\
+          \ OpenStack Release)\n  deb url sources entry|key id\n  or a supported Ubuntu\
+          \ Cloud Archive pocket.\n\nSupported Ubuntu Cloud Archive pockets include:\n\
+          \n  cloud:trusty-liberty\n  cloud:trusty-juno\n  cloud:trusty-kilo\n  cloud:trusty-liberty\n\
+          \  cloud:trusty-mitaka\n\nNote that updating this setting to a source that\
+          \ is known to\nprovide a later version of OpenStack will trigger a software\n\
+          upgrade.\n"
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 10.1.0
+    units:
+      barbican/0:
+        name: barbican/0
+        machine: 3/lxd/0
+        workload_version: 10.1.0
+        os_version: ussuri
+      barbican/1:
+        name: barbican/1
+        machine: 7/lxd/0
+        workload_version: 10.1.0
+        os_version: ussuri
+      barbican/2:
+        name: barbican/2
+        machine: 8/lxd/0
+        workload_version: 10.1.0
+        os_version: ussuri
+    machines:
+      7/lxd/0:
+        id: 7/lxd/0
+        apps: !!python/tuple
+        - hacluster-barbican
+        - barbican-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az2
+      3/lxd/0:
+        id: 3/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-barbican
+        - barbican-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az1
+      8/lxd/0:
+        id: 8/lxd/0
+        apps: !!python/tuple
+        - hacluster-barbican
+        - barbican-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az3
+
+  ceilometer:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: ceilometer
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          NOTE: updating this setting to a source that is known to provide
+
+          a later version of OpenStack will trigger a software upgrade unless
+
+          action-managed-upgrade is set to True.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 14.1.0
+    units:
+      ceilometer/0:
+        name: ceilometer/0
+        machine: 0/lxd/0
+        workload_version: 14.1.0
+        os_version: ussuri
+      ceilometer/1:
+        name: ceilometer/1
+        machine: 1/lxd/0
+        workload_version: 14.1.0
+        os_version: ussuri
+      ceilometer/2:
+        name: ceilometer/2
+        machine: 4/lxd/0
+        workload_version: 14.1.0
+        os_version: ussuri
+    machines:
+      1/lxd/0:
+        id: 1/lxd/0
+        apps: !!python/tuple
+        - hacluster-ceilometer
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceilometer
+        - logrotated
+        az: az3
+      4/lxd/0:
+        id: 4/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-ceilometer
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceilometer
+        - logrotated
+        az: az2
+      0/lxd/0:
+        id: 0/lxd/0
+        apps: !!python/tuple
+        - hacluster-ceilometer
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceilometer
+        - logrotated
+        az: az1
+
+  ceph-radosgw:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/ceph-radosgw-564
+    charm: ceph-radosgw
+    channel: octopus/stable
+    config:
+      source:
+        description: 'Optional repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          Note that a minimum ceph version of 0.48.2 is required for use with this
+
+          charm which is NOT provided by the packages in the main Ubuntu archive
+
+          for precise but is provided in the Ubuntu cloud archive.
+
+          '
+        source: user
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 15.2.16
+    units:
+      ceph-radosgw/0:
+        name: ceph-radosgw/0
+        machine: 3/lxd/1
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-radosgw/1:
+        name: ceph-radosgw/1
+        machine: 7/lxd/1
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-radosgw/2:
+        name: ceph-radosgw/2
+        machine: 8/lxd/1
+        workload_version: 15.2.16
+        os_version: victoria
+    machines:
+      7/lxd/1:
+        id: 7/lxd/1
+        apps: !!python/tuple
+        - hacluster-ceph-radosgw
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-radosgw
+        - logrotated
+        az: az2
+      3/lxd/1:
+        id: 3/lxd/1
+        apps: !!python/tuple
+        - hacluster-ceph-radosgw
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-radosgw
+        - logrotated
+        az: az1
+      8/lxd/1:
+        id: 8/lxd/1
+        apps: !!python/tuple
+        - hacluster-ceph-radosgw
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-radosgw
+        - logrotated
+        az: az3
+
+  cinder:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: cinder
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          NOTE: updating this setting to a source that is known to provide
+
+          a later version of OpenStack will trigger a software upgrade unless
+
+          action-managed-upgrade is set to True.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 16.4.2
+    units:
+      cinder/0:
+        name: cinder/0
+        machine: 0/lxd/1
+        workload_version: 16.4.2
+        os_version: ussuri
+      cinder/1:
+        name: cinder/1
+        machine: 1/lxd/1
+        workload_version: 16.4.2
+        os_version: ussuri
+      cinder/2:
+        name: cinder/2
+        machine: 4/lxd/1
+        workload_version: 16.4.2
+        os_version: ussuri
+    machines:
+      4/lxd/1:
+        id: 4/lxd/1
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-cinder
+        - cinder-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az2
+      1/lxd/1:
+        id: 1/lxd/1
+        apps: !!python/tuple
+        - hacluster-cinder
+        - public-policy-routing
+        - cinder-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az3
+      0/lxd/1:
+        id: 0/lxd/1
+        apps: !!python/tuple
+        - hacluster-cinder
+        - cinder-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az1
+
+  designate:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: designate
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: "Repository from which to install OpenStack.\n\nMay be one of the\
+          \ following:\n\n  distro (default)\n  ppa:somecustom/ppa (PPA name must include\
+          \ OpenStack Release)\n  deb url sources entry|key id\n  or a supported Ubuntu\
+          \ Cloud Archive pocket.\n\nSupported Ubuntu Cloud Archive pockets include:\n\
+          \n  cloud:trusty-liberty\n  cloud:trusty-juno\n  cloud:trusty-kilo\n  cloud:trusty-liberty\n\
+          \  cloud:trusty-mitaka\n\nNote that updating this setting to a source that\
+          \ is known to\nprovide a later version of OpenStack will trigger a software\n\
+          upgrade.\n"
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 10.0.2
+    units:
+      designate/0:
+        name: designate/0
+        machine: 2/lxd/2
+        workload_version: 10.0.2
+        os_version: ussuri
+      designate/1:
+        name: designate/1
+        machine: 5/lxd/2
+        workload_version: 10.0.2
+        os_version: ussuri
+      designate/2:
+        name: designate/2
+        machine: 6/lxd/2
+        workload_version: 10.0.2
+        os_version: ussuri
+    machines:
+      6/lxd/2:
+        id: 6/lxd/2
+        apps: !!python/tuple
+        - hacluster-designate
+        - public-policy-routing
+        - designate-mysql-router
+        - prometheus-grok-exporter
+        - telegraf
+        - nrpe
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az3
+      5/lxd/2:
+        id: 5/lxd/2
+        apps: !!python/tuple
+        - designate-mysql-router
+        - hacluster-designate
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az2
+      2/lxd/2:
+        id: 2/lxd/2
+        apps: !!python/tuple
+        - hacluster-designate
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - designate-mysql-router
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az1
+
+  designate-bind:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/designate-bind-107
+    charm: designate-bind
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 9.16.1
+    units:
+      designate-bind/0:
+        name: designate-bind/0
+        machine: 1/lxd/4
+        workload_version: 9.16.1
+        os_version: ussuri
+      designate-bind/1:
+        name: designate-bind/1
+        machine: 4/lxd/4
+        workload_version: 9.16.1
+        os_version: ussuri
+    machines:
+      4/lxd/4:
+        id: 4/lxd/4
+        apps: !!python/tuple
+        - public-policy-routing
+        - memcached
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - grafana-agent-container
+        - landscape-client
+        - designate-bind
+        - logrotated
+        az: az2
+      1/lxd/4:
+        id: 1/lxd/4
+        apps: !!python/tuple
+        - memcached
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - grafana-agent-container
+        - landscape-client
+        - designate-bind
+        - logrotated
+        az: az3
+
+  glance:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/glance-594
+    charm: glance
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          NOTE: updating this setting to a source that is known to provide
+
+          a later version of OpenStack will trigger a software upgrade unless
+
+          action-managed-upgrade is set to True.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 20.2.0
+    units:
+      glance/0:
+        name: glance/0
+        machine: 0/lxd/2
+        workload_version: 20.2.0
+        os_version: ussuri
+      glance/1:
+        name: glance/1
+        machine: 1/lxd/2
+        workload_version: 20.2.0
+        os_version: ussuri
+      glance/2:
+        name: glance/2
+        machine: 4/lxd/2
+        workload_version: 20.2.0
+        os_version: ussuri
+    machines:
+      0/lxd/2:
+        id: 0/lxd/2
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-glance
+        - glance-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az1
+      1/lxd/2:
+        id: 1/lxd/2
+        apps: !!python/tuple
+        - hacluster-glance
+        - public-policy-routing
+        - glance-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az3
+      4/lxd/2:
+        id: 4/lxd/2
+        apps: !!python/tuple
+        - glance-mysql-router
+        - public-policy-routing
+        - hacluster-glance
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az2
+
+  gnocchi:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: gnocchi
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: "Repository from which to install OpenStack.\n\nMay be one of the\
+          \ following:\n\n  distro (default)\n  ppa:somecustom/ppa (PPA name must include\
+          \ OpenStack Release)\n  deb url sources entry|key id\n  or a supported Ubuntu\
+          \ Cloud Archive pocket.\n\nSupported Ubuntu Cloud Archive pockets include:\n\
+          \n  cloud:trusty-liberty\n  cloud:trusty-juno\n  cloud:trusty-kilo\n  cloud:trusty-liberty\n\
+          \  cloud:trusty-mitaka\n\nNote that updating this setting to a source that\
+          \ is known to\nprovide a later version of OpenStack will trigger a software\n\
+          upgrade.\n"
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 4.3.4
+    units:
+      gnocchi/0:
+        name: gnocchi/0
+        machine: 2/lxd/3
+        workload_version: 4.3.4
+        os_version: ussuri
+      gnocchi/1:
+        name: gnocchi/1
+        machine: 5/lxd/3
+        workload_version: 4.3.4
+        os_version: ussuri
+      gnocchi/2:
+        name: gnocchi/2
+        machine: 6/lxd/4
+        workload_version: 4.3.4
+        os_version: ussuri
+    machines:
+      5/lxd/3:
+        id: 5/lxd/3
+        apps: !!python/tuple
+        - hacluster-gnocchi
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az2
+      6/lxd/4:
+        id: 6/lxd/4
+        apps: !!python/tuple
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - hacluster-gnocchi
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az3
+      2/lxd/3:
+        id: 2/lxd/3
+        apps: !!python/tuple
+        - hacluster-gnocchi
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az1
+
+  heat:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: heat
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          NOTE: updating this setting to a source that is known to provide
+
+          a later version of OpenStack will trigger a software upgrade unless
+
+          action-managed-upgrade is set to True.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 14.2.0
+    units:
+      heat/0:
+        name: heat/0
+        machine: 3/lxd/3
+        workload_version: 14.2.0
+        os_version: ussuri
+      heat/1:
+        name: heat/1
+        machine: 7/lxd/4
+        workload_version: 14.2.0
+        os_version: ussuri
+      heat/2:
+        name: heat/2
+        machine: 8/lxd/3
+        workload_version: 14.2.0
+        os_version: ussuri
+    machines:
+      7/lxd/4:
+        id: 7/lxd/4
+        apps: !!python/tuple
+        - hacluster-heat
+        - heat-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az2
+      3/lxd/3:
+        id: 3/lxd/3
+        apps: !!python/tuple
+        - hacluster-heat
+        - heat-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az1
+      8/lxd/3:
+        id: 8/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-heat
+        - heat-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az3
+
+  neutron-api:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: neutron-api
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          NOTE: updating this setting to a source that is known to provide
+
+          a later version of OpenStack will trigger a software upgrade unless
+
+          action-managed-upgrade is set to True.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 16.4.2
+    units:
+      neutron-api/0:
+        name: neutron-api/0
+        machine: 3/lxd/4
+        workload_version: 16.4.2
+        os_version: ussuri
+      neutron-api/1:
+        name: neutron-api/1
+        machine: 7/lxd/5
+        workload_version: 16.4.2
+        os_version: ussuri
+      neutron-api/2:
+        name: neutron-api/2
+        machine: 8/lxd/5
+        workload_version: 16.4.2
+        os_version: ussuri
+    machines:
+      3/lxd/4:
+        id: 3/lxd/4
+        apps: !!python/tuple
+        - public-policy-routing
+        - neutron-api-mysql-router
+        - hacluster-neutron-api
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az1
+      8/lxd/5:
+        id: 8/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-neutron-api
+        - neutron-api-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az3
+      7/lxd/5:
+        id: 7/lxd/5
+        apps: !!python/tuple
+        - hacluster-neutron-api
+        - neutron-api-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az2
+
+  ovn-central:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/ovn-central-144
+    charm: ovn-central
+    channel: latest/stable
+    config:
+      enable-auto-restarts:
+        default: true
+        description: 'Allow the charm and packages to restart services automatically
+          when
+
+          required.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      source:
+        default: distro
+        description: "Repository from which to install OVS+OVN\n\nMay be one of the\
+          \ following:\n\n  distro (default)\n  ppa:somecustom/ppa (PPA name must include\
+          \ UCA OpenStack Release name)\n  deb url sources entry|key id\n  or a supported\
+          \ Ubuntu Cloud Archive pocket.\n\nSupported Ubuntu Cloud Archive pockets include:\n\
+          \n  cloud:xenial-pike\n  cloud:xenial-queens\n  cloud:bionic-rocky\n\nNote\
+          \ that updating this setting to a source that is known to\nprovide a later\
+          \ version of Ceph will trigger a software\nupgrade.\n"
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 22.03.2
+    units:
+      ovn-central/0:
+        name: ovn-central/0
+        machine: 0/lxd/5
+        workload_version: 22.03.2
+        os_version: victoria
+      ovn-central/1:
+        name: ovn-central/1
+        machine: 1/lxd/7
+        workload_version: 22.03.2
+        os_version: victoria
+      ovn-central/2:
+        name: ovn-central/2
+        machine: 4/lxd/7
+        workload_version: 22.03.2
+        os_version: victoria
+    machines:
+      0/lxd/5:
+        id: 0/lxd/5
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ovn-central
+        - logrotated
+        az: az1
+      1/lxd/7:
+        id: 1/lxd/7
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ovn-central
+        - logrotated
+        az: az3
+      4/lxd/7:
+        id: 4/lxd/7
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - logrotated
+        - ovn-central
+        az: az2
+
+  placement:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: placement
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: "Repository from which to install OpenStack.\n\nMay be one of the\
+          \ following:\n\n  distro (default)\n  ppa:somecustom/ppa (PPA name must include\
+          \ OpenStack Release)\n  deb url sources entry|key id\n  or a supported Ubuntu\
+          \ Cloud Archive pocket.\n\nSupported Ubuntu Cloud Archive pockets include:\n\
+          \n  cloud:trusty-liberty\n  cloud:trusty-juno\n  cloud:trusty-kilo\n  cloud:trusty-liberty\n\
+          \  cloud:trusty-mitaka\n\nNote that updating this setting to a source that\
+          \ is known to\nprovide a later version of OpenStack will trigger a software\n\
+          upgrade.\n"
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 3.0.1
+    units:
+      placement/0:
+        name: placement/0
+        machine: 2/lxd/6
+        workload_version: 3.0.1
+        os_version: ussuri
+      placement/1:
+        name: placement/1
+        machine: 5/lxd/6
+        workload_version: 3.0.1
+        os_version: ussuri
+      placement/2:
+        name: placement/2
+        machine: 6/lxd/8
+        workload_version: 3.0.1
+        os_version: ussuri
+    machines:
+      5/lxd/6:
+        id: 5/lxd/6
+        apps: !!python/tuple
+        - placement-mysql-router
+        - public-policy-routing
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az2
+      2/lxd/6:
+        id: 2/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - placement-mysql-router
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az1
+      6/lxd/8:
+        id: 6/lxd/8
+        apps: !!python/tuple
+        - placement-mysql-router
+        - public-policy-routing
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az3
+
+  nova-cloud-controller:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: nova-cloud-controller
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          NOTE: updating this setting to a source that is known to provide
+
+          a later version of OpenStack will trigger a software upgrade unless
+
+          action-managed-upgrade is set to True.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 21.2.4
+    units:
+      nova-cloud-controller/0:
+        name: nova-cloud-controller/0
+        machine: 0/lxd/4
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-cloud-controller/1:
+        name: nova-cloud-controller/1
+        machine: 1/lxd/5
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-cloud-controller/2:
+        name: nova-cloud-controller/2
+        machine: 4/lxd/5
+        workload_version: 21.2.4
+        os_version: ussuri
+    machines:
+      4/lxd/5:
+        id: 4/lxd/5
+        apps: !!python/tuple
+        - hacluster-nova-cloud-controller
+        - nova-cloud-controller-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az2
+      0/lxd/4:
+        id: 0/lxd/4
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-nova-cloud-controller
+        - nova-cloud-controller-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az1
+      1/lxd/5:
+        id: 1/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - nova-cloud-controller-mysql-router
+        - hacluster-nova-cloud-controller
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az3
+
+  openstack-dashboard:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/openstack-dashboard-643
+    charm: openstack-dashboard
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          .
+
+          NOTE: updating this setting to a source that is known to provide
+
+          a later version of OpenStack will trigger a software upgrade unless
+
+          action-managed-upgrade is set to True.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 18.3.5
+    units:
+      openstack-dashboard/0:
+        name: openstack-dashboard/0
+        machine: 3/lxd/5
+        workload_version: 18.3.5
+        os_version: ussuri
+      openstack-dashboard/1:
+        name: openstack-dashboard/1
+        machine: 7/lxd/6
+        workload_version: 18.3.5
+        os_version: ussuri
+      openstack-dashboard/2:
+        name: openstack-dashboard/2
+        machine: 8/lxd/6
+        workload_version: 18.3.5
+        os_version: ussuri
+    machines:
+      7/lxd/6:
+        id: 7/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - hacluster-openstack-dashboard
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az2
+      8/lxd/6:
+        id: 8/lxd/6
+        apps: !!python/tuple
+        - hacluster-openstack-dashboard
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az3
+      3/lxd/5:
+        id: 3/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - hacluster-openstack-dashboard
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az1
+
+  octavia:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: octavia
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables openstack upgrades for this charm via juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: "Repository from which to install OpenStack.\n\nMay be one of the\
+          \ following:\n\n  distro (default)\n  ppa:somecustom/ppa (PPA name must include\
+          \ OpenStack Release)\n  deb url sources entry|key id\n  or a supported Ubuntu\
+          \ Cloud Archive pocket.\n\nSupported Ubuntu Cloud Archive pockets include:\n\
+          \n  cloud:trusty-liberty\n  cloud:trusty-juno\n  cloud:trusty-kilo\n  cloud:trusty-liberty\n\
+          \  cloud:trusty-mitaka\n\nNote that updating this setting to a source that\
+          \ is known to\nprovide a later version of OpenStack will trigger a software\n\
+          upgrade.\n"
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 6.2.2
+    units:
+      octavia/0:
+        name: octavia/0
+        machine: 2/lxd/5
+        workload_version: 6.2.2
+        os_version: ussuri
+      octavia/1:
+        name: octavia/1
+        machine: 5/lxd/5
+        workload_version: 6.2.2
+        os_version: ussuri
+      octavia/2:
+        name: octavia/2
+        machine: 6/lxd/6
+        workload_version: 6.2.2
+        os_version: ussuri
+    machines:
+      6/lxd/6:
+        id: 6/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-octavia
+        - octavia-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az3
+      5/lxd/5:
+        id: 5/lxd/5
+        apps: !!python/tuple
+        - hacluster-octavia
+        - public-policy-routing
+        - octavia-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az2
+      2/lxd/5:
+        id: 2/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - octavia-mysql-router
+        - hacluster-octavia
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az1
+
+  barbican-vault:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: barbican-vault
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - barbican
+    workload_version: 3.0.1
+    units: {}
+    machines:
+      3/lxd/0:
+        id: 3/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-barbican
+        - barbican-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az1
+      7/lxd/0:
+        id: 7/lxd/0
+        apps: !!python/tuple
+        - hacluster-barbican
+        - barbican-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az2
+      8/lxd/0:
+        id: 8/lxd/0
+        apps: !!python/tuple
+        - hacluster-barbican
+        - barbican-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az3
+
+  ceph-dashboard:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/ceph-dashboard-48
+    charm: ceph-dashboard
+    channel: octopus/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - ceph-mon
+    workload_version: ''
+    units: {}
+    machines:
+      6/lxd/1:
+        id: 6/lxd/1
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-mon
+        - ceph-dashboard
+        - logrotated
+        az: az3
+      5/lxd/1:
+        id: 5/lxd/1
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-mon
+        - ceph-dashboard
+        - logrotated
+        az: az2
+      2/lxd/1:
+        id: 2/lxd/1
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-mon
+        - ceph-dashboard
+        - logrotated
+        az: az1
+
+  cinder-ceph:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/cinder-ceph-527
+    charm: cinder-ceph
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - cinder
+    workload_version: 16.4.2
+    units: {}
+    machines:
+      4/lxd/1:
+        id: 4/lxd/1
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-cinder
+        - cinder-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az2
+      1/lxd/1:
+        id: 1/lxd/1
+        apps: !!python/tuple
+        - hacluster-cinder
+        - public-policy-routing
+        - cinder-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az3
+      0/lxd/1:
+        id: 0/lxd/1
+        apps: !!python/tuple
+        - hacluster-cinder
+        - cinder-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az1
+
+  glance-simplestreams-sync:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: glance-simplestreams-sync
+    channel: ussuri/stable
+    config:
+      source:
+        description: DEPRECATED - option no longer used and will be removed
+        source: unset
+        type: string
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: ''
+    units:
+      glance-simplestreams-sync/0:
+        name: glance-simplestreams-sync/0
+        machine: 7/lxd/3
+        workload_version: ''
+        os_version: ussuri
+    machines:
+      7/lxd/3:
+        id: 7/lxd/3
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia-diskimage-retrofit
+        - logrotated
+        - glance-simplestreams-sync
+        az: az2
+
+  hacluster-heat:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - heat
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      7/lxd/4:
+        id: 7/lxd/4
+        apps: !!python/tuple
+        - hacluster-heat
+        - heat-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az2
+      3/lxd/3:
+        id: 3/lxd/3
+        apps: !!python/tuple
+        - hacluster-heat
+        - heat-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az1
+      8/lxd/3:
+        id: 8/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-heat
+        - heat-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az3
+
+  hacluster-placement:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nrpe
+    - placement
+    workload_version: ''
+    units: {}
+    machines:
+      6/lxd/8:
+        id: 6/lxd/8
+        apps: !!python/tuple
+        - placement-mysql-router
+        - public-policy-routing
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az3
+      2/lxd/6:
+        id: 2/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - placement-mysql-router
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az1
+      5/lxd/6:
+        id: 5/lxd/6
+        apps: !!python/tuple
+        - placement-mysql-router
+        - public-policy-routing
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az2
+
+  hacluster-openstack-dashboard:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nrpe
+    - openstack-dashboard
+    workload_version: ''
+    units: {}
+    machines:
+      7/lxd/6:
+        id: 7/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - hacluster-openstack-dashboard
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az2
+      3/lxd/5:
+        id: 3/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - hacluster-openstack-dashboard
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az1
+      8/lxd/6:
+        id: 8/lxd/6
+        apps: !!python/tuple
+        - hacluster-openstack-dashboard
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az3
+
+  hacluster-ceilometer:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - ceilometer
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      0/lxd/0:
+        id: 0/lxd/0
+        apps: !!python/tuple
+        - hacluster-ceilometer
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceilometer
+        - logrotated
+        az: az1
+      1/lxd/0:
+        id: 1/lxd/0
+        apps: !!python/tuple
+        - hacluster-ceilometer
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceilometer
+        - logrotated
+        az: az3
+      4/lxd/0:
+        id: 4/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-ceilometer
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceilometer
+        - logrotated
+        az: az2
+
+  hacluster-barbican:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - barbican
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      3/lxd/0:
+        id: 3/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-barbican
+        - barbican-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az1
+      7/lxd/0:
+        id: 7/lxd/0
+        apps: !!python/tuple
+        - hacluster-barbican
+        - barbican-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az2
+      8/lxd/0:
+        id: 8/lxd/0
+        apps: !!python/tuple
+        - hacluster-barbican
+        - barbican-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az3
+
+  openstack-loadbalancer-hacluster:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: latest/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - openstack-loadbalancer
+    workload_version: ''
+    units: {}
+    machines:
+      3/lxd/6:
+        id: 3/lxd/6
+        apps: !!python/tuple
+        - openstack-loadbalancer-hacluster
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - logrotated
+        - openstack-loadbalancer
+        az: az1
+      6/lxd/7:
+        id: 6/lxd/7
+        apps: !!python/tuple
+        - openstack-loadbalancer-hacluster
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - logrotated
+        - openstack-loadbalancer
+        az: az3
+      4/lxd/6:
+        id: 4/lxd/6
+        apps: !!python/tuple
+        - openstack-loadbalancer-hacluster
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - logrotated
+        - openstack-loadbalancer
+        az: az2
+
+  hacluster-octavia:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nrpe
+    - octavia
+    workload_version: ''
+    units: {}
+    machines:
+      6/lxd/6:
+        id: 6/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-octavia
+        - octavia-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az3
+      5/lxd/5:
+        id: 5/lxd/5
+        apps: !!python/tuple
+        - hacluster-octavia
+        - public-policy-routing
+        - octavia-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az2
+      2/lxd/5:
+        id: 2/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - octavia-mysql-router
+        - hacluster-octavia
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az1
+
+  hacluster-vault:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nrpe
+    - vault
+    workload_version: ''
+    units: {}
+    machines:
+      '11':
+        id: '11'
+        apps: !!python/tuple
+        - hacluster-vault
+        - vault-mysql-router
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az3
+      '9':
+        id: '9'
+        apps: !!python/tuple
+        - hacluster-vault
+        - vault-mysql-router
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az1
+      '10':
+        id: '10'
+        apps: !!python/tuple
+        - vault-mysql-router
+        - hacluster-vault
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az2
+
+  hacluster-nova-cloud-controller:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nova-cloud-controller
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      4/lxd/5:
+        id: 4/lxd/5
+        apps: !!python/tuple
+        - hacluster-nova-cloud-controller
+        - nova-cloud-controller-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az2
+      1/lxd/5:
+        id: 1/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - nova-cloud-controller-mysql-router
+        - hacluster-nova-cloud-controller
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az3
+      0/lxd/4:
+        id: 0/lxd/4
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-nova-cloud-controller
+        - nova-cloud-controller-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az1
+
+  hacluster-designate:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - designate
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      2/lxd/2:
+        id: 2/lxd/2
+        apps: !!python/tuple
+        - hacluster-designate
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - designate-mysql-router
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az1
+      5/lxd/2:
+        id: 5/lxd/2
+        apps: !!python/tuple
+        - designate-mysql-router
+        - hacluster-designate
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az2
+      6/lxd/2:
+        id: 6/lxd/2
+        apps: !!python/tuple
+        - hacluster-designate
+        - public-policy-routing
+        - designate-mysql-router
+        - prometheus-grok-exporter
+        - telegraf
+        - nrpe
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az3
+
+  hacluster-gnocchi:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - gnocchi
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      5/lxd/3:
+        id: 5/lxd/3
+        apps: !!python/tuple
+        - hacluster-gnocchi
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az2
+      2/lxd/3:
+        id: 2/lxd/3
+        apps: !!python/tuple
+        - hacluster-gnocchi
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az1
+      6/lxd/4:
+        id: 6/lxd/4
+        apps: !!python/tuple
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - hacluster-gnocchi
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az3
+
+  hacluster-aodh:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - aodh
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      5/lxd/0:
+        id: 5/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - aodh-mysql-router
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az2
+      2/lxd/0:
+        id: 2/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - aodh-mysql-router
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az1
+      6/lxd/0:
+        id: 6/lxd/0
+        apps: !!python/tuple
+        - aodh-mysql-router
+        - public-policy-routing
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az3
+
+  hacluster-ceph-radosgw:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - ceph-radosgw
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      7/lxd/1:
+        id: 7/lxd/1
+        apps: !!python/tuple
+        - hacluster-ceph-radosgw
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-radosgw
+        - logrotated
+        az: az2
+      3/lxd/1:
+        id: 3/lxd/1
+        apps: !!python/tuple
+        - hacluster-ceph-radosgw
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-radosgw
+        - logrotated
+        az: az1
+      8/lxd/1:
+        id: 8/lxd/1
+        apps: !!python/tuple
+        - hacluster-ceph-radosgw
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - ceph-radosgw
+        - logrotated
+        az: az3
+
+  hacluster-keystone:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - keystone
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      1/lxd/3:
+        id: 1/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-keystone
+        - keystone-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az3
+      4/lxd/3:
+        id: 4/lxd/3
+        apps: !!python/tuple
+        - keystone-mysql-router
+        - public-policy-routing
+        - hacluster-keystone
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az2
+      0/lxd/3:
+        id: 0/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-keystone
+        - keystone-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az1
+
+  hacluster-glance:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - glance
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      1/lxd/2:
+        id: 1/lxd/2
+        apps: !!python/tuple
+        - hacluster-glance
+        - public-policy-routing
+        - glance-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az3
+      0/lxd/2:
+        id: 0/lxd/2
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-glance
+        - glance-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az1
+      4/lxd/2:
+        id: 4/lxd/2
+        apps: !!python/tuple
+        - glance-mysql-router
+        - public-policy-routing
+        - hacluster-glance
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az2
+
+  hacluster-cinder:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - cinder
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      4/lxd/1:
+        id: 4/lxd/1
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-cinder
+        - cinder-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az2
+      1/lxd/1:
+        id: 1/lxd/1
+        apps: !!python/tuple
+        - hacluster-cinder
+        - public-policy-routing
+        - cinder-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az3
+      0/lxd/1:
+        id: 0/lxd/1
+        apps: !!python/tuple
+        - hacluster-cinder
+        - cinder-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az1
+
+  hacluster-neutron-api:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/hacluster-132
+    charm: hacluster
+    channel: 2.0.3/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - neutron-api
+    - nrpe
+    workload_version: ''
+    units: {}
+    machines:
+      8/lxd/5:
+        id: 8/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-neutron-api
+        - neutron-api-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az3
+      7/lxd/5:
+        id: 7/lxd/5
+        apps: !!python/tuple
+        - hacluster-neutron-api
+        - neutron-api-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az2
+      3/lxd/4:
+        id: 3/lxd/4
+        apps: !!python/tuple
+        - public-policy-routing
+        - neutron-api-mysql-router
+        - hacluster-neutron-api
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az1
+
+  keystone-saml-mellon:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: keystone-saml-mellon
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - keystone
+    workload_version: 17.0.1
+    units: {}
+    machines:
+      1/lxd/3:
+        id: 1/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-keystone
+        - keystone-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az3
+      0/lxd/3:
+        id: 0/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-keystone
+        - keystone-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az1
+      4/lxd/3:
+        id: 4/lxd/3
+        apps: !!python/tuple
+        - keystone-mysql-router
+        - public-policy-routing
+        - hacluster-keystone
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az2
+
+  mysql-innodb-cluster:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-innodb-cluster-133
+    charm: mysql-innodb-cluster
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 8.0.30
+    units:
+      mysql-innodb-cluster/0:
+        name: mysql-innodb-cluster/0
+        machine: 2/lxd/4
+        workload_version: 8.0.30
+        os_version: yoga
+      mysql-innodb-cluster/1:
+        name: mysql-innodb-cluster/1
+        machine: 5/lxd/4
+        workload_version: 8.0.30
+        os_version: yoga
+      mysql-innodb-cluster/2:
+        name: mysql-innodb-cluster/2
+        machine: 6/lxd/5
+        workload_version: 8.0.30
+        os_version: yoga
+    machines:
+      5/lxd/4:
+        id: 5/lxd/4
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - mysql-innodb-cluster
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - logrotated
+        az: az2
+      2/lxd/4:
+        id: 2/lxd/4
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - mysql-innodb-cluster
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - logrotated
+        az: az1
+      6/lxd/5:
+        id: 6/lxd/5
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - mysql-innodb-cluster
+        - logrotated
+        az: az3
+
+  nova-cloud-controller-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nova-cloud-controller
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      1/lxd/5:
+        id: 1/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - nova-cloud-controller-mysql-router
+        - hacluster-nova-cloud-controller
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az3
+      4/lxd/5:
+        id: 4/lxd/5
+        apps: !!python/tuple
+        - hacluster-nova-cloud-controller
+        - nova-cloud-controller-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az2
+      0/lxd/4:
+        id: 0/lxd/4
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-nova-cloud-controller
+        - nova-cloud-controller-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - nova-cloud-controller
+        - logrotated
+        az: az1
+
+  heat-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - heat
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      3/lxd/3:
+        id: 3/lxd/3
+        apps: !!python/tuple
+        - hacluster-heat
+        - heat-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az1
+      7/lxd/4:
+        id: 7/lxd/4
+        apps: !!python/tuple
+        - hacluster-heat
+        - heat-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az2
+      8/lxd/3:
+        id: 8/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-heat
+        - heat-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - heat
+        - logrotated
+        az: az3
+
+  designate-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - designate
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      5/lxd/2:
+        id: 5/lxd/2
+        apps: !!python/tuple
+        - designate-mysql-router
+        - hacluster-designate
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az2
+      2/lxd/2:
+        id: 2/lxd/2
+        apps: !!python/tuple
+        - hacluster-designate
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - designate-mysql-router
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az1
+      6/lxd/2:
+        id: 6/lxd/2
+        apps: !!python/tuple
+        - hacluster-designate
+        - public-policy-routing
+        - designate-mysql-router
+        - prometheus-grok-exporter
+        - telegraf
+        - nrpe
+        - grafana-agent-container
+        - landscape-client
+        - designate
+        - logrotated
+        az: az3
+
+  placement-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - placement
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      5/lxd/6:
+        id: 5/lxd/6
+        apps: !!python/tuple
+        - placement-mysql-router
+        - public-policy-routing
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az2
+      6/lxd/8:
+        id: 6/lxd/8
+        apps: !!python/tuple
+        - placement-mysql-router
+        - public-policy-routing
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az3
+      2/lxd/6:
+        id: 2/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - placement-mysql-router
+        - hacluster-placement
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - placement
+        - logrotated
+        az: az1
+
+  vault-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - vault
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      '11':
+        id: '11'
+        apps: !!python/tuple
+        - hacluster-vault
+        - vault-mysql-router
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az3
+      '10':
+        id: '10'
+        apps: !!python/tuple
+        - vault-mysql-router
+        - hacluster-vault
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az2
+      '9':
+        id: '9'
+        apps: !!python/tuple
+        - hacluster-vault
+        - vault-mysql-router
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az1
+
+  openstack-dashboard-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - openstack-dashboard
+    workload_version: 8.0.31
+    units: {}
+    machines:
+      7/lxd/6:
+        id: 7/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - hacluster-openstack-dashboard
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az2
+      3/lxd/5:
+        id: 3/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - hacluster-openstack-dashboard
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az1
+      8/lxd/6:
+        id: 8/lxd/6
+        apps: !!python/tuple
+        - hacluster-openstack-dashboard
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az3
+
+  glance-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - glance
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      4/lxd/2:
+        id: 4/lxd/2
+        apps: !!python/tuple
+        - glance-mysql-router
+        - public-policy-routing
+        - hacluster-glance
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az2
+      0/lxd/2:
+        id: 0/lxd/2
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-glance
+        - glance-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az1
+      1/lxd/2:
+        id: 1/lxd/2
+        apps: !!python/tuple
+        - hacluster-glance
+        - public-policy-routing
+        - glance-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - glance
+        - logrotated
+        az: az3
+
+  keystone-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - keystone
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      4/lxd/3:
+        id: 4/lxd/3
+        apps: !!python/tuple
+        - keystone-mysql-router
+        - public-policy-routing
+        - hacluster-keystone
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az2
+      1/lxd/3:
+        id: 1/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-keystone
+        - keystone-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az3
+      0/lxd/3:
+        id: 0/lxd/3
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-keystone
+        - keystone-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - keystone-saml-mellon
+        - logrotated
+        - keystone
+        az: az1
+
+  neutron-api-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - neutron-api
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      7/lxd/5:
+        id: 7/lxd/5
+        apps: !!python/tuple
+        - hacluster-neutron-api
+        - neutron-api-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az2
+      3/lxd/4:
+        id: 3/lxd/4
+        apps: !!python/tuple
+        - public-policy-routing
+        - neutron-api-mysql-router
+        - hacluster-neutron-api
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az1
+      8/lxd/5:
+        id: 8/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-neutron-api
+        - neutron-api-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az3
+
+  aodh-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - aodh
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      5/lxd/0:
+        id: 5/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - aodh-mysql-router
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az2
+      2/lxd/0:
+        id: 2/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - aodh-mysql-router
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az1
+      6/lxd/0:
+        id: 6/lxd/0
+        apps: !!python/tuple
+        - aodh-mysql-router
+        - public-policy-routing
+        - hacluster-aodh
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - aodh
+        - logrotated
+        az: az3
+
+  cinder-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - cinder
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      4/lxd/1:
+        id: 4/lxd/1
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-cinder
+        - cinder-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az2
+      1/lxd/1:
+        id: 1/lxd/1
+        apps: !!python/tuple
+        - hacluster-cinder
+        - public-policy-routing
+        - cinder-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az3
+      0/lxd/1:
+        id: 0/lxd/1
+        apps: !!python/tuple
+        - hacluster-cinder
+        - cinder-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - cinder-ceph
+        - cinder
+        - logrotated
+        az: az1
+
+  gnocchi-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - gnocchi
+    workload_version: 8.0.35
+    units: {}
+    machines:
+      6/lxd/4:
+        id: 6/lxd/4
+        apps: !!python/tuple
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - hacluster-gnocchi
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az3
+      5/lxd/3:
+        id: 5/lxd/3
+        apps: !!python/tuple
+        - hacluster-gnocchi
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az2
+      2/lxd/3:
+        id: 2/lxd/3
+        apps: !!python/tuple
+        - hacluster-gnocchi
+        - gnocchi-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - gnocchi
+        - logrotated
+        az: az1
+
+  octavia-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - octavia
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      6/lxd/6:
+        id: 6/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-octavia
+        - octavia-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az3
+      5/lxd/5:
+        id: 5/lxd/5
+        apps: !!python/tuple
+        - hacluster-octavia
+        - public-policy-routing
+        - octavia-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az2
+      2/lxd/5:
+        id: 2/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - octavia-mysql-router
+        - hacluster-octavia
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az1
+
+  barbican-mysql-router:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/mysql-router-154
+    charm: mysql-router
+    channel: 8.0/stable
+    config:
+      source:
+        default: distro
+        description: 'Repository from which to install. May be one of the following:
+
+          distro (default), ppa:somecustom/ppa, a deb url sources entry,
+
+          or a supported Ubuntu Cloud Archive e.g.
+
+          .
+
+          cloud:<series>-<openstack-release>
+
+          cloud:<series>-<openstack-release>/updates
+
+          cloud:<series>-<openstack-release>/staging
+
+          cloud:<series>-<openstack-release>/proposed
+
+          .
+
+          See https://wiki.ubuntu.com/OpenStack/CloudArchive for info on which
+
+          cloud archives are available and supported.
+
+          '
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to:
+    - barbican
+    workload_version: 8.0.30
+    units: {}
+    machines:
+      3/lxd/0:
+        id: 3/lxd/0
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-barbican
+        - barbican-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az1
+      7/lxd/0:
+        id: 7/lxd/0
+        apps: !!python/tuple
+        - hacluster-barbican
+        - barbican-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az2
+      8/lxd/0:
+        id: 8/lxd/0
+        apps: !!python/tuple
+        - hacluster-barbican
+        - barbican-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - barbican-vault
+        - barbican
+        - logrotated
+        az: az3
+
+  neutron-api-plugin-ovn:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: neutron-api-plugin-ovn
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - neutron-api
+    workload_version: 16.4.2
+    units: {}
+    machines:
+      3/lxd/4:
+        id: 3/lxd/4
+        apps: !!python/tuple
+        - public-policy-routing
+        - neutron-api-mysql-router
+        - hacluster-neutron-api
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az1
+      7/lxd/5:
+        id: 7/lxd/5
+        apps: !!python/tuple
+        - hacluster-neutron-api
+        - neutron-api-mysql-router
+        - public-policy-routing
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az2
+      8/lxd/5:
+        id: 8/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-neutron-api
+        - neutron-api-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - neutron-api
+        - neutron-api-plugin-ovn
+        - logrotated
+        az: az3
+
+  octavia-dashboard:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: octavia-dashboard
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - openstack-dashboard
+    workload_version: 5.0.0
+    units: {}
+    machines:
+      7/lxd/6:
+        id: 7/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - hacluster-openstack-dashboard
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az2
+      3/lxd/5:
+        id: 3/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - hacluster-openstack-dashboard
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az1
+      8/lxd/6:
+        id: 8/lxd/6
+        apps: !!python/tuple
+        - hacluster-openstack-dashboard
+        - public-policy-routing
+        - openstack-dashboard-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - openstack-dashboard
+        - octavia-dashboard
+        - logrotated
+        az: az3
+
+  octavia-diskimage-retrofit:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/octavia-diskimage-retrofit-101
+    charm: octavia-diskimage-retrofit
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - glance-simplestreams-sync
+    workload_version: 0.9.12
+    units: {}
+    machines:
+      7/lxd/3:
+        id: 7/lxd/3
+        apps: !!python/tuple
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia-diskimage-retrofit
+        - logrotated
+        - glance-simplestreams-sync
+        az: az2
+
+  octavia-ovn-chassis:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/ovn-chassis-176
+    charm: ovn-chassis
+    channel: latest/stable
+    config:
+      enable-auto-restarts:
+        default: true
+        description: 'Allow the charm and packages to restart services automatically
+          when
+
+          required.
+
+          '
+        source: user
+        type: boolean
+        value: true
+    origin: ch
+    series: focal
+    subordinate_to:
+    - octavia
+    workload_version: 22.03.2
+    units: {}
+    machines:
+      5/lxd/5:
+        id: 5/lxd/5
+        apps: !!python/tuple
+        - hacluster-octavia
+        - public-policy-routing
+        - octavia-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az2
+      2/lxd/5:
+        id: 2/lxd/5
+        apps: !!python/tuple
+        - public-policy-routing
+        - octavia-mysql-router
+        - hacluster-octavia
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az1
+      6/lxd/6:
+        id: 6/lxd/6
+        apps: !!python/tuple
+        - public-policy-routing
+        - hacluster-octavia
+        - octavia-mysql-router
+        - prometheus-grok-exporter
+        - nrpe
+        - telegraf
+        - grafana-agent-container
+        - landscape-client
+        - octavia
+        - octavia-ovn-chassis
+        - logrotated
+        az: az3
+
+  vault:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/vault-210
+    charm: vault
+    channel: 1.7/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 1.7.9
+    units:
+      vault/0:
+        name: vault/0
+        machine: '10'
+        workload_version: 1.7.9
+        os_version: yoga
+      vault/1:
+        name: vault/1
+        machine: '11'
+        workload_version: 1.7.9
+        os_version: yoga
+      vault/2:
+        name: vault/2
+        machine: '9'
+        workload_version: 1.7.9
+        os_version: yoga
+    machines:
+      '11':
+        id: '11'
+        apps: !!python/tuple
+        - hacluster-vault
+        - vault-mysql-router
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az3
+      '9':
+        id: '9'
+        apps: !!python/tuple
+        - hacluster-vault
+        - vault-mysql-router
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az1
+      '10':
+        id: '10'
+        apps: !!python/tuple
+        - vault-mysql-router
+        - hacluster-vault
+        - grafana-agent-vm
+        - prometheus-grok-exporter
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - vault
+        - logrotated
+        - ntp
+        az: az2
+
+  nova-compute:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/nova-compute-728
+    charm: nova-compute
+    channel: ussuri/stable
+    config:
+      action-managed-upgrade:
+        default: false
+        description: 'If True enables OpenStack upgrades for this charm via Juju actions.
+
+          You will still need to set openstack-origin to the new repository but
+
+          instead of an upgrade running automatically across all units, it will
+
+          wait for you to execute the openstack-upgrade action for this charm on
+
+          each unit. If False it will revert to existing behavior of upgrading
+
+          all units on config change.
+
+          '
+        source: user
+        type: boolean
+        value: true
+      openstack-origin:
+        default: distro
+        description: "Repository from which to install. May be one of the following:\n\
+          distro (default), ppa:somecustom/ppa, a deb URL sources entry or a\nsupported\
+          \ Ubuntu Cloud Archive (UCA) release pocket.\n.\nSupported UCA sources include:\n\
+          .\ncloud:<series>-<openstack-release>\ncloud:<series>-<openstack-release>/updates\n\
+          cloud:<series>-<openstack-release>/staging\ncloud:<series>-<openstack-release>/proposed\n\
+          .\nFor series=Precise we support UCA for openstack-release=\n   * icehouse\n\
+          .\nFor series=Trusty we support UCA for openstack-release=\n   * juno\n  \
+          \ * kilo\n   * ...\n.\nNOTE: updating this setting to a source that is known\
+          \ to provide\na later version of OpenStack will trigger a software upgrade.\n\
+          .\n"
+        source: default
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 21.2.4
+    units:
+      nova-compute/0:
+        name: nova-compute/0
+        machine: '0'
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-compute/1:
+        name: nova-compute/1
+        machine: '1'
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-compute/2:
+        name: nova-compute/2
+        machine: '2'
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-compute/3:
+        name: nova-compute/3
+        machine: '3'
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-compute/4:
+        name: nova-compute/4
+        machine: '4'
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-compute/5:
+        name: nova-compute/5
+        machine: '5'
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-compute/6:
+        name: nova-compute/6
+        machine: '6'
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-compute/7:
+        name: nova-compute/7
+        machine: '7'
+        workload_version: 21.2.4
+        os_version: ussuri
+      nova-compute/8:
+        name: nova-compute/8
+        machine: '8'
+        workload_version: 21.2.4
+        os_version: ussuri
+    machines:
+      '5':
+        id: '5'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - hw-health
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az2
+      '3':
+        id: '3'
+        apps: !!python/tuple
+        - bcache-tuning
+        - sysconfig-compute
+        - lldpd
+        - hw-health
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az1
+      '6':
+        id: '6'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - rsyslog-forwarder-ha
+        - lldpd
+        - bcache-tuning
+        - hw-health
+        - prometheus-grok-exporter
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - hardware-observer
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az3
+      '1':
+        id: '1'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - hw-health
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az3
+      '0':
+        id: '0'
+        apps: !!python/tuple
+        - bcache-tuning
+        - sysconfig-compute
+        - lldpd
+        - hw-health
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az1
+      '8':
+        id: '8'
+        apps: !!python/tuple
+        - hw-health
+        - lldpd
+        - bcache-tuning
+        - sysconfig-compute
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az3
+      '4':
+        id: '4'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - hw-health
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az2
+      '7':
+        id: '7'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - lldpd
+        - rsyslog-forwarder-ha
+        - bcache-tuning
+        - hw-health
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az2
+      '2':
+        id: '2'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - hw-health
+        - lldpd
+        - sysconfig-compute
+        - bcache-tuning
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az1
+
+  ceph-osd:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/ceph-osd-576
+    charm: ceph-osd
+    channel: octopus/stable
+    config:
+      source:
+        description: "Optional configuration to support use of additional sources such\
+          \ as:\n.\n  - ppa:myteam/ppa\n  - cloud:bionic-ussuri\n  - cloud:xenial-proposed/queens\n\
+          \  - http://my.archive.com/ubuntu main\n.\nThe last option should be used\
+          \ in conjunction with the key configuration\noption.\n"
+        source: user
+        type: string
+        value: distro
+    origin: ch
+    series: focal
+    subordinate_to: []
+    workload_version: 15.2.16
+    units:
+      ceph-osd/0:
+        name: ceph-osd/0
+        machine: '0'
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-osd/1:
+        name: ceph-osd/1
+        machine: '1'
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-osd/2:
+        name: ceph-osd/2
+        machine: '2'
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-osd/3:
+        name: ceph-osd/3
+        machine: '3'
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-osd/4:
+        name: ceph-osd/4
+        machine: '4'
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-osd/5:
+        name: ceph-osd/5
+        machine: '5'
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-osd/6:
+        name: ceph-osd/6
+        machine: '6'
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-osd/7:
+        name: ceph-osd/7
+        machine: '7'
+        workload_version: 15.2.16
+        os_version: victoria
+      ceph-osd/8:
+        name: ceph-osd/8
+        machine: '8'
+        workload_version: 15.2.16
+        os_version: victoria
+    machines:
+      '2':
+        id: '2'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - hw-health
+        - lldpd
+        - sysconfig-compute
+        - bcache-tuning
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az1
+      '5':
+        id: '5'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - hw-health
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az2
+      '4':
+        id: '4'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - hw-health
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az2
+      '0':
+        id: '0'
+        apps: !!python/tuple
+        - bcache-tuning
+        - sysconfig-compute
+        - lldpd
+        - hw-health
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az1
+      '1':
+        id: '1'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - hw-health
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az3
+      '8':
+        id: '8'
+        apps: !!python/tuple
+        - hw-health
+        - lldpd
+        - bcache-tuning
+        - sysconfig-compute
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az3
+      '6':
+        id: '6'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - rsyslog-forwarder-ha
+        - lldpd
+        - bcache-tuning
+        - hw-health
+        - prometheus-grok-exporter
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - hardware-observer
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az3
+      '7':
+        id: '7'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - lldpd
+        - rsyslog-forwarder-ha
+        - bcache-tuning
+        - hw-health
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az2
+      '3':
+        id: '3'
+        apps: !!python/tuple
+        - bcache-tuning
+        - sysconfig-compute
+        - lldpd
+        - hw-health
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az1
+
+  ceilometer-agent:
+    model_name: openstack
+    can_upgrade_to: ''
+    charm: ceilometer-agent
+    channel: ussuri/stable
+    config: {}
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nova-compute
+    workload_version: 14.1.0
+    units: {}
+    machines:
+      '1':
+        id: '1'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - hw-health
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az3
+      '3':
+        id: '3'
+        apps: !!python/tuple
+        - bcache-tuning
+        - sysconfig-compute
+        - lldpd
+        - hw-health
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az1
+      '4':
+        id: '4'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - hw-health
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az2
+      '5':
+        id: '5'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - hw-health
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az2
+      '8':
+        id: '8'
+        apps: !!python/tuple
+        - hw-health
+        - lldpd
+        - bcache-tuning
+        - sysconfig-compute
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az3
+      '7':
+        id: '7'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - lldpd
+        - rsyslog-forwarder-ha
+        - bcache-tuning
+        - hw-health
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az2
+      '2':
+        id: '2'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - hw-health
+        - lldpd
+        - sysconfig-compute
+        - bcache-tuning
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az1
+      '6':
+        id: '6'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - rsyslog-forwarder-ha
+        - lldpd
+        - bcache-tuning
+        - hw-health
+        - prometheus-grok-exporter
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - hardware-observer
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az3
+      '0':
+        id: '0'
+        apps: !!python/tuple
+        - bcache-tuning
+        - sysconfig-compute
+        - lldpd
+        - hw-health
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az1
+
+  ovn-chassis:
+    model_name: openstack
+    can_upgrade_to: ch:amd64/focal/ovn-chassis-176
+    charm: ovn-chassis
+    channel: latest/stable
+    config:
+      enable-auto-restarts:
+        default: true
+        description: 'Allow the charm and packages to restart services automatically
+          when
+
+          required.
+
+          '
+        source: user
+        type: boolean
+        value: true
+    origin: ch
+    series: focal
+    subordinate_to:
+    - nova-compute
+    workload_version: 22.03.2
+    units: {}
+    machines:
+      '2':
+        id: '2'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - hw-health
+        - lldpd
+        - sysconfig-compute
+        - bcache-tuning
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az1
+      '8':
+        id: '8'
+        apps: !!python/tuple
+        - hw-health
+        - lldpd
+        - bcache-tuning
+        - sysconfig-compute
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az3
+      '4':
+        id: '4'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - hw-health
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az2
+      '0':
+        id: '0'
+        apps: !!python/tuple
+        - bcache-tuning
+        - sysconfig-compute
+        - lldpd
+        - hw-health
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az1
+      '1':
+        id: '1'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - hw-health
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az3
+      '3':
+        id: '3'
+        apps: !!python/tuple
+        - bcache-tuning
+        - sysconfig-compute
+        - lldpd
+        - hw-health
+        - rsyslog-forwarder-ha
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az1
+      '7':
+        id: '7'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - lldpd
+        - rsyslog-forwarder-ha
+        - bcache-tuning
+        - hw-health
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - ntp
+        - prometheus-libvirt-exporter
+        az: az2
+      '5':
+        id: '5'
+        apps: !!python/tuple
+        - rsyslog-forwarder-ha
+        - sysconfig-compute
+        - bcache-tuning
+        - lldpd
+        - prometheus-grok-exporter
+        - hardware-observer
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - hw-health
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az2
+      '6':
+        id: '6'
+        apps: !!python/tuple
+        - sysconfig-compute
+        - rsyslog-forwarder-ha
+        - lldpd
+        - bcache-tuning
+        - hw-health
+        - prometheus-grok-exporter
+        - grafana-agent-host
+        - canonical-livepatch
+        - nrpe
+        - telegraf
+        - hardware-observer
+        - landscape-client
+        - ceilometer-agent
+        - nrpe
+        - nova-compute
+        - ceph-osd
+        - ovn-chassis
+        - logrotated
+        - prometheus-libvirt-exporter
+        - ntp
+        az: az3

@@ -134,7 +134,9 @@ class Analysis:
             key=lambda app: UPGRADE_ORDER.index(app.charm),
         )
         # order by charm name to have a predictable upgrade sequence of other o7k charms.
-        other_o7k_apps_sorted_by_name = sorted(other_o7k_apps, key=lambda app: app.charm)
+        other_o7k_apps_sorted_by_name = sorted(
+            other_o7k_apps, key=lambda app: (app.charm, app.name)
+        )
         return sorted_apps_to_upgrade_in_order + other_o7k_apps_sorted_by_name
 
     def __str__(self) -> str:
