@@ -311,7 +311,7 @@ plan: |
             Upgrade plan for 'octavia-ovn-chassis' to 'victoria'
                 WARNING: Changing 'octavia-ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
         Upgrading all applications deployed on machines with hypervisor.
-            Upgrade plan for 'az1' to 'victoria'
+            Upgrade plan for [nova-compute/0, nova-compute/2, nova-compute/3] in 'az1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Disable nova-compute scheduler from unit: 'nova-compute/2'
                 Disable nova-compute scheduler from unit: 'nova-compute/3'
@@ -343,7 +343,7 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute/3'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/2, nova-compute/3
-            Upgrade plan for 'az3' to 'victoria'
+            Upgrade plan for [nova-compute/1, nova-compute/6, nova-compute/8] in 'az3' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/1'
                 Disable nova-compute scheduler from unit: 'nova-compute/6'
                 Disable nova-compute scheduler from unit: 'nova-compute/8'
@@ -375,7 +375,7 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute/8'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/1, nova-compute/6, nova-compute/8
-            Upgrade plan for 'az2' to 'victoria'
+            Upgrade plan for [nova-compute/4, nova-compute/5, nova-compute/7] in 'az2' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/4'
                 Disable nova-compute scheduler from unit: 'nova-compute/5'
                 Disable nova-compute scheduler from unit: 'nova-compute/7'

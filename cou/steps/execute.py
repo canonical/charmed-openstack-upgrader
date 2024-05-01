@@ -12,15 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Execution logic."""
-
 import asyncio
 import logging
 import sys
+import time
 
 from cou.exceptions import HaltUpgradeExecution, RunUpgradeError
-from cou.steps import ApplicationUpgradePlan, BaseStep, UpgradeStep
+from cou.steps import (
+    ApplicationUpgradePlan,
+    BaseStep,
+    HypervisorUpgradePlan,
+    UpgradeStep,
+)
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 
+GROUP_STEPS = (ApplicationUpgradePlan, HypervisorUpgradePlan)
 AVAILABLE_OPTIONS = ["y", "yes", "n", "no"]
 
 logger = logging.getLogger(__name__)
@@ -107,6 +113,9 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
                                in CLI output. True to overwrite and False (the default) to persist.
     :type overwrite_progress: bool
     """
+    if isinstance(step, GROUP_STEPS):
+        start_time = time.time()
+
     if isinstance(step, UpgradeStep):
         progress_indicator.start(step.description)
         await step.run()
@@ -117,7 +126,7 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
 
     # The progress indication message of ApplicationUpgradePlan's sub-steps and all their
     # sub-steps will get overwritten upon completion
-    overwrite_substeps_progress = overwrite_progress or isinstance(step, ApplicationUpgradePlan)
+    overwrite_substeps_progress = overwrite_progress or isinstance(step, GROUP_STEPS)
 
     if step.parallel:
         await _run_sub_steps_in_parallel(step, prompt, overwrite_substeps_progress)
@@ -126,8 +135,12 @@ async def _run_step(step: BaseStep, prompt: bool, overwrite_progress: bool = Fal
 
     # Upon completion of all sub-steps of ApplicationUpgradePlan, replace the current progress
     # indication message, if any, with a persistent application description message.
-    if isinstance(step, ApplicationUpgradePlan) and progress_indicator.spinner_id is not None:
-        progress_indicator.succeed(step.description)
+    if isinstance(step, GROUP_STEPS) and progress_indicator.spinner_id is not None:
+        end_time = time.time()
+        execution_time = round(end_time - start_time)
+        msg = f"{step.description} executed in {execution_time} seconds"
+        logger.info(msg)
+        progress_indicator.succeed(msg)
 
 
 async def apply_step(step: BaseStep, prompt: bool, overwrite_progress: bool = False) -> None:

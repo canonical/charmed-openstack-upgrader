@@ -164,7 +164,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
-            Upgrade plan for 'az-1' to 'victoria'
+            Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Ψ Upgrade software packages on unit 'nova-compute/0'
@@ -320,7 +320,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
-            Upgrade plan for 'az-1' to 'victoria'
+            Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Ψ Upgrade software packages on unit 'nova-compute/0'

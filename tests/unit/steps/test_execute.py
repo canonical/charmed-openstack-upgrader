@@ -213,13 +213,16 @@ async def test_run_step_sequentially_application_upgrade_plan(
     upgrade_step = MagicMock(spec_set=ApplicationUpgradePlan("test-app upgrade plan"))
     upgrade_step.run = AsyncMock()
     upgrade_step.parallel = False
+    upgrade_step.description = "Upgrade plan for 'app' to 'victoria'"
 
     await _run_step(upgrade_step, False)
 
     mock_indicator.start.assert_not_called()
     upgrade_step.run.assert_awaited_once_with()
     mock_run_sub_steps_sequentially.assert_awaited_once_with(upgrade_step, False, True)
-    mock_indicator.succeed.assert_called_once_with(upgrade_step.description)
+    mock_indicator.succeed.assert_called_once_with(
+        "Upgrade plan for 'app' to 'victoria' executed in 0 seconds"
+    )
 
 
 @pytest.mark.asyncio
