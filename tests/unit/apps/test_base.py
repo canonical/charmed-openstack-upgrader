@@ -25,7 +25,7 @@ from cou.exceptions import (
 from cou.steps import PreUpgradeStep, UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import assert_steps
+from tests.unit.utils import assert_steps, generate_cou_machine
 
 
 def test_openstack_application_magic_functions(model):
@@ -414,11 +414,7 @@ def test_check_mismatched_versions_exception(mock_os_release_units, model):
         "This is not currently handled."
     )
 
-    machines = {
-        "0": MagicMock(spec_set=Machine),
-        "1": MagicMock(spec_set=Machine),
-        "2": MagicMock(spec_set=Machine),
-    }
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     units = {
         "my-app/0": Unit(
             name="my-app/0",
@@ -460,17 +456,14 @@ def test_check_mismatched_versions_exception(mock_os_release_units, model):
     with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
         app._check_mismatched_versions(None)
 
-    # if units are passed, it doesn't raise exception
-    assert app._check_mismatched_versions([units["my-app/0"]]) is None
-
 
 @patch("cou.apps.base.OpenStackApplication.os_release_units", new_callable=PropertyMock)
-def test_check_mismatched_versions(mock_os_release_units, model):
-    """Test that no exceptions is raised if units of the app have the same OpenStack version."""
+def test_check_mismatched_versions_with_nova_compute(mock_os_release_units, model):
+    """Not raise exception if workload version is different, but is colocated with nova-compute."""
+    # Same test as above but this application is colocated with nova-compute
     machines = {
-        "0": MagicMock(spec_set=Machine),
-        "1": MagicMock(spec_set=Machine),
-        "2": MagicMock(spec_set=Machine),
+        f"{i}": generate_cou_machine(f"{i}", f"az-{i}", ("my-app", "nova-compute"))
+        for i in range(3)
     }
     units = {
         "my-app/0": Unit(
@@ -491,7 +484,8 @@ def test_check_mismatched_versions(mock_os_release_units, model):
     }
 
     mock_os_release_units.return_value = {
-        OpenStackRelease("ussuri"): ["my-app/0", "my-app/1", "my-app/2"],
+        OpenStackRelease("ussuri"): ["my-app/0", "my-app/1"],
+        OpenStackRelease("victoria"): ["my-app/2"],
     }
 
     app = OpenStackApplication(
@@ -507,6 +501,50 @@ def test_check_mismatched_versions(mock_os_release_units, model):
         subordinate_to=[],
         units=units,
         workload_version="18.1.0",
+    )
+
+    assert app._check_mismatched_versions(None) is None
+
+
+@patch("cou.apps.base.OpenStackApplication.os_release_units", new_callable=PropertyMock)
+def test_check_mismatched_versions(mock_os_release_units, model):
+    """Test that no exceptions is raised if units of the app have the same OpenStack version."""
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    units = {
+        "my-app/0": Unit(
+            name="my-app/0",
+            workload_version="17.0.1",
+            machine=machines["0"],
+        ),
+        "my-app/1": Unit(
+            name="my-app/1",
+            workload_version="17.0.1",
+            machine=machines["1"],
+        ),
+        "my-app/2": Unit(
+            name="my-app/2",
+            workload_version="17.0.1",
+            machine=machines["2"],
+        ),
+    }
+
+    mock_os_release_units.return_value = {
+        OpenStackRelease("ussuri"): ["my-app/0", "my-app/1", "my-app/2"],
+    }
+
+    app = OpenStackApplication(
+        name="my-app",
+        can_upgrade_to="ussuri/stable",
+        charm="my-app",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="17.0.1",
     )
 
     assert app._check_mismatched_versions([units["my-app/0"]]) is None
