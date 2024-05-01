@@ -16,6 +16,7 @@
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from itertools import chain
 from typing import Any
 
 from cou.apps.base import OpenStackApplication
@@ -290,8 +291,9 @@ class HypervisorUpgradePlanner:
         """
         plan = UpgradePlan("Upgrading all applications deployed on machines with hypervisor.")
         for az, group in self.get_azs(target).items():
+            units = list(chain(*group.app_units.values()))
             hypervisor_plan = HypervisorUpgradePlan(
-                f"Upgrade plan for '{group.name}' to '{target}'"
+                f"Upgrade plan for {units} in '{group.name}' to '{target}'"
             )
 
             # sanity checks
