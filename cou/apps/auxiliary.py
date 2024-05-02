@@ -340,7 +340,7 @@ class CephOsd(AuxiliaryApplication):
         units_not_upgraded = []
         apps = await self.model.get_applications()
 
-        for app in apps:
+        for app in apps.values():
             if app.charm != "nova-compute":
                 logger.debug("skipping application %s", app.name)
                 continue
