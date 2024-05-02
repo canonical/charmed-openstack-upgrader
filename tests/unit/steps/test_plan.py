@@ -1063,7 +1063,7 @@ def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_steps, u
     pre_upgrade_steps = cou_plan._get_post_upgrade_steps(analysis_result, args)
 
     assert pre_upgrade_steps == mock_get_ceph_mon_post_upgrade_steps.return_value
-    mock_get_ceph_mon_post_upgrade_steps.assert_called_with(analysis_result.apps_data_plane)
+    mock_get_ceph_mon_post_upgrade_steps.assert_called_with(analysis_result.apps_control_plane)
 
 
 def test_get_ceph_mon_post_upgrade_steps_zero(model):

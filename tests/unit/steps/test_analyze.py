@@ -451,7 +451,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         can_upgrade_to="ussuri/stable",
         charm="cinder",
         channel="ussuri/stable",
-        config={"source": {"value": "distro"}},
+        config={"source": {"value": "cloud:bionic-ussuri"}},
         machines=machines,
         model=model,
         origin="ch",

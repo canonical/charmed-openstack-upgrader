@@ -147,7 +147,7 @@ class OpenStackApplication(Application):
     def apt_source_codename(self) -> OpenStackRelease:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
-        :raises ApplicationError: When origin setting is not valid.
+        :raises ApplicationError: When origin setting or series are not valid.
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
@@ -160,6 +160,8 @@ class OpenStackApplication(Application):
 
         if self.os_origin == "distro":
             # find the OpenStack release based on ubuntu series
+            if self.series not in DISTRO_TO_OPENSTACK_MAPPING:
+                raise ApplicationError(f"Series '{self.series}' is not supported by COU.")
             return OpenStackRelease(DISTRO_TO_OPENSTACK_MAPPING[self.series])
 
         # probably because user set a ppa or a url
@@ -205,9 +207,16 @@ class OpenStackApplication(Application):
     def current_os_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
+        Applications that are colocated in a same machine will upgrade all the packages in the
+        machine during an upgrade. This means that when upgrading a application X, the application
+        Y colocated with it also upgrades its packages. To ensure to change the 'source' or
+        'openstack-origin' and run all the upgrade steps necessary, it's necessary to include the
+        OpenStack release set in the application configuration.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
+        if self.os_origin:
+            return min(list(self.os_release_units.keys()) + [self.apt_source_codename])
         return min(self.os_release_units.keys())
 
     @property
