@@ -64,15 +64,15 @@ def test_analysis_dump(model):
           machines:
             '0':
               id: '0'
-              apps: !!python/tuple []
+              apps_charms: !!python/tuple []
               az: null
             '1':
               id: '1'
-              apps: !!python/tuple []
+              apps_charms: !!python/tuple []
               az: null
             '2':
               id: '2'
-              apps: !!python/tuple []
+              apps_charms: !!python/tuple []
               az: null
 
         cinder:
@@ -106,15 +106,15 @@ def test_analysis_dump(model):
           machines:
             '0':
               id: '0'
-              apps: !!python/tuple []
+              apps_charms: !!python/tuple []
               az: null
             '1':
               id: '1'
-              apps: !!python/tuple []
+              apps_charms: !!python/tuple []
               az: null
             '2':
               id: '2'
-              apps: !!python/tuple []
+              apps_charms: !!python/tuple []
               az: null
 
         rabbitmq-server:
@@ -138,7 +138,7 @@ def test_analysis_dump(model):
           machines:
             '0':
               id: '0'
-              apps: !!python/tuple []
+              apps_charms: !!python/tuple []
               az: null
         Data Plane:
 

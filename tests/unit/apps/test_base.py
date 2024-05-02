@@ -462,7 +462,9 @@ def test_check_mismatched_versions_with_nova_compute(mock_os_release_units, mode
     """Not raise exception if workload version is different, but is colocated with nova-compute."""
     # Same test as above but this application is colocated with nova-compute
     machines = {
-        f"{i}": generate_cou_machine(f"{i}", f"az-{i}", ("my-app", "nova-compute"))
+        f"{i}": generate_cou_machine(
+            f"{i}", f"az-{i}", (("my-app", "app"), ("nova-compute-kvm-sriov", "nova-compute"))
+        )
         for i in range(3)
     }
     units = {
