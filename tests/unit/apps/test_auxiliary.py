@@ -1202,7 +1202,7 @@ async def test_ceph_osd_verify_nova_compute_no_app(model):
         },
         workload_version="15.2.0",
     )
-    model.get_applications.return_value = [app]
+    model.get_applications.return_value = {"ceph-osd": app}
 
     await app._verify_nova_compute(target)
 
@@ -1288,7 +1288,7 @@ async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
         },
         workload_version="17.0.1",
     )
-    model.get_applications.return_value = [app, nova_compute]
+    model.get_applications.return_value = {"ceph-osd": app, "nova-compute": nova_compute}
 
     await app._verify_nova_compute(target)
 
@@ -1327,7 +1327,7 @@ async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
         },
         workload_version="17.0.1",
     )
-    model.get_applications.return_value = [app, nova_compute]
+    model.get_applications.return_value = {"ceph-osd": app, "nova-compute": nova_compute}
 
     with pytest.raises(ApplicationError, match=f"Units 'nova-compute/0' did not reach {target}."):
         await app._verify_nova_compute(target)
