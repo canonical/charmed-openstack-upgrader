@@ -51,7 +51,7 @@ class AuxiliaryApplication(OpenStackApplication):
         """
         current_track = self._get_track_from_channel(charm_channel)
         possible_tracks = OPENSTACK_TO_TRACK_MAPPING.get(
-            (self.charm, self.series, self.current_os_release.codename), []
+            (self.charm, self.series, self.o7k_release.codename), []
         )
         return (
             self.charm,
@@ -77,7 +77,7 @@ class AuxiliaryApplication(OpenStackApplication):
             ]
         else:
             *_, track = OPENSTACK_TO_TRACK_MAPPING[
-                (self.charm, self.series, self.current_os_release.codename)
+                (self.charm, self.series, self.o7k_release.codename)
             ]
 
         return f"{track}/stable"
@@ -103,7 +103,7 @@ class AuxiliaryApplication(OpenStackApplication):
             )
         )
 
-    def _get_os_release_from_channel(self, channel: str) -> OpenStackRelease:
+    def _get_o7k_release_from_channel(self, channel: str) -> OpenStackRelease:
         """Get the OpenStack release from a channel.
 
         Auxiliary charms can have multiple compatible OpenStack releases. In that case, return the
@@ -116,9 +116,9 @@ class AuxiliaryApplication(OpenStackApplication):
         :raises ApplicationError: When cannot identify suitable OpenStack release codename
         """
         track: str = self._get_track_from_channel(channel)
-        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
+        compatible_o7k_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
 
-        if not compatible_os_releases:
+        if not compatible_o7k_releases:
             raise ApplicationError(
                 f"Channel: {self.channel} for charm '{self.charm}' on series '{self.series}' is "
                 f"not supported by COU. Please take a look at the documentation: "
@@ -126,7 +126,7 @@ class AuxiliaryApplication(OpenStackApplication):
                 "if you are using the right track."
             )
 
-        return max(compatible_os_releases)
+        return max(compatible_o7k_releases)
 
     def generate_upgrade_plan(
         self,
@@ -164,9 +164,9 @@ class AuxiliaryApplication(OpenStackApplication):
         :rtype: bool
         """
         track: str = self._get_track_from_channel(self.channel)
-        compatible_os_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
+        compatible_o7k_releases = TRACK_TO_OPENSTACK_MAPPING[(self.charm, self.series, track)]
         return bool(self.can_upgrade_to) and any(
-            os_release <= target for os_release in compatible_os_releases
+            o7k_release <= target for o7k_release in compatible_o7k_releases
         )
 
 
@@ -346,11 +346,11 @@ class CephOsd(AuxiliaryApplication):
                 continue
 
             for unit in app.units.values():
-                compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+                compatible_o7k_versions = OpenStackCodenameLookup.find_compatible_versions(
                     app.charm, unit.workload_version
                 )
 
-                if target not in compatible_os_versions:
+                if target not in compatible_o7k_versions:
                     units_not_upgraded.append(unit.name)
 
         if units_not_upgraded:

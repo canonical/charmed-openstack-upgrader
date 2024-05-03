@@ -53,7 +53,7 @@ def test_openstack_application_magic_functions(model):
 
 
 @patch("cou.utils.openstack.OpenStackCodenameLookup.find_compatible_versions")
-def test_application_get_latest_os_version_failed(mock_find_compatible_versions, model):
+def test_application_get_latest_o7k_version_failed(mock_find_compatible_versions, model):
     charm = "app"
     app_name = "my_app"
     unit = Unit(
@@ -82,7 +82,7 @@ def test_application_get_latest_os_version_failed(mock_find_compatible_versions,
     )
 
     with pytest.raises(ApplicationError, match=exp_error):
-        app.get_latest_os_version(unit)
+        app.get_latest_o7k_version(unit)
 
     mock_find_compatible_versions.assert_called_once_with(charm, unit.workload_version)
 
@@ -358,8 +358,8 @@ def test_check_auto_restarts_error():
 
 
 @patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_check_application_target(current_os_release, apt_source_codename):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_check_application_target(o7k_release, apt_source_codename):
     """Test function to verify target."""
     target = OpenStackRelease("victoria")
     release = OpenStackRelease("ussuri")
@@ -367,14 +367,14 @@ def test_check_application_target(current_os_release, apt_source_codename):
     app = OpenStackApplication(
         app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
-    current_os_release.return_value = apt_source_codename.return_value = release
+    o7k_release.return_value = apt_source_codename.return_value = release
 
     app._check_application_target(target)
 
 
 @patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_check_application_target_can_upgrade(current_os_release, apt_source_codename):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_check_application_target_can_upgrade(o7k_release, apt_source_codename):
     """Test function to verify target."""
     target = OpenStackRelease("victoria")
     release = OpenStackRelease("ussuri")
@@ -382,14 +382,14 @@ def test_check_application_target_can_upgrade(current_os_release, apt_source_cod
     app = OpenStackApplication(
         app_name, "stable", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
-    current_os_release.return_value = apt_source_codename.return_value = release
+    o7k_release.return_value = apt_source_codename.return_value = release
 
     app._check_application_target(target)
 
 
 @patch("cou.apps.base.OpenStackApplication.apt_source_codename", new_callable=PropertyMock)
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_check_application_target_error(current_os_release, apt_source_codename):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_check_application_target_error(o7k_release, apt_source_codename):
     """Test function to verify target raising error."""
     target = OpenStackRelease("victoria")
     app_name = "app"
@@ -400,14 +400,14 @@ def test_check_application_target_error(current_os_release, apt_source_codename)
     app = OpenStackApplication(
         app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
-    current_os_release.return_value = apt_source_codename.return_value = target
+    o7k_release.return_value = apt_source_codename.return_value = target
 
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_error_msg):
         app._check_application_target(target)
 
 
-@patch("cou.apps.base.OpenStackApplication.os_release_units", new_callable=PropertyMock)
-def test_check_mismatched_versions_exception(mock_os_release_units, model):
+@patch("cou.apps.base.OpenStackApplication.o7k_release_units", new_callable=PropertyMock)
+def test_check_mismatched_versions_exception(mock_o7k_release_units, model):
     """Raise exception if workload version is different on units of a control-plane application."""
     exp_error_msg = (
         "Units of application my-app are running mismatched OpenStack versions: "
@@ -438,7 +438,7 @@ def test_check_mismatched_versions_exception(mock_os_release_units, model):
         ),
     }
 
-    mock_os_release_units.return_value = {
+    mock_o7k_release_units.return_value = {
         OpenStackRelease("ussuri"): ["my-app/0", "my-app/1"],
         OpenStackRelease("victoria"): ["my-app/2"],
     }
@@ -465,8 +465,8 @@ def test_check_mismatched_versions_exception(mock_os_release_units, model):
     assert app._check_mismatched_versions([units["my-app/0"]]) is None
 
 
-@patch("cou.apps.base.OpenStackApplication.os_release_units", new_callable=PropertyMock)
-def test_check_mismatched_versions(mock_os_release_units, model):
+@patch("cou.apps.base.OpenStackApplication.o7k_release_units", new_callable=PropertyMock)
+def test_check_mismatched_versions(mock_o7k_release_units, model):
     """Test that no exceptions is raised if units of the app have the same OpenStack version."""
     machines = {
         "0": MagicMock(spec_set=Machine),
@@ -491,7 +491,7 @@ def test_check_mismatched_versions(mock_os_release_units, model):
         ),
     }
 
-    mock_os_release_units.return_value = {
+    mock_o7k_release_units.return_value = {
         OpenStackRelease("ussuri"): ["my-app/0", "my-app/1", "my-app/2"],
     }
 
@@ -513,11 +513,11 @@ def test_check_mismatched_versions(mock_os_release_units, model):
     assert app._check_mismatched_versions([units["my-app/0"]]) is None
 
 
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_get_charmhub_migration_step(current_os_release, model):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_get_charmhub_migration_step(o7k_release, model):
     """Switch applications installed from charm store to a charmhub channel."""
     target = OpenStackRelease("victoria")
-    current_os_release.return_value = OpenStackRelease("ussuri")
+    o7k_release.return_value = OpenStackRelease("ussuri")
 
     app = OpenStackApplication(
         name="app",
@@ -541,10 +541,10 @@ def test_get_charmhub_migration_step(current_os_release, model):
     )
 
 
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_get_change_channel_possible_downgrade_step(current_os_release, model):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_get_change_channel_possible_downgrade_step(o7k_release, model):
     """Applications using latest/stable should be switched to a release-specific channel."""
-    current_os_release.return_value = OpenStackRelease("ussuri")
+    o7k_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
 
     app = OpenStackApplication(
@@ -669,16 +669,16 @@ def test_get_refresh_charm_step_refresh_current_channel(
 @patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
 @patch("cou.apps.base.OpenStackApplication._get_change_channel_possible_downgrade_step")
 @patch("cou.apps.base.OpenStackApplication._get_charmhub_migration_step")
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
 def test_get_refresh_charm_step_change_to_openstack_channels(
-    current_os_release,
+    o7k_release,
     mock_ch_migration,
     mock_possible_downgrade_step,
     mock_refresh_current_channel,
     model,
 ):
     """Expect a pre-upgrade step for application that needs to change to OpenStack channel."""
-    current_os_release.return_value = OpenStackRelease("ussuri")
+    o7k_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
 
     app = OpenStackApplication(
@@ -716,16 +716,16 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
 @patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
 @patch("cou.apps.base.OpenStackApplication._get_change_channel_possible_downgrade_step")
 @patch("cou.apps.base.OpenStackApplication._get_charmhub_migration_step")
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
 def test_get_refresh_charm_step_charmhub_migration(
-    current_os_release,
+    o7k_release,
     mock_ch_migration,
     mock_possible_downgrade_step,
     mock_refresh_current_channel,
     model,
 ):
     """Expect a pre-upgrade step for application that needs to migrate to charmhub."""
-    current_os_release.return_value = OpenStackRelease("ussuri")
+    o7k_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
 
     app = OpenStackApplication(
@@ -847,12 +847,12 @@ def test_apt_source_codename(config, exp_result, model):
         {},
     ],
 )
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_apt_source_codename_empty_or_without_origin_setting(mock_os_release, config, model):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_apt_source_codename_empty_or_without_origin_setting(mock_o7k_release, config, model):
     """Test application with empty or without origin setting."""
     # apt_source_codename will have OpenStack release considering the workload version.
     exp_result = OpenStackRelease("ussuri")
-    mock_os_release.return_value = exp_result
+    mock_o7k_release.return_value = exp_result
     machines = {"0": MagicMock(spec_set=Machine)}
 
     app = OpenStackApplication(
@@ -945,10 +945,10 @@ def test_need_crossgrade(model, channel, origin, exp_result):
 @pytest.mark.parametrize(
     "channel, origin", [("latest/stable", "ch"), ("latest", "cs"), ("victoria/stable", "ch")]
 )
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_expected_current_channel(mock_os_release, model, channel, origin):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_expected_current_channel(mock_o7k_release, model, channel, origin):
     """Expected current channel is based on the OpenStack release of the workload version."""
-    mock_os_release.return_value = OpenStackRelease("victoria")
+    mock_o7k_release.return_value = OpenStackRelease("victoria")
     target = OpenStackRelease("wallaby")
 
     app = OpenStackApplication(

@@ -75,8 +75,8 @@ def test_application_different_wl(model):
         units=units,
         workload_version="18.1.0",
     )
-    assert OpenStackRelease("victoria") in app.os_release_units
-    assert app.current_os_release == OpenStackRelease("ussuri")
+    assert OpenStackRelease("victoria") in app.o7k_release_units
+    assert app.o7k_release == OpenStackRelease("ussuri")
 
 
 @pytest.mark.asyncio
@@ -338,7 +338,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     assert_steps(upgrade_plan, expected_plan)
 
 
-def test_upgrade_plan_channel_on_next_os_release(model):
+def test_upgrade_plan_channel_on_next_o7k_release(model):
     """Test generate plan to upgrade Keystone from Ussuri to Victoria with updated channel.
 
     The app channel it's already on next OpenStack release.
@@ -1049,7 +1049,7 @@ def test_core_wrong_channel(model):
     machines = {"0": MagicMock(spec_set=Machine)}
     app = Keystone(
         name="keystone",
-        can_upgrade_to="ussuri/stable",
+        can_upgrade_to="",
         charm="keystone",
         channel="wallaby/stable",
         config={
@@ -1075,9 +1075,8 @@ def test_core_wrong_channel(model):
     # or victoria. The user will need manual intervention
 
     exp_msg = (
-        r"'keystone' has the channel ahead from expected\. The channel 'wallaby/stable' doesn't "
-        r"match with the expected 'ussuri/stable' or with the target channel 'victoria/stable'\. "
-        r"Manual intervention is required\."
+        r"^The 'keystone' application is using channel 'wallaby/stable'\. Channels supported this "
+        r"transition: '(ussuri/stable)', '(victoria/stable)'\. Manual intervention is required\.$"
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):

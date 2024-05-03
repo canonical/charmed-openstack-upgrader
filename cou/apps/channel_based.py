@@ -31,7 +31,7 @@ class ChannelBasedApplication(OpenStackApplication):
     # rely on the channel to evaluate current OpenStack release
     based_on_channel = True
 
-    def get_latest_os_version(self, unit: Unit) -> OpenStackRelease:
+    def get_latest_o7k_version(self, unit: Unit) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the channel.
 
         :param unit: Unit
@@ -39,16 +39,16 @@ class ChannelBasedApplication(OpenStackApplication):
         :return: The latest compatible OpenStack release.
         :rtype: OpenStackRelease
         """
-        return self.current_channel_os_release
+        return self.channel_o7k_release
 
     @property
-    def current_os_release(self) -> OpenStackRelease:
+    def o7k_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        return self.current_channel_os_release
+        return self.channel_o7k_release
 
     @property
     def is_versionless(self) -> bool:

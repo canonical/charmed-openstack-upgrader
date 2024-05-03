@@ -68,11 +68,11 @@ def test_auxiliary_app(model):
     )
     assert app.channel == "3.8/stable"
     assert app.is_valid_track(app.channel) is True
-    assert app.os_origin == "distro"
+    assert app.o7k_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.current_channel_os_release == "yoga"
+    assert app.channel_o7k_release == "yoga"
     assert app.is_subordinate is False
-    assert app.current_os_release == "yoga"
+    assert app.o7k_release == "yoga"
 
 
 def test_auxiliary_app_cs(model):
@@ -101,10 +101,10 @@ def test_auxiliary_app_cs(model):
 
     assert app.channel == "stable"
     assert app.is_valid_track(app.channel) is False
-    assert app.os_origin == "distro"
+    assert app.o7k_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.current_channel_os_release == "ussuri"
-    assert app.current_os_release == "yoga"
+    assert app.channel_o7k_release == "ussuri"
+    assert app.o7k_release == "yoga"
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
@@ -385,7 +385,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.get_latest_os_version(unit)
+        app.get_latest_o7k_version(unit)
 
 
 def test_auxiliary_raise_error_unknown_series(model):
@@ -423,13 +423,13 @@ def test_auxiliary_raise_error_unknown_series(model):
         app._check_channel()
 
 
-@patch("cou.apps.core.OpenStackApplication.current_os_release")
-def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
+@patch("cou.apps.core.OpenStackApplication.o7k_release")
+def test_auxiliary_raise_error_o7k_not_on_lookup(o7k_release, model):
     """Test auxiliary upgrade plan with os release not in lookup table.
 
     Using OpenStack release version that is not on openstack_to_track_mapping.csv table.
     """
-    current_os_release.return_value = OpenStackRelease("diablo")
+    o7k_release.return_value = OpenStackRelease("diablo")
     exp_error_msg = (
         "Channel: 3.8/stable for charm 'rabbitmq-server' on series 'focal' is not supported by "
         "COU. Please take a look at the documentation: "
@@ -546,7 +546,7 @@ def test_auxiliary_no_origin_setting_raise_halt_upgrade(model):
     )
 
     # current OpenStack release is bigger than target
-    assert app.current_os_release == OpenStackRelease("yoga")
+    assert app.o7k_release == OpenStackRelease("yoga")
 
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
         app._check_application_target(target)
@@ -616,10 +616,10 @@ def test_ceph_mon_app(model):
     )
 
     assert app.channel == "pacific/stable"
-    assert app.os_origin == "cloud:focal-xena"
-    assert app.get_latest_os_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
+    assert app.o7k_origin == "cloud:focal-xena"
+    assert app.get_latest_o7k_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
     assert app.apt_source_codename == "xena"
-    assert app.current_channel_os_release == "xena"
+    assert app.channel_o7k_release == "xena"
     assert app.is_subordinate is False
 
 
@@ -811,10 +811,10 @@ def test_ovn_principal(model):
         workload_version="22.03",
     )
     assert app.channel == "22.03/stable"
-    assert app.os_origin == "distro"
+    assert app.o7k_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.current_channel_os_release == "yoga"
-    assert app.current_os_release == "yoga"
+    assert app.channel_o7k_release == "yoga"
+    assert app.o7k_release == "yoga"
     assert app.is_subordinate is False
 
 
@@ -886,7 +886,7 @@ def test_ovn_version_pinning_principal(model):
 
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])
-def test_ovn_no_compatible_os_release(channel, model):
+def test_ovn_no_compatible_o7k_release(channel, model):
     """Test the OVNPrincipal with not compatible os release."""
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=Machine)}
@@ -1375,7 +1375,7 @@ def test_ceph_osd_upgrade_plan(model):
 
 
 @pytest.mark.parametrize(
-    "can_upgrade_to, compatible_os_releases, exp_result",
+    "can_upgrade_to, compatible_o7k_releases, exp_result",
     [
         (
             "ch:amd64/focal/my-app-723",
@@ -1387,7 +1387,7 @@ def test_ceph_osd_upgrade_plan(model):
             [OpenStackRelease("victoria")],
             True,
         ),
-        # compatible_os_releases bigger than target
+        # compatible_o7k_releases bigger than target
         (
             "ch:amd64/focal/my-app-723",
             [OpenStackRelease("wallaby"), OpenStackRelease("xena")],
@@ -1402,9 +1402,9 @@ def test_ceph_osd_upgrade_plan(model):
 )
 @patch("cou.apps.auxiliary.TRACK_TO_OPENSTACK_MAPPING")
 def test_need_current_channel_refresh_auxiliary(
-    mock_track_os_mapping, model, can_upgrade_to, compatible_os_releases, exp_result
+    mock_track_o7k_mapping, model, can_upgrade_to, compatible_o7k_releases, exp_result
 ):
-    mock_track_os_mapping.__getitem__.return_value = compatible_os_releases
+    mock_track_o7k_mapping.__getitem__.return_value = compatible_o7k_releases
     target = OpenStackRelease("victoria")
     app_name = "app"
     app = AuxiliaryApplication(
@@ -1422,11 +1422,11 @@ def test_need_current_channel_refresh_auxiliary(
         ("pacific/stable", "ch"),
     ],
 )
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_expected_current_channel_auxiliary(mock_os_release, model, channel, origin):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_expected_current_channel_auxiliary(mock_o7k_release, model, channel, origin):
     """Expected current channel is based on the OpenStack release of the workload version."""
     target = OpenStackRelease("wallaby")
-    mock_os_release.return_value = OpenStackRelease("victoria")
+    mock_o7k_release.return_value = OpenStackRelease("victoria")
     ceph_osd = CephOsd(
         name="ceph-osd",
         can_upgrade_to="octopus/stable",
@@ -1475,9 +1475,8 @@ def test_auxiliary_wrong_channel(model):
     # or pacific. The user will need manual intervention
 
     exp_msg = (
-        r"'ceph-mon' has the channel ahead from expected\. The channel 'quincy/stable' doesn't "
-        r"match with the expected 'octopus/stable' or with the target channel 'octopus/stable'\. "
-        r"Manual intervention is required\."
+        r"^The 'ceph-mon' application is using channel 'quincy/stable'\. Channels supported this "
+        r"transition: '(octopus/stable)', '(octopus/stable)'\. Manual intervention is required\.$"
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):

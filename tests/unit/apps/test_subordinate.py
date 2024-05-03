@@ -27,8 +27,8 @@ from tests.unit.utils import assert_steps
 logger = logging.getLogger(__name__)
 
 
-def test_current_os_release(model):
-    """Test current_os_release for SubordinateApplication."""
+def test_o7k_release(model):
+    """Test o7k_release for SubordinateApplication."""
     machines = {"0": MagicMock(spec_set=Machine)}
     app = SubordinateApplication(
         name="keystone-ldap",
@@ -45,7 +45,7 @@ def test_current_os_release(model):
         workload_version="18.1.0",
     )
 
-    assert app.current_os_release == OpenStackRelease("ussuri")
+    assert app.o7k_release == OpenStackRelease("ussuri")
 
 
 def test_generate_upgrade_plan(model):

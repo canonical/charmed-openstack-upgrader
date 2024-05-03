@@ -66,7 +66,7 @@ applications:
         name: keystone/0
         machine: '0'
         workload_version: 17.0.1
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       '0':
         id: '0'
@@ -106,7 +106,7 @@ applications:
         name: ceph-osd/0
         machine: '2'
         workload_version: 15.2.0
-        os_version: victoria
+        o7k_version: victoria
     machines:
       '2':
         id: '2'
@@ -131,7 +131,7 @@ applications:
         name: nova-compute/0
         machine: '1'
         workload_version: 21.0.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       '1':
         id: '1'

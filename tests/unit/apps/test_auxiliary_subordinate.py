@@ -48,10 +48,10 @@ def test_auxiliary_subordinate(model):
 
     assert app.channel == "8.0/stable"
     assert app.origin == "ch"
-    assert app.os_origin == ""
+    assert app.o7k_origin == ""
     assert app.apt_source_codename == "yoga"
-    assert app.current_channel_os_release == "yoga"
-    assert app.current_os_release == "yoga"
+    assert app.channel_o7k_release == "yoga"
+    assert app.o7k_release == "yoga"
     assert app.is_subordinate is True
 
 
@@ -107,10 +107,10 @@ def test_ovn_subordinate(model):
     )
 
     assert app.channel == "22.03/stable"
-    assert app.os_origin == ""
+    assert app.o7k_origin == ""
     assert app.apt_source_codename == "yoga"
-    assert app.current_channel_os_release == "yoga"
-    assert app.current_os_release == "yoga"
+    assert app.channel_o7k_release == "yoga"
+    assert app.o7k_release == "yoga"
     assert app.is_subordinate is True
 
 
@@ -346,7 +346,7 @@ This may be a charm downgrade, which is generally not supported.
     assert str(plan) == exp_plan
 
 
-def test_auxiliary_subordinate_current_channel_os_release_raise(model):
+def test_auxiliary_subordinate_channel_o7k_release_raise(model):
     app = AuxiliarySubordinateApplication(
         name="ceph-dashboard",
         can_upgrade_to="",
@@ -370,7 +370,7 @@ def test_auxiliary_subordinate_current_channel_os_release_raise(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.current_channel_os_release
+        app.channel_o7k_release
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.current_os_release
+        app.o7k_release

@@ -33,7 +33,7 @@ class SubordinateApplication(OpenStackApplication):
     based_on_channel = True
 
     @property
-    def current_os_release(self) -> OpenStackRelease:
+    def o7k_release(self) -> OpenStackRelease:
         """Infer the OpenStack release from subordinate charm's channel.
 
         We cannot determine the OpenStack release base on workload packages because the principal
@@ -42,7 +42,7 @@ class SubordinateApplication(OpenStackApplication):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        return self.current_channel_os_release
+        return self.channel_o7k_release
 
     def _check_application_target(self, target: OpenStackRelease) -> None:
         """Check if the application is already upgraded.
@@ -54,9 +54,9 @@ class SubordinateApplication(OpenStackApplication):
         :type target: OpenStackRelease
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         """
-        logger.debug("%s application current os_release is %s", self.name, self.current_os_release)
+        logger.debug("%s application current o7k_release is %s", self.name, self.o7k_release)
 
-        if self.current_os_release >= target and not self.can_upgrade_to:
+        if self.o7k_release >= target and not self.can_upgrade_to:
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "
                 f"than {target}. Ignoring."

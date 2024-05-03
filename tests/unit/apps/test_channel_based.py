@@ -56,11 +56,10 @@ def test_application_versionless(model):
         workload_version="",
     )
 
-    assert app.current_os_release == "ussuri"
+    assert app.o7k_release == "ussuri"
     assert app.is_versionless is True
     assert (
-        app.get_latest_os_version(units["glance-simplestreams-sync/0"])
-        == app.current_channel_os_release
+        app.get_latest_o7k_version(units["glance-simplestreams-sync/0"]) == app.channel_o7k_release
     )
 
 
@@ -107,7 +106,7 @@ This may be a charm downgrade, which is generally not supported.
     # app is considered as ussuri because it's using latest/stable, but it won't be considered when
     # calculating the cloud minimum OpenStack release. It will refresh the charm channel to
     # whatever the minimum version of other components passed as a target.
-    assert app.current_os_release == "ussuri"
+    assert app.o7k_release == "ussuri"
     plan = app.generate_upgrade_plan(target, force=False)
     assert str(plan) == exp_plan
 
@@ -139,14 +138,14 @@ def test_application_gnocchi_ussuri(model):
         workload_version="4.3.4",
     )
 
-    assert app.current_os_release == "ussuri"
+    assert app.o7k_release == "ussuri"
     assert app.is_versionless is False
 
 
 def test_application_gnocchi_xena(model):
     """Test the Gnocchi ChannelBasedApplication with Xena.
 
-    The workload version is the same for xena and yoga, but current_os_release is based on
+    The workload version is the same for xena and yoga, but o7k_release is based on
     the channel.
     """
     machines = {"0": MagicMock(spec_set=Machine)}
@@ -171,14 +170,14 @@ def test_application_gnocchi_xena(model):
         workload_version="4.4.1",
     )
 
-    assert app.current_os_release == "xena"
+    assert app.o7k_release == "xena"
     assert app.is_versionless is False
 
 
 def test_application_designate_bind_ussuri(model):
     """Test the Designate-bind ChannelBasedApplication with Ussuri.
 
-    The workload version is the same from ussuri to yoga, but current_os_release is based on
+    The workload version is the same from ussuri to yoga, but o7k_release is based on
     the channel.
     """
     machines = {"0": MagicMock(spec_set=Machine)}
@@ -206,7 +205,7 @@ def test_application_designate_bind_ussuri(model):
         workload_version="9.16.1",
     )
 
-    assert app.current_os_release == "ussuri"
+    assert app.o7k_release == "ussuri"
     assert app.is_versionless is False
 
 

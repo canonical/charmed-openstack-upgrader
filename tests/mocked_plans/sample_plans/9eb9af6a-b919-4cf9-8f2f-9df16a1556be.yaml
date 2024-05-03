@@ -466,17 +466,17 @@ applications:
         name: rabbitmq-server/0
         machine: 3/lxd/7
         workload_version: 3.8.2
-        os_version: yoga
+        o7k_version: yoga
       rabbitmq-server/1:
         name: rabbitmq-server/1
         machine: 7/lxd/7
         workload_version: 3.8.2
-        os_version: yoga
+        o7k_version: yoga
       rabbitmq-server/2:
         name: rabbitmq-server/2
         machine: 8/lxd/7
         workload_version: 3.8.2
-        os_version: yoga
+        o7k_version: yoga
     machines:
       8/lxd/7:
         id: 8/lxd/7
@@ -536,17 +536,17 @@ applications:
         name: ceph-mon/0
         machine: 2/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-mon/1:
         name: ceph-mon/1
         machine: 5/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-mon/2:
         name: ceph-mon/2
         machine: 6/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
     machines:
       2/lxd/1:
         id: 2/lxd/1
@@ -662,17 +662,17 @@ applications:
         name: keystone/0
         machine: 0/lxd/3
         workload_version: 17.0.1
-        os_version: ussuri
+        o7k_version: ussuri
       keystone/1:
         name: keystone/1
         machine: 1/lxd/3
         workload_version: 17.0.1
-        os_version: ussuri
+        o7k_version: ussuri
       keystone/2:
         name: keystone/2
         machine: 4/lxd/3
         workload_version: 17.0.1
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       1/lxd/3:
         id: 1/lxd/3
@@ -766,17 +766,17 @@ applications:
         name: aodh/0
         machine: 2/lxd/0
         workload_version: 10.0.0
-        os_version: ussuri
+        o7k_version: ussuri
       aodh/1:
         name: aodh/1
         machine: 5/lxd/0
         workload_version: 10.0.0
-        os_version: ussuri
+        o7k_version: ussuri
       aodh/2:
         name: aodh/2
         machine: 6/lxd/0
         workload_version: 10.0.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       5/lxd/0:
         id: 5/lxd/0
@@ -867,17 +867,17 @@ applications:
         name: barbican/0
         machine: 3/lxd/0
         workload_version: 10.1.0
-        os_version: ussuri
+        o7k_version: ussuri
       barbican/1:
         name: barbican/1
         machine: 7/lxd/0
         workload_version: 10.1.0
-        os_version: ussuri
+        o7k_version: ussuri
       barbican/2:
         name: barbican/2
         machine: 8/lxd/0
         workload_version: 10.1.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       7/lxd/0:
         id: 7/lxd/0
@@ -994,17 +994,17 @@ applications:
         name: ceilometer/0
         machine: 0/lxd/0
         workload_version: 14.1.0
-        os_version: ussuri
+        o7k_version: ussuri
       ceilometer/1:
         name: ceilometer/1
         machine: 1/lxd/0
         workload_version: 14.1.0
-        os_version: ussuri
+        o7k_version: ussuri
       ceilometer/2:
         name: ceilometer/2
         machine: 4/lxd/0
         workload_version: 14.1.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       1/lxd/0:
         id: 1/lxd/0
@@ -1096,17 +1096,17 @@ applications:
         name: ceph-radosgw/0
         machine: 3/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-radosgw/1:
         name: ceph-radosgw/1
         machine: 7/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-radosgw/2:
         name: ceph-radosgw/2
         machine: 8/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
     machines:
       7/lxd/1:
         id: 7/lxd/1
@@ -1217,17 +1217,17 @@ applications:
         name: cinder/0
         machine: 0/lxd/1
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
       cinder/1:
         name: cinder/1
         machine: 1/lxd/1
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
       cinder/2:
         name: cinder/2
         machine: 4/lxd/1
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       4/lxd/1:
         id: 4/lxd/1
@@ -1321,17 +1321,17 @@ applications:
         name: designate/0
         machine: 2/lxd/2
         workload_version: 10.0.2
-        os_version: ussuri
+        o7k_version: ussuri
       designate/1:
         name: designate/1
         machine: 5/lxd/2
         workload_version: 10.0.2
-        os_version: ussuri
+        o7k_version: ussuri
       designate/2:
         name: designate/2
         machine: 6/lxd/2
         workload_version: 10.0.2
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       6/lxd/2:
         id: 6/lxd/2
@@ -1391,12 +1391,12 @@ applications:
         name: designate-bind/0
         machine: 1/lxd/4
         workload_version: 9.16.1
-        os_version: ussuri
+        o7k_version: ussuri
       designate-bind/1:
         name: designate-bind/1
         machine: 4/lxd/4
         workload_version: 9.16.1
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       4/lxd/4:
         id: 4/lxd/4
@@ -1496,17 +1496,17 @@ applications:
         name: glance/0
         machine: 0/lxd/2
         workload_version: 20.2.0
-        os_version: ussuri
+        o7k_version: ussuri
       glance/1:
         name: glance/1
         machine: 1/lxd/2
         workload_version: 20.2.0
-        os_version: ussuri
+        o7k_version: ussuri
       glance/2:
         name: glance/2
         machine: 4/lxd/2
         workload_version: 20.2.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       0/lxd/2:
         id: 0/lxd/2
@@ -1597,17 +1597,17 @@ applications:
         name: gnocchi/0
         machine: 2/lxd/3
         workload_version: 4.3.4
-        os_version: ussuri
+        o7k_version: ussuri
       gnocchi/1:
         name: gnocchi/1
         machine: 5/lxd/3
         workload_version: 4.3.4
-        os_version: ussuri
+        o7k_version: ussuri
       gnocchi/2:
         name: gnocchi/2
         machine: 6/lxd/4
         workload_version: 4.3.4
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       5/lxd/3:
         id: 5/lxd/3
@@ -1721,17 +1721,17 @@ applications:
         name: heat/0
         machine: 3/lxd/3
         workload_version: 14.2.0
-        os_version: ussuri
+        o7k_version: ussuri
       heat/1:
         name: heat/1
         machine: 7/lxd/4
         workload_version: 14.2.0
-        os_version: ussuri
+        o7k_version: ussuri
       heat/2:
         name: heat/2
         machine: 8/lxd/3
         workload_version: 14.2.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       7/lxd/4:
         id: 7/lxd/4
@@ -1845,17 +1845,17 @@ applications:
         name: neutron-api/0
         machine: 3/lxd/4
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
       neutron-api/1:
         name: neutron-api/1
         machine: 7/lxd/5
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
       neutron-api/2:
         name: neutron-api/2
         machine: 8/lxd/5
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       3/lxd/4:
         id: 3/lxd/4
@@ -1941,17 +1941,17 @@ applications:
         name: ovn-central/0
         machine: 0/lxd/5
         workload_version: 22.03.2
-        os_version: victoria
+        o7k_version: victoria
       ovn-central/1:
         name: ovn-central/1
         machine: 1/lxd/7
         workload_version: 22.03.2
-        os_version: victoria
+        o7k_version: victoria
       ovn-central/2:
         name: ovn-central/2
         machine: 4/lxd/7
         workload_version: 22.03.2
-        os_version: victoria
+        o7k_version: victoria
     machines:
       0/lxd/5:
         id: 0/lxd/5
@@ -2033,17 +2033,17 @@ applications:
         name: placement/0
         machine: 2/lxd/6
         workload_version: 3.0.1
-        os_version: ussuri
+        o7k_version: ussuri
       placement/1:
         name: placement/1
         machine: 5/lxd/6
         workload_version: 3.0.1
-        os_version: ussuri
+        o7k_version: ussuri
       placement/2:
         name: placement/2
         machine: 6/lxd/8
         workload_version: 3.0.1
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       5/lxd/6:
         id: 5/lxd/6
@@ -2157,17 +2157,17 @@ applications:
         name: nova-cloud-controller/0
         machine: 0/lxd/4
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-cloud-controller/1:
         name: nova-cloud-controller/1
         machine: 1/lxd/5
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-cloud-controller/2:
         name: nova-cloud-controller/2
         machine: 4/lxd/5
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       4/lxd/5:
         id: 4/lxd/5
@@ -2281,17 +2281,17 @@ applications:
         name: openstack-dashboard/0
         machine: 3/lxd/5
         workload_version: 18.3.5
-        os_version: ussuri
+        o7k_version: ussuri
       openstack-dashboard/1:
         name: openstack-dashboard/1
         machine: 7/lxd/6
         workload_version: 18.3.5
-        os_version: ussuri
+        o7k_version: ussuri
       openstack-dashboard/2:
         name: openstack-dashboard/2
         machine: 8/lxd/6
         workload_version: 18.3.5
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       7/lxd/6:
         id: 7/lxd/6
@@ -2385,17 +2385,17 @@ applications:
         name: octavia/0
         machine: 2/lxd/5
         workload_version: 6.2.2
-        os_version: ussuri
+        o7k_version: ussuri
       octavia/1:
         name: octavia/1
         machine: 5/lxd/5
         workload_version: 6.2.2
-        os_version: ussuri
+        o7k_version: ussuri
       octavia/2:
         name: octavia/2
         machine: 6/lxd/6
         workload_version: 6.2.2
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       6/lxd/6:
         id: 6/lxd/6
@@ -2630,7 +2630,7 @@ applications:
         name: glance-simplestreams-sync/0
         machine: 7/lxd/3
         workload_version: ''
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       7/lxd/3:
         id: 7/lxd/3
@@ -3721,17 +3721,17 @@ applications:
         name: mysql-innodb-cluster/0
         machine: 2/lxd/4
         workload_version: 8.0.30
-        os_version: yoga
+        o7k_version: yoga
       mysql-innodb-cluster/1:
         name: mysql-innodb-cluster/1
         machine: 5/lxd/4
         workload_version: 8.0.30
-        os_version: yoga
+        o7k_version: yoga
       mysql-innodb-cluster/2:
         name: mysql-innodb-cluster/2
         machine: 6/lxd/5
         workload_version: 8.0.30
-        os_version: yoga
+        o7k_version: yoga
     machines:
       5/lxd/4:
         id: 5/lxd/4
@@ -5196,17 +5196,17 @@ applications:
         name: vault/0
         machine: '10'
         workload_version: 1.7.9
-        os_version: yoga
+        o7k_version: yoga
       vault/1:
         name: vault/1
         machine: '11'
         workload_version: 1.7.9
-        os_version: yoga
+        o7k_version: yoga
       vault/2:
         name: vault/2
         machine: '9'
         workload_version: 1.7.9
-        os_version: yoga
+        o7k_version: yoga
     machines:
       '11':
         id: '11'
@@ -5302,47 +5302,47 @@ applications:
         name: nova-compute/0
         machine: '0'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/1:
         name: nova-compute/1
         machine: '1'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/2:
         name: nova-compute/2
         machine: '2'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/3:
         name: nova-compute/3
         machine: '3'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/4:
         name: nova-compute/4
         machine: '4'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/5:
         name: nova-compute/5
         machine: '5'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/6:
         name: nova-compute/6
         machine: '6'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/7:
         name: nova-compute/7
         machine: '7'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/8:
         name: nova-compute/8
         machine: '8'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       '5':
         id: '5'
@@ -5584,47 +5584,47 @@ applications:
         name: ceph-osd/0
         machine: '0'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/1:
         name: ceph-osd/1
         machine: '1'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/2:
         name: ceph-osd/2
         machine: '2'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/3:
         name: ceph-osd/3
         machine: '3'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/4:
         name: ceph-osd/4
         machine: '4'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/5:
         name: ceph-osd/5
         machine: '5'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/6:
         name: ceph-osd/6
         machine: '6'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/7:
         name: ceph-osd/7
         machine: '7'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/8:
         name: ceph-osd/8
         machine: '8'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
     machines:
       '2':
         id: '2'
