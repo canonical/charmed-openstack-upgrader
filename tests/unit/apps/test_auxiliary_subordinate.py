@@ -49,7 +49,8 @@ def test_auxiliary_subordinate(model):
     assert app.channel == "8.0/stable"
     assert app.origin == "ch"
     assert app.os_origin == ""
-    assert app.apt_source_codename == "yoga"
+    # when don't have os_origin is considered as "distro" which points to ussuri in this case
+    assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
     assert app.is_subordinate is True
@@ -108,7 +109,8 @@ def test_ovn_subordinate(model):
 
     assert app.channel == "22.03/stable"
     assert app.os_origin == ""
-    assert app.apt_source_codename == "yoga"
+    # when don't have os_origin is considered as "distro" which points to ussuri in this case
+    assert app.apt_source_codename == "ussuri"
     assert app.channel_codename == "yoga"
     assert app.current_os_release == "yoga"
     assert app.is_subordinate is True

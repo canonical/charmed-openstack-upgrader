@@ -151,14 +151,11 @@ class OpenStackApplication(Application):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        #  means that the charm doesn't have origin setting config or is using empty string.
-        if not self.os_origin:
-            return self.current_os_release
-
         if self.os_origin.startswith("cloud"):
             return self._extract_from_uca_source()
 
-        if self.os_origin == "distro":
+        # consider as "distro" if the application does not have source or is empty
+        if self.os_origin in {"distro", ""}:
             # find the OpenStack release based on ubuntu series
             if self.series not in DISTRO_TO_OPENSTACK_MAPPING:
                 raise ApplicationError(f"Series '{self.series}' is not supported by COU.")
@@ -848,7 +845,8 @@ class OpenStackApplication(Application):
         if (
             self.current_os_release >= target
             and not self.can_upgrade_to
-            and self.apt_source_codename >= target
+            # consider apt_source_codename just when exist or not empty
+            and (self.apt_source_codename >= target if self.os_origin else True)
         ):
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "
