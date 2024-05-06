@@ -28,11 +28,13 @@ def assert_steps(step_1: BaseStep, step_2: BaseStep) -> None:
     assert step_1 == step_2, msg
 
 
-def generate_cou_machine(machine_id: str, az: str | None = None) -> MagicMock:
+def generate_cou_machine(
+    machine_id: str, az: str | None = None, apps_charms: tuple = tuple(tuple())
+) -> MagicMock:
     machine = MagicMock(spec_set=Machine)()
     machine.machine_id = machine_id
     machine.az = az
-    machine.apps = tuple()
+    machine.apps_charms = apps_charms
     return machine
 
 

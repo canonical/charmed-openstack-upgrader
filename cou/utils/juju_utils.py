@@ -138,7 +138,7 @@ class Machine:
     """Representation of a juju machine."""
 
     machine_id: str
-    apps: tuple[str]
+    apps_charms: tuple[tuple[str, str], ...]
     az: Optional[str] = None  # simple deployments may not have azs
 
 
@@ -285,15 +285,25 @@ class Model:
         return {
             machine.id: Machine(
                 machine_id=machine.id,
-                apps=tuple(
-                    unit.application
-                    for unit in self._model.units.values()
-                    if unit.machine.id == machine.id
-                ),
+                apps_charms=self._get_machine_apps_and_charms(machine.id),
                 az=machine.hardware_characteristics.get("availability-zone"),
             )
             for machine in model.machines.values()
         }
+
+    def _get_machine_apps_and_charms(self, machine_id: int) -> tuple[tuple[str, str], ...]:
+        """Get machine apps amd charm names.
+
+        :param machine_id: Machine id.
+        :type machine_id: int
+        :return: Tuple of tuple contains app name and charm name.
+        :rtype: tuple[tuple[str, str], ...]
+        """
+        return tuple(
+            (str(unit.application), str(self._model.applications[unit.application].charm_name))
+            for unit in self._model.units.values()
+            if unit.machine.id == machine_id
+        )
 
     async def _get_model(self) -> JujuModel:
         """Get juju.model.Model and make sure that it is connected.
