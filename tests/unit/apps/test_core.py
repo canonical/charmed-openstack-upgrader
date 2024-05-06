@@ -124,7 +124,10 @@ async def test_application_verify_workload_upgrade(model):
 async def test_application_verify_workload_upgrade_fail(model):
     """Test Kyestone application check unsuccessful upgrade."""
     target = OpenStackRelease("victoria")
-    exp_msg = "Cannot upgrade units 'keystone/0' to victoria."
+    exp_msg = (
+        r"Unit\(s\) 'keystone/0' did not complete the upgrade to victoria. Some local processes "
+        r"may still be executing; you may try re-running COU in a few minutes."
+    )
     machines = {"0": MagicMock(spec_set=Machine)}
     app = Keystone(
         name="keystone",
@@ -787,25 +790,25 @@ def test_nova_compute_upgrade_plan(model):
         Disable nova-compute scheduler from unit: 'nova-compute/1'
         Disable nova-compute scheduler from unit: 'nova-compute/2'
         Upgrade software packages of 'nova-compute' from the current APT repositories
-            Upgrade software packages on unit 'nova-compute/0'
-            Upgrade software packages on unit 'nova-compute/1'
-            Upgrade software packages on unit 'nova-compute/2'
+            Ψ Upgrade software packages on unit 'nova-compute/0'
+            Ψ Upgrade software packages on unit 'nova-compute/1'
+            Ψ Upgrade software packages on unit 'nova-compute/2'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
         Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'nova-compute' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
-            Upgrade plan for unit 'nova-compute/0'
+            Ψ Upgrade plan for unit 'nova-compute/0'
                 Verify that unit 'nova-compute/0' has no VMs running
                 ├── Pause the unit: 'nova-compute/0'
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
-            Upgrade plan for unit 'nova-compute/1'
+            Ψ Upgrade plan for unit 'nova-compute/1'
                 Verify that unit 'nova-compute/1' has no VMs running
                 ├── Pause the unit: 'nova-compute/1'
                 ├── Upgrade the unit: 'nova-compute/1'
                 ├── Resume the unit: 'nova-compute/1'
-            Upgrade plan for unit 'nova-compute/2'
+            Ψ Upgrade plan for unit 'nova-compute/2'
                 Verify that unit 'nova-compute/2' has no VMs running
                 ├── Pause the unit: 'nova-compute/2'
                 ├── Upgrade the unit: 'nova-compute/2'
@@ -854,13 +857,13 @@ def test_nova_compute_upgrade_plan_single_unit(model):
     Upgrade plan for 'nova-compute' to 'victoria'
         Disable nova-compute scheduler from unit: 'nova-compute/0'
         Upgrade software packages of 'nova-compute' from the current APT repositories
-            Upgrade software packages on unit 'nova-compute/0'
+            Ψ Upgrade software packages on unit 'nova-compute/0'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
         Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'nova-compute' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0
-            Upgrade plan for unit 'nova-compute/0'
+            Ψ Upgrade plan for unit 'nova-compute/0'
                 Verify that unit 'nova-compute/0' has no VMs running
                 ├── Pause the unit: 'nova-compute/0'
                 ├── Upgrade the unit: 'nova-compute/0'
@@ -906,9 +909,9 @@ def test_cinder_upgrade_plan(model):
         """\
     Upgrade plan for 'cinder' to 'victoria'
         Upgrade software packages of 'cinder' from the current APT repositories
-            Upgrade software packages on unit 'cinder/0'
-            Upgrade software packages on unit 'cinder/1'
-            Upgrade software packages on unit 'cinder/2'
+            Ψ Upgrade software packages on unit 'cinder/0'
+            Ψ Upgrade software packages on unit 'cinder/1'
+            Ψ Upgrade software packages on unit 'cinder/2'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
         Upgrade 'cinder' to the new channel: 'victoria/stable'
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
@@ -956,13 +959,13 @@ def test_cinder_upgrade_plan_single_unit(model):
         """\
     Upgrade plan for 'cinder' to 'victoria'
         Upgrade software packages of 'cinder' from the current APT repositories
-            Upgrade software packages on unit 'cinder/0'
+            Ψ Upgrade software packages on unit 'cinder/0'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
         Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'cinder' to the new channel: 'victoria/stable'
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
         Upgrade plan for units: cinder/0
-            Upgrade plan for unit 'cinder/0'
+            Ψ Upgrade plan for unit 'cinder/0'
                 Pause the unit: 'cinder/0'
                 Upgrade the unit: 'cinder/0'
                 Resume the unit: 'cinder/0'

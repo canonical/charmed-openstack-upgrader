@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary application class."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
@@ -335,8 +335,8 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
     """Test auxiliary upgrade plan with unknown track."""
     channel = "2.0/stable"
     exp_msg = (
-        f"Channel: {channel} for charm 'rabbitmq-server' on series 'focal' is currently "
-        "not supported in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm 'rabbitmq-server' on series 'focal' is not supported by "
+        "COU. Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
@@ -398,8 +398,8 @@ def test_auxiliary_raise_error_unknown_series(model):
     series = "foo"
     channel = "3.8/stable"
     exp_msg = (
-        f"Channel: {channel} for charm 'rabbitmq-server' on series '{series}' is currently "
-        "not supported in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm 'rabbitmq-server' on series '{series}' is not supported by "
+        "COU. Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
@@ -436,8 +436,8 @@ def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
     """
     current_os_release.return_value = OpenStackRelease("diablo")
     exp_error_msg = (
-        "Channel: 3.8/stable for charm 'rabbitmq-server' on series 'focal' is currently not "
-        "supported in this tool. Please take a look at the documentation: "
+        "Channel: 3.8/stable for charm 'rabbitmq-server' on series 'focal' is not supported by "
+        "COU. Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if you "
         "are using the right track."
     )
@@ -895,8 +895,8 @@ def test_ovn_no_compatible_os_release(channel, model):
     charm = "ovn-central"
     machines = {"0": MagicMock(spec_set=Machine)}
     exp_msg = (
-        f"Channel: {channel} for charm '{charm}' on series 'focal' is currently "
-        "not supported in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm '{charm}' on series 'focal' is not supported by COU. "
+        "Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
         "to see if you are using the right track."
     )
@@ -1202,7 +1202,7 @@ async def test_ceph_osd_verify_nova_compute_no_app(model):
         },
         workload_version="15.2.0",
     )
-    model.get_applications.return_value = [app]
+    model.get_applications.return_value = {"ceph-osd": app}
 
     await app._verify_nova_compute(target)
 
@@ -1288,7 +1288,7 @@ async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
         },
         workload_version="17.0.1",
     )
-    model.get_applications.return_value = [app, nova_compute]
+    model.get_applications.return_value = {"ceph-osd": app, "nova-compute": nova_compute}
 
     await app._verify_nova_compute(target)
 
@@ -1327,7 +1327,7 @@ async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
         },
         workload_version="17.0.1",
     )
-    model.get_applications.return_value = [app, nova_compute]
+    model.get_applications.return_value = {"ceph-osd": app, "nova-compute": nova_compute}
 
     with pytest.raises(ApplicationError, match=f"Units 'nova-compute/0' did not reach {target}."):
         await app._verify_nova_compute(target)
@@ -1340,9 +1340,9 @@ def test_ceph_osd_upgrade_plan(model):
     Upgrade plan for 'ceph-osd' to 'victoria'
         Verify that all 'nova-compute' units has been upgraded
         Upgrade software packages of 'ceph-osd' from the current APT repositories
-            Upgrade software packages on unit 'ceph-osd/0'
-            Upgrade software packages on unit 'ceph-osd/1'
-            Upgrade software packages on unit 'ceph-osd/2'
+            Ψ Upgrade software packages on unit 'ceph-osd/0'
+            Ψ Upgrade software packages on unit 'ceph-osd/1'
+            Ψ Upgrade software packages on unit 'ceph-osd/2'
         Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
         Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
         Wait for up to 300s for app 'ceph-osd' to reach the idle state
@@ -1415,3 +1415,35 @@ def test_need_current_channel_refresh_auxiliary(
         app_name, can_upgrade_to, app_name, "3.9/stable", {}, {}, model, "ch", "focal", [], {}, "1"
     )
     assert app._need_current_channel_refresh(target) is exp_result
+
+
+@pytest.mark.parametrize(
+    "channel, origin",
+    [
+        ("latest/stable", "ch"),
+        ("latest", "cs"),
+        ("octopus/stable", "ch"),
+        ("pacific/stable", "ch"),
+    ],
+)
+@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
+def test_expected_current_channel_auxiliary(mock_os_release, model, channel, origin):
+    """Expected current channel is based on the OpenStack release of the workload version."""
+    target = OpenStackRelease("wallaby")
+    mock_os_release.return_value = OpenStackRelease("victoria")
+    ceph_osd = CephOsd(
+        name="ceph-osd",
+        can_upgrade_to="octopus/stable",
+        charm="ceph-osd",
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="15.2.0",
+    )
+    # expected_current_channel is indifferent if the charm needs crossgrade
+    assert ceph_osd.expected_current_channel(target) == "octopus/stable"

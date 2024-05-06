@@ -129,8 +129,8 @@ def test_channel_setter_invalid(model, channel):
     """Test unsuccessful validation of channel upgrade plan for SubordinateApplication."""
     machines = {"0": MagicMock(spec_set=Machine)}
     exp_error_msg = (
-        f"Channel: {channel} for charm 'keystone-ldap' on series 'focal' is currently not "
-        "supported in this tool. Please take a look at the documentation: "
+        f"Channel: {channel} for charm 'keystone-ldap' on series 'focal' is not supported by COU. "
+        "Please take a look at the documentation: "
         "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if you "
         "are using the right track."
     )
@@ -184,7 +184,7 @@ def test_generate_plan_ch_migration(model, channel):
         PreUpgradeStep(
             description=f"Migrate '{app.name}' from charmstore to charmhub",
             parallel=False,
-            coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone-ldap"),
+            coro=model.upgrade_charm(app.name, "victoria/stable", switch="ch:keystone-ldap"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' to the new channel: 'wallaby/stable'",
@@ -284,3 +284,45 @@ def test_generate_plan_in_same_version(model, from_to):
 
     upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
+
+
+@pytest.mark.parametrize(
+    "channel, origin, release_target, exp_current_channel",
+    [
+        # using latest/stable will always be N-1 from the target
+        ("latest/stable", "ch", "victoria", "ussuri/stable"),
+        ("latest/stable", "ch", "wallaby", "victoria/stable"),
+        ("latest/stable", "ch", "xena", "wallaby/stable"),
+        ("latest/stable", "ch", "yoga", "xena/stable"),
+        # from charmstore will always be N-1 from the target
+        ("latest", "cs", "victoria", "ussuri/stable"),
+        ("latest", "cs", "wallaby", "victoria/stable"),
+        ("latest", "cs", "xena", "wallaby/stable"),
+        ("latest", "cs", "yoga", "xena/stable"),
+        # when using release channel will always point to the channel track
+        ("ussuri/stable", "ch", "victoria", "ussuri/stable"),
+        ("victoria/stable", "ch", "wallaby", "victoria/stable"),
+        ("wallaby/stable", "ch", "xena", "wallaby/stable"),
+        ("xena/stable", "ch", "yoga", "xena/stable"),
+    ],
+)
+def test_expected_current_channel_subordinate(
+    model, channel, origin, release_target, exp_current_channel
+):
+    target = OpenStackRelease(release_target)
+    app = SubordinateApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel=channel,
+        config={},
+        machines={},
+        model=model,
+        origin=origin,
+        series="focal",
+        subordinate_to=["keystone"],
+        units={},
+        workload_version="1",
+    )
+
+    assert app.expected_current_channel(target) == exp_current_channel

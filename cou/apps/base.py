@@ -15,6 +15,7 @@
 """Base application class."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from collections import defaultdict
@@ -67,6 +68,9 @@ class OpenStackApplication(Application):
     packages_to_hold: Optional[list] = field(default=None, init=False)
     wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
+    # OpenStack apps rely on the workload version of the packages to evaluate current OpenStack
+    # release
+    based_on_channel = False
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -131,6 +135,14 @@ class OpenStackApplication(Application):
 
         return yaml.dump(summary, sort_keys=False)
 
+    def __repr__(self) -> str:
+        """App representation.
+
+        :return: Name of the application
+        :rtype: str
+        """
+        return self.name
+
     @property
     def apt_source_codename(self) -> OpenStackRelease:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
@@ -178,6 +190,14 @@ class OpenStackApplication(Application):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
+        if self.need_crossgrade:
+            logger.debug(
+                "Cannot determine the OpenStack release of '%s' "
+                "via its channel. Assuming Ussuri",
+                self.name,
+            )
+            return OpenStackRelease("ussuri")
+
         # get the OpenStack release from the channel track of the application.
         return OpenStackRelease(self._get_track_from_channel(self.channel))
 
@@ -217,18 +237,21 @@ class OpenStackApplication(Application):
         logger.debug("%s has no origin setting config", self.name)
         return None
 
-    @property
-    def expected_current_channel(self) -> str:
+    def expected_current_channel(self, target: OpenStackRelease) -> str:
         """Return the expected current channel.
 
-        Expected current channel is the channel that the application is suppose to be using based
+        Expected current channel is the channel that the application is supposed to be using based
         on the current series, workload version and, by consequence, the OpenStack release
         identified.
 
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
         :return: The expected current channel of the application. E.g: "ussuri/stable"
         :rtype: str
         """
-        return f"{self.current_os_release.codename}/stable"
+        if self.need_crossgrade and self.based_on_channel:
+            return f"{target.previous_release}/stable"
+        return f"{self.current_os_release}/stable"
 
     @property
     def os_release_units(self) -> dict[OpenStackRelease, list[str]]:
@@ -244,6 +267,15 @@ class OpenStackApplication(Application):
 
         return dict(os_versions)
 
+    @property
+    def need_crossgrade(self) -> bool:
+        """Check if need a charm crossgrade.
+
+        :return: True if necessary, False otherwise
+        :rtype: bool
+        """
+        return self.is_from_charm_store or self.channel == LATEST_STABLE
+
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
 
@@ -256,7 +288,7 @@ class OpenStackApplication(Application):
             OpenStackRelease(self._get_track_from_channel(charm_channel))
             return True
         except ValueError:
-            return self.is_from_charm_store
+            return False
 
     def get_latest_os_version(self, unit: Unit) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
@@ -319,6 +351,11 @@ class OpenStackApplication(Application):
         :type units: list[Unit]
         :raises ApplicationError: When the workload version of the charm doesn't upgrade.
         """
+        # NOTE (gabrielcocenza) force the update-status hook on units
+        # to update the workload version
+        tasks = [self.model.run_on_unit(unit.name, "hooks/update-status") for unit in units]
+        await asyncio.gather(*tasks)
+
         status = await self.model.get_status()
         app_status = status.applications.get(self.name)
         units_not_upgraded = []
@@ -332,7 +369,9 @@ class OpenStackApplication(Application):
 
         if units_not_upgraded:
             raise ApplicationError(
-                f"Cannot upgrade units '{', '.join(units_not_upgraded)}' to {target}."
+                f"Unit(s) '{', '.join(units_not_upgraded)}' did not complete the upgrade to "
+                f"{target}. Some local processes may still be executing; you may try re-running "
+                "COU in a few minutes."
             )
 
     def upgrade_plan_sanity_checks(
@@ -515,9 +554,9 @@ class OpenStackApplication(Application):
         :rtype: PreUpgradeStep
         """
         if self.is_from_charm_store:
-            return self._get_charmhub_migration_step()
+            return self._get_charmhub_migration_step(target)
         if self.channel == LATEST_STABLE:
-            return self._get_change_to_openstack_channels_step()
+            return self._get_change_to_openstack_channels_step(target)
         if self._need_current_channel_refresh(target):
             return self._get_refresh_current_channel_step()
         logger.info(
@@ -525,37 +564,42 @@ class OpenStackApplication(Application):
         )
         return PreUpgradeStep()
 
-    def _get_charmhub_migration_step(self) -> PreUpgradeStep:
+    def _get_charmhub_migration_step(self, target: OpenStackRelease) -> PreUpgradeStep:
         """Get the step for charm hub migration from charm store.
 
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
         :return: Step for charmhub migration
         :rtype: PreUpgradeStep
         """
         return PreUpgradeStep(
             f"Migrate '{self.name}' from charmstore to charmhub",
             coro=self.model.upgrade_charm(
-                self.name, self.expected_current_channel, switch=f"ch:{self.charm}"
+                self.name, self.expected_current_channel(target), switch=f"ch:{self.charm}"
             ),
         )
 
-    def _get_change_to_openstack_channels_step(self) -> PreUpgradeStep:
-        """Get the step for changing to OpenStack channels.
+    def _get_change_to_openstack_channels_step(self, target: OpenStackRelease) -> PreUpgradeStep:
+        """Get the step for changing to an OpenStack channel.
 
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
         :return: Step for changing to OpenStack channels
         :rtype: PreUpgradeStep
         """
         logger.warning(
-            "Changing '%s' channel from %s to %s. This may be a charm downgrade, "
+            "Changing '%s' channel from %s to %s to upgrade to %s. This may be a charm downgrade, "
             "which is generally not supported.",
             self.name,
             self.channel,
-            self.expected_current_channel,
+            self.expected_current_channel(target),
+            target,
         )
         return PreUpgradeStep(
             f"WARNING: Changing '{self.name}' channel from {self.channel} to "
-            f"{self.expected_current_channel}. This may be a charm downgrade, "
+            f"{self.expected_current_channel(target)}. This may be a charm downgrade, "
             "which is generally not supported.",
-            coro=self.model.upgrade_charm(self.name, self.expected_current_channel),
+            coro=self.model.upgrade_charm(self.name, self.expected_current_channel(target)),
         )
 
     def _get_refresh_current_channel_step(self) -> PreUpgradeStep:
@@ -747,18 +791,13 @@ class OpenStackApplication(Application):
 
         :raises ApplicationError: Exception raised when channel is not a valid OpenStack channel.
         """
-        if (
-            self.is_from_charm_store
-            or self.channel == LATEST_STABLE
-            or self.is_valid_track(self.channel)
-        ):
+        if self.need_crossgrade or self.is_valid_track(self.channel):
             logger.debug("%s app has proper channel %s", self.name, self.channel)
             return
 
         raise ApplicationError(
             f"Channel: {self.channel} for charm '{self.charm}' on series "
-            f"'{self.series}' is currently not supported in this tool. Please take a look at the "
-            "documentation: "
+            f"'{self.series}' is not supported by COU. Please take a look at the documentation: "
             "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html to see if "
             "you are using the right track."
         )
