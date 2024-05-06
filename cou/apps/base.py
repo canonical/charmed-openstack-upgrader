@@ -125,7 +125,7 @@ class OpenStackApplication(Application):
                 "machines": {
                     machine.machine_id: {
                         "id": machine.machine_id,
-                        "apps": machine.apps,
+                        "apps_charms": machine.apps_charms,
                         "az": machine.az,
                     }
                     for machine in self.machines.values()
@@ -888,7 +888,14 @@ class OpenStackApplication(Application):
         :raises MismatchedOpenStackVersions: When the units of the app are running
                                              different OpenStack versions.
         """
-        if units:
+        # NOTE (gabrielcocenza) nova-compute is upgraded using paused-single-unit,
+        # so it's possible to have mismatched version in applications units that are
+        # nova-compute or colocated with it.
+        if any(
+            "nova-compute" in app_charm
+            for machine in self.machines.values()
+            for app_charm in machine.apps_charms
+        ):
             return
 
         o7k_versions = self.o7k_release_units

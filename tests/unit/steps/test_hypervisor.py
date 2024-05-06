@@ -643,7 +643,10 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
             Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/2
     """
     )
-    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    machines = {
+        f"{i}": generate_cou_machine(f"{i}", f"az-{i}", ("nova-compute", "cinder"))
+        for i in range(3)
+    }
     # cinder/0 already upgraded
     cinder = OpenStackApplication(
         name="cinder",

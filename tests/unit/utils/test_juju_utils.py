@@ -561,27 +561,20 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
 async def test_get_machines(mocked_model):
     """Test Model getting machines from model."""
     expected_machines = {
-        "0": juju_utils.Machine(
-            "0",
-            (
-                "app1",
-                "app2",
-            ),
-            "zone-1",
-        ),
-        "1": juju_utils.Machine("1", ("app1",), "zone-2"),
-        "2": juju_utils.Machine("2", ("app1",), "zone-3"),
+        "0": juju_utils.Machine("0", (("my_app1", "app1"), ("my_app2", "app2")), "zone-1"),
+        "1": juju_utils.Machine("1", (("my_app1", "app1"),), "zone-2"),
+        "2": juju_utils.Machine("2", (("my_app1", "app1"),), "zone-3"),
     }
     mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
     mocked_model.units = {
-        "app1/0": _generate_juju_unit("app1", "0"),
-        "app1/1": _generate_juju_unit("app1", "1"),
-        "app1/2": _generate_juju_unit("app1", "2"),
-        "app2/0": _generate_juju_unit("app2", "0"),
+        "my_app1/0": _generate_juju_unit("my_app1", "0"),
+        "my_app1/1": _generate_juju_unit("my_app1", "1"),
+        "my_app1/2": _generate_juju_unit("my_app1", "2"),
+        "my_app2/0": _generate_juju_unit("my_app2", "0"),
     }
     mocked_model.applications = {
-        "app1": MagicMock(spec_set=Application)(),
-        "app2": MagicMock(spec_set=Application)(),
+        "my_app1": _generate_juju_app("app1"),
+        "my_app2": _generate_juju_app("app2"),
     }
 
     model = juju_utils.Model("test-model")
@@ -595,6 +588,12 @@ def _generate_juju_unit(app: str, machine_id: str) -> MagicMock:
     unit.application = app
     unit.machine.id = machine_id
     return unit
+
+
+def _generate_juju_app(charm: str) -> MagicMock:
+    app = MagicMock(spec_set=Application)()
+    app.charm_name = charm
+    return app
 
 
 def _generate_juju_machine(machine_id: str) -> MagicMock:

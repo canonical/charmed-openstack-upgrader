@@ -10,8 +10,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from unittest.mock import MagicMock
-
 import pytest
 
 from cou.apps.channel_based import ChannelBasedApplication
@@ -23,14 +21,14 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils import app_utils
-from cou.utils.juju_utils import Machine, Unit
+from cou.utils.juju_utils import Unit
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import assert_steps, dedent_plan
+from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
 
 def test_application_versionless(model):
     """Test application without version."""
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     units = {
         "glance-simplestreams-sync/0": Unit(
             name="glance-simplestreams-sync/0",
@@ -79,7 +77,7 @@ This may be a charm downgrade, which is generally not supported.
     """  # noqa: E501 line too long
     )
 
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     units = {
         "glance-simplestreams-sync/0": Unit(
             name="glance-simplestreams-sync/0",
@@ -113,7 +111,7 @@ This may be a charm downgrade, which is generally not supported.
 
 def test_application_gnocchi_ussuri(model):
     """Test the Gnocchi ChannelBasedApplication with Ussuri."""
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = ChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="",
@@ -148,7 +146,7 @@ def test_application_gnocchi_xena(model):
     The workload version is the same for xena and yoga, but o7k_release is based on
     the channel.
     """
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = ChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="",
@@ -180,7 +178,7 @@ def test_application_designate_bind_ussuri(model):
     The workload version is the same from ussuri to yoga, but o7k_release is based on
     the channel.
     """
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = ChannelBasedApplication(
         name="designate-bind",
         can_upgrade_to="",
@@ -212,7 +210,7 @@ def test_application_designate_bind_ussuri(model):
 def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
     """Test generating plan for glance-simplestreams-sync (ChannelBasedApplication)."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = ChannelBasedApplication(
         name="glance-simplestreams-sync",
         can_upgrade_to="ussuri/stable",
@@ -284,7 +282,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
     Updating Gnocchi from ussuri to victoria increases the workload version from 4.3.4 to 4.4.0.
     """
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = ChannelBasedApplication(
         name="gnocchi",
         can_upgrade_to="ussuri/stable",
@@ -368,7 +366,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
 def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
     """Test generating plan for Designate-bind (ChannelBasedApplication)."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = ChannelBasedApplication(
         name="designate-bind",
         can_upgrade_to="ussuri/stable",
