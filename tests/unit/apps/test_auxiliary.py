@@ -1475,8 +1475,9 @@ def test_auxiliary_wrong_channel(model):
     # or pacific. The user will need manual intervention
 
     exp_msg = (
-        r"^The 'ceph-mon' application is using channel 'quincy/stable'\. Channels supported this "
-        r"transition: '(octopus/stable)', '(octopus/stable)'\. Manual intervention is required\.$"
+        r"^The 'ceph-mon' application is using channel 'quincy/stable'\. Channels supported during"
+        r" this transition: '(octopus/stable)', '(octopus/stable)'\. "
+        r"Manual intervention is required\.$"
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):

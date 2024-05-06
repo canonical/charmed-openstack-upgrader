@@ -654,6 +654,9 @@ class OpenStackApplication(Application):
             logger.debug("%s channel already set to %s", self.name, self.channel)
             return UpgradeStep()
 
+        # Normally, prior the upgrade the channel is equal to the application release.
+        # However, when colocated with other app, the channel can be in a release lesser than the
+        # workload version of the application.
         if self.channel_o7k_release <= self.o7k_release:
             return UpgradeStep(
                 description=f"Upgrade '{self.name}' from '{channel}' to the new channel: "
@@ -663,7 +666,7 @@ class OpenStackApplication(Application):
 
         raise ApplicationError(
             f"The '{self.name}' application is using channel '{self.channel}'. Channels supported "
-            f"this transition: '{self.expected_current_channel(target)}', "
+            f"during this transition: '{self.expected_current_channel(target)}', "
             f"'{self.target_channel(target)}'. Manual intervention is required."
         )
 

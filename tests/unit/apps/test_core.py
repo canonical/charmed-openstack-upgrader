@@ -1075,8 +1075,9 @@ def test_core_wrong_channel(model):
     # or victoria. The user will need manual intervention
 
     exp_msg = (
-        r"^The 'keystone' application is using channel 'wallaby/stable'\. Channels supported this "
-        r"transition: '(ussuri/stable)', '(victoria/stable)'\. Manual intervention is required\.$"
+        r"^The 'keystone' application is using channel 'wallaby/stable'\. Channels supported "
+        r"during this transition: '(ussuri/stable)', '(victoria/stable)'\. "
+        r"Manual intervention is required\.$"
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
