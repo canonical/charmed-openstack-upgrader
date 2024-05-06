@@ -13,8 +13,6 @@
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
 
-from unittest.mock import MagicMock
-
 import pytest
 
 from cou.apps.auxiliary_subordinate import (
@@ -23,14 +21,13 @@ from cou.apps.auxiliary_subordinate import (
 )
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
-from cou.utils.juju_utils import Machine
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import assert_steps, dedent_plan
+from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
 
 def test_auxiliary_subordinate(model):
     """Test auxiliary subordinate application."""
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = AuxiliarySubordinateApplication(
         name="keystone-mysql-router",
         can_upgrade_to="",
@@ -59,7 +56,7 @@ def test_auxiliary_subordinate(model):
 def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
     """Test auxiliary subordinate application upgrade plan to victoria."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = AuxiliarySubordinateApplication(
         name="keystone-mysql-router",
         can_upgrade_to="8.0/stable",
@@ -91,7 +88,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
 
 def test_ovn_subordinate(model):
     """Test the correctness of instantiating OVNSubordinate."""
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
@@ -119,7 +116,7 @@ def test_ovn_subordinate(model):
 def test_ovn_workload_ver_lower_than_22_subordinate(model):
     """Test the OVNSubordinate with lower version than 22."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     exp_msg = (
         "OVN versions lower than 22.03 are not supported. It's necessary to upgrade "
         "OVN to 22.03 before upgrading the cloud. Follow the instructions at: "
@@ -149,7 +146,7 @@ def test_ovn_version_pinning_subordinate(model):
     """Test the OVNSubordinate when enable-version-pinning is set to True."""
     charm = "ovn-chassis"
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
     app = OVNSubordinate(
         name=charm,
@@ -173,7 +170,7 @@ def test_ovn_version_pinning_subordinate(model):
 def test_ovn_subordinate_upgrade_plan(model):
     """Test generating plan for OVNSubordinate."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
@@ -217,7 +214,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
         "victoria. Ignoring."
     )
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="",
@@ -240,7 +237,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
 def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
     """Test when ceph version remains the same between os releases."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = AuxiliarySubordinateApplication(
         name="ceph-dashboard",
         can_upgrade_to="octopus/stable",
@@ -277,7 +274,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
 def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
     """Test when ceph version changes between os releases."""
     target = OpenStackRelease("yoga")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = AuxiliarySubordinateApplication(
         name="ceph-dashboard",
         can_upgrade_to="pacific/stable",
@@ -328,7 +325,7 @@ This may be a charm downgrade, which is generally not supported.
     """
     )
 
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
 
     app = AuxiliarySubordinateApplication(
         name="keystone-hacluster",
@@ -355,7 +352,7 @@ def test_auxiliary_subordinate_channel_codename_raise(model):
         charm="ceph-dashboard",
         channel="luminous/stable",
         config={},
-        machines={"0": MagicMock(spec_set=Machine)},
+        machines={"0": generate_cou_machine("0", "az-0")},
         model=model,
         origin="ch",
         series="focal",
