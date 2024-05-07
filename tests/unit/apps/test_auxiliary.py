@@ -34,7 +34,7 @@ from cou.steps import (
     UpgradeStep,
 )
 from cou.utils import app_utils
-from cou.utils.juju_utils import Machine, Unit
+from cou.utils.juju_utils import Unit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
@@ -68,15 +68,15 @@ def test_auxiliary_app(model):
     )
     assert app.channel == "3.8/stable"
     assert app.is_valid_track(app.channel) is True
-    assert app.os_origin == "distro"
+    assert app.o7k_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.channel_codename == "yoga"
+    assert app.channel_o7k_release == "yoga"
     assert app.is_subordinate is False
 
     # the workload version of units are considered as yoga
-    assert min(app.os_release_units.keys()) == "yoga"
+    assert min(app.o7k_release_units.keys()) == "yoga"
     # application is considered as ussuri because the source is pointing to it
-    assert app.current_os_release == "ussuri"
+    assert app.o7k_release == "ussuri"
 
 
 def test_auxiliary_app_cs(model):
@@ -104,14 +104,14 @@ def test_auxiliary_app_cs(model):
     )
 
     assert app.channel == "stable"
-    assert app.is_valid_track(app.channel) is True
-    assert app.os_origin == "distro"
+    assert app.is_valid_track(app.channel) is False
+    assert app.o7k_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.channel_codename == "ussuri"
     # the workload version of units are considered as yoga
-    assert min(app.os_release_units.keys()) == "yoga"
+    assert min(app.o7k_release_units.keys()) == "yoga"
     # application is considered as ussuri because the source is pointing to it
-    assert app.current_os_release == "ussuri"
+    assert app.channel_o7k_release == "ussuri"
+    assert app.o7k_release == "ussuri"
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
@@ -161,7 +161,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             coro=model.upgrade_charm(app.name, "3.8/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
+            description=f"Upgrade '{app.name}' from '3.8/stable' to the new channel: '3.9/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
@@ -269,7 +269,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     machines = {"0": generate_cou_machine("0", "az-0")}
     app = RabbitMQServer(
         name="rabbitmq-server",
-        can_upgrade_to="3.9/stable",
+        can_upgrade_to="cs:rabbitmq-server",
         charm="rabbitmq-server",
         channel="stable",
         config={"source": {"value": "distro"}},
@@ -306,11 +306,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         PreUpgradeStep(
             f"Migrate '{app.name}' from charmstore to charmhub",
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
-        ),
-        UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: '3.9/stable'",
-            parallel=False,
-            coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -397,7 +392,7 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.get_latest_os_version(unit)
+        app.get_latest_o7k_version(unit)
 
 
 def test_auxiliary_raise_error_unknown_series(model):
@@ -430,13 +425,13 @@ def test_auxiliary_raise_error_unknown_series(model):
         app._check_channel()
 
 
-@patch("cou.apps.core.OpenStackApplication.current_os_release")
-def test_auxiliary_raise_error_os_not_on_lookup(current_os_release, model):
+@patch("cou.apps.core.OpenStackApplication.o7k_release")
+def test_auxiliary_raise_error_o7k_not_on_lookup(o7k_release, model):
     """Test auxiliary upgrade plan with os release not in lookup table.
 
     Using OpenStack release version that is not on openstack_to_track_mapping.csv table.
     """
-    current_os_release.return_value = OpenStackRelease("diablo")
+    o7k_release.return_value = OpenStackRelease("diablo")
     exp_error_msg = (
         "Channel: 3.8/stable for charm 'rabbitmq-server' on series 'focal' is not supported by "
         "COU. Please take a look at the documentation: "
@@ -514,11 +509,7 @@ def test_auxiliary_no_origin_setting_raise_halt_upgrade(model):
         f"Application '{charm}' already configured for release equal to or greater than {target}. "
         "Ignoring."
     )
-    machines = {
-        "0": MagicMock(spec_set=Machine),
-        "1": MagicMock(spec_set=Machine),
-        "2": MagicMock(spec_set=Machine),
-    }
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     app = AuxiliaryApplication(
         name=charm,
         # no channel to refresh
@@ -553,7 +544,7 @@ def test_auxiliary_no_origin_setting_raise_halt_upgrade(model):
     )
 
     # current OpenStack release is bigger than target
-    assert app.current_os_release == OpenStackRelease("yoga")
+    assert app.o7k_release == OpenStackRelease("yoga")
 
     with pytest.raises(HaltUpgradePlanGeneration, match=exp_msg):
         app._check_application_target(target)
@@ -623,10 +614,10 @@ def test_ceph_mon_app(model):
     )
 
     assert app.channel == "pacific/stable"
-    assert app.os_origin == "cloud:focal-xena"
-    assert app.get_latest_os_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
+    assert app.o7k_origin == "cloud:focal-xena"
+    assert app.get_latest_o7k_version(app.units[f"{charm}/0"]) == OpenStackRelease("xena")
     assert app.apt_source_codename == "xena"
-    assert app.channel_codename == "xena"
+    assert app.channel_o7k_release == "xena"
     assert app.is_subordinate is False
 
 
@@ -683,7 +674,8 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",
+            description=f"Upgrade '{app.name}' from 'pacific/stable' "
+            "to the new channel: 'quincy/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
@@ -817,10 +809,10 @@ def test_ovn_principal(model):
         workload_version="22.03",
     )
     assert app.channel == "22.03/stable"
-    assert app.os_origin == "distro"
+    assert app.o7k_origin == "distro"
     assert app.apt_source_codename == "ussuri"
-    assert app.channel_codename == "yoga"
-    assert app.current_os_release == "ussuri"
+    assert app.channel_o7k_release == "yoga"
+    assert app.o7k_release == "ussuri"
     assert app.is_subordinate is False
 
 
@@ -892,7 +884,7 @@ def test_ovn_version_pinning_principal(model):
 
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])
-def test_ovn_no_compatible_os_release(channel, model):
+def test_ovn_no_compatible_o7k_release(channel, model):
     """Test the OVNPrincipal with not compatible os release."""
     charm = "ovn-central"
     machines = {"0": generate_cou_machine("0", "az-0")}
@@ -1216,11 +1208,7 @@ def test_auxiliary_upgrade_by_unit(mock_super, model):
     """Test generating plan with units doesn't create unit Upgrade steps."""
     target = OpenStackRelease("victoria")
     charm = "my-app"
-    machines = {
-        "0": MagicMock(spec_set=Machine),
-        "1": MagicMock(spec_set=Machine),
-        "2": MagicMock(spec_set=Machine),
-    }
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     app = AuxiliaryApplication(
         name=charm,
         can_upgrade_to="1.7/stable",
@@ -1381,7 +1369,7 @@ def test_ceph_osd_upgrade_plan(model):
 
 
 @pytest.mark.parametrize(
-    "can_upgrade_to, compatible_os_releases, exp_result",
+    "can_upgrade_to, compatible_o7k_releases, exp_result",
     [
         (
             "ch:amd64/focal/my-app-723",
@@ -1393,7 +1381,7 @@ def test_ceph_osd_upgrade_plan(model):
             [OpenStackRelease("victoria")],
             True,
         ),
-        # compatible_os_releases bigger than target
+        # compatible_o7k_releases bigger than target
         (
             "ch:amd64/focal/my-app-723",
             [OpenStackRelease("wallaby"), OpenStackRelease("xena")],
@@ -1408,9 +1396,9 @@ def test_ceph_osd_upgrade_plan(model):
 )
 @patch("cou.apps.auxiliary.TRACK_TO_OPENSTACK_MAPPING")
 def test_need_current_channel_refresh_auxiliary(
-    mock_track_os_mapping, model, can_upgrade_to, compatible_os_releases, exp_result
+    mock_track_o7k_mapping, model, can_upgrade_to, compatible_o7k_releases, exp_result
 ):
-    mock_track_os_mapping.__getitem__.return_value = compatible_os_releases
+    mock_track_o7k_mapping.__getitem__.return_value = compatible_o7k_releases
     target = OpenStackRelease("victoria")
     app_name = "app"
     app = AuxiliaryApplication(
@@ -1428,11 +1416,11 @@ def test_need_current_channel_refresh_auxiliary(
         ("pacific/stable", "ch"),
     ],
 )
-@patch("cou.apps.base.OpenStackApplication.current_os_release", new_callable=PropertyMock)
-def test_expected_current_channel_auxiliary(mock_os_release, model, channel, origin):
+@patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
+def test_expected_current_channel_auxiliary(mock_o7k_release, model, channel, origin):
     """Expected current channel is based on the OpenStack release of the workload version."""
     target = OpenStackRelease("wallaby")
-    mock_os_release.return_value = OpenStackRelease("victoria")
+    mock_o7k_release.return_value = OpenStackRelease("victoria")
     ceph_osd = CephOsd(
         name="ceph-osd",
         can_upgrade_to="octopus/stable",
@@ -1449,3 +1437,42 @@ def test_expected_current_channel_auxiliary(mock_os_release, model, channel, ori
     )
     # expected_current_channel is indifferent if the charm needs crossgrade
     assert ceph_osd.expected_current_channel(target) == "octopus/stable"
+
+
+def test_auxiliary_wrong_channel(model):
+    """Test when an auxiliary charm is with a channel that doesn't match the workload version."""
+    target = OpenStackRelease("victoria")
+    charm = "ceph-mon"
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    app = CephMon(
+        name=charm,
+        can_upgrade_to="",
+        charm=charm,
+        channel="quincy/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="15.2.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="15.2.0",
+    )
+
+    # plan will raise exception because the channel is on quincy and was expected to be on octopus
+    # or pacific. The user will need manual intervention
+
+    exp_msg = (
+        r"^The 'ceph-mon' application is using channel 'quincy/stable'\. Channels supported during"
+        r" this transition: '(octopus/stable)', '(octopus/stable)'\. "
+        r"Manual intervention is required\.$"
+    )
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.generate_upgrade_plan(target, force=False)

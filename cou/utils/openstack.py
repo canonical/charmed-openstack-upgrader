@@ -28,7 +28,7 @@ from packaging.version import Version
 
 logger = logging.getLogger(__name__)
 
-TrackKeys = namedtuple("TrackKeys", ["charm", "series", "os_release"])
+TrackKeys = namedtuple("TrackKeys", ["charm", "series", "o7k_release"])
 OSReleaseKeys = namedtuple("OSReleaseKeys", ["charm", "series", "track"])
 
 SERVICE_COLUMN_INDEX = 0
@@ -365,10 +365,10 @@ class OpenStackCodenameLookup:
         service_dict: defaultdict[str, Any] = defaultdict(OrderedDict)
         service = row[SERVICE_COLUMN_INDEX]
         for column_index in range(VERSION_START_COLUMN_INDEX, len(row), 2):
-            os_version, _ = header[column_index].split("-")
+            o7k_version, _ = header[column_index].split("-")
             lower = row[column_index]
             upper = row[column_index + 1]
-            service_dict[os_version] = VersionRange(lower, upper)
+            service_dict[o7k_version] = VersionRange(lower, upper)
         return service, service_dict
 
     @classmethod
@@ -382,16 +382,16 @@ class OpenStackCodenameLookup:
         :return: Return a sorted list of compatible OpenStackRelease(s).
         :rtype: list[str]
         """
-        compatible_os_releases: list[OpenStackRelease] = []
+        compatible_o7k_releases: list[OpenStackRelease] = []
         for openstack_release, version_range in cls.lookup(charm).items():
             if version in version_range:
-                compatible_os_releases.append(OpenStackRelease(openstack_release))
-        if not compatible_os_releases:
+                compatible_o7k_releases.append(OpenStackRelease(openstack_release))
+        if not compatible_o7k_releases:
             logger.warning(
                 "Not possible to find the charm %s in the lookup",
                 charm,
             )
-        return compatible_os_releases
+        return compatible_o7k_releases
 
     @classmethod
     def lookup(cls, charm: str) -> dict:
@@ -442,7 +442,7 @@ def _generate_track_mapping() -> tuple[
     ]
     """
     track_mapping: defaultdict[tuple[str, str, str], list[str]] = defaultdict(list)
-    os_release_mapping: defaultdict[tuple[str, str, str], list[OpenStackRelease]] = defaultdict(
+    o7k_release_mapping: defaultdict[tuple[str, str, str], list[OpenStackRelease]] = defaultdict(
         list
     )
     with open(
@@ -452,14 +452,14 @@ def _generate_track_mapping() -> tuple[
         csv_reader = csv.DictReader(csv_file, delimiter=",")
         for row in csv_reader:
             track_key = TrackKeys(
-                charm=row["charm"], series=row["series"], os_release=row["os_release"]
+                charm=row["charm"], series=row["series"], o7k_release=row["o7k_release"]
             )
-            os_release_key = OSReleaseKeys(
+            o7k_release_key = OSReleaseKeys(
                 charm=row["charm"], series=row["series"], track=row["track"]
             )
             track_mapping[track_key].append(row["track"])
-            os_release_mapping[os_release_key].append(OpenStackRelease(row["os_release"]))
-    return track_mapping, os_release_mapping
+            o7k_release_mapping[o7k_release_key].append(OpenStackRelease(row["o7k_release"]))
+    return track_mapping, o7k_release_mapping
 
 
 OPENSTACK_TO_TRACK_MAPPING, TRACK_TO_OPENSTACK_MAPPING = _generate_track_mapping()

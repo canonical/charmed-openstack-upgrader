@@ -118,7 +118,7 @@ class OpenStackApplication(Application):
                         "name": unit.name,
                         "machine": unit.machine.machine_id,
                         "workload_version": unit.workload_version,
-                        "os_version": str(self.get_latest_os_version(unit)),
+                        "o7k_version": str(self.get_latest_o7k_version(unit)),
                     }
                     for unit in self.units.values()
                 },
@@ -151,11 +151,11 @@ class OpenStackApplication(Application):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        if self.os_origin.startswith("cloud"):
+        if self.o7k_origin.startswith("cloud"):
             return self._extract_from_uca_source()
 
         # consider as "distro" if the application does not have source or is empty
-        if self.os_origin in {"distro", ""}:
+        if self.o7k_origin in {"distro", ""}:
             # find the OpenStack release based on ubuntu series
             if self.series not in DISTRO_TO_OPENSTACK_MAPPING:
                 raise ApplicationError(f"Series '{self.series}' is not supported by COU.")
@@ -163,7 +163,7 @@ class OpenStackApplication(Application):
 
         # probably because user set a ppa or a url
         raise ApplicationError(
-            f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
+            f"'{self.name}' has an invalid '{self.origin_setting}': {self.o7k_origin}"
         )
 
     def _extract_from_uca_source(self) -> OpenStackRelease:
@@ -175,15 +175,15 @@ class OpenStackApplication(Application):
         """
         # Ex: "cloud:focal-victoria" will result in "victoria"
         try:
-            _, os_origin_parsed = self.os_origin.rsplit("-", maxsplit=1)
-            return OpenStackRelease(os_origin_parsed)
+            _, o7k_origin_parsed = self.o7k_origin.rsplit("-", maxsplit=1)
+            return OpenStackRelease(o7k_origin_parsed)
         except ValueError as exc:
             raise ApplicationError(
-                f"'{self.name}' has an invalid '{self.origin_setting}': {self.os_origin}"
+                f"'{self.name}' has an invalid '{self.origin_setting}': {self.o7k_origin}"
             ) from exc
 
     @property
-    def channel_codename(self) -> OpenStackRelease:
+    def channel_o7k_release(self) -> OpenStackRelease:
         """Identify the OpenStack release set in the charm channel.
 
         :return: OpenStackRelease object
@@ -196,12 +196,20 @@ class OpenStackApplication(Application):
                 self.name,
             )
             return OpenStackRelease("ussuri")
+        return self._get_o7k_release_from_channel(self.channel)
 
-        # get the OpenStack release from the channel track of the application.
-        return OpenStackRelease(self._get_track_from_channel(self.channel))
+    def _get_o7k_release_from_channel(self, channel: str) -> OpenStackRelease:
+        """Get the OpenStack release from a channel.
+
+        :param channel: channel to get the release
+        :type channel: str
+        :return: OpenStack release that the channel points to
+        :rtype: OpenStackRelease
+        """
+        return OpenStackRelease(self._get_track_from_channel(channel))
 
     @property
-    def current_os_release(self) -> OpenStackRelease:
+    def o7k_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
         Applications that are colocated in a same machine will upgrade all the packages in the
@@ -212,12 +220,12 @@ class OpenStackApplication(Application):
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
-        if self.os_origin:
-            return min(list(self.os_release_units.keys()) + [self.apt_source_codename])
-        return min(self.os_release_units.keys())
+        if self.o7k_origin:
+            return min(list(self.o7k_release_units.keys()) + [self.apt_source_codename])
+        return min(self.o7k_release_units.keys())
 
     @property
-    def os_origin(self) -> str:
+    def o7k_origin(self) -> str:
         """Get application configuration for openstack-origin or source.
 
         :return: Configuration parameter of the charm to set OpenStack origin.
@@ -257,21 +265,21 @@ class OpenStackApplication(Application):
         """
         if self.need_crossgrade and self.based_on_channel:
             return f"{target.previous_release}/stable"
-        return f"{self.current_os_release}/stable"
+        return f"{self.o7k_release}/stable"
 
     @property
-    def os_release_units(self) -> dict[OpenStackRelease, list[str]]:
+    def o7k_release_units(self) -> dict[OpenStackRelease, list[str]]:
         """Get the OpenStack release versions from the units.
 
         :return: OpenStack release versions from the units.
         :rtype: defaultdict[OpenStackRelease, list[str]]
         """
-        os_versions = defaultdict(list)
+        o7k_versions = defaultdict(list)
         for unit in self.units.values():
-            os_version = self.get_latest_os_version(unit)
-            os_versions[os_version].append(unit.name)
+            o7k_version = self.get_latest_o7k_version(unit)
+            o7k_versions[o7k_version].append(unit.name)
 
-        return dict(os_versions)
+        return dict(o7k_versions)
 
     @property
     def need_crossgrade(self) -> bool:
@@ -296,7 +304,7 @@ class OpenStackApplication(Application):
         except ValueError:
             return False
 
-    def get_latest_os_version(self, unit: Unit) -> OpenStackRelease:
+    def get_latest_o7k_version(self, unit: Unit) -> OpenStackRelease:
         """Get the latest compatible OpenStack release based on the unit workload version.
 
         :param unit: Unit
@@ -306,16 +314,16 @@ class OpenStackApplication(Application):
         :raises ApplicationError: When there are no compatible OpenStack release for the
                                   workload version.
         """
-        compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+        compatible_o7k_versions = OpenStackCodenameLookup.find_compatible_versions(
             self.charm, unit.workload_version
         )
-        if not compatible_os_versions:
+        if not compatible_o7k_versions:
             raise ApplicationError(
                 f"'{self.name}' with workload version {unit.workload_version} has no "
                 "compatible OpenStack release."
             )
 
-        return max(compatible_os_versions)
+        return max(compatible_o7k_versions)
 
     @staticmethod
     def _get_track_from_channel(charm_channel: str) -> str:
@@ -367,10 +375,10 @@ class OpenStackApplication(Application):
         units_not_upgraded = []
         for unit in units:
             workload_version = app_status.units[unit.name].workload_version
-            compatible_os_versions = OpenStackCodenameLookup.find_compatible_versions(
+            compatible_o7k_versions = OpenStackCodenameLookup.find_compatible_versions(
                 self.charm, workload_version
             )
-            if target not in compatible_os_versions:
+            if target not in compatible_o7k_versions:
                 units_not_upgraded.append(unit.name)
 
         if units_not_upgraded:
@@ -562,7 +570,10 @@ class OpenStackApplication(Application):
         if self.is_from_charm_store:
             return self._get_charmhub_migration_step(target)
         if self.channel == LATEST_STABLE:
-            return self._get_change_to_openstack_channels_step(target)
+            return self._get_change_channel_possible_downgrade_step(
+                target, self.expected_current_channel(target)
+            )
+
         if self._need_current_channel_refresh(target):
             return self._get_refresh_current_channel_step()
         logger.info(
@@ -585,12 +596,16 @@ class OpenStackApplication(Application):
             ),
         )
 
-    def _get_change_to_openstack_channels_step(self, target: OpenStackRelease) -> PreUpgradeStep:
-        """Get the step for changing to an OpenStack channel.
+    def _get_change_channel_possible_downgrade_step(
+        self, target: OpenStackRelease, channel: str
+    ) -> PreUpgradeStep:
+        """Get the step for changing to a channel that can be a downgrade.
 
-        :param target: OpenStack release as target to upgrade.
+        :param target:  OpenStack release as target to upgrade
         :type target: OpenStackRelease
-        :return: Step for changing to OpenStack channels
+        :param channel: channel to upgrade
+        :type channel: str
+        :return:  Step for possible downgrade.
         :rtype: PreUpgradeStep
         """
         logger.warning(
@@ -598,14 +613,15 @@ class OpenStackApplication(Application):
             "which is generally not supported.",
             self.name,
             self.channel,
-            self.expected_current_channel(target),
+            channel,
             target,
         )
-        return PreUpgradeStep(
+        description = (
             f"WARNING: Changing '{self.name}' channel from {self.channel} to "
-            f"{self.expected_current_channel(target)}. This may be a charm downgrade, "
-            "which is generally not supported.",
-            coro=self.model.upgrade_charm(self.name, self.expected_current_channel(target)),
+            f"{channel}. This may be a charm downgrade, which is generally not supported."
+        )
+        return PreUpgradeStep(
+            description=description, coro=self.model.upgrade_charm(self.name, channel)
         )
 
     def _get_refresh_current_channel_step(self) -> PreUpgradeStep:
@@ -627,23 +643,38 @@ class OpenStackApplication(Application):
         :return: True if needs to refresh, False otherwise
         :rtype: bool
         """
-        return bool(self.can_upgrade_to) and self.channel_codename <= target
+        return bool(self.can_upgrade_to) and self.channel_o7k_release <= target
 
     def _get_upgrade_charm_step(self, target: OpenStackRelease) -> UpgradeStep:
         """Get step for upgrading the charm.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
+        :raises ApplicationError: When the current channel is ahead from expected and the target.
         :return: Step for upgrading the charm.
         :rtype: UpgradeStep
         """
-        if self.channel != self.target_channel(target):
+        channel = self.expected_current_channel(target) if self.need_crossgrade else self.channel
+
+        if channel == self.target_channel(target):
+            logger.debug("%s channel already set to %s", self.name, self.channel)
+            return UpgradeStep()
+
+        # Normally, prior the upgrade the channel is equal to the application release.
+        # However, when colocated with other app, the channel can be in a release lesser than the
+        # workload version of the application.
+        if self.channel_o7k_release <= self.o7k_release:
             return UpgradeStep(
-                description=f"Upgrade '{self.name}' to the new channel: "
+                description=f"Upgrade '{self.name}' from '{channel}' to the new channel: "
                 f"'{self.target_channel(target)}'",
                 coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
             )
-        return UpgradeStep()
+
+        raise ApplicationError(
+            f"The '{self.name}' application is using channel '{self.channel}'. Channels supported "
+            f"during this transition: '{self.expected_current_channel(target)}', "
+            f"'{self.target_channel(target)}'. Manual intervention is required."
+        )
 
     def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:
         """Set action-managed-upgrade config option.
@@ -730,7 +761,7 @@ class OpenStackApplication(Application):
         :return: Workload upgrade step
         :rtype: UpgradeStep
         """
-        if self.os_origin != self.new_origin(target) and self.origin_setting:
+        if self.o7k_origin != self.new_origin(target) and self.origin_setting:
             return UpgradeStep(
                 f"Change charm config of '{self.name}' '{self.origin_setting}' to "
                 f"'{self.new_origin(target)}'",
@@ -838,16 +869,16 @@ class OpenStackApplication(Application):
         logger.debug(
             "%s current os_release is '%s' with origin setting '%s' and apt source '%s'",
             self.name,
-            self.current_os_release,
-            self.os_origin,
+            self.o7k_release,
+            self.o7k_origin,
             self.apt_source_codename,
         )
 
         if (
-            self.current_os_release >= target
+            self.o7k_release >= target
             and not self.can_upgrade_to
             # consider apt_source_codename just when exist or not empty
-            and (self.apt_source_codename >= target if self.os_origin else True)
+            and (self.apt_source_codename >= target if self.o7k_origin else True)
         ):
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "
@@ -875,11 +906,11 @@ class OpenStackApplication(Application):
         ):
             return
 
-        os_versions = self.os_release_units
-        if len(os_versions.keys()) > 1:
+        o7k_versions = self.o7k_release_units
+        if len(o7k_versions.keys()) > 1:
             mismatched_repr = [
                 f"'{openstack_release.codename}': {units}"
-                for openstack_release, units in os_versions.items()
+                for openstack_release, units in o7k_versions.items()
             ]
 
             raise MismatchedOpenStackVersions(

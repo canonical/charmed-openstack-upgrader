@@ -32,7 +32,7 @@ class SubordinateApplication(OpenStackApplication):
     based_on_channel = True
 
     @property
-    def current_os_release(self) -> OpenStackRelease:
+    def o7k_release(self) -> OpenStackRelease:
         """Infer the OpenStack release from subordinate charm's channel.
 
         We cannot determine the OpenStack release base on workload packages because the principal
@@ -41,7 +41,7 @@ class SubordinateApplication(OpenStackApplication):
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        return self.channel_codename
+        return self.channel_o7k_release
 
     def _get_upgrade_current_release_packages_step(
         self, units: Optional[list[Unit]]

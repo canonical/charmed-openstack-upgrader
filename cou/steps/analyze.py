@@ -42,17 +42,17 @@ class Analysis:
     model: juju_utils.Model
     apps_control_plane: list[OpenStackApplication]
     apps_data_plane: list[OpenStackApplication]
-    min_os_version_control_plane: Optional[OpenStackRelease] = None
-    min_os_version_data_plane: Optional[OpenStackRelease] = None
+    min_o7k_version_control_plane: Optional[OpenStackRelease] = None
+    min_o7k_version_data_plane: Optional[OpenStackRelease] = None
 
-    current_cloud_os_release: Optional[OpenStackRelease] = field(init=False)
+    current_cloud_o7k_release: Optional[OpenStackRelease] = field(init=False)
     current_cloud_series: Optional[str] = field(init=False)
 
     def __post_init__(self) -> None:
         """Initialize the Analysis dataclass."""
-        self.min_os_version_control_plane = self.min_os_release_apps(self.apps_control_plane)
-        self.min_os_version_data_plane = self.min_os_release_apps(self.apps_data_plane)
-        self.current_cloud_os_release = self._get_minimum_cloud_os_release()
+        self.min_o7k_version_control_plane = self.min_o7k_release_apps(self.apps_control_plane)
+        self.min_o7k_version_data_plane = self.min_o7k_release_apps(self.apps_data_plane)
+        self.current_cloud_o7k_release = self._get_minimum_cloud_o7k_release()
         self.current_cloud_series = self._get_minimum_cloud_series()
 
     @staticmethod
@@ -123,9 +123,9 @@ class Analysis:
         juju_applications = await model.get_applications()
         apps = set()
         for name, app in juju_applications.items():
-            if os_app := AppFactory.create(app):
-                apps.add(os_app)
-                logger.info("Found %s application:\n%s", name, os_app)
+            if o7k_app := AppFactory.create(app):
+                apps.add(o7k_app)
+                logger.info("Found %s application:\n%s", name, o7k_app)
 
         apps_to_upgrade_in_order = {app for app in apps if app.charm in UPGRADE_ORDER}
         other_o7k_apps = apps - apps_to_upgrade_in_order
@@ -150,12 +150,12 @@ class Analysis:
             + "\n".join([str(app) for app in self.apps_control_plane])
             + "Data Plane:\n"
             + "\n".join([str(app) for app in self.apps_data_plane])
-            + f"\nCurrent minimum OS release in the cloud: {self.current_cloud_os_release}\n"
+            + f"\nCurrent minimum OS release in the cloud: {self.current_cloud_o7k_release}\n"
             + f"\nCurrent minimum Ubuntu series in the cloud: {self.current_cloud_series}\n"
         )
 
     @staticmethod
-    def min_os_release_apps(apps: list[OpenStackApplication]) -> Optional[OpenStackRelease]:
+    def min_o7k_release_apps(apps: list[OpenStackApplication]) -> Optional[OpenStackRelease]:
         """Get the minimal OpenStack release from a list of applications.
 
         - subordinates or channel based apps are not considered if not using release channels
@@ -175,18 +175,18 @@ class Analysis:
                 "%s were skipped from calculating cloud OpenStack release",
                 sorted(apps_skipped, key=lambda app: app.name),
             )
-        return min((app.current_os_release for app in set(apps) - apps_skipped), default=None)
+        return min((app.o7k_release for app in set(apps) - apps_skipped), default=None)
 
-    def _get_minimum_cloud_os_release(self) -> Optional[OpenStackRelease]:
+    def _get_minimum_cloud_o7k_release(self) -> Optional[OpenStackRelease]:
         """Get the current minimum OpenStack release in the cloud.
 
         :return: OpenStack release
         :rtype: Optional[Optional[OpenStackRelease]]
         """
         control_plane = (
-            [self.min_os_version_control_plane] if self.min_os_version_control_plane else []
+            [self.min_o7k_version_control_plane] if self.min_o7k_version_control_plane else []
         )
-        data_plane = [self.min_os_version_data_plane] if self.min_os_version_data_plane else []
+        data_plane = [self.min_o7k_version_data_plane] if self.min_o7k_version_data_plane else []
         return min(control_plane + data_plane, default=None)
 
     def _get_minimum_cloud_series(self) -> Optional[str]:

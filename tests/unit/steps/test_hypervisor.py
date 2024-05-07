@@ -248,12 +248,12 @@ def test_hypervisor_azs_grouping():
     app1 = MagicMock(spec_set=Application)()
     app1.name = "app1"
     app1.units = {name: unit for name, unit in units.items() if name.startswith("app1")}
-    app1.get_latest_os_version.return_value = OpenStackRelease("ussuri")
+    app1.get_latest_o7k_version.return_value = OpenStackRelease("ussuri")
 
     app2 = MagicMock(spec_set=Application)()
     app2.name = "app2"
     app2.units = {name: unit for name, unit in units.items() if name.startswith("app2")}
-    app2.get_latest_os_version.return_value = OpenStackRelease("ussuri")
+    app2.get_latest_o7k_version.return_value = OpenStackRelease("ussuri")
 
     # passing all machines to the HypervisorUpgradePlanner
     exp_azs_all = AZs()
@@ -284,7 +284,7 @@ def test_hypervisor_azs_grouping():
     assert dict(hypervisor_planner_machine_1.get_azs(target)) == exp_azs_1
 
 
-def test_hypervisor_azs_grouping_units_different_os_release():
+def test_hypervisor_azs_grouping_units_different_o7k_release():
     """Test HypervisorUpgradePlanner azs grouping.
 
     This should return 2 AZs because az0 already got upgraded.
@@ -336,7 +336,7 @@ def test_hypervisor_azs_grouping_units_different_os_release():
     app1.units = {name: unit for name, unit in units.items() if name.startswith("app1")}
 
     def side_effect_app1(value):
-        os_release = {
+        o7k_release = {
             "app1/0": OpenStackRelease("victoria"),
             "app1/1": OpenStackRelease("victoria"),
             "app1/2": OpenStackRelease("victoria"),
@@ -344,23 +344,23 @@ def test_hypervisor_azs_grouping_units_different_os_release():
             "app1/4": OpenStackRelease("ussuri"),
             "app1/5": OpenStackRelease("ussuri"),
         }
-        return os_release[value.name]
+        return o7k_release[value.name]
 
-    app1.get_latest_os_version.side_effect = side_effect_app1
+    app1.get_latest_o7k_version.side_effect = side_effect_app1
 
     app2 = MagicMock(spec_set=Application)()
     app2.name = "app2"
     app2.units = {name: unit for name, unit in units.items() if name.startswith("app2")}
 
     def side_effect_app2(value):
-        os_release = {
+        o7k_release = {
             "app2/0": OpenStackRelease("victoria"),
             "app2/1": OpenStackRelease("ussuri"),
             "app2/2": OpenStackRelease("ussuri"),
         }
-        return os_release[value.name]
+        return o7k_release[value.name]
 
-    app2.get_latest_os_version.side_effect = side_effect_app2
+    app2.get_latest_o7k_version.side_effect = side_effect_app2
 
     # passing all machines to the HypervisorUpgradePlanner
     exp_azs_all = AZs()
@@ -401,7 +401,7 @@ def test_hypervisor_upgrade_plan(model):
                 Ψ Upgrade software packages on unit 'nova-compute/0'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'cinder' to the new channel: 'victoria/stable'
+            Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
             Upgrade plan for units: cinder/0
                 Ψ Upgrade plan for unit 'cinder/0'
@@ -409,7 +409,7 @@ def test_hypervisor_upgrade_plan(model):
                     Upgrade the unit: 'cinder/0'
                     Resume the unit: 'cinder/0'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/0
                 Ψ Upgrade plan for unit 'nova-compute/0'
@@ -428,7 +428,7 @@ def test_hypervisor_upgrade_plan(model):
                 Ψ Upgrade software packages on unit 'nova-compute/1'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/1
                 Ψ Upgrade plan for unit 'nova-compute/1'
@@ -445,7 +445,7 @@ def test_hypervisor_upgrade_plan(model):
                 Ψ Upgrade software packages on unit 'nova-compute/2'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/2
                 Ψ Upgrade plan for unit 'nova-compute/2'
@@ -528,7 +528,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
                 Ψ Upgrade software packages on unit 'nova-compute/0'
             Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
             Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'cinder' to the new channel: 'victoria/stable'
+            Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
             Upgrade plan for units: cinder/0
                 Ψ Upgrade plan for unit 'cinder/0'
@@ -536,7 +536,7 @@ def test_hypervisor_upgrade_plan_single_machine(model):
                     Upgrade the unit: 'cinder/0'
                     Resume the unit: 'cinder/0'
             Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-            Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+            Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
             Upgrade plan for units: nova-compute/0
                 Ψ Upgrade plan for unit 'nova-compute/0'

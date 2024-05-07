@@ -32,18 +32,14 @@ from cou.steps import (
 )
 from cou.utils import app_utils
 from cou.utils import nova_compute as nova_compute_utils
-from cou.utils.juju_utils import Machine, Unit
+from cou.utils.juju_utils import Unit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
 
 def test_application_different_wl(model):
     """The OpenStack version is considered the lowest of the units."""
-    machines = {
-        "0": MagicMock(spec_set=Machine),
-        "1": MagicMock(spec_set=Machine),
-        "2": MagicMock(spec_set=Machine),
-    }
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     units = {
         "keystone/0": Unit(
             name="keystone/0",
@@ -75,8 +71,8 @@ def test_application_different_wl(model):
         units=units,
         workload_version="18.1.0",
     )
-    assert OpenStackRelease("victoria") in app.os_release_units
-    assert app.current_os_release == OpenStackRelease("ussuri")
+    assert OpenStackRelease("victoria") in app.o7k_release_units
+    assert app.o7k_release == OpenStackRelease("ussuri")
 
 
 @pytest.mark.asyncio
@@ -221,7 +217,8 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": str(False)}),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
+            "'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
@@ -306,7 +303,8 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": str(False)}),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
+            "'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
@@ -336,7 +334,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     assert_steps(upgrade_plan, expected_plan)
 
 
-def test_upgrade_plan_channel_on_next_os_release(model):
+def test_upgrade_plan_channel_on_next_o7k_release(model):
     """Test generate plan to upgrade Keystone from Ussuri to Victoria with updated channel.
 
     The app channel it's already on next OpenStack release.
@@ -473,7 +471,8 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": str(False)}),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
+            "'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
@@ -582,7 +581,8 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'victoria/stable'",
+            description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
+            "'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
@@ -795,7 +795,7 @@ def test_nova_compute_upgrade_plan(model):
             Ψ Upgrade software packages on unit 'nova-compute/2'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
         Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-        Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+        Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
             Ψ Upgrade plan for unit 'nova-compute/0'
@@ -860,7 +860,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
             Ψ Upgrade software packages on unit 'nova-compute/0'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
         Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-        Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+        Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0
             Ψ Upgrade plan for unit 'nova-compute/0'
@@ -913,7 +913,7 @@ def test_cinder_upgrade_plan(model):
             Ψ Upgrade software packages on unit 'cinder/1'
             Ψ Upgrade software packages on unit 'cinder/2'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
-        Upgrade 'cinder' to the new channel: 'victoria/stable'
+        Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
         Wait for up to 300s for app 'cinder' to reach the idle state
         Verify that the workload of 'cinder' has been upgraded on units: \
@@ -962,7 +962,7 @@ def test_cinder_upgrade_plan_single_unit(model):
             Ψ Upgrade software packages on unit 'cinder/0'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
         Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
-        Upgrade 'cinder' to the new channel: 'victoria/stable'
+        Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
         Upgrade plan for units: cinder/0
             Ψ Upgrade plan for unit 'cinder/0'
@@ -1037,3 +1037,44 @@ def test_swift_application_not_supported(model):
 
     with pytest.raises(ApplicationNotSupported, match=exp_error):
         app.generate_upgrade_plan(target, False)
+
+
+def test_core_wrong_channel(model):
+    """Test when an OpenStack charm is with a channel that doesn't match the workload version."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    app = Keystone(
+        name="keystone",
+        can_upgrade_to="",
+        charm="keystone",
+        channel="wallaby/stable",
+        config={
+            "openstack-origin": {"value": "distro"},
+            "action-managed-upgrade": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "keystone/0": Unit(
+                name="keystone/0",
+                workload_version="17.0.1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="17.1.0",
+    )
+
+    # plan will raise exception because the channel is on wallaby and was expected to be on ussuri
+    # or victoria. The user will need manual intervention
+
+    exp_msg = (
+        r"^The 'keystone' application is using channel 'wallaby/stable'\. Channels supported "
+        r"during this transition: '(ussuri/stable)', '(victoria/stable)'\. "
+        r"Manual intervention is required\.$"
+    )
+
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.generate_upgrade_plan(target, force=False)

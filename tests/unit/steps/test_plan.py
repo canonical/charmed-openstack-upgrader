@@ -93,7 +93,8 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'",
+            description=f"Upgrade '{app.name}' from '{target.previous_release}/stable' "
+            f"to the new channel: '{target.codename}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
@@ -129,7 +130,8 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
             coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable"),
         ),
         UpgradeStep(
-            f"Upgrade '{app.name}' to the new channel: '{target.codename}/stable'",
+            f"Upgrade '{app.name}' from '{target.previous_release}/stable' to the new channel: "
+            f"'{target.codename}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
         ),
@@ -153,14 +155,14 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                     Ψ Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
                 Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'keystone' to the new channel: 'victoria/stable'
+                Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
-                Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
+                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -168,7 +170,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Ψ Upgrade plan for unit 'nova-compute/0'
@@ -316,7 +318,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
-                Upgrade 'keystone-ldap' to the new channel: 'victoria/stable'
+                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -324,7 +326,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
-                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Ψ Upgrade plan for unit 'nova-compute/0'
@@ -497,7 +499,7 @@ def test_pre_plan_sanity_checks(
     cli_args,
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("ussuri")
     mock_analysis_result.current_cloud_series = "focal"
     cou_plan._pre_plan_sanity_checks(cli_args, mock_analysis_result)
     mock_verify_highest_release_achieved.assert_called_once_with(mock_analysis_result)
@@ -507,7 +509,7 @@ def test_pre_plan_sanity_checks(
 
 
 @pytest.mark.parametrize(
-    "current_os_release, current_series, exp_error_msg",
+    "o7k_release, current_series, exp_error_msg",
     [
         (
             OpenStackRelease("yoga"),
@@ -523,17 +525,17 @@ def test_pre_plan_sanity_checks(
         ),
     ],
 )
-def test_verify_supported_series(current_os_release, current_series, exp_error_msg):
+def test_verify_supported_series(o7k_release, current_series, exp_error_msg):
     mock_analysis_result = MagicMock(spec=Analysis)()
     with pytest.raises(OutOfSupportRange, match=exp_error_msg):
-        mock_analysis_result.current_cloud_os_release = current_os_release
+        mock_analysis_result.current_cloud_o7k_release = o7k_release
         mock_analysis_result.current_cloud_series = current_series
         cou_plan._verify_supported_series(mock_analysis_result)
 
 
 def test_verify_highest_release_achieved():
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.current_cloud_os_release = OpenStackRelease("yoga")
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("yoga")
     mock_analysis_result.current_cloud_series = "focal"
     exp_error_msg = (
         "No upgrades available for OpenStack Yoga on Ubuntu Focal.\n"
@@ -544,7 +546,7 @@ def test_verify_highest_release_achieved():
 
 
 @pytest.mark.parametrize(
-    "min_os_version_control_plane, min_os_version_data_plane, exp_error_msg",
+    "min_o7k_version_control_plane, min_o7k_version_data_plane, exp_error_msg",
     [
         (
             OpenStackRelease("ussuri"),
@@ -559,13 +561,13 @@ def test_verify_highest_release_achieved():
     ],
 )
 def test_verify_data_plane_ready_to_upgrade_error(
-    min_os_version_control_plane, min_os_version_data_plane, exp_error_msg, cli_args
+    min_o7k_version_control_plane, min_o7k_version_data_plane, exp_error_msg, cli_args
 ):
     cli_args.upgrade_group = DATA_PLANE
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_series = "focal"
-    mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
-    mock_analysis_result.min_os_version_data_plane = min_os_version_data_plane
+    mock_analysis_result.min_o7k_version_control_plane = min_o7k_version_control_plane
+    mock_analysis_result.min_o7k_version_data_plane = min_o7k_version_data_plane
     with pytest.raises(DataPlaneCannotUpgrade, match=exp_error_msg):
         cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
 
@@ -576,7 +578,7 @@ def test_verify_data_plane_ready_to_upgrade_data_plane_cmd(
     mock_control_plane_upgraded, cli_args, upgrade_group
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.min_os_version_data_plane = OpenStackRelease("ussuri")
+    mock_analysis_result.min_o7k_version_data_plane = OpenStackRelease("ussuri")
     cli_args.upgrade_group = upgrade_group
 
     cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
@@ -590,7 +592,7 @@ def test_verify_data_plane_ready_to_upgrade_non_data_plane_cmd(
     mock_control_plane_upgraded, cli_args, upgrade_group
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.min_os_version_data_plane = OpenStackRelease("ussuri")
+    mock_analysis_result.min_o7k_version_data_plane = OpenStackRelease("ussuri")
     cli_args.upgrade_group = upgrade_group
 
     cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
@@ -599,7 +601,7 @@ def test_verify_data_plane_ready_to_upgrade_non_data_plane_cmd(
 
 
 @pytest.mark.parametrize(
-    "min_os_version_control_plane, min_os_version_data_plane, expected_result",
+    "min_o7k_version_control_plane, min_o7k_version_data_plane, expected_result",
     [
         (OpenStackRelease("ussuri"), OpenStackRelease("ussuri"), False),
         (OpenStackRelease("ussuri"), OpenStackRelease("victoria"), False),
@@ -608,24 +610,24 @@ def test_verify_data_plane_ready_to_upgrade_non_data_plane_cmd(
     ],
 )
 def test_is_control_plane_upgraded(
-    min_os_version_control_plane, min_os_version_data_plane, expected_result
+    min_o7k_version_control_plane, min_o7k_version_data_plane, expected_result
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.min_os_version_control_plane = min_os_version_control_plane
-    mock_analysis_result.min_os_version_data_plane = min_os_version_data_plane
+    mock_analysis_result.min_o7k_version_control_plane = min_o7k_version_control_plane
+    mock_analysis_result.min_o7k_version_data_plane = min_o7k_version_data_plane
     assert cou_plan._is_control_plane_upgraded(mock_analysis_result) is expected_result
 
 
 @pytest.mark.parametrize(
-    "current_os_release, current_series, next_release",
+    "o7k_release, current_series, next_release",
     [
         (OpenStackRelease("victoria"), "focal", "wallaby"),
         (OpenStackRelease("xena"), "focal", "yoga"),
     ],
 )
-def test_determine_upgrade_target(current_os_release, current_series, next_release):
+def test_determine_upgrade_target(o7k_release, current_series, next_release):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.current_cloud_os_release = current_os_release
+    mock_analysis_result.current_cloud_o7k_release = o7k_release
     mock_analysis_result.current_cloud_series = current_series
 
     target = cou_plan._determine_upgrade_target(mock_analysis_result)
@@ -634,14 +636,14 @@ def test_determine_upgrade_target(current_os_release, current_series, next_relea
 
 
 @pytest.mark.parametrize(
-    "current_os_release, current_series, exp_error_msg",
+    "o7k_release, current_series, exp_error_msg",
     [
         (
             None,
             "bionic",
             "Cannot determine the current OS release in the cloud. "
             "Is this a valid OpenStack cloud?",
-        ),  # current_os_release is None
+        ),  # o7k_release is None
         (
             OpenStackRelease("ussuri"),
             None,
@@ -650,13 +652,13 @@ def test_determine_upgrade_target(current_os_release, current_series, next_relea
         ),  # current_series is None
     ],
 )
-def test_determine_upgrade_target_current_os_and_series(
-    current_os_release, current_series, exp_error_msg
+def test_determine_upgrade_target_current_o7k_and_series(
+    o7k_release, current_series, exp_error_msg
 ):
     with pytest.raises(NoTargetError, match=exp_error_msg):
         mock_analysis_result = MagicMock(spec=Analysis)()
         mock_analysis_result.current_cloud_series = current_series
-        mock_analysis_result.current_cloud_os_release = current_os_release
+        mock_analysis_result.current_cloud_o7k_release = o7k_release
         cou_plan._determine_upgrade_target(mock_analysis_result)
 
 
@@ -671,17 +673,17 @@ def test_determine_upgrade_target_no_next_release():
         "cou.utils.openstack.OpenStackRelease.next_release", new_callable=PropertyMock
     ) as mock_next_release:
         mock_next_release.return_value = None
-        current_os_release = OpenStackRelease(
+        o7k_release = OpenStackRelease(
             "ussuri"
         )  # instantiate OpenStackRelease with any valid codename
-        mock_analysis_result.current_cloud_os_release = current_os_release
+        mock_analysis_result.current_cloud_o7k_release = o7k_release
         cou_plan._determine_upgrade_target(mock_analysis_result)
 
 
 def test_determine_upgrade_target_out_support_range():
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_series = "focal"
-    mock_analysis_result.current_cloud_os_release = OpenStackRelease("zed")
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("zed")
 
     exp_error_msg = (
         "Unable to upgrade cloud from Ubuntu series `focal` to 'antelope'. "
@@ -1011,7 +1013,7 @@ async def test_get_upgradable_hypervisors_machines(
 def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
     cli_args.backup = cli_backup
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.current_cloud_os_release = OpenStackRelease("ussuri")
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("ussuri")
     mock_analysis_result.model = model
 
     expected_steps = []

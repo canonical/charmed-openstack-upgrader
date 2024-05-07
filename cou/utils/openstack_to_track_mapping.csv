@@ -1,4 +1,4 @@
-charm,series,os_release,track
+charm,series,o7k_release,track
 ceph-mon,focal,ussuri,octopus
 ceph-mon,focal,victoria,octopus
 ceph-mon,focal,wallaby,pacific

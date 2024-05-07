@@ -45,11 +45,11 @@ def test_auxiliary_subordinate(model):
 
     assert app.channel == "8.0/stable"
     assert app.origin == "ch"
-    assert app.os_origin == ""
+    assert app.o7k_origin == ""
     # when don't have os_origin is considered as "distro" which points to ussuri in this case
     assert app.apt_source_codename == "ussuri"
-    assert app.channel_codename == "yoga"
-    assert app.current_os_release == "yoga"
+    assert app.channel_o7k_release == "yoga"
+    assert app.o7k_release == "yoga"
     assert app.is_subordinate is True
 
 
@@ -105,11 +105,11 @@ def test_ovn_subordinate(model):
     )
 
     assert app.channel == "22.03/stable"
-    assert app.os_origin == ""
+    assert app.o7k_origin == ""
     # when don't have os_origin is considered as "distro" which points to ussuri in this case
     assert app.apt_source_codename == "ussuri"
-    assert app.channel_codename == "yoga"
-    assert app.current_os_release == "yoga"
+    assert app.channel_o7k_release == "yoga"
+    assert app.o7k_release == "yoga"
     assert app.is_subordinate is True
 
 
@@ -301,7 +301,8 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
             coro=model.upgrade_charm(app.name, "pacific/stable"),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' to the new channel: 'quincy/stable'",
+            description=f"Upgrade '{app.name}' from 'pacific/stable' to the new channel: "
+            "'quincy/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "quincy/stable"),
         ),
@@ -321,7 +322,6 @@ def test_auxiliary_subordinate_latest_stable(model):
         Upgrade plan for 'keystone-hacluster' to 'victoria'
             WARNING: Changing 'keystone-hacluster' channel from latest/stable to 2.4/stable. \
 This may be a charm downgrade, which is generally not supported.
-            Upgrade 'keystone-hacluster' to the new channel: '2.4/stable'
     """
     )
 
@@ -345,7 +345,7 @@ This may be a charm downgrade, which is generally not supported.
     assert str(plan) == exp_plan
 
 
-def test_auxiliary_subordinate_channel_codename_raise(model):
+def test_auxiliary_subordinate_channel_o7k_release_raise(model):
     app = AuxiliarySubordinateApplication(
         name="ceph-dashboard",
         can_upgrade_to="",
@@ -369,7 +369,7 @@ def test_auxiliary_subordinate_channel_codename_raise(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.channel_codename
+        app.channel_o7k_release
 
     with pytest.raises(ApplicationError, match=exp_msg):
-        app.current_os_release
+        app.o7k_release
