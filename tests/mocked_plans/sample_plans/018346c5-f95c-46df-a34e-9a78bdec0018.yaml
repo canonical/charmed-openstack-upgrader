@@ -478,6 +478,7 @@ plan: |
                 Upgrade 'cinder-lvm-slow' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'cinder-volume-mysql-router' to 'victoria'
                 Refresh 'cinder-volume-mysql-router' to the latest revision of '8.0/stable'
+        Ensure that the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version
 
 
 applications:

@@ -71,6 +71,9 @@ class OpenStackApplication(Application):
     # OpenStack apps rely on the workload version of the packages to evaluate current OpenStack
     # release
     based_on_channel = False
+    # multiple_channels set to False means that the charm supports only one channel for
+    # an OpenStack release
+    multiple_channels = False
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -147,19 +150,18 @@ class OpenStackApplication(Application):
     def apt_source_codename(self) -> OpenStackRelease:
         """Identify the OpenStack release set on "openstack-origin" or "source" config.
 
-        :raises ApplicationError: When origin setting is not valid.
+        :raises ApplicationError: When origin setting or series are not valid.
         :return: OpenStackRelease object.
         :rtype: OpenStackRelease
         """
-        #  means that the charm doesn't have origin setting config or is using empty string.
-        if not self.o7k_origin:
-            return self.o7k_release
-
         if self.o7k_origin.startswith("cloud"):
             return self._extract_from_uca_source()
 
-        if self.o7k_origin == "distro":
+        # consider as "distro" if the application does not have source or is empty
+        if self.o7k_origin in {"distro", ""}:
             # find the OpenStack release based on ubuntu series
+            if self.series not in DISTRO_TO_OPENSTACK_MAPPING:
+                raise ApplicationError(f"Series '{self.series}' is not supported by COU.")
             return OpenStackRelease(DISTRO_TO_OPENSTACK_MAPPING[self.series])
 
         # probably because user set a ppa or a url
@@ -213,9 +215,16 @@ class OpenStackApplication(Application):
     def o7k_release(self) -> OpenStackRelease:
         """Current OpenStack Release of the application.
 
+        Applications that are colocated in a same machine will upgrade all the packages in the
+        machine during an upgrade. This means that when upgrading a application X, the application
+        Y colocated with it also upgrades its packages. To ensure to change the 'source' or
+        'openstack-origin' and run all the upgrade steps necessary, it's necessary to include the
+        OpenStack release set in the application configuration.
         :return: OpenStackRelease object
         :rtype: OpenStackRelease
         """
+        if self.o7k_origin:
+            return min(list(self.o7k_release_units.keys()) + [self.apt_source_codename])
         return min(self.o7k_release_units.keys())
 
     @property
@@ -657,7 +666,7 @@ class OpenStackApplication(Application):
         # Normally, prior the upgrade the channel is equal to the application release.
         # However, when colocated with other app, the channel can be in a release lesser than the
         # workload version of the application.
-        if self.channel_o7k_release <= self.o7k_release:
+        if self.channel_o7k_release <= self.o7k_release or self.multiple_channels:
             return UpgradeStep(
                 description=f"Upgrade '{self.name}' from '{channel}' to the new channel: "
                 f"'{self.target_channel(target)}'",
@@ -861,16 +870,18 @@ class OpenStackApplication(Application):
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         """
         logger.debug(
-            "%s application current o7k_release is %s and apt source is %s",
+            "%s current os_release is '%s' with origin setting '%s' and apt source '%s'",
             self.name,
             self.o7k_release,
+            self.o7k_origin,
             self.apt_source_codename,
         )
 
         if (
             self.o7k_release >= target
             and not self.can_upgrade_to
-            and self.apt_source_codename >= target
+            # consider apt_source_codename just when exist or not empty
+            and (self.apt_source_codename >= target if self.o7k_origin else True)
         ):
             raise HaltUpgradePlanGeneration(
                 f"Application '{self.name}' already configured for release equal to or greater "

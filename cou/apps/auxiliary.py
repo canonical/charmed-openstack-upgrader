@@ -179,6 +179,9 @@ class RabbitMQServer(AuxiliaryApplication):
 
     wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
+    # rabbitmq-server can use channels 3.8 or 3.9 on focal.
+    # COU changes to 3.9 if the channel is set to 3.8
+    multiple_channels = True
 
 
 @AppFactory.register_application(["ceph-mon"])

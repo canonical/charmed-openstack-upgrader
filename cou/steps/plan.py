@@ -30,6 +30,7 @@ from cou.apps.auxiliary import (  # noqa: F401
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     AuxiliarySubordinateApplication,
+    HACluster,
     OVNSubordinate,
 )
 from cou.apps.base import OpenStackApplication
@@ -400,7 +401,7 @@ def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Po
     """
     steps = []
     if args.upgrade_group in {DATA_PLANE, None}:
-        steps.extend(_get_ceph_mon_post_upgrade_steps(analysis_result.apps_data_plane))
+        steps.extend(_get_ceph_mon_post_upgrade_steps(analysis_result.apps_control_plane))
 
     return steps
 
@@ -415,7 +416,11 @@ def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[P
     """
     ceph_mons_apps = [app for app in apps if isinstance(app, CephMon)]
 
-    steps = []
+    steps: list[PostUpgradeStep] = []
+    if not ceph_mons_apps:
+        logger.warning("There is no ceph-mon application. Is this a valid OpenStack cloud?")
+        return steps
+
     for app in ceph_mons_apps:
         unit = list(app.units.values())[0]  # getting the first unit, since we don't care which one
         steps.append(

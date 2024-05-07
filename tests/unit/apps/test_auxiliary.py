@@ -72,7 +72,11 @@ def test_auxiliary_app(model):
     assert app.apt_source_codename == "ussuri"
     assert app.channel_o7k_release == "yoga"
     assert app.is_subordinate is False
-    assert app.o7k_release == "yoga"
+
+    # the workload version of units are considered as yoga
+    assert min(app.o7k_release_units.keys()) == "yoga"
+    # application is considered as ussuri because the source is pointing to it
+    assert app.o7k_release == "ussuri"
 
 
 def test_auxiliary_app_cs(model):
@@ -103,8 +107,11 @@ def test_auxiliary_app_cs(model):
     assert app.is_valid_track(app.channel) is False
     assert app.o7k_origin == "distro"
     assert app.apt_source_codename == "ussuri"
+    # the workload version of units are considered as yoga
+    assert min(app.o7k_release_units.keys()) == "yoga"
+    # application is considered as ussuri because the source is pointing to it
     assert app.channel_o7k_release == "ussuri"
-    assert app.o7k_release == "yoga"
+    assert app.o7k_release == "ussuri"
 
 
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
@@ -392,12 +399,7 @@ def test_auxiliary_raise_error_unknown_series(model):
     """Test auxiliary application with unknown series."""
     series = "foo"
     channel = "3.8/stable"
-    exp_msg = (
-        f"Channel: {channel} for charm 'rabbitmq-server' on series '{series}' is not supported by "
-        "COU. Please take a look at the documentation: "
-        "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html "
-        "to see if you are using the right track."
-    )
+    exp_msg = "Series 'foo' is not supported by COU."
     machines = {"0": generate_cou_machine("0", "az-0")}
     app = RabbitMQServer(
         name="rabbitmq-server",
@@ -810,7 +812,7 @@ def test_ovn_principal(model):
     assert app.o7k_origin == "distro"
     assert app.apt_source_codename == "ussuri"
     assert app.channel_o7k_release == "yoga"
-    assert app.o7k_release == "yoga"
+    assert app.o7k_release == "ussuri"
     assert app.is_subordinate is False
 
 

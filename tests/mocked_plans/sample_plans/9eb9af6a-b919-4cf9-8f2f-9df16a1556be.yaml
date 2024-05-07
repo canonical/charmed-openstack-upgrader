@@ -429,6 +429,7 @@ plan: |
                 Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 WARNING: Changing 'ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+        Ensure that the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version
 
 applications:
   rabbitmq-server:
