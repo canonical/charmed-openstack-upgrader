@@ -15,10 +15,9 @@
 from cou.apps.auxiliary import OVN, AuxiliaryApplication
 from cou.apps.factory import AppFactory
 from cou.apps.subordinate import SubordinateApplication
-from cou.utils.openstack import AUXILIARY_SUBORDINATES
 
 
-@AppFactory.register_application(AUXILIARY_SUBORDINATES)
+@AppFactory.register_application(["mysql-router", "ceph-dashboard"])
 class AuxiliarySubordinateApplication(SubordinateApplication, AuxiliaryApplication):
     """Auxiliary subordinate application class."""
 
@@ -33,3 +32,12 @@ class OVNSubordinate(OVN, AuxiliarySubordinateApplication):
         :raises ApplicationError: When workload version is lower than 22.03.0.
         """
         OVNSubordinate._validate_ovn_support(self.workload_version)
+
+
+@AppFactory.register_application(["hacluster"])
+class HACluster(AuxiliarySubordinateApplication):
+    """HACluster application class."""
+
+    # hacluster can use channels 2.0.3 or 2.4 on focal.
+    # COU changes to 2.4 if the channel is set to 2.0.3
+    multiple_channels = True
