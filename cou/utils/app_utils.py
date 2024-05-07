@@ -110,14 +110,26 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
     check_osd_result = await model.run_on_unit(unit_name=unit, command=check_command, timeout=600)
 
     osd_release_output = json.loads(check_osd_result["Stdout"]).get("osd", None)
+    overall_output = json.loads(check_osd_result["Stdout"]).get("overall", None)
+
     # throw exception if ceph-mon doesn't contain osd release information in `ceph`
     if not osd_release_output:
         raise RunUpgradeError(f"Cannot get OSD release information on ceph-mon unit '{unit}'.")
+
+    if not overall_output:
+        raise RunUpgradeError("Cannot get release information on ceph applications.")
+
     # throw exception if OSDs are on mismatched releases
     if len(osd_release_output) > 1:
         raise RunUpgradeError(
             f"OSDs are on mismatched releases:\n{osd_release_output}."
             "Please manually upgrade them to be on the same release before proceeding."
+        )
+
+    if len(overall_output) > 1:
+        raise RunUpgradeError(
+            f"Ceph applications are on mismatched releases:\n{overall_output}."
+            "Please manually upgrade or restart ceph services to have a single version."
         )
 
     # get release name from "osd_release_output". Example value of "osd_release_output":

@@ -191,29 +191,50 @@ async def test_get_current_osd_release(model):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "osd_release_output, error_message",
+    "osd_release_output, overall_output, error_message",
     [
         (
             {},  # OSDs release information is empty
+            {"ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 1},
             "Cannot get OSD release information on ceph-mon unit 'ceph-mon/0'.",
+        ),
+        (
+            {"ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 1},
+            {},  # overall information is empty,
+            "Cannot get release information on ceph applications.",
         ),
         (
             {
                 "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 2,
                 "ceph version 16.2.13 (8a82819d84cf884bd39c17e3236e0632) pacific (stable)": 1,
             },  # mismatched OSD releases
+            {
+                "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 2,
+                "ceph version 16.2.13 (8a82819d84cf884bd39c17e3236e0632) pacific (stable)": 1,
+            },
             "OSDs are on mismatched releases:\n",
         ),
         (
             {
                 "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) invalid (stable)": 3,
-            },  # unsupported OSD releases
+            },  # unsupported OSD releases,
+            {"ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 1},
             "Cannot recognize Ceph release 'invalid'. The supporting "
             "releases are: octopus, pacific, quincy",
         ),
+        (
+            {"ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 1},
+            {
+                "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 1,
+                "ceph version 16.2.14 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 6,
+            },  # more than one ceph version in the overall versions
+            "Ceph applications are on mismatched releases:\n" "",
+        ),
     ],
 )
-async def test_get_current_osd_release_unsuccessful(model, osd_release_output, error_message):
+async def test_get_current_osd_release_unsuccessful(
+    model, osd_release_output, overall_output, error_message
+):
     check_output = """
     {
         "mon": {
@@ -224,12 +245,11 @@ async def test_get_current_osd_release_unsuccessful(model, osd_release_output, e
         },
         "osd": %s,
         "mds": {},
-        "overall": {
-            "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 5
-        }
+        "overall": %s
     }
     """ % (
-        json.dumps(osd_release_output)
+        json.dumps(osd_release_output),
+        json.dumps(overall_output),
     )
     model.run_on_unit.return_value = {"Code": "0", "Stdout": check_output}
     with pytest.raises(RunUpgradeError, match=error_message):
