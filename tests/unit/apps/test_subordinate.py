@@ -13,23 +13,21 @@
 #  limitations under the License.
 """Subordinate application class."""
 import logging
-from unittest.mock import MagicMock
 
 import pytest
 
 from cou.apps.subordinate import SubordinateApplication
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
-from cou.utils.juju_utils import Machine
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import assert_steps
+from tests.unit.utils import assert_steps, generate_cou_machine
 
 logger = logging.getLogger(__name__)
 
 
 def test_current_os_release(model):
     """Test current_os_release for SubordinateApplication."""
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = SubordinateApplication(
         name="keystone-ldap",
         can_upgrade_to="ussuri/stable",
@@ -51,7 +49,7 @@ def test_current_os_release(model):
 def test_generate_upgrade_plan(model):
     """Test generate upgrade plan for SubordinateApplication."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = SubordinateApplication(
         name="keystone-ldap",
         can_upgrade_to="ussuri/stable",
@@ -98,7 +96,7 @@ def test_generate_upgrade_plan(model):
 )
 def test_channel_valid(model, channel):
     """Test successful validation of channel upgrade plan for SubordinateApplication."""
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = SubordinateApplication(
         name="keystone-ldap",
         can_upgrade_to=channel,
@@ -127,7 +125,7 @@ def test_channel_valid(model, channel):
 )
 def test_channel_setter_invalid(model, channel):
     """Test unsuccessful validation of channel upgrade plan for SubordinateApplication."""
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     exp_error_msg = (
         f"Channel: {channel} for charm 'keystone-ldap' on series 'focal' is not supported by COU. "
         "Please take a look at the documentation: "
@@ -164,7 +162,7 @@ def test_channel_setter_invalid(model, channel):
 def test_generate_plan_ch_migration(model, channel):
     """Test generate upgrade plan for SubordinateApplication with charmhub migration."""
     target = OpenStackRelease("wallaby")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = SubordinateApplication(
         name="keystone-ldap",
         can_upgrade_to="wallaby/stable",
@@ -210,7 +208,7 @@ def test_generate_plan_ch_migration(model, channel):
 def test_generate_plan_from_to(model, from_os, to_os):
     """Test generate upgrade plan for SubordinateApplication from to version."""
     target = OpenStackRelease(to_os)
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = SubordinateApplication(
         name="keystone-ldap",
         can_upgrade_to=f"{to_os}/stable",
@@ -257,7 +255,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
 def test_generate_plan_in_same_version(model, from_to):
     """Test generate upgrade plan for SubordinateApplication in same version."""
     target = OpenStackRelease(from_to)
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = SubordinateApplication(
         name="keystone-ldap",
         can_upgrade_to=f"{from_to}/stable",

@@ -83,7 +83,7 @@ def test_application_different_wl(model):
 async def test_application_verify_workload_upgrade(model):
     """Test Kyestone application check successful upgrade."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -128,7 +128,7 @@ async def test_application_verify_workload_upgrade_fail(model):
         r"Unit\(s\) 'keystone/0' did not complete the upgrade to victoria. Some local processes "
         r"may still be executing; you may try re-running COU in a few minutes."
     )
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -169,7 +169,7 @@ async def test_application_verify_workload_upgrade_fail(model):
 def test_upgrade_plan_ussuri_to_victoria(model):
     """Test generate plan to upgrade Keystone from Ussuri to Victoria."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -254,7 +254,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
 def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     """Test generate plan to upgrade Keystone from Ussuri to Victoria with charmhub migration."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -342,7 +342,7 @@ def test_upgrade_plan_channel_on_next_os_release(model):
     The app channel it's already on next OpenStack release.
     """
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Keystone(
         name="keystone",
         can_upgrade_to="",
@@ -421,7 +421,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
     The app config option openstack-origin it's already on next OpenStack release.
     """
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -502,7 +502,7 @@ def test_upgrade_plan_application_already_upgraded(model):
         "than victoria. Ignoring."
     )
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Keystone(
         name="keystone",
         can_upgrade_to="",
@@ -536,7 +536,7 @@ def test_upgrade_plan_application_already_upgraded(model):
 def test_upgrade_plan_application_already_disable_action_managed(model):
     """Test generate plan to upgrade Keystone with managed upgrade disabled."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Keystone(
         name="keystone",
         can_upgrade_to="ussuri/stable",
@@ -1008,7 +1008,7 @@ def test_cinder_upgrade_plan_single_unit(model):
 def test_swift_application_not_supported(model):
     """Test Swift application raising ApplicationNotSupported error."""
     target = OpenStackRelease("victoria")
-    machines = {"0": MagicMock(spec_set=Machine)}
+    machines = {"0": generate_cou_machine("0", "az-0")}
     app = Swift(
         name="swift-proxy",
         can_upgrade_to="ussuri/stable",
