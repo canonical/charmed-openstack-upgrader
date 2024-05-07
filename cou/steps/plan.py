@@ -30,6 +30,7 @@ from cou.apps.auxiliary import (  # noqa: F401
 )
 from cou.apps.auxiliary_subordinate import (  # noqa: F401
     AuxiliarySubordinateApplication,
+    HACluster,
     OVNSubordinate,
 )
 from cou.apps.base import OpenStackApplication

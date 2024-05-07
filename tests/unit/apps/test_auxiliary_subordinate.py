@@ -17,6 +17,7 @@ import pytest
 
 from cou.apps.auxiliary_subordinate import (
     AuxiliarySubordinateApplication,
+    HACluster,
     OVNSubordinate,
 )
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
@@ -373,3 +374,33 @@ def test_auxiliary_subordinate_channel_o7k_release_raise(model):
 
     with pytest.raises(ApplicationError, match=exp_msg):
         app.o7k_release
+
+
+def test_hacluster_change_channel(model):
+    """Test that HACluster changes the channel to 2.4 when 2.0.3 is set."""
+    target = OpenStackRelease("victoria")
+    app = HACluster(
+        name="keystone-hacluster",
+        can_upgrade_to="ch:hacluster",
+        charm="hacluster",
+        channel="2.0.3/stable",
+        config={},
+        machines={"0": generate_cou_machine("0", "az-0")},
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["keystone"],
+        units={},
+        workload_version="2.0.3",
+    )
+
+    exp_plan = dedent_plan(
+        """\
+    Upgrade plan for 'keystone-hacluster' to 'victoria'
+        Refresh 'keystone-hacluster' to the latest revision of '2.0.3/stable'
+        Upgrade 'keystone-hacluster' from '2.0.3/stable' to the new channel: '2.4/stable'
+        """
+    )
+
+    plan = app.generate_upgrade_plan(target, force=False)
+    assert str(plan) == exp_plan

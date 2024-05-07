@@ -71,6 +71,9 @@ class OpenStackApplication(Application):
     # OpenStack apps rely on the workload version of the packages to evaluate current OpenStack
     # release
     based_on_channel = False
+    # multiple_channels set to False means that the charm supports only one channel for
+    # an OpenStack release
+    multiple_channels = False
 
     def __hash__(self) -> int:
         """Hash magic method for Application.
@@ -663,7 +666,7 @@ class OpenStackApplication(Application):
         # Normally, prior the upgrade the channel is equal to the application release.
         # However, when colocated with other app, the channel can be in a release lesser than the
         # workload version of the application.
-        if self.channel_o7k_release <= self.o7k_release:
+        if self.channel_o7k_release <= self.o7k_release or self.multiple_channels:
             return UpgradeStep(
                 description=f"Upgrade '{self.name}' from '{channel}' to the new channel: "
                 f"'{self.target_channel(target)}'",
