@@ -17,7 +17,6 @@ from typing import Optional
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
-from cou.exceptions import HaltUpgradePlanGeneration
 from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import Unit
 from cou.utils.openstack import SUBORDINATES, OpenStackRelease
@@ -43,24 +42,6 @@ class SubordinateApplication(OpenStackApplication):
         :rtype: OpenStackRelease
         """
         return self.channel_codename
-
-    def _check_application_target(self, target: OpenStackRelease) -> None:
-        """Check if the application is already upgraded.
-
-        Subordinate applications use the apt source of the related principal and don't have an
-        origin/openstack-origin config option.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
-        """
-        logger.debug("%s application current os_release is %s", self.name, self.current_os_release)
-
-        if self.current_os_release >= target and not self.can_upgrade_to:
-            raise HaltUpgradePlanGeneration(
-                f"Application '{self.name}' already configured for release equal to or greater "
-                f"than {target}. Ignoring."
-            )
 
     def _get_upgrade_current_release_packages_step(
         self, units: Optional[list[Unit]]

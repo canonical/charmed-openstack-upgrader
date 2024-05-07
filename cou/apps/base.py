@@ -836,9 +836,10 @@ class OpenStackApplication(Application):
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         """
         logger.debug(
-            "%s application current os_release is %s and apt source is %s",
+            "%s current os_release is '%s' with origin setting '%s' and apt source '%s'",
             self.name,
             self.current_os_release,
+            self.os_origin,
             self.apt_source_codename,
         )
 
