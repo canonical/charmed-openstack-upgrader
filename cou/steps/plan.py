@@ -90,7 +90,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     target = _determine_upgrade_target(analysis_result)
 
     plan = UpgradePlan(
-        f"Upgrade cloud from '{analysis_result.current_cloud_os_release}' to '{target}'"
+        f"Upgrade cloud from '{analysis_result.current_cloud_o7k_release}' to '{target}'"
     )
     plan.add_steps(_get_pre_upgrade_steps(analysis_result, args))
 
@@ -175,12 +175,12 @@ def _verify_highest_release_achieved(analysis_result: Analysis) -> None:
     :type analysis_result: Analysis
     :raises HighestReleaseAchieved: When the OpenStack release is the last supported by the series.
     """
-    current_os_release = analysis_result.current_cloud_os_release
+    o7k_release = analysis_result.current_cloud_o7k_release
     current_series = analysis_result.current_cloud_series or ""
     last_supported = LTS_TO_OS_RELEASE.get(current_series, [])[-1]
-    if current_os_release and current_series and str(current_os_release) == last_supported:
+    if o7k_release and current_series and str(o7k_release) == last_supported:
         raise HighestReleaseAchieved(
-            f"No upgrades available for OpenStack {str(current_os_release).capitalize()} on "
+            f"No upgrades available for OpenStack {str(o7k_release).capitalize()} on "
             f"Ubuntu {current_series.capitalize()}.\nNewer OpenStack releases "
             "may be available after upgrading to a later Ubuntu series."
         )
@@ -198,7 +198,7 @@ def _verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis
     :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
     if args.upgrade_group in {DATA_PLANE, HYPERVISORS}:
-        if not analysis_result.min_os_version_data_plane:
+        if not analysis_result.min_o7k_version_data_plane:
             raise DataPlaneCannotUpgrade(
                 "Cannot find data-plane apps. Is this a valid OpenStack cloud?"
             )
@@ -217,8 +217,8 @@ def _is_control_plane_upgraded(analysis_result: Analysis) -> bool:
     :return: Whether the control plane is already upgraded or not.
     :rtype: bool
     """
-    control_plane = analysis_result.min_os_version_control_plane
-    data_plane = analysis_result.min_os_version_data_plane
+    control_plane = analysis_result.min_o7k_version_control_plane
+    data_plane = analysis_result.min_o7k_version_data_plane
 
     return bool(control_plane and data_plane and control_plane > data_plane)
 
@@ -234,25 +234,25 @@ def _determine_upgrade_target(analysis_result: Analysis) -> OpenStackRelease:
     :return: The target OS release to upgrade the cloud to.
     :rtype: OpenStackRelease
     """
-    current_os_release, current_series = _get_os_release_and_series(analysis_result)
+    o7k_release, current_series = _get_o7k_release_and_series(analysis_result)
 
-    target = current_os_release.next_release
+    target = o7k_release.next_release
     if not target:
         raise NoTargetError(
             "Cannot find target to upgrade. Current minimum OS release is "
-            f"'{str(current_os_release)}'. Current Ubuntu series is '{current_series}'."
+            f"'{str(o7k_release)}'. Current Ubuntu series is '{current_series}'."
         )
 
     if (
         current_series
-        and (supporting_os_release := ", ".join(LTS_TO_OS_RELEASE[current_series]))
-        and str(current_os_release) not in supporting_os_release
-        or str(target) not in supporting_os_release
+        and (supporting_o7k_release := ", ".join(LTS_TO_OS_RELEASE[current_series]))
+        and str(o7k_release) not in supporting_o7k_release
+        or str(target) not in supporting_o7k_release
     ):
         raise OutOfSupportRange(
             f"Unable to upgrade cloud from Ubuntu series `{current_series}` to '{target}'. "
             "Both the from and to releases need to be supported by the current "
-            f"Ubuntu series '{current_series}': {supporting_os_release}."
+            f"Ubuntu series '{current_series}': {supporting_o7k_release}."
         )
 
     return target
@@ -324,7 +324,7 @@ def verify_hypervisors_membership(
         )
 
 
-def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRelease, str]:
+def _get_o7k_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRelease, str]:
     """Get the current OpenStack release and series of the cloud.
 
     This function also checks if the model passed is a valid OpenStack cloud.
@@ -336,9 +336,9 @@ def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRele
     :return: Current OpenStack release and series of the cloud.
     :rtype: tuple[OpenStackRelease, str]
     """
-    current_os_release = analysis_result.current_cloud_os_release
+    o7k_release = analysis_result.current_cloud_o7k_release
     current_series = analysis_result.current_cloud_series
-    if not current_os_release:
+    if not o7k_release:
         raise NoTargetError(
             "Cannot determine the current OS release in the cloud. "
             "Is this a valid OpenStack cloud?"
@@ -349,7 +349,7 @@ def _get_os_release_and_series(analysis_result: Analysis) -> tuple[OpenStackRele
             "Cannot determine the current Ubuntu series in the cloud. "
             "Is this a valid OpenStack cloud?"
         )
-    return current_os_release, current_series
+    return o7k_release, current_series
 
 
 def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:

@@ -84,10 +84,10 @@ def test_generate_lookup(service):
     openstack_lookup = OpenStackCodenameLookup._generate_lookup(
         OpenStackCodenameLookup._DEFAULT_CSV_FILE
     )
-    os_releases = ["ussuri", "victoria", "wallaby", "xena", "yoga"]
+    o7k_releases = ["ussuri", "victoria", "wallaby", "xena", "yoga"]
     versions = ["10", "11", "12", "13", "14"]
-    for os_release, version in zip(os_releases, versions):
-        assert openstack_lookup[service][os_release] == VersionRange(
+    for o7k_release, version in zip(o7k_releases, versions):
+        assert openstack_lookup[service][o7k_release] == VersionRange(
             version + ".0.0", str(int(version) + 1) + ".0.0"
         )
 
@@ -200,16 +200,16 @@ def test_compare_openstack_release_order():
     antelope = OpenStackRelease("antelope")
     bobcat = OpenStackRelease("bobcat")
     caracal = OpenStackRelease("2024.1")
-    os_releases = {
+    o7k_releases = {
         caracal,
         wallaby,
         ussuri,
         bobcat,
         antelope,
     }
-    assert min(os_releases) == ussuri
-    assert max(os_releases) == caracal
-    assert sorted(os_releases) == [ussuri, wallaby, antelope, bobcat, caracal]
+    assert min(o7k_releases) == ussuri
+    assert max(o7k_releases) == caracal
+    assert sorted(o7k_releases) == [ussuri, wallaby, antelope, bobcat, caracal]
 
 
 def test_openstack_release_setter():
@@ -227,13 +227,13 @@ def test_openstack_release_setter_by_date():
     assert openstack_release.date == "2023.1"
 
 
-@pytest.mark.parametrize("os_release", ["victoria", "wallaby"])
-def test_compare_openstack_repr_str(os_release):
-    os_compare = OpenStackRelease(os_release)
-    expected_str = os_release
-    expected_repr = f"OpenStackRelease<{os_release}>"
-    assert repr(os_compare) == expected_repr
-    assert str(os_compare) == expected_str
+@pytest.mark.parametrize("o7k_release", ["victoria", "wallaby"])
+def test_compare_openstack_repr_str(o7k_release):
+    o7k_compare = OpenStackRelease(o7k_release)
+    expected_str = o7k_release
+    expected_repr = f"OpenStackRelease<{o7k_release}>"
+    assert repr(o7k_compare) == expected_repr
+    assert str(o7k_compare) == expected_str
 
 
 def test_compare_openstack_raises_error():
@@ -243,7 +243,7 @@ def test_compare_openstack_raises_error():
 
 
 @pytest.mark.parametrize(
-    "os_release, release_year, next_os_release",
+    "o7k_release, release_year, next_o7k_release",
     [
         ("ussuri", "2020.1", "victoria"),
         ("victoria", "2020.2", "wallaby"),
@@ -252,14 +252,14 @@ def test_compare_openstack_raises_error():
         ("caracal", "2024.1", None),  # None when there is no next release
     ],
 )
-def test_determine_next_openstack_release(os_release, release_year, next_os_release):
-    release = OpenStackRelease(os_release)
-    assert release.next_release == next_os_release
+def test_determine_next_openstack_release(o7k_release, release_year, next_o7k_release):
+    release = OpenStackRelease(o7k_release)
+    assert release.next_release == next_o7k_release
     assert release.date == release_year
 
 
 @pytest.mark.parametrize(
-    "os_release, previous_os_release",
+    "o7k_release, previous_o7k_release",
     [
         ("ussuri", "train"),
         ("victoria", "ussuri"),
@@ -268,13 +268,13 @@ def test_determine_next_openstack_release(os_release, release_year, next_os_rele
         ("diablo", None),  # None when there is no previous release
     ],
 )
-def test_determine_previous_openstack_release(os_release, previous_os_release):
-    release = OpenStackRelease(os_release)
-    assert release.previous_release == previous_os_release
+def test_determine_previous_openstack_release(o7k_release, previous_o7k_release):
+    release = OpenStackRelease(o7k_release)
+    assert release.previous_release == previous_o7k_release
 
 
 @pytest.mark.parametrize(
-    "series, charm, os_release, exp_result",
+    "series, charm, o7k_release, exp_result",
     [
         ("focal", "ceph-mon", "ussuri", ["octopus"]),
         ("focal", "ceph-mon", "victoria", ["octopus"]),
@@ -322,8 +322,8 @@ def test_determine_previous_openstack_release(os_release, previous_os_release):
         ("jammy", "my-service", "zed", None),  # family not mapped
     ],
 )
-def test_openstack_to_track(charm, series, os_release, exp_result):
-    assert OPENSTACK_TO_TRACK_MAPPING.get((charm, series, os_release)) == exp_result
+def test_openstack_to_track(charm, series, o7k_release, exp_result):
+    assert OPENSTACK_TO_TRACK_MAPPING.get((charm, series, o7k_release)) == exp_result
 
 
 @pytest.mark.parametrize(

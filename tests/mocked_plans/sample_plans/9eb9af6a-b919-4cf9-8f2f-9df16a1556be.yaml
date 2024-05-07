@@ -9,7 +9,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'rabbitmq-server/1'
                     Ψ Upgrade software packages on unit 'rabbitmq-server/2'
                 Refresh 'rabbitmq-server' to the latest revision of '3.8/stable'
-                Upgrade 'rabbitmq-server' to the new channel: '3.9/stable'
+                Upgrade 'rabbitmq-server' from '3.8/stable' to the new channel: '3.9/stable'
                 Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'rabbitmq-server' has been upgraded on units: rabbitmq-server/0, rabbitmq-server/1, rabbitmq-server/2
@@ -29,7 +29,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'keystone/1'
                     Ψ Upgrade software packages on unit 'keystone/2'
                 Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'keystone' to the new channel: 'victoria/stable'
+                Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0, keystone/1, keystone/2
@@ -39,7 +39,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'aodh/1'
                     Ψ Upgrade software packages on unit 'aodh/2'
                 Change charm config of 'aodh' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'aodh' to the new channel: 'victoria/stable'
+                Upgrade 'aodh' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'aodh' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'aodh' to reach the idle state
                 Verify that the workload of 'aodh' has been upgraded on units: aodh/0, aodh/1, aodh/2
@@ -49,7 +49,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'barbican/1'
                     Ψ Upgrade software packages on unit 'barbican/2'
                 Change charm config of 'barbican' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'barbican' to the new channel: 'victoria/stable'
+                Upgrade 'barbican' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'barbican' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'barbican' to reach the idle state
                 Verify that the workload of 'barbican' has been upgraded on units: barbican/0, barbican/1, barbican/2
@@ -59,7 +59,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceilometer/1'
                     Ψ Upgrade software packages on unit 'ceilometer/2'
                 Change charm config of 'ceilometer' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'ceilometer' to the new channel: 'victoria/stable'
+                Upgrade 'ceilometer' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'ceilometer' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceilometer' to reach the idle state
                 Verify that the workload of 'ceilometer' has been upgraded on units: ceilometer/0, ceilometer/1, ceilometer/2
@@ -78,7 +78,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'cinder/1'
                     Ψ Upgrade software packages on unit 'cinder/2'
                 Change charm config of 'cinder' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'cinder' to the new channel: 'victoria/stable'
+                Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'cinder' to reach the idle state
                 Verify that the workload of 'cinder' has been upgraded on units: cinder/0, cinder/1, cinder/2
@@ -88,7 +88,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'designate/1'
                     Ψ Upgrade software packages on unit 'designate/2'
                 Change charm config of 'designate' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'designate' to the new channel: 'victoria/stable'
+                Upgrade 'designate' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'designate' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'designate' to reach the idle state
                 Verify that the workload of 'designate' has been upgraded on units: designate/0, designate/1, designate/2
@@ -97,7 +97,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'designate-bind/0'
                     Ψ Upgrade software packages on unit 'designate-bind/1'
                 Refresh 'designate-bind' to the latest revision of 'ussuri/stable'
-                Upgrade 'designate-bind' to the new channel: 'victoria/stable'
+                Upgrade 'designate-bind' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'designate-bind' to reach the idle state
                 Verify that the workload of 'designate-bind' has been upgraded on units: designate-bind/0, designate-bind/1
             Upgrade plan for 'glance' to 'victoria'
@@ -107,7 +107,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'glance/2'
                 Refresh 'glance' to the latest revision of 'ussuri/stable'
                 Change charm config of 'glance' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'glance' to the new channel: 'victoria/stable'
+                Upgrade 'glance' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'glance' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'glance' to reach the idle state
                 Verify that the workload of 'glance' has been upgraded on units: glance/0, glance/1, glance/2
@@ -117,7 +117,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'gnocchi/1'
                     Ψ Upgrade software packages on unit 'gnocchi/2'
                 Change charm config of 'gnocchi' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'gnocchi' to the new channel: 'victoria/stable'
+                Upgrade 'gnocchi' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'gnocchi' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'gnocchi' to reach the idle state
                 Verify that the workload of 'gnocchi' has been upgraded on units: gnocchi/0, gnocchi/1, gnocchi/2
@@ -127,7 +127,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'heat/1'
                     Ψ Upgrade software packages on unit 'heat/2'
                 Change charm config of 'heat' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'heat' to the new channel: 'victoria/stable'
+                Upgrade 'heat' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'heat' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'heat' to reach the idle state
                 Verify that the workload of 'heat' has been upgraded on units: heat/0, heat/1, heat/2
@@ -137,7 +137,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'neutron-api/1'
                     Ψ Upgrade software packages on unit 'neutron-api/2'
                 Change charm config of 'neutron-api' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'neutron-api' to the new channel: 'victoria/stable'
+                Upgrade 'neutron-api' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'neutron-api' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'neutron-api' to reach the idle state
                 Verify that the workload of 'neutron-api' has been upgraded on units: neutron-api/0, neutron-api/1, neutron-api/2
@@ -147,7 +147,6 @@ plan: |
                     Ψ Upgrade software packages on unit 'ovn-central/1'
                     Ψ Upgrade software packages on unit 'ovn-central/2'
                 WARNING: Changing 'ovn-central' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'ovn-central' to the new channel: '22.03/stable'
                 Change charm config of 'ovn-central' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ovn-central' to reach the idle state
                 Verify that the workload of 'ovn-central' has been upgraded on units: ovn-central/0, ovn-central/1, ovn-central/2
@@ -157,7 +156,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'placement/1'
                     Ψ Upgrade software packages on unit 'placement/2'
                 Change charm config of 'placement' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'placement' to the new channel: 'victoria/stable'
+                Upgrade 'placement' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'placement' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'placement' to reach the idle state
                 Verify that the workload of 'placement' has been upgraded on units: placement/0, placement/1, placement/2
@@ -167,7 +166,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-cloud-controller/1'
                     Ψ Upgrade software packages on unit 'nova-cloud-controller/2'
                 Change charm config of 'nova-cloud-controller' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'nova-cloud-controller' to the new channel: 'victoria/stable'
+                Upgrade 'nova-cloud-controller' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-cloud-controller' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'nova-cloud-controller' to reach the idle state
                 Verify that the workload of 'nova-cloud-controller' has been upgraded on units: nova-cloud-controller/0, nova-cloud-controller/1, nova-cloud-controller/2
@@ -178,7 +177,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'openstack-dashboard/2'
                 Refresh 'openstack-dashboard' to the latest revision of 'ussuri/stable'
                 Change charm config of 'openstack-dashboard' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'openstack-dashboard' to the new channel: 'victoria/stable'
+                Upgrade 'openstack-dashboard' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'openstack-dashboard' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'openstack-dashboard' to reach the idle state
                 Verify that the workload of 'openstack-dashboard' has been upgraded on units: openstack-dashboard/0, openstack-dashboard/1, openstack-dashboard/2
@@ -188,14 +187,14 @@ plan: |
                     Ψ Upgrade software packages on unit 'octavia/1'
                     Ψ Upgrade software packages on unit 'octavia/2'
                 Change charm config of 'octavia' 'action-managed-upgrade' from 'True' to 'False'
-                Upgrade 'octavia' to the new channel: 'victoria/stable'
+                Upgrade 'octavia' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'octavia' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'octavia' to reach the idle state
                 Verify that the workload of 'octavia' has been upgraded on units: octavia/0, octavia/1, octavia/2
             Upgrade plan for 'glance-simplestreams-sync' to 'victoria'
                 Upgrade software packages of 'glance-simplestreams-sync' from the current APT repositories
                     Ψ Upgrade software packages on unit 'glance-simplestreams-sync/0'
-                Upgrade 'glance-simplestreams-sync' to the new channel: 'victoria/stable'
+                Upgrade 'glance-simplestreams-sync' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'glance-simplestreams-sync' 'source' to 'cloud:focal-victoria'
             Upgrade plan for 'mysql-innodb-cluster' to 'victoria'
                 Upgrade software packages of 'mysql-innodb-cluster' from the current APT repositories
@@ -216,65 +215,64 @@ plan: |
                 Verify that the workload of 'vault' has been upgraded on units: vault/0, vault/1, vault/2
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'barbican-vault' to 'victoria'
-                Upgrade 'barbican-vault' to the new channel: 'victoria/stable'
+                Upgrade 'barbican-vault' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'ceph-dashboard' to 'victoria'
                 Refresh 'ceph-dashboard' to the latest revision of 'octopus/stable'
             Upgrade plan for 'cinder-ceph' to 'victoria'
                 Refresh 'cinder-ceph' to the latest revision of 'ussuri/stable'
-                Upgrade 'cinder-ceph' to the new channel: 'victoria/stable'
+                Upgrade 'cinder-ceph' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'hacluster-aodh' to 'victoria'
                 Refresh 'hacluster-aodh' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-aodh' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-aodh' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-barbican' to 'victoria'
                 Refresh 'hacluster-barbican' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-barbican' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-barbican' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-ceilometer' to 'victoria'
                 Refresh 'hacluster-ceilometer' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-ceilometer' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-ceilometer' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-ceph-radosgw' to 'victoria'
                 Refresh 'hacluster-ceph-radosgw' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-ceph-radosgw' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-ceph-radosgw' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-cinder' to 'victoria'
                 Refresh 'hacluster-cinder' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-cinder' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-cinder' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-designate' to 'victoria'
                 Refresh 'hacluster-designate' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-designate' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-designate' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-glance' to 'victoria'
                 Refresh 'hacluster-glance' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-glance' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-glance' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-gnocchi' to 'victoria'
                 Refresh 'hacluster-gnocchi' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-gnocchi' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-gnocchi' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-heat' to 'victoria'
                 Refresh 'hacluster-heat' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-heat' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-heat' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-keystone' to 'victoria'
                 Refresh 'hacluster-keystone' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-keystone' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-keystone' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-neutron-api' to 'victoria'
                 Refresh 'hacluster-neutron-api' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-neutron-api' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-neutron-api' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-nova-cloud-controller' to 'victoria'
                 Refresh 'hacluster-nova-cloud-controller' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-nova-cloud-controller' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-nova-cloud-controller' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-octavia' to 'victoria'
                 Refresh 'hacluster-octavia' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-octavia' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-octavia' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-openstack-dashboard' to 'victoria'
                 Refresh 'hacluster-openstack-dashboard' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-openstack-dashboard' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-openstack-dashboard' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-placement' to 'victoria'
                 Refresh 'hacluster-placement' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-placement' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-placement' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'hacluster-vault' to 'victoria'
                 Refresh 'hacluster-vault' to the latest revision of '2.0.3/stable'
-                Upgrade 'hacluster-vault' to the new channel: '2.4/stable'
+                Upgrade 'hacluster-vault' from '2.0.3/stable' to the new channel: '2.4/stable'
             Upgrade plan for 'openstack-loadbalancer-hacluster' to 'victoria'
                 WARNING: Changing 'openstack-loadbalancer-hacluster' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'openstack-loadbalancer-hacluster' to the new channel: '2.4/stable'
             Upgrade plan for 'keystone-saml-mellon' to 'victoria'
-                Upgrade 'keystone-saml-mellon' to the new channel: 'victoria/stable'
+                Upgrade 'keystone-saml-mellon' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'aodh-mysql-router' to 'victoria'
                 Refresh 'aodh-mysql-router' to the latest revision of '8.0/stable'
             Upgrade plan for 'barbican-mysql-router' to 'victoria'
@@ -304,15 +302,14 @@ plan: |
             Upgrade plan for 'vault-mysql-router' to 'victoria'
                 Refresh 'vault-mysql-router' to the latest revision of '8.0/stable'
             Upgrade plan for 'neutron-api-plugin-ovn' to 'victoria'
-                Upgrade 'neutron-api-plugin-ovn' to the new channel: 'victoria/stable'
+                Upgrade 'neutron-api-plugin-ovn' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'octavia-dashboard' to 'victoria'
-                Upgrade 'octavia-dashboard' to the new channel: 'victoria/stable'
+                Upgrade 'octavia-dashboard' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'octavia-diskimage-retrofit' to 'victoria'
                 Refresh 'octavia-diskimage-retrofit' to the latest revision of 'ussuri/stable'
-                Upgrade 'octavia-diskimage-retrofit' to the new channel: 'victoria/stable'
+                Upgrade 'octavia-diskimage-retrofit' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'octavia-ovn-chassis' to 'victoria'
                 WARNING: Changing 'octavia-ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'octavia-ovn-chassis' to the new channel: '22.03/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0, nova-compute/2, nova-compute/3] in 'az1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -323,7 +320,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute/2'
                     Ψ Upgrade software packages on unit 'nova-compute/3'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0, nova-compute/2, nova-compute/3
                     Ψ Upgrade plan for unit 'nova-compute/0'
@@ -355,7 +352,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute/6'
                     Ψ Upgrade software packages on unit 'nova-compute/8'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/1, nova-compute/6, nova-compute/8
                     Ψ Upgrade plan for unit 'nova-compute/1'
@@ -387,7 +384,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute/5'
                     Ψ Upgrade software packages on unit 'nova-compute/7'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Upgrade 'nova-compute' to the new channel: 'victoria/stable'
+                Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/4, nova-compute/5, nova-compute/7
                     Ψ Upgrade plan for unit 'nova-compute/4'
@@ -429,10 +426,9 @@ plan: |
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2, ceph-osd/3, ceph-osd/4, ceph-osd/5, ceph-osd/6, ceph-osd/7, ceph-osd/8
         Data Plane subordinate(s) upgrade plan
             Upgrade plan for 'ceilometer-agent' to 'victoria'
-                Upgrade 'ceilometer-agent' to the new channel: 'victoria/stable'
+                Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 WARNING: Changing 'ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'ovn-chassis' to the new channel: '22.03/stable'
 
 applications:
   rabbitmq-server:
@@ -470,17 +466,17 @@ applications:
         name: rabbitmq-server/0
         machine: 3/lxd/7
         workload_version: 3.8.2
-        os_version: yoga
+        o7k_version: yoga
       rabbitmq-server/1:
         name: rabbitmq-server/1
         machine: 7/lxd/7
         workload_version: 3.8.2
-        os_version: yoga
+        o7k_version: yoga
       rabbitmq-server/2:
         name: rabbitmq-server/2
         machine: 8/lxd/7
         workload_version: 3.8.2
-        os_version: yoga
+        o7k_version: yoga
     machines:
       8/lxd/7:
         id: 8/lxd/7
@@ -540,17 +536,17 @@ applications:
         name: ceph-mon/0
         machine: 2/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-mon/1:
         name: ceph-mon/1
         machine: 5/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-mon/2:
         name: ceph-mon/2
         machine: 6/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
     machines:
       2/lxd/1:
         id: 2/lxd/1
@@ -666,17 +662,17 @@ applications:
         name: keystone/0
         machine: 0/lxd/3
         workload_version: 17.0.1
-        os_version: ussuri
+        o7k_version: ussuri
       keystone/1:
         name: keystone/1
         machine: 1/lxd/3
         workload_version: 17.0.1
-        os_version: ussuri
+        o7k_version: ussuri
       keystone/2:
         name: keystone/2
         machine: 4/lxd/3
         workload_version: 17.0.1
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       1/lxd/3:
         id: 1/lxd/3
@@ -770,17 +766,17 @@ applications:
         name: aodh/0
         machine: 2/lxd/0
         workload_version: 10.0.0
-        os_version: ussuri
+        o7k_version: ussuri
       aodh/1:
         name: aodh/1
         machine: 5/lxd/0
         workload_version: 10.0.0
-        os_version: ussuri
+        o7k_version: ussuri
       aodh/2:
         name: aodh/2
         machine: 6/lxd/0
         workload_version: 10.0.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       5/lxd/0:
         id: 5/lxd/0
@@ -871,17 +867,17 @@ applications:
         name: barbican/0
         machine: 3/lxd/0
         workload_version: 10.1.0
-        os_version: ussuri
+        o7k_version: ussuri
       barbican/1:
         name: barbican/1
         machine: 7/lxd/0
         workload_version: 10.1.0
-        os_version: ussuri
+        o7k_version: ussuri
       barbican/2:
         name: barbican/2
         machine: 8/lxd/0
         workload_version: 10.1.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       7/lxd/0:
         id: 7/lxd/0
@@ -998,17 +994,17 @@ applications:
         name: ceilometer/0
         machine: 0/lxd/0
         workload_version: 14.1.0
-        os_version: ussuri
+        o7k_version: ussuri
       ceilometer/1:
         name: ceilometer/1
         machine: 1/lxd/0
         workload_version: 14.1.0
-        os_version: ussuri
+        o7k_version: ussuri
       ceilometer/2:
         name: ceilometer/2
         machine: 4/lxd/0
         workload_version: 14.1.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       1/lxd/0:
         id: 1/lxd/0
@@ -1100,17 +1096,17 @@ applications:
         name: ceph-radosgw/0
         machine: 3/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-radosgw/1:
         name: ceph-radosgw/1
         machine: 7/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-radosgw/2:
         name: ceph-radosgw/2
         machine: 8/lxd/1
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
     machines:
       7/lxd/1:
         id: 7/lxd/1
@@ -1221,17 +1217,17 @@ applications:
         name: cinder/0
         machine: 0/lxd/1
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
       cinder/1:
         name: cinder/1
         machine: 1/lxd/1
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
       cinder/2:
         name: cinder/2
         machine: 4/lxd/1
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       4/lxd/1:
         id: 4/lxd/1
@@ -1325,17 +1321,17 @@ applications:
         name: designate/0
         machine: 2/lxd/2
         workload_version: 10.0.2
-        os_version: ussuri
+        o7k_version: ussuri
       designate/1:
         name: designate/1
         machine: 5/lxd/2
         workload_version: 10.0.2
-        os_version: ussuri
+        o7k_version: ussuri
       designate/2:
         name: designate/2
         machine: 6/lxd/2
         workload_version: 10.0.2
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       6/lxd/2:
         id: 6/lxd/2
@@ -1395,12 +1391,12 @@ applications:
         name: designate-bind/0
         machine: 1/lxd/4
         workload_version: 9.16.1
-        os_version: ussuri
+        o7k_version: ussuri
       designate-bind/1:
         name: designate-bind/1
         machine: 4/lxd/4
         workload_version: 9.16.1
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       4/lxd/4:
         id: 4/lxd/4
@@ -1500,17 +1496,17 @@ applications:
         name: glance/0
         machine: 0/lxd/2
         workload_version: 20.2.0
-        os_version: ussuri
+        o7k_version: ussuri
       glance/1:
         name: glance/1
         machine: 1/lxd/2
         workload_version: 20.2.0
-        os_version: ussuri
+        o7k_version: ussuri
       glance/2:
         name: glance/2
         machine: 4/lxd/2
         workload_version: 20.2.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       0/lxd/2:
         id: 0/lxd/2
@@ -1601,17 +1597,17 @@ applications:
         name: gnocchi/0
         machine: 2/lxd/3
         workload_version: 4.3.4
-        os_version: ussuri
+        o7k_version: ussuri
       gnocchi/1:
         name: gnocchi/1
         machine: 5/lxd/3
         workload_version: 4.3.4
-        os_version: ussuri
+        o7k_version: ussuri
       gnocchi/2:
         name: gnocchi/2
         machine: 6/lxd/4
         workload_version: 4.3.4
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       5/lxd/3:
         id: 5/lxd/3
@@ -1725,17 +1721,17 @@ applications:
         name: heat/0
         machine: 3/lxd/3
         workload_version: 14.2.0
-        os_version: ussuri
+        o7k_version: ussuri
       heat/1:
         name: heat/1
         machine: 7/lxd/4
         workload_version: 14.2.0
-        os_version: ussuri
+        o7k_version: ussuri
       heat/2:
         name: heat/2
         machine: 8/lxd/3
         workload_version: 14.2.0
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       7/lxd/4:
         id: 7/lxd/4
@@ -1849,17 +1845,17 @@ applications:
         name: neutron-api/0
         machine: 3/lxd/4
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
       neutron-api/1:
         name: neutron-api/1
         machine: 7/lxd/5
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
       neutron-api/2:
         name: neutron-api/2
         machine: 8/lxd/5
         workload_version: 16.4.2
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       3/lxd/4:
         id: 3/lxd/4
@@ -1945,17 +1941,17 @@ applications:
         name: ovn-central/0
         machine: 0/lxd/5
         workload_version: 22.03.2
-        os_version: victoria
+        o7k_version: victoria
       ovn-central/1:
         name: ovn-central/1
         machine: 1/lxd/7
         workload_version: 22.03.2
-        os_version: victoria
+        o7k_version: victoria
       ovn-central/2:
         name: ovn-central/2
         machine: 4/lxd/7
         workload_version: 22.03.2
-        os_version: victoria
+        o7k_version: victoria
     machines:
       0/lxd/5:
         id: 0/lxd/5
@@ -2037,17 +2033,17 @@ applications:
         name: placement/0
         machine: 2/lxd/6
         workload_version: 3.0.1
-        os_version: ussuri
+        o7k_version: ussuri
       placement/1:
         name: placement/1
         machine: 5/lxd/6
         workload_version: 3.0.1
-        os_version: ussuri
+        o7k_version: ussuri
       placement/2:
         name: placement/2
         machine: 6/lxd/8
         workload_version: 3.0.1
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       5/lxd/6:
         id: 5/lxd/6
@@ -2161,17 +2157,17 @@ applications:
         name: nova-cloud-controller/0
         machine: 0/lxd/4
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-cloud-controller/1:
         name: nova-cloud-controller/1
         machine: 1/lxd/5
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-cloud-controller/2:
         name: nova-cloud-controller/2
         machine: 4/lxd/5
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       4/lxd/5:
         id: 4/lxd/5
@@ -2285,17 +2281,17 @@ applications:
         name: openstack-dashboard/0
         machine: 3/lxd/5
         workload_version: 18.3.5
-        os_version: ussuri
+        o7k_version: ussuri
       openstack-dashboard/1:
         name: openstack-dashboard/1
         machine: 7/lxd/6
         workload_version: 18.3.5
-        os_version: ussuri
+        o7k_version: ussuri
       openstack-dashboard/2:
         name: openstack-dashboard/2
         machine: 8/lxd/6
         workload_version: 18.3.5
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       7/lxd/6:
         id: 7/lxd/6
@@ -2389,17 +2385,17 @@ applications:
         name: octavia/0
         machine: 2/lxd/5
         workload_version: 6.2.2
-        os_version: ussuri
+        o7k_version: ussuri
       octavia/1:
         name: octavia/1
         machine: 5/lxd/5
         workload_version: 6.2.2
-        os_version: ussuri
+        o7k_version: ussuri
       octavia/2:
         name: octavia/2
         machine: 6/lxd/6
         workload_version: 6.2.2
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       6/lxd/6:
         id: 6/lxd/6
@@ -2634,7 +2630,7 @@ applications:
         name: glance-simplestreams-sync/0
         machine: 7/lxd/3
         workload_version: ''
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       7/lxd/3:
         id: 7/lxd/3
@@ -3725,17 +3721,17 @@ applications:
         name: mysql-innodb-cluster/0
         machine: 2/lxd/4
         workload_version: 8.0.30
-        os_version: yoga
+        o7k_version: yoga
       mysql-innodb-cluster/1:
         name: mysql-innodb-cluster/1
         machine: 5/lxd/4
         workload_version: 8.0.30
-        os_version: yoga
+        o7k_version: yoga
       mysql-innodb-cluster/2:
         name: mysql-innodb-cluster/2
         machine: 6/lxd/5
         workload_version: 8.0.30
-        os_version: yoga
+        o7k_version: yoga
     machines:
       5/lxd/4:
         id: 5/lxd/4
@@ -5200,17 +5196,17 @@ applications:
         name: vault/0
         machine: '10'
         workload_version: 1.7.9
-        os_version: yoga
+        o7k_version: yoga
       vault/1:
         name: vault/1
         machine: '11'
         workload_version: 1.7.9
-        os_version: yoga
+        o7k_version: yoga
       vault/2:
         name: vault/2
         machine: '9'
         workload_version: 1.7.9
-        os_version: yoga
+        o7k_version: yoga
     machines:
       '11':
         id: '11'
@@ -5306,47 +5302,47 @@ applications:
         name: nova-compute/0
         machine: '0'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/1:
         name: nova-compute/1
         machine: '1'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/2:
         name: nova-compute/2
         machine: '2'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/3:
         name: nova-compute/3
         machine: '3'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/4:
         name: nova-compute/4
         machine: '4'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/5:
         name: nova-compute/5
         machine: '5'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/6:
         name: nova-compute/6
         machine: '6'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/7:
         name: nova-compute/7
         machine: '7'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
       nova-compute/8:
         name: nova-compute/8
         machine: '8'
         workload_version: 21.2.4
-        os_version: ussuri
+        o7k_version: ussuri
     machines:
       '5':
         id: '5'
@@ -5588,47 +5584,47 @@ applications:
         name: ceph-osd/0
         machine: '0'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/1:
         name: ceph-osd/1
         machine: '1'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/2:
         name: ceph-osd/2
         machine: '2'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/3:
         name: ceph-osd/3
         machine: '3'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/4:
         name: ceph-osd/4
         machine: '4'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/5:
         name: ceph-osd/5
         machine: '5'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/6:
         name: ceph-osd/6
         machine: '6'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/7:
         name: ceph-osd/7
         machine: '7'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
       ceph-osd/8:
         name: ceph-osd/8
         machine: '8'
         workload_version: 15.2.16
-        os_version: victoria
+        o7k_version: victoria
     machines:
       '2':
         id: '2'

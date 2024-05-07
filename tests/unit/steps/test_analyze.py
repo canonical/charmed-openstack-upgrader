@@ -50,17 +50,17 @@ def test_analysis_dump(model):
               name: keystone/0
               machine: '0'
               workload_version: 17.0.1
-              os_version: ussuri
+              o7k_version: ussuri
             keystone/1:
               name: keystone/1
               machine: '1'
               workload_version: 17.0.1
-              os_version: ussuri
+              o7k_version: ussuri
             keystone/2:
               name: keystone/2
               machine: '2'
               workload_version: 17.0.1
-              os_version: ussuri
+              o7k_version: ussuri
           machines:
             '0':
               id: '0'
@@ -92,17 +92,17 @@ def test_analysis_dump(model):
               name: cinder/0
               machine: '0'
               workload_version: 16.4.2
-              os_version: ussuri
+              o7k_version: ussuri
             cinder/1:
               name: cinder/1
               machine: '1'
               workload_version: 16.4.2
-              os_version: ussuri
+              o7k_version: ussuri
             cinder/2:
               name: cinder/2
               machine: '2'
               workload_version: 16.4.2
-              os_version: ussuri
+              o7k_version: ussuri
           machines:
             '0':
               id: '0'
@@ -134,7 +134,7 @@ def test_analysis_dump(model):
               name: rabbitmq-server/0
               machine: '0'
               workload_version: '3.8'
-              os_version: yoga
+              o7k_version: yoga
           machines:
             '0':
               id: '0'
@@ -323,14 +323,14 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
     assert result.model == model
     assert result.apps_control_plane == exp_apps
     assert result.apps_data_plane == []
-    assert result.min_os_version_control_plane == OpenStackRelease("ussuri")
-    assert result.min_os_version_data_plane is None
-    assert result.current_cloud_os_release == "ussuri"
+    assert result.min_o7k_version_control_plane == OpenStackRelease("ussuri")
+    assert result.min_o7k_version_data_plane is None
+    assert result.current_cloud_o7k_release == "ussuri"
     assert result.current_cloud_series == "focal"
 
 
 @pytest.mark.asyncio
-async def test_analysis_detect_current_cloud_os_release_different_releases(model):
+async def test_analysis_detect_current_cloud_o7k_release_different_releases(model):
     machines = {"0": MagicMock(spec_set=Machine)}
     keystone = Keystone(
         name="keystone",
@@ -398,8 +398,8 @@ async def test_analysis_detect_current_cloud_os_release_different_releases(model
         apps_data_plane=[],
     )
 
-    # current_cloud_os_release takes the minimum OpenStack version
-    assert result.current_cloud_os_release == "ussuri"
+    # current_cloud_o7k_release takes the minimum OpenStack version
+    assert result.current_cloud_o7k_release == "ussuri"
 
 
 @pytest.mark.asyncio
@@ -472,7 +472,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         apps_data_plane=[],
     )
 
-    assert result.current_cloud_os_release == "ussuri"
+    assert result.current_cloud_o7k_release == "ussuri"
     assert result.current_cloud_series == "bionic"
 
 
@@ -551,7 +551,7 @@ def test_split_apps(exp_control_plane, exp_data_plane):
         ("latest/stable", "latest/stable", "ch", "wallaby"),
     ],
 )
-def test_min_os_release_apps(model, channel_keystone, channel_gnocchi, origin, exp_release):
+def test_min_o7k_release_apps(model, channel_keystone, channel_gnocchi, origin, exp_release):
     """Test to evaluate the Openstack release from a list of apps."""
     machines = {f"{i}": generate_cou_machine(f"{i}") for i in range(3)}
 
@@ -597,4 +597,4 @@ def test_min_os_release_apps(model, channel_keystone, channel_gnocchi, origin, e
         workload_version="4.3.0",
     )
 
-    assert Analysis.min_os_release_apps([keystone, gnocchi]) == exp_release
+    assert Analysis.min_o7k_release_apps([keystone, gnocchi]) == exp_release
