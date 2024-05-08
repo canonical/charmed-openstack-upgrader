@@ -21,6 +21,10 @@ apps:
       - ssh-public-keys
       - dot-local-share-cou
 
+architectures:
+  - build-on: arm64
+  - build-on: amd64
+
 parts:
   cou-wrapper:
     plugin: dump

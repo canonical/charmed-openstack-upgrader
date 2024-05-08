@@ -86,15 +86,34 @@ jobs:
         uses: canonical/setup-lxd@v0.1.1
         with:
           channel: latest/stable
-      - name: Install snapcraft
-        run: sudo snap install snapcraft --classic
+      - name: Install dependencie
+        run: |
+          sudo snap install snapcraft --classic
+          # Setup Launchpad credentials
+          mkdir -p ~/.local/share/snapcraft
+          echo -e "$LAUNCHPAD_TOKEN" >> ~/.local/share/snapcraft/launchpad-credentials
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "Github Actions"
       - name: Build snap
-        run: make build
-      - name: Upload the built snap as an artifact
+        run: snapcraft remote-build --launchpad-accept-public-upload
+      - name: Find and upload artifacts
+        run: |
+          # Use find command to find files matching the pattern
+          find ./ -name '*.snap' -type f -exec sh -c 'echo "Uploading {}" && echo "::set-env name=ARTIFACT_PATH::{}"' \;
+
+          # Upload each artifact found
+          while IFS= read -r artifact; do
+            echo "Uploading $artifact"
+            echo "::set-env name=ARTIFACT_NAME::$(basename $artifact)"
+            echo "::set-env name=ARTIFACT_PATH::$artifact"
+            echo "::add-path::$artifact"
+          done < <(echo $ARTIFACT_PATH)
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SNAP_FILE
-          path: charmed-openstack-upgrader.snap
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_PATH }}
 
   func:
     name: Functional tests
