@@ -87,6 +87,8 @@ jobs:
         with:
           channel: latest/stable
       - name: Install dependencies
+        env:
+          SNAPCRAFT_REMOTE_BUILD_STRATEGY: force-fallback
         run: |
           sudo snap install snapcraft --classic
           # Setup Launchpad credentials
