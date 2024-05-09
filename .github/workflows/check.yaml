@@ -118,7 +118,7 @@ jobs:
 
   func:
     name: Functional tests
-    needs: snap-build
+    needs: build-amd64
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
