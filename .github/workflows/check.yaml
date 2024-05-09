@@ -65,7 +65,7 @@ jobs:
     - name: Run mocked-plans tests
       run: tox -e mocked-plans
 
-  snap-build:
+  build-amd64:
     name: Build snap package
     needs: lint-unit
     runs-on: ubuntu-latest
@@ -95,6 +95,26 @@ jobs:
         with:
           name: SNAP_FILE
           path: charmed-openstack-upgrader.snap
+
+  build-arm64:
+    needs: lint-unit
+    name: Build snap arm64
+    runs-on: [self-hosted, ARM64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build snap locally
+        uses: snapcore/action-build@v1
+        id: snapcraft
+
+      - name: Upload locally built snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-${{ steps.snapcraft.outputs.snap }}
+          path: ${{ steps.snapcraft.outputs.snap }}
+
 
   func:
     name: Functional tests
