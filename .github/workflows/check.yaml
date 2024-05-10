@@ -179,6 +179,6 @@ jobs:
       - name: Download snap file artifact
         uses: actions/download-artifact@v4
         with:
-          name: local-${{ needs.build-arm64.outputs.snap }}
+          name: local-${{ needs.build-arm64.outputs.snap-arm64 }}
       - name: Run func tests
         run: TEST_SNAP=$GITHUB_WORKSPACE/local-${{ needs.build-arm64.outputs.snap }} tox -e func
