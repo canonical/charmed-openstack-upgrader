@@ -168,6 +168,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Install jq
+        run: sudo snap install jq
+      - name: Install juju-crashdump
+        run: sudo snap install juju-crashdump --classic
       - name: Setup Juju 2.9/stable environment
         uses: charmed-kubernetes/actions-operator@main
         with:
