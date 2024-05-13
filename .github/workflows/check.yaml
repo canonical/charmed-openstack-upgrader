@@ -99,7 +99,7 @@ jobs:
   build-arm64:
     name: Build snap arm64
     needs: lint-unit
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ARM64]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -124,7 +124,7 @@ jobs:
       - name: Upload the built snap as an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SNAP_FILE
+          name: charmed-openstack-upgrader_arm64.snap
           path: charmed-openstack-upgrader_arm64.snap
 
 
@@ -162,7 +162,7 @@ jobs:
   func-arm64:
     name: Functional tests arm64
     needs: build-arm64
-    runs-on: [self-hosted, large, ARM64]
+    runs-on: [self-hosted, ARM64]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
@@ -186,6 +186,6 @@ jobs:
       - name: Download snap file artifact
         uses: actions/download-artifact@v4
         with:
-          name: SNAP_FILE
+          name: charmed-openstack-upgrader_arm64.snap
       - name: Run func tests
         run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader_arm64.snap tox -e func
