@@ -5,7 +5,7 @@
     "controller": "serverstack-serverstack",
     "cloud": "serverstack",
     "region": "serverstack",
-    "version": "2.9.42",
+    "version": "3.4.2",
     "model-status": {
       "current": "available",
       "since": "12 Jul 2023 12:36:01+03:00"
@@ -17,7 +17,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:15+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-0",
       "dns-name": "10.5.0.61",
@@ -28,14 +28,17 @@
       "instance-id": "03e7d6e2-eb4a-4a09-8fb2-4698d0b5d71b",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:52+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:37:57+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -62,7 +65,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:16+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-1",
       "dns-name": "10.5.0.119",
@@ -73,14 +76,17 @@
       "instance-id": "35c00523-2803-4554-a963-b3c609d93308",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:52+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:37:58+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -107,7 +113,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:43+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-10",
       "dns-name": "10.5.0.38",
@@ -118,14 +124,17 @@
       "instance-id": "855e53b6-ffa2-47ec-9c77-264cf76f04e9",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:58+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:38:00+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -152,7 +161,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:26+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-11",
       "dns-name": "10.5.0.6",
@@ -163,14 +172,17 @@
       "instance-id": "68bc1d80-0c9b-4699-a8c5-80d2e53c5961",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:58+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:38:01+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -197,7 +209,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:32+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-2",
       "dns-name": "10.5.0.72",
@@ -208,14 +220,17 @@
       "instance-id": "63de6c52-809c-4c82-a4f9-0e72f5b0f791",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:52+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:37:58+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -242,7 +257,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:38:58+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-3",
       "dns-name": "10.5.0.40",
@@ -253,14 +268,17 @@
       "instance-id": "f8e7c796-abce-440a-bf10-b0d6ab83a1f0",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:23+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:37:58+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -287,7 +305,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:10+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-4",
       "dns-name": "10.5.0.139",
@@ -298,14 +316,17 @@
       "instance-id": "9ad440c6-551b-42ae-8294-e11b0c281cb7",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:52+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:37:58+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -332,7 +353,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:38:59+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-5",
       "dns-name": "10.5.0.157",
@@ -343,14 +364,17 @@
       "instance-id": "fdeb8ae2-eab6-4c8d-9028-cfb50047e121",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:52+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:37:59+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -377,7 +401,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:21+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-6",
       "dns-name": "10.5.0.112",
@@ -388,14 +412,17 @@
       "instance-id": "58cd351c-0669-4cc2-a50c-56f4c40f15de",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:52+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:37:59+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -422,7 +449,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:23+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-7",
       "dns-name": "10.5.0.198",
@@ -433,14 +460,17 @@
       "instance-id": "b32cd7af-1c19-4d53-99a0-c9770668fae2",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:53+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:37:59+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -467,7 +497,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:25+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-8",
       "dns-name": "10.5.0.131",
@@ -478,14 +508,17 @@
       "instance-id": "cde7c9d7-8e4d-42a7-b4d1-30bf844ecd81",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:58+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:38:00+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -512,7 +545,7 @@
       "juju-status": {
         "current": "started",
         "since": "12 Jul 2023 12:39:25+03:00",
-        "version": "2.9.42"
+        "version": "3.4.2"
       },
       "hostname": "juju-75b9b3-zaza-0228b5aec1cf-9",
       "dns-name": "10.5.0.151",
@@ -523,14 +556,17 @@
       "instance-id": "e10f4232-2ab5-4248-884f-b85754132c3d",
       "machine-status": {
         "current": "running",
-        "message": "ACTIVE",
+        "message": "Running",
         "since": "12 Jul 2023 12:38:58+03:00"
       },
       "modification-status": {
-        "current": "idle",
+        "current": "applied",
         "since": "12 Jul 2023 12:38:00+03:00"
       },
-      "series": "focal",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "network-interfaces": {
         "ens3": {
           "ip-addresses": [
@@ -557,8 +593,10 @@
   "applications": {
     "cinder": {
       "charm": "cinder",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "cinder",
       "charm-rev": 633,
@@ -600,7 +638,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 13:01:04+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "7",
@@ -618,7 +656,7 @@
               "juju-status": {
                 "current": "idle",
                 "since": "12 Jul 2023 12:58:25+03:00",
-                "version": "2.9.42"
+                "version": "3.4.2"
               },
               "leader": true,
               "public-address": "10.5.0.198"
@@ -649,8 +687,10 @@
     },
     "cinder-mysql-router": {
       "charm": "mysql-router",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "mysql-router",
       "charm-rev": 90,
@@ -684,8 +724,10 @@
     },
     "glance": {
       "charm": "glance",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "glance",
       "charm-rev": 567,
@@ -725,7 +767,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 12:59:18+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "10",
@@ -743,7 +785,7 @@
               "juju-status": {
                 "current": "idle",
                 "since": "12 Jul 2023 12:51:14+03:00",
-                "version": "2.9.42"
+                "version": "3.4.2"
               },
               "leader": true,
               "public-address": "10.5.0.38"
@@ -773,8 +815,10 @@
     },
     "glance-mysql-router": {
       "charm": "mysql-router",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "mysql-router",
       "charm-rev": 90,
@@ -808,8 +852,10 @@
     },
     "keystone": {
       "charm": "keystone",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "keystone",
       "charm-rev": 652,
@@ -845,7 +891,7 @@
           "juju-status": {
             "current": "idle",
             "since": "14 Jul 2023 07:25:03+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "11",
@@ -863,7 +909,7 @@
               "juju-status": {
                 "current": "idle",
                 "since": "12 Jul 2023 12:51:03+03:00",
-                "version": "2.9.42"
+                "version": "3.4.2"
               },
               "leader": true,
               "public-address": "10.5.0.6"
@@ -894,8 +940,10 @@
     },
     "keystone-mysql-router": {
       "charm": "mysql-router",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "mysql-router",
       "charm-rev": 90,
@@ -929,8 +977,10 @@
     },
     "mysql": {
       "charm": "mysql-innodb-cluster",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "mysql-innodb-cluster",
       "charm-rev": 56,
@@ -968,7 +1018,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 12:55:31+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "0",
@@ -983,7 +1033,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 12:55:31+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "machine": "1",
           "public-address": "10.5.0.119"
@@ -997,7 +1047,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 12:55:52+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "machine": "2",
           "public-address": "10.5.0.72"
@@ -1016,8 +1066,10 @@
     },
     "neutron-api": {
       "charm": "neutron-api",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "neutron-api",
       "charm-rev": 541,
@@ -1059,7 +1111,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 12:59:45+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "4",
@@ -1077,7 +1129,7 @@
               "juju-status": {
                 "current": "idle",
                 "since": "12 Jul 2023 12:54:17+03:00",
-                "version": "2.9.42"
+                "version": "3.4.2"
               },
               "leader": true,
               "public-address": "10.5.0.139"
@@ -1111,8 +1163,10 @@
     },
     "neutron-api-mysql-router": {
       "charm": "mysql-router",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "mysql-router",
       "charm-rev": 90,
@@ -1146,8 +1200,10 @@
     },
     "neutron-gateway": {
       "charm": "neutron-gateway",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "neutron-gateway",
       "charm-rev": 522,
@@ -1182,7 +1238,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 13:03:57+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "3",
@@ -1204,8 +1260,10 @@
     },
     "neutron-openvswitch": {
       "charm": "neutron-openvswitch",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "neutron-openvswitch",
       "charm-rev": 526,
@@ -1243,8 +1301,10 @@
     },
     "nova-cloud-controller": {
       "charm": "nova-cloud-controller",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "nova-cloud-controller",
       "charm-rev": 672,
@@ -1297,7 +1357,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 13:04:53+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "6",
@@ -1316,7 +1376,7 @@
               "juju-status": {
                 "current": "idle",
                 "since": "12 Jul 2023 12:52:07+03:00",
-                "version": "2.9.42"
+                "version": "3.4.2"
               },
               "leader": true,
               "public-address": "10.5.0.112"
@@ -1353,8 +1413,10 @@
     },
     "nova-cloud-controller-mysql-router": {
       "charm": "mysql-router",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "mysql-router",
       "charm-rev": 90,
@@ -1388,8 +1450,10 @@
     },
     "nova-compute": {
       "charm": "nova-compute",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "nova-compute",
       "charm-rev": 669,
@@ -1428,7 +1492,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 13:04:07+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "5",
@@ -1443,7 +1507,7 @@
               "juju-status": {
                 "current": "idle",
                 "since": "12 Jul 2023 13:00:07+03:00",
-                "version": "2.9.42"
+                "version": "3.4.2"
               },
               "leader": true,
               "public-address": "10.5.0.157"
@@ -1474,8 +1538,10 @@
     },
     "placement": {
       "charm": "placement",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "placement",
       "charm-rev": 81,
@@ -1511,7 +1577,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 12:59:25+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "8",
@@ -1529,7 +1595,7 @@
               "juju-status": {
                 "current": "idle",
                 "since": "12 Jul 2023 12:51:24+03:00",
-                "version": "2.9.42"
+                "version": "3.4.2"
               },
               "leader": true,
               "public-address": "10.5.0.131"
@@ -1554,8 +1620,10 @@
     },
     "placement-mysql-router": {
       "charm": "mysql-router",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "mysql-router",
       "charm-rev": 90,
@@ -1589,8 +1657,10 @@
     },
     "rabbitmq-server": {
       "charm": "rabbitmq-server",
-      "series": "focal",
-      "os": "ubuntu",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
       "charm-origin": "charmhub",
       "charm-name": "rabbitmq-server",
       "charm-rev": 176,
@@ -1625,7 +1695,7 @@
           "juju-status": {
             "current": "idle",
             "since": "12 Jul 2023 12:54:31+03:00",
-            "version": "2.9.42"
+            "version": "3.4.2"
           },
           "leader": true,
           "machine": "9",
@@ -1646,104 +1716,7 @@
       }
     }
   },
-  "storage": {
-    "storage": {
-      "block-devices/0": {
-        "kind": "block",
-        "life": "alive",
-        "status": {
-          "current": "attached",
-          "since": "12 Jul 2023 12:39:23+03:00"
-        },
-        "persistent": false,
-        "attachments": {
-          "units": {
-            "cinder/0": {
-              "machine": "7",
-              "location": "/dev/loop3",
-              "life": "alive"
-            }
-          }
-        }
-      },
-      "ephemeral-device/1": {
-        "kind": "block",
-        "life": "alive",
-        "status": {
-          "current": "attached",
-          "since": "12 Jul 2023 12:39:01+03:00"
-        },
-        "persistent": false,
-        "attachments": {
-          "units": {
-            "nova-compute/0": {
-              "machine": "5",
-              "location": "/dev/disk/by-uuid/1f5578a3-0f07-458d-9a65-356289adf618",
-              "life": "alive"
-            }
-          }
-        }
-      }
-    },
-    "volumes": {
-      "5/1": {
-        "provider-id": "volume-5-1",
-        "storage": "ephemeral-device/1",
-        "attachments": {
-          "machines": {
-            "5": {
-              "device": "loop3",
-              "read-only": false,
-              "life": "alive"
-            }
-          },
-          "units": {
-            "nova-compute/0": {
-              "machine": "5",
-              "location": "/dev/disk/by-uuid/1f5578a3-0f07-458d-9a65-356289adf618",
-              "life": "alive"
-            }
-          }
-        },
-        "pool": "loop",
-        "size": 10240,
-        "persistent": false,
-        "life": "alive",
-        "status": {
-          "current": "attached",
-          "since": "12 Jul 2023 12:39:01+03:00"
-        }
-      },
-      "7/0": {
-        "provider-id": "volume-7-0",
-        "storage": "block-devices/0",
-        "attachments": {
-          "machines": {
-            "7": {
-              "device": "loop3",
-              "read-only": false,
-              "life": "alive"
-            }
-          },
-          "units": {
-            "cinder/0": {
-              "machine": "7",
-              "location": "/dev/loop3",
-              "life": "alive"
-            }
-          }
-        },
-        "pool": "loop",
-        "size": 10240,
-        "persistent": false,
-        "life": "alive",
-        "status": {
-          "current": "attached",
-          "since": "12 Jul 2023 12:39:23+03:00"
-        }
-      }
-    }
-  },
+  "storage": {},
   "controller": {
     "timestamp": "07:25:20+03:00"
   }
