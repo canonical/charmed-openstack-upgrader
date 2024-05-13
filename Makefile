@@ -6,7 +6,7 @@ PYTHON := /usr/bin/python3
 
 PROJECTPATH=$(dir $(realpath ${MAKEFILE_LIST}))
 SNAP_NAME=$(shell cat ${PROJECTPATH}/snap/snapcraft.yaml | grep -E '^name:' | awk '{print $$2}')
-SNAP_FILE=${PROJECTPATH}/${SNAP_NAME}.snap
+SNAP_FILE=$(shell ls *.snap)
 
 help:
 	@echo "This project supports the following targets"
@@ -47,6 +47,7 @@ clean:
 	@echo "Cleaning snap"
 	@snapcraft clean --use-lxd
 	@echo "Cleaning existing snap builds"
+	@echo "${SNAP_FILE}"
 	@rm -rf ${SNAP_FILE}
 
 dev-environment:

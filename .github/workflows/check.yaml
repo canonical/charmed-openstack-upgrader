@@ -2,11 +2,6 @@ name: Check workflow running linter, unit and functional tests
 
 on:
   workflow_call:
-    outputs:
-      snap-arm64:
-        description: "Filename of the built arm64 snap artifact"
-        value: ${{ jobs.build-arm64.outputs.snap }}
-
   workflow_dispatch:
   pull_request:
     types: [ opened, synchronize, reopened ]
@@ -70,8 +65,39 @@ jobs:
     - name: Run mocked-plans tests
       run: tox -e mocked-plans
 
-  build-amd64:
-    name: Build snap amd64
+  # build-amd64:
+  #   name: Build snap amd64
+  #   needs: lint-unit
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: true
+  #     - name: Setup Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.10'
+  #     - name: Install tox
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         python -m pip install tox
+  #     - name: Setup LXD
+  #       uses: canonical/setup-lxd@v0.1.1
+  #       with:
+  #         channel: latest/stable
+  #     - name: Install snapcraft
+  #       run: sudo snap install snapcraft --classic
+  #     - name: Build snap
+  #       run: make build
+  #     - name: Upload the built snap as an artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: SNAP_FILE
+  #         path: charmed-openstack-upgrader_amd64.snap
+
+  build-arm64:
+    name: Build snap arm64
     needs: lint-unit
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -99,41 +125,49 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SNAP_FILE
-          path: charmed-openstack-upgrader.snap
-
-  build-arm64:
-    needs: lint-unit
-    name: Build snap arm64
-    runs-on: [self-hosted, ARM64]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Build snap locally
-        uses: snapcore/action-build@v1
-        id: snapcraft
-
-      - name: Upload locally built snap artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: local-${{ steps.snapcraft.outputs.snap }}
-          path: ${{ steps.snapcraft.outputs.snap }}
+          path: charmed-openstack-upgrader_arm64.snap
 
 
-  func-amd64:
-    name: Functional tests amd64
-    needs: build-amd64
-    runs-on: ubuntu-latest
+  # func-amd64:
+  #   name: Functional tests amd64
+  #   needs: build-amd64
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 120
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: true
+  #     - name: Setup Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.10'
+  #     - name: Setup Juju 2.9/stable environment
+  #       uses: charmed-kubernetes/actions-operator@main
+  #       with:
+  #         provider: lxd
+  #         juju-channel: 2.9/stable
+  #     - name: Remove tox install by actions-operator
+  #       run: sudo apt remove tox -y
+  #     - name: Install tox
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         python -m pip install tox
+  #     - name: Download snap file artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: SNAP_FILE
+  #     - name: Run func tests
+  #       run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader_amd64.snap tox -e func
+
+  func-arm64:
+    name: Functional tests arm64
+    needs: build-arm64
+    runs-on: [self-hosted, large, ARM64]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
       - name: Setup Juju 2.9/stable environment
         uses: charmed-kubernetes/actions-operator@main
         with:
@@ -150,35 +184,4 @@ jobs:
         with:
           name: SNAP_FILE
       - name: Run func tests
-        run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader.snap tox -e func
-
-  func-arm64:
-    name: Functional tests arm64
-    needs: build-arm64
-    runs-on: [self-hosted, large, ARM64]
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - name: Install jq
-        run: sudo snap install jq
-      - name: Install juju-crashdump
-        run: sudo snap install juju-crashdump --classic
-      - name: Setup Juju 2.9/stable environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: lxd
-          juju-channel: 2.9/stable
-      - name: Remove tox install by actions-operator
-        run: sudo apt remove tox -y
-      - name: Install tox
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install tox
-      - name: Download snap file artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: local-${{ needs.build-arm64.outputs.snap }}
-      - name: Run func tests
-        run: TEST_SNAP=$GITHUB_WORKSPACE/local-${{ needs.build-arm64.outputs.snap }} tox -e func
+        run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader_arm64.snap tox -e func

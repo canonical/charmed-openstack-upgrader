@@ -3,15 +3,17 @@
 # This file is managed by bootstack-charms-spec and should not be modified
 # within individual snap repos. https://launchpad.net/bootstack-charms-spec
 
+file_name=$(ls *.snap)
 snap=$(grep -E "^name:" snap/snapcraft.yaml | awk '{print $2}')
-echo "renaming ${snap}_*.snap to ${snap}.snap"
+arch=$(echo "$file_name" | awk -F'_' '{print $NF}' | awk -F'.' '{print $(NF-1)}')
+echo "renaming ${file_name} to ${snap}_${arch}.snap"
 echo -n "pwd: "
 pwd
 ls -al
 echo "Removing previous snap if it exists"
-if [[ -e "${snap}.snap" ]];
+if [[ -e "${snap}_${arch}.snap" ]];
 then
-    rm "${snap}.snap"
+    rm "${snap}_${arch}.snap"
 fi
 echo "Renaming snap here."
-mv ${snap}_*.snap ${snap}.snap
+mv ${file_name} ${snap}_${arch}.snap
