@@ -230,7 +230,7 @@ def test_hypervisor_azs_grouping():
     ```
     """
     target = OpenStackRelease("victoria")
-    machines = {f"{i}": Machine(f"{i}", (), f"az{i//2}") for i in range(6)}
+    machines = {f"{i}": Machine(f"{i}", (), f"az{i // 2}") for i in range(6)}
     units = {
         # app1
         "app1/0": Unit("app1/0", machines["0"], ""),
@@ -316,7 +316,7 @@ def test_hypervisor_azs_grouping_units_different_o7k_release():
     ```
     """
     target = OpenStackRelease("victoria")
-    machines = {f"{i}": Machine(f"{i}", (), f"az{i//2}") for i in range(6)}
+    machines = {f"{i}": Machine(f"{i}", (), f"az{i // 2}") for i in range(6)}
     units = {
         # app1
         "app1/0": Unit("app1/0", machines["0"], ""),
