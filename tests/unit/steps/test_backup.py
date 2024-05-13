@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
@@ -24,11 +25,11 @@ from cou.steps.backup import _check_db_relations, backup, get_database_app_unit_
 @patch("cou.steps.backup.get_database_app_unit_name", new_callable=AsyncMock)
 async def test_backup(database_app_name, model):
     unit = "test-unit"
-    dump_file = "dump-file"
-    basedir = "basedir"
+    dump_file = Path("/test/dump-file")
+    basedir = dump_file.parent
     database_app_name.return_value = unit
     model.run_action.return_value = action = MagicMock()
-    action.data = {"results": {"mysqldump-file": dump_file}, "parameters": {"basedir": basedir}}
+    action.results = {"mysqldump-file": dump_file}
 
     await backup(model)
 
