@@ -183,7 +183,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: charmed-openstack-upgrader_arm64.snap
-      - name: Set Juju model constraints for arch
-        run: export MODEL_CONSTRAINTS="arch=arm64"
       - name: Run func tests
         run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader_arm64.snap tox -e func
+        env:
+          MODEL_CONSTRAINTS: "arch=arm64"
