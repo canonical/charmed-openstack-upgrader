@@ -204,22 +204,25 @@ class CephMon(AuxiliaryApplication):
         :rtype: list[PreUpgradeStep]
         """
         return super().pre_upgrade_steps(target, units) + [
-            self._get_change_require_osd_release_step()
+            self._get_change_require_osd_release_step(target)
         ]
 
-    def _get_change_require_osd_release_step(self) -> PreUpgradeStep:
+    def _get_change_require_osd_release_step(self, target: OpenStackRelease) -> PreUpgradeStep:
         """Get the step to set correct value for require-osd-release option on ceph-mon.
 
         This step is needed as a workaround for LP#1929254. Reference:
         https://docs.openstack.org/charm-guide/latest/project/issues/upgrade-issues.html#ceph-require-osd-release
 
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
         :return: Step to check and set correct value for require-osd-release
         :rtype: PreUpgradeStep
         """
         ceph_mon_unit, *_ = self.units.values()
+        track, *_ = self.target_channel(target).split("/")
         return PreUpgradeStep(
             "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version",
-            coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
+            coro=set_require_osd_release_option(track, ceph_mon_unit.name, self.model),
         )
 
 

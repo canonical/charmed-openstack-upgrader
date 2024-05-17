@@ -105,7 +105,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     if args.upgrade_group in {DATA_PLANE, HYPERVISORS, None}:
         plan.add_steps(await _generate_data_plane_plan(target, analysis_result, args))
 
-    plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
+    plan.add_steps(_get_post_upgrade_steps(target, analysis_result, args))
 
     return plan
 
@@ -389,9 +389,13 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
     return steps
 
 
-def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[PostUpgradeStep]:
+def _get_post_upgrade_steps(
+    target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
+) -> list[PostUpgradeStep]:
     """Get the post-upgrade steps.
 
+    :param target: OpenStack release as target to upgrade.
+    :type target: OpenStackRelease
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     :param args: CLI arguments
@@ -401,14 +405,18 @@ def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Po
     """
     steps = []
     if args.upgrade_group in {DATA_PLANE, None}:
-        steps.extend(_get_ceph_mon_post_upgrade_steps(analysis_result.apps_control_plane))
+        steps.extend(_get_ceph_mon_post_upgrade_steps(target, analysis_result.apps_control_plane))
 
     return steps
 
 
-def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[PostUpgradeStep]:
+def _get_ceph_mon_post_upgrade_steps(
+    target: OpenStackRelease, apps: list[OpenStackApplication]
+) -> list[PostUpgradeStep]:
     """Get the post-upgrade step for ceph-mon, where we check the require-osd-release option.
 
+    :param target: OpenStack release as target to upgrade.
+    :type target: OpenStackRelease
     :param apps: List of OpenStackApplication.
     :type apps: list[OpenStackApplication]
     :return: List of post-upgrade steps.
@@ -423,11 +431,12 @@ def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[P
 
     for app in ceph_mons_apps:
         unit = list(app.units.values())[0]  # getting the first unit, since we don't care which one
+        track, *_ = app.expected_current_channel(target).split("/")
         steps.append(
             PostUpgradeStep(
                 f"Ensure that the 'require-osd-release' option in '{app.name}' matches the "
                 "'ceph-osd' version",
-                coro=set_require_osd_release_option(unit.name, app.model),
+                coro=set_require_osd_release_option(track, unit.name, app.model),
             )
         )
 

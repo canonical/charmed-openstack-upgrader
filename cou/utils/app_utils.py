@@ -44,12 +44,21 @@ async def upgrade_packages(unit: str, model: Model, packages_to_hold: Optional[l
     await model.run_on_unit(unit_name=unit, command=command, timeout=600)
 
 
-async def set_require_osd_release_option(unit: str, model: Model) -> None:
+async def set_require_osd_release_option(
+    expected_ceph_release: str, unit: str, model: Model
+) -> None:
     """Check and set the correct value for require-osd-release on a ceph-mon unit.
 
-    This function compares the value of require-osd-release option with the current release
-    of OSDs. If they are not the same, set the OSDs release as the value for
+    This function compares the value of require-osd-release option with the expected release
+    ceph release. If they are not the same, set the OSDs release as the value for
     require-osd-release.
+    As a pre-upgrade step when upgrading ceph-mon, the expected release should match with the
+    expected current channel because ceph components are not upgraded yet, whereas as a post
+    upgrade of ceph-osd, it should match with the target because all ceph components should be
+    already upgraded.
+
+    :param expected_ceph_release: The expected ceph release of the cloud.
+    :type expected_ceph_release: str
     :param unit: The ceph-mon unit name where the check command runs on.
     :type unit: str
     :param model: Model object
@@ -58,15 +67,14 @@ async def set_require_osd_release_option(unit: str, model: Model) -> None:
     """
     # The current `require_osd_release` value set on the ceph-mon unit
     current_require_osd_release = await _get_required_osd_release(unit, model)
-    # The actual release which OSDs are on
-    current_running_osd_release = await _get_current_osd_release(unit, model)
 
-    if current_require_osd_release != current_running_osd_release:
-        set_command = f"ceph osd require-osd-release {current_running_osd_release}"
+    await _validate_ceph_component_versions(unit, model)
+
+    if current_require_osd_release != expected_ceph_release:
+        set_command = f"ceph osd require-osd-release {expected_ceph_release}"
         await model.run_on_unit(unit_name=unit, command=set_command, timeout=600)
 
 
-# Private functions
 async def _get_required_osd_release(unit: str, model: Model) -> str:
     """Get the value of require-osd-release option on a ceph-mon unit.
 
@@ -91,7 +99,35 @@ async def _get_required_osd_release(unit: str, model: Model) -> str:
     return current_require_osd_release
 
 
-async def _get_current_osd_release(unit: str, model: Model) -> str:
+async def _validate_ceph_component_versions(unit: str, model: Model) -> None:
+    """Validate all ceph components in the cloud.
+
+    Before upgrading any ceph component or after upgrading all components, ceph should have a
+    single release.
+
+    :param unit: The ceph-mon unit name where the validation happens.
+    :type unit: str
+    :param model: Model object
+    :type model: Model
+    :raises RunUpgradeError: When ceph components are not as expected.
+    """
+    ceph_components_releases = await _get_ceph_components_releases(unit, model)
+    if "osd" not in ceph_components_releases:
+        raise RunUpgradeError(f"Cannot get OSD release information on ceph-mon unit '{unit}'.")
+    for ceph_component, ceph_releases in ceph_components_releases.items():
+        if len(ceph_releases) > 1:
+            raise RunUpgradeError(
+                f"{ceph_component} are on mismatched releases:\n{ceph_releases}."
+                "Please manually upgrade them to be on the same release before proceeding."
+            )
+        if not ceph_releases.issubset(CEPH_RELEASES):
+            raise RunUpgradeError(
+                f"Cannot recognize Ceph release '{ceph_releases - set(CEPH_RELEASES)}'. "
+                f"The supporting releases are {CEPH_RELEASES}"
+            )
+
+
+async def _get_ceph_components_releases(unit: str, model: Model) -> dict[str, set[str]]:
     """Get the current release of OSDs.
 
     The release of OSDs is parsed from the output of running `ceph versions` command
@@ -100,7 +136,7 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
     :type unit: str
     :param model: Model object
     :type model: Model
-    :return: the release which OSDs are on
+    :return: the release which ceph components are
     :rtype: str
     :raises RunUpgradeError: When an upgrade fails.
     :raises CommandRunFailed: When a command fails to run.
@@ -109,39 +145,25 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
 
     check_osd_result = await model.run_on_unit(unit_name=unit, command=check_command, timeout=600)
 
-    osd_release_output = json.loads(check_osd_result["Stdout"]).get("osd", None)
-    overall_output = json.loads(check_osd_result["Stdout"]).get("overall", None)
+    return _format_ceph_version(json.loads(check_osd_result["Stdout"]))
 
-    # throw exception if ceph-mon doesn't contain osd release information in `ceph`
-    if not osd_release_output:
-        raise RunUpgradeError(f"Cannot get OSD release information on ceph-mon unit '{unit}'.")
 
-    if not overall_output:
-        raise RunUpgradeError("Cannot get release information on ceph applications.")
+def _format_ceph_version(ceph_versions: dict[str, dict]) -> dict[str, set[str]]:
+    """Format the ceph output.
 
-    # throw exception if OSDs are on mismatched releases
-    if len(osd_release_output) > 1:
-        raise RunUpgradeError(
-            f"OSDs are on mismatched releases:\n{osd_release_output}."
-            "Please manually upgrade them to be on the same release before proceeding."
-        )
+    :param ceph_versions: Ceph versions of all components
+    :type ceph_versions: dict[str, dict]
+    :return: Formatted ceph components versions. E.g: {"osd": {pacific}, "mon": pacific}
+    :rtype: dict[str, set[str]]
+    """
+    output_dict = {}
+    for ceph_service, ceph_version in ceph_versions.items():
+        releases = set()
+        for version in ceph_version.keys():
+            # Example value of a version on a ceph component:
+            # {'ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)': 1}
+            ceph_release = version.split(" ")[4].strip()
+            releases.add(ceph_release)
 
-    if len(overall_output) > 1:
-        raise RunUpgradeError(
-            f"Ceph applications are on mismatched releases:\n{overall_output}."
-            "Please manually upgrade or restart ceph services to have a single version."
-        )
-
-    # get release name from "osd_release_output". Example value of "osd_release_output":
-    # {'ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)': 1}
-    osd_release_key, *_ = osd_release_output.keys()
-    current_osd_release = osd_release_key.split(" ")[4].strip()
-    ceph_releases = ", ".join(CEPH_RELEASES)
-    if current_osd_release not in ceph_releases:
-        raise RunUpgradeError(
-            f"Cannot recognize Ceph release '{current_osd_release}'. The supporting "
-            f"releases are: {ceph_releases}"
-        )
-    logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
-
-    return current_osd_release
+        output_dict[ceph_service] = releases
+    return output_dict
