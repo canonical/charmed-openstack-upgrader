@@ -51,9 +51,9 @@ Commands:
 Application supports:
 
 - Focal/Ussuri -> Focal/Victoria
-- Focal/Victoria -> Focal/Xena
-- Focal/Xena -> Focal/Wallaby
-- Focal/Wallaby -> Focal/Yoga
+- Focal/Victoria -> Focal/Wallaby
+- Focal/Wallaby -> Focal/Xena
+- Focal/Xena -> Focal/Yoga
 
 upgrades.
 
