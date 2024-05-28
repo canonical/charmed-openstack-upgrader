@@ -183,28 +183,6 @@ class RabbitMQServer(AuxiliaryApplication):
     # COU changes to 3.9 if the channel is set to 3.8
     multiple_channels = True
 
-    def upgrade_plan_sanity_checks(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> None:
-        """Run sanity checks before generating upgrade plan.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan, defaults to None
-        :type units: Optional[list[Unit]], optional
-        :raises ApplicationError: When application is wrongly configured.
-        :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
-        :raises MismatchedOpenStackVersions: When the units of the app are running
-                                             different OpenStack versions.
-        """
-        self._check_channel()
-        self._check_application_target(target)
-        self._check_mismatched_versions(units)
-        logger.info(
-            "%s application met all the necessary prerequisites to generate the upgrade plan",
-            self.name,
-        )
-
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
     ) -> list[PreUpgradeStep]:
@@ -219,20 +197,25 @@ class RabbitMQServer(AuxiliaryApplication):
         """
         steps = super().pre_upgrade_steps(target, units)
         if self.config["enable-auto-restarts"].get("value") is False:
+            action_name = "run-deferred-hooks"
             units_to_run_action = self.units.values() if units is None else units
             steps += [
                 PreUpgradeStep(
-                    description=(
-                        "Enable auto restarts is disabled, : will"
-                        f" run any deferred events and restart services for unit: '{unit.name}'"
-                    ),
-                    coro=self.model.run_action(
-                        unit_name=unit.name,
-                        action_name="run-deferred-hooks",
-                        raise_on_failure=True,
-                    ),
+                    description="Auto restarts is disabled, will"
+                    f" execute run-deferred-hooks for unit: '{unit.name}'",
+                    coro=self.model.run_action(unit.name, action_name, raise_on_failure=True),
                 )
                 for unit in units_to_run_action
+            ]
+            steps += [
+                PreUpgradeStep(
+                    description=(
+                        f"Wait for up to {self.wait_timeout}s for model '{self.model.name}'"
+                        " to reach the idle state"
+                    ),
+                    parallel=False,
+                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=None),
+                )
             ]
         return steps
 
@@ -250,24 +233,36 @@ class RabbitMQServer(AuxiliaryApplication):
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
-        steps = super().post_upgrade_steps(target, units)
+        steps = []
         if self.config["enable-auto-restarts"].get("value") is False:
-            units_to_run_action = self.units.values() if units is None else units
             steps += [
                 PostUpgradeStep(
                     description=(
-                        "Enable auto restarts is disabled, : will"
-                        f" run any deferred events and restart services for unit: '{unit.name}'"
+                        f"Wait for up to {self.wait_timeout}s for model '{self.model.name}'"
+                        " to reach the idle state"
                     ),
-                    coro=self.model.run_action(
-                        unit_name=unit.name,
-                        action_name="run-deferred-hooks",
-                        raise_on_failure=True,
-                    ),
+                    parallel=False,
+                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=None),
+                )
+            ]
+            action_name = "run-deferred-hooks"
+            units_to_run_action = self.units.values() if units is None else units
+            steps += [
+                PostUpgradeStep(
+                    description="Auto restarts is disabled, will"
+                    f" execute run-deferred-hooks for unit: '{unit.name}'",
+                    coro=self.model.run_action(unit.name, action_name, raise_on_failure=True),
                 )
                 for unit in units_to_run_action
             ]
+        steps += super().post_upgrade_steps(target, units)
         return steps
+
+    def _check_auto_restarts(self) -> None:
+        """Check if enable-auto-restarts is enabled.
+
+        No-op, skip check auto restarts option.
+        """
 
 
 @AppFactory.register_application(["ceph-mon"])

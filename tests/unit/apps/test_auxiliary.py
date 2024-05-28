@@ -114,8 +114,7 @@ def test_auxiliary_app_cs(model):
     assert app.o7k_release == "ussuri"
 
 
-@pytest.mark.parametrize("enable_auto_restarts", [True, False])
-def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model, enable_auto_restarts):
+def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     """Test auxiliary upgrade plan from Ussuri to Victoria with change of channel."""
     target = OpenStackRelease("victoria")
     machines = {"0": generate_cou_machine("0", "az-0")}
@@ -126,7 +125,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model, enable_
         channel="3.8/stable",
         config={
             "source": {"value": "distro"},
-            "enable-auto-restarts": {"value": enable_auto_restarts},
+            "enable-auto-restarts": {"value": True},
         },
         machines=machines,
         model=model,
@@ -164,23 +163,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model, enable_
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.8/stable"),
         ),
-    ]
-    if app.config["enable-auto-restarts"].get("value") is False:
-        upgrade_steps += [
-            PreUpgradeStep(
-                description=(
-                    "Enable auto restarts is disabled, : will"
-                    f" run any deferred events and restart services for unit: '{unit.name}'"
-                ),
-                coro=model.run_action(
-                    unit_name=unit.name,
-                    action_name="run-deferred-hooks",
-                    raise_on_failure=True,
-                ),
-            )
-            for unit in app.units.values()
-        ]
-    upgrade_steps += [
         UpgradeStep(
             description=f"Upgrade '{app.name}' from '3.8/stable' to the new channel: '3.9/stable'",
             parallel=False,
@@ -207,29 +189,13 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model, enable_
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
-    if app.config["enable-auto-restarts"].get("value") is False:
-        upgrade_steps += [
-            PostUpgradeStep(
-                description=(
-                    "Enable auto restarts is disabled, : will"
-                    f" run any deferred events and restart services for unit: '{unit.name}'"
-                ),
-                coro=model.run_action(
-                    unit_name=unit.name,
-                    action_name="run-deferred-hooks",
-                    raise_on_failure=True,
-                ),
-            )
-            for unit in app.units.values()
-        ]
     expected_plan.add_steps(upgrade_steps)
 
     upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
 
-@pytest.mark.parametrize("enable_auto_restarts", [True, False])
-def test_auxiliary_upgrade_plan_ussuri_to_victoria(model, enable_auto_restarts):
+def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
     """Test auxiliary upgrade plan from Ussuri to Victoria."""
     target = OpenStackRelease("victoria")
     machines = {"0": generate_cou_machine("0", "az-0")}
@@ -240,7 +206,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model, enable_auto_restarts):
         channel="3.9/stable",
         config={
             "source": {"value": "distro"},
-            "enable-auto-restarts": {"value": enable_auto_restarts},
+            "enable-auto-restarts": {"value": True},
         },
         machines=machines,
         model=model,
@@ -276,23 +242,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model, enable_auto_restarts):
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
-    ]
-    if app.config["enable-auto-restarts"].get("value") is False:
-        upgrade_steps += [
-            PreUpgradeStep(
-                description=(
-                    "Enable auto restarts is disabled, : will"
-                    f" run any deferred events and restart services for unit: '{unit.name}'"
-                ),
-                coro=model.run_action(
-                    unit_name=unit.name,
-                    action_name="run-deferred-hooks",
-                    raise_on_failure=True,
-                ),
-            )
-            for unit in app.units.values()
-        ]
-    upgrade_steps += [
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -313,21 +262,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model, enable_auto_restarts):
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
-    if app.config["enable-auto-restarts"].get("value") is False:
-        upgrade_steps += [
-            PostUpgradeStep(
-                description=(
-                    "Enable auto restarts is disabled, : will"
-                    f" run any deferred events and restart services for unit: '{unit.name}'"
-                ),
-                coro=model.run_action(
-                    unit_name=unit.name,
-                    action_name="run-deferred-hooks",
-                    raise_on_failure=True,
-                ),
-            )
-            for unit in app.units.values()
-        ]
     expected_plan.add_steps(upgrade_steps)
 
     upgrade_plan = app.generate_upgrade_plan(target, False)
@@ -335,8 +269,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model, enable_auto_restarts):
     assert_steps(upgrade_plan, expected_plan)
 
 
-@pytest.mark.parametrize("enable_auto_restarts", [True, False])
-def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model, enable_auto_restarts):
+def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     """Test auxiliary upgrade plan from Ussuri to Victoria with migration to charmhub."""
     target = OpenStackRelease("victoria")
     machines = {"0": generate_cou_machine("0", "az-0")}
@@ -347,7 +280,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model, enable_au
         channel="stable",
         config={
             "source": {"value": "distro"},
-            "enable-auto-restarts": {"value": enable_auto_restarts},
+            "enable-auto-restarts": {"value": True},
         },
         machines=machines,
         model=model,
@@ -383,23 +316,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model, enable_au
             f"Migrate '{app.name}' from charmstore to charmhub",
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
         ),
-    ]
-    if app.config["enable-auto-restarts"].get("value") is False:
-        upgrade_steps += [
-            PreUpgradeStep(
-                description=(
-                    "Enable auto restarts is disabled, : will"
-                    f" run any deferred events and restart services for unit: '{unit.name}'"
-                ),
-                coro=model.run_action(
-                    unit_name=unit.name,
-                    action_name="run-deferred-hooks",
-                    raise_on_failure=True,
-                ),
-            )
-            for unit in app.units.values()
-        ]
-    upgrade_steps += [
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -420,24 +336,113 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model, enable_au
             coro=app._verify_workload_upgrade(target, list(app.units.values())),
         ),
     ]
-    if app.config["enable-auto-restarts"].get("value") is False:
-        upgrade_steps += [
-            PostUpgradeStep(
-                description=(
-                    "Enable auto restarts is disabled, : will"
-                    f" run any deferred events and restart services for unit: '{unit.name}'"
-                ),
-                coro=model.run_action(
-                    unit_name=unit.name,
-                    action_name="run-deferred-hooks",
-                    raise_on_failure=True,
-                ),
-            )
-            for unit in app.units.values()
-        ]
     expected_plan.add_steps(upgrade_steps)
 
     upgrade_plan = app.generate_upgrade_plan(target, False)
+    assert_steps(upgrade_plan, expected_plan)
+
+
+def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(model):
+    """Test rabbitmq server upgrade plan from Ussuri to Victoria with enable_auto_restart=False."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    app = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="3.9/stable",
+        charm="rabbitmq-server",
+        channel="3.9/stable",
+        config={
+            "source": {"value": "distro"},
+            "enable-auto-restarts": {"value": False},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.9",
+                machine=machines["0"],
+            ),
+        },
+        workload_version="3.9",
+    )
+
+    expected_plan = ApplicationUpgradePlan(f"Upgrade plan for '{app.name}' to '{target}'")
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    upgrade_packages.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit '{unit.name}'",
+            coro=app_utils.upgrade_packages(unit.name, model, None),
+        )
+        for unit in app.units.values()
+    )
+
+    upgrade_steps = [
+        upgrade_packages,
+        PreUpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
+            coro=model.upgrade_charm(app.name, "3.9/stable"),
+        ),
+    ]
+    upgrade_steps += [
+        PreUpgradeStep(
+            description="Auto restarts is disabled, will"
+            f" execute run-deferred-hooks for unit: '{unit.name}'",
+            coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+        )
+        for unit in app.units.values()
+    ]
+    upgrade_steps += [
+        PreUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_active_idle(2400, apps=None),
+        ),
+        UpgradeStep(
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-victoria'",
+            parallel=False,
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
+            ),
+        ),
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_active_idle(2400, apps=None),
+        ),
+    ]
+    upgrade_steps += [
+        PostUpgradeStep(
+            description="Auto restarts is disabled, will"
+            f" execute run-deferred-hooks for unit: '{unit.name}'",
+            coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+        )
+        for unit in app.units.values()
+    ]
+    upgrade_steps += [
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_active_idle(2400, apps=None),
+        ),
+        PostUpgradeStep(
+            description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
+            f"{', '.join([unit for unit in app.units.keys()])}",
+            parallel=False,
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
+        ),
+    ]
+    expected_plan.add_steps(upgrade_steps)
+
+    upgrade_plan = app.generate_upgrade_plan(target, False)
+
     assert_steps(upgrade_plan, expected_plan)
 
 
