@@ -22,7 +22,7 @@ from cou.utils import app_utils
 
 @pytest.mark.asyncio
 async def test_application_upgrade_packages(model):
-    model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
+    model.run_on_unit.return_value = {"return-code": "0", "stdout": "Success"}
     units = ["keystone/0", "keystone/1"]
 
     for unit in units:
@@ -51,7 +51,7 @@ async def test_application_upgrade_packages(model):
 
 @pytest.mark.asyncio
 async def test_application_upgrade_packages_with_hold(model):
-    model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
+    model.run_on_unit.return_value = {"return-code": "0", "stdout": "Success"}
     units = ["keystone/0", "keystone/1"]
 
     for unit in units:
@@ -100,7 +100,7 @@ async def test_set_require_osd_release_option_different_releases(
 ):
     mock_get_required_osd_release.return_value = current_required_osd_release
     mock_get_current_osd_release.return_value = current_osd_release
-    model.run_on_unit.return_value = {"Code": "0", "Stdout": "Success"}
+    model.run_on_unit.return_value = {"return-code": "0", "stdout": "Success"}
 
     await app_utils.set_require_osd_release_option(unit="ceph-mon/0", model=model)
 
@@ -142,7 +142,7 @@ async def test_get_required_osd_release(model):
     check_result = """
         {"crush_version":7,"min_compat_client":"jewel","require_osd_release":"octopus"}
     """
-    model.run_on_unit.return_value = {"Code": "0", "Stdout": check_result}
+    model.run_on_unit.return_value = {"return-code": "0", "stdout": check_result}
     actual_current_release = await app_utils._get_required_osd_release(
         unit="ceph-mon/0", model=model
     )
@@ -177,7 +177,7 @@ async def test_get_current_osd_release(model):
     """ % (
         expected_osd_release
     )
-    model.run_on_unit.return_value = {"Code": "0", "Stdout": check_output}
+    model.run_on_unit.return_value = {"return-code": "0", "stdout": check_output}
     actual_osd_release = await app_utils._get_current_osd_release(unit="ceph-mon/0", model=model)
 
     model.run_on_unit.assert_called_once_with(
@@ -231,7 +231,7 @@ async def test_get_current_osd_release_unsuccessful(model, osd_release_output, e
     """ % (
         json.dumps(osd_release_output)
     )
-    model.run_on_unit.return_value = {"Code": "0", "Stdout": check_output}
+    model.run_on_unit.return_value = {"return-code": "0", "stdout": check_output}
     with pytest.raises(RunUpgradeError, match=error_message):
         await app_utils._get_current_osd_release(unit="ceph-mon/0", model=model)
 

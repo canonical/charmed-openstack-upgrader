@@ -25,12 +25,13 @@ from typing import Any, Callable, Optional
 
 from juju.action import Action
 from juju.application import Application as JujuApplication
-from juju.client._definitions import FullStatus
+from juju.client._definitions import Base, FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
 from juju.errors import JujuAppError, JujuError, JujuUnitError
 from juju.model import Model as JujuModel
 from juju.unit import Unit as JujuUnit
+from juju.utils import get_version_series
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
@@ -56,37 +57,16 @@ DEFAULT_MODEL_IDLE_PERIOD: int = 30
 logger = logging.getLogger(__name__)
 
 
-def _normalize_action_results(results: dict[str, str]) -> dict[str, str]:
-    """Unify action results format.
+def _convert_base_to_series(base: Base) -> str:
+    """Convert base to series.
 
-    :param results: Results dictionary to process.
-    :type results: dict[str, str]
-    :returns: {
-        'Code': '',
-        'Stderr': '',
-        'Stdout': '',
-        'stderr': '',
-        'stdout': ''}
-    :rtype: dict[str, str]
+    :param base: Base object
+    :type base: juju.client._definitions.Base
+    :return: converted channel to series, e.g. 20.04 -> focal
+    :rtype: str
     """
-    if results:
-        # In Juju 2.7 some keys are dropped from the results if their
-        # value was empty. This breaks some functions downstream, so
-        # ensure the keys are always present.
-        for key in ["Stderr", "Stdout", "stderr", "stdout"]:
-            results[key] = results.get(key, "")
-        # Juju has started using a lowercase "stdout" key in new action
-        # commands in recent versions. Ensure the old capatalised keys and
-        # the new lowercase keys are present and point to the same value to
-        # avoid breaking functions downstream.
-        for key in ["stderr", "stdout"]:
-            old_key = key.capitalize()
-            if results.get(key) and not results.get(old_key):
-                results[old_key] = results[key]
-            elif results.get(old_key) and not results.get(key):
-                results[key] = results[old_key]
-        return results
-    return {}
+    version, *_ = base.channel.split("/")
+    return get_version_series(version)
 
 
 def retry(
@@ -379,7 +359,7 @@ class Model:
                 },
                 model=self,
                 origin=status.charm.split(":")[0],
-                series=status.series,
+                series=_convert_base_to_series(status.base),
                 subordinate_to=status.subordinate_to,
                 units={
                     name: Unit(name, machines[unit.machine], unit.workload_version)
@@ -471,7 +451,7 @@ class Model:
         :type command: str
         :param timeout: How long in seconds to wait for command to complete
         :type timeout: Optional[int]
-        :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
+        :returns: action.results {'return-code': '', 'stderr': '', 'stdout': ''}
         :rtype: dict[str, str]
         :raises UnitNotFound: When a valid unit cannot be found.
         :raises CommandRunFailed: When a command fails to run.
@@ -479,15 +459,14 @@ class Model:
         logger.debug("Running '%s' on '%s'", command, unit_name)
 
         unit = await self._get_unit(unit_name)
-        action = await unit.run(command, timeout=timeout)
-        results = action.data.get("results")
-        normalize_results = _normalize_action_results(results)
+        action = await unit.run(command, timeout=timeout, block=True)
+        results = action.results
+        logger.debug("results: %s", results)
 
-        if str(normalize_results["Code"]) != "0":
-            raise CommandRunFailed(cmd=command, result=normalize_results)
-        logger.debug(normalize_results["Stdout"])
+        if str(results["return-code"]) != "0":
+            raise CommandRunFailed(cmd=command, result=results)
 
-        return normalize_results
+        return results
 
     @retry(no_retry_exceptions=(ApplicationNotFound,))
     async def set_application_config(self, name: str, configuration: dict[str, str]) -> None:

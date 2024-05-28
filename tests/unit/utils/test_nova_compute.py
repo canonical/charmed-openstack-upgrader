@@ -25,7 +25,7 @@ from cou.utils.juju_utils import Machine, Unit
 async def test_get_instance_count(model):
     expected_count = 1
     model.run_action.return_value = mocked_action = AsyncMock(spec_set=Action).return_value
-    mocked_action.results = {"Code": "0", "instance-count": str(expected_count)}
+    mocked_action.results = {"return-code": "0", "instance-count": str(expected_count)}
 
     actual_count = await nova_compute.get_instance_count(unit="nova-compute/0", model=model)
 
@@ -47,7 +47,7 @@ async def test_get_instance_count(model):
 )
 async def test_get_instance_count_invalid_result(model, result_key, value):
     model.run_action.return_value = mocked_action = AsyncMock(spec_set=Action).return_value
-    mocked_action.results = {"Code": "0", result_key: value}
+    mocked_action.results = {"return-code": "0", result_key: value}
 
     with pytest.raises(ValueError):
         await nova_compute.get_instance_count(unit="nova-compute/0", model=model)
