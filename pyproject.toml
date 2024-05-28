@@ -100,6 +100,7 @@ output = "tests/unit/report/coverage.xml"
 skip = ".eggs,.tox,.git,.venv,venv,build,.build,lib,report,docs"
 quiet-level = 3
 check-filenames = true
+ignore-words-list = "assertIn"
 
 [tool.pytest.ini_options]
 filterwarnings = [
