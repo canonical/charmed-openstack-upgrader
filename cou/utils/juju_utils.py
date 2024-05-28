@@ -605,19 +605,29 @@ class Model:
                                  WaitForApplicationsTimeout, defaults to False.
         :type raise_on_blocked: bool
         """
+        if apps is None:
+            apps = await self._get_supported_apps()
 
-        @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
+        # @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
         @wraps(self.wait_for_active_idle)
         async def _wait_for_active_idle() -> None:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
             model = await self._get_model()
             try:
-                await model.wait_for_idle(
-                    apps=apps,
-                    timeout=timeout,
-                    idle_period=idle_period,
-                    raise_on_blocked=raise_on_blocked,
-                    status="active",
+                # NOTE(rgildein): Use asyncio.gather because we always go through the application
+                # list (apps will never be None) and libjuju is very slow here.
+                # https://github.com/juju/python-libjuju/issues/1055
+                await asyncio.gather(
+                    *(
+                        model.wait_for_idle(
+                            apps=[app],
+                            timeout=timeout,
+                            idle_period=idle_period,
+                            raise_on_blocked=raise_on_blocked,
+                            status="active",
+                        )
+                        for app in apps
+                    )
                 )
             except (asyncio.exceptions.TimeoutError, JujuAppError, JujuUnitError) as error:
                 # NOTE(rgildein): Catching TimeoutError raised as exception when wait_for_idle
@@ -630,8 +640,5 @@ class Model:
                 #   cinder/0 [idle] active: Unit is ready
                 msg = str(error).replace("\n", "\n  ", 1)
                 raise WaitForApplicationsTimeout(msg) from error
-
-        if apps is None:
-            apps = await self._get_supported_apps()
 
         await _wait_for_active_idle()

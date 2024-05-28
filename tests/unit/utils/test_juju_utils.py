@@ -46,6 +46,7 @@ def mocked_model(mocker):
     model.connection.return_value.is_open = True  # simulate already connected model
     model.disconnect = AsyncMock()
     model.connect = AsyncMock()
+    model.wait_for_idle = AsyncMock()
     yield model
 
 
@@ -506,12 +507,23 @@ async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_mod
 
     await model.wait_for_active_idle(timeout)
 
-    mocked_model.wait_for_idle.assert_awaited_once_with(
-        apps=["app1", "app2"],
-        timeout=timeout,
-        idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-        raise_on_blocked=False,
-        status="active",
+    mocked_model.wait_for_idle.assert_has_awaits(
+        [
+            call(
+                apps=["app1"],
+                timeout=timeout,
+                idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
+                raise_on_blocked=False,
+                status="active",
+            ),
+            call(
+                apps=["app2"],
+                timeout=timeout,
+                idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
+                raise_on_blocked=False,
+                status="active",
+            ),
+        ]
     )
     mock_get_supported_apps.assert_awaited_once_with()
 
@@ -547,12 +559,17 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
     with pytest.raises(WaitForApplicationsTimeout):
         await model.wait_for_active_idle(timeout, apps=exp_apps)
 
-    mocked_model.wait_for_idle.assert_awaited_once_with(
-        apps=exp_apps,
-        timeout=timeout,
-        idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-        raise_on_blocked=False,
-        status="active",
+    mocked_model.wait_for_idle.assert_has_awaits(
+        [
+            call(
+                apps=[app],
+                timeout=timeout,
+                idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
+                raise_on_blocked=False,
+                status="active",
+            )
+            for app in exp_apps
+        ]
     )
     mock_get_supported_apps.assert_not_awaited()
 
