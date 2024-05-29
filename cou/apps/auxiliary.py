@@ -196,17 +196,19 @@ class RabbitMQServer(AuxiliaryApplication):
         :rtype: list[PreUpgradeStep]
         """
         steps = super().pre_upgrade_steps(target, units)
-        if self.config["enable-auto-restarts"].get("value") is False:
-            action_name = "run-deferred-hooks"
-            units_to_run_action = self.units.values() if units is None else units
+        if not self.config["enable-auto-restarts"].get("value"):
             steps += [
                 PreUpgradeStep(
                     description="Auto restarts is disabled, will"
                     f" execute run-deferred-hooks for unit: '{unit.name}'",
-                    coro=self.model.run_action(unit.name, action_name, raise_on_failure=True),
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
                 )
-                for unit in units_to_run_action
+                for unit in units or self.units.values()
             ]
+            # Run any deferred events and restart the service. See
+            # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
             steps += [
                 PreUpgradeStep(
                     description=(
@@ -234,7 +236,7 @@ class RabbitMQServer(AuxiliaryApplication):
         :rtype: list[PostUpgradeStep]
         """
         steps = []
-        if self.config["enable-auto-restarts"].get("value") is False:
+        if not self.config["enable-auto-restarts"].get("value"):
             steps += [
                 PostUpgradeStep(
                     description=(
@@ -245,23 +247,27 @@ class RabbitMQServer(AuxiliaryApplication):
                     coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
                 )
             ]
-            action_name = "run-deferred-hooks"
-            units_to_run_action = self.units.values() if units is None else units
+            # Run any deferred events and restart the service. See
+            # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
             steps += [
                 PostUpgradeStep(
                     description="Auto restarts is disabled, will"
                     f" execute run-deferred-hooks for unit: '{unit.name}'",
-                    coro=self.model.run_action(unit.name, action_name, raise_on_failure=True),
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
                 )
-                for unit in units_to_run_action
+                for unit in units or self.units.values()
             ]
         steps += super().post_upgrade_steps(target, units)
         return steps
 
     def _check_auto_restarts(self) -> None:
-        """Check if enable-auto-restarts is enabled.
+        """No-op, skip check auto restarts option.
 
-        No-op, skip check auto restarts option.
+        This method override the parent class's `_check_auto_restarts()` method
+        because the parent class's will raise an `ApplicationError` if
+        `enable-auto-restarts` is `True`.
         """
 
 
