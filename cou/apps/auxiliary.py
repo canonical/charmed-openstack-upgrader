@@ -210,11 +210,11 @@ class RabbitMQServer(AuxiliaryApplication):
             steps += [
                 PreUpgradeStep(
                     description=(
-                        f"Wait for up to {self.wait_timeout}s for model '{self.model.name}'"
+                        f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
                         " to reach the idle state"
                     ),
                     parallel=False,
-                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=None),
+                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
                 )
             ]
         return steps
@@ -238,11 +238,11 @@ class RabbitMQServer(AuxiliaryApplication):
             steps += [
                 PostUpgradeStep(
                     description=(
-                        f"Wait for up to {self.wait_timeout}s for model '{self.model.name}'"
+                        f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
                         " to reach the idle state"
                     ),
                     parallel=False,
-                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=None),
+                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
                 )
             ]
             action_name = "run-deferred-hooks"

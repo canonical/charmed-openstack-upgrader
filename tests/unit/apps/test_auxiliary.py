@@ -400,9 +400,9 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
     ]
     upgrade_steps += [
         PreUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=f"Wait for up to 2400s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_active_idle(2400, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -413,9 +413,9 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=f"Wait for up to 2400s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_active_idle(2400, apps=[app.name]),
         ),
     ]
     upgrade_steps += [
