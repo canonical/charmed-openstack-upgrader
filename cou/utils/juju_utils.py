@@ -608,7 +608,7 @@ class Model:
         if apps is None:
             apps = await self._get_supported_apps()
 
-        # @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
+        @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
         @wraps(self.wait_for_active_idle)
         async def _wait_for_active_idle() -> None:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
