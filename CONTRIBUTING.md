@@ -38,7 +38,7 @@ If you're interested in making code contributions, please begin by forking the
 repository to your own GitHub account. From there, you can open Pull Requests (PRs)
 against the `main` branch of the upstream repository.
 
-Please adhere to the following guidelines prior to submitting your changes: 
+Please adhere to the following guidelines prior to submitting your changes:
 
 - Add or update any unit tests accordingly if applicable.
 - Format code with `make reformat` (which runs `black` and `isort`)
@@ -53,7 +53,7 @@ Please adhere to the following guidelines prior to submitting your changes:
     make spelling
     make woke
     make linkcheck
-    ``` 
+    ```
 - Commit messages should be well-structured and provide a meaningful explanation
   of the changes made
 - Commits must be signed (refer to the [Prerequisites](#prerequisites) section)
@@ -65,8 +65,26 @@ organize them into different categories. For new contributors, we recommend
 starting with issues labeled "good first issue." If you're interested in
 enhancing our documentation, you can filter issues using the "documentation"
 label to find issues specifically related to documentation improvement.
-  
+
 Once you have decided which issue to work on, you can express your interest by
 posting a comment on it. When you submit your proposed fix for an issue, link
 your PR to the issue with one of the supported
 [keywords](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
+
+## Development environment
+
+To set up a development environment to run from source,
+you can install it in a virtual environment,
+for example:
+
+```
+virtualenv venv
+source venv/bin/activate
+pip install -e .
+
+# setuptools is required to avoid `ModuleNotFoundError: No module named 'pkg_resources'`
+pip install setuptools
+
+# run cou!
+cou --version
+```
