@@ -254,7 +254,8 @@ class Model:
         """
         action_obj = await action.wait()
         if raise_on_failure and action_obj.status != "completed":
-            raise ActionFailed(action, output=action_obj.data)
+            logger.error("action %s failed", action_obj)
+            raise ActionFailed(action)
 
         return action_obj
 
