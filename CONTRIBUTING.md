@@ -82,9 +82,6 @@ virtualenv venv
 source venv/bin/activate
 pip install -e .
 
-# setuptools is required to avoid `ModuleNotFoundError: No module named 'pkg_resources'`
-pip install setuptools
-
 # run cou!
 cou --version
 ```
