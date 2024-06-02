@@ -20,22 +20,25 @@ from cou.exceptions import ActionFailed
 
 def test_action_failed():
     """Test error message composition for ActionFailed."""
-    mocked_action = mock.Mock(spec=Action)
-    action = mocked_action()
-    action.name = "test-action"
-    action.parameters = "test=1"
-    action.receiver = "test-receiver"
-    action.message = "test-message"
-    action.id = "test-id"
-    action.status = "test-status"
-    action.enqueued = "test-enqueued"
-    action.started = "test-started"
-    action.completed = "test-completed"
+    action = mock.Mock(spec_set=Action)()
+    action.safe_data = {
+        "model-uuid": "12885f47-4dfa-4457-8ed1-1f08c1b278dd",
+        "id": "4",
+        "receiver": "my-charm/0",
+        "name": "test-action",
+        "status": "failed",
+        "message": "error message",
+        "enqueued": "2024-05-29T14:50:08Z",
+        "started": "2024-05-29T14:50:11Z",
+        "completed": "2024-05-29T14:50:11Z",
+    }
 
-    error = ActionFailed(action=action, output="test output")
+    error = ActionFailed(action=action)
     assert str(error) == (
-        'Run of action "test-action" with parameters "test=1" on '
-        '"test-receiver" failed with "test-message" (id=test-id '
-        "status=test-status enqueued=test-enqueued started=test-started "
-        "completed=test-completed output=test output)"
+        "Run of action 'test-action' with parameters '<not-set>' on 'my-charm/0' failed with "
+        "'error message' (id=4 status=failed enqueued=2024-05-29T14:50:08Z started=2024-05-29T14:"
+        "50:11Z completed=2024-05-29T14:50:11Z output={'model-uuid': '12885f47-4dfa-4457-8ed1-1f0"
+        "8c1b278dd', 'id': '4', 'receiver': 'my-charm/0', 'name': 'test-action', 'status': "
+        "'failed', 'message': 'error message', 'enqueued': '2024-05-29T14:50:08Z', 'started': "
+        "'2024-05-29T14:50:11Z', 'completed': '2024-05-29T14:50:11Z'})"
     )

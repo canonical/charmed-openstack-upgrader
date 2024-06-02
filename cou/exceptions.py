@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module of exceptions that charmed-openstack-upgrader may raise."""
-from typing import Any, Optional, Union
-
 from juju.action import Action
 
 
@@ -79,15 +77,13 @@ class ActionFailed(COUException):
     """Exception raised when action fails."""
 
     # pylint: disable=consider-using-f-string
-    def __init__(self, action: Action, output: Optional[Union[Any, dict]] = None):
+    def __init__(self, action: Action):
         """Set information about action failure in message and raise.
 
         :param action: Action that failed.
         :type action: Action
-        :param output: Description of the failed action, defaults to None
-        :type output: Optional[str], optional
         """
-        params = {"output": output}
+        params = {"output": action.safe_data}
         for key in [
             "name",
             "parameters",
@@ -99,11 +95,11 @@ class ActionFailed(COUException):
             "started",
             "completed",
         ]:
-            params[key] = getattr(action, key, "<not-set>")
+            params[key] = action.safe_data.get(key, "<not-set>")
 
         message = (
-            'Run of action "{name}" with parameters "{parameters}" on '
-            '"{receiver}" failed with "{message}" (id={id} '
+            "Run of action '{name}' with parameters '{parameters}' on "
+            "'{receiver}' failed with '{message}' (id={id} "
             "status={status} enqueued={enqueued} started={started} "
             "completed={completed} output={output})".format(**params)
         )
