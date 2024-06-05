@@ -51,6 +51,7 @@ from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
+from cou.steps.nova import archive
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
 from cou.utils.nova_compute import get_empty_hypervisors
@@ -383,6 +384,16 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             PreUpgradeStep(
                 description="Back up MySQL databases",
                 coro=backup(analysis_result.model),
+            )
+        )
+
+    # Add a pre-upgrade step to archive old database data.
+    # This is a performance optimisation.
+    if args.archive:
+        steps.append(
+            PreUpgradeStep(
+                description="Archive old database data on nova-cloud-controller",
+                coro=archive(analysis_result.model, batch_size=args.archive_batch_size),
             )
         )
 

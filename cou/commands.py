@@ -125,6 +125,19 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         default=argparse.SUPPRESS,
     )
     subcommand_common_opts_parser.add_argument(
+        "--archive",
+        help="Archive old database data (nova) before cloud upgrade.\n"
+        "Default to enabling archive.",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--archive-batch-size",
+        help="Batch size for nova old database data archiving.\n" "Default is 1000.",
+        type=int,
+        default=1000,
+    )
+    subcommand_common_opts_parser.add_argument(
         "--force",
         action="store_true",
         dest="force",
@@ -382,6 +395,8 @@ class CLIargs:
     command: str
     verbosity: int = 0
     backup: bool = True
+    archive: bool = True
+    archive_batch_size: int = 1000
     quiet: bool = False
     force: bool = False
     auto_approve: bool = False

@@ -44,6 +44,7 @@ from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
+from cou.steps.nova import archive
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
@@ -149,6 +150,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
+        Archive old database data on nova-cloud-controller
         Control Plane principal(s) upgrade plan
             Upgrade plan for 'keystone' to 'victoria'
                 Upgrade software packages of 'keystone' from the current APT repositories
@@ -315,6 +317,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
+        Archive old database data on nova-cloud-controller
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
@@ -1012,6 +1015,7 @@ async def test_get_upgradable_hypervisors_machines(
 @pytest.mark.parametrize("cli_backup", [True, False])
 def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
     cli_args.backup = cli_backup
+    cli_args.archive_batch_size = 998
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("ussuri")
     mock_analysis_result.model = model
@@ -1034,6 +1038,14 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
                 coro=backup(model),
             )
         )
+
+    expected_steps.append(
+        PreUpgradeStep(
+            description="Archive old database data on nova-cloud-controller",
+            parallel=False,
+            coro=archive(model, batch_size=998),
+        )
+    )
 
     pre_upgrade_steps = cou_plan._get_pre_upgrade_steps(mock_analysis_result, cli_args)
 
