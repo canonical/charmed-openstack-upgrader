@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # NOTE(rgildein): Fetch all tags as the latest tag is required for build.
+          fetch-depth: 0  # Complete git history is required to generate the version from git tags.
       - uses: snapcore/action-build@v1
         id: build
       - uses: actions/upload-artifact@v4
