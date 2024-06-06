@@ -20,6 +20,7 @@ Plan:
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify that all OpenStack applications are in idle state
         # note that there's no backup step planned
+        Archive old database data on nova-cloud-controller
         Control Plane principal(s) upgrade plan
         Upgrade plan for 'rabbitmq-server' to 'victoria'
             Upgrade software packages of 'rabbitmq-server' from the current APT repositories
