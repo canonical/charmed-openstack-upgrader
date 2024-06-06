@@ -45,6 +45,7 @@ async def archive(model: Model, *, batch_size: int) -> None:
             raise_on_failure=True,
             action_params={"batch-size": batch_size},
         )
+        logger.info("action output: %s", action.data)
         output = action.data["results"]["archive-deleted-rows"]
         if "Nothing was archived" in output:
             logger.debug("Archiving complete.")
