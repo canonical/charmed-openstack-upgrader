@@ -136,6 +136,7 @@ class SmokeTest(unittest.TestCase):
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
             f"{backup_plan}"
+            "\tArchive old database data on nova-cloud-controller\n"
             "\tControl Plane principal(s) upgrade plan\n"
             "\t\tUpgrade plan for 'designate-bind' to 'victoria'\n"
             "\t\t\tUpgrade software packages of 'designate-bind' "
