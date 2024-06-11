@@ -15,7 +15,7 @@
 """Functions for prereq steps relating to nova."""
 import logging
 
-from cou.exceptions import UnitNotFound
+from cou.exceptions import ApplicationNotFound, UnitNotFound
 from cou.utils.juju_utils import Model
 
 logger = logging.getLogger(__name__)
@@ -56,18 +56,26 @@ async def archive(model: Model, *, batch_size: int) -> None:
 async def _get_nova_cloud_controller_unit_name(model: Model) -> str:
     """Get nova-cloud-controller application's first unit's name.
 
+    Assumes only a single nova-cloud-controller application is deployed.
+
     :param model: juju model to work with
     :type model: Model
     :return: unit name
     :rtype: str
     :raises UnitNotFound: When cannot find a valid unit for 'nova-cloud-controller'
+    :raises ApplicationNotFound: When cannot find a 'nova-cloud-controller' application
     """
     status = await model.get_status()
     for app_name, app_config in status.applications.items():
         charm_name = await model.get_charm_name(app_name)
         if charm_name == "nova-cloud-controller":
-            return list(app_config.units.keys())[0]
+            units = list(app_config.units.keys())
+            if units:
+                return units[0]
+            raise UnitNotFound(
+                f"Cannot find unit for 'nova-cloud-controller' in model '{model.name}'."
+            )
 
-    raise UnitNotFound(
-        f"Cannot find a valid unit for 'nova-cloud-controller' in model '{model.name}'."
+    raise ApplicationNotFound(
+        f"Cannot find 'nova-cloud-controller' in model '{model.name}'."
     )
