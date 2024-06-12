@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from cou.exceptions import UnitNotFound
+from cou.exceptions import ApplicationNotFound, COUException
 from cou.steps.nova import archive
 
 
@@ -37,11 +37,31 @@ async def test_archive(model):
 
 
 @pytest.mark.asyncio
+async def test_archive_with_broken_charm_action(model):
+    model.get_charm_name.side_effect = lambda x: x
+    model.run_action.return_value = action = MagicMock()
+    # simulate the expected archive-deleted-rows key missing
+    action.data = {"results": {}}
+
+    # It should raise an expected exception
+    # (this will be more graceful than a KeyError for example).
+    with pytest.raises(COUException, match="archive-deleted-rows"):
+        await archive(model, batch_size=999)
+
+    model.run_action.assert_awaited_once_with(
+        unit_name="nova-cloud-controller/0",
+        action_name="archive-data",
+        raise_on_failure=True,
+        action_params={"batch-size": 999},
+    )
+
+
+@pytest.mark.asyncio
 async def test_archive_unit_not_found(model):
     # force it to never find a nova-cloud-controller charm
     model.get_charm_name.side_effect = lambda _: "invalid"
 
-    with pytest.raises(UnitNotFound):
+    with pytest.raises(ApplicationNotFound):
         await archive(model, batch_size=999)
 
     model.run_action.assert_not_called()
