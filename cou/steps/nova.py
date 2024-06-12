@@ -15,7 +15,7 @@
 """Functions for prereq steps relating to nova."""
 import logging
 
-from cou.exceptions import ApplicationNotFound, UnitNotFound
+from cou.exceptions import ApplicationNotFound, COUException, UnitNotFound
 from cou.utils.juju_utils import Model
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ async def archive(model: Model, *, batch_size: int) -> None:
     :param batch_size: batch-size to pass to the archive-data action
         (default is 1000; decrease if performance issues seen)
     :type batch_size: int
+    :raises COUException: if action returned unexpected output
     """  # noqa: E501 line too long
     unit_name: str = await _get_nova_cloud_controller_unit_name(model)
     while True:
@@ -46,7 +47,12 @@ async def archive(model: Model, *, batch_size: int) -> None:
             action_params={"batch-size": batch_size},
         )
         logger.info("action output: %s", action.data)
-        output = action.data["results"]["archive-deleted-rows"]
+        output = action.data["results"].get("archive-deleted-rows")
+        if output is None:
+            raise COUException(
+                "Expected to find output in action results.'archive-deleted-rows', "
+                "but it was not present."
+            )
         if "Nothing was archived" in output:
             logger.debug("Archiving complete.")
             break
@@ -76,6 +82,4 @@ async def _get_nova_cloud_controller_unit_name(model: Model) -> str:
                 f"Cannot find unit for 'nova-cloud-controller' in model '{model.name}'."
             )
 
-    raise ApplicationNotFound(
-        f"Cannot find 'nova-cloud-controller' in model '{model.name}'."
-    )
+    raise ApplicationNotFound(f"Cannot find 'nova-cloud-controller' in model '{model.name}'.")
