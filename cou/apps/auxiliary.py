@@ -201,7 +201,7 @@ class RabbitMQServer(AuxiliaryApplication):
         # action to clear the events before performing upgrade. If there
         # are no pending events, this step should be a no-op, so it's safe
         # to run anyway
-        if not self.config["enable-auto-restarts"].get("value"):
+        if self.config.get("enable-auto-restarts", {}).get("value") is False:
             # Run any deferred events and restart the service. See
             # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
             units_to_run_action = self.units.values() if units is None else units
@@ -245,7 +245,7 @@ class RabbitMQServer(AuxiliaryApplication):
         # Since the auto restart is disabled, we need to run the
         # `run-deferred-hooks` action, and restart the service after the
         # upgrade.
-        if not self.config["enable-auto-restarts"].get("value"):
+        if self.config.get("enable-auto-restarts", {}).get("value") is False:
             steps += [
                 PostUpgradeStep(
                     description=(
