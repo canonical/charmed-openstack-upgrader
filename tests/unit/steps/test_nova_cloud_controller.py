@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call
 
 import pytest
 
-from cou.exceptions import ApplicationNotFound, COUException
+from cou.exceptions import ApplicationNotFound, COUException, UnitNotFound
 from cou.steps.nova_cloud_controller import archive
+from tests.unit.utils import get_status
 
 
 @pytest.mark.asyncio
@@ -58,10 +59,25 @@ async def test_archive_with_broken_charm_action(model):
 
 @pytest.mark.asyncio
 async def test_archive_app_not_found(model):
-    # force it to never find a nova-cloud-controller charm
-    model.get_charm_name.side_effect = lambda _: "invalid"
+    # Update the mocked status so a nova-cloud-controller charm doesn't exist
+    status = get_status()
+    del status.applications["nova-cloud-controller"]
+    model.get_status = AsyncMock(return_value=status)
 
     with pytest.raises(ApplicationNotFound):
+        await archive(model, batch_size=999)
+
+    model.run_action.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_archive_unit_not_found(model):
+    # Update the mocked status so nova-cloud-controller doesn't have any units
+    status = get_status()
+    status.applications["nova-cloud-controller"].units = {}
+    model.get_status = AsyncMock(return_value=status)
+
+    with pytest.raises(UnitNotFound):
         await archive(model, batch_size=999)
 
     model.run_action.assert_not_called()

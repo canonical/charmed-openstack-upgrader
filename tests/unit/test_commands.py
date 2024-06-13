@@ -594,6 +594,31 @@ def test_parse_args_hypervisors_exclusive_options(args):
         commands.parse_args(args)
 
 
+def test_parse_args_invalid_batch_size_string():
+    """Verify that batch size of a non-integer raises an error."""
+    with pytest.raises(SystemExit, match="2"):
+        commands.parse_args(["upgrade", "--archive-batch-size", "asdf"])
+
+
+def test_parse_args_invalid_batch_size_negative():
+    """Verify that batch size of a negative integer raises an error."""
+    with pytest.raises(SystemExit, match="2"):
+        commands.parse_args(["upgrade", "--archive-batch-size", "-4"])
+
+
+def test_parse_args_invalid_batch_size_zero():
+    """Verify that batch size of zero raises an error."""
+    with pytest.raises(SystemExit, match="2"):
+        commands.parse_args(["upgrade", "--archive-batch-size", "0"])
+
+
+def test_parse_args_valid_batch_size():
+    """Verify that batch size of a positive integer is accepted."""
+    parsed_args = commands.parse_args(["upgrade", "--archive-batch-size", "4"])
+
+    assert parsed_args.archive_batch_size == 4
+
+
 @pytest.mark.parametrize(
     "args",
     [
