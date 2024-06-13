@@ -127,7 +127,7 @@ class NovaCompute(OpenStackApplication):
         steps = []
         for unit in units:
             for subordinate in unit.subordinates:
-                if "ceilometer-agent" in subordinate.name:
+                if "ceilometer-agent" == subordinate.charm:
                     service = "ceilometer-agent-compute"
                     steps.append(
                         PostUpgradeStep(

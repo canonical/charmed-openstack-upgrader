@@ -147,6 +147,7 @@ class SubordinateUnit:
     """Representation of a single unit of subordinate unit."""
 
     name: str
+    charm: str
     workload_version: str
 
     def __repr__(self) -> str:
@@ -292,6 +293,15 @@ class Model:
 
         return app
 
+    async def _get_applications(self) -> dict[str, JujuApplication]:
+        """Return a map of application-name:Application for all applications.
+
+        :returns: Dictionary of the applications found in the model.
+        :rtype: dict[str, Application]
+        """
+        model = await self._get_model()
+        return model.applications
+
     async def _get_machines(self) -> dict[str, Machine]:
         """Get all the machines in the model.
 
@@ -371,7 +381,7 @@ class Model:
             retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
         )
 
-    @retry
+    # @retry
     async def get_applications(self) -> dict[str, Application]:
         """Return list of applications with all relevant information.
 
@@ -384,12 +394,11 @@ class Model:
         full_status = await self.get_status()
         machines = await self._get_machines()
 
-        for app, status in full_status.applications.items():
-            logger.debug(app)
-            for name, unit in status.units.items():
-                logger.debug(name)
-                logger.debug(unit)
-                logger.debug(unit.subordinates)
+        applications = await self._get_applications()
+        unit_charm_mapping: dict[str, str] = {}
+        for name, app in applications.items():
+            for unit in app.units:
+                unit_charm_mapping[unit.name] = app.charm_name
 
         return {
             app: Application(
@@ -412,7 +421,11 @@ class Model:
                         machines[unit.machine],
                         unit.workload_version,
                         [
-                            SubordinateUnit(subordinate_name, subordinate.workload_version)
+                            SubordinateUnit(
+                                subordinate_name,
+                                unit_charm_mapping[subordinate_name],
+                                subordinate.workload_version,
+                            )
                             for subordinate_name, subordinate in unit.subordinates.items()
                         ],
                     )

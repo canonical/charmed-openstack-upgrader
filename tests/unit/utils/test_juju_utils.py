@@ -584,10 +584,10 @@ async def test_get_machines(mocked_model):
     }
     mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
     mocked_model.units = {
-        "my_app1/0": _generate_juju_unit("my_app1", "0"),
-        "my_app1/1": _generate_juju_unit("my_app1", "1"),
-        "my_app1/2": _generate_juju_unit("my_app1", "2"),
-        "my_app2/0": _generate_juju_unit("my_app2", "0"),
+        "my_app1/0": _generate_juju_unit("my_app1", "0", "0"),
+        "my_app1/1": _generate_juju_unit("my_app1", "1", "1"),
+        "my_app1/2": _generate_juju_unit("my_app1", "2", "2"),
+        "my_app2/0": _generate_juju_unit("my_app2", "0", "0"),
     }
     mocked_model.applications = {
         "my_app1": _generate_juju_app("app1"),
@@ -600,9 +600,22 @@ async def test_get_machines(mocked_model):
     assert machines == expected_machines
 
 
-def _generate_juju_unit(app: str, machine_id: str) -> MagicMock:
+@pytest.mark.asyncio
+async def test__get_applications(mocked_model):
+    """Test Model getting applications from model."""
+    expected = "expect-applications"
+    mocked_model.applications = "expect-applications"
+
+    model = juju_utils.Model("test-model")
+    applications = await model._get_applications()
+
+    assert applications == expected
+
+
+def _generate_juju_unit(app: str, id: str, machine_id: str) -> MagicMock:
     unit = MagicMock(set=Unit)()
     unit.application = app
+    unit.name = f"{app}/{id}"
     unit.machine.id = machine_id
     return unit
 
@@ -635,6 +648,7 @@ def _generate_unit_status(
     status = MagicMock(spec_set=UnitStatus)()
     status.machine = machine_id
     status.subordinates = subordinates
+    status.charm = app
     return f"{app}/{unit_id}", status
 
 
@@ -648,7 +662,13 @@ def _generate_app_status(units: dict[str, MagicMock]) -> MagicMock:
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model.get_status")
 @patch("cou.utils.juju_utils.Model._get_machines")
-async def test_get_applications(mock_get_machines, mock_get_status, mocked_model):
+@patch("cou.utils.juju_utils.Model._get_applications")
+async def test_get_applications(
+    mock_get_applications,
+    mock_get_machines,
+    mock_get_status,
+    mocked_model,
+):
     """Test Model getting applications from model.
 
     Getting application from status, where model contain 3 applications deployed on 3 machines.
@@ -691,20 +711,23 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
         "app4": {},  # subordinate application has no units defined in juju status
     }
     exp_units = {
-        "app1": [_generate_juju_unit("app1", f"{i}") for i in range(3)],
-        "app2": [_generate_juju_unit("app2", "0")],
-        "app3": [_generate_juju_unit("app3", "0")],
-        "app4": [_generate_juju_unit("app4", "0")],
+        "app1": [_generate_juju_unit("app1", f"{i}", f"{i}") for i in range(3)],
+        "app2": [_generate_juju_unit("app2", "0", "0")],
+        "app3": [_generate_juju_unit("app3", "0", "0")],
+        "app4": [_generate_juju_unit("app4", "0", "0")],
     }
 
     mocked_model.applications = {app: MagicMock(spec_set=Application)() for app in exp_apps}
+
     for app in exp_apps:
         mocked_model.applications[app].get_config = AsyncMock()
         mocked_model.applications[app].units = exp_units[app]
+        mocked_model.applications[app].charm_name = app
 
     full_status_apps = {app: _generate_app_status(exp_units_from_status[app]) for app in exp_apps}
     mock_get_status.return_value.applications = full_status_apps
     mock_get_machines.return_value = exp_machines
+    mock_get_applications.return_value = mocked_model.applications
 
     model = juju_utils.Model("test-model")
     exp_apps = {
@@ -727,6 +750,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
                     [
                         juju_utils.SubordinateUnit(
                             subordinate_name,
+                            subordinate.charm,
                             subordinate.workload_version,
                         )
                         for subordinate_name, subordinate in unit.subordinates.items()
@@ -744,6 +768,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     # check mocked objects
     mock_get_status.assert_awaited_once_with()
     mock_get_machines.assert_awaited_once_with()
+    mock_get_applications.assert_called_once_with()
     for app in full_status_apps:
         mocked_model.applications[app].get_config.assert_awaited_once_with()
 
@@ -768,5 +793,5 @@ def test_unit_repr():
 
 
 def test_suborinate_unit_repr():
-    unit = juju_utils.SubordinateUnit(name="foo/0", workload_version="1")
+    unit = juju_utils.SubordinateUnit(name="foo/0", charm="foo", workload_version="1")
     assert repr(unit) == "foo/0"
