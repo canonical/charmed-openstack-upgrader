@@ -808,7 +808,7 @@ def _generate_nova_compute_app(model):
             f"nova-compute/{unit_num}",
             MagicMock(),
             "21.0.1",
-            [SubordinateUnit("ceilometer-agent/{unit_num}", "ceilometer-agent", "14.1.0")],
+            [SubordinateUnit("ceilometer-agent/{unit_num}", "ceilometer-agent")],
         )
         for unit_num in range(3)
     }

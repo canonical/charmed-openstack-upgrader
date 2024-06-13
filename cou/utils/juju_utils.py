@@ -148,7 +148,6 @@ class SubordinateUnit:
 
     name: str
     charm: str
-    workload_version: str
 
     def __repr__(self) -> str:
         """App representation.
@@ -381,7 +380,7 @@ class Model:
             retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
         )
 
-    # @retry
+    @retry
     async def get_applications(self) -> dict[str, Application]:
         """Return list of applications with all relevant information.
 
@@ -424,7 +423,6 @@ class Model:
                             SubordinateUnit(
                                 subordinate_name,
                                 unit_charm_mapping[subordinate_name],
-                                subordinate.workload_version,
                             )
                             for subordinate_name, subordinate in unit.subordinates.items()
                         ],

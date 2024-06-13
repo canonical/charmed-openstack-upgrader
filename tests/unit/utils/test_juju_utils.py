@@ -751,7 +751,6 @@ async def test_get_applications(
                         juju_utils.SubordinateUnit(
                             subordinate_name,
                             subordinate.charm,
-                            subordinate.workload_version,
                         )
                         for subordinate_name, subordinate in unit.subordinates.items()
                     ],
@@ -793,5 +792,5 @@ def test_unit_repr():
 
 
 def test_suborinate_unit_repr():
-    unit = juju_utils.SubordinateUnit(name="foo/0", charm="foo", workload_version="1")
+    unit = juju_utils.SubordinateUnit(name="foo/0", charm="foo")
     assert repr(unit) == "foo/0"
