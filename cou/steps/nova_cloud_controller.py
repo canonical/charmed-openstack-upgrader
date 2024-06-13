@@ -37,6 +37,8 @@ async def archive(model: Model, *, batch_size: int) -> None:
     :raises COUException: if action returned unexpected output
     """  # noqa: E501 line too long
     unit_name: str = await _get_nova_cloud_controller_unit_name(model)
+    # The archive-data action only archives a single batch,
+    # so we must run it in a loop until everything is archived.
     while True:
         logger.debug("Running action 'archive-data' on %s", unit_name)
         # https://charmhub.io/nova-cloud-controller/actions#archive-data
@@ -53,6 +55,8 @@ async def archive(model: Model, *, batch_size: int) -> None:
                 "Expected to find output in action results.'archive-deleted-rows', "
                 "but it was not present."
             )
+        # The command will contain this string if there is nothing left to archive.
+        # This means we don't need to run the command any more.
         if "Nothing was archived" in output:
             logger.debug("Archiving complete.")
             break

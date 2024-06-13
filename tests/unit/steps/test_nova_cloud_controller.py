@@ -17,11 +17,11 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from cou.exceptions import ApplicationNotFound, COUException
-from cou.steps.nova import archive
+from cou.steps.nova_cloud_controller import archive
 
 
 @pytest.mark.asyncio
-async def test_archive(model):
+async def test_archive_succeeds(model):
     model.get_charm_name.side_effect = lambda x: x
     model.run_action.return_value = action = MagicMock()
     action.data = {"results": {"archive-deleted-rows": "Nothing was archived."}}
@@ -57,7 +57,7 @@ async def test_archive_with_broken_charm_action(model):
 
 
 @pytest.mark.asyncio
-async def test_archive_unit_not_found(model):
+async def test_archive_app_not_found(model):
     # force it to never find a nova-cloud-controller charm
     model.get_charm_name.side_effect = lambda _: "invalid"
 
@@ -68,7 +68,7 @@ async def test_archive_unit_not_found(model):
 
 
 @pytest.mark.asyncio
-async def test_archive_multiple_batches(model):
+async def test_archive_handles_multiple_batches(model):
     model.get_charm_name.side_effect = lambda x: x
     model.run_action.side_effect = [
         MagicMock(data={"results": {"archive-deleted-rows": "placeholder 25 rows"}}),

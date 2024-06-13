@@ -93,6 +93,21 @@ class SplitArgs(argparse.Action):
         setattr(namespace, self.dest, cli_input)
 
 
+def batch_size_arg(x: str) -> int:
+    """Type converter for argparse.
+
+    :param x: input arg value to validate and convert
+    :type x: str
+    :return: the input value converted to an int
+    :rtype: int
+    :raises argparse.ArgumentTypeError: if integer is an invalid batch size
+    """
+    i = int(x)
+    if i <= 0:
+        raise argparse.ArgumentTypeError("batch size must be greater than 0")
+    return i
+
+
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
@@ -133,8 +148,9 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     )
     subcommand_common_opts_parser.add_argument(
         "--archive-batch-size",
-        help="Batch size for nova old database data archiving.\n" "Default is 1000.",
-        type=int,
+        help="Batch size for nova old database data archiving.\n"
+        "Decrease the batch size if performance issues are detected.\n(default: 1000)",
+        type=batch_size_arg,
         default=1000,
     )
     subcommand_common_opts_parser.add_argument(

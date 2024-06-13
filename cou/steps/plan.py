@@ -51,7 +51,7 @@ from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
-from cou.steps.nova import archive
+from cou.steps.nova_cloud_controller import archive
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
 from cou.utils.nova_compute import get_empty_hypervisors

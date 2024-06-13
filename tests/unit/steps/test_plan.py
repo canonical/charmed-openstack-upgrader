@@ -44,7 +44,7 @@ from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
-from cou.steps.nova import archive
+from cou.steps.nova_cloud_controller import archive
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
