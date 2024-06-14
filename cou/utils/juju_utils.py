@@ -406,8 +406,7 @@ class Model:
                         unit.workload_version,
                         [
                             SubordinateUnit(
-                                subordinate,
-                                model.applications[subordinate.split("/")[0]]
+                                subordinate, model.applications[subordinate.split("/")[0]]
                             )
                             for subordinate, subordinate_unit in unit.subordinates.items()
                         ],

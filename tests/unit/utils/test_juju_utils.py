@@ -650,7 +650,7 @@ def _generate_app_status(units: dict[str, MagicMock]) -> MagicMock:
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model.get_status")
 @patch("cou.utils.juju_utils.Model._get_machines")
-async def test_get_applications(mock_get_machines ,mock_get_status, mocked_model):
+async def test_get_applications(mock_get_machines, mock_get_status, mocked_model):
     """Test Model getting applications from model.
 
     Getting application from status, where model contain 3 applications deployed on 3 machines.
