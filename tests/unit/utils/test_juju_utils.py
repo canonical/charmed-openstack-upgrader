@@ -600,18 +600,6 @@ async def test_get_machines(mocked_model):
     assert machines == expected_machines
 
 
-@pytest.mark.asyncio
-async def test__get_applications(mocked_model):
-    """Test Model getting applications from model."""
-    expected = "expect-applications"
-    mocked_model.applications = "expect-applications"
-
-    model = juju_utils.Model("test-model")
-    applications = await model._get_applications()
-
-    assert applications == expected
-
-
 def _generate_juju_unit(app: str, id: str, machine_id: str) -> MagicMock:
     unit = MagicMock(set=Unit)()
     unit.application = app
@@ -662,13 +650,7 @@ def _generate_app_status(units: dict[str, MagicMock]) -> MagicMock:
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model.get_status")
 @patch("cou.utils.juju_utils.Model._get_machines")
-@patch("cou.utils.juju_utils.Model._get_applications")
-async def test_get_applications(
-    mock_get_applications,
-    mock_get_machines,
-    mock_get_status,
-    mocked_model,
-):
+async def test_get_applications(mock_get_machines ,mock_get_status, mocked_model):
     """Test Model getting applications from model.
 
     Getting application from status, where model contain 3 applications deployed on 3 machines.
@@ -727,7 +709,6 @@ async def test_get_applications(
     full_status_apps = {app: _generate_app_status(exp_units_from_status[app]) for app in exp_apps}
     mock_get_status.return_value.applications = full_status_apps
     mock_get_machines.return_value = exp_machines
-    mock_get_applications.return_value = mocked_model.applications
 
     model = juju_utils.Model("test-model")
     exp_apps = {
@@ -767,7 +748,6 @@ async def test_get_applications(
     # check mocked objects
     mock_get_status.assert_awaited_once_with()
     mock_get_machines.assert_awaited_once_with()
-    mock_get_applications.assert_called_once_with()
     for app in full_status_apps:
         mocked_model.applications[app].get_config.assert_awaited_once_with()
 

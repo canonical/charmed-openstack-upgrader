@@ -292,15 +292,6 @@ class Model:
 
         return app
 
-    async def _get_applications(self) -> dict[str, JujuApplication]:
-        """Return a map of application-name:Application for all applications.
-
-        :returns: Dictionary of the applications found in the model.
-        :rtype: dict[str, Application]
-        """
-        model = await self._get_model()
-        return model.applications
-
     async def _get_machines(self) -> dict[str, Machine]:
         """Get all the machines in the model.
 
@@ -392,12 +383,7 @@ class Model:
         #                 information the status than from objects. e.g. workload_version for unit
         full_status = await self.get_status()
         machines = await self._get_machines()
-
-        applications = await self._get_applications()
-        unit_charm_mapping: dict[str, str] = {}
-        for name, app in applications.items():
-            for unit in app.units:
-                unit_charm_mapping[unit.name] = app.charm_name
+        print(model.applications)
 
         return {
             app: Application(
@@ -421,10 +407,10 @@ class Model:
                         unit.workload_version,
                         [
                             SubordinateUnit(
-                                subordinate_name,
-                                unit_charm_mapping[subordinate_name],
+                                subordinate,
+                                model.applications[subordinate.split("/")[0]]
                             )
-                            for subordinate_name, subordinate in unit.subordinates.items()
+                            for subordinate, subordinate_unit in unit.subordinates.items()
                         ],
                     )
                     for name, unit in status.units.items()
