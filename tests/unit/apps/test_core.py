@@ -855,6 +855,9 @@ def test_nova_compute_upgrade_plan(model):
         Enable nova-compute scheduler from unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/1'
         Enable nova-compute scheduler from unit: 'nova-compute/2'
+        Restart subordinate service for unit: ceilometer-agent/0
+        Restart subordinate service for unit: ceilometer-agent/1
+        Restart subordinate service for unit: ceilometer-agent/2
         Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
@@ -865,6 +868,7 @@ def test_nova_compute_upgrade_plan(model):
             name=f"nova-compute/{unit}",
             workload_version="21.0.0",
             machine=machines[f"{unit}"],
+            subordinates=[SubordinateUnit(name=f"ceilometer-agent/{unit}", charm="ceilometer-agent")]
         )
         for unit in range(3)
     }
@@ -884,7 +888,6 @@ def test_nova_compute_upgrade_plan(model):
     )
 
     plan = nova_compute.generate_upgrade_plan(target, False)
-
     assert str(plan) == exp_plan
 
 
@@ -908,6 +911,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/0'
+        Restart subordinate service for unit: ceilometer-agent/0
         Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
@@ -918,6 +922,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
             name=f"nova-compute/{unit}",
             workload_version="21.0.0",
             machine=machines[f"{unit}"],
+            subordinates=[SubordinateUnit(name=f"ceilometer-agent/{unit}", charm="ceilometer-agent")]
         )
         for unit in range(3)
     }

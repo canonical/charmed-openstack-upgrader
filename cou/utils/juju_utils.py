@@ -383,7 +383,6 @@ class Model:
         #                 information the status than from objects. e.g. workload_version for unit
         full_status = await self.get_status()
         machines = await self._get_machines()
-        print(model.applications)
 
         return {
             app: Application(

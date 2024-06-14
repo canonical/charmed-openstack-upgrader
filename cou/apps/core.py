@@ -123,7 +123,7 @@ class NovaCompute(OpenStackApplication):
         :rtype: list[PostUpgradeStep]
         """
         if not units:
-            return []
+            units = list(self.units.values())
         steps = []
         for unit in units:
             for subordinate in unit.subordinates:
