@@ -93,19 +93,19 @@ class SplitArgs(argparse.Action):
         setattr(namespace, self.dest, cli_input)
 
 
-def batch_size_arg(x: str) -> int:
+def batch_size_arg(value: str) -> int:
     """Type converter for argparse.
 
-    :param x: input arg value to validate and convert
-    :type x: str
+    :param value: input arg value to validate and convert
+    :type value: str
     :return: the input value converted to an int
     :rtype: int
     :raises argparse.ArgumentTypeError: if integer is an invalid batch size
     """
-    i = int(x)
-    if i <= 0:
+    batch_size = int(value)
+    if batch_size <= 0:
         raise argparse.ArgumentTypeError("batch size must be greater than 0")
-    return i
+    return batch_size
 
 
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
