@@ -195,7 +195,14 @@ class SmokeTest(unittest.TestCase):
             "Upgrade plan for 'mysql-innodb-cluster' to 'victoria'",
         ]
         result_before_upgrade = self.cou(
-            ["upgrade", "--model", self.model_name, "--no-backup", "--auto-approve"]
+            [
+                "upgrade",
+                "--model",
+                self.model_name,
+                "--no-backup",
+                "--no-archive",
+                "--auto-approve",
+            ]
         ).stdout
         for expected_msg in expected_msgs_before_upgrade:
             with self.subTest(expected_msg):
@@ -206,7 +213,9 @@ class SmokeTest(unittest.TestCase):
             "Upgrade plan for 'designate-bind' to 'wallaby'",
             "Upgrade plan for 'mysql-innodb-cluster' to 'wallaby'",
         ]
-        result_after_upgrade = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
+        result_after_upgrade = self.cou(
+            ["plan", "--model", self.model_name, "--no-backup", "--no-archive"]
+        ).stdout
         for expected_msg in expected_msg_after_upgrade:
             with self.subTest(expected_msg):
                 self.assertIn(expected_msg, result_after_upgrade)
