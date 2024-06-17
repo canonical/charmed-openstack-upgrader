@@ -40,8 +40,22 @@ If your openstack environment is behind the vpn and you have the bastion server,
      sshuttle --ssh-cmd "ssh -i /home/myuser/.ssh/mykey" -v -r ubuntu@your-bastion-ip 10.5.0.0/16
 
 
-Prepare local python environment for COU
-----------------------------------------
+Install COU for testing
+-----------------------
+
+There are two ways to execute COU:
+
+- Use snap
+- Use Python
+
+Using python is more useful to debugging the code base bugs.
+However Snap is a official way to run COU on production, and we need to make sure all the parts in snap is working fine.
+
+
+(Optional) Prepare local python environment for COU
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+One way to execute COU is to run it in your python environment
 
 .. code:: bash
 
@@ -49,6 +63,23 @@ Prepare local python environment for COU
     source .venv/bin/activate
     pip install -e .
 
+(Optional) Install COU from local snap build
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: bash
+   # Running snapcraft command in the project's root directory.
+   snapcraft
+
+   # Install local snap with --devmode or --dangerous
+   sudo snap install ./LOCAL_SNAP_FILE --devmode
+
+   # snap list command should show the COU
+   snap list
+
+(Optional) Copy the JUJU_DATA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: bash
     # (Optional)
     # Copy all the files under ~/.local/share/juju to ./juju-data
     export JUJU_DATA=./juju-data
@@ -64,17 +95,17 @@ Run cou plan and review the steps generate by COU
     python -m cou plan
 
 
-(Optional) Run apply to execute the upgrade steps
+(Optional) Run upgrade to execute the upgrade steps
 
 .. code:: bash
 
-    python -m cou apply
+    python -m cou upgrade
 
 
 (Optional) Tail COU's log message
 -------------------------------------
 
-Use below script to tail the log files with follow mode:
+Use below script to tail all the log files, old and new created, in follow mode:
 
 .. code:: bash
 
