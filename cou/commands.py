@@ -154,6 +154,22 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         default=1000,
     )
     subcommand_common_opts_parser.add_argument(
+        "--purge",
+        help="Delete data from shadow tables. before cloud upgrade.\n"
+        "Default to disable purge.",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--purge-before",
+        dest="purge_before",
+        help="Specifying –before will delete data from all shadow tables "
+        "that is older than the date provided. "
+        "Date strings may be fuzzy, such as 'Oct 21 2015'. "
+        "Without before the step will delete all the data.",
+        type=str,
+    )
+    subcommand_common_opts_parser.add_argument(
         "--force",
         action="store_true",
         dest="force",
@@ -421,6 +437,8 @@ class CLIargs:
     subcommand: Optional[str] = None  # for help option
     machines: Optional[set[str]] = None
     availability_zones: Optional[set[str]] = None
+    purge: bool = False
+    purge_before: str = ""
 
     @property
     def prompt(self) -> bool:
