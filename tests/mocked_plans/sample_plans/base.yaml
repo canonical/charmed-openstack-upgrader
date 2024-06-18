@@ -2,6 +2,7 @@ plan: |
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
+        Archive old database data on nova-cloud-controller
         Control Plane principal(s) upgrade plan
             Upgrade plan for 'keystone' to 'victoria'
                 Upgrade software packages of 'keystone' from the current APT repositories

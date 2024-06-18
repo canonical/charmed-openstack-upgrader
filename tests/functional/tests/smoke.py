@@ -136,6 +136,7 @@ class SmokeTest(unittest.TestCase):
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify that all OpenStack applications are in idle state\n"
             f"{backup_plan}"
+            "\tArchive old database data on nova-cloud-controller\n"
             "\tControl Plane principal(s) upgrade plan\n"
             "\t\tUpgrade plan for 'designate-bind' to 'victoria'\n"
             "\t\t\tUpgrade software packages of 'designate-bind' "
@@ -194,7 +195,14 @@ class SmokeTest(unittest.TestCase):
             "Upgrade plan for 'mysql-innodb-cluster' to 'victoria'",
         ]
         result_before_upgrade = self.cou(
-            ["upgrade", "--model", self.model_name, "--no-backup", "--auto-approve"]
+            [
+                "upgrade",
+                "--model",
+                self.model_name,
+                "--no-backup",
+                "--no-archive",
+                "--auto-approve",
+            ]
         ).stdout
         for expected_msg in expected_msgs_before_upgrade:
             with self.subTest(expected_msg):
@@ -205,7 +213,9 @@ class SmokeTest(unittest.TestCase):
             "Upgrade plan for 'designate-bind' to 'wallaby'",
             "Upgrade plan for 'mysql-innodb-cluster' to 'wallaby'",
         ]
-        result_after_upgrade = self.cou(["plan", "--model", self.model_name, "--no-backup"]).stdout
+        result_after_upgrade = self.cou(
+            ["plan", "--model", self.model_name, "--no-backup", "--no-archive"]
+        ).stdout
         for expected_msg in expected_msg_after_upgrade:
             with self.subTest(expected_msg):
                 self.assertIn(expected_msg, result_after_upgrade)

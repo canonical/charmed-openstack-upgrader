@@ -15,4 +15,5 @@ are possible with **COU**.
    interruption
    configure-connection
    no-backup
+   archive-old-data
    verbosity
