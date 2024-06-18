@@ -132,7 +132,8 @@ class NovaCompute(OpenStackApplication):
                     steps.append(
                         PostUpgradeStep(
                             description=(
-                                f"Restart subordinate service for unit: '{subordinate.name}'"
+                                "Restart service ceilometer-agent-compute "
+                                f"for subordinate unit: '{subordinate.name}'"
                             ),
                             coro=self.model.run_on_unit(
                                 unit_name=subordinate.name,
