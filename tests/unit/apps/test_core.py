@@ -719,9 +719,9 @@ def test_nova_compute_get_enable_scheduler_step(model, units):
 @pytest.mark.parametrize(
     "units",
     [
-        [f"nova-compute/{unit}" for unit in range(1)],
-        [f"nova-compute/{unit}" for unit in range(2)],
-        [f"nova-compute/{unit}" for unit in range(3)],
+        ["nova-compute/0"],
+        ["nova-compute/0", "nova-compute/1"],
+        ["nova-compute/0", "nova-compute/1", "nova-compute/2"],
     ],
 )
 def test_nova_compute_get_restart_subordinate_services_steps(model, units):

@@ -600,10 +600,10 @@ async def test_get_machines(mocked_model):
     assert machines == expected_machines
 
 
-def _generate_juju_unit(app: str, id: str, machine_id: str) -> MagicMock:
+def _generate_juju_unit(app: str, unit_id: str, machine_id: str) -> MagicMock:
     unit = MagicMock(set=Unit)()
     unit.application = app
-    unit.name = f"{app}/{id}"
+    unit.name = f"{app}/{unit_id}"
     unit.machine.id = machine_id
     return unit
 
