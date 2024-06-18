@@ -61,10 +61,15 @@ One way to execute COU is to run it in your python environment
 
     virtualenv ./.venv
     source .venv/bin/activate
+
+    # Install COU in editable mode
     pip install -e .
 
+    # Verify cou is installed in the environment
+    which cou
+
     # Execute cou in python environment
-    python -m cou
+    cou
 
 (Optional) Install COU from local snap build
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,14 +100,14 @@ Run cou plan and review the steps generate by COU
 
 .. code:: bash
 
-    python -m cou plan
+    cou plan
 
 
 (Optional) Run upgrade to execute the upgrade steps
 
 .. code:: bash
 
-    python -m cou upgrade
+    cou upgrade
 
 
 (Optional) Tail COU's log message
