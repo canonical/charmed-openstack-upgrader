@@ -31,7 +31,7 @@ to deploy the openstack cloud
 
 
 (Optional) sshuttle as proxy
--------------------
+----------------------------
 
 If your openstack environment is behind the vpn and you have the bastion server, you can use sshuttle:
 
@@ -63,15 +63,18 @@ One way to execute COU is to run it in your python environment
     source .venv/bin/activate
     pip install -e .
 
+    # Execute cou in python environment
+    python -m cou
+
 (Optional) Install COU from local snap build
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: bash
    # Running snapcraft command in the project's root directory.
    snapcraft
 
-   # Install local snap with --devmode or --dangerous
-   sudo snap install ./LOCAL_SNAP_FILE --devmode
+   # Install local snap with --dangerous
+   sudo snap install ./LOCAL_SNAP_FILE --dangerous
 
    # snap list command should show the COU
    snap list
@@ -79,9 +82,9 @@ One way to execute COU is to run it in your python environment
 (Optional) Copy the JUJU_DATA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+If you don't want to mix the configuration with your local.
+
 .. code:: bash
-    # (Optional)
-    # Copy all the files under ~/.local/share/juju to ./juju-data
     export JUJU_DATA=./juju-data
 
 
