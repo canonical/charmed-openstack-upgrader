@@ -75,6 +75,7 @@ One way to execute COU is to run it in your python environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: bash
+
    # Running snapcraft command in the project's root directory.
    snapcraft
 
@@ -90,6 +91,7 @@ One way to execute COU is to run it in your python environment
 If you don't want to mix the configuration with your local.
 
 .. code:: bash
+
     export JUJU_DATA=./juju-data
 
 
@@ -110,7 +112,7 @@ Run cou plan and review the steps generate by COU
     cou upgrade
 
 
-(Optional) Tail COU's log message
+(Optional) Tail COU log message
 -------------------------------------
 
 Use below script to tail all the log files, old and new created, in follow mode:
