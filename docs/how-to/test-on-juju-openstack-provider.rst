@@ -8,7 +8,7 @@ This document explain how to setup the testing environment on top of the Juju Op
 Bootstrap juju controller on openstack cloud
 --------------------------------------------
 
-Follow the step on the `official document <https://juju.is/docs/juju/manage-controllers#heading--bootstrap-a-controller>`_ to bootstrap a Juju Openstack controller
+Follow the step on the `official documentation <https://juju.is/docs/juju/manage-controllers#heading--bootstrap-a-controller>`_ to bootstrap a Juju Openstack controller
 
 
 Deploy openstack with juju openstack-provider
