@@ -93,6 +93,21 @@ class SplitArgs(argparse.Action):
         setattr(namespace, self.dest, cli_input)
 
 
+def batch_size_arg(value: str) -> int:
+    """Type converter for argparse.
+
+    :param value: input arg value to validate and convert
+    :type value: str
+    :return: the input value converted to an int
+    :rtype: int
+    :raises argparse.ArgumentTypeError: if integer is an invalid batch size
+    """
+    batch_size = int(value)
+    if batch_size <= 0:
+        raise argparse.ArgumentTypeError("batch size must be greater than 0")
+    return batch_size
+
+
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
@@ -123,6 +138,20 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         "Default to enabling database backup.",
         action=argparse.BooleanOptionalAction,
         default=argparse.SUPPRESS,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--archive",
+        help="Archive old database data (nova) before cloud upgrade.\n"
+        "Default to enabling archive.",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--archive-batch-size",
+        help="Batch size for nova old database data archiving.\n"
+        "Decrease the batch size if performance issues are detected.\n(default: 1000)",
+        type=batch_size_arg,
+        default=1000,
     )
     subcommand_common_opts_parser.add_argument(
         "--force",
@@ -382,6 +411,8 @@ class CLIargs:
     command: str
     verbosity: int = 0
     backup: bool = True
+    archive: bool = True
+    archive_batch_size: int = 1000
     quiet: bool = False
     force: bool = False
     auto_approve: bool = False
