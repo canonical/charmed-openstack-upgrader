@@ -387,6 +387,22 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             )
         )
 
+    pre_clean_data_steps = _get_pre_clean_data_steps(analysis_result, args)
+    steps = steps + pre_clean_data_steps
+    return steps
+
+
+def _get_pre_clean_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get the pre-upgraded steps to clean nova db.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of pre-upgrade steps to clean nova database.
+    :rtype: list[PreUpgradeStep]
+    """
+    steps = []
     # Add a pre-upgrade step to archive old database data.
     # This is a performance optimisation.
     if args.archive:
@@ -396,17 +412,27 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
                 coro=archive(analysis_result.model, batch_size=args.archive_batch_size),
             )
         )
+
     # Add a pre-upgrade step to purge old database data.
     # This is a performance optimisation.
-    if args.purge:
+    if args.purge and any(
+        app.charm == "nova-cloud-controller" and "purge-data" in app.actions.keys()
+        for app in analysis_result.apps_control_plane
+    ):
+        msg: str
+        if args.purge_before:
+            msg = (
+                f"Purge data before {args.purge_before}"
+                " from shadow tables on nova-cloud-controller"
+            )
+        else:
+            msg = "Purge all data from shadow tables on nova-cloud-controller"
         steps.append(
             PreUpgradeStep(
-                description="Purge data from shadow tables on nova-cloud-controller",
+                description=msg,
                 coro=purge(analysis_result.model, before=args.purge_before),
             )
         )
-
-
     return steps
 
 

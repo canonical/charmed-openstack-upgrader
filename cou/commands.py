@@ -16,6 +16,7 @@
 import argparse
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Iterable, Optional
 
 import pkg_resources
@@ -108,6 +109,28 @@ def batch_size_arg(value: str) -> int:
     return batch_size
 
 
+def purge_before_arg(value: str) -> str:
+    """Verify the datetime string is acceptable.
+
+    :param value: input arg value to validate
+    :type value: str
+    :return: same as input string
+    :rtype: str
+    :raises argparse.ArgumentTypeError: if string format is invalid
+    """
+    valid = False
+    formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"]
+    for fmt in formats:
+        try:
+            datetime.strptime(value, fmt)
+            valid = True
+        except ValueError:
+            continue
+    if not valid:
+        raise argparse.ArgumentTypeError("purge before format must be YYYY-MM-DD[HH:mm][:ss]")
+    return value
+
+
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
@@ -155,9 +178,8 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     )
     subcommand_common_opts_parser.add_argument(
         "--purge",
-        help="Delete data from shadow tables. before cloud upgrade.\n"
-        "Default to disable purge.",
-        action=argparse.BooleanOptionalAction,
+        help="Delete data from shadow tables. before cloud upgrade.\n" "Default to disable purge.",
+        action="store_true",
         default=False,
     )
     subcommand_common_opts_parser.add_argument(
@@ -167,7 +189,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         "that is older than the date provided. "
         "Date strings may be fuzzy, such as 'Oct 21 2015'. "
         "Without before the step will delete all the data.",
-        type=str,
+        type=purge_before_arg,
     )
     subcommand_common_opts_parser.add_argument(
         "--force",

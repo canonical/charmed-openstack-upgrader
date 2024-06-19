@@ -70,8 +70,9 @@ async def purge(model: Model, before: Optional[str]) -> None:
     The purge-data action delete rows from shadow tables.
     :param model: juju model to work with
     :type model: Model
-    :param before: specifying before will delete data from all shadow tables that is older than the data provided.
-         Date strings may be fuzzy, such as Oct 21 2015
+    :param before: specifying before will delete data from all shadow tables
+        that is older than the data provided.
+        Date string format should be YYYY-MM-DD[HH:mm][:ss]
     :raises COUException: if action returned unexpected output or failed
     """
     action_params = {}
@@ -88,8 +89,7 @@ async def purge(model: Model, before: Optional[str]) -> None:
     output = action.data["results"].get("output")
     if output is None:
         raise COUException(
-            "Expected to find output in action results. 'output',"
-            "but it was not present."
+            "Expected to find output in action results. 'output', but it was not present."
         )
     if "Purging stale soft-deleted rows failed" in output:
         raise COUException(
@@ -97,9 +97,7 @@ async def purge(model: Model, before: Optional[str]) -> None:
             "for more details."
         )
     if "Purging stale soft-deleted rows and no data was deleted" in output:
-        logger.info(
-            f"Run purge-data action in ${unit_name} and no data was deleted"
-        )
+        logger.info("Run purge-data action in %s and no data was deleted", unit_name)
     else:
         logger.info("Purge data action success in ${unit_name}")
 
