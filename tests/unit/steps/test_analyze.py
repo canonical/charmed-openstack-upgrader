@@ -51,16 +51,19 @@ def test_analysis_dump(model):
               machine: '0'
               workload_version: 17.0.1
               o7k_version: ussuri
+              subordinates: {}
             keystone/1:
               name: keystone/1
               machine: '1'
               workload_version: 17.0.1
               o7k_version: ussuri
+              subordinates: {}
             keystone/2:
               name: keystone/2
               machine: '2'
               workload_version: 17.0.1
               o7k_version: ussuri
+              subordinates: {}
           machines:
             '0':
               id: '0'
@@ -93,16 +96,19 @@ def test_analysis_dump(model):
               machine: '0'
               workload_version: 16.4.2
               o7k_version: ussuri
+              subordinates: {}
             cinder/1:
               name: cinder/1
               machine: '1'
               workload_version: 16.4.2
               o7k_version: ussuri
+              subordinates: {}
             cinder/2:
               name: cinder/2
               machine: '2'
               workload_version: 16.4.2
               o7k_version: ussuri
+              subordinates: {}
           machines:
             '0':
               id: '0'
@@ -135,6 +141,7 @@ def test_analysis_dump(model):
               machine: '0'
               workload_version: '3.8'
               o7k_version: yoga
+              subordinates: {}
           machines:
             '0':
               id: '0'

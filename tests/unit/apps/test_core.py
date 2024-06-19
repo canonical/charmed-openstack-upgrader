@@ -32,7 +32,7 @@ from cou.steps import (
 )
 from cou.utils import app_utils
 from cou.utils import nova_compute as nova_compute_utils
-from cou.utils.juju_utils import Unit
+from cou.utils.juju_utils import SubordinateUnit, Unit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
@@ -631,7 +631,14 @@ def test_nova_compute_pre_upgrade_steps(
 @patch("cou.apps.base.OpenStackApplication._get_wait_step")
 @patch("cou.apps.base.OpenStackApplication._get_reached_expected_target_step")
 @patch("cou.apps.core.NovaCompute._get_enable_scheduler_step")
-def test_nova_compute_post_upgrade_steps(mock_enable, mock_expected_target, mock_wait_step, model):
+@patch("cou.apps.core.NovaCompute._get_restart_subordinate_services_steps")
+def test_nova_compute_post_upgrade_steps(
+    mock_restart_subordinate,
+    mock_enable,
+    mock_expected_target,
+    mock_wait_step,
+    model,
+):
     app = _generate_nova_compute_app(model)
     target = OpenStackRelease("victoria")
     units = list(app.units.values())
@@ -640,6 +647,7 @@ def test_nova_compute_post_upgrade_steps(mock_enable, mock_expected_target, mock
     mock_enable.assert_called_once_with(units)
     mock_expected_target.assert_called_once_with(target, units)
     mock_wait_step.assert_called_once_with()
+    mock_restart_subordinate.assert_called_once_with(units)
 
 
 @pytest.mark.parametrize("force", [True, False])
@@ -708,6 +716,35 @@ def test_nova_compute_get_enable_scheduler_step(model, units):
     assert app._get_enable_scheduler_step(units_selected) == expected_step
 
 
+@pytest.mark.parametrize(
+    "units",
+    [
+        ["nova-compute/0"],
+        ["nova-compute/0", "nova-compute/1"],
+        ["nova-compute/0", "nova-compute/1", "nova-compute/2"],
+    ],
+)
+def test_nova_compute_get_restart_subordinate_services_steps(model, units):
+    app = _generate_nova_compute_app(model)
+    units_selected = [app.units[unit] for unit in units]
+    assert app._get_restart_subordinate_services_steps(units_selected) == [
+        PostUpgradeStep(
+            description=(
+                "Restart service ceilometer-agent-compute "
+                f"for subordinate unit: '{unit.subordinates[0].name}'"
+            ),
+            coro=model.run_on_unit(
+                unit_name=unit.subordinates[0].name,
+                command=(
+                    "systemctl is-active --quiet ceilometer-agent-compute"
+                    " || systemctl restart ceilometer-agent-compute"
+                ),
+            ),
+        )
+        for unit in units_selected
+    ]
+
+
 def test_nova_compute_get_enable_scheduler_step_no_units(model):
     """Enable the scheduler on all units if no units are passed."""
     app = _generate_nova_compute_app(model)
@@ -770,7 +807,12 @@ def _generate_nova_compute_app(model):
     channel = "ussuri/stable"
 
     units = {
-        f"nova-compute/{unit_num}": Unit(f"nova-compute/{unit_num}", MagicMock(), "21.0.1")
+        f"nova-compute/{unit_num}": Unit(
+            f"nova-compute/{unit_num}",
+            MagicMock(),
+            "21.0.1",
+            [SubordinateUnit("ceilometer-agent/{unit_num}", "ceilometer-agent")],
+        )
         for unit_num in range(3)
     }
     app = NovaCompute(
@@ -816,6 +858,9 @@ def test_nova_compute_upgrade_plan(model):
         Enable nova-compute scheduler from unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/1'
         Enable nova-compute scheduler from unit: 'nova-compute/2'
+        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
+        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/1'
+        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/2'
         Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
@@ -826,6 +871,9 @@ def test_nova_compute_upgrade_plan(model):
             name=f"nova-compute/{unit}",
             workload_version="21.0.0",
             machine=machines[f"{unit}"],
+            subordinates=[
+                SubordinateUnit(name=f"ceilometer-agent/{unit}", charm="ceilometer-agent"),
+            ],
         )
         for unit in range(3)
     }
@@ -845,7 +893,6 @@ def test_nova_compute_upgrade_plan(model):
     )
 
     plan = nova_compute.generate_upgrade_plan(target, False)
-
     assert str(plan) == exp_plan
 
 
@@ -869,6 +916,7 @@ def test_nova_compute_upgrade_plan_single_unit(model):
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/0'
+        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
         Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
@@ -879,6 +927,9 @@ def test_nova_compute_upgrade_plan_single_unit(model):
             name=f"nova-compute/{unit}",
             workload_version="21.0.0",
             machine=machines[f"{unit}"],
+            subordinates=[
+                SubordinateUnit(name=f"ceilometer-agent/{unit}", charm="ceilometer-agent"),
+            ],
         )
         for unit in range(3)
     }

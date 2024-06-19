@@ -81,6 +81,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -93,6 +95,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=False,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -105,6 +109,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=True,
                 backup=False,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -117,6 +123,50 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=True,
                 backup=False,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["plan", "--no-archive"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=False,
+                archive_batch_size=1000,
+                archive=False,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["plan", "--archive"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=False,
+                archive_batch_size=1000,
+                archive=True,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["plan", "--archive-batch-size", "564"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=False,
+                archive_batch_size=564,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -129,6 +179,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -141,6 +193,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -153,6 +207,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "data-plane"}
@@ -167,6 +223,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "hypervisors"}
@@ -181,6 +239,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "data-plane"}
@@ -195,6 +255,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "hypervisors"}
@@ -209,6 +271,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -221,6 +285,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines={"1", "2", "3"},
                 availability_zones=None,
                 **{"upgrade_group": "hypervisors"}
@@ -235,6 +301,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines={"1", "2", "3"},
                 availability_zones=None,
                 **{"upgrade_group": "hypervisors"}
@@ -249,6 +317,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=True,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones={"1", "2", "3"},
                 **{"upgrade_group": "hypervisors"}
@@ -263,6 +333,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=True,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones={"1", "2", "3"},
                 **{"upgrade_group": "hypervisors"}
@@ -278,6 +350,8 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 quiet=False,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines={"1", "2", "3", "4"},
                 availability_zones=None,
                 **{"upgrade_group": "hypervisors"}
@@ -305,6 +379,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -318,6 +394,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=False,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -331,6 +409,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=False,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -344,6 +424,53 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=False,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["upgrade", "--no-archive"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
+                archive_batch_size=1000,
+                archive=False,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["upgrade", "--archive"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
+                archive_batch_size=1000,
+                archive=True,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["upgrade", "--archive-batch-size", "564"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
+                archive_batch_size=564,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -357,6 +484,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": None}
             ),
         ),
@@ -370,6 +499,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -383,6 +514,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -396,6 +529,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "data-plane"}
@@ -413,6 +548,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "data-plane"}
@@ -428,6 +565,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=False,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "data-plane"}
@@ -443,6 +582,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones=None,
                 **{"upgrade_group": "data-plane"}
@@ -458,6 +599,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -471,6 +614,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 **{"upgrade_group": "control-plane"}
             ),
         ),
@@ -484,6 +629,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines={"1", "2", "3"},
                 availability_zones=None,
                 **{"upgrade_group": "hypervisors"}
@@ -499,6 +646,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines={"1", "2", "3"},
                 availability_zones=None,
                 **{"upgrade_group": "hypervisors"}
@@ -514,6 +663,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones={"1", "2", "3"},
                 **{"upgrade_group": "hypervisors"}
@@ -529,6 +680,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=False,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones={"1", "2", "3"},
                 **{"upgrade_group": "hypervisors"}
@@ -544,6 +697,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=False,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines=None,
                 availability_zones={"1", "2", "3"},
                 **{"upgrade_group": "hypervisors"}
@@ -567,6 +722,8 @@ def test_parse_args_plan(args, expected_CLIargs):
                 auto_approve=True,
                 backup=True,
                 force=True,
+                archive_batch_size=1000,
+                archive=True,
                 machines={"1", "2", "3", "4"},
                 availability_zones=None,
                 **{"upgrade_group": "hypervisors"}
@@ -590,6 +747,23 @@ def test_parse_args_upgrade(args, expected_CLIargs):
 )
 def test_parse_args_hypervisors_exclusive_options(args):
     """Test parsing mutually exclusive hypervisors specific options."""
+    with pytest.raises(SystemExit, match="2"):
+        commands.parse_args(args)
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["upgrade", "--archive-batch-size", "asdf"],
+        ["plan", "--archive-batch-size", "asdf"],
+        ["upgrade", "--archive-batch-size", "-4"],
+        ["plan", "--archive-batch-size", "-4"],
+        ["upgrade", "--archive-batch-size", "0"],
+        ["plan", "--archive-batch-size", "0"],
+    ],
+)
+def test_parse_invalid_args(args):
+    """Generic test for various invalid sets of args."""
     with pytest.raises(SystemExit, match="2"):
         commands.parse_args(args)
 

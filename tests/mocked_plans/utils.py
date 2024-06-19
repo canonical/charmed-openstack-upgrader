@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, PropertyMock
 
 import yaml
 
-from cou.utils.juju_utils import Application, Machine, Model, Unit
+from cou.utils.juju_utils import Application, Machine, Model, SubordinateUnit, Unit
 from tests.unit.utils import dedent_plan
 
 
@@ -64,7 +64,18 @@ def parse_sample_plan_file(source: Path) -> tuple[Model, str]:
             series=app_data["series"],
             subordinate_to=app_data["subordinate_to"],
             units={
-                name: Unit(name, machines[unit["machine"]], unit["workload_version"])
+                name: Unit(
+                    name,
+                    machines[unit["machine"]],
+                    unit["workload_version"],
+                    [
+                        SubordinateUnit(
+                            subordinate["name"],
+                            subordinate["charm"],
+                        )
+                        for _, subordinate in unit.get("subordinates", {}).items()
+                    ],
+                )
                 for name, unit in app_data["units"].items()
             },
             workload_version=app_data["workload_version"],

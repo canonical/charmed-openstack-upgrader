@@ -2,6 +2,7 @@ plan: |
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
+        Archive old database data on nova-cloud-controller
         Control Plane principal(s) upgrade plan
             Upgrade plan for 'rabbitmq-server' to 'victoria'
                 Upgrade software packages of 'rabbitmq-server' from the current APT repositories
@@ -319,6 +320,10 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/2'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/3'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/9'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/2'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/3'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/9'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/0, nova-compute-kvm/2, nova-compute-kvm/3, nova-compute-kvm/9
             Upgrade plan for [cinder-volume/1, cinder-volume/10, cinder-volume/11, cinder-volume/5, nova-compute-kvm/1, nova-compute-kvm/10, nova-compute-kvm/11, nova-compute-kvm/5] in 'zone3' to 'victoria'
@@ -386,6 +391,10 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/10'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/11'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/5'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/1'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/10'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/11'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/5'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/1, nova-compute-kvm/10, nova-compute-kvm/11, nova-compute-kvm/5
             Upgrade plan for [cinder-volume/4, cinder-volume/6, cinder-volume/7, cinder-volume/8, nova-compute-kvm/4, nova-compute-kvm/6, nova-compute-kvm/7, nova-compute-kvm/8] in 'zone1' to 'victoria'
@@ -453,6 +462,10 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/6'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/7'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/8'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/4'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/6'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/7'
+                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/8'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/4, nova-compute-kvm/6, nova-compute-kvm/7, nova-compute-kvm/8
         Remaining Data Plane principal(s) upgrade plan
@@ -6738,61 +6751,108 @@ applications:
         machine: '21'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/0:
+            name: ceilometer-agent/0
+            charm: ceilometer-agent
       nova-compute-kvm/1:
         name: nova-compute-kvm/1
         machine: '22'
         workload_version: 21.2.4
-        o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/1:
+            name: ceilometer-agent/1
+            charm: ceilometer-agent
       nova-compute-kvm/10:
         name: nova-compute-kvm/10
         machine: '31'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/10:
+            name: ceilometer-agent/10
+            charm: ceilometer-agent
       nova-compute-kvm/11:
         name: nova-compute-kvm/11
         machine: '32'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/11:
+            name: ceilometer-agent/11
+            charm: ceilometer-agent
       nova-compute-kvm/2:
         name: nova-compute-kvm/2
         machine: '23'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/2:
+            name: ceilometer-agent/2
+            charm: ceilometer-agent
       nova-compute-kvm/3:
         name: nova-compute-kvm/3
         machine: '24'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/3:
+            name: ceilometer-agent/3
+            charm: ceilometer-agent
       nova-compute-kvm/4:
         name: nova-compute-kvm/4
         machine: '25'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/4:
+            name: ceilometer-agent/4
+            charm: ceilometer-agent
       nova-compute-kvm/5:
         name: nova-compute-kvm/5
         machine: '26'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/5:
+            name: ceilometer-agent/5
+            charm: ceilometer-agent
       nova-compute-kvm/6:
         name: nova-compute-kvm/6
         machine: '27'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/6:
+            name: ceilometer-agent/6
+            charm: ceilometer-agent
       nova-compute-kvm/7:
         name: nova-compute-kvm/7
         machine: '28'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/7:
+            name: ceilometer-agent/7
+            charm: ceilometer-agent
       nova-compute-kvm/8:
         name: nova-compute-kvm/8
         machine: '29'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/8:
+            name: ceilometer-agent/8
+            charm: ceilometer-agent
       nova-compute-kvm/9:
         name: nova-compute-kvm/9
         machine: '30'
         workload_version: 21.2.4
         o7k_version: ussuri
+        subordinates:
+          ceilometer-agent/9:
+            name: ceilometer-agent/9
+            charm: ceilometer-agent
     machines:
       '21':
         id: '21'
