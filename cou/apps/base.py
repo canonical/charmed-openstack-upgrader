@@ -122,6 +122,13 @@ class OpenStackApplication(Application):
                         "machine": unit.machine.machine_id,
                         "workload_version": unit.workload_version,
                         "o7k_version": str(self.get_latest_o7k_version(unit)),
+                        "subordinates": {
+                            subordinate.name: {
+                                "name": subordinate.name,
+                                "charm": subordinate.charm,
+                            }
+                            for subordinate in unit.subordinates
+                        },
                     }
                     for unit in self.units.values()
                 },
