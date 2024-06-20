@@ -543,8 +543,9 @@ def test_verify_highest_release_achieved():
     exp_error_msg = (
         "No upgrades available for OpenStack Yoga on "
         "Ubuntu Focal.\nNewer OpenStack releases "
-        "may be available after manually upgrading to a later Ubuntu series.\n"
-        "For more information, please refer to the official documentations:\n"
+        "is available after manually upgrading to a later Ubuntu series.\n"
+        "Charmed OpenStack Upgrader does not support upgrade across series,\n"
+        "please refer to the official documentation on how to do series upgrade:\n"
         "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series.html\n"
         "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series-openstack.html"
     )
