@@ -184,7 +184,10 @@ def _verify_highest_release_achieved(analysis_result: Analysis) -> None:
         raise HighestReleaseAchieved(
             f"No upgrades available for OpenStack {str(o7k_release).capitalize()} on "
             f"Ubuntu {current_series.capitalize()}.\nNewer OpenStack releases "
-            "may be available after upgrading to a later Ubuntu series."
+            "may be available after manually upgrading to a later Ubuntu series.\n"
+            "For more information, please refer to the official documentations:\n"
+            "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series.html\n"
+            "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series-openstack.html"
         )
 
 
