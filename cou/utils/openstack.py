@@ -105,6 +105,7 @@ AUXILIARY_SUBORDINATES = ["hacluster", "mysql-router", "ceph-dashboard"]
 
 CHANNEL_BASED_CHARMS = ["designate-bind", "gnocchi", "glance-simplestreams-sync"]
 
+# https://governance.openstack.org/tc/reference/release-naming.html
 OPENSTACK_CODENAMES = OrderedDict(
     [
         ("diablo", "2011.2"),
@@ -136,6 +137,7 @@ OPENSTACK_CODENAMES = OrderedDict(
     ]
 )
 
+# https://ubuntu.com/about/release-cycle#ubuntu
 DISTRO_TO_OPENSTACK_MAPPING = {
     "bionic": "queens",
     "cosmic": "rocky",
@@ -148,16 +150,24 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "jammy": "yoga",
     "kinetic": "zed",
     "lunar": "antelope",
+    "mantic": "bobcat",
+    "noble": "caracal",
 }
 
+# https://ubuntu.com/openstack/docs/supported-versions
+# https://governance.openstack.org/tc/reference/release-naming.html
+# https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 LTS_TO_OS_RELEASE = {
     "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+    "jammy": ["yoga", "zed", "antelope", "bobcat", "caracal"],
 }
 
+# https://docs.ceph.com/en/latest/releases/
 CEPH_RELEASES = [
     "octopus",
     "pacific",
     "quincy",
+    "reef",
 ]
 
 
@@ -322,16 +332,17 @@ class OpenStackCodenameLookup:
 
         The dictionary is generated from a static csv file that should be updated regularly
         to include new OpenStack releases and updates to the lower and upper versions of
-        the services. The csv table is made from the release page [0] charm delivery [1],
-        cmadison and rmadison. The lower version is the lowest version of a certain release (N)
-        while the upper is the first incompatible version. This way, new patches
-        won't affect the comparison.
+        the services. The csv table is made from the release page [0], charm delivery [1],
+        cmadison and rmadison, and ceph release page [2]. The lower version is the lowest
+        version of a certain release (N) while the upper is the first incompatible version.
+        This way, new patches won't affect the comparison.
 
         Charm designate-bind workload_version tracks the version of the deb package bind9.
         For charm gnocchi it was used cmadison.
 
         [0] https://releases.openstack.org/
         [1] https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+        [2] https://docs.ceph.com/en/latest/releases/
 
         :param resource: Path to the csv file
         :type resource: Path
