@@ -584,10 +584,10 @@ async def test_get_machines(mocked_model):
     }
     mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
     mocked_model.units = {
-        "my_app1/0": _generate_juju_unit("my_app1", "0"),
-        "my_app1/1": _generate_juju_unit("my_app1", "1"),
-        "my_app1/2": _generate_juju_unit("my_app1", "2"),
-        "my_app2/0": _generate_juju_unit("my_app2", "0"),
+        "my_app1/0": _generate_juju_unit("my_app1", "0", "0"),
+        "my_app1/1": _generate_juju_unit("my_app1", "1", "1"),
+        "my_app1/2": _generate_juju_unit("my_app1", "2", "2"),
+        "my_app2/0": _generate_juju_unit("my_app2", "0", "0"),
     }
     mocked_model.applications = {
         "my_app1": _generate_juju_app("app1"),
@@ -600,9 +600,10 @@ async def test_get_machines(mocked_model):
     assert machines == expected_machines
 
 
-def _generate_juju_unit(app: str, machine_id: str) -> MagicMock:
+def _generate_juju_unit(app: str, unit_id: str, machine_id: str) -> MagicMock:
     unit = MagicMock(set=Unit)()
     unit.application = app
+    unit.name = f"{app}/{unit_id}"
     unit.machine.id = machine_id
     return unit
 
@@ -625,10 +626,17 @@ def _generate_juju_machine(machine_id: str) -> MagicMock:
     return machine
 
 
-def _generate_unit_status(app: str, unit_id: int, machine_id: str) -> tuple[str, MagicMock]:
+def _generate_unit_status(
+    app: str,
+    unit_id: int,
+    machine_id: str,
+    subordinates: dict[str, MagicMock] = {},
+) -> tuple[str, MagicMock]:
     """Generate unit name and status."""
     status = MagicMock(spec_set=UnitStatus)()
     status.machine = machine_id
+    status.subordinates = subordinates
+    status.charm = app
     return f"{app}/{unit_id}", status
 
 
@@ -678,21 +686,25 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     }
     exp_units_from_status = {
         "app1": dict([_generate_unit_status("app1", i, f"{i}") for i in range(3)]),
-        "app2": dict([_generate_unit_status("app2", 0, "0")]),
+        "app2": dict(
+            [_generate_unit_status("app2", 0, "0", dict([_generate_unit_status("app4", 0, "")]))]
+        ),
         "app3": dict([_generate_unit_status("app3", 0, "1")]),
         "app4": {},  # subordinate application has no units defined in juju status
     }
     exp_units = {
-        "app1": [_generate_juju_unit("app1", f"{i}") for i in range(3)],
-        "app2": [_generate_juju_unit("app2", "0")],
-        "app3": [_generate_juju_unit("app3", "0")],
-        "app4": [_generate_juju_unit("app4", "0")],
+        "app1": [_generate_juju_unit("app1", f"{i}", f"{i}") for i in range(3)],
+        "app2": [_generate_juju_unit("app2", "0", "0")],
+        "app3": [_generate_juju_unit("app3", "0", "0")],
+        "app4": [_generate_juju_unit("app4", "0", "0")],
     }
 
     mocked_model.applications = {app: MagicMock(spec_set=Application)() for app in exp_apps}
+
     for app in exp_apps:
         mocked_model.applications[app].get_config = AsyncMock()
         mocked_model.applications[app].units = exp_units[app]
+        mocked_model.applications[app].charm_name = app
 
     full_status_apps = {app: _generate_app_status(exp_units_from_status[app]) for app in exp_apps}
     mock_get_status.return_value.applications = full_status_apps
@@ -712,7 +724,18 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             series=status.series,
             subordinate_to=status.subordinate_to,
             units={
-                name: juju_utils.Unit(name, exp_machines[unit.machine], unit.workload_version)
+                name: juju_utils.Unit(
+                    name,
+                    exp_machines[unit.machine],
+                    unit.workload_version,
+                    [
+                        juju_utils.SubordinateUnit(
+                            subordinate_name,
+                            subordinate.charm,
+                        )
+                        for subordinate_name, subordinate in unit.subordinates.items()
+                    ],
+                )
                 for name, unit in exp_units_from_status[app].items()
             },
             workload_version=status.workload_version,
@@ -745,4 +768,9 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
 
 def test_unit_repr():
     unit = juju_utils.Unit(name="foo/0", machine=MagicMock(), workload_version="1")
+    assert repr(unit) == "foo/0"
+
+
+def test_suborinate_unit_repr():
+    unit = juju_utils.SubordinateUnit(name="foo/0", charm="foo")
     assert repr(unit) == "foo/0"

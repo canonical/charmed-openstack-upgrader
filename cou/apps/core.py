@@ -106,7 +106,45 @@ class NovaCompute(OpenStackApplication):
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
-        return self._get_enable_scheduler_step(units) + super().post_upgrade_steps(target, units)
+        return (
+            self._get_enable_scheduler_step(units)
+            + self._get_restart_subordinate_services_steps(units)
+            + super().post_upgrade_steps(target, units)
+        )
+
+    def _get_restart_subordinate_services_steps(
+        self, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
+        """Get step to restart all subordinate services if they aren't running.
+
+        :param units: Units to restart subordinate services.
+        :type units: Optional[list[Unit]]
+        :return: Steps to restart to subordinate services
+        :rtype: list[PostUpgradeStep]
+        """
+        if not units:
+            units = list(self.units.values())
+        steps = []
+        for unit in units:
+            for subordinate in unit.subordinates:
+                if "ceilometer-agent" == subordinate.charm:
+                    service = "ceilometer-agent-compute"
+                    steps.append(
+                        PostUpgradeStep(
+                            description=(
+                                "Restart service ceilometer-agent-compute "
+                                f"for subordinate unit: '{subordinate.name}'"
+                            ),
+                            coro=self.model.run_on_unit(
+                                unit_name=subordinate.name,
+                                command=(
+                                    f"systemctl is-active --quiet {service}"
+                                    f" || systemctl restart {service}"
+                                ),
+                            ),
+                        )
+                    )
+        return steps
 
     def _get_unit_upgrade_steps(self, unit: Unit, force: bool) -> UnitUpgradeStep:
         """Get the upgrade steps for a single unit.
