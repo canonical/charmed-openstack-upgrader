@@ -44,7 +44,7 @@ from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
-from cou.steps.nova_cloud_controller import archive
+from cou.steps.nova_cloud_controller import archive, purge
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
@@ -931,7 +931,6 @@ async def test_filter_hypervisors_machines(
     expected_machines,
     cli_args,
 ):
-
     empty_hypervisors_machines = {
         Machine(str(machine_id), (), f"zone-{machine_id + 1}") for machine_id in range(2)
     }
@@ -1050,6 +1049,107 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
     pre_upgrade_steps = cou_plan._get_pre_upgrade_steps(mock_analysis_result, cli_args)
 
     assert pre_upgrade_steps == expected_steps
+
+
+@patch("cou.steps.plan._get_purge_data_steps")
+@patch("cou.steps.plan._get_archive_data_steps")
+@pytest.mark.parametrize(
+    "case,archive,purge",
+    [
+        ("Empty steps", False, False),
+        ("Archive", True, False),
+        ("Purge", False, True),
+        ("Archive and Purge", False, True),
+    ],
+)
+def test_get_pre_clean_data_steps(
+    mock_get_archive_data_steps,
+    mock_get_purge_data_steps,
+    case,
+    purge,
+    archive,
+    cli_args,
+    model,
+):
+    cli_args.purge = purge
+    cli_args.archive = archive
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+
+    mock_get_archive_data_steps.return_value = ["archive_step"]
+    mock_get_purge_data_steps.return_value = ["purge_step"]
+    steps = cou_plan._get_pre_clean_data_steps(mock_analysis_result, cli_args)
+
+    expected_steps = []
+
+    if archive:
+        mock_get_archive_data_steps.assert_called_with(mock_analysis_result, cli_args)
+        expected_steps.append("archive_step")
+    if purge:
+        mock_get_purge_data_steps.assert_called_with(mock_analysis_result, cli_args)
+        expected_steps.append("purge_step")
+    assert expected_steps == steps
+
+
+def test_get_archive_data_steps(cli_args, model):
+    cli_args.archive_batch_size = 2000
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+
+    steps = cou_plan._get_archive_data_steps(mock_analysis_result, cli_args)
+    assert steps == [
+        PreUpgradeStep(
+            description="Archive old database data on nova-cloud-controller",
+            coro=archive(mock_analysis_result.model, batch_size=2000),
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "case,charm_exists,action_exists,purge_before",
+    [
+        ("No action exists", True, False, None),
+        ("No application exists", False, True, None),
+        ("Purge all", True, True, None),
+        ("Purge before", True, True, "2000-01-02"),
+    ],
+)
+def test_get_purge_data_steps(case, charm_exists, action_exists, purge_before, cli_args, model):
+    cli_args.purge = True
+    cli_args.purge_before = purge_before
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+
+    if charm_exists:
+        app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+        app.charm = "nova-cloud-controller"
+        mock_analysis_result.apps_control_plane = [app]
+        app.actions = {}
+        if action_exists:
+            app.actions = {"purge-data": True}
+
+    expected_steps = []
+    if charm_exists and action_exists:
+        if not purge_before:
+            expected_steps = [
+                PreUpgradeStep(
+                    description="Purge all data from shadow tables on nova-cloud-controller",
+                    coro=purge(mock_analysis_result.model, before=cli_args.purge_before),
+                )
+            ]
+        else:
+            expected_steps = [
+                PreUpgradeStep(
+                    description=(
+                        f"Purge data before {purge_before}"
+                        " from shadow tables on nova-cloud-controller"
+                    ),
+                    coro=purge(mock_analysis_result.model, before=cli_args.purge_before),
+                )
+            ]
+
+    steps = cou_plan._get_purge_data_steps(mock_analysis_result, cli_args)
+    assert expected_steps == steps
 
 
 @pytest.mark.parametrize("upgrade_group", [CONTROL_PLANE, HYPERVISORS])

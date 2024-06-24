@@ -402,20 +402,30 @@ def _get_pre_clean_data_steps(analysis_result: Analysis, args: CLIargs) -> list[
     :return: List of pre-upgrade steps to clean nova database.
     :rtype: list[PreUpgradeStep]
     """
-    steps = []
+    steps: list[PreUpgradeStep] = []
     # Add a pre-upgrade step to archive old database data.
     # This is a performance optimisation.
     if args.archive:
-        steps.append(
-            PreUpgradeStep(
-                description="Archive old database data on nova-cloud-controller",
-                coro=archive(analysis_result.model, batch_size=args.archive_batch_size),
-            )
-        )
+        steps = steps + _get_archive_data_steps(analysis_result, args)
 
     # Add a pre-upgrade step to purge old database data.
     # This is a performance optimisation.
-    if args.purge and any(
+    if args.purge:
+        steps = steps + _get_purge_data_steps(analysis_result, args)
+    return steps
+
+
+def _get_purge_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get purge nova db data step.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of post-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
+    if any(
         app.charm == "nova-cloud-controller" and "purge-data" in app.actions.keys()
         for app in analysis_result.apps_control_plane
     ):
@@ -427,13 +437,31 @@ def _get_pre_clean_data_steps(analysis_result: Analysis, args: CLIargs) -> list[
             )
         else:
             msg = "Purge all data from shadow tables on nova-cloud-controller"
-        steps.append(
+        return [
             PreUpgradeStep(
                 description=msg,
                 coro=purge(analysis_result.model, before=args.purge_before),
             )
+        ]
+    return []
+
+
+def _get_archive_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get the archive nova db data step.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of post-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
+    return [
+        PreUpgradeStep(
+            description="Archive old database data on nova-cloud-controller",
+            coro=archive(analysis_result.model, batch_size=args.archive_batch_size),
         )
-    return steps
+    ]
 
 
 def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[PostUpgradeStep]:

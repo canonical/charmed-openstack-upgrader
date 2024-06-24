@@ -131,6 +131,23 @@ def purge_before_arg(value: str) -> str:
     return value
 
 
+class PurgeBeforeArgumentAction(argparse.Action):
+    """Custom action to make sure the arguments dependency."""
+
+    required_arg = "purge"
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Optional[str] = None,
+    ) -> None:
+        if getattr(namespace, self.required_arg) is False:
+            parser.error(f"--{self.dest} requires --{self.required_arg}")
+        setattr(namespace, self.dest, values)
+
+
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
@@ -185,11 +202,13 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     subcommand_common_opts_parser.add_argument(
         "--purge-before",
         dest="purge_before",
+        action=PurgeBeforeArgumentAction,
         help="Specifying –before will delete data from all shadow tables "
         "that is older than the date provided. "
-        "Date strings may be fuzzy, such as 'Oct 21 2015'. "
+        "Date string format should be YYYY-MM-DD[HH:mm][:ss]"
         "Without before the step will delete all the data.",
         type=purge_before_arg,
+        required=False,
     )
     subcommand_common_opts_parser.add_argument(
         "--force",
@@ -460,7 +479,7 @@ class CLIargs:
     machines: Optional[set[str]] = None
     availability_zones: Optional[set[str]] = None
     purge: bool = False
-    purge_before: str = ""
+    purge_before: Optional[str] = None
 
     @property
     def prompt(self) -> bool:

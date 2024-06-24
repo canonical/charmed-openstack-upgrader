@@ -194,7 +194,7 @@ class Application:
     subordinate_to: list[str]
     units: dict[str, Unit]
     workload_version: str
-    actions: dict[str, str]
+    actions: dict[str, str] = field(default_factory=lambda: {}, compare=False)
 
     @property
     def is_subordinate(self) -> bool:

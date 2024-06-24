@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
 from cou.exceptions import ApplicationNotFound, COUException, UnitNotFound
-from cou.steps.nova_cloud_controller import archive
+from cou.steps.nova_cloud_controller import archive, purge
 from tests.unit.utils import get_status
 
 
@@ -101,3 +101,48 @@ async def test_archive_handles_multiple_batches(model):
         action_params={"batch-size": 999},
     )
     model.run_action.assert_has_awaits([expected_call, expected_call])
+
+
+@pytest.mark.parametrize(
+    "case,before,action_output,expect_err",
+    [
+        ("Purge all", None, AsyncMock(), False),
+        ("Purge before", "2000-01-02", AsyncMock(), False),
+        ("Output not found", None, {"results": {}}, True),
+        (
+            "Action failed",
+            None,
+            {"results": {"output": "Purging stale soft-deleted rows failed"}},
+            True,
+        ),
+        (
+            "No data deleted",
+            None,
+            {"results": {"output": "Purging stale soft-deleted rows and no data was deleted"}},
+            False,
+        ),
+    ],
+)
+@patch("cou.steps.nova_cloud_controller.logger")
+@pytest.mark.asyncio
+async def test_purge(mock_logger, case, before, action_output, expect_err, model):
+    params = {}
+    if before:
+        params["before"] = before
+
+    model.run_action.return_value = AsyncMock()
+    model.run_action.return_value.data = action_output
+
+    if expect_err:
+        with pytest.raises(COUException):
+            await purge(model, before)
+    else:
+        await purge(model, before)
+        mock_logger.info.assert_called()
+
+    model.run_action.assert_awaited_once_with(
+        action_name="purge-data",
+        unit_name="nova-cloud-controller/0",
+        raise_on_failure=True,
+        action_params=params,
+    )
