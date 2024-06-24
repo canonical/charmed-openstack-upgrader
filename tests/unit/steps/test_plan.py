@@ -516,15 +516,15 @@ def test_pre_plan_sanity_checks(
     [
         (
             OpenStackRelease("yoga"),
-            "jammy",
-            "Cloud series 'jammy' is not a Ubuntu LTS series supported by COU. "
-            "The supporting series are: focal",
+            "noble",
+            "Cloud series 'noble' is not a Ubuntu LTS series supported by COU. "
+            "The supporting series are: focal, jammy",
         ),
         (
             OpenStackRelease("train"),
             "bionic",
             "Cloud series 'bionic' is not a Ubuntu LTS series supported by COU. "
-            "The supporting series are: focal",
+            "The supporting series are: focal, jammy",
         ),
     ],
 )

@@ -41,7 +41,7 @@ def test_version_range_raises_ValueError(lower, upper):
         (
             "ceph-mon",
             ["15.2.17", "16.2.14", "17.2.6"],
-            [["ussuri", "victoria"], ["wallaby", "xena"], ["yoga"]],
+            [["ussuri", "victoria"], ["wallaby", "xena"], ["yoga", "zed", "antelope", "bobcat"]],
         ),  # version 15 (octopus) can be ussuri or victoria
         # version 16 (pacific) can be wallaby or xena
         (
@@ -57,12 +57,20 @@ def test_version_range_raises_ValueError(lower, upper):
         (
             "rabbitmq-server",  # yoga can be 3.8 or 3.9
             ["3.8", "3.9", "3.10"],
-            [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
+            [
+                ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+                ["yoga", "zed", "antelope", "bobcat", "caracal"],
+                [],
+            ],
         ),
         (
             "vault",  # yoga can be 1.7 to 1.8
             ["1.7", "1.8", "1.9"],
-            [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
+            [
+                ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+                ["yoga", "zed", "antelope", "bobcat", "caracal"],
+                [],
+            ],
         ),
         (
             "ovn-central",
@@ -283,6 +291,9 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "ceph-mon", "yoga", ["quincy"]),
         ("jammy", "ceph-mon", "yoga", ["quincy"]),
         ("jammy", "ceph-mon", "zed", ["quincy"]),
+        ("jammy", "ceph-mon", "antelope", ["quincy"]),
+        ("jammy", "ceph-mon", "bobcat", ["reef"]),
+        ("jammy", "ceph-mon", "caracal", ["reef"]),
         ("focal", "ovn-central", "ussuri", ["20.03", "22.03"]),
         ("focal", "ovn-central", "victoria", ["20.03", "22.03"]),
         ("focal", "ovn-central", "wallaby", ["20.12", "22.03"]),
@@ -290,6 +301,9 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "ovn-central", "yoga", ["22.03"]),
         ("jammy", "ovn-central", "yoga", ["22.03"]),
         ("jammy", "ovn-central", "zed", ["22.09"]),
+        ("jammy", "ovn-central", "antelope", ["23.03"]),
+        ("jammy", "ovn-central", "bobcat", ["23.09"]),
+        ("jammy", "ovn-central", "caracal", ["24.03"]),
         ("focal", "mysql-router", "ussuri", ["8.0"]),
         ("focal", "mysql-router", "victoria", ["8.0"]),
         ("focal", "mysql-router", "wallaby", ["8.0"]),
@@ -297,6 +311,9 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "mysql-router", "yoga", ["8.0"]),
         ("jammy", "mysql-router", "yoga", ["8.0"]),
         ("jammy", "mysql-router", "zed", ["8.0"]),
+        ("jammy", "mysql-router", "antelope", ["8.0"]),
+        ("jammy", "mysql-router", "bobcat", ["8.0"]),
+        ("jammy", "mysql-router", "caracal", ["8.0"]),
         ("focal", "hacluster", "ussuri", ["2.0.3", "2.4"]),
         ("focal", "hacluster", "victoria", ["2.0.3", "2.4"]),
         ("focal", "hacluster", "wallaby", ["2.0.3", "2.4"]),
@@ -304,6 +321,9 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "hacluster", "yoga", ["2.0.3", "2.4"]),
         ("jammy", "hacluster", "yoga", ["2.4"]),
         ("jammy", "hacluster", "zed", ["2.4"]),
+        ("jammy", "hacluster", "antelope", ["2.4"]),
+        ("jammy", "hacluster", "bobcat", ["2.4"]),
+        ("jammy", "hacluster", "caracal", ["2.4"]),
         ("focal", "rabbitmq-server", "ussuri", ["3.8", "3.9"]),
         ("focal", "rabbitmq-server", "victoria", ["3.8", "3.9"]),
         ("focal", "rabbitmq-server", "wallaby", ["3.8", "3.9"]),
@@ -311,13 +331,19 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "rabbitmq-server", "yoga", ["3.8", "3.9"]),
         ("jammy", "rabbitmq-server", "yoga", ["3.9"]),
         ("jammy", "rabbitmq-server", "zed", ["3.9"]),
+        ("jammy", "rabbitmq-server", "antelope", ["3.9"]),
+        ("jammy", "rabbitmq-server", "bobcat", ["3.9"]),
+        ("jammy", "rabbitmq-server", "caracal", ["3.9"]),
         ("focal", "vault", "ussuri", ["1.7"]),
         ("focal", "vault", "victoria", ["1.7"]),
         ("focal", "vault", "wallaby", ["1.7"]),
         ("focal", "vault", "xena", ["1.7"]),
         ("focal", "vault", "yoga", ["1.7"]),
-        ("jammy", "vault", "yoga", ["1.8"]),
+        ("jammy", "vault", "yoga", ["1.7", "1.8"]),
         ("jammy", "vault", "zed", ["1.8"]),
+        ("jammy", "vault", "antelope", ["1.8"]),
+        ("jammy", "vault", "bobcat", ["1.8"]),
+        ("jammy", "vault", "caracal", ["1.8"]),
         ("bionic", "vault", "zed", None),  # release not mapped
         ("jammy", "my-service", "zed", None),  # family not mapped
     ],
@@ -399,7 +425,13 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
             "jammy",
             "mysql-router",
             "8.0",
-            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+            [
+                OpenStackRelease("yoga"),
+                OpenStackRelease("zed"),
+                OpenStackRelease("2023.1"),
+                OpenStackRelease("2023.2"),
+                OpenStackRelease("2024.1"),
+            ],
         ),
         (
             "focal",
@@ -417,7 +449,13 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
             "jammy",
             "hacluster",
             "2.4",
-            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+            [
+                OpenStackRelease("yoga"),
+                OpenStackRelease("zed"),
+                OpenStackRelease("2023.1"),
+                OpenStackRelease("2023.2"),
+                OpenStackRelease("2024.1"),
+            ],
         ),
         (
             "focal",
@@ -435,7 +473,13 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
             "jammy",
             "rabbitmq-server",
             "3.9",
-            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+            [
+                OpenStackRelease("yoga"),
+                OpenStackRelease("zed"),
+                OpenStackRelease("2023.1"),
+                OpenStackRelease("2023.2"),
+                OpenStackRelease("2024.1"),
+            ],
         ),
         (
             "focal",
@@ -453,7 +497,13 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
             "jammy",
             "vault",
             "1.8",
-            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+            [
+                OpenStackRelease("yoga"),
+                OpenStackRelease("zed"),
+                OpenStackRelease("2023.1"),
+                OpenStackRelease("2023.2"),
+                OpenStackRelease("2024.1"),
+            ],
         ),
     ],
 )
