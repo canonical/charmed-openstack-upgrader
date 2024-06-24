@@ -28,7 +28,7 @@ official website the for the following constants:
 
 ## `cou/utils/openstack_lookup.csv`
 
-This file define an OpenStack lookup dictionary based on the version of the
+This file defines an OpenStack lookup dictionary based on the version of the
 components.
 
 The information should be updated regularly to include new OpenStack releases and
@@ -44,12 +44,12 @@ bind9. For charm gnocchi it was used `cmadison`.
 **Note**: Generally, the `upper_version` of the last release is unknown, we can increase
 the "PATCH" number of `lower_version` by one, to set the `upper_version`. This
 way, it's effectively making the `lower_version` is the only compatible version
-for the last release. However, we will need to revist this column frequently to
+for the last release. However, we will need to revisit this column frequently to
 ensure the information is up-to-date.
 
 ## `cou/utils/openstack_lookup.csv`
 
-This file define the track mappings for the auxiliary charms, and it should be
+This file defines the track mappings for the auxiliary charms, and it should be
 updated periodically by adding new lines to the file.
 
 The csv table is made from the [charm delivery][5].
