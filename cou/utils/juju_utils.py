@@ -406,7 +406,8 @@ class Model:
                         unit.workload_version,
                         [
                             SubordinateUnit(
-                                subordinate, model.applications[subordinate.split("/")[0]]
+                                subordinate,
+                                model.applications[subordinate.split("/")[0]].charm_name,
                             )
                             for subordinate, subordinate_unit in unit.subordinates.items()
                         ],
