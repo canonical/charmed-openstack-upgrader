@@ -8,6 +8,7 @@ ceph-mon,jammy,yoga,quincy
 ceph-mon,jammy,zed,quincy
 ceph-mon,jammy,antelope,quincy
 ceph-mon,jammy,bobcat,reef
+ceph-mon,jammy,caracal,reef
 ceph-fs,focal,ussuri,octopus
 ceph-fs,focal,victoria,octopus
 ceph-fs,focal,wallaby,pacific
@@ -17,6 +18,7 @@ ceph-fs,jammy,yoga,quincy
 ceph-fs,jammy,zed,quincy
 ceph-fs,jammy,antelope,quincy
 ceph-fs,jammy,bobcat,reef
+ceph-fs,jammy,caracal,reef
 ceph-radosgw,focal,ussuri,octopus
 ceph-radosgw,focal,victoria,octopus
 ceph-radosgw,focal,wallaby,pacific
@@ -26,6 +28,7 @@ ceph-radosgw,jammy,yoga,quincy
 ceph-radosgw,jammy,zed,quincy
 ceph-radosgw,jammy,antelope,quincy
 ceph-radosgw,jammy,bobcat,reef
+ceph-radosgw,jammy,caracal,reef
 ceph-osd,focal,ussuri,octopus
 ceph-osd,focal,victoria,octopus
 ceph-osd,focal,wallaby,pacific
@@ -35,6 +38,7 @@ ceph-osd,jammy,yoga,quincy
 ceph-osd,jammy,zed,quincy
 ceph-osd,jammy,antelope,quincy
 ceph-osd,jammy,bobcat,reef
+ceph-osd,jammy,caracal,reef
 ceph-dashboard,focal,ussuri,octopus
 ceph-dashboard,focal,victoria,octopus
 ceph-dashboard,focal,wallaby,pacific
@@ -44,6 +48,7 @@ ceph-dashboard,jammy,yoga,quincy
 ceph-dashboard,jammy,zed,quincy
 ceph-dashboard,jammy,antelope,quincy
 ceph-dashboard,jammy,bobcat,reef
+ceph-dashboard,jammy,caracal,reef
 ovn-chassis,focal,ussuri,20.03
 ovn-chassis,focal,ussuri,22.03
 ovn-chassis,focal,victoria,20.03
@@ -57,6 +62,7 @@ ovn-chassis,jammy,yoga,22.03
 ovn-chassis,jammy,zed,22.09
 ovn-chassis,jammy,antelope,23.03
 ovn-chassis,jammy,bobcat,23.09
+ovn-chassis,jammy,caracal,24.03
 ovn-dedicated-chassis,focal,ussuri,20.03
 ovn-dedicated-chassis,focal,ussuri,22.03
 ovn-dedicated-chassis,focal,victoria,20.03
@@ -70,6 +76,7 @@ ovn-dedicated-chassis,jammy,yoga,22.03
 ovn-dedicated-chassis,jammy,zed,22.09
 ovn-dedicated-chassis,jammy,antelope,23.03
 ovn-dedicated-chassis,jammy,bobcat,23.09
+ovn-dedicated-chassis,jammy,caracal,24.03
 ovn-central,focal,ussuri,20.03
 ovn-central,focal,ussuri,22.03
 ovn-central,focal,victoria,20.03
@@ -83,6 +90,7 @@ ovn-central,jammy,yoga,22.03
 ovn-central,jammy,zed,22.09
 ovn-central,jammy,antelope,23.03
 ovn-central,jammy,bobcat,23.09
+ovn-central,jammy,caracal,24.03
 mysql-innodb-cluster,focal,ussuri,8.0
 mysql-innodb-cluster,focal,victoria,8.0
 mysql-innodb-cluster,focal,wallaby,8.0
@@ -92,6 +100,7 @@ mysql-innodb-cluster,jammy,yoga,8.0
 mysql-innodb-cluster,jammy,zed,8.0
 mysql-innodb-cluster,jammy,antelope,8.0
 mysql-innodb-cluster,jammy,bobcat,8.0
+mysql-innodb-cluster,jammy,caracal,8.0
 mysql-router,focal,ussuri,8.0
 mysql-router,focal,victoria,8.0
 mysql-router,focal,wallaby,8.0
@@ -101,6 +110,7 @@ mysql-router,jammy,yoga,8.0
 mysql-router,jammy,zed,8.0
 mysql-router,jammy,antelope,8.0
 mysql-router,jammy,bobcat,8.0
+mysql-router,jammy,caracal,8.0
 hacluster,focal,ussuri,2.0.3
 hacluster,focal,ussuri,2.4
 hacluster,focal,victoria,2.0.3
@@ -115,6 +125,7 @@ hacluster,jammy,yoga,2.4
 hacluster,jammy,zed,2.4
 hacluster,jammy,antelope,2.4
 hacluster,jammy,bobcat,2.4
+hacluster,jammy,caracal,2.4
 pacemaker-remote,focal,ussuri,focal
 pacemaker-remote,focal,victoria,focal
 pacemaker-remote,focal,wallaby,focal
@@ -124,6 +135,7 @@ pacemaker-remote,jammy,yoga,jammy
 pacemaker-remote,jammy,zed,jammy
 pacemaker-remote,jammy,antelope,jammy
 pacemaker-remote,jammy,bobcat,jammy
+pacemaker-remote,jammy,caracal,jammy
 rabbitmq-server,focal,ussuri,3.8
 rabbitmq-server,focal,ussuri,3.9
 rabbitmq-server,focal,victoria,3.8
@@ -138,6 +150,7 @@ rabbitmq-server,jammy,yoga,3.9
 rabbitmq-server,jammy,zed,3.9
 rabbitmq-server,jammy,antelope,3.9
 rabbitmq-server,jammy,bobcat,3.9
+rabbitmq-server,jammy,caracal,3.9
 vault,focal,ussuri,1.7
 vault,focal,victoria,1.7
 vault,focal,wallaby,1.7
@@ -148,3 +161,4 @@ vault,jammy,yoga,1.8
 vault,jammy,zed,1.8
 vault,jammy,antelope,1.8
 vault,jammy,bobcat,1.8
+vault,jammy,caracal,1.8
