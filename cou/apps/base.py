@@ -354,7 +354,7 @@ class OpenStackApplication(Application):
         :return: The next channel for the application. E.g: victoria/stable
         :rtype: str
         """
-        return f"{target.codename}/stable"
+        return f"{target.track}/stable"
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.
@@ -364,7 +364,7 @@ class OpenStackApplication(Application):
         :return: Repository from which to install.
         :rtype: str
         """
-        return f"cloud:{self.series}-{target.codename}"
+        return f"cloud:{self.series}-{target.track}"
 
     async def _verify_workload_upgrade(self, target: OpenStackRelease, units: list[Unit]) -> None:
         """Check if an application has upgraded its workload version.

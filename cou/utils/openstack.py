@@ -246,13 +246,21 @@ class OpenStackRelease:
                 f"{self.openstack_codenames}' or '{self.openstack_release_date}'"
             )
 
+        self._codename = self.openstack_codenames[self.index]
+
+    @property
+    def track(self) -> str:
+        """Charmhub track for this openstack release.
+
+        :return: Charmhub track
+        :rtype: str
+        """
         # NOTE (gabrielcocenza) From antelope, OpenStack releases are commonly referenced
         # by the release date and not on the codename.
         index_zed = self.openstack_codenames.index("zed")
         if self.index <= index_zed:
-            self._codename = self.openstack_codenames[self.index]
-        else:
-            self._codename = self.openstack_release_date[self.index]
+            return self.openstack_codenames[self.index]
+        return self.openstack_release_date[self.index]
 
     @property
     def next_release(self) -> Optional[OpenStackRelease]:

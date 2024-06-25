@@ -84,9 +84,9 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of "
-            f"'{target.previous_release}/stable'",
+            f"'{target.previous_release.track}/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.previous_release.track}/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
@@ -94,17 +94,17 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' from '{target.previous_release}/stable' "
-            f"to the new channel: '{target.codename}/stable'",
+            description=f"Upgrade '{app.name}' from '{target.previous_release.track}/stable' "
+            f"to the new channel: '{target.track}/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.track}/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
-            f"'{app.origin_setting}' to 'cloud:focal-{target.codename}'",
+            f"'{app.origin_setting}' to 'cloud:focal-{target.track}'",
             parallel=False,
             coro=model.set_application_config(
-                app.name, {f"{app.origin_setting}": f"cloud:focal-{target.codename}"}
+                app.name, {f"{app.origin_setting}": f"cloud:focal-{target.track}"}
             ),
         ),
         wait_step,
@@ -126,15 +126,21 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
     )
     upgrade_steps = [
         PreUpgradeStep(
-            f"Refresh '{app.name}' to the latest revision of '{target.previous_release}/stable'",
+            (
+                f"Refresh '{app.name}' to the latest revision of "
+                f"'{target.previous_release.track}/stable'"
+            ),
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.previous_release.track}/stable"),
         ),
         UpgradeStep(
-            f"Upgrade '{app.name}' from '{target.previous_release}/stable' to the new channel: "
-            f"'{target.codename}/stable'",
+            (
+                f"Upgrade '{app.name}' from "
+                f"'{target.previous_release.track}/stable' to the new channel: "
+                f"'{target.track}/stable'"
+            ),
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.track}/stable"),
         ),
     ]
     expected_plan.add_steps(upgrade_steps)
@@ -695,7 +701,7 @@ def test_determine_upgrade_target_out_support_range():
 
     exp_error_msg = (
         "Unable to upgrade cloud from Ubuntu series "
-        f"`{mock_analysis_result.current_cloud_series}` to '2023.1'. "
+        f"`{mock_analysis_result.current_cloud_series}` to 'antelope'. "
         "Both the from and to releases need to be supported by the current "
         "Ubuntu series 'focal': ussuri, victoria, wallaby, xena, yoga."
     )

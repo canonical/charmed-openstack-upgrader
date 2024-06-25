@@ -228,18 +228,23 @@ def test_openstack_release_setter():
     assert openstack_release.next_release == "yoga"
 
 
-def test_openstack_release_setter_by_date_before_or_at_zed():
-    openstack_release = OpenStackRelease("zed")
-    assert openstack_release.codename == "zed"
-    assert openstack_release.next_release == "2023.1"
-    assert openstack_release.date == "2022.2"
-
-
-def test_openstack_release_setter_by_date_after_zed():
+def test_openstack_release_setter_by_date():
     openstack_release = OpenStackRelease("2023.1")
-    assert openstack_release.codename == "2023.1"
-    assert openstack_release.next_release == "2023.2"
+    assert openstack_release.codename == "antelope"
+    assert openstack_release.next_release == "bobcat"
     assert openstack_release.date == "2023.1"
+
+
+def test_openstack_release_track_before_zed():
+    openstack_release = OpenStackRelease("yoga")
+    assert openstack_release.codename == "yoga"
+    assert openstack_release.track == "yoga"
+
+
+def test_openstack_release_track_after_zed():
+    openstack_release = OpenStackRelease("antelope")
+    assert openstack_release.codename == "antelope"
+    assert openstack_release.track == "2023.1"
 
 
 @pytest.mark.parametrize("o7k_release", ["victoria", "wallaby"])
