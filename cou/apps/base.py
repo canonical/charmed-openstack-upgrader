@@ -364,7 +364,7 @@ class OpenStackApplication(Application):
         :return: Repository from which to install.
         :rtype: str
         """
-        return f"cloud:{self.series}-{target.track}"
+        return f"cloud:{self.series}-{target.codename}"
 
     async def _verify_workload_upgrade(self, target: OpenStackRelease, units: list[Unit]) -> None:
         """Check if an application has upgraded its workload version.

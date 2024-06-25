@@ -159,7 +159,7 @@ DISTRO_TO_OPENSTACK_MAPPING = {
 # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 LTS_TO_OS_RELEASE = {
     "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
-    "jammy": ["yoga", "zed", "2023.1", "2023.2", "2024.1"],
+    "jammy": ["yoga", "zed", "antelope", "bobcat", "caracal"],
 }
 
 # https://docs.ceph.com/en/latest/releases/
