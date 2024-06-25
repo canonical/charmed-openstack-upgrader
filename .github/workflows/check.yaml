@@ -109,11 +109,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - name: Setup Juju 2.9/stable environment
+      - name: Setup Juju 3.4/stable environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: lxd
-          juju-channel: 2.9/stable
+          juju-channel: 3.4/stable
       - name: Remove tox install by actions-operator
         run: sudo apt remove tox -y
       - name: Install tox
@@ -125,4 +125,4 @@ jobs:
         with:
           name: SNAP_FILE
       - name: Run func tests
-        run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader.snap tox -e func
+        run: TEST_JUJU3=1 TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader.snap tox -e func
