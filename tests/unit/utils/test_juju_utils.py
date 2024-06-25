@@ -437,13 +437,10 @@ async def test_coumodel_run_on_unit_failed_command(mocked_model):
     mocked_action.results = expected_results
     model = juju_utils.Model("test-model")
 
-    with pytest.raises(CommandRunFailed) as exc_info:
+    expected_err = "Command test-command failed with code 1, output None and error Error!"
+    with pytest.raises(CommandRunFailed, match=expected_err):
         await model.run_on_unit("test-unit/0", command)
 
-    assert (
-        str(exc_info.value)
-        == "Command test-command failed with code 1, output None and error Error!"
-    )
     mocked_unit.run.assert_awaited_once_with(command, timeout=None, block=True)
 
 
