@@ -110,13 +110,13 @@ async def test_archive_handles_multiple_batches(model):
             "Purge all",
             None,
             AsyncMock(),
-            ["Purge data action success in nova-cloud-controller/0"],
+            ["Purge data action success in %s", "nova-cloud-controller/0"],
         ),
         (
             "Purge before",
             "2000-01-02",
             AsyncMock(),
-            ["Purge data action success in nova-cloud-controller/0"],
+            ["Purge data action success in %s", "nova-cloud-controller/0"],
         ),
         (
             "No data deleted",
@@ -154,13 +154,13 @@ async def test_purge(mock_logger, case, before, action_output, log_msg, model):
             "Output not found",
             None,
             {"results": {}},
-            "Expected to find output in action results. 'output', but it was not present."
+            "Expected to find output in action results. 'output', but it was not present.",
         ),
         (
             "Output not found, before",
             "2000-01-02",
             {"results": {}},
-            "Expected to find output in action results. 'output', but it was not present."
+            "Expected to find output in action results. 'output', but it was not present.",
         ),
         (
             "Action failed",
@@ -170,7 +170,7 @@ async def test_purge(mock_logger, case, before, action_output, log_msg, model):
                 "Purge data action failed in nova-cloud-controller/0,"
                 " please check unit's debug log"
                 " for more details."
-            )
+            ),
         ),
     ],
 )
