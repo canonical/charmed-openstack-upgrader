@@ -104,28 +104,31 @@ async def test_archive_handles_multiple_batches(model):
 
 
 @pytest.mark.parametrize(
-    "case,before,action_output,expect_err",
+    "case,before,action_output,log_msg",
     [
-        ("Purge all", None, AsyncMock(), False),
-        ("Purge before", "2000-01-02", AsyncMock(), False),
-        ("Output not found", None, {"results": {}}, True),
         (
-            "Action failed",
+            "Purge all",
             None,
-            {"results": {"output": "Purging stale soft-deleted rows failed"}},
-            True,
+            AsyncMock(),
+            ["Purge data action success in nova-cloud-controller/0"],
+        ),
+        (
+            "Purge before",
+            "2000-01-02",
+            AsyncMock(),
+            ["Purge data action success in nova-cloud-controller/0"],
         ),
         (
             "No data deleted",
             None,
             {"results": {"output": "Purging stale soft-deleted rows and no data was deleted"}},
-            False,
+            ["Run purge-data action in %s and no data was deleted", "nova-cloud-controller/0"],
         ),
     ],
 )
 @patch("cou.steps.nova_cloud_controller.logger")
 @pytest.mark.asyncio
-async def test_purge(mock_logger, case, before, action_output, expect_err, model):
+async def test_purge(mock_logger, case, before, action_output, log_msg, model):
     params = {}
     if before:
         params["before"] = before
@@ -133,12 +136,8 @@ async def test_purge(mock_logger, case, before, action_output, expect_err, model
     model.run_action.return_value = AsyncMock()
     model.run_action.return_value.data = action_output
 
-    if expect_err:
-        with pytest.raises(COUException):
-            await purge(model, before)
-    else:
-        await purge(model, before)
-        mock_logger.info.assert_called()
+    await purge(model, before)
+    mock_logger.info.assert_called_with(*log_msg)
 
     model.run_action.assert_awaited_once_with(
         action_name="purge-data",
@@ -146,3 +145,43 @@ async def test_purge(mock_logger, case, before, action_output, expect_err, model
         raise_on_failure=True,
         action_params=params,
     )
+
+
+@pytest.mark.parametrize(
+    "case,before,action_output,err_msg",
+    [
+        (
+            "Output not found",
+            None,
+            {"results": {}},
+            "Expected to find output in action results. 'output', but it was not present."
+        ),
+        (
+            "Output not found, before",
+            "2000-01-02",
+            {"results": {}},
+            "Expected to find output in action results. 'output', but it was not present."
+        ),
+        (
+            "Action failed",
+            None,
+            {"results": {"output": "Purging stale soft-deleted rows failed"}},
+            (
+                "Purge data action failed in nova-cloud-controller/0,"
+                " please check unit's debug log"
+                " for more details."
+            )
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_purge_err(case, before, action_output, err_msg, model):
+    params = {}
+    if before:
+        params["before"] = before
+
+    model.run_action.return_value = AsyncMock()
+    model.run_action.return_value.data = action_output
+
+    with pytest.raises(COUException, match=err_msg):
+        await purge(model, {})

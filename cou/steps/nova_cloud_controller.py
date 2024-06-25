@@ -93,13 +93,13 @@ async def purge(model: Model, before: Optional[str]) -> None:
         )
     if "Purging stale soft-deleted rows failed" in output:
         raise COUException(
-            f"Purge data action failed in ${unit_name}, please check unit's debug log"
-            "for more details."
+            f"Purge data action failed in {unit_name}, please check unit's debug log"
+            " for more details."
         )
     if "Purging stale soft-deleted rows and no data was deleted" in output:
         logger.info("Run purge-data action in %s and no data was deleted", unit_name)
     else:
-        logger.info("Purge data action success in ${unit_name}")
+        logger.info(f"Purge data action success in {unit_name}")
 
 
 async def _get_nova_cloud_controller_unit_name(model: Model) -> str:

@@ -530,6 +530,35 @@ def test_parse_args_plan(args, expected_CLIargs):
             ),
         ),
         (
+            ["upgrade", "--purge"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
+                purge=True,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["upgrade", "--purge", "--purge-before", "2000-01-02 03:04:05"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
+                purge=True,
+                purge_before="2000-01-02 03:04:05",
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
             ["upgrade", "--model=model_name"],
             CLIargs(
                 command="upgrade",

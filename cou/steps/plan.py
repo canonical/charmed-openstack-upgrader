@@ -387,8 +387,7 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             )
         )
 
-    pre_clean_data_steps = _get_pre_clean_data_steps(analysis_result, args)
-    steps = steps + pre_clean_data_steps
+    steps.extend(_get_pre_clean_data_steps(analysis_result, args))
     return steps
 
 
@@ -406,12 +405,12 @@ def _get_pre_clean_data_steps(analysis_result: Analysis, args: CLIargs) -> list[
     # Add a pre-upgrade step to archive old database data.
     # This is a performance optimisation.
     if args.archive:
-        steps = steps + _get_archive_data_steps(analysis_result, args)
+        steps.extend(_get_archive_data_steps(analysis_result, args))
 
     # Add a pre-upgrade step to purge old database data.
     # This is a performance optimisation.
     if args.purge:
-        steps = steps + _get_purge_data_steps(analysis_result, args)
+        steps.extend(_get_purge_data_steps(analysis_result, args))
     return steps
 
 

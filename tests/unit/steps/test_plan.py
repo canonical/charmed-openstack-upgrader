@@ -1051,15 +1051,15 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
     assert pre_upgrade_steps == expected_steps
 
 
-@patch("cou.steps.plan._get_purge_data_steps")
-@patch("cou.steps.plan._get_archive_data_steps")
+@patch("cou.steps.plan._get_purge_data_steps", return_value=["purge_step"])
+@patch("cou.steps.plan._get_archive_data_steps", return_value=["archive_step"])
 @pytest.mark.parametrize(
     "case,archive,purge",
     [
         ("Empty steps", False, False),
         ("Archive", True, False),
         ("Purge", False, True),
-        ("Archive and Purge", False, True),
+        ("Archive and Purge", True, True),
     ],
 )
 def test_get_pre_clean_data_steps(
@@ -1076,8 +1076,6 @@ def test_get_pre_clean_data_steps(
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.model = model
 
-    mock_get_archive_data_steps.return_value = ["archive_step"]
-    mock_get_purge_data_steps.return_value = ["purge_step"]
     steps = cou_plan._get_pre_clean_data_steps(mock_analysis_result, cli_args)
 
     expected_steps = []
@@ -1106,7 +1104,7 @@ def test_get_archive_data_steps(cli_args, model):
 
 
 @pytest.mark.parametrize(
-    "case,charm_exists,action_exists,purge_before",
+    "case,app_exists,action_exists,purge_before",
     [
         ("No action exists", True, False, None),
         ("No application exists", False, True, None),
@@ -1114,13 +1112,13 @@ def test_get_archive_data_steps(cli_args, model):
         ("Purge before", True, True, "2000-01-02"),
     ],
 )
-def test_get_purge_data_steps(case, charm_exists, action_exists, purge_before, cli_args, model):
+def test_get_purge_data_steps(case, app_exists, action_exists, purge_before, cli_args, model):
     cli_args.purge = True
     cli_args.purge_before = purge_before
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.model = model
 
-    if charm_exists:
+    if app_exists:
         app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
         app.charm = "nova-cloud-controller"
         mock_analysis_result.apps_control_plane = [app]
@@ -1129,7 +1127,7 @@ def test_get_purge_data_steps(case, charm_exists, action_exists, purge_before, c
             app.actions = {"purge-data": True}
 
     expected_steps = []
-    if charm_exists and action_exists:
+    if app_exists and action_exists:
         if not purge_before:
             expected_steps = [
                 PreUpgradeStep(
