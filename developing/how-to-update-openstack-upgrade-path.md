@@ -23,7 +23,7 @@ official website the for the following constants:
 
 - `OPENSTACK_CODENAMES` [1][1]
 - `DISTRO_TO_OPENSTACK_MAPPING` [2][2]
-- `LTS_TO_OS_RELEASE` [3][3],[4][4],[5][5]
+- `LTS_TO_OS_RELEASE` [1][1],[3][3],[5][5]
 - `CEPH_RELEASES` [6][6]
 
 ## `cou/utils/openstack_lookup.csv`
@@ -47,18 +47,28 @@ way, it's effectively making the `lower_version` is the only compatible version
 for the last release. However, we will need to revisit this column frequently to
 ensure the information is up-to-date.
 
-## `cou/utils/openstack_lookup.csv`
+## `openstack_to_track_mapping.csv`
 
 This file defines the track mappings for the auxiliary charms, and it should be
 updated periodically by adding new lines to the file.
 
-The csv table is made from the [charm delivery][5].
+The csv table is made from [charm delivery][5], using the "Tracks for the
+OpenStack Charms project" table. The `series` column is the Ubuntu series, the
+`o7k_release` column is the [OpenStack release identifier][1] corresponding to
+auxiliary charms, and the `track` column is the track for the auxiliary charms
+on charmhub.
+
+**Note**: The `o7k_release` must match the `LTS_TO_OS_RELEASE` in the
+`cou/utils/openstack.py`, and they should be the *track* of the OpenStack
+release (e.g. `zed`, `2024.1`).
+
+**Note**: Starting from OpenStack Antelope, the OpenStack release identifier
+will use *release date* instead of *release codename*.
 
 
 [1]: https://governance.openstack.org/tc/reference/release-naming.html
 [2]: https://ubuntu.com/about/release-cycle#ubuntu
 [3]: https://ubuntu.com/openstack/docs/supported-versions
-[4]: https://governance.openstack.org/tc/reference/release-naming.html
-[5]: https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+[5]: https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html#tracks-for-the-openstack-charms-project
 [6]: https://docs.ceph.com/en/latest/releases/
 [7]: https://releases.openstack.org/

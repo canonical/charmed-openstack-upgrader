@@ -159,7 +159,7 @@ DISTRO_TO_OPENSTACK_MAPPING = {
 # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 LTS_TO_OS_RELEASE = {
     "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
-    "jammy": ["yoga", "zed", "antelope", "bobcat", "caracal"],
+    "jammy": ["yoga", "zed", "2023.1", "2023.2", "2024.1"],
 }
 
 # https://docs.ceph.com/en/latest/releases/
@@ -199,17 +199,21 @@ class OpenStackRelease:
         """
         return hash(f"{self.codename}{self.date}")
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Do equals."""
         if not isinstance(other, (str, OpenStackRelease)):
             return NotImplemented
-        return self.index == self.openstack_codenames.index(str(other))
+        if isinstance(other, str):
+            return self.index == OpenStackRelease(other).index
+        return self.index == other.index
 
-    def __lt__(self, other: Any) -> bool:
+    def __lt__(self, other: object) -> bool:
         """Do less than."""
         if not isinstance(other, (str, OpenStackRelease)):
             return NotImplemented
-        return self.index < self.openstack_codenames.index(str(other))
+        if isinstance(other, str):
+            return self.index < OpenStackRelease(other).index
+        return self.index < other.index
 
     def __repr__(self) -> str:
         """Return the representation of CompareOpenStack."""
@@ -232,16 +236,23 @@ class OpenStackRelease:
         :type value: str
         :raises ValueError: Raise ValueError if codename is unknown.
         """
-        if value in self.openstack_codenames:
-            self._codename = value
+        if value in self.openstack_codenames:  # if the value is release codename
             self.index = self.openstack_codenames.index(value)
+        elif value in self.openstack_release_date:  # if the value is release date
+            self.index = self.openstack_release_date.index(value)
+        else:
+            raise ValueError(
+                f"OpenStack '{value}' is not in '"
+                f"{self.openstack_codenames}' or '{self.openstack_release_date}'"
+            )
+
         # NOTE (gabrielcocenza) From antelope, OpenStack releases are commonly referenced
         # by the release date and not on the codename.
-        elif value in self.openstack_release_date:
-            self.index = self.openstack_release_date.index(value)
+        index_zed = self.openstack_codenames.index("zed")
+        if self.index <= index_zed:
             self._codename = self.openstack_codenames[self.index]
         else:
-            raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
+            self._codename = self.openstack_release_date[self.index]
 
     @property
     def next_release(self) -> Optional[OpenStackRelease]:

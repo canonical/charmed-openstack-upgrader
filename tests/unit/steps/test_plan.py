@@ -694,7 +694,8 @@ def test_determine_upgrade_target_out_support_range():
     mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("zed")
 
     exp_error_msg = (
-        "Unable to upgrade cloud from Ubuntu series `focal` to 'antelope'. "
+        "Unable to upgrade cloud from Ubuntu series "
+        f"`{mock_analysis_result.current_cloud_series}` to '2023.1'. "
         "Both the from and to releases need to be supported by the current "
         "Ubuntu series 'focal': ussuri, victoria, wallaby, xena, yoga."
     )
