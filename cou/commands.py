@@ -17,6 +17,7 @@ import argparse
 import logging
 from dataclasses import dataclass
 from datetime import datetime
+from os import linesep
 from typing import Any, Iterable, Optional
 
 import pkg_resources
@@ -203,10 +204,12 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         "--purge-before",
         dest="purge_before",
         action=PurgeBeforeArgumentAction,
-        help="Specifying –before will delete data from all shadow tables "
-        "that is older than the date provided. "
-        "Date string format should be YYYY-MM-DD[HH:mm][:ss]"
-        "Without before the step will delete all the data.",
+        help=(
+            "Specifying –before will delete data from all shadow tables"
+            f"{linesep}that is older than the date provided."
+            f"{linesep}Date string format should be YYYY-MM-DD[HH:mm][:ss]."
+            f"{linesep}Without before the step will delete all the data."
+        ),
         type=purge_before_arg,
         required=False,
     )
