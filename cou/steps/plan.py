@@ -183,8 +183,12 @@ def _verify_highest_release_achieved(analysis_result: Analysis) -> None:
     if o7k_release and current_series and str(o7k_release) == last_supported:
         raise HighestReleaseAchieved(
             f"No upgrades available for OpenStack {str(o7k_release).capitalize()} on "
-            f"Ubuntu {current_series.capitalize()}.\nNewer OpenStack releases "
-            "may be available after upgrading to a later Ubuntu series."
+            f"Ubuntu {current_series.capitalize()}.\nIn future releases of COU, newer "
+            "OpenStack releases may available after manually upgrading to a later Ubuntu series.\n"
+            "Charmed OpenStack Upgrader will not support upgrade across series,\n"
+            "please refer to the official documentation on how to do series upgrade:\n"
+            "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series.html\n"
+            "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series-openstack.html"
         )
 
 
