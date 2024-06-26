@@ -1056,44 +1056,6 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
     assert pre_upgrade_steps == expected_steps
 
 
-@patch("cou.steps.plan._get_purge_data_steps", return_value=["purge_step"])
-@patch("cou.steps.plan._get_archive_data_steps", return_value=["archive_step"])
-@pytest.mark.parametrize(
-    "case,archive,purge",
-    [
-        ("Empty steps", False, False),
-        ("Archive", True, False),
-        ("Purge", False, True),
-        ("Archive and Purge", True, True),
-    ],
-)
-def test_get_pre_clean_data_steps(
-    mock_get_archive_data_steps,
-    mock_get_purge_data_steps,
-    case,
-    purge,
-    archive,
-    cli_args,
-    model,
-):
-    cli_args.purge = purge
-    cli_args.archive = archive
-    mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.model = model
-
-    steps = cou_plan._get_pre_clean_data_steps(mock_analysis_result, cli_args)
-
-    expected_steps = []
-
-    if archive:
-        mock_get_archive_data_steps.assert_called_with(mock_analysis_result, cli_args)
-        expected_steps.append("archive_step")
-    if purge:
-        mock_get_purge_data_steps.assert_called_with(mock_analysis_result, cli_args)
-        expected_steps.append("purge_step")
-    assert expected_steps == steps
-
-
 def test_get_archive_data_steps(cli_args, model):
     cli_args.archive_batch_size = 2000
     mock_analysis_result = MagicMock(spec=Analysis)()
@@ -1108,18 +1070,37 @@ def test_get_archive_data_steps(cli_args, model):
     ]
 
 
+def test_get_archive_data_steps_no_archive(cli_args, model):
+    cli_args.archive_batch_size = 2000
+    cli_args.archive = False
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+
+    steps = cou_plan._get_archive_data_steps(mock_analysis_result, cli_args)
+    assert steps == []
+
+
 @pytest.mark.parametrize(
-    "case,app_exists,action_exists,purge_before",
+    "case,app_exists,action_exists,purge_arg,purge_before_arg",
     [
-        ("No action exists", True, False, None),
-        ("No application exists", False, True, None),
-        ("Purge all", True, True, None),
-        ("Purge before", True, True, "2000-01-02"),
+        ("No purge", True, True, False, None),
+        ("No action exists", True, False, True, None),
+        ("No application exists", False, True, True, None),
+        ("Purge all", True, True, True, None),
+        ("Purge before", True, True, True, "2000-01-02"),
     ],
 )
-def test_get_purge_data_steps(case, app_exists, action_exists, purge_before, cli_args, model):
-    cli_args.purge = True
-    cli_args.purge_before = purge_before
+def test_get_purge_data_steps(
+    case,
+    app_exists,
+    action_exists,
+    purge_arg,
+    purge_before_arg,
+    cli_args,
+    model,
+):
+    cli_args.purge = purge_arg
+    cli_args.purge_before = purge_before_arg
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.model = model
 
@@ -1132,8 +1113,8 @@ def test_get_purge_data_steps(case, app_exists, action_exists, purge_before, cli
             app.actions = {"purge-data": True}
 
     expected_steps = []
-    if app_exists and action_exists:
-        if not purge_before:
+    if purge_arg and app_exists and action_exists:
+        if not purge_before_arg:
             expected_steps = [
                 PreUpgradeStep(
                     description="Purge all data from shadow tables on nova-cloud-controller",
@@ -1144,7 +1125,7 @@ def test_get_purge_data_steps(case, app_exists, action_exists, purge_before, cli
             expected_steps = [
                 PreUpgradeStep(
                     description=(
-                        f"Purge data before {purge_before}"
+                        f"Purge data before {purge_before_arg}"
                         " from shadow tables on nova-cloud-controller"
                     ),
                     coro=purge(mock_analysis_result.model, before=cli_args.purge_before),

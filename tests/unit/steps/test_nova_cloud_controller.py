@@ -110,19 +110,19 @@ async def test_archive_handles_multiple_batches(model):
             "Purge all",
             None,
             AsyncMock(),
-            ["Purge data action success in %s", "nova-cloud-controller/0"],
+            ["purge-data action succeeded on %s", "nova-cloud-controller/0"],
         ),
         (
             "Purge before",
             "2000-01-02",
             AsyncMock(),
-            ["Purge data action success in %s", "nova-cloud-controller/0"],
+            ["purge-data action succeeded on %s", "nova-cloud-controller/0"],
         ),
         (
             "No data deleted",
             None,
             {"results": {"output": "Purging stale soft-deleted rows and no data was deleted"}},
-            ["Run purge-data action in %s and no data was deleted", "nova-cloud-controller/0"],
+            ["purge-data action succeeded on %s (no data was deleted)", "nova-cloud-controller/0"],
         ),
     ],
 )
@@ -167,7 +167,7 @@ async def test_purge(mock_logger, case, before, action_output, log_msg, model):
             None,
             {"results": {"output": "Purging stale soft-deleted rows failed"}},
             (
-                "Purge data action failed in nova-cloud-controller/0,"
+                "purge-data action failed on nova-cloud-controller/0,"
                 " please check unit's debug log"
                 " for more details."
             ),

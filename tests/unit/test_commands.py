@@ -935,8 +935,8 @@ def test_purge_before_arg(val, raise_err):
 @pytest.mark.parametrize(
     "case,args,expected_err",
     [
-        ("with purge", "--purge-before 2000-01-02", True),
-        ("without purge", "--purge --purge-before 2000-01-02", False),
+        ("without purge", "--purge-before 2000-01-02", True),
+        ("with purge", "--purge --purge-before 2000-01-02", False),
     ],
 )
 @patch("cou.commands.setattr")
