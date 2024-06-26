@@ -59,8 +59,8 @@ auxiliary charms, and the `track` column is the track for the auxiliary charms
 on charmhub.
 
 **Note**: The `o7k_release` must match the `LTS_TO_OS_RELEASE` in the
-`cou/utils/openstack.py`, and they should be the *track* of the OpenStack
-release (e.g. `zed`, `2024.1`).
+`cou/utils/openstack.py`, and they should be the *codename* of the OpenStack
+release (e.g. `zed`, `antelope`).
 
 **Note**: Starting from OpenStack Antelope, the OpenStack release identifier
 will use *release date* instead of *release codename*.
