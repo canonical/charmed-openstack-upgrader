@@ -28,12 +28,12 @@ class CommandRunFailed(COUException):
         :param cmd: Command that was run
         :type cmd: string
         :param result: Dict returned by juju containing the output of the command
-        :type result: dict - {'Code': '0', 'Stdout': '', 'Stderr':''}
+        :type result: dict - {'return-code': 0, 'stdout': '', 'stderr':''}
         """
-        code = result.get("Code")
-        output = result.get("Stdout")
-        err = result.get("Stderr")
-        msg = f"Command {cmd} failed with code {code}, output {output} and error {err}"
+        code = result.get("return-code")
+        stdout = result.get("stdout")
+        stderr = result.get("stderr")
+        msg = f"Command {cmd} failed with code {code}, output {stdout} and error {stderr}"
         super().__init__(msg)
 
 

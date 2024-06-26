@@ -37,8 +37,8 @@ async def backup(model: Model) -> Path:
 
     logger.info("mysqldump mysql-innodb-cluster DBs ...")
     action = await model.run_action(unit_name, "mysqldump")
-    remote_file = action.data["results"]["mysqldump-file"]
-    basedir = action.data["parameters"]["basedir"]
+    remote_file = Path(action.results["mysqldump-file"])
+    basedir = remote_file.parent
 
     logger.info("Set permissions to read mysql-innodb-cluster:%s ...", basedir)
     await model.run_on_unit(unit_name, f"chmod o+rx {basedir}")
