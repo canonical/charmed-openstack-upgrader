@@ -236,9 +236,9 @@ class OpenStackRelease:
         :type value: str
         :raises ValueError: Raise ValueError if codename is unknown.
         """
-        if value in self.openstack_codenames:  # if the value is release codename
+        if value in self.openstack_codenames:
             self.index = self.openstack_codenames.index(value)
-        elif value in self.openstack_release_date:  # if the value is release date
+        elif value in self.openstack_release_date:
             self.index = self.openstack_release_date.index(value)
         else:
             raise ValueError(
@@ -250,13 +250,20 @@ class OpenStackRelease:
 
     @property
     def track(self) -> str:
-        """Charmhub track for this openstack release.
+        """Return charmhub track for this openstack release.
+
+        This property return the charmhub track for this OpenStack release. The
+        charmhub tracks before OpenStack Antelope are usually tagged by their
+        release codenames such as `ussuri`, `zed`, or `yoga`. For releases at
+        or later than Antelope, the charmhub tracks are tagged with the release
+        dates[ 1]. For example, see the charmhub track of nova-compute [2].
+
+        [1] https://governance.openstack.org/tc/reference/release-naming.html
+        [2] https://charmhub.io/nova-compute
 
         :return: Charmhub track
         :rtype: str
         """
-        # NOTE (gabrielcocenza) From antelope, OpenStack releases are commonly referenced
-        # by the release date and not on the codename.
         index_zed = self.openstack_codenames.index("zed")
         if self.index <= index_zed:
             return self.openstack_codenames[self.index]
