@@ -35,24 +35,76 @@ def test_version_range_raises_ValueError(lower, upper):
     [
         (
             "keystone",
-            ["17.1.0", "18.3.1", "19.4.5", "20.6.7", "21.8.9"],
-            [["ussuri"], ["victoria"], ["wallaby"], ["xena"], ["yoga"]],
+            [
+                "17.1.0",
+                "18.3.1",
+                "19.4.5",
+                "20.6.7",
+                "21.8.9",
+                "22.0.0",
+                "23.0.0",
+                "24.0.0",
+                "25.0.0",
+            ],
+            [
+                ["ussuri"],
+                ["victoria"],
+                ["wallaby"],
+                ["xena"],
+                ["yoga"],
+                ["zed"],
+                ["antelope"],
+                ["bobcat"],
+                ["caracal"],
+            ],
         ),
         (
             "ceph-mon",
-            ["15.2.17", "16.2.14", "17.2.6"],
-            [["ussuri", "victoria"], ["wallaby", "xena"], ["yoga", "zed", "antelope", "bobcat"]],
+            ["15.2.17", "16.2.14", "17.2.6", "18.2.1"],
+            [
+                ["ussuri", "victoria"],
+                ["wallaby", "xena"],
+                ["yoga", "zed", "antelope"],
+                ["bobcat", "caracal"],
+            ],
         ),  # version 15 (octopus) can be ussuri or victoria
         # version 16 (pacific) can be wallaby or xena
         (
             "gnocchi",
-            ["4.3.4", "4.4.0", "4.4.1"],
-            [["ussuri"], ["victoria", "wallaby"], ["xena", "yoga"]],
+            ["4.3.4", "4.4.0", "4.4.1", "4.4.2", "4.5.5", "4.6.0"],
+            [
+                ["ussuri"],
+                ["victoria", "wallaby"],
+                ["xena", "yoga"],
+                ["zed"],
+                ["antelope"],
+                ["bobcat", "caracal"],
+            ],
         ),
         (
             "openstack-dashboard",
-            ["18.3.5", "18.6.3", "19.3.0", "20.1.4", "20.2.0"],
-            [["ussuri"], ["victoria"], ["wallaby"], ["xena"], ["yoga"]],
+            [
+                "18.3.5",
+                "18.6.3",
+                "19.3.0",
+                "20.1.4",
+                "20.2.0",
+                "22.2.0",
+                "23.1.0",
+                "23.2.0",
+                "23.4.0",
+            ],
+            [
+                ["ussuri"],
+                ["victoria"],
+                ["wallaby"],
+                ["xena"],
+                ["yoga"],
+                ["zed"],
+                ["antelope"],
+                ["bobcat"],
+                ["caracal"],
+            ],
         ),
         (
             "rabbitmq-server",  # yoga can be 3.8 or 3.9
@@ -74,8 +126,14 @@ def test_version_range_raises_ValueError(lower, upper):
         ),
         (
             "ovn-central",
-            ["22.03.02"],
-            [["ussuri", "victoria", "wallaby", "xena", "yoga"]],
+            ["22.03.02", "22.09", "23.03", "23.09", "24.03"],
+            [
+                ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+                ["zed"],
+                ["antelope"],
+                ["bobcat"],
+                ["caracal"],
+            ],
         ),
         ("my_charm", ["13.1.2"], [[]]),  # unknown charm
         ("keystone", ["63.5.7"], [[]]),  # out-of-bounds of a known charm
