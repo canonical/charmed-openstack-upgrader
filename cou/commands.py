@@ -122,12 +122,10 @@ def purge_before_arg(value: str) -> str:
     for fmt in formats:
         try:
             datetime.strptime(value, fmt)
-            break
+            return value
         except ValueError:
             pass
-    else:  # only run this if didn't `break` above
-        raise argparse.ArgumentTypeError("purge before format must be YYYY-MM-DD[HH:mm][:ss]")
-    return value
+    raise argparse.ArgumentTypeError("purge before format must be YYYY-MM-DD[HH:mm][:ss]")
 
 
 class PurgeBeforeArgumentAction(argparse.Action):
@@ -199,7 +197,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         default=False,
     )
     subcommand_common_opts_parser.add_argument(
-        "--purge-before",
+        "--purge-before-date",
         dest="purge_before",
         action=PurgeBeforeArgumentAction,
         help=(

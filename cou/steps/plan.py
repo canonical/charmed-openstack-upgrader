@@ -383,17 +383,30 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             ),
         )
     ]
+    steps.extend(_get_backup_steps(analysis_result, args))
+    steps.extend(_get_archive_data_steps(analysis_result, args))
+    steps.extend(_get_purge_data_steps(analysis_result, args))
+    return steps
+
+
+def _get_backup_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get back up MySQL databases step.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of post-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
     if args.backup:
-        steps.append(
+        return [
             PreUpgradeStep(
                 description="Back up MySQL databases",
                 coro=backup(analysis_result.model),
             )
-        )
-
-    steps.extend(_get_archive_data_steps(analysis_result, args))
-    steps.extend(_get_purge_data_steps(analysis_result, args))
-    return steps
+        ]
+    return []
 
 
 def _get_purge_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:

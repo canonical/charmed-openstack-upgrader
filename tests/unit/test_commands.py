@@ -170,7 +170,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
             ),
         ),
         (
-            ["plan", "--purge", "--purge-before", "2000-01-02"],
+            ["plan", "--purge", "--purge-before-date", "2000-01-02"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -184,7 +184,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
             ),
         ),
         (
-            ["plan", "--purge", "--purge-before", "2000-01-02 03:04"],
+            ["plan", "--purge", "--purge-before-date", "2000-01-02 03:04"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -198,7 +198,7 @@ def test_parse_args_quiet_verbose_exclusive(args):
             ),
         ),
         (
-            ["plan", "--purge", "--purge-before", "2000-01-02 03:04:05"],
+            ["plan", "--purge", "--purge-before-date", "2000-01-02 03:04:05"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -544,7 +544,7 @@ def test_parse_args_plan(args, expected_CLIargs):
             ),
         ),
         (
-            ["upgrade", "--purge", "--purge-before", "2000-01-02 03:04:05"],
+            ["upgrade", "--purge", "--purge-before-date", "2000-01-02 03:04:05"],
             CLIargs(
                 command="upgrade",
                 model_name=None,
@@ -932,23 +932,29 @@ def test_purge_before_arg(val, raise_err):
             commands.purge_before_arg(val)
 
 
-@pytest.mark.parametrize(
-    "case,args,expected_err",
-    [
-        ("without purge", "--purge-before 2000-01-02", True),
-        ("with purge", "--purge --purge-before 2000-01-02", False),
-    ],
-)
 @patch("cou.commands.setattr")
-def test_purge_before_argument_action(mock_setattr, case, args, expected_err):
+def test_purge_before_argument_action(mock_setattr):
     parser = ArgumentParser()
     parser.add_argument("--purge", action="store_true", default=False)
     parser.add_argument(
-        "--purge-before", dest="purge_before", type=str, action=commands.PurgeBeforeArgumentAction
+        "--purge-before-date",
+        dest="purge_before",
+        type=str,
+        action=commands.PurgeBeforeArgumentAction,
     )
-    if expected_err:
-        with pytest.raises(SystemExit, match="2"):
-            parser.parse_args(args.split())
-    else:
-        parser.parse_args(args.split())
-        mock_setattr.assert_called()
+    parser.parse_args("--purge --purge-before-date 2000-01-02".split())
+    mock_setattr.assert_called()
+
+
+@patch("cou.commands.setattr")
+def test_purge_before_argument_action_failed(mock_setattr):
+    parser = ArgumentParser()
+    parser.add_argument("--purge", action="store_true", default=False)
+    parser.add_argument(
+        "--purge-before-date",
+        dest="purge_before",
+        type=str,
+        action=commands.PurgeBeforeArgumentAction,
+    )
+    with pytest.raises(SystemExit, match="2"):
+        parser.parse_args("--purge-before-date 2000-01-02".split())

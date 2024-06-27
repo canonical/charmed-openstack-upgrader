@@ -1016,10 +1016,16 @@ async def test_get_upgradable_hypervisors_machines(
     } == expected_result
 
 
-@pytest.mark.parametrize("cli_backup", [True, False])
-def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
-    cli_args.backup = cli_backup
-    cli_args.archive_batch_size = 998
+@patch("cou.steps.plan._get_purge_data_steps", return_value=["purge_step"])
+@patch("cou.steps.plan._get_archive_data_steps", return_value=["archive_step"])
+@patch("cou.steps.plan._get_backup_steps", return_value=["backup_step"])
+def test_get_pre_upgrade_steps(
+    mock_get_backup_steps,
+    mock_get_archive_steps,
+    mock_get_purge_steps,
+    cli_args,
+    model,
+):
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("ussuri")
     mock_analysis_result.model = model
@@ -1034,26 +1040,40 @@ def test_get_pre_upgrade_steps(cli_backup, cli_args, model):
             ),
         )
     )
-    if cli_backup:
-        expected_steps.append(
-            PreUpgradeStep(
-                description="Back up MySQL databases",
-                parallel=False,
-                coro=backup(model),
-            )
-        )
 
-    expected_steps.append(
-        PreUpgradeStep(
-            description="Archive old database data on nova-cloud-controller",
-            parallel=False,
-            coro=archive(model, batch_size=998),
-        )
-    )
+    expected_steps.append("backup_step")
+    expected_steps.append("archive_step")
+    expected_steps.append("purge_step")
 
     pre_upgrade_steps = cou_plan._get_pre_upgrade_steps(mock_analysis_result, cli_args)
 
     assert pre_upgrade_steps == expected_steps
+    mock_get_backup_steps.assert_called_with(mock_analysis_result, cli_args)
+    mock_get_archive_steps.assert_called_with(mock_analysis_result, cli_args)
+    mock_get_purge_steps.assert_called_with(mock_analysis_result, cli_args)
+
+
+def test_get_backup_steps(cli_args, model):
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+    cli_args.backup = True
+
+    steps = cou_plan._get_backup_steps(mock_analysis_result, cli_args)
+    assert steps == [
+        PreUpgradeStep(
+            description="Back up MySQL databases",
+            coro=backup(mock_analysis_result.model),
+        )
+    ]
+
+
+def test_get_backup_steps_no_backup(cli_args, model):
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+    cli_args.backup = False
+
+    steps = cou_plan._get_backup_steps(mock_analysis_result, cli_args)
+    assert steps == []
 
 
 def test_get_archive_data_steps(cli_args, model):
@@ -1080,58 +1100,77 @@ def test_get_archive_data_steps_no_archive(cli_args, model):
     assert steps == []
 
 
+def test_get_purge_data_steps_no_purge(cli_args, model):
+    cli_args.purge = False
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+
+    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app.charm = "nova-cloud-controller"
+    mock_analysis_result.apps_control_plane = [app]
+    app.actions = {"purge-data": True}
+
+    steps = cou_plan._get_purge_data_steps(mock_analysis_result, cli_args)
+    assert [] == steps
+
+
+def test_get_purge_data_steps_no_action(cli_args, model):
+    cli_args.purge = True
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+
+    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app.charm = "nova-cloud-controller"
+    mock_analysis_result.apps_control_plane = [app]
+    app.actions = {}
+
+    steps = cou_plan._get_purge_data_steps(mock_analysis_result, cli_args)
+    assert [] == steps
+
+
+def test_get_purge_data_steps_no_app(cli_args, model):
+    cli_args.purge = True
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.model = model
+
+    steps = cou_plan._get_purge_data_steps(mock_analysis_result, cli_args)
+    assert [] == steps
+
+
 @pytest.mark.parametrize(
-    "case,app_exists,action_exists,purge_arg,purge_before_arg",
+    "case,purge_before_arg,msg",
     [
-        ("No purge", True, True, False, None),
-        ("No action exists", True, False, True, None),
-        ("No application exists", False, True, True, None),
-        ("Purge all", True, True, True, None),
-        ("Purge before", True, True, True, "2000-01-02"),
+        ("Purge all", None, "Purge all data from shadow tables on nova-cloud-controller"),
+        (
+            "Purge before",
+            "2000-01-02",
+            "Purge data before 2000-01-02 from shadow tables on nova-cloud-controller",
+        ),
     ],
 )
 def test_get_purge_data_steps(
     case,
-    app_exists,
-    action_exists,
-    purge_arg,
     purge_before_arg,
+    msg,
     cli_args,
     model,
 ):
-    cli_args.purge = purge_arg
+    cli_args.purge = True
     cli_args.purge_before = purge_before_arg
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.model = model
 
-    if app_exists:
-        app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
-        app.charm = "nova-cloud-controller"
-        mock_analysis_result.apps_control_plane = [app]
-        app.actions = {}
-        if action_exists:
-            app.actions = {"purge-data": True}
+    app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
+    app.charm = "nova-cloud-controller"
+    mock_analysis_result.apps_control_plane = [app]
+    app.actions = {"purge-data": True}
 
-    expected_steps = []
-    if purge_arg and app_exists and action_exists:
-        if not purge_before_arg:
-            expected_steps = [
-                PreUpgradeStep(
-                    description="Purge all data from shadow tables on nova-cloud-controller",
-                    coro=purge(mock_analysis_result.model, before=cli_args.purge_before),
-                )
-            ]
-        else:
-            expected_steps = [
-                PreUpgradeStep(
-                    description=(
-                        f"Purge data before {purge_before_arg}"
-                        " from shadow tables on nova-cloud-controller"
-                    ),
-                    coro=purge(mock_analysis_result.model, before=cli_args.purge_before),
-                )
-            ]
-
+    expected_steps = [
+        PreUpgradeStep(
+            description=msg,
+            coro=purge(mock_analysis_result.model, before=cli_args.purge_before),
+        )
+    ]
     steps = cou_plan._get_purge_data_steps(mock_analysis_result, cli_args)
     assert expected_steps == steps
 
