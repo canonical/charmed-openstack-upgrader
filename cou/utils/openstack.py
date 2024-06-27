@@ -256,7 +256,7 @@ class OpenStackRelease:
         charmhub tracks before OpenStack Antelope are usually tagged by their
         release codenames such as `ussuri`, `zed`, or `yoga`. For releases at
         or later than Antelope, the charmhub tracks are tagged with the release
-        dates[ 1]. For example, see the charmhub track of nova-compute [2].
+        dates[1]. For example, see the charmhub track of nova-compute [2].
 
         [1] https://governance.openstack.org/tc/reference/release-naming.html
         [2] https://charmhub.io/nova-compute

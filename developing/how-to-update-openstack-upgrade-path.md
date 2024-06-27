@@ -15,11 +15,11 @@ these files, and make changes to the relevant places.
 This file contains some constants such as the list of OpenStack charms,
 OpenStack release name, and Ceph release name for defining the supported
 OpenStack releases. It also dynamically loads the content of the csv files
-(`openstack_lookup.csv` and `openstack_to_track_mapping.csv`) for generating a
+(`openstack_lookup.csv` and `openstack_to_track_mapping.csv`) for generating
 upgrade paths.
 
 When you are changing the upgrade paths, make sure to review the external
-official website the for the following constants:
+official websites for the following constants:
 
 - `OPENSTACK_CODENAMES` [1][1]
 - `DISTRO_TO_OPENSTACK_MAPPING` [2][2]
@@ -38,8 +38,13 @@ from the [charm delivery][5], [ceph release page][6], [release page][7],
 release (N) while the upper is the first incompatible version.  This way, new
 patches won't affect the comparison.
 
-Charm designate-bind workload_version tracks the version of the deb package
-bind9. For charm gnocchi it was used `cmadison`.
+The version of some packages cannot be found directly from the official release
+pages (often they non-OpenStack packages). In this situation, the version can be
+obtained from the debian package itself using `cmadison` or `rmadison`. For
+example, the `workload_version` for charm `designate-bind` tracks the version of
+the debian package `bind9`, and we can use `rmadison bind9` to find all the
+versions for charm `designate-bind`. Similarly, for charm `gnocchi`, the
+versions can be found using `cmadison gnocchi`.
 
 **Note**: Generally, the `upper_version` of the last release is unknown, we can increase
 the "PATCH" number of `lower_version` by one, to set the `upper_version`. This
