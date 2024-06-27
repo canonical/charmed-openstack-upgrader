@@ -521,7 +521,7 @@ def test_pre_plan_sanity_checks(
     "o7k_release, current_series, exp_error_msg",
     [
         (
-            OpenStackRelease("yoga"),
+            OpenStackRelease("caracal"),
             "noble",
             "Cloud series 'noble' is not a Ubuntu LTS series supported by COU. "
             "The supporting series are: focal, jammy",
@@ -542,13 +542,20 @@ def test_verify_supported_series(o7k_release, current_series, exp_error_msg):
         cou_plan._verify_supported_series(mock_analysis_result)
 
 
-def test_verify_highest_release_achieved():
+@pytest.mark.parametrize(
+    "o7k_release, series",
+    [
+        ("yoga", "focal"),
+        ("caracal", "jammy"),
+    ],
+)
+def test_verify_highest_release_achieved(o7k_release, series):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("yoga")
-    mock_analysis_result.current_cloud_series = "focal"
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease(o7k_release)
+    mock_analysis_result.current_cloud_series = series
     exp_error_msg = (
-        "No upgrades available for OpenStack Yoga on "
-        "Ubuntu Focal.\nIn future releases of COU, newer OpenStack releases "
+        f"No upgrades available for OpenStack {o7k_release.capitalize()} on "
+        f"Ubuntu {series.capitalize()}.\nIn future releases of COU, newer OpenStack releases "
         "may available after manually upgrading to a later Ubuntu series.\n"
         "Charmed OpenStack Upgrader will not support upgrade across series,\n"
         "please refer to the official documentation on how to do series upgrade:\n"
@@ -637,6 +644,10 @@ def test_is_control_plane_upgraded(
     [
         (OpenStackRelease("victoria"), "focal", "wallaby"),
         (OpenStackRelease("xena"), "focal", "yoga"),
+        (OpenStackRelease("yoga"), "jammy", "zed"),
+        (OpenStackRelease("zed"), "jammy", "antelope"),
+        (OpenStackRelease("antelope"), "jammy", "bobcat"),
+        (OpenStackRelease("bobcat"), "jammy", "caracal"),
     ],
 )
 def test_determine_upgrade_target(o7k_release, current_series, next_release):
