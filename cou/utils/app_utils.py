@@ -83,7 +83,7 @@ async def _get_required_osd_release(unit: str, model: Model) -> str:
     check_option_result = await model.run_on_unit(
         unit_name=unit, command=check_command, timeout=600
     )
-    current_require_osd_release = json.loads(check_option_result["Stdout"]).get(
+    current_require_osd_release = json.loads(check_option_result["stdout"]).get(
         "require_osd_release", ""
     )
     logger.debug("Current require-osd-release is set to: %s", current_require_osd_release)
@@ -109,7 +109,7 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
 
     check_osd_result = await model.run_on_unit(unit_name=unit, command=check_command, timeout=600)
 
-    osd_release_output = json.loads(check_osd_result["Stdout"]).get("osd", None)
+    osd_release_output = json.loads(check_osd_result["stdout"]).get("osd", None)
     # throw exception if ceph-mon doesn't contain osd release information in `ceph`
     if not osd_release_output:
         raise RunUpgradeError(f"Cannot get OSD release information on ceph-mon unit '{unit}'.")

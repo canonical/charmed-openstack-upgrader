@@ -220,7 +220,12 @@ def entrypoint() -> None:
         print(exc)
     except TimeoutException:
         progress_indicator.fail()
-        print("The connection was lost. Check your connection or increase the timeout.")
+        print(
+            "The connection was lost.\n"
+            "Check your connection or increase the timeout.\n"
+            "Default timeout is 10s; to increase to 60s for example:\n"
+            "$ COU_TIMEOUT=60 cou plan"
+        )
         sys.exit(1)
     except COUException as exc:
         progress_indicator.fail()
