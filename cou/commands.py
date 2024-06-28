@@ -204,7 +204,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
             "Providing this argument will delete data from all shadow tables"
             "\nthat is older than the date provided."
             "\nDate string format should be YYYY-MM-DD[HH:mm][:ss]."
-            "\nWithout --purge-before the purge step will delete all the data."
+            "\nWithout --purge-before-date the purge step will delete all the data."
         ),
         type=purge_before_arg,
         required=False,
