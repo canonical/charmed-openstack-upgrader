@@ -354,7 +354,7 @@ class OpenStackApplication(Application):
         :return: The next channel for the application. E.g: victoria/stable
         :rtype: str
         """
-        return f"{target.codename}/stable"
+        return f"{target.track}/stable"
 
     def new_origin(self, target: OpenStackRelease) -> str:
         """Return the new openstack-origin or source configuration.

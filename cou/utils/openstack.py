@@ -105,6 +105,7 @@ AUXILIARY_SUBORDINATES = ["hacluster", "mysql-router", "ceph-dashboard"]
 
 CHANNEL_BASED_CHARMS = ["designate-bind", "gnocchi", "glance-simplestreams-sync"]
 
+# https://governance.openstack.org/tc/reference/release-naming.html
 OPENSTACK_CODENAMES = OrderedDict(
     [
         ("diablo", "2011.2"),
@@ -136,6 +137,7 @@ OPENSTACK_CODENAMES = OrderedDict(
     ]
 )
 
+# https://ubuntu.com/about/release-cycle#ubuntu
 DISTRO_TO_OPENSTACK_MAPPING = {
     "bionic": "queens",
     "cosmic": "rocky",
@@ -148,16 +150,24 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "jammy": "yoga",
     "kinetic": "zed",
     "lunar": "antelope",
+    "mantic": "bobcat",
+    "noble": "caracal",
 }
 
+# https://ubuntu.com/openstack/docs/supported-versions
+# https://governance.openstack.org/tc/reference/release-naming.html
+# https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 LTS_TO_OS_RELEASE = {
     "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+    "jammy": ["yoga", "zed", "antelope", "bobcat", "caracal"],
 }
 
+# https://docs.ceph.com/en/latest/releases/
 CEPH_RELEASES = [
     "octopus",
     "pacific",
     "quincy",
+    "reef",
 ]
 
 
@@ -189,17 +199,21 @@ class OpenStackRelease:
         """
         return hash(f"{self.codename}{self.date}")
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Do equals."""
         if not isinstance(other, (str, OpenStackRelease)):
             return NotImplemented
-        return self.index == self.openstack_codenames.index(str(other))
+        if isinstance(other, str):
+            return self.index == OpenStackRelease(other).index
+        return self.index == other.index
 
-    def __lt__(self, other: Any) -> bool:
+    def __lt__(self, other: object) -> bool:
         """Do less than."""
         if not isinstance(other, (str, OpenStackRelease)):
             return NotImplemented
-        return self.index < self.openstack_codenames.index(str(other))
+        if isinstance(other, str):
+            return self.index < OpenStackRelease(other).index
+        return self.index < other.index
 
     def __repr__(self) -> str:
         """Return the representation of CompareOpenStack."""
@@ -215,23 +229,50 @@ class OpenStackRelease:
         return self._codename
 
     @codename.setter
-    def codename(self, value: str) -> None:
+    def codename(self, release_identifier: str) -> None:
         """Setter of OpenStack release codename.
 
-        :param value: OpenStack release codename.
-        :type value: str
-        :raises ValueError: Raise ValueError if codename is unknown.
+        This setter take the OpenStack release identifier string (release
+        codename or release date), and convert it into the OpenStack release
+        codename. For example, if the `release_identifier` is `zed` or
+        `2024.1`, then `self.codename` is `zed` or `caracal`.
+
+        :param release_identifier: OpenStack release identifier.
+        :type release_identifier: str
+        :raises ValueError: Raise ValueError if release_identifier is unknown.
         """
-        if value in self.openstack_codenames:
-            self._codename = value
-            self.index = self.openstack_codenames.index(value)
-        # NOTE (gabrielcocenza) From antelope, OpenStack releases are commonly referenced
-        # by the release date and not on the codename.
-        elif value in self.openstack_release_date:
-            self.index = self.openstack_release_date.index(value)
-            self._codename = self.openstack_codenames[self.index]
+        if release_identifier in self.openstack_codenames:
+            self.index = self.openstack_codenames.index(release_identifier)
+        elif release_identifier in self.openstack_release_date:
+            self.index = self.openstack_release_date.index(release_identifier)
         else:
-            raise ValueError(f"OpenStack '{value}' is not in '{self.openstack_codenames}'")
+            raise ValueError(
+                f"OpenStack '{release_identifier}' is not in '"
+                f"{self.openstack_codenames}' or '{self.openstack_release_date}'"
+            )
+
+        self._codename = self.openstack_codenames[self.index]
+
+    @property
+    def track(self) -> str:
+        """Return charmhub track for this openstack release.
+
+        This property return the charmhub track for this OpenStack release. The
+        charmhub tracks before OpenStack Antelope are usually tagged by their
+        release codenames such as `ussuri`, `zed`, or `yoga`. For releases at
+        or later than Antelope, the charmhub tracks are tagged with the release
+        dates[1]. For example, see the charmhub track of nova-compute [2].
+
+        [1] https://governance.openstack.org/tc/reference/release-naming.html
+        [2] https://charmhub.io/nova-compute
+
+        :return: Charmhub track
+        :rtype: str
+        """
+        index_zed = self.openstack_codenames.index("zed")
+        if self.index <= index_zed:
+            return self.openstack_codenames[self.index]
+        return self.openstack_release_date[self.index]
 
     @property
     def next_release(self) -> Optional[OpenStackRelease]:
@@ -322,16 +363,17 @@ class OpenStackCodenameLookup:
 
         The dictionary is generated from a static csv file that should be updated regularly
         to include new OpenStack releases and updates to the lower and upper versions of
-        the services. The csv table is made from the release page [0] charm delivery [1],
-        cmadison and rmadison. The lower version is the lowest version of a certain release (N)
-        while the upper is the first incompatible version. This way, new patches
-        won't affect the comparison.
+        the services. The csv table is made from the release page [0], charm delivery [1],
+        cmadison and rmadison, and ceph release page [2]. The lower version is the lowest
+        version of a certain release (N) while the upper is the first incompatible version.
+        This way, new patches won't affect the comparison.
 
         Charm designate-bind workload_version tracks the version of the deb package bind9.
         For charm gnocchi it was used cmadison.
 
         [0] https://releases.openstack.org/
         [1] https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
+        [2] https://docs.ceph.com/en/latest/releases/
 
         :param resource: Path to the csv file
         :type resource: Path

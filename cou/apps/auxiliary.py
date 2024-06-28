@@ -51,7 +51,7 @@ class AuxiliaryApplication(OpenStackApplication):
         """
         current_track = self._get_track_from_channel(charm_channel)
         possible_tracks = OPENSTACK_TO_TRACK_MAPPING.get(
-            (self.charm, self.series, self.o7k_release.codename), []
+            (self.charm, self.series, self.o7k_release.track), []
         )
         return (
             self.charm,
@@ -77,7 +77,7 @@ class AuxiliaryApplication(OpenStackApplication):
             ]
         else:
             *_, track = OPENSTACK_TO_TRACK_MAPPING[
-                (self.charm, self.series, self.o7k_release.codename)
+                (self.charm, self.series, self.o7k_release.track)
             ]
 
         return f"{track}/stable"
@@ -91,13 +91,13 @@ class AuxiliaryApplication(OpenStackApplication):
         :rtype: str
         :raises ApplicationError: When cannot find a track.
         """
-        tracks = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.codename))
+        tracks = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.track))
         if tracks:
             return f"{tracks[-1]}/stable"
 
         raise ApplicationError(
             (
-                f"Cannot find a suitable '{self.charm}' charm channel for {target.codename} "
+                f"Cannot find a suitable '{self.charm}' charm channel for {target.track} "
                 f"on series '{self.series}'. Please take a look at the documentation: "
                 "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
             )

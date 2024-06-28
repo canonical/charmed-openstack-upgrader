@@ -84,9 +84,9 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of "
-            f"'{target.previous_release}/stable'",
+            f"'{target.previous_release.track}/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.previous_release.track}/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' to 'False'",
@@ -94,17 +94,17 @@ def generate_expected_upgrade_plan_principal(app, target, model):
             coro=model.set_application_config(app.name, {"action-managed-upgrade": False}),
         ),
         UpgradeStep(
-            description=f"Upgrade '{app.name}' from '{target.previous_release}/stable' "
-            f"to the new channel: '{target.codename}/stable'",
+            description=f"Upgrade '{app.name}' from '{target.previous_release.track}/stable' "
+            f"to the new channel: '{target.track}/stable'",
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.track}/stable"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
-            f"'{app.origin_setting}' to 'cloud:focal-{target.codename}'",
+            f"'{app.origin_setting}' to 'cloud:focal-{target.track}'",
             parallel=False,
             coro=model.set_application_config(
-                app.name, {f"{app.origin_setting}": f"cloud:focal-{target.codename}"}
+                app.name, {f"{app.origin_setting}": f"cloud:focal-{target.track}"}
             ),
         ),
         wait_step,
@@ -126,15 +126,21 @@ def generate_expected_upgrade_plan_subordinate(app, target, model):
     )
     upgrade_steps = [
         PreUpgradeStep(
-            f"Refresh '{app.name}' to the latest revision of '{target.previous_release}/stable'",
+            (
+                f"Refresh '{app.name}' to the latest revision of "
+                f"'{target.previous_release.track}/stable'"
+            ),
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.previous_release}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.previous_release.track}/stable"),
         ),
         UpgradeStep(
-            f"Upgrade '{app.name}' from '{target.previous_release}/stable' to the new channel: "
-            f"'{target.codename}/stable'",
+            (
+                f"Upgrade '{app.name}' from "
+                f"'{target.previous_release.track}/stable' to the new channel: "
+                f"'{target.track}/stable'"
+            ),
             parallel=False,
-            coro=model.upgrade_charm(app.name, f"{target.codename}/stable"),
+            coro=model.upgrade_charm(app.name, f"{target.track}/stable"),
         ),
     ]
     expected_plan.add_steps(upgrade_steps)
@@ -515,16 +521,16 @@ def test_pre_plan_sanity_checks(
     "o7k_release, current_series, exp_error_msg",
     [
         (
-            OpenStackRelease("yoga"),
-            "jammy",
-            "Cloud series 'jammy' is not a Ubuntu LTS series supported by COU. "
-            "The supporting series are: focal",
+            OpenStackRelease("caracal"),
+            "noble",
+            "Cloud series 'noble' is not a Ubuntu LTS series supported by COU. "
+            "The supporting series are: focal, jammy",
         ),
         (
             OpenStackRelease("train"),
             "bionic",
             "Cloud series 'bionic' is not a Ubuntu LTS series supported by COU. "
-            "The supporting series are: focal",
+            "The supporting series are: focal, jammy",
         ),
     ],
 )
@@ -536,13 +542,20 @@ def test_verify_supported_series(o7k_release, current_series, exp_error_msg):
         cou_plan._verify_supported_series(mock_analysis_result)
 
 
-def test_verify_highest_release_achieved():
+@pytest.mark.parametrize(
+    "o7k_release, series",
+    [
+        ("yoga", "focal"),
+        ("caracal", "jammy"),
+    ],
+)
+def test_verify_highest_release_achieved(o7k_release, series):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("yoga")
-    mock_analysis_result.current_cloud_series = "focal"
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease(o7k_release)
+    mock_analysis_result.current_cloud_series = series
     exp_error_msg = (
-        "No upgrades available for OpenStack Yoga on "
-        "Ubuntu Focal.\nIn future releases of COU, newer OpenStack releases "
+        f"No upgrades available for OpenStack {o7k_release.capitalize()} on "
+        f"Ubuntu {series.capitalize()}.\nIn future releases of COU, newer OpenStack releases "
         "may available after manually upgrading to a later Ubuntu series.\n"
         "Charmed OpenStack Upgrader will not support upgrade across series,\n"
         "please refer to the official documentation on how to do series upgrade:\n"
@@ -631,6 +644,10 @@ def test_is_control_plane_upgraded(
     [
         (OpenStackRelease("victoria"), "focal", "wallaby"),
         (OpenStackRelease("xena"), "focal", "yoga"),
+        (OpenStackRelease("yoga"), "jammy", "zed"),
+        (OpenStackRelease("zed"), "jammy", "antelope"),
+        (OpenStackRelease("antelope"), "jammy", "bobcat"),
+        (OpenStackRelease("bobcat"), "jammy", "caracal"),
     ],
 )
 def test_determine_upgrade_target(o7k_release, current_series, next_release):
@@ -694,7 +711,8 @@ def test_determine_upgrade_target_out_support_range():
     mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("zed")
 
     exp_error_msg = (
-        "Unable to upgrade cloud from Ubuntu series `focal` to 'antelope'. "
+        "Unable to upgrade cloud from Ubuntu series "
+        f"`{mock_analysis_result.current_cloud_series}` to 'antelope'. "
         "Both the from and to releases need to be supported by the current "
         "Ubuntu series 'focal': ussuri, victoria, wallaby, xena, yoga."
     )
