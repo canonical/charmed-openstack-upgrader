@@ -46,7 +46,7 @@ from cou.exceptions import (
 )
 from cou.utils.openstack import is_charm_supported
 
-# Default for the Juju MAX_FRAME_SIZE to be 256MB to stop
+# Increase Juju websocket connection MAX_FRAME_SIZE to 1024MiB to stop
 # "RPC: Connection closed, reconnecting" errors and then a failure in the log.
 # See https://github.com/juju/python-libjuju/issues/458 for more details
 JUJU_MAX_FRAME_SIZE: int = 2**30
