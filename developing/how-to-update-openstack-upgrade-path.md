@@ -46,11 +46,9 @@ the debian package `bind9`, and we can use `rmadison bind9` to find all the
 versions for charm `designate-bind`. Similarly, for charm `gnocchi`, the
 versions can be found using `cmadison gnocchi`.
 
-**Note**: Generally, the `upper_version` of the last release is unknown, we can increase
-the "PATCH" number of `lower_version` by one, to set the `upper_version`. This
-way, it's effectively making the `lower_version` is the only compatible version
-for the last release. However, we will need to revisit this column frequently to
-ensure the information is up-to-date.
+**Note**: Generally, the `upper_version` of the last release is unknown, we
+should use educated guess to set the `upper_version` (e.g. based on the past
+experience), and create an github issue to track the issue in the future.
 
 ## `openstack_to_track_mapping.csv`
 
