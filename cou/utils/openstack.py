@@ -234,7 +234,8 @@ class OpenStackRelease:
 
         This setter take the OpenStack release identifier string (release
         codename or release date), and convert it into the OpenStack release
-        codename.
+        codename. For example, if the `release_identifier` is `zed` or
+        `2024.1`, then `self.codename` is `zed` or `caracal`.
 
         :param release_identifier: OpenStack release identifier.
         :type release_identifier: str
