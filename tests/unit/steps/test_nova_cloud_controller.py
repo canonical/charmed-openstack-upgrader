@@ -25,7 +25,7 @@ from tests.unit.utils import get_status
 async def test_archive_succeeds(model):
     model.get_charm_name.side_effect = lambda x: x
     model.run_action.return_value = action = MagicMock()
-    action.data = {"results": {"archive-deleted-rows": "Nothing was archived."}}
+    action.results = {"archive-deleted-rows": "Nothing was archived."}
 
     await archive(model, batch_size=999)
 
@@ -42,7 +42,7 @@ async def test_archive_with_broken_charm_action(model):
     model.get_charm_name.side_effect = lambda x: x
     model.run_action.return_value = action = MagicMock()
     # simulate the expected archive-deleted-rows key missing
-    action.data = {"results": {}}
+    action.results = {}
 
     # It should raise an expected exception
     # (this will be more graceful than a KeyError for example).
@@ -87,8 +87,8 @@ async def test_archive_unit_not_found(model):
 async def test_archive_handles_multiple_batches(model):
     model.get_charm_name.side_effect = lambda x: x
     model.run_action.side_effect = [
-        MagicMock(data={"results": {"archive-deleted-rows": "placeholder 25 rows"}}),
-        MagicMock(data={"results": {"archive-deleted-rows": "Nothing was archived."}}),
+        MagicMock(results={"archive-deleted-rows": "placeholder 25 rows"}),
+        MagicMock(results={"archive-deleted-rows": "Nothing was archived."}),
     ]
 
     await archive(model, batch_size=999)

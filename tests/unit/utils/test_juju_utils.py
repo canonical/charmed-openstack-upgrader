@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import pytest
 from juju.action import Action
 from juju.application import Application
-from juju.client._definitions import ApplicationStatus, UnitStatus
+from juju.client._definitions import ApplicationStatus, Base, UnitStatus
 from juju.client.connector import NoConnectionException
 from juju.machine import Machine
 from juju.model import Model
@@ -35,6 +35,19 @@ from cou.exceptions import (
 from cou.utils import juju_utils
 
 
+@pytest.mark.parametrize(
+    "base, exp_series",
+    [
+        (Base("18.04/stable", "ubuntu"), "bionic"),
+        (Base("20.04/stable", "ubuntu"), "focal"),
+        (Base("22.04/stable", "ubuntu"), "jammy"),
+    ],
+)
+def test_convert_base_to_series(base, exp_series):
+    """Test helper function to convert base to series."""
+    assert juju_utils._convert_base_to_series(base) == exp_series
+
+
 @pytest.fixture
 def mocked_model(mocker):
     """Fixture providing mocked juju.model.Model object."""
@@ -48,24 +61,6 @@ def mocked_model(mocker):
     model.connect = AsyncMock()
     model.wait_for_idle = AsyncMock()
     yield model
-
-
-def test_normalize_action_results():
-    results = {"Stderr": "error", "stdout": "output"}
-    expected = {"Stderr": "error", "Stdout": "output", "stderr": "error", "stdout": "output"}
-
-    normalized_results = juju_utils._normalize_action_results(results)
-
-    assert normalized_results == expected
-
-
-def test_normalize_action_results_empty_results():
-    results = {}
-    expected = {}
-
-    normalized_results = juju_utils._normalize_action_results(results)
-
-    assert normalized_results == expected
 
 
 @pytest.mark.asyncio
@@ -417,38 +412,36 @@ async def test_coumodel_run_action(mock_get_waited_action_object, mocked_model):
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils._normalize_action_results")
-async def test_coumodel_run_on_unit(mock_normalize_action_results, mocked_model):
+async def test_coumodel_run_on_unit(mocked_model):
     """Test Model run on unit."""
     command = "test-command"
+    expected_results = {"return-code": 0, "stdout": "some results"}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    results = mocked_action.data.get.return_value
-    mock_normalize_action_results.return_value = {"Code": "0", "Stdout": "some results"}
+    mocked_action.results = expected_results
     model = juju_utils.Model("test-model")
 
-    await model.run_on_unit("test-unit/0", command)
+    results = await model.run_on_unit("test-unit/0", command)
 
-    mocked_unit.run.assert_awaited_once_with(command, timeout=None)
-    mock_normalize_action_results.assert_called_once_with(results)
+    mocked_unit.run.assert_awaited_once_with(command, timeout=None, block=True)
+    assert results == expected_results
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils._normalize_action_results")
-async def test_coumodel_run_on_unit_failed_command(mock_normalize_action_results, mocked_model):
+async def test_coumodel_run_on_unit_failed_command(mocked_model):
     """Test Model run on unit."""
     command = "test-command"
+    expected_results = {"return-code": 1, "stderr": "Error!"}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    results = mocked_action.data.get.return_value
-    mock_normalize_action_results.return_value = {"Code": "1", "Stderr": "Error!"}
+    mocked_action.results = expected_results
     model = juju_utils.Model("test-model")
 
-    with pytest.raises(CommandRunFailed):
+    expected_err = "Command test-command failed with code 1, output None and error Error!"
+    with pytest.raises(CommandRunFailed, match=expected_err):
         await model.run_on_unit("test-unit/0", command)
 
-    mocked_unit.run.assert_awaited_once_with(command, timeout=None)
-    mock_normalize_action_results.assert_called_once_with(results)
+    mocked_unit.run.assert_awaited_once_with(command, timeout=None, block=True)
 
 
 @pytest.mark.asyncio
@@ -644,6 +637,7 @@ def _generate_app_status(units: dict[str, MagicMock]) -> MagicMock:
     """Generate app status with units."""
     status = MagicMock(spec_set=ApplicationStatus)()
     status.units = units
+    status.base = Base("20.04/stable", "ubuntu")
     return status
 
 
@@ -722,7 +716,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             machines={unit.machine.id: exp_machines[unit.machine.id] for unit in exp_units[app]},
             model=model,
             origin=status.charm.split(":")[0],
-            series=status.series,
+            series="focal",
             subordinate_to=status.subordinate_to,
             units={
                 name: juju_utils.Unit(

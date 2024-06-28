@@ -50,7 +50,7 @@ async def archive(model: Model, *, batch_size: int) -> None:
             action_params={"batch-size": batch_size},
         )
         logger.info("action output: %s", action.data)
-        output = action.data["results"].get("archive-deleted-rows")
+        output = action.results.get("archive-deleted-rows")
         if output is None:
             raise COUException(
                 "Expected to find output in action results.'archive-deleted-rows', "
