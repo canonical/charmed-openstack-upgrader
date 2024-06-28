@@ -229,20 +229,24 @@ class OpenStackRelease:
         return self._codename
 
     @codename.setter
-    def codename(self, value: str) -> None:
+    def codename(self, release_identifier: str) -> None:
         """Setter of OpenStack release codename.
 
-        :param value: OpenStack release codename.
-        :type value: str
-        :raises ValueError: Raise ValueError if codename is unknown.
+        This setter take the OpenStack release identifier string (release
+        codename or release date), and convert it into the OpenStack release
+        codename.
+
+        :param release_identifier: OpenStack release identifier.
+        :type release_identifier: str
+        :raises ValueError: Raise ValueError if release_identifier is unknown.
         """
-        if value in self.openstack_codenames:
-            self.index = self.openstack_codenames.index(value)
-        elif value in self.openstack_release_date:
-            self.index = self.openstack_release_date.index(value)
+        if release_identifier in self.openstack_codenames:
+            self.index = self.openstack_codenames.index(release_identifier)
+        elif release_identifier in self.openstack_release_date:
+            self.index = self.openstack_release_date.index(release_identifier)
         else:
             raise ValueError(
-                f"OpenStack '{value}' is not in '"
+                f"OpenStack '{release_identifier}' is not in '"
                 f"{self.openstack_codenames}' or '{self.openstack_release_date}'"
             )
 
