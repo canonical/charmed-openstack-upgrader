@@ -696,6 +696,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     mocked_model.applications = {app: MagicMock(spec_set=Application)() for app in exp_apps}
 
     for app in exp_apps:
+        mocked_model.applications[app].get_actions = AsyncMock()
         mocked_model.applications[app].get_config = AsyncMock()
         mocked_model.applications[app].units = exp_units[app]
         mocked_model.applications[app].charm_name = app

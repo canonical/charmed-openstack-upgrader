@@ -174,6 +174,7 @@ class Application:
     subordinate_to: list[str]
     units: dict[str, Unit]
     workload_version: str
+    actions: dict[str, str] = field(default_factory=lambda: {}, compare=False)
 
     @property
     def is_subordinate(self) -> bool:
@@ -395,6 +396,7 @@ class Model:
                     for name, unit in status.units.items()
                 },
                 workload_version=status.workload_version,
+                actions=await model.applications[app].get_actions(),
             )
             for app, status in full_status.applications.items()
         }

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 from unittest.mock import patch
 
 import pytest
@@ -153,6 +153,61 @@ def test_parse_args_quiet_verbose_exclusive(args):
                 force=False,
                 archive_batch_size=1000,
                 archive=True,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["plan", "--purge"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=False,
+                purge=True,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["plan", "--purge", "--purge-before-date", "2000-01-02"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=False,
+                purge=True,
+                purge_before="2000-01-02",
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["plan", "--purge", "--purge-before-date", "2000-01-02 03:04"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=False,
+                purge=True,
+                purge_before="2000-01-02 03:04",
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["plan", "--purge", "--purge-before-date", "2000-01-02 03:04:05"],
+            CLIargs(
+                command="plan",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                backup=True,
+                force=False,
+                purge=True,
+                purge_before="2000-01-02 03:04:05",
                 **{"upgrade_group": None}
             ),
         ),
@@ -475,6 +530,35 @@ def test_parse_args_plan(args, expected_CLIargs):
             ),
         ),
         (
+            ["upgrade", "--purge"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
+                purge=True,
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
+            ["upgrade", "--purge", "--purge-before-date", "2000-01-02 03:04:05"],
+            CLIargs(
+                command="upgrade",
+                model_name=None,
+                verbosity=0,
+                quiet=False,
+                auto_approve=False,
+                backup=True,
+                force=False,
+                purge=True,
+                purge_before="2000-01-02 03:04:05",
+                **{"upgrade_group": None}
+            ),
+        ),
+        (
             ["upgrade", "--model=model_name"],
             CLIargs(
                 command="upgrade",
@@ -760,6 +844,9 @@ def test_parse_args_hypervisors_exclusive_options(args):
         ["plan", "--archive-batch-size", "-4"],
         ["upgrade", "--archive-batch-size", "0"],
         ["plan", "--archive-batch-size", "0"],
+        ["plan", "--purge_before", "2000-01-02"],
+        ["plan", "--purge_before", "2000-01-02 03:04"],
+        ["plan", "--purge_before", "2000-01-02 03:04:05"],
     ],
 )
 def test_parse_invalid_args(args):
@@ -812,3 +899,62 @@ def test_capitalize_help_message():
     help_message = parser.format_help()
 
     assert "Show this help message and exit." in help_message
+
+
+@pytest.mark.parametrize(
+    "val,raise_err",
+    [
+        (
+            "2000-01-02",
+            False,
+        ),
+        (
+            "2000-01-02 03:04",
+            False,
+        ),
+        (
+            "2000-01-02 03:04:05",
+            False,
+        ),
+        (
+            "2000-01-02 03:04:05 something-wrong",
+            True,
+        ),
+    ],
+)
+def test_purge_before_arg(val, raise_err):
+    """Test purge_before_arg."""
+    if not raise_err:
+        result = commands.purge_before_arg(val)
+        assert val == result
+    else:
+        with pytest.raises(ArgumentTypeError):
+            commands.purge_before_arg(val)
+
+
+@patch("cou.commands.setattr")
+def test_purge_before_argument_action(mock_setattr):
+    parser = ArgumentParser()
+    parser.add_argument("--purge", action="store_true", default=False)
+    parser.add_argument(
+        "--purge-before-date",
+        dest="purge_before",
+        type=str,
+        action=commands.PurgeBeforeArgumentAction,
+    )
+    parser.parse_args("--purge --purge-before-date 2000-01-02".split())
+    mock_setattr.assert_called()
+
+
+@patch("cou.commands.setattr")
+def test_purge_before_argument_action_failed(mock_setattr):
+    parser = ArgumentParser()
+    parser.add_argument("--purge", action="store_true", default=False)
+    parser.add_argument(
+        "--purge-before-date",
+        dest="purge_before",
+        type=str,
+        action=commands.PurgeBeforeArgumentAction,
+    )
+    with pytest.raises(SystemExit, match="2"):
+        parser.parse_args("--purge-before-date 2000-01-02".split())

@@ -14,6 +14,7 @@
 
 """Functions for prereq steps relating to nova."""
 import logging
+from typing import Optional
 
 from cou.exceptions import ApplicationNotFound, COUException, UnitNotFound
 from cou.utils.juju_utils import Model
@@ -61,6 +62,44 @@ async def archive(model: Model, *, batch_size: int) -> None:
             logger.debug("Archiving complete.")
             break
         logger.debug("Potentially more data to archive...")
+
+
+async def purge(model: Model, before: Optional[str]) -> None:
+    """Purge data on a nova-cloud-controller unit.
+
+    The purge-data action delete rows from shadow tables.
+    :param model: juju model to work with
+    :type model: Model
+    :param before: specifying before will delete data from all shadow tables
+        that is older than the data provided.
+        Date string format should be YYYY-MM-DD[HH:mm][:ss]
+    :raises COUException: if action returned unexpected output or failed
+    """
+    action_params = {}
+    if before is not None:
+        action_params = {"before": before}
+
+    unit_name: str = await _get_nova_cloud_controller_unit_name(model)
+    action = await model.run_action(
+        unit_name=unit_name,
+        action_name="purge-data",
+        raise_on_failure=True,
+        action_params=action_params,
+    )
+    output = action.data["results"].get("output")
+    if output is None:
+        raise COUException(
+            "Expected to find output in action results. 'output', but it was not present."
+        )
+    if "Purging stale soft-deleted rows failed" in output:
+        raise COUException(
+            f"purge-data action failed on {unit_name}, please check unit's debug log"
+            " for more details."
+        )
+    if "Purging stale soft-deleted rows and no data was deleted" in output:
+        logger.info("purge-data action succeeded on %s (no data was deleted)", unit_name)
+    else:
+        logger.info("purge-data action succeeded on %s", unit_name)
 
 
 async def _get_nova_cloud_controller_unit_name(model: Model) -> str:
