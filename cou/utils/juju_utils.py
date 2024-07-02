@@ -453,7 +453,7 @@ class Model:
         try:
             await self.run_on_unit(unit, f"ls {update_status_hook}")
         except CommandRunFailed:
-            logger.warning("Skipped running '%s': file does not exist", update_status_hook)
+            logger.debug("Skipped running '%s': file does not exist", update_status_hook)
         else:
             await self.run_on_unit(unit, update_status_hook)
 
