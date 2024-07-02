@@ -442,6 +442,21 @@ class Model:
         model = await self._get_model()
         return await model.get_status()
 
+    async def update_status(self, unit: str) -> None:
+        """Run the update_status hook on the given unit if the hook exists.
+
+        :param unit: Name of the unit to run update-status hook
+        :type unit: str
+        :raises CommandRunFailed: When update-status hook failed
+        """
+        update_status_hook = "hooks/update-status"
+        try:
+            await self.run_on_unit(unit, f"ls {update_status_hook}")
+        except CommandRunFailed:
+            logger.warning("Skipped running '%s': file does not exist", update_status_hook)
+        else:
+            await self.run_on_unit(unit, update_status_hook)
+
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run_action(...)` and the rest of the function is covered by retry.
     async def run_action(
