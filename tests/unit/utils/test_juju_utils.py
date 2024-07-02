@@ -445,6 +445,34 @@ async def test_coumodel_run_on_unit_failed_command(mocked_model):
 
 
 @pytest.mark.asyncio
+async def test_coumodel_update_status(mocked_model):
+    """Test Model update_status."""
+    expected_results = {"return-code": 0, "stderr": ""}
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = expected_results
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    mocked_unit.run.assert_any_await("ls hooks/update-status", timeout=None, block=True)
+    mocked_unit.run.assert_any_await("hooks/update-status", timeout=None, block=True)
+
+
+@pytest.mark.asyncio
+async def test_coumodel_update_status_skipped(mocked_model):
+    """Test skip Model update_status."""
+    expected_results = {"return-code": 2, "stderr": "No such file or directory"}
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = expected_results
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    mocked_unit.run.assert_awaited_once()
+    mocked_unit.run.assert_awaited_with("ls hooks/update-status", timeout=None, block=True)
+
+
+@pytest.mark.asyncio
 async def test_coumodel_set_application_configs(mocked_model):
     """Test Model set application configuration."""
     test_config = {"test-key": "test-value"}
