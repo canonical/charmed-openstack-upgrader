@@ -54,6 +54,8 @@ More information
 - `nova-cloud-controller charm actions`_
 - `nova-manage reference`_ - see `archive_deleted_rows` subcommand
 - OpenStack upgrade guide information on `archiving old database data`_
+- :doc:`Purge data on shadow table <how-to/purge-data-on-shadow-table>`
+- :doc:`Nova data migration <explanation/nova-data-migration>`
 
 
 .. LINKS
