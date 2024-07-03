@@ -484,7 +484,15 @@ async def test_coumodel_update_status_use_dispatch_failed(
 @patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
 async def test_coumodel_update_status_use_hooks(use_dispatch, use_hooks, mocked_model):
     """Test Model update_status using hooks."""
-    use_dispatch.return_value = False
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            ),
+        },
+    )
     model = juju_utils.Model("test-model")
     await model.update_status("test-unit/0")
 
@@ -500,7 +508,15 @@ async def test_coumodel_update_status_use_hooks_failed(
     use_dispatch, use_hooks, mocked_logger, mocked_model
 ):
     """Test Model update_status using hooks failed."""
-    use_dispatch.return_value = False
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            )
+        },
+    )
     use_hooks.side_effect = CommandRunFailed("some cmd", result={})
     model = juju_utils.Model("test-model")
 
@@ -519,88 +535,30 @@ async def test_coumodel_update_status_skipped(
     use_dispatch, use_hooks, mocked_logger, mocked_model
 ):
     """Test skip Model update_status."""
-    use_hooks.return_value = False
-    use_dispatch.return_value = False
-    expected_results = {"return-code": 0, "stderr": ""}
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = expected_results
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            )
+        },
+    )
+    use_hooks.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec1660320022/script.sh: "
+                "line 1: hooks/update-status: No such file or directory"
+            )
+        },
+    )
     model = juju_utils.Model("test-model")
     await model.update_status("test-unit/0")
 
     use_dispatch.assert_awaited_once()
     use_hooks.assert_awaited_once()
     mocked_logger.debug.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    "results",
-    [
-        {
-            "return-code": 0,
-            "stderr": "",
-        },
-        {
-            "return-code": 1,
-            "stderr": "Some reasons for command failed",
-        },
-        {
-            "return-code": 2,
-            "stderr": (
-                "/tmp/juju-exec1660320022/script.sh: line 1: "
-                "./dispatch: No such file or directory"
-            ),
-        },
-    ],
-)
-@pytest.mark.asyncio
-async def test_coumodel_dispatch_update_status_hook(results, mocked_model):
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = results
-    model = juju_utils.Model("test-model")
-    if "No such file or directory" in results["stderr"]:
-        assert await model._dispatch_update_status_hook("test-unit/0") is False
-    elif results["return-code"] == 0:
-        assert await model._dispatch_update_status_hook("test-unit/0") is True
-    else:
-        with pytest.raises(CommandRunFailed):
-            await model._dispatch_update_status_hook("test-unit/0")
-
-
-@pytest.mark.parametrize(
-    "results",
-    [
-        {
-            "return-code": 0,
-            "stderr": "",
-        },
-        {
-            "return-code": 1,
-            "stderr": "Some reasons for command failed",
-        },
-        {
-            "return-code": 2,
-            "stderr": (
-                "/tmp/juju-exec1660320022/script.sh: line 1: "
-                "hooks/update-status: No such file or directory"
-            ),
-        },
-    ],
-)
-@pytest.mark.asyncio
-async def test_coumodel_run_update_status_hook(results, mocked_model):
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = results
-    model = juju_utils.Model("test-model")
-    if "No such file or directory" in results["stderr"]:
-        assert await model._run_update_status_hook("test-unit/0") is False
-    elif results["return-code"] == 0:
-        assert await model._run_update_status_hook("test-unit/0") is True
-    else:
-        with pytest.raises(CommandRunFailed):
-            await model._run_update_status_hook("test-unit/0")
 
 
 @pytest.mark.asyncio
