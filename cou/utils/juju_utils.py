@@ -442,20 +442,62 @@ class Model:
         model = await self._get_model()
         return await model.get_status()
 
-    async def update_status(self, unit: str) -> None:
-        """Run the update_status hook on the given unit if the hook exists.
+    async def _use_dispatch(self, unit_name: str) -> bool:
+        """Check if the charm support dispatch the hook or not.
 
-        :param unit: Name of the unit to run update-status hook
-        :type unit: str
+        Legacy and reactive charm allows the operators to directly run hooks
+        inside the charm code directly; while the operator framework uses
+        ./dispatch script to dispatch the hooks. This method check if we could
+        use dispatch to run the hook.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
+        :return: true if we can use dispatch
+        :rtype: bool
+        """
+        try:
+            await self.run_on_unit(unit_name, "ls ./dispatch")
+        except CommandRunFailed:
+            return False
+        return True
+
+    async def _use_hooks(self, unit_name: str) -> bool:
+        """Check if the charm support running the hook or not.
+
+        Legacy and reactive charm allows the operators to directly run hooks
+        inside the charm code directly; while the operator framework uses
+        ./dispatch script to dispatch the hooks. This method check if we could
+        run the hook directly.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
+        :return: true if we can use hooks
+        :rtype: bool
+        """
+        try:
+            await self.run_on_unit(unit_name, "ls hooks/update-status")
+        except CommandRunFailed:
+            return False
+        return True
+
+    async def update_status(self, unit_name: str) -> None:
+        """Run the update_status hook on the given unit.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
         :raises CommandRunFailed: When update-status hook failed
         """
-        update_status_hook = "hooks/update-status"
-        try:
-            await self.run_on_unit(unit, f"ls {update_status_hook}")
-        except CommandRunFailed:
-            logger.debug("Skipped running '%s': file does not exist", update_status_hook)
-        else:
-            await self.run_on_unit(unit, update_status_hook)
+        # For charm written in operator framework
+        if await self._use_dispatch(unit_name):
+            await self.run_on_unit(unit_name, "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch")
+            return
+
+        # For charm written in legacy / reactive framework
+        if await self._use_hooks(unit_name):
+            await self.run_on_unit(unit_name, "hooks/update-status")
+            return
+
+        logger.debug("Skipped running hooks/update-status: file does not exist")
 
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run_action(...)` and the rest of the function is covered by retry.

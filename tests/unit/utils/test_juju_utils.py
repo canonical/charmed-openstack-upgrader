@@ -445,8 +445,12 @@ async def test_coumodel_run_on_unit_failed_command(mocked_model):
 
 
 @pytest.mark.asyncio
-async def test_coumodel_update_status(mocked_model):
-    """Test Model update_status."""
+@patch("cou.utils.juju_utils.Model._use_hooks")
+@patch("cou.utils.juju_utils.Model._use_dispatch")
+async def test_coumodel_update_status_use_dispatch(use_dispatch, use_hooks, mocked_model):
+    """Test Model update_status using dispatch."""
+    use_hooks.return_value = False
+    use_dispatch.return_value = True
     expected_results = {"return-code": 0, "stderr": ""}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
@@ -454,22 +458,68 @@ async def test_coumodel_update_status(mocked_model):
     model = juju_utils.Model("test-model")
     await model.update_status("test-unit/0")
 
-    mocked_unit.run.assert_any_await("ls hooks/update-status", timeout=None, block=True)
-    mocked_unit.run.assert_any_await("hooks/update-status", timeout=None, block=True)
+    mocked_unit.run.assert_awaited_once_with(
+        "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch", timeout=None, block=True
+    )
 
 
 @pytest.mark.asyncio
-async def test_coumodel_update_status_skipped(mocked_model):
-    """Test skip Model update_status."""
-    expected_results = {"return-code": 2, "stderr": "No such file or directory"}
+@patch("cou.utils.juju_utils.Model._use_hooks")
+@patch("cou.utils.juju_utils.Model._use_dispatch")
+async def test_coumodel_update_status_use_hooks(use_dispatch, use_hooks, mocked_model):
+    """Test Model update_status using hooks."""
+    use_hooks.return_value = True
+    use_dispatch.return_value = False
+    expected_results = {"return-code": 0, "stderr": ""}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
     mocked_action.results = expected_results
     model = juju_utils.Model("test-model")
     await model.update_status("test-unit/0")
 
-    mocked_unit.run.assert_awaited_once()
-    mocked_unit.run.assert_awaited_with("ls hooks/update-status", timeout=None, block=True)
+    mocked_unit.run.assert_awaited_once_with("hooks/update-status", timeout=None, block=True)
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._use_hooks")
+@patch("cou.utils.juju_utils.Model._use_dispatch")
+async def test_coumodel_update_status_skipped(use_dispatch, use_hooks, mock_logger, mocked_model):
+    """Test skip Model update_status."""
+    use_hooks.return_value = False
+    use_dispatch.return_value = False
+    expected_results = {"return-code": 0, "stderr": ""}
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = expected_results
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    mock_logger.debug.assert_called_with(
+        "Skipped running hooks/update-status: file does not exist"
+    )
+
+
+@pytest.mark.parametrize("return_code", [0, 1])
+@pytest.mark.asyncio
+async def test_coumodel_use_dispatch(return_code, mocked_model):
+    expected_results = {"return-code": return_code, "stderr": ""}
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = expected_results
+    model = juju_utils.Model("test-model")
+    assert await model._use_dispatch("test-unit/0") == (return_code == 0)
+
+
+@pytest.mark.parametrize("return_code", [0, 1])
+@pytest.mark.asyncio
+async def test_coumodel_use_hooks(return_code, mocked_model):
+    expected_results = {"return-code": return_code, "stderr": ""}
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = expected_results
+    model = juju_utils.Model("test-model")
+    assert await model._use_hooks("test-unit/0") == (return_code == 0)
 
 
 @pytest.mark.asyncio
