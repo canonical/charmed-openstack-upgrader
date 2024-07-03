@@ -40,8 +40,6 @@ from cou.exceptions import (
     ApplicationError,
     ApplicationNotFound,
     CommandRunFailed,
-    DispatchScriptNotFound,
-    HooksNotFound,
     TimeoutException,
     UnitNotFound,
     WaitForApplicationsTimeout,
@@ -444,7 +442,7 @@ class Model:
         model = await self._get_model()
         return await model.get_status()
 
-    async def _dispatch_update_status_hook(self, unit_name: str) -> None:
+    async def _dispatch_update_status_hook(self, unit_name: str) -> bool:
         """Use dispatch to run the update-status hook.
 
         Legacy and reactive charm allows the operators to directly run hooks
@@ -454,17 +452,19 @@ class Model:
 
         :param unit_name: Name of the unit to run update-status hook
         :type unit_name: str
+        :return: True if command succeeded
+        :rtype: bool
         :raises CommandRunFailed: When update-status hook failed
-        :raises DispatchScriptNotFound: When dispatch script not found
         """
         try:
             await self.run_on_unit(unit_name, "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch")
         except CommandRunFailed as e:
             if "No such file or directory" in str(e):
-                raise DispatchScriptNotFound("'./dispatch' not found") from e
+                return False
             raise e
+        return True
 
-    async def _run_update_status_hook(self, unit_name: str) -> None:
+    async def _run_update_status_hook(self, unit_name: str) -> bool:
         """Run the update-status hook directly.
 
         Legacy and reactive charm allows the operators to directly run hooks
@@ -474,15 +474,17 @@ class Model:
 
         :param unit_name: Name of the unit to run update-status hook
         :type unit_name: str
+        :return: True if command succeeded
+        :rtype: bool
         :raises CommandRunFailed: When update-status hook failed
-        :raises HooksNotFound: When the update-status hook file not found
         """
         try:
             await self.run_on_unit(unit_name, "hooks/update-status")
         except CommandRunFailed as e:
             if "No such file or directory" in str(e):
-                raise HooksNotFound("'hooks/update-status' not found") from e
+                return False
             raise e
+        return True
 
     async def update_status(self, unit_name: str) -> None:
         """Run the update_status hook on the given unit.
@@ -491,20 +493,12 @@ class Model:
         :type unit_name: str
         :raises CommandRunFailed: When update-status hook failed
         """
-        try:
-            # For charm written in operator framework
-            await self._dispatch_update_status_hook(unit_name)
-        except DispatchScriptNotFound:
-            pass
-        else:
+        # For charm written in operator framework
+        if await self._dispatch_update_status_hook(unit_name):
             return
 
-        try:
-            # For charm written in legacy / reactive framework
-            await self._run_update_status_hook(unit_name)
-        except HooksNotFound:
-            pass
-        else:
+        # For charm written in legacy / reactive framework
+        if await self._run_update_status_hook(unit_name):
             return
 
         logger.debug("Skipped updating status: file does not exist")

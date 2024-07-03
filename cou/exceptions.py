@@ -19,14 +19,6 @@ class COUException(Exception):
     """Default COU exception."""
 
 
-class HooksNotFound(COUException):
-    """Exception raised when a hook is not found in the unit."""
-
-
-class DispatchScriptNotFound(COUException):
-    """Exception raised when the dispatch script is not found in the unit."""
-
-
 class CommandRunFailed(COUException):
     """Exception raised when a command fails to run."""
 
