@@ -28,6 +28,8 @@ from cou.exceptions import (
     ApplicationError,
     ApplicationNotFound,
     CommandRunFailed,
+    DispatchScriptNotFound,
+    HooksNotFound,
     TimeoutException,
     UnitNotFound,
     WaitForApplicationsTimeout,
@@ -445,49 +447,82 @@ async def test_coumodel_run_on_unit_failed_command(mocked_model):
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils.Model._use_hooks")
-@patch("cou.utils.juju_utils.Model._use_dispatch")
-async def test_coumodel_update_status_use_dispatch(use_dispatch, use_hooks, mocked_model):
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_dispatch(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
     """Test Model update_status using dispatch."""
-    use_hooks.return_value = False
-    use_dispatch.return_value = True
-    expected_results = {"return-code": 0, "stderr": ""}
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = expected_results
     model = juju_utils.Model("test-model")
     await model.update_status("test-unit/0")
 
-    mocked_unit.run.assert_awaited_once_with(
-        "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch", timeout=None, block=True
-    )
-
-
-@pytest.mark.asyncio
-@patch("cou.utils.juju_utils.Model._use_hooks")
-@patch("cou.utils.juju_utils.Model._use_dispatch")
-async def test_coumodel_update_status_use_hooks(use_dispatch, use_hooks, mocked_model):
-    """Test Model update_status using hooks."""
-    use_hooks.return_value = True
-    use_dispatch.return_value = False
-    expected_results = {"return-code": 0, "stderr": ""}
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = expected_results
-    model = juju_utils.Model("test-model")
-    await model.update_status("test-unit/0")
-
-    mocked_unit.run.assert_awaited_once_with("hooks/update-status", timeout=None, block=True)
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_not_awaited()
+    mocked_logger.assert_not_called()
 
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.logger")
-@patch("cou.utils.juju_utils.Model._use_hooks")
-@patch("cou.utils.juju_utils.Model._use_dispatch")
-async def test_coumodel_update_status_skipped(use_dispatch, use_hooks, mock_logger, mocked_model):
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_dispatch_failed(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test Model update_status using dispatch failed."""
+    use_dispatch.side_effect = CommandRunFailed("some cmd", result={})
+    model = juju_utils.Model("test-model")
+
+    with pytest.raises(CommandRunFailed):
+        await model.update_status("test-unit/0")
+        use_dispatch.assert_awaited_once()
+        use_hooks.assert_not_awaited()
+        mocked_logger.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_hooks(use_dispatch, use_hooks, mocked_model):
+    """Test Model update_status using hooks."""
+    use_dispatch.side_effect = DispatchScriptNotFound()
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_hooks_failed(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test Model update_status using hooks failed."""
+    use_dispatch.side_effect = DispatchScriptNotFound()
+    use_hooks.side_effect = CommandRunFailed("some cmd", result={})
+    model = juju_utils.Model("test-model")
+
+    with pytest.raises(CommandRunFailed):
+        await model.update_status("test-unit/0")
+        use_dispatch.assert_awaited_once()
+        use_hooks.assert_not_awaited()
+        mocked_logger.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_skipped(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
     """Test skip Model update_status."""
-    use_hooks.return_value = False
-    use_dispatch.return_value = False
+    use_hooks.side_effect = HooksNotFound()
+    use_dispatch.side_effect = DispatchScriptNotFound()
     expected_results = {"return-code": 0, "stderr": ""}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
@@ -495,31 +530,69 @@ async def test_coumodel_update_status_skipped(use_dispatch, use_hooks, mock_logg
     model = juju_utils.Model("test-model")
     await model.update_status("test-unit/0")
 
-    mock_logger.debug.assert_called_with(
-        "Skipped running hooks/update-status: file does not exist"
-    )
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_awaited_once()
+    mocked_logger.debug.assert_called_once()
 
 
-@pytest.mark.parametrize("return_code", [0, 1])
+@pytest.mark.parametrize(
+    "results",
+    [
+        {
+            "return-code": 1,
+            "stderr": "Some reasons for command failed",
+        },
+        {
+            "return-code": 2,
+            "stderr": (
+                "/tmp/juju-exec1660320022/script.sh: line 1: "
+                "./dispatch: No such file or directory"
+            ),
+        },
+    ],
+)
 @pytest.mark.asyncio
-async def test_coumodel_use_dispatch(return_code, mocked_model):
-    expected_results = {"return-code": return_code, "stderr": ""}
+async def test_coumodel_dispatch_update_status_hook(results, mocked_model):
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = expected_results
+    mocked_action.results = results
     model = juju_utils.Model("test-model")
-    assert await model._use_dispatch("test-unit/0") == (return_code == 0)
+    if "No such file or directory" in results["stderr"]:
+        with pytest.raises(DispatchScriptNotFound):
+            await model._dispatch_update_status_hook("test-unit/0")
+    else:
+        with pytest.raises(CommandRunFailed):
+            await model._dispatch_update_status_hook("test-unit/0")
 
 
-@pytest.mark.parametrize("return_code", [0, 1])
+@pytest.mark.parametrize(
+    "results",
+    [
+        {
+            "return-code": 1,
+            "stderr": "Some reasons for command failed",
+        },
+        {
+            "return-code": 2,
+            "stderr": (
+                "/tmp/juju-exec1660320022/script.sh: line 1: "
+                "hooks/update-status: No such file or directory"
+            ),
+        },
+    ],
+)
 @pytest.mark.asyncio
-async def test_coumodel_use_hooks(return_code, mocked_model):
-    expected_results = {"return-code": return_code, "stderr": ""}
+async def test_coumodel_run_update_status_hook(results, mocked_model):
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = expected_results
+    mocked_action.results = results
     model = juju_utils.Model("test-model")
-    assert await model._use_hooks("test-unit/0") == (return_code == 0)
+    if "No such file or directory" in results["stderr"]:
+        with pytest.raises(HooksNotFound):
+            await model._run_update_status_hook("test-unit/0")
+    else:
+        with pytest.raises(CommandRunFailed):
+            await model._run_update_status_hook("test-unit/0")
 
 
 @pytest.mark.asyncio
