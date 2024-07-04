@@ -886,3 +886,27 @@ def test_unit_repr():
 def test_suborinate_unit_repr():
     unit = juju_utils.SubordinateUnit(name="foo/0", charm="foo")
     assert repr(unit) == "foo/0"
+
+
+@pytest.mark.asyncio
+async def test_run_update_status_hook(mocked_model):
+    """Test Model _run_update_status hook."""
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = {"return-code": 0, "stderr": ""}
+    model = juju_utils.Model("test-model")
+    await model._run_update_status_hook(mocked_unit)
+    mocked_unit.run.assert_awaited_once_with("hooks/update-status", timeout=None, block=True)
+
+
+@pytest.mark.asyncio
+async def test_dispatch_update_status_hook(mocked_model):
+    """Test Model _dispatch_update_status hook."""
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = {"return-code": 0, "stderr": ""}
+    model = juju_utils.Model("test-model")
+    await model._dispatch_update_status_hook(mocked_unit)
+    mocked_unit.run.assert_awaited_once_with(
+        "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch", timeout=None, block=True
+    )

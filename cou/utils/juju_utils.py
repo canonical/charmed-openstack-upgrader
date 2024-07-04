@@ -454,9 +454,7 @@ class Model:
         :type unit_name: str
         :raises CommandRunFailed: When update-status hook failed
         """
-        await self.run_on_unit(  # pragma: no cover
-            unit_name, "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch"
-        )
+        await self.run_on_unit(unit_name, "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch")
 
     async def _run_update_status_hook(self, unit_name: str) -> None:
         """Run the update-status hook directly.
@@ -470,7 +468,7 @@ class Model:
         :type unit_name: str
         :raises CommandRunFailed: When update-status hook failed
         """
-        await self.run_on_unit(unit_name, "hooks/update-status")  # pragma: no cover
+        await self.run_on_unit(unit_name, "hooks/update-status")
 
     async def update_status(self, unit_name: str) -> None:
         """Run the update_status hook on the given unit.
