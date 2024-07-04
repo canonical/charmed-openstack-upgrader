@@ -35,17 +35,17 @@ Below is a table showing the migration versions from Ussuri to Caracal.
    * - Yoga
      - 422
        - (move to Alembic)
-       - 8f2f1571d55b_initial_version
-       - 16f1fbcab42b_resolve_shadow_table_diffs
+       - ``8f2f1571d55b_initial_version``
+       - ``16f1fbcab42b_resolve_shadow_table_diffs``
    * - Zed
-     - ccb0fa1a2252_add_encryption_fields_to
+     - ``ccb0fa1a2252_add_encryption_fields_to``
    * - 2023.1 (Antelope)
-     - 960aac0e09ea_de_duplicate_indexes_in_instances
+     - ``960aac0e09ea_de_duplicate_indexes_in_instances``
    * - 2023.2 (Bobcat)
-     - 1acf2c98e646_add_compute_id_to_instance
-       - 1b91788ec3a6_drop_legacy_migrate_version_table
+     - ``1acf2c98e646_add_compute_id_to_instance``
+       - ``1b91788ec3a6_drop_legacy_migrate_version_table``
    * - 2024.1 (Caracal)
-     - 13863f4e1612_create_share_mapping_table
+     - ``13863f4e1612_create_share_mapping_table``
 
 Details of each migration can be found at:
 
@@ -58,8 +58,8 @@ db online_data_migration
 The list of online data migrations can be found at `nova_online_migrations`_.
 There are only two online migration cases after Victoria:
 
-- *pci_device_obj.PciDevice.populate_dev_uuids*, added in Victoria
-- *instance_obj.populate_instance_compute_id*, added in 2023.2
+- ``pci_device_obj.PciDevice.populate_dev_uuids``, added in Victoria
+- ``instance_obj.populate_instance_compute_id``, added in 2023.2
 
 On COU
 ------
