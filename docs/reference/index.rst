@@ -10,3 +10,4 @@ This section outlines the available commands, environmental variables, and known
    commands
    environment-variables
    known-issues
+   security
