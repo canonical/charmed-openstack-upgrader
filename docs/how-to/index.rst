@@ -17,3 +17,4 @@ are possible with **COU**.
    no-backup
    archive-old-data
    verbosity
+   purge-data-on-shadow-table

@@ -44,6 +44,3 @@ UI
 UUID
 VM
 YAML
-STSStack
-sshuttle
-vpn
