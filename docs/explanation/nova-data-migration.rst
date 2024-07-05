@@ -75,8 +75,8 @@ More Information
 ----------------
 
 - `opendev/openstack/nova`_
-- :doc:`Archive old data <how-to/archive-old-data>`
-- :doc:`Purge data on shadow table <how-to/purge-data-on-shadow-table>`
+- :doc:`Archive old data <../how-to/archive-old-data>`
+- :doc:`Purge data on shadow table <../how-to/purge-data-on-shadow-table>`
 
 .. LINKS
 .. _unmaintained/yoga - nova/nova/db/main/legacy_migrations/versions: https://opendev.org/openstack/nova/src/branch/unmaintained/yoga/nova/db/main/legacy_migrations/versions
