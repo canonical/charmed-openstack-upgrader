@@ -68,6 +68,10 @@ class OpenStackApplication(Application):
     packages_to_hold: Optional[list] = field(default=None, init=False)
     wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
+    # Raise error when any unit or app going into "blocked" status
+    raise_on_blocked: bool = field(default=False, init=False)
+    # Raise error when any unit or app going into "error" status
+    raise_on_error: bool = field(default=True, init=True)
     # OpenStack apps rely on the workload version of the packages to evaluate current OpenStack
     # release
     based_on_channel = False
@@ -830,7 +834,12 @@ class OpenStackApplication(Application):
         return PostUpgradeStep(
             description=description,
             parallel=False,
-            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=apps),
+            coro=self.model.wait_for_active_idle(
+                timeout=self.wait_timeout,
+                apps=apps,
+                raise_on_blocked=self.raise_on_blocked,
+                raise_on_error=self.raise_on_error,
+            ),
         )
 
     def _check_channel(self) -> None:

@@ -147,3 +147,22 @@ class InterruptError(KeyboardInterrupt):
 
 class ApplicationNotSupported(COUException):
     """COU exception when the application is known but not supported by COU."""
+
+
+class SnapVaultNotInstalled(COUException):
+    """COU exception when the snap vault is not installed.
+
+    The snap vault is required to upgrade the vault, which COU used to unseal the vault.
+    """
+
+
+class VaultSealed(COUException):
+    """COU exception when the application vault is sealed."""
+
+
+class VaultGetStatusFailed(COUException):
+    """COU exception when get the vault status failed."""
+
+
+class VaultUnsealFailed(COUException):
+    """COU exception when unseal the vault application failed."""

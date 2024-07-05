@@ -14,14 +14,22 @@
 """Auxiliary application class."""
 import abc
 import logging
+import re
+import subprocess
 from typing import Optional
 
 from packaging.version import Version
 
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
-from cou.exceptions import ApplicationError
+from cou.exceptions import (
+    ApplicationError,
+    SnapVaultNotInstalled,
+    VaultGetStatusFailed,
+    VaultUnsealFailed,
+)
 from cou.steps import ApplicationUpgradePlan, PostUpgradeStep, PreUpgradeStep
+from cou.utils import progress_indicator
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import Unit
 from cou.utils.openstack import (
@@ -34,7 +42,7 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(["vault", "ceph-fs", "ceph-radosgw"])
+@AppFactory.register_application(["ceph-fs", "ceph-radosgw"])
 class AuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
@@ -457,3 +465,142 @@ class CephOsd(AuxiliaryApplication):
             raise ApplicationError(
                 f"Units '{', '.join(units_not_upgraded)}' did not reach {target}."
             )
+
+
+@AppFactory.register_application(["vault"])
+class Vault(AuxiliaryApplication):
+    """Application for vault."""
+
+    wait_timeout = LONG_IDLE_TIMEOUT
+    wait_for_model = True
+
+    def _check_snap_vault_installed(self) -> None:
+        """Make sure snap vault is installed.
+
+        :raises SnapVaultNotInstalled: When no snap valut installed.
+        """
+        result = subprocess.run(
+            "snap info vault".split(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        if "installed" not in result.stdout:
+            raise SnapVaultNotInstalled("snap vault is required to upgrade the vault")
+
+    async def _wait_for_sealed_status(self) -> None:
+        """Wait for application vault go into sealed status.
+
+        :raises ApplicationError: When application vault is not in sealed status.
+        """
+        await self.model.wait_for_idle(
+            timeout=self.wait_timeout,
+            status="blocked",
+            apps=[self.name],
+            # Vault application will go into error status first then blocked status.
+            raise_on_error=False,
+        )
+
+        app_status = await self.model.get_application_status(charm_name="vault")
+        if not app_status.status.info == "Unit is sealed":
+            raise ApplicationError("Vault not in sealed status")
+        logger.debug("Application 'vault' in sealed status")
+
+    async def _unseal_vault(self) -> None:
+        """Unseal vault on every vault unit.
+
+        :raises VaultGetStatusFailed: When failed to get sealed status from vault command
+        :raises VaultUnsealFailed: When unseal command failed
+        """
+        progress_indicator.stop()
+
+        for unit_name in self.units:
+            logger.debug("Start unseal %s", unit_name)
+            juju_unit = await self.model.get_unit(unit_name)
+            vault_address = f"http://{juju_unit.public_address}:8200"
+
+            while True:
+                status_result = subprocess.run(
+                    "/snap/bin/vault status".split(),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    env={"VAULT_ADDR": vault_address},
+                    text=True,
+                    check=True,
+                )
+                sealed_match = re.search(
+                    r"(Sealed)\s+(?P<sealed>(true)|(false))", status_result.stdout
+                )
+                if not sealed_match:
+                    raise VaultGetStatusFailed("Failed to get vault sealed status")
+
+                if sealed_match.group("sealed").lower() == "false":
+                    logger.debug("Unseal succeeded %s", unit_name)
+                    break
+
+                unseal_result = subprocess.run(
+                    "/snap/bin/vault operator unseal".split(),
+                    env={"VAULT_ADDR": vault_address},
+                    check=False,
+                )
+                if unseal_result.returncode != 0:
+                    raise VaultUnsealFailed("Unseal vault failed")
+
+    def post_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
+        """Post Upgrade steps planning.
+
+        Wait until the application reaches the idle state and then check the target workload.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: List of post upgrade steps.
+        :rtype: list[PostUpgradeStep]
+        """
+        steps = [
+            # Vault application should get into blocked and sealed status after upgrading.
+            PostUpgradeStep(
+                description="wait for sealed status",
+                coro=self._wait_for_sealed_status(),
+            ),
+            PostUpgradeStep(
+                description="unseal vault",
+                coro=self._unseal_vault(),
+            ),
+            PostUpgradeStep(
+                description="wait for vault active",
+                coro=self.model.wait_for_idle(
+                    timeout=self.wait_timeout,
+                    status="active",
+                    apps=[self.name],
+                    raise_on_blocked=False,
+                    raise_on_error=False,
+                ),
+            ),
+            # Some applications will get into error status because vault in sealed status.
+            # Need to resolve them.
+            PostUpgradeStep(
+                description="Resolve all",
+                coro=self.model.resolve_all(),
+            ),
+        ]
+        steps.extend(super().post_upgrade_steps(target, units))
+        return steps
+
+    def upgrade_plan_sanity_checks(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> None:
+        """Run sanity checks before generating upgrade plan.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan, defaults to None
+        :type units: Optional[list[Unit]], optional
+        :raises SnapVaultNotInstalled: When the snap vault is not installed.
+        """
+        self._check_snap_vault_installed()
+        super().upgrade_plan_sanity_checks(target, units)
