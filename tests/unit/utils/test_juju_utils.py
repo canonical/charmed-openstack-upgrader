@@ -968,9 +968,7 @@ async def test_coumodel_resolve_all(mocked_model):
     mock_error_juju_unit.workload_status = "error"
 
     mock_error_juju_app.units = [mock_active_juju_unit, mock_error_juju_unit]
-
     await model.resolve_all()
-
     mock_error_juju_unit.resolved.assert_awaited_once_with(retry=True)
 
 

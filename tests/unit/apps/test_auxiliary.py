@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary application class."""
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
 
@@ -23,6 +23,7 @@ from cou.apps.auxiliary import (
     MysqlInnodbCluster,
     OVNPrincipal,
     RabbitMQServer,
+    Vault,
 )
 from cou.apps.core import NovaCompute
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
@@ -194,6 +195,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     ]
     expected_plan.add_steps(upgrade_steps)
 
+    vault_o7k_app.upgrade_plan_sanity_checks = MagicMock()
     upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
@@ -255,7 +257,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
             coro=model.wait_for_idle(2400, apps=None),
         ),
@@ -330,7 +332,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
             coro=model.wait_for_idle(2400, apps=None),
         ),
@@ -452,7 +454,7 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
         run_deferred_hooks_and_restart_post_wait_step,
         run_deferred_hooks_and_restart_post_upgrades,
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
             coro=model.wait_for_idle(2400, apps=None),
         ),
@@ -913,7 +915,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
             coro=model.wait_for_idle(2400, apps=None),
         ),
@@ -1651,3 +1653,393 @@ def test_auxiliary_wrong_channel(model):
 
     with pytest.raises(ApplicationError, match=exp_msg):
         app.generate_upgrade_plan(target, force=False)
+
+
+def get_vault_o7k_app(model, config, series: str = "jammy"):
+    charm = "vault"
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    return Vault(
+        name=charm,
+        can_upgrade_to="1.8/stable",
+        charm=charm,
+        channel="1.7/stable",
+        machines=machines,
+        model=model,
+        origin="ch",
+        series=series,
+        subordinate_to=[],
+        subordinate_units=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="1.7.9",
+                machine=machines["0"],
+            )
+        },
+        workload_version="1.7.9",
+        config=config,
+    )
+
+
+@pytest.fixture
+def vault_o7k_app(model):
+    return get_vault_o7k_app(
+        model=model,
+        config={
+            "ssl-cert": {},
+            "vip": {},
+            "ssl-ca": {},
+            "hostname": {},
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_vault_wait_for_sealed_status(vault_o7k_app):
+    vault_o7k_app.model.get_application_status.return_value.status.info = "Unit is sealed"
+    await vault_o7k_app._wait_for_sealed_status()
+
+    vault_o7k_app.model.wait_for_idle.assert_awaited_once_with(
+        timeout=vault_o7k_app.wait_timeout,
+        status="blocked",
+        apps=[vault_o7k_app.name],
+        raise_on_error=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_vault_wait_for_sealed_status_failed(vault_o7k_app):
+    vault_o7k_app.model.wait_for_idle = AsyncMock()
+    vault_o7k_app.model.get_application_status.return_value.status.info = "Unit is ready"
+    with pytest.raises(ApplicationError, match="Vault not in sealed status"):
+        await vault_o7k_app._wait_for_sealed_status()
+
+
+@pytest.mark.asyncio
+@patch("cou.apps.auxiliary.progress_indicator")
+@patch("cou.apps.auxiliary.hvac")
+@patch("cou.apps.auxiliary.getpass.getpass")
+async def test_unseal_vault(mock_get_pass, mock_hvac, mock_procress_indicator, vault_o7k_app):
+    vault_o7k_app.model.get_unit.return_value = MagicMock()
+    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
+
+    mock_hvac.Client.return_value = MagicMock()
+    read_seal_status_side_effect = [
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+    ]
+    read_seal_status_side_effect[0] = {"sealed": True}
+    read_seal_status_side_effect[1] = {"sealed": True}
+    read_seal_status_side_effect[2] = {"sealed": True}
+    read_seal_status_side_effect[3] = {"sealed": True}
+    read_seal_status_side_effect[4] = {"sealed": False}
+    mock_hvac.Client.return_value.sys.read_seal_status.side_effect = read_seal_status_side_effect
+
+    mock_get_pass.side_effect = [
+        "unseal-key-1",
+        "",
+        "unseal-key-2",
+        "unseal-key-3",
+    ]
+
+    await vault_o7k_app._unseal_vault()
+    mock_procress_indicator.stop.assert_called()
+    mock_hvac.Client.assert_called_once_with(url="http://10.7.7.7:8200", verify=None)
+
+    mock_hvac.Client.return_value.sys.read_seal_status.assert_has_calls(
+        [call(), call(), call(), call()],
+    )
+    mock_hvac.Client.return_value.sys.submit_unseal_key.assert_has_calls(
+        [call(key="unseal-key-1"), call(key="unseal-key-2"), call(key="unseal-key-3")],
+        any_order=False,
+    )
+
+
+@pytest.mark.asyncio
+@patch("cou.apps.auxiliary.os")
+@patch("cou.apps.auxiliary.progress_indicator")
+@patch("cou.apps.auxiliary.hvac")
+@patch("cou.apps.auxiliary.getpass.getpass")
+async def test_unseal_vault_ca_exists(
+    mock_get_pass,
+    mock_hvac,
+    mock_procress_indicator,
+    mock_os,
+    model,
+):
+    vault_o7k_app = get_vault_o7k_app(
+        model=model,
+        config={
+            "ssl-cert": {},
+            "vip": {},
+            "ssl-ca": {"value": "c29tZS1jYQo="},
+            "hostname": {},
+        },
+    )
+    vault_o7k_app.model.get_unit.return_value = MagicMock()
+    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
+    vault_o7k_app._get_cacert_file = MagicMock()
+
+    mock_hvac.Client.return_value = MagicMock()
+    read_seal_status_side_effect = [
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+    ]
+    read_seal_status_side_effect[0] = {"sealed": True}
+    read_seal_status_side_effect[1] = {"sealed": True}
+    read_seal_status_side_effect[2] = {"sealed": True}
+    read_seal_status_side_effect[3] = {"sealed": True}
+    read_seal_status_side_effect[4] = {"sealed": False}
+    mock_hvac.Client.return_value.sys.read_seal_status.side_effect = read_seal_status_side_effect
+
+    mock_get_pass.side_effect = [
+        "unseal-key-1",
+        "",
+        "unseal-key-2",
+        "unseal-key-3",
+    ]
+
+    await vault_o7k_app._unseal_vault()
+    mock_procress_indicator.stop.assert_called()
+    mock_hvac.Client.assert_called_once_with(
+        url="http://10.7.7.7:8200",
+        verify=vault_o7k_app._get_cacert_file.return_value,
+    )
+
+    mock_hvac.Client.return_value.sys.read_seal_status.assert_has_calls(
+        [call(), call(), call(), call()],
+    )
+    mock_hvac.Client.return_value.sys.submit_unseal_key.assert_has_calls(
+        [call(key="unseal-key-1"), call(key="unseal-key-2"), call(key="unseal-key-3")],
+        any_order=False,
+    )
+    mock_os.remove.assert_called_once_with(vault_o7k_app._get_cacert_file.return_value)
+
+
+def test_vault_post_upgrade_steps_ussuri_to_victoria(model):
+    vault_o7k_app = get_vault_o7k_app(
+        model=model,
+        config={
+            "ssl-cert": {},
+            "vip": {},
+            "ssl-ca": {},
+            "hostname": {},
+        },
+        series="focal",
+    )
+    target = OpenStackRelease("victoria")
+    expected_plan = ApplicationUpgradePlan(
+        f"Upgrade plan for '{vault_o7k_app.name}' to '{target}'"
+    )
+    expected_upgrade_package_step = PreUpgradeStep(
+        description=(
+            f"Upgrade software packages of '{vault_o7k_app.name}'"
+            " from the current APT repositories"
+        ),
+        parallel=True,
+    )
+    expected_upgrade_package_step.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit '{unit}'",
+            parallel=False,
+            coro=app_utils.upgrade_packages(unit, vault_o7k_app.model, None),
+        )
+        for unit in vault_o7k_app.units.keys()
+    )
+    upgrade_steps = [
+        expected_upgrade_package_step,
+        PreUpgradeStep(
+            description=(f"Refresh '{vault_o7k_app.name}' to the latest revision of '1.7/stable'"),
+            parallel=False,
+            coro=vault_o7k_app.model.upgrade_charm(vault_o7k_app.name, "1.7/stable"),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s for"
+                f" model '{vault_o7k_app.model.name}' to reach the idle state"
+            ),
+            parallel=False,
+            coro=vault_o7k_app.model.wait_for_idle(vault_o7k_app.wait_timeout, apps=None),
+        ),
+        PostUpgradeStep(
+            (
+                f"Verify that the workload of '{vault_o7k_app.name}'"
+                " has been upgraded on units: vault/0"
+            ),
+            coro=vault_o7k_app._verify_workload_upgrade(
+                target, list(vault_o7k_app.units.values())
+            ),
+        ),
+    ]
+    expected_plan.add_steps(upgrade_steps)
+
+    vault_o7k_app.upgrade_plan_sanity_checks = MagicMock()
+    upgrade_plan = vault_o7k_app.generate_upgrade_plan(target, False)
+    assert_steps(upgrade_plan, expected_plan)
+
+
+def test_vault_post_upgrade_steps_yoga_to_zed(vault_o7k_app):
+    target = OpenStackRelease("zed")
+    expected_plan = ApplicationUpgradePlan(
+        f"Upgrade plan for '{vault_o7k_app.name}' to '{target}'"
+    )
+    expected_upgrade_package_step = PreUpgradeStep(
+        description=(
+            f"Upgrade software packages of '{vault_o7k_app.name}'"
+            " from the current APT repositories"
+        ),
+        parallel=True,
+    )
+    expected_upgrade_package_step.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit '{unit}'",
+            parallel=False,
+            coro=app_utils.upgrade_packages(unit, vault_o7k_app.model, None),
+        )
+        for unit in vault_o7k_app.units.keys()
+    )
+    upgrade_steps = [
+        expected_upgrade_package_step,
+        PreUpgradeStep(
+            description=(f"Refresh '{vault_o7k_app.name}' to the latest revision of '1.7/stable'"),
+            parallel=False,
+            coro=vault_o7k_app.model.upgrade_charm(vault_o7k_app.name, "1.7/stable"),
+        ),
+        UpgradeStep(
+            description=(
+                f"Upgrade '{vault_o7k_app.name}' from"
+                " '1.7/stable' to the new channel: '1.8/stable'"
+            ),
+            parallel=False,
+            coro=vault_o7k_app.model.upgrade_charm(vault_o7k_app.name, "1.8/stable"),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s"
+                " for vault to reach the sealed status"
+            ),
+            coro=vault_o7k_app._wait_for_sealed_status(),
+        ),
+        PostUpgradeStep(
+            description="Unseal vault",
+            coro=vault_o7k_app._unseal_vault(),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s" " for vault to reach active status"
+            ),
+            coro=vault_o7k_app.model.wait_for_idle(
+                timeout=vault_o7k_app.wait_timeout,
+                status="active",
+                apps=[vault_o7k_app.name],
+                raise_on_blocked=False,
+                raise_on_error=False,
+            ),
+        ),
+        PostUpgradeStep(
+            description="Resolve all applications in error status",
+            coro=vault_o7k_app.model.resolve_all(),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s for"
+                f" model '{vault_o7k_app.model.name}' to reach the idle state"
+            ),
+            parallel=False,
+            coro=vault_o7k_app.model.wait_for_idle(
+                vault_o7k_app.wait_timeout,
+                apps=None,
+            ),
+        ),
+        PostUpgradeStep(
+            (
+                f"Verify that the workload of '{vault_o7k_app.name}'"
+                " has been upgraded on units: vault/0"
+            ),
+            coro=vault_o7k_app._verify_workload_upgrade(
+                target, list(vault_o7k_app.units.values())
+            ),
+        ),
+    ]
+    expected_plan.add_steps(upgrade_steps)
+
+    vault_o7k_app.upgrade_plan_sanity_checks = MagicMock()
+    upgrade_plan = vault_o7k_app.generate_upgrade_plan(target, False)
+    assert_steps(upgrade_plan, expected_plan)
+
+
+def test_get_cacert_file(model):
+    app = get_vault_o7k_app(model=model, config={"ssl-ca": {"value": "c29tZS1jYQo="}})
+    file_path = app._get_cacert_file()
+    with open(file_path, "r") as f:
+        cert = f.read().strip()
+        assert cert == "some-ca"
+
+
+@pytest.mark.asyncio
+async def test_get_unit_api_url_https(model):
+    app = get_vault_o7k_app(
+        model=model,
+        config={
+            "ssl-cert": {"value": "c29tZS1jZXJ0Cg=="},
+            "ssl-ca": {"value": "c29tZS1jYQo="},
+            "vip": {"value": ""},
+            "hostname": {"value": ""},
+        },
+    )
+    app.model.get_unit.return_value = MagicMock()
+    app.model.get_unit.return_value.public_address = "10.7.7.7"
+
+    url = await app._get_unit_api_url("some-unit-name")
+    assert url == "https://10.7.7.7:8200"
+    app.model.get_unit.assert_called_once_with("some-unit-name")
+
+
+@pytest.mark.asyncio
+async def test_get_unit_api_url_http(vault_o7k_app):
+    vault_o7k_app.model.get_unit.return_value = MagicMock()
+    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
+
+    url = await vault_o7k_app._get_unit_api_url("some-unit-name")
+    assert url == "http://10.7.7.7:8200"
+    vault_o7k_app.model.get_unit.assert_called_once_with("some-unit-name")
+
+
+@pytest.mark.asyncio
+async def test_get_unit_api_url_vip(model):
+    app = get_vault_o7k_app(
+        model=model,
+        config={
+            "ssl-cert": {"value": "c29tZS1jZXJ0Cg=="},
+            "ssl-ca": {"value": "c29tZS1jYQo="},
+            "vip": {"value": "10.8.8.8"},
+            "hostname": {},
+        },
+    )
+
+    url = await app._get_unit_api_url("some-unit-name")
+    app.model.get_unit.assert_not_called()
+    assert url == "https://10.8.8.8:8200"
+
+
+@pytest.mark.asyncio
+async def test_get_unit_api_url_hostname(model):
+    app = get_vault_o7k_app(
+        model=model,
+        config={
+            "ssl-cert": {"value": "c29tZS1jZXJ0Cg=="},
+            "ssl-ca": {"value": "c29tZS1jYQo="},
+            "vip": {"value": "10.8.8.8"},
+            "hostname": {"value": "cou-test.com"},
+        },
+    )
+
+    url = await app._get_unit_api_url("some-unit-name")
+    app.model.get_unit.assert_not_called()
+    assert url == "https://cou-test.com:8200"

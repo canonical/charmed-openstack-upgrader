@@ -102,6 +102,14 @@ plan: |
             Upgrade plan for 'octavia-ovn-chassis' to 'victoria'
                 WARNING: Changing 'octavia-ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
         Control Plane principal(s) upgrade plan
+            Upgrade plan for 'vault' to 'victoria'
+                Upgrade software packages of 'vault' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'vault/0'
+                    Ψ Upgrade software packages on unit 'vault/1'
+                    Ψ Upgrade software packages on unit 'vault/2'
+                Refresh 'vault' to the latest revision of '1.7/stable'
+                Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
+                Verify that the workload of 'vault' has been upgraded on units: vault/0, vault/1, vault/2
             Upgrade plan for 'rabbitmq-server' to 'victoria'
                 Upgrade software packages of 'rabbitmq-server' from the current APT repositories
                     Ψ Upgrade software packages on unit 'rabbitmq-server/0'
@@ -304,14 +312,6 @@ plan: |
                 Change charm config of 'mysql-innodb-cluster' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state
                 Verify that the workload of 'mysql-innodb-cluster' has been upgraded on units: mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2
-            Upgrade plan for 'vault' to 'victoria'
-                Upgrade software packages of 'vault' from the current APT repositories
-                    Ψ Upgrade software packages on unit 'vault/0'
-                    Ψ Upgrade software packages on unit 'vault/1'
-                    Ψ Upgrade software packages on unit 'vault/2'
-                Refresh 'vault' to the latest revision of '1.7/stable'
-                Wait for up to 300s for app 'vault' to reach the idle state
-                Verify that the workload of 'vault' has been upgraded on units: vault/0, vault/1, vault/2
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0, nova-compute/2, nova-compute/3] in 'az1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
