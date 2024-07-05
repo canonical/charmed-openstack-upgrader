@@ -442,6 +442,61 @@ class Model:
         model = await self._get_model()
         return await model.get_status()
 
+    async def _dispatch_update_status_hook(self, unit_name: str) -> None:
+        """Use dispatch to run the update-status hook.
+
+        Legacy and reactive charm allows the operators to directly run hooks
+        inside the charm code directly; while the operator framework uses
+        ./dispatch script to dispatch the hooks. This method use dispatch to
+        run the hook.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
+        :raises CommandRunFailed: When update-status hook failed
+        """
+        await self.run_on_unit(unit_name, "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch")
+
+    async def _run_update_status_hook(self, unit_name: str) -> None:
+        """Run the update-status hook directly.
+
+        Legacy and reactive charm allows the operators to directly run hooks
+        inside the charm code directly; while the operator framework uses
+        ./dispatch script to dispatch the hooks. This method run the hook
+        directly.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
+        :raises CommandRunFailed: When update-status hook failed
+        """
+        await self.run_on_unit(unit_name, "hooks/update-status")
+
+    async def update_status(self, unit_name: str) -> None:
+        """Run the update_status hook on the given unit.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
+        :raises CommandRunFailed: When update-status hook failed
+        """
+        # For charm written in operator framework
+        try:
+            await self._dispatch_update_status_hook(unit_name)
+        except CommandRunFailed as e:
+            if "No such file or directory" not in str(e):
+                raise e
+        else:
+            return
+
+        # For charm written in legacy / reactive framework
+        try:
+            await self._run_update_status_hook(unit_name)
+        except CommandRunFailed as e:
+            if "No such file or directory" not in str(e):
+                raise e
+        else:
+            return
+
+        logger.debug("Skipped updating status: file does not exist")
+
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run_action(...)` and the rest of the function is covered by retry.
     async def run_action(

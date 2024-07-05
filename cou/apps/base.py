@@ -377,7 +377,7 @@ class OpenStackApplication(Application):
         """
         # NOTE (gabrielcocenza) force the update-status hook on units
         # to update the workload version
-        tasks = [self.model.run_on_unit(unit.name, "hooks/update-status") for unit in units]
+        tasks = [self.model.update_status(unit.name) for unit in units]
         await asyncio.gather(*tasks)
 
         status = await self.model.get_status()

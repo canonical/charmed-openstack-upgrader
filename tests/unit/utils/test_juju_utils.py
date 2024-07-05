@@ -445,6 +445,123 @@ async def test_coumodel_run_on_unit_failed_command(mocked_model):
 
 
 @pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_dispatch(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test Model update_status using dispatch."""
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_not_awaited()
+    mocked_logger.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_dispatch_failed(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test Model update_status using dispatch failed."""
+    use_dispatch.side_effect = CommandRunFailed("some cmd", result={})
+    model = juju_utils.Model("test-model")
+
+    with pytest.raises(CommandRunFailed):
+        await model.update_status("test-unit/0")
+        use_dispatch.assert_awaited_once()
+        use_hooks.assert_not_awaited()
+        mocked_logger.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_hooks(use_dispatch, use_hooks, mocked_model):
+    """Test Model update_status using hooks."""
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            ),
+        },
+    )
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_hooks_failed(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test Model update_status using hooks failed."""
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            )
+        },
+    )
+    use_hooks.side_effect = CommandRunFailed("some cmd", result={})
+    model = juju_utils.Model("test-model")
+
+    with pytest.raises(CommandRunFailed):
+        await model.update_status("test-unit/0")
+        use_dispatch.assert_awaited_once()
+        use_hooks.assert_not_awaited()
+        mocked_logger.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_skipped(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test skip Model update_status."""
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            )
+        },
+    )
+    use_hooks.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec1660320022/script.sh: "
+                "line 1: hooks/update-status: No such file or directory"
+            )
+        },
+    )
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_awaited_once()
+    mocked_logger.debug.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_coumodel_set_application_configs(mocked_model):
     """Test Model set application configuration."""
     test_config = {"test-key": "test-value"}
@@ -769,3 +886,27 @@ def test_unit_repr():
 def test_suborinate_unit_repr():
     unit = juju_utils.SubordinateUnit(name="foo/0", charm="foo")
     assert repr(unit) == "foo/0"
+
+
+@pytest.mark.asyncio
+async def test_run_update_status_hook(mocked_model):
+    """Test Model _run_update_status hook."""
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = {"return-code": 0, "stderr": ""}
+    model = juju_utils.Model("test-model")
+    await model._run_update_status_hook(mocked_unit)
+    mocked_unit.run.assert_awaited_once_with("hooks/update-status", timeout=None, block=True)
+
+
+@pytest.mark.asyncio
+async def test_dispatch_update_status_hook(mocked_model):
+    """Test Model _dispatch_update_status hook."""
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = {"return-code": 0, "stderr": ""}
+    model = juju_utils.Model("test-model")
+    await model._dispatch_update_status_hook(mocked_unit)
+    mocked_unit.run.assert_awaited_once_with(
+        "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch", timeout=None, block=True
+    )
