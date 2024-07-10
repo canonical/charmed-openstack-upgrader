@@ -663,7 +663,7 @@ class Model:
     async def wait_for_idle(
         self,
         timeout: int,
-        status: str,
+        status: str = "active",
         idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
         apps: Optional[list[str]] = None,
         raise_on_blocked: bool = False,

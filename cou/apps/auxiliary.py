@@ -564,15 +564,19 @@ class Vault(AuxiliaryApplication):
         steps = [
             # Vault application should get into blocked and sealed status after upgrading.
             PostUpgradeStep(
-                description="wait for sealed status",
+                description=(
+                    f"Wait for up to {self.wait_timeout}s for vault to reach the sealed status"
+                ),
                 coro=self._wait_for_sealed_status(),
             ),
             PostUpgradeStep(
-                description="unseal vault",
+                description="Unseal vault",
                 coro=self._unseal_vault(),
             ),
             PostUpgradeStep(
-                description="wait for vault active",
+                description=(
+                    f"Wait for up to {self.wait_timeout}s for vault to reach active status"
+                ),
                 coro=self.model.wait_for_idle(
                     timeout=self.wait_timeout,
                     status="active",
@@ -584,7 +588,7 @@ class Vault(AuxiliaryApplication):
             # Some applications will get into error status because vault in sealed status.
             # Need to resolve them.
             PostUpgradeStep(
-                description="Resolve all",
+                description="Resolve all applications in error status",
                 coro=self.model.resolve_all(),
             ),
         ]

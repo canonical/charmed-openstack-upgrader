@@ -12,7 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary application class."""
-from unittest.mock import MagicMock, PropertyMock, patch
+import subprocess
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
 
@@ -23,9 +24,16 @@ from cou.apps.auxiliary import (
     MysqlInnodbCluster,
     OVNPrincipal,
     RabbitMQServer,
+    Vault,
 )
 from cou.apps.core import NovaCompute
-from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
+from cou.exceptions import (
+    ApplicationError,
+    HaltUpgradePlanGeneration,
+    SnapVaultNotInstalled,
+    VaultGetStatusFailed,
+    VaultUnsealFailed,
+)
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -180,7 +188,9 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_active_idle(
+                timeout=2400, apps=None, raise_on_blocked=False, raise_on_error=True
+            ),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -191,6 +201,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     ]
     expected_plan.add_steps(upgrade_steps)
 
+    vault_o7k_app.upgrade_plan_sanity_checks = MagicMock()
     upgrade_plan = app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
 
@@ -251,9 +262,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_active_idle(
+                timeout=2400, apps=None, raise_on_blocked=False, raise_on_error=True
+            ),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -325,9 +338,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_active_idle(
+                timeout=2400, apps=None, raise_on_blocked=False, raise_on_error=True
+            ),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -428,9 +443,11 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
     ]
     upgrade_steps += [
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_active_idle(
+                timeout=2400, apps=None, raise_on_blocked=False, raise_on_error=True
+            ),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -803,7 +820,9 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_active_idle(
+                timeout=2400, apps=None, raise_on_blocked=False, raise_on_error=True
+            ),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -879,9 +898,11 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             ),
         ),
         PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_active_idle(
+                timeout=2400, apps=None, raise_on_blocked=False, raise_on_error=True
+            ),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -1155,7 +1176,9 @@ def test_ovn_principal_upgrade_plan(model):
         PostUpgradeStep(
             description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(300, apps=[app.name]),
+            coro=model.wait_for_active_idle(
+                timeout=300, apps=[app.name], raise_on_blocked=False, raise_on_error=True
+            ),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -1228,7 +1251,9 @@ def test_mysql_innodb_cluster_upgrade(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=[app.name]),
+            coro=model.wait_for_active_idle(
+                timeout=2400, apps=[app.name], raise_on_blocked=False, raise_on_error=True
+            ),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -1589,3 +1614,331 @@ def test_auxiliary_wrong_channel(model):
 
     with pytest.raises(ApplicationError, match=exp_msg):
         app.generate_upgrade_plan(target, force=False)
+
+
+@pytest.fixture
+def vault_o7k_app(model):
+    charm = "vault"
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    app = Vault(
+        name=charm,
+        can_upgrade_to="1.8/stable",
+        charm=charm,
+        channel="1.7/stable",
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="jammy",
+        subordinate_to=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="1.7.9",
+                machine=machines["0"],
+            )
+        },
+        workload_version="1.7.9",
+        config={},
+    )
+    return app
+
+
+@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
+def test_vault_check_snap_vault_installed(mock_subprocess_run, vault_o7k_app):
+    mock_subprocess_run.return_value.stdout = "installed"
+
+    vault_o7k_app._check_snap_vault_installed()
+
+    mock_subprocess_run.assert_called_once_with(
+        "snap info vault".split(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=True,
+    )
+
+
+@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
+def test_vault_check_snap_vault_installed_failed(mock_subprocess_run, vault_o7k_app):
+    mock_subprocess_run.return_value.stdout = ""
+
+    with pytest.raises(SnapVaultNotInstalled, match="snap vault is required to upgrade the vault"):
+        vault_o7k_app._check_snap_vault_installed()
+
+
+@pytest.mark.asyncio
+async def test_vault_wait_for_sealed_status(vault_o7k_app):
+    vault_o7k_app.model.get_application_status.return_value.status.info = "Unit is sealed"
+    await vault_o7k_app._wait_for_sealed_status()
+
+    vault_o7k_app.model.wait_for_idle.assert_awaited_once_with(
+        timeout=vault_o7k_app.wait_timeout,
+        status="blocked",
+        apps=[vault_o7k_app.name],
+        raise_on_error=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_vault_wait_for_sealed_status_failed(vault_o7k_app):
+    vault_o7k_app.model.wait_for_idle = AsyncMock()
+    vault_o7k_app.model.get_application_status.return_value.status.info = "Unit is ready"
+    with pytest.raises(ApplicationError, match="Vault not in sealed status"):
+        await vault_o7k_app._wait_for_sealed_status()
+
+
+@pytest.mark.asyncio
+@patch("cou.apps.auxiliary.progress_indicator")
+@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
+async def test_unseal_vault(mock_subprocess_run, mock_procress_indicator, vault_o7k_app):
+    vault_o7k_app.model.get_unit.return_value = MagicMock()
+    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
+
+    run_side_effect = [
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+    ]
+    run_side_effect[0].stdout = "Sealed true"
+    run_side_effect[2].stdout = "Sealed true"
+    run_side_effect[4].stdout = "Sealed true"
+    run_side_effect[6].stdout = "Sealed false"
+
+    run_side_effect[1].returncode = 0
+    run_side_effect[3].returncode = 0
+    run_side_effect[5].returncode = 0
+
+    mock_subprocess_run.side_effect = run_side_effect
+
+    await vault_o7k_app._unseal_vault()
+    mock_procress_indicator.stop.assert_called()
+    mock_subprocess_run.assert_has_calls(
+        [
+            call(
+                ["/snap/bin/vault", "status"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                text=True,
+                check=True,
+            ),
+            call(
+                ["/snap/bin/vault", "operator", "unseal"],
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                check=False,
+            ),
+            call(
+                ["/snap/bin/vault", "status"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                text=True,
+                check=True,
+            ),
+            call(
+                ["/snap/bin/vault", "operator", "unseal"],
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                check=False,
+            ),
+            call(
+                ["/snap/bin/vault", "status"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                text=True,
+                check=True,
+            ),
+            call(
+                ["/snap/bin/vault", "operator", "unseal"],
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                check=False,
+            ),
+            call(
+                ["/snap/bin/vault", "status"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                text=True,
+                check=True,
+            ),
+        ],
+        any_order=False,
+    )
+
+
+@pytest.mark.asyncio
+@patch("cou.apps.auxiliary.progress_indicator")
+@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
+async def test_unseal_vault_vault_get_status_failed(
+    mock_subprocess_run, mock_procress_indicator, vault_o7k_app
+):
+    vault_o7k_app.model.get_unit.return_value = MagicMock()
+    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
+
+    run_side_effect = [MagicMock()]
+    run_side_effect[0].stdout = "wrong-output"
+
+    mock_subprocess_run.side_effect = run_side_effect
+
+    with pytest.raises(VaultGetStatusFailed, match="Failed to get vault sealed status"):
+        await vault_o7k_app._unseal_vault()
+    mock_procress_indicator.stop.assert_called()
+    mock_subprocess_run.assert_has_calls(
+        [
+            call(
+                ["/snap/bin/vault", "status"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                text=True,
+                check=True,
+            ),
+        ]
+    )
+
+
+@pytest.mark.asyncio
+@patch("cou.apps.auxiliary.progress_indicator")
+@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
+async def test_unseal_vault_unseal_failed(
+    mock_subprocess_run, mock_procress_indicator, vault_o7k_app
+):
+    vault_o7k_app.model.get_unit.return_value = MagicMock()
+    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
+
+    run_side_effect = [
+        MagicMock(),
+        MagicMock(),
+    ]
+    run_side_effect[0].stdout = "Sealed true"
+    run_side_effect[1].returncode = 1
+
+    mock_subprocess_run.side_effect = run_side_effect
+
+    with pytest.raises(VaultUnsealFailed, match="Unseal vault failed"):
+        await vault_o7k_app._unseal_vault()
+    mock_procress_indicator.stop.assert_called()
+    mock_subprocess_run.assert_has_calls(
+        [
+            call(
+                ["/snap/bin/vault", "status"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                text=True,
+                check=True,
+            ),
+            call(
+                ["/snap/bin/vault", "operator", "unseal"],
+                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
+                check=False,
+            ),
+        ],
+        any_order=False,
+    )
+
+
+@patch("cou.apps.auxiliary.AuxiliaryApplication.upgrade_plan_sanity_checks")
+def test_vault_upgrade_plan_sanity_checks(mock_super_upgrade_plan_snaity_checks, vault_o7k_app):
+    vault_o7k_app._check_snap_vault_installed = MagicMock()
+
+    vault_o7k_app.upgrade_plan_sanity_checks("zed", ["some-unit"])
+
+    vault_o7k_app._check_snap_vault_installed.assert_called()
+    mock_super_upgrade_plan_snaity_checks.assert_called_once_with("zed", ["some-unit"])
+
+
+def test_vault_post_upgrade_steps_yoga_to_zed(vault_o7k_app):
+    target = OpenStackRelease("zed")
+    expected_plan = ApplicationUpgradePlan(
+        f"Upgrade plan for '{vault_o7k_app.name}' to '{target}'"
+    )
+    expected_upgrade_package_step = PreUpgradeStep(
+        description=(
+            f"Upgrade software packages of '{vault_o7k_app.name}'"
+            " from the current APT repositories"
+        ),
+        parallel=True,
+    )
+    expected_upgrade_package_step.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit '{unit}'",
+            parallel=False,
+            coro=app_utils.upgrade_packages(unit, vault_o7k_app.model, None),
+        )
+        for unit in vault_o7k_app.units.keys()
+    )
+    upgrade_steps = [
+        expected_upgrade_package_step,
+        PreUpgradeStep(
+            description=(f"Refresh '{vault_o7k_app.name}' to the latest revision of '1.7/stable'"),
+            parallel=False,
+            coro=vault_o7k_app.model.upgrade_charm(vault_o7k_app.name, "1.7/stable"),
+        ),
+        UpgradeStep(
+            description=(
+                f"Upgrade '{vault_o7k_app.name}' from"
+                " '1.7/stable' to the new channel: '1.8/stable'"
+            ),
+            parallel=False,
+            coro=vault_o7k_app.model.upgrade_charm(vault_o7k_app.name, "1.8/stable"),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s"
+                " for vault to reach the sealed status"
+            ),
+            coro=vault_o7k_app._wait_for_sealed_status(),
+        ),
+        PostUpgradeStep(
+            description="Unseal vault",
+            coro=vault_o7k_app._unseal_vault(),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s" " for vault to reach active status"
+            ),
+            coro=vault_o7k_app.model.wait_for_idle(
+                timeout=vault_o7k_app.wait_timeout,
+                status="active",
+                apps=[vault_o7k_app.name],
+                raise_on_blocked=False,
+                raise_on_error=False,
+            ),
+        ),
+        PostUpgradeStep(
+            description="Resolve all applications in error status",
+            coro=vault_o7k_app.model.resolve_all(),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s for"
+                f" model '{vault_o7k_app.model.name}' to reach the idle state"
+            ),
+            parallel=False,
+            coro=vault_o7k_app.model.wait_for_active_idle(
+                timeout=vault_o7k_app.wait_timeout,
+                apps=None,
+                raise_on_blocked=False,
+                raise_on_error=True,
+            ),
+        ),
+        PostUpgradeStep(
+            (
+                f"Verify that the workload of '{vault_o7k_app.name}'"
+                " has been upgraded on units: vault/0"
+            ),
+            coro=vault_o7k_app._verify_workload_upgrade(
+                target, list(vault_o7k_app.units.values())
+            ),
+        ),
+    ]
+    expected_plan.add_steps(upgrade_steps)
+
+    vault_o7k_app.upgrade_plan_sanity_checks = MagicMock()
+    upgrade_plan = vault_o7k_app.generate_upgrade_plan(target, False)
+    assert_steps(upgrade_plan, expected_plan)
