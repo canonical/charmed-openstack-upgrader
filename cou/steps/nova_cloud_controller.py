@@ -86,7 +86,7 @@ async def purge(model: Model, before: Optional[str]) -> None:
         raise_on_failure=True,
         action_params=action_params,
     )
-    output = action.data["results"].get("output")
+    output = action.results.get("output")
     if output is None:
         raise COUException(
             "Expected to find output in action results. 'output', but it was not present."

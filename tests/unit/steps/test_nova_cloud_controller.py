@@ -109,19 +109,19 @@ async def test_archive_handles_multiple_batches(model):
         (
             "Purge all",
             None,
-            AsyncMock(),
+            {"output": "fake-msg"},
             ["purge-data action succeeded on %s", "nova-cloud-controller/0"],
         ),
         (
             "Purge before",
             "2000-01-02",
-            AsyncMock(),
+            {"output": "fake-msg"},
             ["purge-data action succeeded on %s", "nova-cloud-controller/0"],
         ),
         (
             "No data deleted",
             None,
-            {"results": {"output": "Purging stale soft-deleted rows and no data was deleted"}},
+            {"output": "Purging stale soft-deleted rows and no data was deleted"},
             ["purge-data action succeeded on %s (no data was deleted)", "nova-cloud-controller/0"],
         ),
     ],
@@ -134,7 +134,7 @@ async def test_purge(mock_logger, case, before, action_output, log_msg, model):
         params["before"] = before
 
     model.run_action.return_value = AsyncMock()
-    model.run_action.return_value.data = action_output
+    model.run_action.return_value.results = action_output
 
     await purge(model, before)
     mock_logger.info.assert_called_with(*log_msg)
@@ -153,19 +153,19 @@ async def test_purge(mock_logger, case, before, action_output, log_msg, model):
         (
             "Output not found",
             None,
-            {"results": {}},
+            {},
             "Expected to find output in action results. 'output', but it was not present.",
         ),
         (
             "Output not found, before",
             "2000-01-02",
-            {"results": {}},
+            {},
             "Expected to find output in action results. 'output', but it was not present.",
         ),
         (
             "Action failed",
             None,
-            {"results": {"output": "Purging stale soft-deleted rows failed"}},
+            {"output": "Purging stale soft-deleted rows failed"},
             (
                 "purge-data action failed on nova-cloud-controller/0,"
                 " please check unit's debug log"
@@ -181,7 +181,7 @@ async def test_purge_err(case, before, action_output, err_msg, model):
         params["before"] = before
 
     model.run_action.return_value = AsyncMock()
-    model.run_action.return_value.data = action_output
+    model.run_action.return_value.results = action_output
 
     with pytest.raises(COUException, match=err_msg):
         await purge(model, {})
