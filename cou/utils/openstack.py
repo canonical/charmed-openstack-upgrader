@@ -47,8 +47,7 @@ CHARM_FAMILIES = {
 DATA_PLANE_CHARMS = ["nova-compute", "ceph-osd", "swift-proxy", "swift-storage"]
 
 # https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
-OFFICIAL_UPGRADE_ORDER = [
-    "rabbitmq-server",
+UCA_UPGRADE_ORDER = [
     "ceph-mon",
     "keystone",
     "aodh",
@@ -78,7 +77,7 @@ OFFICIAL_UPGRADE_ORDER = [
     "octavia",
 ]
 
-UPGRADE_ORDER = ["vault"] + OFFICIAL_UPGRADE_ORDER
+UPGRADE_ORDER = ["vault", "rabbitmq-server"] + UCA_UPGRADE_ORDER
 
 SUBORDINATES = [
     "barbican-vault",

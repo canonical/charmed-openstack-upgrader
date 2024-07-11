@@ -63,7 +63,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install tox
         # vault is required to pass the command exists check
-        snap install vault
+        sudo snap install vault
     - name: Run mocked-plans tests
       run: tox -e mocked-plans
 
