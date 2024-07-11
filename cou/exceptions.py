@@ -149,10 +149,10 @@ class ApplicationNotSupported(COUException):
     """COU exception when the application is known but not supported by COU."""
 
 
-class SnapVaultNotInstalled(COUException):
-    """COU exception when the snap vault is not installed.
+class CommandVaultNotFound(COUException):
+    """COU exception when the command vault not found.
 
-    The snap vault is required to upgrade the vault, which COU used to unseal the vault.
+    The vault is required to upgrade the vault, which COU used to unseal the vault.
     """
 
 

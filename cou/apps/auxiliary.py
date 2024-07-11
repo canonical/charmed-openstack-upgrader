@@ -24,7 +24,7 @@ from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import (
     ApplicationError,
-    SnapVaultNotInstalled,
+    CommandVaultNotFound,
     VaultGetStatusFailed,
     VaultUnsealFailed,
 )
@@ -474,20 +474,20 @@ class Vault(AuxiliaryApplication):
     wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
-    def _check_snap_vault_installed(self) -> None:
+    def _check_vault_command_exists(self) -> None:
         """Make sure snap vault is installed.
 
-        :raises SnapVaultNotInstalled: When no snap valut installed.
+        :raises CommandVaultNotFound: When no snap valut installed.
         """
         result = subprocess.run(
-            "snap info vault".split(),
+            "vault --help".split(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             check=True,
         )
-        if "installed" not in result.stdout:
-            raise SnapVaultNotInstalled("snap vault is required to upgrade the vault")
+        if result.returncode != 0:
+            raise CommandVaultNotFound("vault is required to upgrade the vault")
 
     async def _wait_for_sealed_status(self) -> None:
         """Wait for application vault go into sealed status.
@@ -522,7 +522,7 @@ class Vault(AuxiliaryApplication):
 
             while True:
                 status_result = subprocess.run(
-                    "/snap/bin/vault status".split(),
+                    "vault status".split(),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     env={"VAULT_ADDR": vault_address},
@@ -540,7 +540,7 @@ class Vault(AuxiliaryApplication):
                     break
 
                 unseal_result = subprocess.run(
-                    "/snap/bin/vault operator unseal".split(),
+                    "vault operator unseal".split(),
                     env={"VAULT_ADDR": vault_address},
                     check=False,
                 )
@@ -604,7 +604,7 @@ class Vault(AuxiliaryApplication):
         :type target: OpenStackRelease
         :param units: Units to generate upgrade plan, defaults to None
         :type units: Optional[list[Unit]], optional
-        :raises SnapVaultNotInstalled: When the snap vault is not installed.
+        :raises CommandVaultNotFound: When the snap vault is not installed.
         """
-        self._check_snap_vault_installed()
+        self._check_vault_command_exists()
         super().upgrade_plan_sanity_checks(target, units)

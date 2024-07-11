@@ -29,8 +29,8 @@ from cou.apps.auxiliary import (
 from cou.apps.core import NovaCompute
 from cou.exceptions import (
     ApplicationError,
+    CommandVaultNotFound,
     HaltUpgradePlanGeneration,
-    SnapVaultNotInstalled,
     VaultGetStatusFailed,
     VaultUnsealFailed,
 )
@@ -1644,13 +1644,13 @@ def vault_o7k_app(model):
 
 
 @patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
-def test_vault_check_snap_vault_installed(mock_subprocess_run, vault_o7k_app):
-    mock_subprocess_run.return_value.stdout = "installed"
+def test_check_vault_command_exists(mock_subprocess_run, vault_o7k_app):
+    mock_subprocess_run.return_value.returncode = 0
 
-    vault_o7k_app._check_snap_vault_installed()
+    vault_o7k_app._check_vault_command_exists()
 
     mock_subprocess_run.assert_called_once_with(
-        "snap info vault".split(),
+        "vault --help".split(),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -1659,11 +1659,19 @@ def test_vault_check_snap_vault_installed(mock_subprocess_run, vault_o7k_app):
 
 
 @patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
-def test_vault_check_snap_vault_installed_failed(mock_subprocess_run, vault_o7k_app):
-    mock_subprocess_run.return_value.stdout = ""
+def test_check_snap_vault_installed_failed(mock_subprocess_run, vault_o7k_app):
+    mock_subprocess_run.return_value.returncode = 1
 
-    with pytest.raises(SnapVaultNotInstalled, match="snap vault is required to upgrade the vault"):
-        vault_o7k_app._check_snap_vault_installed()
+    with pytest.raises(CommandVaultNotFound, match="vault is required to upgrade the vault"):
+        vault_o7k_app._check_vault_command_exists()
+
+    mock_subprocess_run.assert_called_once_with(
+        "vault --help".split(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=True,
+    )
 
 
 @pytest.mark.asyncio
@@ -1719,7 +1727,7 @@ async def test_unseal_vault(mock_subprocess_run, mock_procress_indicator, vault_
     mock_subprocess_run.assert_has_calls(
         [
             call(
-                ["/snap/bin/vault", "status"],
+                ["vault", "status"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
@@ -1727,12 +1735,12 @@ async def test_unseal_vault(mock_subprocess_run, mock_procress_indicator, vault_
                 check=True,
             ),
             call(
-                ["/snap/bin/vault", "operator", "unseal"],
+                ["vault", "operator", "unseal"],
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
                 check=False,
             ),
             call(
-                ["/snap/bin/vault", "status"],
+                ["vault", "status"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
@@ -1740,12 +1748,12 @@ async def test_unseal_vault(mock_subprocess_run, mock_procress_indicator, vault_
                 check=True,
             ),
             call(
-                ["/snap/bin/vault", "operator", "unseal"],
+                ["vault", "operator", "unseal"],
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
                 check=False,
             ),
             call(
-                ["/snap/bin/vault", "status"],
+                ["vault", "status"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
@@ -1753,12 +1761,12 @@ async def test_unseal_vault(mock_subprocess_run, mock_procress_indicator, vault_
                 check=True,
             ),
             call(
-                ["/snap/bin/vault", "operator", "unseal"],
+                ["vault", "operator", "unseal"],
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
                 check=False,
             ),
             call(
-                ["/snap/bin/vault", "status"],
+                ["vault", "status"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
@@ -1790,7 +1798,7 @@ async def test_unseal_vault_vault_get_status_failed(
     mock_subprocess_run.assert_has_calls(
         [
             call(
-                ["/snap/bin/vault", "status"],
+                ["vault", "status"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
@@ -1825,7 +1833,7 @@ async def test_unseal_vault_unseal_failed(
     mock_subprocess_run.assert_has_calls(
         [
             call(
-                ["/snap/bin/vault", "status"],
+                ["vault", "status"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
@@ -1833,7 +1841,7 @@ async def test_unseal_vault_unseal_failed(
                 check=True,
             ),
             call(
-                ["/snap/bin/vault", "operator", "unseal"],
+                ["vault", "operator", "unseal"],
                 env={"VAULT_ADDR": "http://10.7.7.7:8200"},
                 check=False,
             ),
@@ -1844,11 +1852,11 @@ async def test_unseal_vault_unseal_failed(
 
 @patch("cou.apps.auxiliary.AuxiliaryApplication.upgrade_plan_sanity_checks")
 def test_vault_upgrade_plan_sanity_checks(mock_super_upgrade_plan_snaity_checks, vault_o7k_app):
-    vault_o7k_app._check_snap_vault_installed = MagicMock()
+    vault_o7k_app._check_vault_command_exists = MagicMock()
 
     vault_o7k_app.upgrade_plan_sanity_checks("zed", ["some-unit"])
 
-    vault_o7k_app._check_snap_vault_installed.assert_called()
+    vault_o7k_app._check_vault_command_exists.assert_called()
     mock_super_upgrade_plan_snaity_checks.assert_called_once_with("zed", ["some-unit"])
 
 
