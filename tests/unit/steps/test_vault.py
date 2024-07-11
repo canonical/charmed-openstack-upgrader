@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cou.exceptions import VaultSealed
+from cou.exceptions import ApplicationNotFound, VaultSealed
 from cou.steps.vault import check_vault_status
 
 
@@ -47,3 +47,11 @@ async def test_check_vault_status_unseal(case, info, status, model) -> None:
     model.get_application_status.return_value.status.info = info
     model.get_application_status.return_value.status.status = status
     await check_vault_status(model)
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.vault.logger")
+async def test_check_vault_status_vault_not_exists(mock_logger, model) -> None:
+    model.get_application_status.side_effect = ApplicationNotFound
+    await check_vault_status(model)
+    mock_logger.warning.assert_called_once_with("Application vault not found, skip")

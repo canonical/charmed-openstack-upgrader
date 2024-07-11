@@ -14,7 +14,7 @@
 """Functions for prereq steps relating to vault."""
 import logging
 
-from cou.exceptions import VaultSealed
+from cou.exceptions import ApplicationNotFound, VaultSealed
 from cou.utils.juju_utils import Model
 
 logger = logging.getLogger(__name__)
@@ -27,9 +27,15 @@ async def check_vault_status(model: Model) -> None:
     :type model: Model
     :raises VaultSealed: if application in sealed status
     """
-    app = await model.get_application_status(charm_name="vault")
-    if app.status.info == "Unit is sealed" and app.status.status == "blocked":
-        raise VaultSealed(
-            "Vault is in sealed, please follow the steps on "
-            "https://charmhub.io/vault to unseal the vault manually before upgrade"
-        )
+    try:
+        app = await model.get_application_status(charm_name="vault")
+        if app.status.info == "Unit is sealed" and app.status.status == "blocked":
+            raise VaultSealed(
+                "Vault is in sealed, please follow the steps on "
+                "https://charmhub.io/vault to unseal the vault manually before upgrade"
+            )
+    except ApplicationNotFound:
+        logger.warning("Application vault not found, skip")
+    except VaultSealed as err:
+        raise err
+    logger.debug("Vault not in sealed status")

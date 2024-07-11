@@ -123,7 +123,7 @@ class SmokeTest(unittest.TestCase):
         """
         return run([self.exc_path] + cmd, capture_output=True, text=True)
 
-    def generate_expected_plan(self, backup: bool = True, vault: bool = True) -> str:
+    def generate_expected_plan(self, backup: bool = True) -> str:
         """Generate the expected plan for the smoke bundle.
 
         :param backup: Whether the plan should contain the backup step, defaults to True
@@ -132,11 +132,11 @@ class SmokeTest(unittest.TestCase):
         :rtype: str
         """
         backup_plan = "\tBack up MySQL databases\n" if backup else ""
-        vault_plan = "\tCheck application vault is not sealed\n" if vault else ""
         return (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tCheck application vault is not sealed\n"
-            f"{vault_plan}"
+            "\tVerify that all OpenStack applications are in idle state\n"
+            "\tCheck application vault is not sealed\n"
             f"{backup_plan}"
             "\tArchive old database data on nova-cloud-controller\n"
             "\tControl Plane principal(s) upgrade plan\n"
