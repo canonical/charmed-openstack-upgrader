@@ -13,21 +13,18 @@
 # limitations under the License.
 """Auxiliary application class."""
 import abc
+import base64
+import getpass
 import logging
-import re
-import subprocess
+import tempfile
 from typing import Optional
 
+import hvac
 from packaging.version import Version
 
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
-from cou.exceptions import (
-    ApplicationError,
-    CommandVaultNotFound,
-    VaultGetStatusFailed,
-    VaultUnsealFailed,
-)
+from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PostUpgradeStep, PreUpgradeStep
 from cou.utils import progress_indicator
 from cou.utils.app_utils import set_require_osd_release_option
@@ -474,20 +471,39 @@ class Vault(AuxiliaryApplication):
     wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
-    def _check_vault_command_exists(self) -> None:
-        """Make sure snap vault is installed.
+    def _get_cacert_file(self) -> Optional[str]:
+        """Read cert file and write into temporary file.
 
-        :raises CommandVaultNotFound: When no snap valut installed.
+        :return: Temporary file path
+        :rtype: str
         """
-        result = subprocess.run(
-            "vault --help".split(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=True,
-        )
-        if result.returncode != 0:
-            raise CommandVaultNotFound("vault is required to upgrade the vault")
+        cacert_b64 = self.config["ssl-ca"].get("vault")
+        cacert_file = None
+        if cacert_b64:
+            with tempfile.NamedTemporaryFile(mode="wb", delete=False) as fp:
+                fp.write(base64.b64decode(cacert_b64))
+                cacert_file = fp.name
+        return cacert_file
+
+    async def _get_unit_api_url(self, unit_name: str) -> str:
+        """Get unit's vault api address.
+
+        :param unit_name: vault unit name
+        :type unit_name: str
+        :return: unit's vault api url
+        :rtype: str
+        """
+        # Use vip as address if vip is being used.
+        if self.config["vip"].get("value"):
+            address = self.config["vip"].get("value")
+        else:
+            juju_unit = await self.model.get_unit(unit_name)
+            address = juju_unit.public_address
+
+        transport = "http"
+        if self.config["ssl-cert"].get("value"):
+            transport = "https"
+        return f"{transport}://{address}:8200"
 
     async def _wait_for_sealed_status(self) -> None:
         """Wait for application vault go into sealed status.
@@ -507,6 +523,20 @@ class Vault(AuxiliaryApplication):
             raise ApplicationError("Vault not in sealed status")
         logger.debug("Application 'vault' in sealed status")
 
+    async def _get_vault_client(self, unit_name: str) -> hvac.Client:
+        """Get vault client.
+
+        :param unit_name: vault unit name
+        :type unit_name: str
+        :return: hvac vault Client object
+        :rtype: hvac.Client
+        """
+        vault_url = await self._get_unit_api_url(unit_name)
+        cacert_file = self._get_cacert_file()
+
+        client = hvac.Client(url=vault_url, verify=cacert_file)
+        return client
+
     async def _unseal_vault(self) -> None:
         """Unseal vault on every vault unit.
 
@@ -517,35 +547,16 @@ class Vault(AuxiliaryApplication):
 
         for unit_name in self.units:
             logger.debug("Start unseal %s", unit_name)
-            juju_unit = await self.model.get_unit(unit_name)
-            vault_address = f"http://{juju_unit.public_address}:8200"
-
+            client = await self._get_vault_client(unit_name)
             while True:
-                status_result = subprocess.run(
-                    "vault status".split(),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    env={"VAULT_ADDR": vault_address},
-                    text=True,
-                    check=True,
-                )
-                sealed_match = re.search(
-                    r"(Sealed)\s+(?P<sealed>(true)|(false))", status_result.stdout
-                )
-                if not sealed_match:
-                    raise VaultGetStatusFailed("Failed to get vault sealed status")
-
-                if sealed_match.group("sealed").lower() == "false":
-                    logger.debug("Unseal succeeded %s", unit_name)
+                status = client.sys.read_seal_status()  # pylint: disable=no-member
+                if status["sealed"]:
+                    unseal_key = getpass.getpass("Unseal Key (will be hidden):")
+                    if unseal_key:
+                        client.sys.submit_unseal_key(key=unseal_key)  # pylint: disable=no-member
+                    del unseal_key
+                else:
                     break
-
-                unseal_result = subprocess.run(
-                    "vault operator unseal".split(),
-                    env={"VAULT_ADDR": vault_address},
-                    check=False,
-                )
-                if unseal_result.returncode != 0:
-                    raise VaultUnsealFailed("Unseal vault failed")
 
     def post_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
@@ -594,17 +605,3 @@ class Vault(AuxiliaryApplication):
         ]
         steps.extend(super().post_upgrade_steps(target, units))
         return steps
-
-    def upgrade_plan_sanity_checks(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> None:
-        """Run sanity checks before generating upgrade plan.
-
-        :param target: OpenStack release as target to upgrade.
-        :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan, defaults to None
-        :type units: Optional[list[Unit]], optional
-        :raises CommandVaultNotFound: When the snap vault is not installed.
-        """
-        self._check_vault_command_exists()
-        super().upgrade_plan_sanity_checks(target, units)

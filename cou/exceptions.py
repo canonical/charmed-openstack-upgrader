@@ -149,20 +149,5 @@ class ApplicationNotSupported(COUException):
     """COU exception when the application is known but not supported by COU."""
 
 
-class CommandVaultNotFound(COUException):
-    """COU exception when the command vault not found.
-
-    The vault is required to upgrade the vault, which COU used to unseal the vault.
-    """
-
-
 class VaultSealed(COUException):
     """COU exception when the application vault is sealed."""
-
-
-class VaultGetStatusFailed(COUException):
-    """COU exception when get the vault status failed."""
-
-
-class VaultUnsealFailed(COUException):
-    """COU exception when unseal the vault application failed."""

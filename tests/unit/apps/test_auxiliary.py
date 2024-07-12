@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Auxiliary application class."""
-import subprocess
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
@@ -27,13 +26,7 @@ from cou.apps.auxiliary import (
     Vault,
 )
 from cou.apps.core import NovaCompute
-from cou.exceptions import (
-    ApplicationError,
-    CommandVaultNotFound,
-    HaltUpgradePlanGeneration,
-    VaultGetStatusFailed,
-    VaultUnsealFailed,
-)
+from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,
@@ -1616,11 +1609,10 @@ def test_auxiliary_wrong_channel(model):
         app.generate_upgrade_plan(target, force=False)
 
 
-@pytest.fixture
-def vault_o7k_app(model):
+def get_vault_o7k_app(model, config):
     charm = "vault"
     machines = {"0": generate_cou_machine("0", "az-0")}
-    app = Vault(
+    return Vault(
         name=charm,
         can_upgrade_to="1.8/stable",
         charm=charm,
@@ -1638,40 +1630,13 @@ def vault_o7k_app(model):
             )
         },
         workload_version="1.7.9",
-        config={},
-    )
-    return app
-
-
-@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
-def test_check_vault_command_exists(mock_subprocess_run, vault_o7k_app):
-    mock_subprocess_run.return_value.returncode = 0
-
-    vault_o7k_app._check_vault_command_exists()
-
-    mock_subprocess_run.assert_called_once_with(
-        "vault --help".split(),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=True,
+        config=config,
     )
 
 
-@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
-def test_check_snap_vault_installed_failed(mock_subprocess_run, vault_o7k_app):
-    mock_subprocess_run.return_value.returncode = 1
-
-    with pytest.raises(CommandVaultNotFound, match="vault is required to upgrade the vault"):
-        vault_o7k_app._check_vault_command_exists()
-
-    mock_subprocess_run.assert_called_once_with(
-        "vault --help".split(),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=True,
-    )
+@pytest.fixture
+def vault_o7k_app(model):
+    return get_vault_o7k_app(model=model, config={"ssl-cert": {}, "vip": {}, "ssl-ca": {}})
 
 
 @pytest.mark.asyncio
@@ -1697,167 +1662,45 @@ async def test_vault_wait_for_sealed_status_failed(vault_o7k_app):
 
 @pytest.mark.asyncio
 @patch("cou.apps.auxiliary.progress_indicator")
-@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
-async def test_unseal_vault(mock_subprocess_run, mock_procress_indicator, vault_o7k_app):
+@patch("cou.apps.auxiliary.hvac")
+@patch("cou.apps.auxiliary.getpass.getpass")
+async def test_unseal_vault(mock_get_pass, mock_hvac, mock_procress_indicator, vault_o7k_app):
     vault_o7k_app.model.get_unit.return_value = MagicMock()
     vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
 
-    run_side_effect = [
-        MagicMock(),
-        MagicMock(),
+    mock_hvac.Client.return_value = MagicMock()
+    read_seal_status_side_effect = [
         MagicMock(),
         MagicMock(),
         MagicMock(),
         MagicMock(),
         MagicMock(),
     ]
-    run_side_effect[0].stdout = "Sealed true"
-    run_side_effect[2].stdout = "Sealed true"
-    run_side_effect[4].stdout = "Sealed true"
-    run_side_effect[6].stdout = "Sealed false"
+    read_seal_status_side_effect[0] = {"sealed": True}
+    read_seal_status_side_effect[1] = {"sealed": True}
+    read_seal_status_side_effect[2] = {"sealed": True}
+    read_seal_status_side_effect[3] = {"sealed": True}
+    read_seal_status_side_effect[4] = {"sealed": False}
+    mock_hvac.Client.return_value.sys.read_seal_status.side_effect = read_seal_status_side_effect
 
-    run_side_effect[1].returncode = 0
-    run_side_effect[3].returncode = 0
-    run_side_effect[5].returncode = 0
-
-    mock_subprocess_run.side_effect = run_side_effect
+    mock_get_pass.side_effect = [
+        "unseal-key-1",
+        "",
+        "unseal-key-2",
+        "unseal-key-3",
+    ]
 
     await vault_o7k_app._unseal_vault()
     mock_procress_indicator.stop.assert_called()
-    mock_subprocess_run.assert_has_calls(
-        [
-            call(
-                ["vault", "status"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                text=True,
-                check=True,
-            ),
-            call(
-                ["vault", "operator", "unseal"],
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                check=False,
-            ),
-            call(
-                ["vault", "status"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                text=True,
-                check=True,
-            ),
-            call(
-                ["vault", "operator", "unseal"],
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                check=False,
-            ),
-            call(
-                ["vault", "status"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                text=True,
-                check=True,
-            ),
-            call(
-                ["vault", "operator", "unseal"],
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                check=False,
-            ),
-            call(
-                ["vault", "status"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                text=True,
-                check=True,
-            ),
-        ],
+    mock_hvac.Client.assert_called_once_with(url="http://10.7.7.7:8200", verify=None)
+
+    mock_hvac.Client.return_value.sys.read_seal_status.assert_has_calls(
+        [call(), call(), call(), call()],
+    )
+    mock_hvac.Client.return_value.sys.submit_unseal_key.assert_has_calls(
+        [call(key="unseal-key-1"), call(key="unseal-key-2"), call(key="unseal-key-3")],
         any_order=False,
     )
-
-
-@pytest.mark.asyncio
-@patch("cou.apps.auxiliary.progress_indicator")
-@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
-async def test_unseal_vault_vault_get_status_failed(
-    mock_subprocess_run, mock_procress_indicator, vault_o7k_app
-):
-    vault_o7k_app.model.get_unit.return_value = MagicMock()
-    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
-
-    run_side_effect = [MagicMock()]
-    run_side_effect[0].stdout = "wrong-output"
-
-    mock_subprocess_run.side_effect = run_side_effect
-
-    with pytest.raises(VaultGetStatusFailed, match="Failed to get vault sealed status"):
-        await vault_o7k_app._unseal_vault()
-    mock_procress_indicator.stop.assert_called()
-    mock_subprocess_run.assert_has_calls(
-        [
-            call(
-                ["vault", "status"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                text=True,
-                check=True,
-            ),
-        ]
-    )
-
-
-@pytest.mark.asyncio
-@patch("cou.apps.auxiliary.progress_indicator")
-@patch("cou.apps.auxiliary.subprocess.run", return_value=MagicMock())
-async def test_unseal_vault_unseal_failed(
-    mock_subprocess_run, mock_procress_indicator, vault_o7k_app
-):
-    vault_o7k_app.model.get_unit.return_value = MagicMock()
-    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
-
-    run_side_effect = [
-        MagicMock(),
-        MagicMock(),
-    ]
-    run_side_effect[0].stdout = "Sealed true"
-    run_side_effect[1].returncode = 1
-
-    mock_subprocess_run.side_effect = run_side_effect
-
-    with pytest.raises(VaultUnsealFailed, match="Unseal vault failed"):
-        await vault_o7k_app._unseal_vault()
-    mock_procress_indicator.stop.assert_called()
-    mock_subprocess_run.assert_has_calls(
-        [
-            call(
-                ["vault", "status"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                text=True,
-                check=True,
-            ),
-            call(
-                ["vault", "operator", "unseal"],
-                env={"VAULT_ADDR": "http://10.7.7.7:8200"},
-                check=False,
-            ),
-        ],
-        any_order=False,
-    )
-
-
-@patch("cou.apps.auxiliary.AuxiliaryApplication.upgrade_plan_sanity_checks")
-def test_vault_upgrade_plan_sanity_checks(mock_super_upgrade_plan_snaity_checks, vault_o7k_app):
-    vault_o7k_app._check_vault_command_exists = MagicMock()
-
-    vault_o7k_app.upgrade_plan_sanity_checks("zed", ["some-unit"])
-
-    vault_o7k_app._check_vault_command_exists.assert_called()
-    mock_super_upgrade_plan_snaity_checks.assert_called_once_with("zed", ["some-unit"])
 
 
 def test_vault_post_upgrade_steps_yoga_to_zed(vault_o7k_app):
@@ -1950,3 +1793,55 @@ def test_vault_post_upgrade_steps_yoga_to_zed(vault_o7k_app):
     vault_o7k_app.upgrade_plan_sanity_checks = MagicMock()
     upgrade_plan = vault_o7k_app.generate_upgrade_plan(target, False)
     assert_steps(upgrade_plan, expected_plan)
+
+
+def test_get_cacert_file(model):
+    app = get_vault_o7k_app(model=model, config={"ssl-ca": {"vault": "c29tZS1jYQo="}})
+    file_path = app._get_cacert_file()
+    with open(file_path, "r") as f:
+        cert = f.read().strip()
+        assert cert == "some-ca"
+
+
+@pytest.mark.asyncio
+async def test_get_unit_api_url_https(model):
+    app = get_vault_o7k_app(
+        model=model,
+        config={
+            "ssl-cert": {"value": "c29tZS1jZXJ0Cg=="},
+            "ssl-ca": {"value": "c29tZS1jYQo="},
+            "vip": {"value": ""},
+        }
+    )
+    app.model.get_unit.return_value = MagicMock()
+    app.model.get_unit.return_value.public_address = "10.7.7.7"
+
+    url = await app._get_unit_api_url("some-unit-name")
+    assert url == "https://10.7.7.7:8200"
+    app.model.get_unit.assert_called_once_with("some-unit-name")
+
+
+@pytest.mark.asyncio
+async def test_get_unit_api_url_http(vault_o7k_app):
+    vault_o7k_app.model.get_unit.return_value = MagicMock()
+    vault_o7k_app.model.get_unit.return_value.public_address = "10.7.7.7"
+
+    url = await vault_o7k_app._get_unit_api_url("some-unit-name")
+    assert url == "http://10.7.7.7:8200"
+    vault_o7k_app.model.get_unit.assert_called_once_with("some-unit-name")
+
+
+@pytest.mark.asyncio
+async def test_get_unit_api_url_vip(model):
+    app = get_vault_o7k_app(
+        model=model,
+        config={
+            "ssl-cert": {"value": "c29tZS1jZXJ0Cg=="},
+            "ssl-ca": {"value": "c29tZS1jYQo="},
+            "vip": {"value": "10.8.8.8"},
+        },
+    )
+
+    url = await app._get_unit_api_url("some-unit-name")
+    app.model.get_unit.assert_not_called()
+    assert url == "https://10.8.8.8:8200"
