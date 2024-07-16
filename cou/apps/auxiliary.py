@@ -196,35 +196,8 @@ class RabbitMQServer(AuxiliaryApplication):
         :rtype: list[PreUpgradeStep]
         """
         steps = super().pre_upgrade_steps(target, units)
-        # Since auto restart is disabled, we don't know the if the service
-        # has pending events or not, so we want to run `run-deferred-hooks`
-        # action to clear the events before performing upgrade. If there
-        # are no pending events, this step should be a no-op, so it's safe
-        # to run anyway
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            # Run any deferred events and restart the service. See
-            # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
-            units_to_run_action = self.units.values() if units is None else units
-            steps += [
-                PreUpgradeStep(
-                    description="Auto restarts is disabled, will"
-                    f" execute run-deferred-hooks for unit: '{unit.name}'",
-                    coro=self.model.run_action(
-                        unit.name, "run-deferred-hooks", raise_on_failure=True
-                    ),
-                )
-                for unit in units_to_run_action
-            ]
-            steps += [
-                PreUpgradeStep(
-                    description=(
-                        f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
-                        " to reach the idle state"
-                    ),
-                    parallel=False,
-                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
-                )
-            ]
+            steps.extend(self.get_run_deferred_hooks_and_restart_pre_upgrade_step())
         return steps
 
     def post_upgrade_steps(
@@ -242,34 +215,9 @@ class RabbitMQServer(AuxiliaryApplication):
         :rtype: list[PostUpgradeStep]
         """
         steps = []
-        # Since the auto restart is disabled, we need to run the
-        # `run-deferred-hooks` action, and restart the service after the
-        # upgrade.
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            steps += [
-                PostUpgradeStep(
-                    description=(
-                        f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
-                        " to reach the idle state"
-                    ),
-                    parallel=False,
-                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
-                )
-            ]
-            # Run any deferred events and restart the service. See
-            # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
-            units_to_run_action = self.units.values() if units is None else units
-            steps += [
-                PostUpgradeStep(
-                    description="Auto restarts is disabled, will"
-                    f" execute run-deferred-hooks for unit: '{unit.name}'",
-                    coro=self.model.run_action(
-                        unit.name, "run-deferred-hooks", raise_on_failure=True
-                    ),
-                )
-                for unit in units_to_run_action
-            ]
-        steps += super().post_upgrade_steps(target, units)
+            steps.extend(self.get_run_deferred_hooks_and_restart_post_upgrade_step())
+        steps.extend(super().post_upgrade_steps(target, units))
         return steps
 
     def _check_auto_restarts(self) -> None:

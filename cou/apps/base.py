@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=C0302
+
 """Base application class."""
 from __future__ import annotations
 
@@ -606,6 +608,82 @@ class OpenStackApplication(Application):
                 self.name, self.expected_current_channel(target), switch=f"ch:{self.charm}"
             ),
         )
+
+    def get_run_deferred_hooks_and_restart_pre_upgrade_step(self) -> list[PreUpgradeStep]:
+        """Get the steps for run deferred hook and restart services for before upgrade.
+
+        :return: Steps for run deferred hooks and restart service
+        :rtype: List of PreUpgradeStep
+        """
+        units = self.get_units_to_run_action()
+        run_hook_step = PreUpgradeStep(
+            description=(
+                "Execute run-deferred-hooks for all units to clear any leftover events:"
+                f" {', '.join([unit.name for unit in units])}"
+            ),
+            parallel=False,
+        )
+        run_hook_step.add_steps(
+            [
+                UnitUpgradeStep(
+                    description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
+                )
+                for unit in units
+            ]
+        )
+        wait_step = PreUpgradeStep(
+            description=(
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
+                " to reach the idle state"
+            ),
+            parallel=False,
+            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
+        )
+        return [
+            run_hook_step,
+            wait_step,
+        ]
+
+    def get_run_deferred_hooks_and_restart_post_upgrade_step(self) -> list[PostUpgradeStep]:
+        """Get the step for run deferred hook and restart services for after upgrade.
+
+        :return: Step for run deferred hooks and restart service
+        :rtype: PostUpgradeStep
+        """
+        units = self.get_units_to_run_action()
+        wait_step = PostUpgradeStep(
+            description=(
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
+                " to reach the idle state"
+            ),
+            parallel=False,
+            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
+        )
+        run_hook_step = PostUpgradeStep(
+            description=(
+                "Execute run-deferred-hooks for all units to restart the service after upgrade:"
+                f" {', '.join([unit.name for unit in units])}"
+            ),
+            parallel=False,
+        )
+        run_hook_step.add_steps(
+            [
+                UnitUpgradeStep(
+                    description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
+                )
+                for unit in units
+            ]
+        )
+        return [
+            wait_step,
+            run_hook_step,
+        ]
 
     def _get_change_channel_possible_downgrade_step(
         self, target: OpenStackRelease, channel: str

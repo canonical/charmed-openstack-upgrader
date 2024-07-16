@@ -395,21 +395,7 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
-    ]
-    upgrade_steps += [
-        PreUpgradeStep(
-            description="Auto restarts is disabled, will"
-            f" execute run-deferred-hooks for unit: '{unit.name}'",
-            coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
-        )
-        for unit in app.units.values()
-    ]
-    upgrade_steps += [
-        PreUpgradeStep(
-            description=f"Wait for up to 2400s for app '{app.name}' to reach the idle state",
-            parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=[app.name]),
-        ),
+        *tuple(app.get_run_deferred_hooks_and_restart_pre_upgrade_step()),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -418,21 +404,7 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for app '{app.name}' to reach the idle state",
-            parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=[app.name]),
-        ),
-    ]
-    upgrade_steps += [
-        PostUpgradeStep(
-            description="Auto restarts is disabled, will"
-            f" execute run-deferred-hooks for unit: '{unit.name}'",
-            coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
-        )
-        for unit in app.units.values()
-    ]
-    upgrade_steps += [
+        *tuple(app.get_run_deferred_hooks_and_restart_post_upgrade_step()),
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
