@@ -126,9 +126,5 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: SNAP_FILE
-      - name: Install dependencies
-        run: |
-          # vault is required to pass the command exists check
-          sudo snap install vault
       - name: Run func tests
         run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader.snap tox -e func

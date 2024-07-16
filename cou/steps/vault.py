@@ -36,6 +36,4 @@ async def check_vault_status(model: Model) -> None:
             )
     except ApplicationNotFound:
         logger.warning("Application vault not found, skip")
-    except VaultSealed as err:
-        raise err
     logger.debug("Vault not in sealed status")

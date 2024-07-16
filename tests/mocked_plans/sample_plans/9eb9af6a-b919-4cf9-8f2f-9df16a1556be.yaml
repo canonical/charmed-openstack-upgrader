@@ -11,10 +11,6 @@ plan: |
                     Ψ Upgrade software packages on unit 'vault/1'
                     Ψ Upgrade software packages on unit 'vault/2'
                 Refresh 'vault' to the latest revision of '1.7/stable'
-                Wait for up to 2400s for vault to reach the sealed status
-                Unseal vault
-                Wait for up to 2400s for vault to reach active status
-                Resolve all applications in error status
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'vault' has been upgraded on units: vault/0, vault/1, vault/2
             Upgrade plan for 'rabbitmq-server' to 'victoria'

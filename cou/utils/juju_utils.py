@@ -769,16 +769,14 @@ class Model:
 
     async def resolve_all(self) -> None:
         """Resolve all the units in the model if they are in error status."""
-        apps = await self.get_applications()
-        for app_name, app in apps.items():
-            juju_app = await self._get_application(app_name)
+        model = await self._get_model()
+        for _, juju_app in model.applications.items():
             if juju_app.status != "error":
                 continue
-            for unit_name in app.units:
-                juju_unit = await self._get_unit(unit_name)
-                if juju_unit.workload_status != "error":
+            for unit in juju_app.units:
+                if unit.workload_status != "error":
                     continue
-                await juju_unit.resolved(retry=True)
+                await unit.resolved(retry=True)
 
     async def get_application_status(self, charm_name: str) -> ApplicationStatus:
         """Get ApplicationStatus by charm name.

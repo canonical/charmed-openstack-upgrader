@@ -16,6 +16,7 @@ import abc
 import base64
 import getpass
 import logging
+import os
 import tempfile
 from typing import Optional
 
@@ -477,12 +478,13 @@ class Vault(AuxiliaryApplication):
         :return: Temporary file path
         :rtype: str
         """
-        cacert_b64 = self.config["ssl-ca"].get("vault")
+        cacert_b64 = self.config["ssl-ca"].get("value")
         cacert_file = None
         if cacert_b64:
             with tempfile.NamedTemporaryFile(mode="wb", delete=False) as fp:
                 fp.write(base64.b64decode(cacert_b64))
                 cacert_file = fp.name
+                logger.debug("Create tempfile: %s", cacert_file)
         return cacert_file
 
     async def _get_unit_api_url(self, unit_name: str) -> str:
@@ -493,16 +495,15 @@ class Vault(AuxiliaryApplication):
         :return: unit's vault api url
         :rtype: str
         """
-        # Use vip as address if vip is being used.
-        if self.config["vip"].get("value"):
+        if self.config["hostname"].get("value"):  # Use hostname if hostname is being used.
+            address = self.config["hostname"].get("value")
+        elif self.config["vip"].get("value"):  # Use vip as address if vip is being used.
             address = self.config["vip"].get("value")
         else:
             juju_unit = await self.model.get_unit(unit_name)
             address = juju_unit.public_address
 
-        transport = "http"
-        if self.config["ssl-cert"].get("value"):
-            transport = "https"
+        transport = "https" if self.config["ssl-cert"].get("value") else "http"
         return f"{transport}://{address}:8200"
 
     async def _wait_for_sealed_status(self) -> None:
@@ -523,40 +524,42 @@ class Vault(AuxiliaryApplication):
             raise ApplicationError("Vault not in sealed status")
         logger.debug("Application 'vault' in sealed status")
 
-    async def _get_vault_client(self, unit_name: str) -> hvac.Client:
+    async def _get_vault_client(self, unit_name: str, cacert_file: Optional[str]) -> hvac.Client:
         """Get vault client.
 
         :param unit_name: vault unit name
         :type unit_name: str
+        :param cacert_file: cacert file path
+        :type cacert_file: str
         :return: hvac vault Client object
         :rtype: hvac.Client
         """
         vault_url = await self._get_unit_api_url(unit_name)
-        cacert_file = self._get_cacert_file()
-
         client = hvac.Client(url=vault_url, verify=cacert_file)
         return client
 
     async def _unseal_vault(self) -> None:
-        """Unseal vault on every vault unit.
-
-        :raises VaultGetStatusFailed: When failed to get sealed status from vault command
-        :raises VaultUnsealFailed: When unseal command failed
-        """
+        """Unseal vault on every vault unit."""
+        # Stop progress_indicator because it will clear the unseal key input.
         progress_indicator.stop()
 
         for unit_name in self.units:
             logger.debug("Start unseal %s", unit_name)
-            client = await self._get_vault_client(unit_name)
+            cacert_file = self._get_cacert_file()
+            client = await self._get_vault_client(unit_name, cacert_file)
             while True:
-                status = client.sys.read_seal_status()  # pylint: disable=no-member
-                if status["sealed"]:
-                    unseal_key = getpass.getpass("Unseal Key (will be hidden):")
-                    if unseal_key:
-                        client.sys.submit_unseal_key(key=unseal_key)  # pylint: disable=no-member
-                    del unseal_key
-                else:
+                status = client.sys.read_seal_status()
+                if not status["sealed"]:
                     break
+                unseal_key = getpass.getpass("Unseal Key (will be hidden):")
+                if unseal_key:
+                    client.sys.submit_unseal_key(key=unseal_key)
+                del unseal_key
+
+            # Delete temporary ca file
+            if cacert_file:
+                os.remove(cacert_file)
+                logger.debug("Remove tempfile: %s", cacert_file)
 
     def post_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
@@ -572,36 +575,44 @@ class Vault(AuxiliaryApplication):
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
-        steps = [
-            # Vault application should get into blocked and sealed status after upgrading.
-            PostUpgradeStep(
-                description=(
-                    f"Wait for up to {self.wait_timeout}s for vault to reach the sealed status"
-                ),
-                coro=self._wait_for_sealed_status(),
-            ),
-            PostUpgradeStep(
-                description="Unseal vault",
-                coro=self._unseal_vault(),
-            ),
-            PostUpgradeStep(
-                description=(
-                    f"Wait for up to {self.wait_timeout}s for vault to reach active status"
-                ),
-                coro=self.model.wait_for_idle(
-                    timeout=self.wait_timeout,
-                    status="active",
-                    apps=[self.name],
-                    raise_on_blocked=False,
-                    raise_on_error=False,
-                ),
-            ),
-            # Some applications will get into error status because vault in sealed status.
-            # Need to resolve them.
-            PostUpgradeStep(
-                description="Resolve all applications in error status",
-                coro=self.model.resolve_all(),
-            ),
-        ]
+        upgrade_step = self._get_upgrade_charm_step(target=target)
+        steps = []
+
+        # Add unseal steps only if chaneel is changed.
+        if upgrade_step:
+            steps.extend(
+                [
+                    # Vault application should get into blocked and sealed status after upgrading.
+                    PostUpgradeStep(
+                        description=(
+                            f"Wait for up to {self.wait_timeout}s"
+                            " for vault to reach the sealed status"
+                        ),
+                        coro=self._wait_for_sealed_status(),
+                    ),
+                    PostUpgradeStep(
+                        description="Unseal vault",
+                        coro=self._unseal_vault(),
+                    ),
+                    PostUpgradeStep(
+                        description=(
+                            f"Wait for up to {self.wait_timeout}s for vault to reach active status"
+                        ),
+                        coro=self.model.wait_for_idle(
+                            timeout=self.wait_timeout,
+                            status="active",
+                            apps=[self.name],
+                            raise_on_blocked=False,
+                            raise_on_error=False,
+                        ),
+                    ),
+                    # Some applications will get into error status because vault in sealed status.
+                    # Need to resolve them.
+                    PostUpgradeStep(
+                        description="Resolve all applications in error status",
+                        coro=self.model.resolve_all(),
+                    ),
+                ]
+            )
         steps.extend(super().post_upgrade_steps(target, units))
         return steps

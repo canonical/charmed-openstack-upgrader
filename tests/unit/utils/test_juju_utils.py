@@ -966,12 +966,7 @@ async def test_coumodel_get_unit(mock_get_unit, mocked_model):
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils.Model._get_unit")
-@patch("cou.utils.juju_utils.Model._get_application")
-@patch("cou.utils.juju_utils.Model.get_applications")
-async def test_coumodel_resolve_all(
-    mock_get_applications, mock_get_application, mock_get_unit, mocked_model
-):
+async def test_coumodel_resolve_all(mocked_model):
     model = juju_utils.Model("test-model")
 
     mock_active_juju_app = AsyncMock()
@@ -979,34 +974,16 @@ async def test_coumodel_resolve_all(
 
     mock_error_juju_app = AsyncMock()
     mock_error_juju_app.status = "error"
-    mock_error_juju_app.units = ["unit1", "unit2"]
 
-    async def _get_application_side_effect(name: str) -> AsyncMock:
-        if name == "app1":
-            return mock_active_juju_app
-        return mock_error_juju_app
-
-    mock_get_application.side_effect = _get_application_side_effect
+    mocked_model.applications = {"app1": mock_active_juju_app, "app2": mock_error_juju_app}
 
     mock_active_juju_unit = AsyncMock()
     mock_active_juju_unit.workload_status = "active"
     mock_error_juju_unit = AsyncMock()
     mock_error_juju_unit.workload_status = "error"
 
-    async def _get_unit_side_effect(name: str) -> AsyncMock:
-        if name == "unit1":
-            return mock_active_juju_app
-        return mock_error_juju_unit
+    mock_error_juju_app.units = [mock_active_juju_unit, mock_error_juju_unit]
 
-    mock_get_unit.side_effect = _get_unit_side_effect
-
-    apps = {
-        "app1": MagicMock(),
-        "app2": MagicMock(),
-    }
-    apps["app2"].units = ["unit1", "unit2"]
-
-    mock_get_applications.return_value = apps
     await model.resolve_all()
 
     mock_error_juju_unit.resolved.assert_awaited_once_with(retry=True)
