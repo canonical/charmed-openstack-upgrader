@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Tests of the Auxiliary Subordinate application class."""
-
 import pytest
 
 from cou.apps.auxiliary_subordinate import (
@@ -21,7 +20,13 @@ from cou.apps.auxiliary_subordinate import (
     OVNSubordinate,
 )
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
-from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
+from cou.steps import (
+    ApplicationUpgradePlan,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UnitUpgradeStep,
+    UpgradeStep,
+)
 from cou.utils.juju_utils import SubordinateUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
@@ -203,6 +208,95 @@ def test_ovn_subordinate_upgrade_plan(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "22.03/stable"),
         )
+    ]
+    expected_plan.add_steps(upgrade_steps)
+
+    upgrade_plan = app.generate_upgrade_plan(target, False)
+
+    assert_steps(upgrade_plan, expected_plan)
+
+
+def test_ovn_subordinate_upgrade_plan_auto_restart_False(model):
+    """Test generating plan for OVNSubordinate when enable-auto-restarts is False."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    app = OVNSubordinate(
+        name="ovn-chassis",
+        can_upgrade_to="22.03/stable",
+        charm="ovn-chassis",
+        channel="22.03/stable",
+        config={
+            "enable-version-pinning": {"value": False},
+            "enable-auto-restarts": {"value": False},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassis/0", "ovn-chassis")],
+        units={},
+        workload_version="22.3",
+    )
+
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
+    )
+
+    run_deferred_hooks_and_restart_pre_upgrades = PreUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to clear any leftover events"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_pre_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.subordinate_units
+        ]
+    )
+    run_deferred_hooks_and_restart_pre_wait_step = PreUpgradeStep(
+        description=(f"Wait for up to 300s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_active_idle(300, apps=[app.name]),
+    )
+
+    run_deferred_hooks_and_restart_post_wait_step = PostUpgradeStep(
+        description=(f"Wait for up to 300s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_active_idle(300, apps=[app.name]),
+    )
+    run_deferred_hooks_and_restart_post_upgrades = PostUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to restart the service after upgrade"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_post_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.subordinate_units
+        ]
+    )
+
+    upgrade_steps = [
+        run_deferred_hooks_and_restart_pre_upgrades,
+        run_deferred_hooks_and_restart_pre_wait_step,
+        PreUpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "22.03/stable"),
+        ),
+        run_deferred_hooks_and_restart_post_wait_step,
+        run_deferred_hooks_and_restart_post_upgrades,
     ]
     expected_plan.add_steps(upgrade_steps)
 

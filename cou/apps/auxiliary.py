@@ -14,7 +14,7 @@
 """Auxiliary application class."""
 import abc
 import logging
-from typing import Optional
+from typing import Optional, Sequence
 
 from packaging.version import Version
 
@@ -28,7 +28,7 @@ from cou.steps import (
     UnitUpgradeStep,
 )
 from cou.utils.app_utils import set_require_osd_release_option
-from cou.utils.juju_utils import Unit
+from cou.utils.juju_utils import SubordinateUnit, Unit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
@@ -175,7 +175,7 @@ class AuxiliaryApplication(OpenStackApplication):
         )
 
     def get_run_deferred_hooks_and_restart_pre_upgrade_step(
-        self, units: Optional[list[Unit]]
+        self, units: Sequence[Unit | SubordinateUnit]
     ) -> list[PreUpgradeStep]:
         """Get the steps for run deferred hook and restart services for before upgrade.
 
@@ -204,7 +204,7 @@ class AuxiliaryApplication(OpenStackApplication):
                         unit.name, "run-deferred-hooks", raise_on_failure=True
                     ),
                 )
-                for unit in units or self.units.values()
+                for unit in units
             ]
         )
         wait_step = PreUpgradeStep(
@@ -221,7 +221,7 @@ class AuxiliaryApplication(OpenStackApplication):
         ]
 
     def get_run_deferred_hooks_and_restart_post_upgrade_step(
-        self, units: Optional[list[Unit]]
+        self, units: Sequence[Unit | SubordinateUnit]
     ) -> list[PostUpgradeStep]:
         """Get the step for run deferred hook and restart services for after upgrade.
 
@@ -258,7 +258,7 @@ class AuxiliaryApplication(OpenStackApplication):
                         unit.name, "run-deferred-hooks", raise_on_failure=True
                     ),
                 )
-                for unit in units or self.units.values()
+                for unit in units
             ]
         )
         return [
@@ -294,7 +294,9 @@ class RabbitMQServer(AuxiliaryApplication):
         """
         steps = super().pre_upgrade_steps(target, units)
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            steps.extend(self.get_run_deferred_hooks_and_restart_pre_upgrade_step(units))
+            steps.extend(
+                self.get_run_deferred_hooks_and_restart_pre_upgrade_step(list(self.units.values()))
+            )
         return steps
 
     def post_upgrade_steps(
@@ -313,7 +315,11 @@ class RabbitMQServer(AuxiliaryApplication):
         """
         steps = []
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            steps.extend(self.get_run_deferred_hooks_and_restart_post_upgrade_step(units))
+            steps.extend(
+                self.get_run_deferred_hooks_and_restart_post_upgrade_step(
+                    list(self.units.values())
+                )
+            )
         steps.extend(super().post_upgrade_steps(target, units))
         return steps
 
