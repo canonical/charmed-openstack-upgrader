@@ -22,6 +22,7 @@ from cou.apps.auxiliary_subordinate import (
 )
 from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
+from cou.utils.juju_utils import SubordinateUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps, dedent_plan, generate_cou_machine
 
@@ -40,6 +41,7 @@ def test_auxiliary_subordinate(model):
         origin="ch",
         series="focal",
         subordinate_to=["keystone"],
+        subordinate_units=[SubordinateUnit("keystone-mysql-router/0", "mysql-router")],
         units={},
         workload_version="8.0",
     )
@@ -69,6 +71,7 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=["keystone"],
+        subordinate_units=[SubordinateUnit("keystone-mysql-router/0", "mysql-router")],
         units={},
         workload_version="8.0",
     )
@@ -101,6 +104,7 @@ def test_ovn_subordinate(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassis/0", "ovn-chassis")],
         units={},
         workload_version="22.3",
     )
@@ -135,6 +139,7 @@ def test_ovn_workload_ver_lower_than_22_subordinate(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassisr/0", "ovn-chassis")],
         units={},
         workload_version="20.3",
     )
@@ -160,6 +165,7 @@ def test_ovn_version_pinning_subordinate(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassisr/0", "ovn-chassis")],
         units={},
         workload_version="22.3",
     )
@@ -183,6 +189,7 @@ def test_ovn_subordinate_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassisr/0", "ovn-chassis")],
         units={},
         workload_version="22.3",
     )
@@ -227,6 +234,7 @@ def test_ovn_subordinate_upgrade_plan_cant_upgrade_charm(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassisr/0", "ovn-chassis")],
         units={},
         workload_version="22.3",
     )
@@ -250,6 +258,7 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassisr/0", "ovn-chassis")],
         units={},
         workload_version="15.2.0",
     )
@@ -287,6 +296,7 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassisr/0", "ovn-chassis")],
         units={},
         workload_version="16.2.0",
     )
@@ -339,6 +349,7 @@ This may be a charm downgrade, which is generally not supported.
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassisr/0", "ovn-chassis")],
         units={},
         workload_version="",
     )
@@ -358,6 +369,7 @@ def test_auxiliary_subordinate_channel_o7k_release_raise(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("ovn-chassisr/0", "ovn-chassis")],
         units={},
         workload_version="",
     )
@@ -390,6 +402,7 @@ def test_hacluster_change_channel(model):
         origin="ch",
         series="focal",
         subordinate_to=["keystone"],
+        subordinate_units=[SubordinateUnit("keystone-hacluster/0", "hacluster")],
         units={},
         workload_version="2.0.3",
     )

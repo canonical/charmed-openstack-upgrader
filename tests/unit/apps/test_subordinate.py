@@ -19,6 +19,7 @@ import pytest
 from cou.apps.subordinate import SubordinateApplication
 from cou.exceptions import ApplicationError
 from cou.steps import ApplicationUpgradePlan, PreUpgradeStep, UpgradeStep
+from cou.utils.juju_utils import SubordinateUnit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import assert_steps, generate_cou_machine
 
@@ -39,6 +40,7 @@ def test_o7k_release(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="18.1.0",
     )
@@ -61,6 +63,7 @@ def test_generate_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="18.1.0",
     )
@@ -109,6 +112,7 @@ def test_channel_valid(model, channel):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="18.1.0",
     )
@@ -144,6 +148,7 @@ def test_channel_setter_invalid(model, channel):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="18.1.0",
     )
@@ -175,6 +180,7 @@ def test_generate_plan_ch_migration(model, channel):
         origin="cs",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="",
     )
@@ -222,6 +228,7 @@ def test_generate_plan_from_to(model, from_os, to_os):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="18.1.0",
     )
@@ -270,6 +277,7 @@ def test_generate_plan_in_same_version(model, from_to):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
+        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="18.1.0",
     )
@@ -322,6 +330,7 @@ def test_expected_current_channel_subordinate(
         origin=origin,
         series="focal",
         subordinate_to=["keystone"],
+        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="1",
     )

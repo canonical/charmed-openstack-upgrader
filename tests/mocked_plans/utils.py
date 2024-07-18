@@ -63,6 +63,7 @@ def parse_sample_plan_file(source: Path) -> tuple[Model, str]:
             origin=app_data["origin"],
             series=app_data["series"],
             subordinate_to=app_data["subordinate_to"],
+            subordinate_units=app_data["subordinate_units"],
             units={
                 name: Unit(
                     name,
