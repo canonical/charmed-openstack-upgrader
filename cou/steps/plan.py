@@ -534,7 +534,9 @@ def _generate_control_plane_plan(
     )
 
     logger.debug("Generation of the control plane upgrade plan complete")
-    control_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
+    # Note: relate to issue #466
+    # The subordinate application should be upgrade first before principle
+    control_plane_upgrade_plan = [subordinate_upgrade_plan, principal_upgrade_plan]
 
     return control_plane_upgrade_plan
 

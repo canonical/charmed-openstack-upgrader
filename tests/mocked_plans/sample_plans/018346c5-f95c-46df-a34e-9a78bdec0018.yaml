@@ -3,6 +3,76 @@ plan: |
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
+        Control Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ceph-dashboard' to 'victoria'
+                Refresh 'ceph-dashboard' to the latest revision of 'octopus/stable'
+            Upgrade plan for 'cinder-ceph' to 'victoria'
+                Upgrade 'cinder-ceph' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'hacluster-aodh' to 'victoria'
+                WARNING: Changing 'hacluster-aodh' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-ceilometer' to 'victoria'
+                WARNING: Changing 'hacluster-ceilometer' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-cinder' to 'victoria'
+                WARNING: Changing 'hacluster-cinder' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-designate' to 'victoria'
+                WARNING: Changing 'hacluster-designate' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-glance' to 'victoria'
+                WARNING: Changing 'hacluster-glance' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-gnocchi' to 'victoria'
+                WARNING: Changing 'hacluster-gnocchi' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-heat' to 'victoria'
+                WARNING: Changing 'hacluster-heat' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-horizon' to 'victoria'
+                WARNING: Changing 'hacluster-horizon' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-keystone' to 'victoria'
+                WARNING: Changing 'hacluster-keystone' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-neutron' to 'victoria'
+                WARNING: Changing 'hacluster-neutron' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-nova' to 'victoria'
+                WARNING: Changing 'hacluster-nova' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-octavia' to 'victoria'
+                WARNING: Changing 'hacluster-octavia' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-placement' to 'victoria'
+                WARNING: Changing 'hacluster-placement' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-radosgw' to 'victoria'
+                WARNING: Changing 'hacluster-radosgw' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'hacluster-vault' to 'victoria'
+                WARNING: Changing 'hacluster-vault' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'keystone-ldap' to 'victoria'
+                WARNING: Changing 'keystone-ldap' channel from latest/stable to ussuri/stable. This may be a charm downgrade, which is generally not supported.
+                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'aodh-mysql-router' to 'victoria'
+                Refresh 'aodh-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'cinder-mysql-router' to 'victoria'
+                Refresh 'cinder-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'designate-mysql-router' to 'victoria'
+                Refresh 'designate-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'glance-mysql-router' to 'victoria'
+                Refresh 'glance-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'gnocchi-mysql-router' to 'victoria'
+                Refresh 'gnocchi-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'heat-mysql-router' to 'victoria'
+                Refresh 'heat-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'keystone-mysql-router' to 'victoria'
+                Refresh 'keystone-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'neutron-api-mysql-router' to 'victoria'
+                Refresh 'neutron-api-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'nova-mysql-router' to 'victoria'
+                Refresh 'nova-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'octavia-mysql-router' to 'victoria'
+                Refresh 'octavia-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'openstack-dashboard-mysql-router' to 'victoria'
+                Refresh 'openstack-dashboard-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'placement-mysql-router' to 'victoria'
+                Refresh 'placement-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'vault-mysql-router' to 'victoria'
+                Refresh 'vault-mysql-router' to the latest revision of '8.0/stable'
+            Upgrade plan for 'neutron-openvswitch-octavia' to 'victoria'
+                Upgrade 'neutron-openvswitch-octavia' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'octavia-dashboard' to 'victoria'
+                Upgrade 'octavia-dashboard' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'octavia-diskimage-retrofit' to 'victoria'
+                Upgrade 'octavia-diskimage-retrofit' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Control Plane principal(s) upgrade plan
             Upgrade plan for 'rabbitmq-server' to 'victoria'
                 Upgrade software packages of 'rabbitmq-server' from the current APT repositories
@@ -184,76 +254,6 @@ plan: |
                 Change charm config of 'mysql-innodb-cluster' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state
                 Verify that the workload of 'mysql-innodb-cluster' has been upgraded on units: mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2
-        Control Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ceph-dashboard' to 'victoria'
-                Refresh 'ceph-dashboard' to the latest revision of 'octopus/stable'
-            Upgrade plan for 'cinder-ceph' to 'victoria'
-                Upgrade 'cinder-ceph' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'hacluster-aodh' to 'victoria'
-                WARNING: Changing 'hacluster-aodh' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-ceilometer' to 'victoria'
-                WARNING: Changing 'hacluster-ceilometer' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-cinder' to 'victoria'
-                WARNING: Changing 'hacluster-cinder' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-designate' to 'victoria'
-                WARNING: Changing 'hacluster-designate' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-glance' to 'victoria'
-                WARNING: Changing 'hacluster-glance' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-gnocchi' to 'victoria'
-                WARNING: Changing 'hacluster-gnocchi' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-heat' to 'victoria'
-                WARNING: Changing 'hacluster-heat' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-horizon' to 'victoria'
-                WARNING: Changing 'hacluster-horizon' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-keystone' to 'victoria'
-                WARNING: Changing 'hacluster-keystone' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-neutron' to 'victoria'
-                WARNING: Changing 'hacluster-neutron' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-nova' to 'victoria'
-                WARNING: Changing 'hacluster-nova' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-octavia' to 'victoria'
-                WARNING: Changing 'hacluster-octavia' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-placement' to 'victoria'
-                WARNING: Changing 'hacluster-placement' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-radosgw' to 'victoria'
-                WARNING: Changing 'hacluster-radosgw' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'hacluster-vault' to 'victoria'
-                WARNING: Changing 'hacluster-vault' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
-            Upgrade plan for 'keystone-ldap' to 'victoria'
-                WARNING: Changing 'keystone-ldap' channel from latest/stable to ussuri/stable. This may be a charm downgrade, which is generally not supported.
-                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'aodh-mysql-router' to 'victoria'
-                Refresh 'aodh-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'cinder-mysql-router' to 'victoria'
-                Refresh 'cinder-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'designate-mysql-router' to 'victoria'
-                Refresh 'designate-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'glance-mysql-router' to 'victoria'
-                Refresh 'glance-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'gnocchi-mysql-router' to 'victoria'
-                Refresh 'gnocchi-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'heat-mysql-router' to 'victoria'
-                Refresh 'heat-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'keystone-mysql-router' to 'victoria'
-                Refresh 'keystone-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'neutron-api-mysql-router' to 'victoria'
-                Refresh 'neutron-api-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'nova-mysql-router' to 'victoria'
-                Refresh 'nova-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'octavia-mysql-router' to 'victoria'
-                Refresh 'octavia-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'openstack-dashboard-mysql-router' to 'victoria'
-                Refresh 'openstack-dashboard-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'placement-mysql-router' to 'victoria'
-                Refresh 'placement-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'vault-mysql-router' to 'victoria'
-                Refresh 'vault-mysql-router' to the latest revision of '8.0/stable'
-            Upgrade plan for 'neutron-openvswitch-octavia' to 'victoria'
-                Upgrade 'neutron-openvswitch-octavia' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'octavia-dashboard' to 'victoria'
-                Upgrade 'octavia-dashboard' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'octavia-diskimage-retrofit' to 'victoria'
-                Upgrade 'octavia-diskimage-retrofit' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [cinder-volume/0, cinder-volume/2, cinder-volume/3, cinder-volume/9, nova-compute-kvm/0, nova-compute-kvm/2, nova-compute-kvm/3, nova-compute-kvm/9] in 'zone2' to 'victoria'
                 Upgrade software packages of 'cinder-volume' from the current APT repositories
