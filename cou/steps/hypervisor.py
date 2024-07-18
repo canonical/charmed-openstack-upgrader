@@ -143,6 +143,7 @@ class HypervisorUpgradePlanner:
         :rtype: dict[str, HypervisorGroup]
         """
         azs = AZs()
+        apps_dict = {app.name: app for app in self.apps}
         for app in self.apps:
             for unit in app.units.values():
                 if unit.machine not in self.machines:
@@ -159,6 +160,16 @@ class HypervisorUpgradePlanner:
                 az = unit.machine.az or ""
                 azs[az].app_units[app.name].append(unit)
 
+            for s_unit in app.subordinate_units:
+                s_app = apps_dict[s_unit.name.split("/")[0]]
+                for machine in s_app.machines.values():
+                    if machine not in self.machines:
+                        logger.debug("skipping machine %s", machine.machine_id)
+                        continue
+
+                    az = machine.az or ""
+                    if s_unit not in azs[az].app_units[s_app.name]:
+                        azs[az].app_units[s_app.name].append(s_unit)
         return azs
 
     def _upgrade_plan_sanity_checks(

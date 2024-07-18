@@ -172,11 +172,12 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
         Upgrading all applications deployed on machines with hypervisor.
-            Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
+            Upgrade plan for [nova-compute/0, ovn-chassis/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
@@ -199,9 +200,6 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
@@ -218,7 +216,7 @@ nova-compute/0
             "openstack-origin": {"value": "distro"},
             "action-managed-upgrade": {"value": True},
         },
-        machines=machines["0"],
+        machines={"0": machines["0"]},
         model=model,
         origin="ch",
         series="focal",
@@ -229,6 +227,7 @@ nova-compute/0
                 name="keystone/0",
                 workload_version="17.0.1",
                 machine=machines["0"],
+                subordinates=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
             )
         },
         workload_version="17.0.1",
@@ -239,7 +238,7 @@ nova-compute/0
         charm="keystone-ldap",
         channel="ussuri/stable",
         config={},
-        machines=machines["0"],
+        machines={"0": machines["0"]},
         model=model,
         origin="ch",
         series="focal",
@@ -255,7 +254,7 @@ nova-compute/0
         charm="nova-compute",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
-        machines=machines["1"],
+        machines={"1": machines["1"]},
         model=model,
         origin="ch",
         series="focal",
@@ -266,6 +265,7 @@ nova-compute/0
                 name="nova-compute/0",
                 workload_version="21.0.0",
                 machine=machines["1"],
+                subordinates=[SubordinateUnit("ovn-chassis/0", "ovn-chassis")],
             )
         },
         workload_version="21.0.0",
@@ -277,7 +277,7 @@ nova-compute/0
         charm="ceph-osd",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
-        machines=machines["2"],
+        machines={"2": machines["2"]},
         model=model,
         origin="ch",
         series="focal",
@@ -288,6 +288,7 @@ nova-compute/0
                 name="ceph-osd/0",
                 workload_version="15.2.0",
                 machine=machines["2"],
+                subordinates=[],
             )
         },
         workload_version="15.2.0",
@@ -299,7 +300,7 @@ nova-compute/0
         charm="ovn-chassis",
         channel="22.03/stable",
         config={"enable-version-pinning": {"value": False}},
-        machines=machines["1"],
+        machines={"1": machines["1"]},
         model=model,
         origin="ch",
         series="focal",
@@ -334,11 +335,12 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
-            Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
+            Upgrade plan for [nova-compute/0, ovn-chassis/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
@@ -361,9 +363,6 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
@@ -380,7 +379,7 @@ nova-compute/0
             "openstack-origin": {"value": "distro"},
             "action-managed-upgrade": {"value": True},
         },
-        machines=machines["0"],
+        machines={"0": machines["0"]},
         model=model,
         origin="ch",
         series="focal",
@@ -391,11 +390,13 @@ nova-compute/0
                 name="keystone/0",
                 workload_version="17.0.1",
                 machine=machines["0"],
+                subordinates=[SubordinateUnit("keystone-ldap/1", "keystone-ldap")],
             ),
             "keystone/1": Unit(
                 name="keystone/1",
                 workload_version="18.0.1",  # mismatched unit versions
                 machine=machines["0"],
+                subordinates=[SubordinateUnit("keystone-ldap/1", "keystone-ldap")],
             ),
         },
         workload_version="17.0.1",
@@ -406,7 +407,7 @@ nova-compute/0
         charm="keystone-ldap",
         channel="ussuri/stable",
         config={},
-        machines=machines["0"],
+        machines={"0": machines["0"]},
         model=model,
         origin="ch",
         series="focal",
@@ -422,7 +423,7 @@ nova-compute/0
         charm="nova-compute",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
-        machines=machines["1"],
+        machines={"1": machines["1"]},
         model=model,
         origin="ch",
         series="focal",
@@ -433,6 +434,7 @@ nova-compute/0
                 name="nova-compute/0",
                 workload_version="21.0.0",
                 machine=machines["1"],
+                subordinates=[SubordinateUnit("ovn-chassis/0", "ovn-chassis")],
             )
         },
         workload_version="21.0.0",
@@ -444,7 +446,7 @@ nova-compute/0
         charm="ceph-osd",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
-        machines=machines["2"],
+        machines={"2": machines["2"]},
         model=model,
         origin="ch",
         series="focal",
@@ -466,7 +468,7 @@ nova-compute/0
         charm="ovn-chassis",
         channel="22.03/stable",
         config={"enable-version-pinning": {"value": False}},
-        machines=machines["1"],
+        machines={"1": machines["1"]},
         model=model,
         origin="ch",
         series="focal",
@@ -1490,6 +1492,7 @@ def test_separate_hypervisors_apps(model):
                 name="nova-compute/0",
                 workload_version="21.0.0",
                 machine=machines["0"],
+                subordinates=[SubordinateUnit("ovn-chassis/0", "ovn-chassis")],
             )
         },
         workload_version="21.0.0",
@@ -1516,12 +1519,13 @@ def test_separate_hypervisors_apps(model):
                 name="cinder/0",
                 workload_version="16.4.2",
                 machine=machines["0"],
+                subordinates=[],
             )
         },
         workload_version="16.4.2",
     )
 
-    # subordinates are considered as non-hypervisors
+    # ovn_chassis subordinate to nova-compute are considered as hypervisors
     ovn_chassis = OVNSubordinate(
         name="ovn-chassis",
         can_upgrade_to="22.03/stable",
@@ -1556,6 +1560,7 @@ def test_separate_hypervisors_apps(model):
                 name="ceph-osd/0",
                 workload_version="17.0.1",
                 machine=machines["0"],
+                subordinates=[],
             )
         },
         workload_version="17.0.1",
@@ -1579,6 +1584,7 @@ def test_separate_hypervisors_apps(model):
                 name="ceph-osd/0",
                 workload_version="17.0.1",
                 machine=machines["1"],
+                subordinates=[],
             )
         },
         workload_version="17.0.1",
@@ -1593,9 +1599,11 @@ def test_separate_hypervisors_apps(model):
             ovn_chassis,
         ]
     )
-    assert result == (
-        [nova_compute, cinder],
-        [ceph_osd_colocated, ceph_osd_not_colocated, ovn_chassis],
+    assert sorted(result[0], key=lambda x: x.name), sorted(
+        [nova_compute, ovn_chassis, cinder], key=lambda x: x.name
+    )
+    assert sorted(result[1], key=lambda x: x.name), sorted(
+        [ceph_osd_colocated, ceph_osd_not_colocated], key=lambda x: x.name
     )
 
 

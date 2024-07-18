@@ -14,7 +14,6 @@
 """Module to provide helper for writing unit tests."""
 from pathlib import Path
 from textwrap import dedent
-from unittest.mock import MagicMock
 
 from juju.client.client import FullStatus
 
@@ -30,12 +29,8 @@ def assert_steps(step_1: BaseStep, step_2: BaseStep) -> None:
 
 def generate_cou_machine(
     machine_id: str, az: str | None = None, apps_charms: tuple = tuple(tuple())
-) -> MagicMock:
-    machine = MagicMock(spec_set=Machine)()
-    machine.machine_id = machine_id
-    machine.az = az
-    machine.apps_charms = apps_charms
-    return machine
+) -> Machine:
+    return Machine(machine_id=machine_id, az=az, apps_charms=apps_charms)
 
 
 def dedent_plan(plan: str) -> str:

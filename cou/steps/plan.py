@@ -556,17 +556,32 @@ def _separate_hypervisors_apps(
     """
     hypervisor_apps = []
     non_hypervisors_apps = []
+    apps_dict = {app.name: app for app in apps}
     _, nova_compute_machines = _get_nova_compute_units_and_machines(apps)
     for app in apps:
-        if (
+        # Grab all units subordinate to nova-compute, and also nova-compute itself
+        if app.charm == "nova-compute":
+            # Add nove-compute itself
+            hypervisor_apps.append(app)
+            # Add all units subordinate to nova-compute
+            for unit in app.units.values():
+                for s_unit in unit.subordinates:
+                    su_app_name = s_unit.name.split("/")[0]
+                    hypervisor_apps.append(apps_dict[su_app_name])
+        # Grab all unit colocated with nova-compute except ceph-osd
+        elif (
             any(unit.machine in nova_compute_machines for unit in app.units.values())
             and app.charm != "ceph-osd"
             and app.is_subordinate is False
         ):
             hypervisor_apps.append(app)
+        # Subordinates has already been counted in the first if condition
+        elif app.is_subordinate:
+            continue
         else:
             non_hypervisors_apps.append(app)
-    return hypervisor_apps, non_hypervisors_apps
+    # Use set to avoid double counting for apps with multiple units
+    return list(dict.fromkeys(hypervisor_apps)), list(dict.fromkeys(non_hypervisors_apps))
 
 
 async def _generate_data_plane_hypervisors_plan(
