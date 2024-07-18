@@ -129,13 +129,26 @@ async def _generate_data_plane_plan(
     hypervisor_apps, non_hypervisors_apps = _separate_hypervisors_apps(
         analysis_result.apps_data_plane
     )
+    plans = []
+    if args.upgrade_group != HYPERVISORS:
+        plans.extend(
+            _generate_data_plane_subordinate_remaining_plan(
+                target, non_hypervisors_apps, args.force
+            )
+        )
 
-    plans = [
-        await _generate_data_plane_hypervisors_plan(target, analysis_result, args, hypervisor_apps)
-    ]
+    plans.extend(
+        [
+            await _generate_data_plane_hypervisors_plan(
+                target, analysis_result, args, hypervisor_apps
+            )
+        ]
+    )
 
     if args.upgrade_group != HYPERVISORS:
-        plans.extend(_generate_data_plane_remaining_plan(target, non_hypervisors_apps, args.force))
+        plans.extend(
+            _generate_data_plane_principle_remaining_plan(target, non_hypervisors_apps, args.force)
+        )
 
     return plans
 
@@ -598,10 +611,10 @@ async def _generate_data_plane_hypervisors_plan(
     return hypervisor_plan
 
 
-def _generate_data_plane_remaining_plan(
+def _generate_data_plane_principle_remaining_plan(
     target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
 ) -> list[UpgradePlan]:
-    """Generate upgrade plan for principals and subordinates data-plane apps.
+    """Generate upgrade plan for principals data-plane apps.
 
     Those plans are done using the all-in-one upgrade strategy.
 
@@ -620,18 +633,34 @@ def _generate_data_plane_remaining_plan(
         target=target,
         force=force,
     )
+    logger.debug("Generation of remaining data plane principals upgrade plan complete")
+    return [principal_upgrade_plan]
 
+
+def _generate_data_plane_subordinate_remaining_plan(
+    target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for subordinates data-plane apps.
+
+    Those plans are done using the all-in-one upgrade strategy.
+
+    :param target:  Target OpenStack release.
+    :type target: OpenStackRelease
+    :param apps:  List of non-hypervisor apps
+    :type apps: list[OpenStackApplication]
+    :param force: Whether the plan generation should be forced
+    :type force: bool
+    :return: A list of data plane (non-hypervisors Principal and Subordinate) upgrade plans.
+    :rtype: list[UpgradePlan]
+    """
     subordinate_upgrade_plan = _create_upgrade_group(
         apps=[app for app in apps if app.is_subordinate],
         description="Data Plane subordinate(s) upgrade plan",
         target=target,
         force=force,
     )
-
-    logger.debug("Generation of remaining data plane upgrade plan complete")
-    data_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
-
-    return data_plane_upgrade_plan
+    logger.debug("Generation of remaining data plane subordinates upgrade plan complete")
+    return [subordinate_upgrade_plan]
 
 
 async def _filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> list[Machine]:

@@ -254,6 +254,18 @@ plan: |
                 Change charm config of 'mysql-innodb-cluster' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state
                 Verify that the workload of 'mysql-innodb-cluster' has been upgraded on units: mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2
+        Data Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ceilometer-agent' to 'victoria'
+                Refresh 'ceilometer-agent' to the latest revision of 'ussuri/stable'
+                Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'cinder-lvm-fast' to 'victoria'
+                Upgrade 'cinder-lvm-fast' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'cinder-lvm-fast2' to 'victoria'
+                Upgrade 'cinder-lvm-fast2' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'cinder-lvm-slow' to 'victoria'
+                Upgrade 'cinder-lvm-slow' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'cinder-volume-mysql-router' to 'victoria'
+                Refresh 'cinder-volume-mysql-router' to the latest revision of '8.0/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [cinder-volume/0, cinder-volume/2, cinder-volume/3, cinder-volume/9, nova-compute-kvm/0, nova-compute-kvm/2, nova-compute-kvm/3, nova-compute-kvm/9] in 'zone2' to 'victoria'
                 Upgrade software packages of 'cinder-volume' from the current APT repositories
@@ -479,18 +491,6 @@ plan: |
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ceilometer-agent' to 'victoria'
-                Refresh 'ceilometer-agent' to the latest revision of 'ussuri/stable'
-                Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'cinder-lvm-fast' to 'victoria'
-                Upgrade 'cinder-lvm-fast' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'cinder-lvm-fast2' to 'victoria'
-                Upgrade 'cinder-lvm-fast2' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'cinder-lvm-slow' to 'victoria'
-                Upgrade 'cinder-lvm-slow' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'cinder-volume-mysql-router' to 'victoria'
-                Refresh 'cinder-volume-mysql-router' to the latest revision of '8.0/stable'
         Ensure that the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version
 
 

@@ -171,6 +171,9 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
+        Data Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -199,9 +202,6 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
@@ -328,6 +328,9 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
+        Data Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -356,9 +359,6 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
@@ -1308,13 +1308,18 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
-    "cou.steps.plan._generate_data_plane_remaining_plan",
+    "cou.steps.plan._generate_data_plane_subordinate_remaining_plan",
+    return_value=MagicMock(),
+)
+@patch(
+    "cou.steps.plan._generate_data_plane_principle_remaining_plan",
     return_value=MagicMock(),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_None(
     mock_post_upgrade_steps,
-    mock_ceph_osd_subordinates,
+    mock_principle_remaining_plan,
+    mock_subordinate_remaining_plan,
     mock_generate_data_plane_hypervisors_plan,
     mock_separate_hypervisors_apps,
     mock_control_plane,
@@ -1335,7 +1340,8 @@ async def test_generate_plan_upgrade_group_None(
     mock_separate_hypervisors_apps.assert_called_once()
 
     mock_generate_data_plane_hypervisors_plan.assert_called_once()
-    mock_ceph_osd_subordinates.assert_called_once()
+    mock_principle_remaining_plan.assert_called_once()
+    mock_subordinate_remaining_plan.assert_called_once()
     mock_post_upgrade_steps.assert_called_once()
 
 
@@ -1350,13 +1356,18 @@ async def test_generate_plan_upgrade_group_None(
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
-    "cou.steps.plan._generate_data_plane_remaining_plan",
+    "cou.steps.plan._generate_data_plane_subordinate_remaining_plan",
+    return_value=MagicMock(),
+)
+@patch(
+    "cou.steps.plan._generate_data_plane_principle_remaining_plan",
     return_value=MagicMock(),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_control_plane(
     mock_post_upgrade_steps,
-    mock_ceph_osd_subordinates,
+    mock_principle_remaining_plan,
+    mock_subordinate_remaining_plan,
     mock_generate_data_plane_hypervisors_plan,
     mock_separate_hypervisors_apps,
     mock_control_plane,
@@ -1377,7 +1388,8 @@ async def test_generate_plan_upgrade_group_control_plane(
 
     mock_separate_hypervisors_apps.assert_not_called()
     mock_generate_data_plane_hypervisors_plan.assert_not_called()
-    mock_ceph_osd_subordinates.assert_not_called()
+    mock_principle_remaining_plan.assert_not_called()
+    mock_subordinate_remaining_plan.assert_not_called()
     mock_post_upgrade_steps.assert_called_once()
 
 
@@ -1392,13 +1404,18 @@ async def test_generate_plan_upgrade_group_control_plane(
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
 @patch(
-    "cou.steps.plan._generate_data_plane_remaining_plan",
+    "cou.steps.plan._generate_data_plane_subordinate_remaining_plan",
+    return_value=MagicMock(),
+)
+@patch(
+    "cou.steps.plan._generate_data_plane_principle_remaining_plan",
     return_value=MagicMock(),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_data_plane(
     mock_post_upgrade_steps,
-    mock_ceph_osd_subordinates,
+    mock_principle_remaining_plan,
+    mock_subordinate_remaining_plan,
     mock_generate_data_plane_hypervisors_plan,
     mock_separate_hypervisors_apps,
     mock_control_plane,
@@ -1419,7 +1436,8 @@ async def test_generate_plan_upgrade_group_data_plane(
     mock_separate_hypervisors_apps.assert_called_once()
 
     mock_generate_data_plane_hypervisors_plan.assert_called_once()
-    mock_ceph_osd_subordinates.assert_called_once()
+    mock_principle_remaining_plan.assert_called_once()
+    mock_subordinate_remaining_plan.assert_called_once()
     mock_post_upgrade_steps.assert_called_once()
 
 
@@ -1430,11 +1448,19 @@ async def test_generate_plan_upgrade_group_data_plane(
 @patch("cou.steps.plan._generate_control_plane_plan")
 @patch("cou.steps.plan._separate_hypervisors_apps", return_value=(MagicMock(), MagicMock()))
 @patch("cou.steps.plan._generate_data_plane_hypervisors_plan", return_value=UpgradePlan("foo"))
-@patch("cou.steps.plan._generate_data_plane_remaining_plan")
+@patch(
+    "cou.steps.plan._generate_data_plane_subordinate_remaining_plan",
+    return_value=MagicMock(),
+)
+@patch(
+    "cou.steps.plan._generate_data_plane_principle_remaining_plan",
+    return_value=MagicMock(),
+)
 @patch("cou.steps.plan._get_post_upgrade_steps")
 async def test_generate_plan_upgrade_group_hypervisors(
     mock_post_upgrade_steps,
-    mock_ceph_osd_subordinates,
+    mock_principle_remaining_plan,
+    mock_subordinate_remaining_plan,
     mock_generate_data_plane_hypervisors_plan,
     mock_separate_hypervisors_apps,
     mock_control_plane,
@@ -1455,7 +1481,8 @@ async def test_generate_plan_upgrade_group_hypervisors(
     mock_separate_hypervisors_apps.assert_called_once()
 
     mock_generate_data_plane_hypervisors_plan.assert_called_once()
-    mock_ceph_osd_subordinates.assert_not_called()
+    mock_principle_remaining_plan.assert_not_called()
+    mock_subordinate_remaining_plan.assert_not_called()
     mock_post_upgrade_steps.assert_called_once()
 
 
@@ -1632,7 +1659,7 @@ async def test_generate_data_plane_hypervisors_plan_None(
 
 
 @patch("cou.steps.plan._create_upgrade_group")
-def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
+def test_generate_data_plane_principle_remaining_plan(mock_create_upgrade_group):
     target = OpenStackRelease("victoria")
     force = False
 
@@ -1642,7 +1669,7 @@ def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
     ovn_chassis = MagicMock(spec_set=OVNSubordinate)()
     ovn_chassis.is_subordinate = True
 
-    cou_plan._generate_data_plane_remaining_plan(target, [ceph_osd, ovn_chassis], force)
+    cou_plan._generate_data_plane_principle_remaining_plan(target, [ceph_osd, ovn_chassis], force)
     expected_calls = [
         call(
             apps=[ceph_osd],
@@ -1650,6 +1677,25 @@ def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
             target=target,
             force=force,
         ),
+    ]
+    mock_create_upgrade_group.assert_has_calls(expected_calls)
+
+
+@patch("cou.steps.plan._create_upgrade_group")
+def test_generate_data_plane_subordinate_remaining_plan(mock_create_upgrade_group):
+    target = OpenStackRelease("victoria")
+    force = False
+
+    ceph_osd = MagicMock(spec_set=CephOsd)()
+    ceph_osd.is_subordinate = False
+
+    ovn_chassis = MagicMock(spec_set=OVNSubordinate)()
+    ovn_chassis.is_subordinate = True
+
+    cou_plan._generate_data_plane_subordinate_remaining_plan(
+        target, [ceph_osd, ovn_chassis], force
+    )
+    expected_calls = [
         call(
             apps=[ovn_chassis],
             description="Data Plane subordinate(s) upgrade plan",

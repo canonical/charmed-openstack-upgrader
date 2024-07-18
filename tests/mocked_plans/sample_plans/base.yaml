@@ -17,6 +17,9 @@ plan: |
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model 'base' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
+        Data Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0] in 'az-0' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -45,9 +48,6 @@ plan: |
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
 
 applications:
   keystone:

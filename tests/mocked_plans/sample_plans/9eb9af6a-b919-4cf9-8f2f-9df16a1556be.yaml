@@ -311,6 +311,11 @@ plan: |
                 Refresh 'vault' to the latest revision of '1.7/stable'
                 Wait for up to 300s for app 'vault' to reach the idle state
                 Verify that the workload of 'vault' has been upgraded on units: vault/0, vault/1, vault/2
+        Data Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ceilometer-agent' to 'victoria'
+                Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                WARNING: Changing 'ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0, nova-compute/2, nova-compute/3] in 'az1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -434,11 +439,6 @@ plan: |
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2, ceph-osd/3, ceph-osd/4, ceph-osd/5, ceph-osd/6, ceph-osd/7, ceph-osd/8
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ceilometer-agent' to 'victoria'
-                Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                WARNING: Changing 'ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
         Ensure that the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version
 
 applications:
