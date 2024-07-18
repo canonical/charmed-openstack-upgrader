@@ -470,6 +470,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 3.8.2
     units:
@@ -540,6 +541,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 15.2.16
     units:
@@ -666,6 +668,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 17.0.1
     units:
@@ -770,6 +773,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 10.0.0
     units:
@@ -871,6 +875,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 10.1.0
     units:
@@ -998,6 +1003,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 14.1.0
     units:
@@ -1100,6 +1106,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 15.2.16
     units:
@@ -1221,6 +1228,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 16.4.2
     units:
@@ -1325,6 +1333,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 10.0.2
     units:
@@ -1395,6 +1404,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 9.16.1
     units:
@@ -1500,6 +1510,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 20.2.0
     units:
@@ -1601,6 +1612,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 4.3.4
     units:
@@ -1725,6 +1737,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 14.2.0
     units:
@@ -1849,6 +1862,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 16.4.2
     units:
@@ -1945,6 +1959,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 22.03.2
     units:
@@ -2037,6 +2052,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 3.0.1
     units:
@@ -2161,6 +2177,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 21.2.4
     units:
@@ -2285,6 +2302,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 18.3.5
     units:
@@ -2389,6 +2407,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 6.2.2
     units:
@@ -2462,6 +2481,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - barbican
     workload_version: 3.0.1
@@ -2521,6 +2541,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - ceph-mon
     workload_version: ''
@@ -2571,6 +2592,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - cinder
     workload_version: 16.4.2
@@ -2634,6 +2656,7 @@ applications:
         type: string
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: ''
     units:
@@ -2664,6 +2687,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - heat
     - nrpe
@@ -2721,6 +2745,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - nrpe
     - placement
@@ -2778,6 +2803,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - nrpe
     - openstack-dashboard
@@ -2838,6 +2864,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - ceilometer
     - nrpe
@@ -2892,6 +2919,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - barbican
     - nrpe
@@ -2952,6 +2980,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - openstack-loadbalancer
     workload_version: ''
@@ -2999,6 +3028,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - nrpe
     - octavia
@@ -3059,6 +3089,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - nrpe
     - vault
@@ -3119,6 +3150,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - nova-cloud-controller
     - nrpe
@@ -3176,6 +3208,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - designate
     - nrpe
@@ -3233,6 +3266,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - gnocchi
     - nrpe
@@ -3290,6 +3324,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - aodh
     - nrpe
@@ -3347,6 +3382,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - ceph-radosgw
     - nrpe
@@ -3401,6 +3437,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - keystone
     - nrpe
@@ -3461,6 +3498,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - glance
     - nrpe
@@ -3518,6 +3556,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - cinder
     - nrpe
@@ -3578,6 +3617,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - neutron-api
     - nrpe
@@ -3638,6 +3678,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - keystone
     workload_version: 17.0.1
@@ -3725,6 +3766,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 8.0.30
     units:
@@ -3817,6 +3859,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - nova-cloud-controller
     workload_version: 8.0.30
@@ -3901,6 +3944,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - heat
     workload_version: 8.0.30
@@ -3985,6 +4029,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - designate
     workload_version: 8.0.30
@@ -4069,6 +4114,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - placement
     workload_version: 8.0.30
@@ -4153,6 +4199,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - vault
     workload_version: 8.0.30
@@ -4240,6 +4287,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - openstack-dashboard
     workload_version: 8.0.31
@@ -4327,6 +4375,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - glance
     workload_version: 8.0.30
@@ -4411,6 +4460,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - keystone
     workload_version: 8.0.30
@@ -4498,6 +4548,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - neutron-api
     workload_version: 8.0.30
@@ -4585,6 +4636,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - aodh
     workload_version: 8.0.30
@@ -4669,6 +4721,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - cinder
     workload_version: 8.0.30
@@ -4756,6 +4809,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - gnocchi
     workload_version: 8.0.35
@@ -4840,6 +4894,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - octavia
     workload_version: 8.0.30
@@ -4927,6 +4982,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - barbican
     workload_version: 8.0.30
@@ -4986,6 +5042,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - neutron-api
     workload_version: 16.4.2
@@ -5045,6 +5102,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - openstack-dashboard
     workload_version: 5.0.0
@@ -5104,6 +5162,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - glance-simplestreams-sync
     workload_version: 0.9.12
@@ -5141,6 +5200,7 @@ applications:
         value: true
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - octavia
     workload_version: 22.03.2
@@ -5200,6 +5260,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 1.7.9
     units:
@@ -5306,6 +5367,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 21.2.4
     units:
@@ -5624,6 +5686,7 @@ applications:
         value: distro
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to: []
     workload_version: 15.2.16
     units:
@@ -5898,6 +5961,7 @@ applications:
     config: {}
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - nova-compute
     workload_version: 14.1.0
@@ -6139,6 +6203,7 @@ applications:
         value: true
     origin: ch
     series: focal
+    subordinate_units: []
     subordinate_to:
     - nova-compute
     workload_version: 22.03.2

@@ -115,6 +115,7 @@ class OpenStackApplication(Application):
                 "origin": self.origin,
                 "series": self.series,
                 "subordinate_to": self.subordinate_to,
+                "subordinate_units": self.subordinate_units,
                 "workload_version": self.workload_version,
                 "units": {
                     unit.name: {
