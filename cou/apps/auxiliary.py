@@ -179,6 +179,11 @@ class AuxiliaryApplication(OpenStackApplication):
     ) -> list[PreUpgradeStep]:
         """Get the steps for run deferred hook and restart services for before upgrade.
 
+        This step will run the `run-deferred-hooks` action to clear any
+        potential event and wait until the app is ready before performing
+        upgrade. If there are no pending events, this step should be a no-op,
+        so it's safe to run anyways.
+
         :param units: Units to generate upgrade plan
         :type units: Optional[list[Unit]]
         :return: Steps for run deferred hooks and restart service
@@ -219,6 +224,11 @@ class AuxiliaryApplication(OpenStackApplication):
         self, units: Optional[list[Unit]]
     ) -> list[PostUpgradeStep]:
         """Get the step for run deferred hook and restart services for after upgrade.
+
+        This step will wait for the app to complete the upgrade step and then
+        run the `run-deferred-hooks` action to restart the service. If there
+        are no pending events, this step should be a no-op, so it's safe to run
+        anyways.
 
         :param units: Units to generate upgrade plan
         :type units: Optional[list[Unit]]
