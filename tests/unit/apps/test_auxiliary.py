@@ -389,13 +389,58 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
         for unit in app.units.values()
     )
 
+    run_deferred_hooks_and_restart_pre_upgrades = PreUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to clear any leftover events"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_pre_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+    run_deferred_hooks_and_restart_pre_wait_step = PreUpgradeStep(
+        description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_active_idle(2400, apps=[app.name]),
+    )
+
+    run_deferred_hooks_and_restart_post_wait_step = PostUpgradeStep(
+        description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_active_idle(2400, apps=[app.name]),
+    )
+    run_deferred_hooks_and_restart_post_upgrades = PostUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to restart the service after upgrade"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_post_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
-        *tuple(app.get_run_deferred_hooks_and_restart_pre_upgrade_step(app.units.values())),
+        run_deferred_hooks_and_restart_pre_upgrades,
+        run_deferred_hooks_and_restart_pre_wait_step,
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -404,7 +449,8 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
-        *tuple(app.get_run_deferred_hooks_and_restart_post_upgrade_step(app.units.values())),
+        run_deferred_hooks_and_restart_post_wait_step,
+        run_deferred_hooks_and_restart_post_upgrades,
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
