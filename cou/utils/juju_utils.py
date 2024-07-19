@@ -198,15 +198,6 @@ class Application:
         """
         return self.origin == "cs"
 
-    def get_units_to_run_action(self) -> list[Unit | SubordinateUnit]:
-        """Get the unit or subordinate units in the application to run action.
-
-        :return: The unit or subordinate units
-        :rtype: List of Unit or SubordinateUnit
-        """
-        units = self.subordinate_units if self.is_subordinate else self.units.values()
-        return units  # type: ignore[return-value]
-
 
 class Model:
     """COU model object.

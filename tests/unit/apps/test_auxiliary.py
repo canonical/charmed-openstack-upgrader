@@ -395,7 +395,7 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
-        *tuple(app.get_run_deferred_hooks_and_restart_pre_upgrade_step()),
+        *tuple(app.get_run_deferred_hooks_and_restart_pre_upgrade_step(app.units.values())),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -404,7 +404,7 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
-        *tuple(app.get_run_deferred_hooks_and_restart_post_upgrade_step()),
+        *tuple(app.get_run_deferred_hooks_and_restart_post_upgrade_step(app.units.values())),
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,

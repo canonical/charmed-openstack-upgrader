@@ -174,17 +174,20 @@ class AuxiliaryApplication(OpenStackApplication):
             o7k_release <= target for o7k_release in compatible_o7k_releases
         )
 
-    def get_run_deferred_hooks_and_restart_pre_upgrade_step(self) -> list[PreUpgradeStep]:
+    def get_run_deferred_hooks_and_restart_pre_upgrade_step(
+        self, units: Optional[list[Unit]]
+    ) -> list[PreUpgradeStep]:
         """Get the steps for run deferred hook and restart services for before upgrade.
 
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
         :return: Steps for run deferred hooks and restart service
         :rtype: List of PreUpgradeStep
         """
-        units = self.get_units_to_run_action()
         run_hook_step = PreUpgradeStep(
             description=(
-                "Execute run-deferred-hooks for all units to clear any leftover events:"
-                f" {', '.join([unit.name for unit in units])}"
+                f"Execute run-deferred-hooks for all '{self.name}' units "
+                "to clear any leftover events"
             ),
             parallel=False,
         )
@@ -196,7 +199,7 @@ class AuxiliaryApplication(OpenStackApplication):
                         unit.name, "run-deferred-hooks", raise_on_failure=True
                     ),
                 )
-                for unit in units
+                for unit in units or self.units.values()
             ]
         )
         wait_step = PreUpgradeStep(
@@ -212,13 +215,16 @@ class AuxiliaryApplication(OpenStackApplication):
             wait_step,
         ]
 
-    def get_run_deferred_hooks_and_restart_post_upgrade_step(self) -> list[PostUpgradeStep]:
+    def get_run_deferred_hooks_and_restart_post_upgrade_step(
+        self, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
         """Get the step for run deferred hook and restart services for after upgrade.
 
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
         :return: Step for run deferred hooks and restart service
         :rtype: PostUpgradeStep
         """
-        units = self.get_units_to_run_action()
         wait_step = PostUpgradeStep(
             description=(
                 f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
@@ -229,8 +235,8 @@ class AuxiliaryApplication(OpenStackApplication):
         )
         run_hook_step = PostUpgradeStep(
             description=(
-                "Execute run-deferred-hooks for all units to restart the service after upgrade:"
-                f" {', '.join([unit.name for unit in units])}"
+                f"Execute run-deferred-hooks for all '{self.name}' units "
+                "to restart the service after upgrade"
             ),
             parallel=False,
         )
@@ -242,7 +248,7 @@ class AuxiliaryApplication(OpenStackApplication):
                         unit.name, "run-deferred-hooks", raise_on_failure=True
                     ),
                 )
-                for unit in units
+                for unit in units or self.units.values()
             ]
         )
         return [
@@ -278,7 +284,7 @@ class RabbitMQServer(AuxiliaryApplication):
         """
         steps = super().pre_upgrade_steps(target, units)
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            steps.extend(self.get_run_deferred_hooks_and_restart_pre_upgrade_step())
+            steps.extend(self.get_run_deferred_hooks_and_restart_pre_upgrade_step(units))
         return steps
 
     def post_upgrade_steps(
@@ -297,7 +303,7 @@ class RabbitMQServer(AuxiliaryApplication):
         """
         steps = []
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            steps.extend(self.get_run_deferred_hooks_and_restart_post_upgrade_step())
+            steps.extend(self.get_run_deferred_hooks_and_restart_post_upgrade_step(units))
         steps.extend(super().post_upgrade_steps(target, units))
         return steps
 
