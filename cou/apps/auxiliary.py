@@ -21,7 +21,12 @@ from packaging.version import Version
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
-from cou.steps import ApplicationUpgradePlan, PostUpgradeStep, PreUpgradeStep
+from cou.steps import (
+    ApplicationUpgradePlan,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UnitUpgradeStep,
+)
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import Unit
 from cou.utils.openstack import (
@@ -168,6 +173,82 @@ class AuxiliaryApplication(OpenStackApplication):
         return bool(self.can_upgrade_to) and any(
             o7k_release <= target for o7k_release in compatible_o7k_releases
         )
+
+    def get_run_deferred_hooks_and_restart_pre_upgrade_step(self) -> list[PreUpgradeStep]:
+        """Get the steps for run deferred hook and restart services for before upgrade.
+
+        :return: Steps for run deferred hooks and restart service
+        :rtype: List of PreUpgradeStep
+        """
+        units = self.get_units_to_run_action()
+        run_hook_step = PreUpgradeStep(
+            description=(
+                "Execute run-deferred-hooks for all units to clear any leftover events:"
+                f" {', '.join([unit.name for unit in units])}"
+            ),
+            parallel=False,
+        )
+        run_hook_step.add_steps(
+            [
+                UnitUpgradeStep(
+                    description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
+                )
+                for unit in units
+            ]
+        )
+        wait_step = PreUpgradeStep(
+            description=(
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
+                " to reach the idle state"
+            ),
+            parallel=False,
+            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
+        )
+        return [
+            run_hook_step,
+            wait_step,
+        ]
+
+    def get_run_deferred_hooks_and_restart_post_upgrade_step(self) -> list[PostUpgradeStep]:
+        """Get the step for run deferred hook and restart services for after upgrade.
+
+        :return: Step for run deferred hooks and restart service
+        :rtype: PostUpgradeStep
+        """
+        units = self.get_units_to_run_action()
+        wait_step = PostUpgradeStep(
+            description=(
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
+                " to reach the idle state"
+            ),
+            parallel=False,
+            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
+        )
+        run_hook_step = PostUpgradeStep(
+            description=(
+                "Execute run-deferred-hooks for all units to restart the service after upgrade:"
+                f" {', '.join([unit.name for unit in units])}"
+            ),
+            parallel=False,
+        )
+        run_hook_step.add_steps(
+            [
+                UnitUpgradeStep(
+                    description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
+                )
+                for unit in units
+            ]
+        )
+        return [
+            wait_step,
+            run_hook_step,
+        ]
 
 
 @AppFactory.register_application(["rabbitmq-server"])
