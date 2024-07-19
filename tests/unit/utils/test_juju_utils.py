@@ -291,7 +291,7 @@ async def test_coumodel_get_unit(mocked_model):
     unit_name = "test-unit"
     model = juju_utils.Model("test-model")
 
-    unit = await model._get_unit(unit_name)
+    unit = await model.get_unit(unit_name)
 
     mocked_model.units.get.assert_called_once_with(unit_name)
     assert unit == mocked_model.units.get.return_value
@@ -304,7 +304,7 @@ async def test_coumodel_get_unit_failure(mocked_model):
     mocked_model.units.get.return_value = None
 
     with pytest.raises(UnitNotFound):
-        await model._get_unit("test-unit")
+        await model.get_unit("test-unit")
 
 
 @pytest.mark.asyncio
@@ -608,14 +608,54 @@ async def test_coumodel_upgrade_charm(mocked_model):
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils.Model._get_supported_apps")
-async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_model):
-    """Test Model wait for related apps to be active idle."""
+async def test_coumodel_wait_for_active_idle(mocked_model):
     timeout = 60
+    model = juju_utils.Model("test-model")
+    model.wait_for_idle = AsyncMock()
+    await model.wait_for_active_idle(timeout=timeout)
+    model.wait_for_idle.assert_awaited_once_with(
+        timeout=timeout,
+        status="active",
+        idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
+        apps=None,
+        raise_on_blocked=False,
+        raise_on_error=True,
+    )
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.Model._get_supported_apps")
+@pytest.mark.parametrize(
+    "case, status,timeout,raise_on_blocked,raise_on_error",
+    [
+        # status
+        ("active status", "active", 60, False, True),
+        ("blocked status", "blocked", 60, False, True),
+        ("error status", "error", 60, False, True),
+        ("raise_on_blocked", "active", 60, True, True),
+        ("raise_on_error", "active", 60, False, False),
+        ("timeout", "active", 120, False, True),
+    ],
+)
+async def test_coumodel_wait_for_idle(
+    mock_get_supported_apps,
+    case,
+    status,
+    timeout,
+    raise_on_blocked,
+    raise_on_error,
+    mocked_model,
+):
+    """Test Model wait for related apps to be active idle."""
     model = juju_utils.Model("test-model")
     mock_get_supported_apps.return_value = ["app1", "app2"]
 
-    await model.wait_for_active_idle(timeout)
+    await model.wait_for_idle(
+        timeout=timeout,
+        status=status,
+        raise_on_error=raise_on_error,
+        raise_on_blocked=raise_on_blocked,
+    )
 
     mocked_model.wait_for_idle.assert_has_awaits(
         [
@@ -623,15 +663,17 @@ async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_mod
                 apps=["app1"],
                 timeout=timeout,
                 idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-                raise_on_blocked=False,
-                status="active",
+                raise_on_blocked=raise_on_blocked,
+                raise_on_error=raise_on_error,
+                status=status,
             ),
             call(
                 apps=["app2"],
                 timeout=timeout,
                 idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-                raise_on_blocked=False,
-                status="active",
+                raise_on_blocked=raise_on_blocked,
+                raise_on_error=raise_on_error,
+                status=status,
             ),
         ]
     )
@@ -640,18 +682,19 @@ async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_mod
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
-async def test_coumodel_wait_for_active_idle_apps(mock_get_supported_apps, mocked_model):
+async def test_coumodel_wait_for_idle_apps(mock_get_supported_apps, mocked_model):
     """Test Model wait for specific apps to be active idle."""
     timeout = 60
     model = juju_utils.Model("test-model")
 
-    await model.wait_for_active_idle(timeout, apps=["app1"])
+    await model.wait_for_idle(timeout, apps=["app1"])
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
         apps=["app1"],
         timeout=timeout,
         idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
         raise_on_blocked=False,
+        raise_on_error=True,
         status="active",
     )
     mock_get_supported_apps.assert_not_awaited()
@@ -659,7 +702,7 @@ async def test_coumodel_wait_for_active_idle_apps(mock_get_supported_apps, mocke
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
-async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mocked_model):
+async def test_coumodel_wait_for_idle_timeout(mock_get_supported_apps, mocked_model):
     """Test Model wait for model to be active idle reach timeout."""
     timeout = 60
     exp_apps = ["app1", "app2"]
@@ -667,7 +710,7 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
     model = juju_utils.Model(None)
 
     with pytest.raises(WaitForApplicationsTimeout):
-        await model.wait_for_active_idle(timeout, apps=exp_apps)
+        await model.wait_for_idle(timeout, apps=exp_apps)
 
     mocked_model.wait_for_idle.assert_has_awaits(
         [
@@ -676,6 +719,7 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
                 timeout=timeout,
                 idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
                 raise_on_blocked=False,
+                raise_on_error=True,
                 status="active",
             )
             for app in exp_apps
@@ -920,3 +964,73 @@ async def test_dispatch_update_status_hook(mocked_model):
     mocked_unit.run.assert_awaited_once_with(
         "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch", timeout=None, block=True
     )
+
+
+@pytest.mark.asyncio
+async def test_coumodel_resolve_all(mocked_model):
+    model = juju_utils.Model("test-model")
+
+    mock_active_juju_app = AsyncMock()
+    mock_active_juju_app.status = "active"
+
+    mock_error_juju_app = AsyncMock()
+    mock_error_juju_app.status = "error"
+
+    mocked_model.applications = {"app1": mock_active_juju_app, "app2": mock_error_juju_app}
+
+    mock_active_juju_unit = AsyncMock()
+    mock_active_juju_unit.workload_status = "active"
+    mock_error_juju_unit = AsyncMock()
+    mock_error_juju_unit.workload_status = "error"
+
+    mock_error_juju_app.units = [mock_active_juju_unit, mock_error_juju_unit]
+
+    await model.resolve_all()
+
+    mock_error_juju_unit.resolved.assert_awaited_once_with(retry=True)
+
+
+@pytest.mark.asyncio
+async def test_coumodel_get_application_status(mocked_model):
+    model = juju_utils.Model("test-model")
+    test_apps = {
+        "app1": MagicMock(),
+        "app2": MagicMock(),
+        "app3": MagicMock(),
+    }
+    test_apps["app1"].charm_name = "app1_charm_name"
+    mocked_model.applications = test_apps
+
+    data = {
+        "app1": "app-status-1",
+        "app2": "app-status-2",
+        "app3": "app-status-3",
+    }
+    mocked_model.get_status.return_value.applications = data
+    status = await model.get_application_status(charm_name="app1_charm_name")
+    assert status == "app-status-1"
+    mocked_model.get_status.assert_awaited_once_with(filters=["app1"])
+
+
+@pytest.mark.asyncio
+async def test_coumodel_get_application_status_failed(mocked_model):
+    model = juju_utils.Model("test-model")
+    test_apps = {
+        "app1": MagicMock(),
+        "app2": MagicMock(),
+        "app3": MagicMock(),
+    }
+    test_apps["app1"].charm_name = "wrong_app1_charm_name"
+    mocked_model.applications = test_apps
+    mocked_model.name = "mocked-model"
+
+    data = {
+        "app1": "app-status-1",
+        "app2": "app-status-2",
+        "app3": "app-status-3",
+    }
+    mocked_model.get_status.return_value.applications = data
+    with pytest.raises(
+        ApplicationNotFound, match="Cannot find 'app1_charm_name' in model 'mocked-model'."
+    ):
+        await model.get_application_status(charm_name="app1_charm_name")
