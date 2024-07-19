@@ -21,7 +21,12 @@ from packaging.version import Version
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
-from cou.steps import ApplicationUpgradePlan, PostUpgradeStep, PreUpgradeStep
+from cou.steps import (
+    ApplicationUpgradePlan,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UnitUpgradeStep,
+)
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import Unit
 from cou.utils.openstack import (
@@ -169,6 +174,98 @@ class AuxiliaryApplication(OpenStackApplication):
             o7k_release <= target for o7k_release in compatible_o7k_releases
         )
 
+    def get_run_deferred_hooks_and_restart_pre_upgrade_step(
+        self, units: Optional[list[Unit]]
+    ) -> list[PreUpgradeStep]:
+        """Get the steps for run deferred hook and restart services for before upgrade.
+
+        This step will run the `run-deferred-hooks` action to clear any
+        potential event and wait until the app is ready before performing
+        upgrade. If there are no pending events, this step should be a no-op,
+        so it's safe to run anyways.
+
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: Steps for run deferred hooks and restart service
+        :rtype: List of PreUpgradeStep
+        """
+        run_hook_step = PreUpgradeStep(
+            description=(
+                f"Execute run-deferred-hooks for all '{self.name}' units "
+                "to clear any leftover events"
+            ),
+            parallel=False,
+        )
+        run_hook_step.add_steps(
+            [
+                UnitUpgradeStep(
+                    description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
+                )
+                for unit in units or self.units.values()
+            ]
+        )
+        wait_step = PreUpgradeStep(
+            description=(
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
+                " to reach the idle state"
+            ),
+            parallel=False,
+            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
+        )
+        return [
+            run_hook_step,
+            wait_step,
+        ]
+
+    def get_run_deferred_hooks_and_restart_post_upgrade_step(
+        self, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
+        """Get the step for run deferred hook and restart services for after upgrade.
+
+        This step will wait for the app to complete the upgrade step and then
+        run the `run-deferred-hooks` action to restart the service. If there
+        are no pending events, this step should be a no-op, so it's safe to run
+        anyways.
+
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: Step for run deferred hooks and restart service
+        :rtype: PostUpgradeStep
+        """
+        wait_step = PostUpgradeStep(
+            description=(
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
+                " to reach the idle state"
+            ),
+            parallel=False,
+            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
+        )
+        run_hook_step = PostUpgradeStep(
+            description=(
+                f"Execute run-deferred-hooks for all '{self.name}' units "
+                "to restart the service after upgrade"
+            ),
+            parallel=False,
+        )
+        run_hook_step.add_steps(
+            [
+                UnitUpgradeStep(
+                    description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
+                )
+                for unit in units or self.units.values()
+            ]
+        )
+        return [
+            wait_step,
+            run_hook_step,
+        ]
+
 
 @AppFactory.register_application(["rabbitmq-server"])
 class RabbitMQServer(AuxiliaryApplication):
@@ -196,35 +293,8 @@ class RabbitMQServer(AuxiliaryApplication):
         :rtype: list[PreUpgradeStep]
         """
         steps = super().pre_upgrade_steps(target, units)
-        # Since auto restart is disabled, we don't know the if the service
-        # has pending events or not, so we want to run `run-deferred-hooks`
-        # action to clear the events before performing upgrade. If there
-        # are no pending events, this step should be a no-op, so it's safe
-        # to run anyway
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            # Run any deferred events and restart the service. See
-            # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
-            units_to_run_action = self.units.values() if units is None else units
-            steps += [
-                PreUpgradeStep(
-                    description="Auto restarts is disabled, will"
-                    f" execute run-deferred-hooks for unit: '{unit.name}'",
-                    coro=self.model.run_action(
-                        unit.name, "run-deferred-hooks", raise_on_failure=True
-                    ),
-                )
-                for unit in units_to_run_action
-            ]
-            steps += [
-                PreUpgradeStep(
-                    description=(
-                        f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
-                        " to reach the idle state"
-                    ),
-                    parallel=False,
-                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
-                )
-            ]
+            steps.extend(self.get_run_deferred_hooks_and_restart_pre_upgrade_step(units))
         return steps
 
     def post_upgrade_steps(
@@ -242,34 +312,9 @@ class RabbitMQServer(AuxiliaryApplication):
         :rtype: list[PostUpgradeStep]
         """
         steps = []
-        # Since the auto restart is disabled, we need to run the
-        # `run-deferred-hooks` action, and restart the service after the
-        # upgrade.
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            steps += [
-                PostUpgradeStep(
-                    description=(
-                        f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
-                        " to reach the idle state"
-                    ),
-                    parallel=False,
-                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
-                )
-            ]
-            # Run any deferred events and restart the service. See
-            # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
-            units_to_run_action = self.units.values() if units is None else units
-            steps += [
-                PostUpgradeStep(
-                    description="Auto restarts is disabled, will"
-                    f" execute run-deferred-hooks for unit: '{unit.name}'",
-                    coro=self.model.run_action(
-                        unit.name, "run-deferred-hooks", raise_on_failure=True
-                    ),
-                )
-                for unit in units_to_run_action
-            ]
-        steps += super().post_upgrade_steps(target, units)
+            steps.extend(self.get_run_deferred_hooks_and_restart_post_upgrade_step(units))
+        steps.extend(super().post_upgrade_steps(target, units))
         return steps
 
     def _check_auto_restarts(self) -> None:
