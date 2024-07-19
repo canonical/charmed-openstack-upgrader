@@ -157,6 +157,10 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
+        Control Plane subordinate(s) upgrade plan
+            Upgrade plan for 'keystone-ldap' to 'victoria'
+                Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
+                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Control Plane principal(s) upgrade plan
             Upgrade plan for 'keystone' to 'victoria'
                 Upgrade software packages of 'keystone' from the current APT repositories
@@ -167,10 +171,6 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
-        Control Plane subordinate(s) upgrade plan
-            Upgrade plan for 'keystone-ldap' to 'victoria'
-                Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
-                Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'

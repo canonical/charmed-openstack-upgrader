@@ -534,7 +534,11 @@ def _generate_control_plane_plan(
     )
 
     logger.debug("Generation of the control plane upgrade plan complete")
-    control_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
+    # Subordinate charms should be upgraded before principal charms to avoid the
+    # subordinates being on an unsupported platform after principal charms are upgraded.
+    # Check more information:
+    #   https://github.com/canonical/charmed-openstack-upgrader/issues/466#issuecomment-2209991680
+    control_plane_upgrade_plan = [subordinate_upgrade_plan, principal_upgrade_plan]
 
     return control_plane_upgrade_plan
 
