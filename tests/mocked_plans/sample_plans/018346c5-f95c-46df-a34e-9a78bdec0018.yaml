@@ -1,5 +1,6 @@
 plan: |
     Upgrade cloud from 'ussuri' to 'victoria'
+        Check application vault is not sealed
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller

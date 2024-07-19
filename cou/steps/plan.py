@@ -52,6 +52,7 @@ from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
+from cou.steps.vault import check_vault_status
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
 from cou.utils.nova_compute import get_empty_hypervisors
@@ -370,6 +371,11 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
     """
     steps = [
         PreUpgradeStep(
+            description="Check application vault is not sealed",
+            parallel=False,
+            coro=check_vault_status(analysis_result.model),
+        ),
+        PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
             coro=analysis_result.model.wait_for_idle(
@@ -381,7 +387,7 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
                 idle_period=10,
                 raise_on_blocked=True,
             ),
-        )
+        ),
     ]
     steps.extend(_get_backup_steps(analysis_result, args))
     steps.extend(_get_archive_data_steps(analysis_result, args))
