@@ -608,22 +608,6 @@ async def test_coumodel_upgrade_charm(mocked_model):
 
 
 @pytest.mark.asyncio
-async def test_coumodel_wait_for_active_idle(mocked_model):
-    timeout = 60
-    model = juju_utils.Model("test-model")
-    model.wait_for_idle = AsyncMock()
-    await model.wait_for_active_idle(timeout=timeout)
-    model.wait_for_idle.assert_awaited_once_with(
-        timeout=timeout,
-        status="active",
-        idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-        apps=None,
-        raise_on_blocked=False,
-        raise_on_error=True,
-    )
-
-
-@pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
 @pytest.mark.parametrize(
     "case, status,timeout,raise_on_blocked,raise_on_error",
@@ -1018,7 +1002,9 @@ async def test_get_application_names_failed(mocked_model):
     mocked_model.applications = test_apps
     mocked_model.name = "mocked-model"
 
-    with pytest.raises(ApplicationNotFound, match="Cannot find 'app1_charm_name' charm in model 'mocked-model'"):
+    with pytest.raises(
+        ApplicationNotFound, match="Cannot find 'app1_charm_name' charm in model 'mocked-model'"
+    ):
         await model.get_application_names("app1_charm_name")
 
 

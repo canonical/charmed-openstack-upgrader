@@ -690,8 +690,8 @@ class Model:
             apps = await self._get_supported_apps()
 
         @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
-        @wraps(self.wait_for_active_idle)
-        async def _wait_for_active_idle() -> None:
+        @wraps(self.wait_for_idle)
+        async def _wait_for_idle() -> None:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
             model = await self._get_model()
             try:
@@ -723,44 +723,7 @@ class Model:
                 msg = str(error).replace("\n", "\n  ", 1)
                 raise WaitForApplicationsTimeout(msg) from error
 
-        await _wait_for_active_idle()
-
-    async def wait_for_active_idle(
-        self,
-        timeout: int,
-        idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
-        apps: Optional[list[str]] = None,
-        raise_on_blocked: bool = False,
-        raise_on_error: bool = True,
-    ) -> None:
-        """Wait for application(s) to reach active idle state.
-
-        If no applications are provided, this function will wait for all COU-related applications.
-
-        :param timeout: How long (in seconds) to wait for the bundle settles before raising an
-                        WaitForApplicationsTimeout.
-        :type timeout: int
-        :param idle_period: How long (in seconds) statuses of all apps need to be `idle`. This
-                            delay is used to ensure that any pending hooks have a chance to start
-                            to avoid false positives.
-        :type idle_period: int
-        :param apps: Applications to wait, defaults to None
-        :type apps: Optional[list[str]]
-        :param raise_on_blocked: If any unit or app going into "blocked" status immediately raises
-                                 WaitForApplicationsTimeout, defaults to False.
-        :type raise_on_blocked: bool
-        :param raise_on_error: If any unit or app going into "error" status immediately raises
-                                 WaitForApplicationsTimeout, defaults to True.
-        :type raise_on_error: bool
-        """
-        await self.wait_for_idle(
-            timeout=timeout,
-            status="active",
-            idle_period=idle_period,
-            apps=apps,
-            raise_on_blocked=raise_on_blocked,
-            raise_on_error=raise_on_error,
-        )
+        await _wait_for_idle()
 
     async def resolve_all(self) -> None:
         """Resolve all the units in the model if they are in error status."""
@@ -771,7 +734,7 @@ class Model:
                     await unit.resolved(retry=True)
 
     async def get_application_names(self, charm_name: str) -> list[str]:
-        """Get appliation name by charm name.
+        """Get application name by charm name.
 
         :param charm_name: charm name of application
         :type charm_name: str
@@ -781,7 +744,6 @@ class Model:
         """
         app_names = []
         model = await self._get_model()
-        target_app_name: str = ""
         for app_name, app in model.applications.items():
             if app.charm_name == charm_name:
                 app_names.append(app_name)
@@ -792,8 +754,8 @@ class Model:
     async def get_application_status(self, app_name: str) -> ApplicationStatus:
         """Get ApplicationStatus by charm name.
 
-        :param charm_name: charm name of application
-        :type charm_name: str
+        :param app_name: name of application
+        :type app_name: str
         :return: ApplicationStatus object
         :rtype: ApplicationStatus
         :raises ApplicationNotFound: When application is not found in the model.

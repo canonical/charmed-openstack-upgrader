@@ -372,7 +372,7 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
-            coro=analysis_result.model.wait_for_active_idle(
+            coro=analysis_result.model.wait_for_idle(
                 # NOTE (rgildein): We need to DEFAULT_TIMEOUT so it's possible to change if
                 # a network is too slow, this could cause an issue.
                 # We are using max function to ensure timeout is always at least 120 (110 seconds

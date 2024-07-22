@@ -76,7 +76,7 @@ class ModelTest(unittest.TestCase):
 
         # changing configuration and validating it was changed
         zaza.sync_wrapper(self.model.set_application_config)(TESTED_APP, new_config)
-        zaza.sync_wrapper(self.model.wait_for_active_idle)(120, apps=[TESTED_APP])
+        zaza.sync_wrapper(self.model.wait_for_idle)(120, apps=[TESTED_APP])
         config = zaza.sync_wrapper(self.model.get_application_config)(TESTED_APP)
 
         self.assertTrue(config["debug"]["value"])
@@ -90,4 +90,4 @@ class ModelTest(unittest.TestCase):
         # get the current channel, so we will not change it
         channel = status.applications[TESTED_APP].charm_channel
         zaza.sync_wrapper(self.model.upgrade_charm)(TESTED_APP, channel=channel)
-        zaza.sync_wrapper(self.model.wait_for_active_idle)(120, apps=[TESTED_APP])
+        zaza.sync_wrapper(self.model.wait_for_idle)(120, apps=[TESTED_APP])

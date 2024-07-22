@@ -213,7 +213,7 @@ class AuxiliaryApplication(OpenStackApplication):
                 " to reach the idle state"
             ),
             parallel=False,
-            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
+            coro=self.model.wait_for_idle(self.wait_timeout, apps=[self.name]),
         )
         return [
             run_hook_step,
@@ -241,7 +241,7 @@ class AuxiliaryApplication(OpenStackApplication):
                 " to reach the idle state"
             ),
             parallel=False,
-            coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
+            coro=self.model.wait_for_idle(self.wait_timeout, apps=[self.name]),
         )
         run_hook_step = PostUpgradeStep(
             description=(

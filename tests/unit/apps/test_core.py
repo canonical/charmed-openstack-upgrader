@@ -237,7 +237,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -324,7 +324,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -404,7 +404,7 @@ def test_upgrade_plan_channel_on_next_o7k_release(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -486,7 +486,7 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -606,7 +606,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "

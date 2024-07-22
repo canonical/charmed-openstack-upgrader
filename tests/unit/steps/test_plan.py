@@ -59,13 +59,13 @@ def generate_expected_upgrade_plan_principal(app, target, model):
         wait_step = PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         )
     else:
         wait_step = PostUpgradeStep(
             description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         )
 
     upgrade_packages = PreUpgradeStep(
@@ -1063,7 +1063,7 @@ def test_get_pre_upgrade_steps(
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
-            coro=mock_analysis_result.model.wait_for_active_idle(
+            coro=mock_analysis_result.model.wait_for_idle(
                 timeout=120, idle_period=10, raise_on_blocked=True
             ),
         )

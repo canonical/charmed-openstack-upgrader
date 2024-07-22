@@ -353,7 +353,7 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -437,7 +437,7 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
