@@ -991,23 +991,47 @@ async def test_coumodel_resolve_all(mocked_model):
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_application_status(mocked_model):
+async def test_get_application_names(mocked_model):
     model = juju_utils.Model("test-model")
     test_apps = {
         "app1": MagicMock(),
         "app2": MagicMock(),
         "app3": MagicMock(),
     }
-    test_apps["app1"].charm_name = "app1_charm_name"
+    test_apps["app1"].charm_name = "target_charm_name"
+    test_apps["app2"].charm_name = "target_charm_name"
+    test_apps["app3"].charm_name = "not_target_charm_name"
     mocked_model.applications = test_apps
 
+    names = await model.get_application_names("target_charm_name")
+    assert names == ["app1", "app2"]
+
+
+@pytest.mark.asyncio
+async def test_get_application_names_failed(mocked_model):
+    model = juju_utils.Model("test-model")
+    test_apps = {
+        "app1": MagicMock(),
+        "app2": MagicMock(),
+        "app3": MagicMock(),
+    }
+    mocked_model.applications = test_apps
+    mocked_model.name = "mocked-model"
+
+    with pytest.raises(ApplicationNotFound, match="Cannot find 'app1_charm_name' charm in model 'mocked-model'"):
+        await model.get_application_names("app1_charm_name")
+
+
+@pytest.mark.asyncio
+async def test_coumodel_get_application_status(mocked_model):
+    model = juju_utils.Model("test-model")
     data = {
         "app1": "app-status-1",
         "app2": "app-status-2",
         "app3": "app-status-3",
     }
     mocked_model.get_status.return_value.applications = data
-    status = await model.get_application_status(charm_name="app1_charm_name")
+    status = await model.get_application_status(app_name="app1")
     assert status == "app-status-1"
     mocked_model.get_status.assert_awaited_once_with(filters=["app1"])
 
@@ -1015,13 +1039,6 @@ async def test_coumodel_get_application_status(mocked_model):
 @pytest.mark.asyncio
 async def test_coumodel_get_application_status_failed(mocked_model):
     model = juju_utils.Model("test-model")
-    test_apps = {
-        "app1": MagicMock(),
-        "app2": MagicMock(),
-        "app3": MagicMock(),
-    }
-    test_apps["app1"].charm_name = "wrong_app1_charm_name"
-    mocked_model.applications = test_apps
     mocked_model.name = "mocked-model"
 
     data = {
@@ -1031,6 +1048,6 @@ async def test_coumodel_get_application_status_failed(mocked_model):
     }
     mocked_model.get_status.return_value.applications = data
     with pytest.raises(
-        ApplicationNotFound, match="Cannot find 'app1_charm_name' in model 'mocked-model'."
+        ApplicationNotFound, match="Cannot find 'app-not-exists' in model 'mocked-model'."
     ):
-        await model.get_application_status(charm_name="app1_charm_name")
+        await model.get_application_status(app_name="app-not-exists")

@@ -766,13 +766,30 @@ class Model:
         """Resolve all the units in the model if they are in error status."""
         model = await self._get_model()
         for _, juju_app in model.applications.items():
-            if juju_app.status != "error":
-                continue
             for unit in juju_app.units:
                 if unit.workload_status == "error":
                     await unit.resolved(retry=True)
 
-    async def get_application_status(self, charm_name: str) -> ApplicationStatus:
+    async def get_application_names(self, charm_name: str) -> list[str]:
+        """Get appliation name by charm name.
+
+        :param charm_name: charm name of application
+        :type charm_name: str
+        :return: ApplicationStatus object
+        :rtype: ApplicationStatus
+        :raises ApplicationNotFound: When charm is not found in the model.
+        """
+        app_names = []
+        model = await self._get_model()
+        target_app_name: str = ""
+        for app_name, app in model.applications.items():
+            if app.charm_name == charm_name:
+                app_names.append(app_name)
+        if not app_names:
+            raise ApplicationNotFound(f"Cannot find '{charm_name}' charm in model '{self.name}'.")
+        return app_names
+
+    async def get_application_status(self, app_name: str) -> ApplicationStatus:
         """Get ApplicationStatus by charm name.
 
         :param charm_name: charm name of application
@@ -782,14 +799,8 @@ class Model:
         :raises ApplicationNotFound: When application is not found in the model.
         """
         model = await self._get_model()
-        target_app_name: str = ""
-        for app_name, app in model.applications.items():
-            if app.charm_name == charm_name:
-                target_app_name = app_name
-
-        if target_app_name:
-            status = await model.get_status(filters=[target_app_name])
-            for app_name, app in status.applications.items():
-                if app_name == target_app_name:
-                    return app
-        raise ApplicationNotFound(f"Cannot find '{charm_name}' in model '{self.name}'.")
+        status = await model.get_status(filters=[app_name])
+        for name, app in status.applications.items():
+            if name == app_name:
+                return app
+        raise ApplicationNotFound(f"Cannot find '{app_name}' in model '{self.name}'.")
