@@ -1212,6 +1212,135 @@ def test_ovn_principal_upgrade_plan(model):
     assert_steps(upgrade_plan, expected_plan)
 
 
+def test_ovn_principal_upgrade_plan_with_auto_restart_False(model):
+    """Test generating plan for OVNPrincipal with enable_auto_restarts=False."""
+    target = OpenStackRelease("victoria")
+    charm = "ovn-dedicated-chassis"
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    app = OVNPrincipal(
+        name=charm,
+        can_upgrade_to="22.06/stable",
+        charm=charm,
+        channel="22.03/stable",
+        config={
+            "source": {"value": "distro"},
+            "enable-version-pinning": {"value": False},
+            "enable-auto-restarts": {"value": False},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        subordinate_units=[],
+        units={
+            f"{charm}/0": Unit(
+                name=f"{charm}/0",
+                workload_version="22.03",
+                machine=machines["0"],
+            )
+        },
+        workload_version="22.03",
+    )
+
+    expected_plan = ApplicationUpgradePlan(
+        description=f"Upgrade plan for '{app.name}' to '{target}'"
+    )
+
+    run_deferred_hooks_and_restart_pre_upgrades = PreUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to clear any leftover events"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_pre_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+    run_deferred_hooks_and_restart_pre_wait_step = PreUpgradeStep(
+        description=(f"Wait for up to 300s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_active_idle(300, apps=[app.name]),
+    )
+
+    run_deferred_hooks_and_restart_post_wait_step = PostUpgradeStep(
+        description=(f"Wait for up to 300s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_active_idle(300, apps=[app.name]),
+    )
+    run_deferred_hooks_and_restart_post_upgrades = PostUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to restart the service after upgrade"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_post_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+
+    upgrade_packages = PreUpgradeStep(
+        description=f"Upgrade software packages of '{app.name}' from the current APT repositories",
+        parallel=True,
+    )
+    upgrade_packages.add_steps(
+        UnitUpgradeStep(
+            description=f"Upgrade software packages on unit '{unit.name}'",
+            coro=app_utils.upgrade_packages(unit.name, model, None),
+        )
+        for unit in app.units.values()
+    )
+
+    upgrade_steps = [
+        upgrade_packages,
+        PreUpgradeStep(
+            description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
+            parallel=False,
+            coro=model.upgrade_charm(app.name, "22.03/stable"),
+        ),
+        run_deferred_hooks_and_restart_pre_upgrades,
+        run_deferred_hooks_and_restart_pre_wait_step,
+        UpgradeStep(
+            description=f"Change charm config of '{app.name}' "
+            f"'{app.origin_setting}' to 'cloud:focal-{target}'",
+            parallel=False,
+            coro=model.set_application_config(
+                app.name, {f"{app.origin_setting}": f"cloud:focal-{target}"}
+            ),
+        ),
+        run_deferred_hooks_and_restart_post_wait_step,
+        run_deferred_hooks_and_restart_post_upgrades,
+        PostUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_active_idle(300, apps=[app.name]),
+        ),
+        PostUpgradeStep(
+            description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
+            f"{', '.join([unit for unit in app.units.keys()])}",
+            parallel=False,
+            coro=app._verify_workload_upgrade(target, list(app.units.values())),
+        ),
+    ]
+    expected_plan.add_steps(upgrade_steps)
+
+    upgrade_plan = app.generate_upgrade_plan(target, False)
+
+    assert_steps(upgrade_plan, expected_plan)
+
+
 def test_mysql_innodb_cluster_upgrade(model):
     """Test generating plan for MysqlInnodbCluster."""
     target = OpenStackRelease("victoria")

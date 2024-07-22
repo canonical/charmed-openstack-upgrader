@@ -431,6 +431,51 @@ class OVN(AuxiliaryApplication):
 class OVNPrincipal(OVN):
     """OVN principal application class."""
 
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: List of pre upgrade steps.
+        :rtype: list[PreUpgradeStep]
+        """
+        steps = super().pre_upgrade_steps(target, units)
+        if self.config.get("enable-auto-restarts", {}).get("value") is False:
+            steps.extend(self.get_run_deferred_hooks_and_restart_pre_upgrade_step(units))
+        return steps
+
+    def post_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
+        """Post Upgrade steps planning.
+
+        Wait until the application reaches the idle state and then check the target workload.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: List of post upgrade steps.
+        :rtype: list[PostUpgradeStep]
+        """
+        steps = []
+        if self.config.get("enable-auto-restarts", {}).get("value") is False:
+            steps.extend(self.get_run_deferred_hooks_and_restart_post_upgrade_step(units))
+        steps.extend(super().post_upgrade_steps(target, units))
+        return steps
+
+    def _check_auto_restarts(self) -> None:
+        """No-op, skip check auto restarts option.
+
+        This method override the parent class's `_check_auto_restarts()` method
+        because the parent class's will raise an `ApplicationError` if
+        `enable-auto-restarts` is `True`.
+        """
+
     def _check_ovn_support(self) -> None:
         """Check OVN version.
 
