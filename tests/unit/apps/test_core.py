@@ -11,14 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
 
 import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import OpenStackApplication
-from cou.apps.core import Keystone, NovaCompute, Swift
+from cou.apps.core import Keystone, NovaCompute, Swift, resume_nova_compute_unit
 from cou.exceptions import (
+    ActionFailed,
     ApplicationError,
     ApplicationNotSupported,
     HaltUpgradePlanGeneration,
@@ -1144,3 +1145,72 @@ def test_core_wrong_channel(model):
 
     with pytest.raises(ApplicationError, match=exp_msg):
         app.generate_upgrade_plan(target, force=False)
+
+
+@pytest.mark.asyncio
+async def test_resume_nova_compute_success(model):
+    """Verify that the success case resumes without calling workarounds."""
+    model.run_action.return_value = Mock(status="completed")
+    unit = Unit(
+        name="nova-compute/0",
+        machine=generate_cou_machine("0", "az-0"),
+        workload_version="21.2.4",
+        subordinates=[SubordinateUnit(name="ceilometer-agent/0", charm="ceilometer-agent")],
+    )
+
+    await resume_nova_compute_unit(model, unit)
+
+    model.run_action.assert_awaited_once_with("nova-compute/0", "resume", raise_on_failure=False)
+    model.run_on_unit.assert_not_awaited()
+    model.update_status.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resume_nova_compute_unknown_failure(model):
+    """Verify that the unknown failure case bails out."""
+    model.run_action.return_value = Mock(
+        status="failed", safe_data={"message": "it crashed and we don't know why"}
+    )
+    unit = Unit(
+        name="nova-compute/0",
+        machine=generate_cou_machine("0", "az-0"),
+        workload_version="21.2.4",
+        subordinates=[SubordinateUnit(name="ceilometer-agent/0", charm="ceilometer-agent")],
+    )
+
+    with pytest.raises(ActionFailed, match="it crashed and we don't know why"):
+        await resume_nova_compute_unit(model, unit)
+
+    model.run_action.assert_awaited_once_with("nova-compute/0", "resume", raise_on_failure=False)
+    model.run_on_unit.assert_not_awaited()
+    model.update_status.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resume_nova_compute_ceilometer_failure(model):
+    """Verify that the ceilometer failure case performs the workaround."""
+    model.run_action.return_value = Mock(
+        status="failed",
+        safe_data={
+            "message": (
+                "Action resume failed: Couldn't resume: "
+                "ceilometer-agent-compute didn't resume cleanly.; "
+                "Services not running that should be: ceilometer-agent-compute"
+            ),
+        },
+    )
+    unit = Unit(
+        name="nova-compute/0",
+        machine=generate_cou_machine("0", "az-0"),
+        workload_version="21.2.4",
+        subordinates=[SubordinateUnit(name="ceilometer-agent/0", charm="ceilometer-agent")],
+    )
+
+    await resume_nova_compute_unit(model, unit)
+
+    model.run_action.assert_awaited_once_with("nova-compute/0", "resume", raise_on_failure=False)
+    model.run_on_unit.assert_awaited_once_with(
+        "nova-compute/0", "sudo systemctl restart ceilometer-agent-compute"
+    )
+    model.update_status.has_awaits(call("nova-compute/0"), call("ceilometer-agent/0"))
+    assert model.update_status.await_count == 2
