@@ -127,6 +127,9 @@ linkcheck_ignore = [
 # (This list will be appended to linkcheck_anchors_ignore_for_url)
 
 custom_linkcheck_anchors_ignore_for_url = [
+        # Anchors on juju docs are flaky with linkcheck, resulting in these errors:
+        # https://juju.is/docs/juju/manage-controllers#heading--bootstrap-a-controller - Anchor 'heading--bootstrap-a-controller' not found
+        r"https://juju\.is/docs/.*"
     ]
 
 ############################################################
