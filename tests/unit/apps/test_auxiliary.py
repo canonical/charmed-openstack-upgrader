@@ -1711,7 +1711,14 @@ async def test_vault_wait_for_sealed_status(vault_o7k_app):
 async def test_vault_wait_for_sealed_status_failed(vault_o7k_app):
     vault_o7k_app.model.wait_for_idle = AsyncMock()
     vault_o7k_app.model.get_application_status.return_value.status.info = "Unit is ready"
-    with pytest.raises(ApplicationError, match="Vault not in sealed status"):
+    with pytest.raises(
+        ApplicationError,
+        match=(
+            "Application vault not in sealed."
+            " The vault expected to be sealed after upgrading."
+            " Please check application log for more details."
+        ),
+    ):
         await vault_o7k_app._wait_for_sealed_status()
 
 

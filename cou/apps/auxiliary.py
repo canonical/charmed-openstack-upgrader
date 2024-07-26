@@ -566,7 +566,12 @@ class Vault(AuxiliaryApplication):
 
         app_status = await self.model.get_application_status(app_name=self.name)
         if not app_status.status.info == "Unit is sealed":
-            raise ApplicationError("Vault not in sealed status")
+            # It's an exception if vault not in sealed after upgrading.
+            raise ApplicationError(
+                "Application vault not in sealed."
+                " The vault expected to be sealed after upgrading."
+                " Please check application log for more details."
+            )
         logger.debug("Application 'vault' in sealed status")
 
     async def _get_vault_client(self, unit_name: str, cacert_file: Optional[str]) -> hvac.Client:
@@ -599,6 +604,7 @@ class Vault(AuxiliaryApplication):
                 unseal_key = getpass.getpass("Unseal Key (will be hidden):")
                 if unseal_key:
                     client.sys.submit_unseal_key(key=unseal_key)
+                # remove unseal key from memory
                 del unseal_key
 
             # Delete temporary ca file
