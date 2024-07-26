@@ -25,7 +25,7 @@ from typing import Any, Callable, List, Optional
 
 from juju.action import Action
 from juju.application import Application as JujuApplication
-from juju.client._definitions import Base, FullStatus
+from juju.client._definitions import ApplicationStatus, Base, FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
 from juju.errors import JujuAppError, JujuError, JujuUnitError
@@ -330,7 +330,7 @@ class Model:
             name for name, app in model.applications.items() if is_charm_supported(app.charm_name)
         ]
 
-    async def _get_unit(self, name: str) -> JujuUnit:
+    async def get_unit(self, name: str) -> JujuUnit:
         """Get juju.unit.unit from model.
 
         :param name: Name of unit
@@ -528,7 +528,7 @@ class Model:
         :rtype: Action
         """
         action_params = action_params or {}
-        unit = await self._get_unit(unit_name)
+        unit = await self.get_unit(unit_name)
         action = await unit.run_action(action_name, **action_params)
         action_obj = await self._get_waited_action_object(action, raise_on_failure)
         return action_obj
@@ -553,7 +553,7 @@ class Model:
         """
         logger.debug("Running '%s' on '%s'", command, unit_name)
 
-        unit = await self._get_unit(unit_name)
+        unit = await self.get_unit(unit_name)
         action = await unit.run(command, timeout=timeout, block=True)
         results = action.results
         logger.debug("results: %s", results)
@@ -602,7 +602,7 @@ class Model:
         :type scp_opts: str
         :raises: UnitNotFound
         """
-        unit = await self._get_unit(unit_name)
+        unit = await self.get_unit(unit_name)
         await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
 
     # pylint: disable=too-many-arguments
@@ -655,20 +655,24 @@ class Model:
             switch=switch,
         )
 
-    async def wait_for_active_idle(
+    async def wait_for_idle(
         self,
         timeout: int,
+        status: str = "active",
         idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
         apps: Optional[list[str]] = None,
         raise_on_blocked: bool = False,
+        raise_on_error: bool = True,
     ) -> None:
-        """Wait for application(s) to reach active idle state.
+        """Wait for application(s) to reach target idle state.
 
         If no applications are provided, this function will wait for all COU-related applications.
 
         :param timeout: How long (in seconds) to wait for the bundle settles before raising an
                         WaitForApplicationsTimeout.
         :type timeout: int
+        :param status: The status to wait for.
+        :type status: str
         :param idle_period: How long (in seconds) statuses of all apps need to be `idle`. This
                             delay is used to ensure that any pending hooks have a chance to start
                             to avoid false positives.
@@ -678,13 +682,16 @@ class Model:
         :param raise_on_blocked: If any unit or app going into "blocked" status immediately raises
                                  WaitForApplicationsTimeout, defaults to False.
         :type raise_on_blocked: bool
+        :param raise_on_error: If any unit or app going into "error" status immediately raises
+                                 WaitForApplicationsTimeout, defaults to True.
+        :type raise_on_error: bool
         """
         if apps is None:
             apps = await self._get_supported_apps()
 
         @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
-        @wraps(self.wait_for_active_idle)
-        async def _wait_for_active_idle() -> None:
+        @wraps(self.wait_for_idle)
+        async def _wait_for_idle() -> None:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
             model = await self._get_model()
             try:
@@ -698,7 +705,8 @@ class Model:
                             timeout=timeout,
                             idle_period=idle_period,
                             raise_on_blocked=raise_on_blocked,
-                            status="active",
+                            raise_on_error=raise_on_error,
+                            status=status,
                         )
                         for app in apps
                     )
@@ -715,4 +723,46 @@ class Model:
                 msg = str(error).replace("\n", "\n  ", 1)
                 raise WaitForApplicationsTimeout(msg) from error
 
-        await _wait_for_active_idle()
+        await _wait_for_idle()
+
+    async def resolve_all(self) -> None:
+        """Resolve all the units in the model if they are in error status."""
+        model = await self._get_model()
+        for _, juju_app in model.applications.items():
+            for unit in juju_app.units:
+                if unit.workload_status == "error":
+                    await unit.resolved(retry=True)
+
+    async def get_application_names(self, charm_name: str) -> list[str]:
+        """Get application name by charm name.
+
+        :param charm_name: charm name of application
+        :type charm_name: str
+        :return: ApplicationStatus object
+        :rtype: ApplicationStatus
+        :raises ApplicationNotFound: When charm is not found in the model.
+        """
+        app_names = []
+        model = await self._get_model()
+        for app_name, app in model.applications.items():
+            if app.charm_name == charm_name:
+                app_names.append(app_name)
+        if not app_names:
+            raise ApplicationNotFound(f"Cannot find '{charm_name}' charm in model '{self.name}'.")
+        return app_names
+
+    async def get_application_status(self, app_name: str) -> ApplicationStatus:
+        """Get ApplicationStatus by charm name.
+
+        :param app_name: name of application
+        :type app_name: str
+        :return: ApplicationStatus object
+        :rtype: ApplicationStatus
+        :raises ApplicationNotFound: When application is not found in the model.
+        """
+        model = await self._get_model()
+        status = await model.get_status(filters=[app_name])
+        for name, app in status.applications.items():
+            if name == app_name:
+                return app
+        raise ApplicationNotFound(f"Cannot find '{app_name}' in model '{self.name}'.")

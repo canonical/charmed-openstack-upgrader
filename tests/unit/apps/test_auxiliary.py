@@ -183,7 +183,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -257,7 +257,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -332,7 +332,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -408,13 +408,13 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
     run_deferred_hooks_and_restart_pre_wait_step = PreUpgradeStep(
         description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
         parallel=False,
-        coro=model.wait_for_active_idle(2400, apps=[app.name]),
+        coro=model.wait_for_idle(2400, apps=[app.name]),
     )
 
     run_deferred_hooks_and_restart_post_wait_step = PostUpgradeStep(
         description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
         parallel=False,
-        coro=model.wait_for_active_idle(2400, apps=[app.name]),
+        coro=model.wait_for_idle(2400, apps=[app.name]),
     )
     run_deferred_hooks_and_restart_post_upgrades = PostUpgradeStep(
         description=(
@@ -454,7 +454,7 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -836,7 +836,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -915,7 +915,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -1196,7 +1196,7 @@ def test_ovn_principal_upgrade_plan(model):
         PostUpgradeStep(
             description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -1270,7 +1270,7 @@ def test_mysql_innodb_cluster_upgrade(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=[app.name]),
+            coro=model.wait_for_idle(2400, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
