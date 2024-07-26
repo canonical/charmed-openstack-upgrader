@@ -20,7 +20,7 @@ from cou.utils.juju_utils import Model
 logger = logging.getLogger(__name__)
 
 
-async def check_vault_status(model: Model) -> None:
+async def verify_vault_is_unsealed(model: Model) -> None:
     """Make sure vault is not in sealed status.
 
     :param model: juju model to work with
@@ -33,7 +33,7 @@ async def check_vault_status(model: Model) -> None:
             app = await model.get_application_status(app_name=app_name)
             if app.status.info == "Unit is sealed" and app.status.status == "blocked":
                 raise VaultSealed(
-                    "Vault is in sealed, please follow the steps on "
+                    "Vault is sealed, please follow the steps on "
                     "https://charmhub.io/vault to unseal the vault manually before upgrade"
                 )
     except ApplicationNotFound:

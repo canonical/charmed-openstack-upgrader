@@ -134,7 +134,7 @@ class SmokeTest(unittest.TestCase):
         backup_plan = "\tBack up MySQL databases\n" if backup else ""
         return (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
-            "\tCheck application vault is not sealed\n"
+            "\tVerify vault application is unsealed\n"
             "\tVerify that all OpenStack applications are in idle state\n"
             f"{backup_plan}"
             "\tArchive old database data on nova-cloud-controller\n"

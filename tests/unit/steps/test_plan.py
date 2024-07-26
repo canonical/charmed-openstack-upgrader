@@ -45,7 +45,7 @@ from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
-from cou.steps.vault import check_vault_status
+from cou.steps.vault import verify_vault_is_unsealed
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, SubordinateUnit, Unit
 from cou.utils.openstack import OpenStackRelease
@@ -155,7 +155,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
     exp_plan = dedent_plan(
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
-        Check application vault is not sealed
+        Verify vault application is unsealed
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
@@ -328,7 +328,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
     exp_plan = dedent_plan(
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
-        Check application vault is not sealed
+        Verify vault application is unsealed
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
@@ -1065,9 +1065,9 @@ def test_get_pre_upgrade_steps(
     expected_steps.extend(
         [
             PreUpgradeStep(
-                description="Check application vault is not sealed",
+                description="Verify vault application is unsealed",
                 parallel=False,
-                coro=check_vault_status(mock_analysis_result.model),
+                coro=verify_vault_is_unsealed(mock_analysis_result.model),
             ),
             PreUpgradeStep(
                 description="Verify that all OpenStack applications are in idle state",
