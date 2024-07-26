@@ -147,3 +147,7 @@ class InterruptError(KeyboardInterrupt):
 
 class ApplicationNotSupported(COUException):
     """COU exception when the application is known but not supported by COU."""
+
+
+class VaultSealed(COUException):
+    """COU exception when the application vault is sealed."""
