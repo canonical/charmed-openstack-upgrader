@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 
 
 async def verify_vault_is_unsealed(model: Model) -> None:
-    """Make sure vault is not in sealed status.
+    """Verify vault is unsealed.
+
+    Check vault status. If vault is sealed, raise VaultSealed.
 
     :param model: juju model to work with
     :type model: Model
