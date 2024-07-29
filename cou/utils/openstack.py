@@ -45,6 +45,7 @@ CHARM_FAMILIES = {
 }
 
 DATA_PLANE_CHARMS = ["nova-compute", "ceph-osd", "swift-proxy", "swift-storage"]
+OVN_SUBORDINATES = ["ovn-chassis"]
 
 # https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
 UCA_UPGRADE_ORDER = [

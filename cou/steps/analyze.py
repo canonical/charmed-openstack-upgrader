@@ -22,7 +22,12 @@ from typing import Optional
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.utils import juju_utils
-from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
+from cou.utils.openstack import (
+    DATA_PLANE_CHARMS,
+    OVN_SUBORDINATES,
+    UPGRADE_ORDER,
+    OpenStackRelease,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +77,23 @@ class Analysis:
         :rtype: list[OpenStackApplication]
         """
         _, data_plane = self._split_apps(self.apps)
+        # Remove ovn subordinates from the data plane since it have to upgrade before
+        # ovn-central
+        data_plane = [app for app in data_plane if app.charm not in OVN_SUBORDINATES]
         return data_plane
+
+    @property
+    def apps_ovn_subordinate(self) -> list[OpenStackApplication]:
+        """Return list of ovn subordinate applications.
+
+        :return: ovn subordinate application lists.
+        :rtype: list[OpenStackApplication]
+        """
+        apps = []
+        for app in self.apps:
+            if app.charm in OVN_SUBORDINATES:
+                apps.append(app)
+        return apps
 
     @staticmethod
     def _split_apps(

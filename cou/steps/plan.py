@@ -100,6 +100,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
     #  the whole cloud.
     if args.upgrade_group in {CONTROL_PLANE, None}:
+        plan.add_steps(_generate_ovn_subordinate_plan(target, analysis_result, args))
         plan.add_steps(
             _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
         )
@@ -110,6 +111,30 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
 
     return plan
+
+
+def _generate_ovn_subordinate_plan(
+    target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for ovn subordinate applications.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: A list of the upgrade plans for ovn subordinate applications.
+    :rtype: list[UpgradePlan]
+    """
+    return [
+        _create_upgrade_group(
+            apps=analysis_result.apps_ovn_subordinate,
+            description="OVN subordinate upgrade plan",
+            target=target,
+            force=args.force,
+        )
+    ]
 
 
 async def _generate_data_plane_plan(

@@ -159,6 +159,9 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
+        OVN subordinate upgrade plan
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
@@ -201,9 +204,6 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
@@ -331,6 +331,9 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
+        OVN subordinate upgrade plan
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
@@ -363,9 +366,6 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
