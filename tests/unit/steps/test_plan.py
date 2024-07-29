@@ -220,7 +220,7 @@ nova-compute/0
             "openstack-origin": {"value": "distro"},
             "action-managed-upgrade": {"value": True},
         },
-        machines=machines["0"],
+        machines={"0": machines["0"]},
         model=model,
         origin="ch",
         series="focal",
@@ -241,7 +241,7 @@ nova-compute/0
         charm="keystone-ldap",
         channel="ussuri/stable",
         config={},
-        machines=machines["0"],
+        machines={"0": machines["0"]},
         model=model,
         origin="ch",
         series="focal",
@@ -257,7 +257,7 @@ nova-compute/0
         charm="nova-compute",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
-        machines=machines["1"],
+        machines={"1": machines["1"]},
         model=model,
         origin="ch",
         series="focal",
@@ -279,7 +279,7 @@ nova-compute/0
         charm="ceph-osd",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
-        machines=machines["2"],
+        machines={"2": machines["2"]},
         model=model,
         origin="ch",
         series="focal",
@@ -301,7 +301,7 @@ nova-compute/0
         charm="ovn-chassis",
         channel="22.03/stable",
         config={"enable-version-pinning": {"value": False}},
-        machines=machines["1"],
+        machines={"1": machines["1"]},
         model=model,
         origin="ch",
         series="focal",
@@ -313,8 +313,7 @@ nova-compute/0
 
     analysis_result = Analysis(
         model=model,
-        apps_control_plane=[keystone, keystone_ldap],
-        apps_data_plane=[ceph_osd, nova_compute, ovn_chassis],
+        apps=[keystone, keystone_ldap, ceph_osd, nova_compute, ovn_chassis],
     )
 
     upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
@@ -383,7 +382,7 @@ nova-compute/0
             "openstack-origin": {"value": "distro"},
             "action-managed-upgrade": {"value": True},
         },
-        machines=machines["0"],
+        machines={"0": machines["0"]},
         model=model,
         origin="ch",
         series="focal",
@@ -409,7 +408,7 @@ nova-compute/0
         charm="keystone-ldap",
         channel="ussuri/stable",
         config={},
-        machines=machines["0"],
+        machines={"0": machines["0"]},
         model=model,
         origin="ch",
         series="focal",
@@ -425,7 +424,7 @@ nova-compute/0
         charm="nova-compute",
         channel="ussuri/stable",
         config={"source": {"value": "distro"}, "action-managed-upgrade": {"value": False}},
-        machines=machines["1"],
+        machines={"1": machines["1"]},
         model=model,
         origin="ch",
         series="focal",
@@ -447,7 +446,7 @@ nova-compute/0
         charm="ceph-osd",
         channel="octopus/stable",
         config={"source": {"value": "distro"}},
-        machines=machines["2"],
+        machines={"2": machines["2"]},
         model=model,
         origin="ch",
         series="focal",
@@ -469,7 +468,7 @@ nova-compute/0
         charm="ovn-chassis",
         channel="22.03/stable",
         config={"enable-version-pinning": {"value": False}},
-        machines=machines["1"],
+        machines={"1": machines["1"]},
         model=model,
         origin="ch",
         series="focal",
@@ -481,8 +480,7 @@ nova-compute/0
 
     analysis_result = Analysis(
         model=model,
-        apps_control_plane=[keystone, keystone_ldap],
-        apps_data_plane=[ceph_osd, nova_compute, ovn_chassis],
+        apps=[keystone, keystone_ldap, ceph_osd, nova_compute, ovn_chassis],
     )
 
     upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)

@@ -74,7 +74,7 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli
     cli_args.backup = False
 
     cou_model.return_value.connect.side_effect = AsyncMock()
-    analysis_result = Analysis(model=cou_model, apps_control_plane=[], apps_data_plane=[])
+    analysis_result = Analysis(model=cou_model, apps=[])
     mock_analyze.return_value = analysis_result
     mock_generate_plan.return_value = UpgradePlan("Mock upgrade plan")
 
