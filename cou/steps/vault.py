@@ -27,7 +27,7 @@ async def verify_vault_is_unsealed(model: Model) -> None:
 
     :param model: juju model to work with
     :type model: Model
-    :raises VaultSealed: if application in sealed status
+    :raises VaultSealed: if application in sealed
     """
     try:
         app_names = await model.get_application_names(charm_name="vault")

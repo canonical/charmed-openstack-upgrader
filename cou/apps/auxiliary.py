@@ -552,15 +552,17 @@ class Vault(AuxiliaryApplication):
         return f"{transport}://{address}:8200"
 
     async def _wait_for_sealed_status(self) -> None:
-        """Wait for application vault go into sealed status.
+        """Wait for application vault go into sealed.
 
-        :raises ApplicationError: When application vault is not in sealed status.
+        :raises ApplicationError: When application vault is not in sealed.
         """
         await self.model.wait_for_idle(
             timeout=self.wait_timeout,
             status="blocked",
             apps=[self.name],
-            # Vault application will go into error status first then blocked status.
+            # The Vault application will first enter an error state, followed by a blocked state.
+            # This occurs due to a race condition in the Vault charm's hook. The charm will then
+            # auto-recover from the error state.
             raise_on_error=False,
         )
 
