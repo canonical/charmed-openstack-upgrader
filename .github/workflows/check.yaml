@@ -3,6 +3,12 @@ name: Check workflow running linter, unit and functional tests
 on:
   workflow_call:
   workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
   pull_request:
     types: [ opened, synchronize, reopened ]
     branches: [ master, main ]
@@ -102,6 +108,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+        uses: canonical/action-tmate@main
+        if: ${{ inputs.debug_enabled }}
+        with:
+          detached: true
       - uses: actions/checkout@v4
         with:
           submodules: true
