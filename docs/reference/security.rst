@@ -14,4 +14,4 @@ prerequisite for using Charmed OpenStack Upgrader.
 Please refer to `Juju's documentation`_ for more details.
 
 .. LINKS:
-.. _Juju documentation: https://juju.is/docs/juju
+.. _Juju's documentation: https://juju.is/docs/juju
