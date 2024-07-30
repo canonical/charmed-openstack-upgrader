@@ -18,3 +18,4 @@ are possible with **COU**.
    archive-old-data
    verbosity
    purge-data-on-shadow-table
+   test-on-juju-openstack-provider
