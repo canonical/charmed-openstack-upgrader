@@ -22,7 +22,12 @@ from typing import Optional
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.utils import juju_utils
-from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
+from cou.utils.openstack import (
+    DATA_PLANE_CHARMS,
+    OVN_SUBORDINATES,
+    UPGRADE_ORDER,
+    OpenStackRelease,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +45,7 @@ class Analysis:
     """
 
     model: juju_utils.Model
-    apps_control_plane: list[OpenStackApplication]
-    apps_data_plane: list[OpenStackApplication]
+    apps: list[OpenStackApplication]
     min_o7k_version_control_plane: Optional[OpenStackRelease] = None
     min_o7k_version_data_plane: Optional[OpenStackRelease] = None
 
@@ -54,6 +58,45 @@ class Analysis:
         self.min_o7k_version_data_plane = self.min_o7k_release_apps(self.apps_data_plane)
         self.current_cloud_o7k_release = self._get_minimum_cloud_o7k_release()
         self.current_cloud_series = self._get_minimum_cloud_series()
+
+    @property
+    def apps_control_plane(self) -> list[OpenStackApplication]:
+        """Return list of control plane applications.
+
+        :return: Control plane application lists.
+        :rtype: list[OpenStackApplication]
+        """
+        control_plane, _ = self._split_apps(self.apps)
+        return control_plane
+
+    @property
+    def apps_data_plane(self) -> list[OpenStackApplication]:
+        """Return list of data plane applications.
+
+        OVN_SUBORDINATES is not part of the data plane apps because they need to be
+        upgraded before the ovn-contral.
+
+        :return: data plane application lists.
+        :rtype: list[OpenStackApplication]
+        """
+        _, data_plane = self._split_apps(self.apps)
+        # Remove ovn subordinates from the data plane since they have to upgrade before
+        # ovn-central
+        data_plane = [app for app in data_plane if app.charm not in OVN_SUBORDINATES]
+        return data_plane
+
+    @property
+    def apps_ovn_subordinate(self) -> list[OpenStackApplication]:
+        """Return list of ovn subordinate applications.
+
+        :return: ovn subordinate application lists.
+        :rtype: list[OpenStackApplication]
+        """
+        apps = []
+        for app in self.apps:
+            if app.charm in OVN_SUBORDINATES:
+                apps.append(app)
+        return apps
 
     @staticmethod
     def _split_apps(
@@ -81,6 +124,7 @@ class Analysis:
         data_plane_machines = {
             unit.machine for app in apps if is_data_plane(app) for unit in app.units.values()
         }
+
         for app in apps:
             if is_data_plane(app):
                 data_plane.append(app)
@@ -103,9 +147,7 @@ class Analysis:
         logger.info("Analyzing the OpenStack deployment...")
         apps = await Analysis._populate(model)
 
-        control_plane, data_plane = cls._split_apps(apps)
-
-        return Analysis(model=model, apps_data_plane=data_plane, apps_control_plane=control_plane)
+        return Analysis(model=model, apps=apps)
 
     @classmethod
     async def _populate(cls, model: juju_utils.Model) -> list[OpenStackApplication]:

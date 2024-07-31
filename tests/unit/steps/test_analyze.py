@@ -224,8 +224,7 @@ def test_analysis_dump(model):
     )
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[keystone, cinder, rabbitmq_server],
-        apps_data_plane=[],
+        apps=[keystone, cinder, rabbitmq_server],
     )
 
     assert str(result) == expected_result
@@ -414,8 +413,7 @@ async def test_analysis_detect_current_cloud_o7k_release_different_releases(mode
     )
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[rabbitmq_server, keystone, cinder],
-        apps_data_plane=[],
+        apps=[rabbitmq_server, keystone, cinder],
     )
 
     # current_cloud_o7k_release takes the minimum OpenStack version
@@ -491,8 +489,7 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
     )
     result = analyze.Analysis(
         model=model,
-        apps_control_plane=[rabbitmq_server, keystone, cinder],
-        apps_data_plane=[],
+        apps=[rabbitmq_server, keystone, cinder],
     )
 
     assert result.current_cloud_o7k_release == "ussuri"

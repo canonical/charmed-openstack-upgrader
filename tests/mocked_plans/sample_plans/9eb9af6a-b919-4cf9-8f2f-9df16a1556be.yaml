@@ -4,6 +4,11 @@ plan: |
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
+        OVN subordinate upgrade plan
+            Upgrade plan for 'octavia-ovn-chassis' to 'victoria'
+                WARNING: Changing 'octavia-ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                WARNING: Changing 'ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'barbican-vault' to 'victoria'
                 Upgrade 'barbican-vault' from 'ussuri/stable' to the new channel: 'victoria/stable'
@@ -438,8 +443,6 @@ plan: |
         Data Plane subordinate(s) upgrade plan
             Upgrade plan for 'ceilometer-agent' to 'victoria'
                 Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                WARNING: Changing 'ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
         Ensure that the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version
 
 applications:
