@@ -73,11 +73,14 @@ class Analysis:
     def apps_data_plane(self) -> list[OpenStackApplication]:
         """Return list of data plane applications.
 
+        OVN_SUBORDINATES is not part of the data plane apps because they need to be
+        upgraded before the ovn-contral.
+
         :return: data plane application lists.
         :rtype: list[OpenStackApplication]
         """
         _, data_plane = self._split_apps(self.apps)
-        # Remove ovn subordinates from the data plane since it have to upgrade before
+        # Remove ovn subordinates from the data plane since they have to upgrade before
         # ovn-central
         data_plane = [app for app in data_plane if app.charm not in OVN_SUBORDINATES]
         return data_plane
