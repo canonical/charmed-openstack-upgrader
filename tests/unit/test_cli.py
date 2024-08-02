@@ -72,6 +72,7 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli
     """Test analyze_and_plan function with different model_name arguments."""
     cli_args.model_name = None
     cli_args.backup = False
+    cli_args.skip_apps = None
 
     cou_model.return_value.connect.side_effect = AsyncMock()
     analysis_result = Analysis(model=cou_model, apps=[])
@@ -81,7 +82,7 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli
     await cli.analyze_and_plan(cli_args)
 
     cou_model.assert_called_once_with(None)
-    mock_analyze.assert_awaited_once_with(cou_model.return_value)
+    mock_analyze.assert_awaited_once_with(cou_model.return_value, skip_apps=None)
     mock_generate_plan.assert_awaited_once_with(analysis_result, cli_args)
 
 

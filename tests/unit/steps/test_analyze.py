@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cou.apps.auxiliary import RabbitMQServer
+from cou.apps.auxiliary import RabbitMQServer, Vault
 from cou.apps.base import OpenStackApplication
 from cou.apps.channel_based import ChannelBasedApplication
 from cou.apps.core import Keystone
@@ -335,6 +335,112 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
     mock_split_apps.return_value = exp_apps, []
 
     result = await Analysis.create(model=model)
+
+    assert result.model == model
+    assert result.apps_control_plane == exp_apps
+    assert result.apps_data_plane == []
+    assert result.min_o7k_version_control_plane == OpenStackRelease("ussuri")
+    assert result.min_o7k_version_data_plane is None
+    assert result.current_cloud_o7k_release == "ussuri"
+    assert result.current_cloud_series == "focal"
+
+
+@pytest.mark.asyncio
+@patch.object(analyze.Analysis, "_populate", new_callable=AsyncMock)
+async def test_analysis_create_with_skip_apps(mock_populate, model):
+    """Test analysis object creation with skip_apps."""
+    machines = {"0": MagicMock(spec_set=Machine)}
+    keystone = Keystone(
+        name="keystone",
+        can_upgrade_to="ussuri/stable",
+        charm="keystone",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        subordinate_units=[],
+        units={
+            "keystone/0": Unit(
+                name="keystone/0",
+                workload_version="17.1.0",
+                machine=machines["0"],
+            )
+        },
+        workload_version="17.1.0",
+    )
+    rabbitmq_server = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="3.8/stable",
+        charm="rabbitmq-server",
+        channel="3.8/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        subordinate_units=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.8",
+                machine=machines["0"],
+            )
+        },
+        workload_version="3.8",
+    )
+    cinder = OpenStackApplication(
+        name="cinder",
+        can_upgrade_to="ussuri/stable",
+        charm="cinder",
+        channel="ussuri/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        subordinate_units=[],
+        units={
+            "cinder/0": Unit(
+                name="cinder/0",
+                workload_version="16.4.2",
+                machine=machines["0"],
+            )
+        },
+        workload_version="16.4.2",
+    )
+
+    vault = Vault(
+        name="vault",
+        can_upgrade_to="1.8/stable",
+        charm="vault",
+        channel="1.7/stable",
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        subordinate_units=[],
+        units={
+            "vault/0": Unit(
+                name="vault/0",
+                workload_version="1.7.9",
+                machine=machines["0"],
+            )
+        },
+        workload_version="1.7.9",
+        config={"source": {"value": "distro"}},
+    )
+
+    apps = [keystone, rabbitmq_server, cinder, vault]
+    mock_populate.return_value = apps
+
+    exp_apps = [keystone, rabbitmq_server, cinder]
+    result = await Analysis.create(model=model, skip_apps={"vault", "vault"})
 
     assert result.model == model
     assert result.apps_control_plane == exp_apps

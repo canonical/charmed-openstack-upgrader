@@ -145,6 +145,20 @@ class PurgeBeforeArgumentAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
+class SkipAppsArgumentAction(argparse.Action):
+    """Custom action to make sure the arguments is unique."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Optional[str] = None,
+    ) -> None:
+        unique_values = set(values)
+        setattr(namespace, self.dest, unique_values)
+
+
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
@@ -207,6 +221,18 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
             "\nWithout --purge-before-date the purge step will delete all the data."
         ),
         type=purge_before_arg,
+        required=False,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--skip-apps",
+        dest="skip_apps",
+        choices=["vault"],
+        action=SkipAppsArgumentAction,
+        nargs="*",
+        help=(
+            "Skip upgrading the given applications."
+            "\nCurrently, it only supports skip upgrading vault."
+        ),
         required=False,
     )
     subcommand_common_opts_parser.add_argument(
@@ -479,6 +505,7 @@ class CLIargs:
     availability_zones: Optional[set[str]] = None
     purge: bool = False
     purge_before: Optional[str] = None
+    skip_apps: Optional[set[str]] = None
 
     @property
     def prompt(self) -> bool:
