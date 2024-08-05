@@ -15,7 +15,7 @@
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Iterable, Optional
 
@@ -145,20 +145,6 @@ class PurgeBeforeArgumentAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
-class SkipAppsArgumentAction(argparse.Action):
-    """Custom action to make sure the arguments is unique."""
-
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: Any,
-        option_string: Optional[str] = None,
-    ) -> None:
-        unique_values = set(values)
-        setattr(namespace, self.dest, unique_values)
-
-
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
@@ -226,9 +212,9 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     subcommand_common_opts_parser.add_argument(
         "--skip-apps",
         dest="skip_apps",
+        default=[],
         choices=["vault"],
-        action=SkipAppsArgumentAction,
-        nargs="*",
+        nargs="+",
         help=(
             "Skip upgrading the given applications."
             "\nCurrently, it only supports skip upgrading vault."
@@ -505,7 +491,7 @@ class CLIargs:
     availability_zones: Optional[set[str]] = None
     purge: bool = False
     purge_before: Optional[str] = None
-    skip_apps: Optional[set[str]] = None
+    skip_apps: Optional[list[str]] = field(default_factory=list)
 
     @property
     def prompt(self) -> bool:

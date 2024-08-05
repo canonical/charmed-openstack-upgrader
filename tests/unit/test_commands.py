@@ -965,8 +965,7 @@ def test_purge_before_argument_action_failed(mock_setattr):
 @patch("cou.commands.setattr")
 def test_skip_apps(mock_setattr):
     args = commands.parse_args("upgrade --skip-apps vault vault vault".split())
-    args.skip_apps == {"vault"}
-    mock_setattr.assert_called()
+    args.skip_apps == ["vault", "vault", "vault"]
 
 
 @patch("cou.commands.setattr")

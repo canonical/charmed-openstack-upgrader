@@ -137,7 +137,7 @@ class Analysis:
 
     @classmethod
     async def create(
-        cls, model: juju_utils.Model, skip_apps: Optional[set[str]] = None
+        cls, model: juju_utils.Model, skip_apps: Optional[list[str]] = None
     ) -> Analysis:
         """Analyze the deployment before planning.
 
@@ -152,7 +152,7 @@ class Analysis:
         apps = await Analysis._populate(model)
 
         return Analysis(
-            model=model, apps=[app for app in apps if app.name not in (skip_apps or set())]
+            model=model, apps=[app for app in apps if app.name not in (skip_apps or [])]
         )
 
     @classmethod
