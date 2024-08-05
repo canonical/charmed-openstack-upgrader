@@ -217,6 +217,9 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         nargs="+",
         help=(
             "Skip upgrading the given applications."
+            "\nNote that skip upgrading applications is dangerous, and could leave"
+            "\nthe cloud in an unstable state. You should only use this option if"
+            "\nyou know the applications will not affect the cloud during an upgrade."
             "\nCurrently, it only supports skip upgrading vault."
         ),
         required=False,
