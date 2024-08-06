@@ -494,7 +494,7 @@ class CLIargs:
     availability_zones: Optional[set[str]] = None
     purge: bool = False
     purge_before: Optional[str] = None
-    skip_apps: Optional[list[str]] = field(default_factory=list)
+    skip_apps: list[str] = field(default_factory=list)
 
     @property
     def prompt(self) -> bool:

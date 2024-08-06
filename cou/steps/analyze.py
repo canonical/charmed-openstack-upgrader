@@ -136,9 +136,7 @@ class Analysis:
         return control_plane, data_plane
 
     @classmethod
-    async def create(
-        cls, model: juju_utils.Model, skip_apps: Optional[list[str]] = None
-    ) -> Analysis:
+    async def create(cls, model: juju_utils.Model, skip_apps: list[str]) -> Analysis:
         """Analyze the deployment before planning.
 
         :param model: Model object
@@ -151,9 +149,7 @@ class Analysis:
         logger.info("Analyzing the OpenStack deployment...")
         apps = await Analysis._populate(model)
 
-        return Analysis(
-            model=model, apps=[app for app in apps if app.name not in (skip_apps or [])]
-        )
+        return Analysis(model=model, apps=[app for app in apps if app.name not in skip_apps])
 
     @classmethod
     async def _populate(cls, model: juju_utils.Model) -> list[OpenStackApplication]:

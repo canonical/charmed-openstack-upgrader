@@ -334,7 +334,7 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
     mock_populate.return_value = exp_apps
     mock_split_apps.return_value = exp_apps, []
 
-    result = await Analysis.create(model=model)
+    result = await Analysis.create(model=model, skip_apps=[])
 
     assert result.model == model
     assert result.apps_control_plane == exp_apps
