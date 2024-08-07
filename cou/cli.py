@@ -123,7 +123,7 @@ async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
     progress_indicator.succeed(f"Connected to '{model.name}'")
 
     progress_indicator.start("Analyzing cloud...")
-    analysis_result = await Analysis.create(model)
+    analysis_result = await Analysis.create(model, skip_apps=args.skip_apps)
     logger.info(analysis_result)
     progress_indicator.succeed()
 

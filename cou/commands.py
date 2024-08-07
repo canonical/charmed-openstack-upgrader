@@ -15,7 +15,7 @@
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Iterable, Optional
 
@@ -207,6 +207,21 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
             "\nWithout --purge-before-date the purge step will delete all the data."
         ),
         type=purge_before_arg,
+        required=False,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--skip-apps",
+        dest="skip_apps",
+        default=[],
+        choices=["vault"],
+        nargs="+",
+        help=(
+            "Skip upgrading the given applications."
+            "\nNote that skip upgrading applications is dangerous, and could leave"
+            "\nthe cloud in an unstable state. You should only use this option if"
+            "\nyou know the applications will not affect the cloud during an upgrade."
+            "\nCurrently, it only supports skip upgrading vault."
+        ),
         required=False,
     )
     subcommand_common_opts_parser.add_argument(
@@ -479,6 +494,7 @@ class CLIargs:
     availability_zones: Optional[set[str]] = None
     purge: bool = False
     purge_before: Optional[str] = None
+    skip_apps: list[str] = field(default_factory=list)
 
     @property
     def prompt(self) -> bool:

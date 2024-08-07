@@ -27,6 +27,6 @@ async def test_plans_with_empty_hypervisors(_, sample_plan):
     """Testing all the plans on sample_plans folder considering all hypervisors empty."""
     model, exp_plan = sample_plan
     args = CLIargs("plan", auto_approve=True)
-    analysis_results = await Analysis.create(model)
+    analysis_results = await Analysis.create(model, skip_apps=[])
     plan = await generate_plan(analysis_results, args)
     assert str(plan) == exp_plan

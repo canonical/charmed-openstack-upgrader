@@ -847,6 +847,8 @@ def test_parse_args_hypervisors_exclusive_options(args):
         ["plan", "--purge_before", "2000-01-02"],
         ["plan", "--purge_before", "2000-01-02 03:04"],
         ["plan", "--purge_before", "2000-01-02 03:04:05"],
+        ["upgrade", "--skip-apps", "vault keystone"],
+        ["plan", "--skip_apps", "vault keystone"],
     ],
 )
 def test_parse_invalid_args(args):
@@ -958,3 +960,15 @@ def test_purge_before_argument_action_failed(mock_setattr):
     )
     with pytest.raises(SystemExit, match="2"):
         parser.parse_args("--purge-before-date 2000-01-02".split())
+
+
+@patch("cou.commands.setattr")
+def test_skip_apps(mock_setattr):
+    args = commands.parse_args("upgrade --skip-apps vault vault vault".split())
+    args.skip_apps == ["vault", "vault", "vault"]
+
+
+@patch("cou.commands.setattr")
+def test_skip_apps_failed(mock_setattr):
+    with pytest.raises(SystemExit, match="2"):
+        commands.parse_args("upgrade --skip-apps vault keystone".split())
