@@ -172,6 +172,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=None),
+        ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -248,6 +253,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             coro=model.upgrade_charm(app.name, "3.9/stable"),
         ),
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=None),
+        ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -322,6 +332,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         PreUpgradeStep(
             f"Migrate '{app.name}' from charmstore to charmhub",
             coro=model.upgrade_charm(app.name, "3.9/stable", switch="ch:rabbitmq-server"),
+        ),
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "

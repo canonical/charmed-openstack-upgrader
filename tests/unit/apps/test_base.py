@@ -653,7 +653,7 @@ def test_get_refresh_current_channel_step(model):
         coro=model.upgrade_charm(app.name, app.channel),
     )
 
-    assert app._get_refresh_current_channel_step() == expected_result
+    assert app._get_refresh_current_channel_steps() == expected_result
 
 
 @patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
@@ -680,7 +680,7 @@ def test_get_refresh_charm_step_skip(
         units={},
         workload_version="1",
     )
-    assert app._get_refresh_charm_step(target) == PreUpgradeStep()
+    assert app._get_refresh_charm_steps(target) == PreUpgradeStep()
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_not_called()
     mock_refresh_current_channel.assert_not_called()
@@ -718,7 +718,7 @@ def test_get_refresh_charm_step_refresh_current_channel(
     )
     mock_refresh_current_channel.return_value = expected_result
 
-    assert app._get_refresh_charm_step(target) == expected_result
+    assert app._get_refresh_charm_steps(target) == expected_result
 
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_not_called()
@@ -766,7 +766,7 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
 
     mock_possible_downgrade_step.return_value = expected_step
 
-    assert app._get_refresh_charm_step(target) == expected_step
+    assert app._get_refresh_charm_steps(target) == expected_step
 
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_called_once_with(target, "ussuri/stable")
@@ -809,7 +809,7 @@ def test_get_refresh_charm_step_charmhub_migration(
     )
     mock_ch_migration.return_value = expected_result
 
-    assert app._get_refresh_charm_step(target) == expected_result
+    assert app._get_refresh_charm_steps(target) == expected_result
 
     mock_ch_migration.assert_called_once()
     mock_possible_downgrade_step.assert_not_called()

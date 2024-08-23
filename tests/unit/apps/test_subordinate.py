@@ -75,10 +75,20 @@ def test_generate_upgrade_plan(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+        UpgradeStep(
             description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
             "'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
+        ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
     ]
     expected_plan.add_steps(upgrade_steps)
@@ -192,10 +202,20 @@ def test_generate_plan_ch_migration(model, channel):
             coro=model.upgrade_charm(app.name, "victoria/stable", switch="ch:keystone-ldap"),
         ),
         UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+        UpgradeStep(
             description=f"Upgrade '{app.name}' from 'victoria/stable' to the new channel: "
             "'wallaby/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "wallaby/stable"),
+        ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
     ]
     expected_plan.add_steps(upgrade_steps)
@@ -240,10 +260,20 @@ def test_generate_plan_from_to(model, from_os, to_os):
             coro=model.upgrade_charm(app.name, f"{from_os}/stable"),
         ),
         UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+        UpgradeStep(
             description=f"Upgrade '{app.name}' from '{from_os}/stable' to the new channel: "
             f"'{to_os}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{to_os}/stable"),
+        ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
     ]
     expected_plan.add_steps(upgrade_steps)
@@ -287,6 +317,11 @@ def test_generate_plan_in_same_version(model, from_to):
             description=f"Refresh '{app.name}' to the latest revision of '{from_to}/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, f"{from_to}/stable"),
+        ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
     ]
     expected_plan.add_steps(upgrade_steps)

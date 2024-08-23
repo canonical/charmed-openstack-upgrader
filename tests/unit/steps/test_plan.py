@@ -162,17 +162,22 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
         OVN subordinate upgrade plan
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
+                Wait for up to 300s for app 'ovn-chassis' to reach the idle state
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'keystone-ldap' to reach the idle state
                 Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'keystone-ldap' to reach the idle state
         Control Plane principal(s) upgrade plan
             Upgrade plan for 'keystone' to 'victoria'
                 Upgrade software packages of 'keystone' from the current APT repositories
                     Ψ Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
@@ -182,8 +187,10 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Ψ Upgrade plan for unit 'nova-compute/0'
@@ -201,6 +208,7 @@ nova-compute/0
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Ψ Upgrade software packages on unit 'ceph-osd/0'
                 Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
+                Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
@@ -334,18 +342,23 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
         OVN subordinate upgrade plan
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
+                Wait for up to 300s for app 'ovn-chassis' to reach the idle state
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'keystone-ldap' to reach the idle state
                 Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'keystone-ldap' to reach the idle state
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 2400s for model 'test_model' to reach the idle state
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Ψ Upgrade plan for unit 'nova-compute/0'
@@ -363,6 +376,7 @@ nova-compute/0
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
                     Ψ Upgrade software packages on unit 'ceph-osd/0'
                 Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
+                Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
