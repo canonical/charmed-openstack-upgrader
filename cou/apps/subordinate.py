@@ -69,7 +69,7 @@ class SubordinateApplication(OpenStackApplication):
         :return: List of upgrade steps.
         :rtype: list[UpgradeStep]
         """
-        return [self._get_upgrade_charm_step(target)]
+        return self._get_upgrade_charm_steps(target)
 
     def post_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]

@@ -436,7 +436,7 @@ class OpenStackApplication(Application):
         """
         return [
             self._get_upgrade_current_release_packages_step(units),
-            self._get_refresh_charm_step(target),
+            *self._get_refresh_charm_steps(target),
         ]
 
     def upgrade_steps(
@@ -455,7 +455,7 @@ class OpenStackApplication(Application):
         """
         return [
             self._set_action_managed_upgrade(enable=bool(units)),
-            self._get_upgrade_charm_step(target),
+            *self._get_upgrade_charm_steps(target),
             self._get_change_install_repository_step(target),
             self._get_units_upgrade_steps(units, force),
         ]
@@ -569,28 +569,31 @@ class OpenStackApplication(Application):
 
         return step
 
-    def _get_refresh_charm_step(self, target: OpenStackRelease) -> PreUpgradeStep:
-        """Get step for refreshing the charm.
+    def _get_refresh_charm_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+        """Get steps for refreshing the charm.
 
         :param target: OpenStack release as target to upgrade
         :type target: OpenStackRelease
         :raises ApplicationError: When application has unexpected channel.
-        :return: Step for refreshing the charm
-        :rtype: PreUpgradeStep
+        :return: Steps for refreshing the charm
+        :rtype: list[PreUpgradeStep]
         """
         if self.is_from_charm_store:
-            return self._get_charmhub_migration_step(target)
+            return [self._get_charmhub_migration_step(target), self._get_wait_step()]
         if self.channel in LATEST_STABLE:
-            return self._get_change_channel_possible_downgrade_step(
-                target, self.expected_current_channel(target)
-            )
+            return [
+                self._get_change_channel_possible_downgrade_step(
+                    target, self.expected_current_channel(target)
+                ),
+                self._get_wait_step(),
+            ]
 
         if self._need_current_channel_refresh(target):
-            return self._get_refresh_current_channel_step()
+            return [self._get_refresh_current_channel_step(), self._get_wait_step()]
         logger.info(
             "'%s' does not need to refresh the current channel: %s", self.name, self.channel
         )
-        return PreUpgradeStep()
+        return []
 
     def _get_charmhub_migration_step(self, target: OpenStackRelease) -> PreUpgradeStep:
         """Get the step for charm hub migration from charm store.
@@ -656,30 +659,33 @@ class OpenStackApplication(Application):
         """
         return bool(self.can_upgrade_to) and self.channel_o7k_release <= target
 
-    def _get_upgrade_charm_step(self, target: OpenStackRelease) -> UpgradeStep:
-        """Get step for upgrading the charm.
+    def _get_upgrade_charm_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+        """Get steps for upgrading the charm.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
         :raises ApplicationError: When the current channel is ahead from expected and the target.
-        :return: Step for upgrading the charm.
-        :rtype: UpgradeStep
+        :return: List of steps for upgrading the charm.
+        :rtype: list[UpgradeStep]
         """
         channel = self.expected_current_channel(target) if self.need_crossgrade else self.channel
 
         if channel == self.target_channel(target):
             logger.debug("%s channel already set to %s", self.name, self.channel)
-            return UpgradeStep()
+            return []
 
         # Normally, prior the upgrade the channel is equal to the application release.
         # However, when colocated with other app, the channel can be in a release lesser than the
         # workload version of the application.
         if self.channel_o7k_release <= self.o7k_release or self.multiple_channels:
-            return UpgradeStep(
-                description=f"Upgrade '{self.name}' from '{channel}' to the new channel: "
-                f"'{self.target_channel(target)}'",
-                coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
-            )
+            return [
+                UpgradeStep(
+                    description=f"Upgrade '{self.name}' from '{channel}' to the new channel: "
+                    f"'{self.target_channel(target)}'",
+                    coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
+                ),
+                self._get_wait_step(),
+            ]
 
         raise ApplicationError(
             f"The '{self.name}' application is using channel '{self.channel}'. Channels supported "
