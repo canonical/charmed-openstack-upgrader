@@ -304,19 +304,19 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
 
 
 @pytest.mark.parametrize("origin", ["cs", "ch"])
-@patch("cou.apps.base.OpenStackApplication.is_valid_track", return_value=True)
-def test_check_channel(_, origin):
+def test_check_channel(origin):
     """Test function to verify validity of the charm channel."""
-    app_name = "app"
+    name = "app"
+    channel = "ussuri/stable"
+    series = "focal"
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", {}, {}, MagicMock(), origin, "focal", [], {}, [], "1"
+        name, "", name, channel, {}, {}, MagicMock(), origin, series, [], {}, [], "1"
     )
 
     app._check_channel()
 
 
-@patch("cou.apps.base.OpenStackApplication.is_valid_track", return_value=False)
-def test_check_channel_error(_):
+def test_check_channel_error():
     """Test function to verify validity of the charm channel when it's not valid."""
     name = "app"
     channel = "stable"
