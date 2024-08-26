@@ -52,7 +52,7 @@ STANDARD_IDLE_TIMEOUT: int = int(
 LONG_IDLE_TIMEOUT: int = int(os.environ.get("COU_LONG_IDLE_TIMEOUT", 40 * 60))  # default of 40 min
 ORIGIN_SETTINGS = ("openstack-origin", "source")
 REQUIRED_SETTINGS = ("enable-auto-restarts", "action-managed-upgrade", *ORIGIN_SETTINGS)
-LATEST_STABLE = "latest/stable"
+LATEST_STABLE = {"stable", "latest/stable"}
 
 
 @dataclass(frozen=True)
@@ -299,7 +299,7 @@ class OpenStackApplication(Application):
         :return: True if necessary, False otherwise
         :rtype: bool
         """
-        return self.is_from_charm_store or self.channel == LATEST_STABLE
+        return self.is_from_charm_store or self.channel in LATEST_STABLE
 
     def is_valid_track(self, charm_channel: str) -> bool:
         """Check if the channel track is valid.
@@ -580,7 +580,7 @@ class OpenStackApplication(Application):
         """
         if self.is_from_charm_store:
             return self._get_charmhub_migration_step(target)
-        if self.channel == LATEST_STABLE:
+        if self.channel in LATEST_STABLE:
             return self._get_change_channel_possible_downgrade_step(
                 target, self.expected_current_channel(target)
             )
