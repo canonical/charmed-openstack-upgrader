@@ -304,10 +304,11 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
 
 
 @pytest.mark.parametrize("origin", ["cs", "ch"])
-def test_check_channel(origin):
+@pytest.mark.parametrize("channel", ["stable", "latest/stable", "ussuri/stable"])
+def test_check_channel(channel, origin):
     """Test function to verify validity of the charm channel."""
     name = "app"
-    channel = "ussuri/stable"
+    channel = channel
     series = "focal"
     app = OpenStackApplication(
         name, "", name, channel, {}, {}, MagicMock(), origin, series, [], {}, [], "1"
@@ -319,7 +320,7 @@ def test_check_channel(origin):
 def test_check_channel_error():
     """Test function to verify validity of the charm channel when it's not valid."""
     name = "app"
-    channel = "stable"
+    channel = "unknown/stable"
     series = "focal"
     exp_error_msg = (
         f"Channel: {channel} for charm '{name}' on series '{series}' is not supported by COU. "
