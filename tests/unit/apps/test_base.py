@@ -591,9 +591,14 @@ def test_get_charmhub_migration_step(o7k_release, model):
     )
 
 
+@pytest.mark.parametrize("channel", ["stable", "latest/stable"])
 @patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
-def test_get_change_channel_possible_downgrade_step(o7k_release, model):
-    """Applications using latest/stable should be switched to a release-specific channel."""
+def test_get_change_channel_possible_downgrade_step(o7k_release, model, channel):
+    """Test possible downgrade scenario.
+
+    Applications using 'stable' or 'latest/stable' should be switched to a
+    release-specific channel.
+    """
     o7k_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
 
@@ -601,7 +606,7 @@ def test_get_change_channel_possible_downgrade_step(o7k_release, model):
         name="app",
         can_upgrade_to="",
         charm="app",
-        channel="latest/stable",
+        channel=channel,
         config={},
         machines={},
         model=model,
@@ -614,7 +619,7 @@ def test_get_change_channel_possible_downgrade_step(o7k_release, model):
     )
 
     description = (
-        f"WARNING: Changing '{app.name}' channel from latest/stable to "
+        f"WARNING: Changing '{app.name}' channel from {app.channel} to "
         "ussuri/stable. This may be a charm downgrade, which is generally not supported."
     )
 
