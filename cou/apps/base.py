@@ -424,7 +424,7 @@ class OpenStackApplication(Application):
 
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[PreUpgradeStep]:
+    ) -> list[UpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -569,7 +569,7 @@ class OpenStackApplication(Application):
 
         return step
 
-    def _get_refresh_charm_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
+    def _get_refresh_charm_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
         """Get steps for refreshing the charm.
 
         :param target: OpenStack release as target to upgrade

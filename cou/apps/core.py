@@ -61,7 +61,7 @@ class NovaCompute(OpenStackApplication):
 
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[PreUpgradeStep]:
+    ) -> list[UpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
