@@ -167,6 +167,11 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "3.8/stable"),
         ),
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=None),
+        ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' from '3.8/stable' to the new channel: '3.9/stable'",
             parallel=False,
@@ -455,6 +460,11 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
         PreUpgradeStep(
             description=f"Refresh '{app.name}' to the latest revision of '3.9/stable'",
             coro=model.upgrade_charm(app.name, "3.9/stable"),
+        ),
+        PostUpgradeStep(
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         run_deferred_hooks_and_restart_pre_upgrades,
         run_deferred_hooks_and_restart_pre_wait_step,
@@ -830,6 +840,11 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "pacific/stable"),
         ),
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=None),
+        ),
         PreUpgradeStep(
             description="Ensure that the 'require-osd-release' option matches the 'ceph-osd' "
             "version",
@@ -841,6 +856,11 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             "to the new channel: 'quincy/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "quincy/stable"),
+        ),
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -915,6 +935,11 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "octopus/stable"),
+        ),
+        PostUpgradeStep(
+            description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PreUpgradeStep(
             "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version",
@@ -1202,6 +1227,11 @@ def test_ovn_principal_upgrade_plan(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "22.03/stable"),
         ),
+        PostUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-{target}'",
@@ -1275,6 +1305,11 @@ def test_mysql_innodb_cluster_upgrade(model):
             description=f"Refresh '{app.name}' to the latest revision of '8.0/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "8.0/stable"),
+        ),
+        PostUpgradeStep(
+            description=f"Wait for up to 2400s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(2400, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -1511,6 +1546,7 @@ def test_ceph_osd_upgrade_plan(model):
             Ψ Upgrade software packages on unit 'ceph-osd/1'
             Ψ Upgrade software packages on unit 'ceph-osd/2'
         Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
+        Wait for up to 300s for app 'ceph-osd' to reach the idle state
         Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
         Wait for up to 300s for app 'ceph-osd' to reach the idle state
         Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
@@ -1890,6 +1926,14 @@ def test_vault_post_upgrade_steps_ussuri_to_victoria(model):
             coro=vault_o7k_app.model.wait_for_idle(vault_o7k_app.wait_timeout, apps=None),
         ),
         PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s for"
+                f" model '{vault_o7k_app.model.name}' to reach the idle state"
+            ),
+            parallel=False,
+            coro=vault_o7k_app.model.wait_for_idle(vault_o7k_app.wait_timeout, apps=None),
+        ),
+        PostUpgradeStep(
             (
                 f"Verify that the workload of '{vault_o7k_app.name}'"
                 " has been upgraded on units: vault/0"
@@ -1933,6 +1977,17 @@ def test_vault_post_upgrade_steps_yoga_to_zed(vault_o7k_app):
             parallel=False,
             coro=vault_o7k_app.model.upgrade_charm(vault_o7k_app.name, "1.7/stable"),
         ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s for"
+                f" model '{vault_o7k_app.model.name}' to reach the idle state"
+            ),
+            parallel=False,
+            coro=vault_o7k_app.model.wait_for_idle(
+                vault_o7k_app.wait_timeout,
+                apps=None,
+            ),
+        ),
         UpgradeStep(
             description=(
                 f"Upgrade '{vault_o7k_app.name}' from"
@@ -1940,6 +1995,17 @@ def test_vault_post_upgrade_steps_yoga_to_zed(vault_o7k_app):
             ),
             parallel=False,
             coro=vault_o7k_app.model.upgrade_charm(vault_o7k_app.name, "1.8/stable"),
+        ),
+        PostUpgradeStep(
+            description=(
+                f"Wait for up to {vault_o7k_app.wait_timeout}s for"
+                f" model '{vault_o7k_app.model.name}' to reach the idle state"
+            ),
+            parallel=False,
+            coro=vault_o7k_app.model.wait_for_idle(
+                vault_o7k_app.wait_timeout,
+                apps=None,
+            ),
         ),
         PostUpgradeStep(
             description=(

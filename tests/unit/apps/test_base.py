@@ -653,7 +653,7 @@ def test_get_refresh_current_channel_step(model):
         coro=model.upgrade_charm(app.name, app.channel),
     )
 
-    assert app._get_refresh_current_channel_steps() == expected_result
+    assert app._get_refresh_current_channel_step() == expected_result
 
 
 @patch("cou.apps.base.OpenStackApplication._get_refresh_current_channel_step")
@@ -680,7 +680,7 @@ def test_get_refresh_charm_step_skip(
         units={},
         workload_version="1",
     )
-    assert app._get_refresh_charm_steps(target) == PreUpgradeStep()
+    assert app._get_refresh_charm_steps(target) == []
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_not_called()
     mock_refresh_current_channel.assert_not_called()
@@ -712,11 +712,20 @@ def test_get_refresh_charm_step_refresh_current_channel(
         units={},
         workload_version="1",
     )
-    expected_result = PreUpgradeStep(
+    upgrade_step = PreUpgradeStep(
         f"Refresh '{app.name}' to the latest revision of '{app.channel}'",
         coro=model.upgrade_charm(app.name, app.channel),
     )
-    mock_refresh_current_channel.return_value = expected_result
+    mock_refresh_current_channel.return_value = upgrade_step
+
+    expected_result = [
+        upgrade_step,
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+    ]
 
     assert app._get_refresh_charm_steps(target) == expected_result
 
@@ -762,11 +771,19 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
     )
 
     coro = model.upgrade_charm(app.name, app.expected_current_channel)
-    expected_step = PreUpgradeStep(description=description, coro=coro)
+    upgrade_step = PreUpgradeStep(description=description, coro=coro)
+    mock_possible_downgrade_step.return_value = upgrade_step
 
-    mock_possible_downgrade_step.return_value = expected_step
+    expected_steps = [
+        upgrade_step,
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+    ]
 
-    assert app._get_refresh_charm_steps(target) == expected_step
+    assert app._get_refresh_charm_steps(target) == expected_steps
 
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_called_once_with(target, "ussuri/stable")
@@ -803,11 +820,20 @@ def test_get_refresh_charm_step_charmhub_migration(
         units={},
         workload_version="1",
     )
-    expected_result = PreUpgradeStep(
+    migrate_step = PreUpgradeStep(
         f"Migrate '{app.name}' from charmstore to charmhub",
         coro=model.upgrade_charm(app.name, app.expected_current_channel, switch=f"ch:{app.charm}"),
     )
-    mock_ch_migration.return_value = expected_result
+    mock_ch_migration.return_value = migrate_step
+
+    expected_result = [
+        migrate_step,
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+    ]
 
     assert app._get_refresh_charm_steps(target) == expected_result
 
