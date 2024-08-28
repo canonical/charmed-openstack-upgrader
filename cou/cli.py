@@ -33,7 +33,7 @@ from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
-from cou.steps.plan import PlanWarnings, generate_plan
+from cou.steps.plan import PlanWarnings, generate_plan, post_upgrade_sanity_checks
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import Model
@@ -190,6 +190,19 @@ async def run_upgrade(args: CLIargs) -> None:
     print("Upgrade completed.")
 
 
+async def run_finalizer(args: CLIargs) -> None:
+    """Run finalizer.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    :raises RunUpgradeError: When some applications failed to generate their plans.
+    """
+    model = Model(args.model_name)
+    await model.connect()
+    analysis_result = await Analysis.create(model, skip_apps=args.skip_apps)
+    await post_upgrade_sanity_checks(analysis_result)
+
+
 async def _run_command(args: CLIargs) -> None:
     """Run 'charmed-openstack-upgrade' command.
 
@@ -201,6 +214,17 @@ async def _run_command(args: CLIargs) -> None:
             await get_upgrade_plan(args)
         case "upgrade":
             await run_upgrade(args)
+
+
+async def _run_finalizer_command(args: CLIargs) -> None:
+    """Run finalizer command.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    """
+    match args.command:
+        case "upgrade":
+            await run_finalizer(args)
 
 
 def entrypoint() -> None:
@@ -251,4 +275,5 @@ def entrypoint() -> None:
         logger.exception(exc)
         sys.exit(2)
     finally:
+        loop.run_until_complete(_run_finalizer_command(args))
         progress_indicator.stop()

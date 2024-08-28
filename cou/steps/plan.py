@@ -39,6 +39,7 @@ from cou.apps.core import Keystone, Octavia, Swift  # noqa: F401
 from cou.apps.subordinate import SubordinateApplication  # noqa: F401
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
+    ApplicationError,
     COUException,
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -50,6 +51,7 @@ from cou.exceptions import (
 from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.steps.ceph import verify_ceph_cluster_noout_unset
 from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
@@ -89,7 +91,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :return: A plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """
-    _pre_plan_sanity_checks(args, analysis_result)
+    await _pre_plan_sanity_checks(args, analysis_result)
     target = _determine_upgrade_target(analysis_result)
 
     plan = UpgradePlan(
@@ -111,6 +113,18 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
 
     return plan
+
+
+async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
+    """Run post upgrade sanity checks.
+
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    """
+    try:
+        await verify_ceph_cluster_noout_unset(analysis_result.model)
+    except ApplicationError:
+        print("Upgrade completed, please unset noout for ceph cluster.")
 
 
 def _generate_ovn_subordinate_plan(
@@ -166,7 +180,7 @@ async def _generate_data_plane_plan(
     return plans
 
 
-def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
+async def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     """Pre checks to generate the upgrade plan.
 
     :param args: CLI arguments
@@ -178,6 +192,7 @@ def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     _verify_highest_release_achieved(analysis_result)
     _verify_data_plane_ready_to_upgrade(args, analysis_result)
     _verify_hypervisors_cli_input(args, analysis_result)
+    await verify_ceph_cluster_noout_unset(analysis_result.model)
 
 
 def _verify_supported_series(analysis_result: Analysis) -> None:
@@ -514,7 +529,7 @@ def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[P
     :param apps: List of OpenStackApplication.
     :type apps: list[OpenStackApplication]
     :return: List of post-upgrade steps.
-    :rtype: list[PreUpgradeStep]
+    :rtype: list[PostUpgradeStep]
     """
     ceph_mons_apps = [app for app in apps if isinstance(app, CephMon)]
 
