@@ -128,23 +128,6 @@ def purge_before_arg(value: str) -> str:
     raise argparse.ArgumentTypeError("purge before format must be YYYY-MM-DD[HH:mm][:ss]")
 
 
-class PurgeBeforeArgumentAction(argparse.Action):
-    """Custom action to make sure the arguments dependency."""
-
-    required_arg = "purge"
-
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: Any,
-        option_string: Optional[str] = None,
-    ) -> None:
-        if getattr(namespace, self.required_arg) is False:
-            parser.error(f"--{self.dest} requires --{self.required_arg}")
-        setattr(namespace, self.dest, values)
-
-
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
@@ -185,8 +168,10 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     )
     subcommand_common_opts_parser.add_argument(
         "--archive-batch-size",
-        help="Batch size for nova old database data archiving.\n"
-        "Decrease the batch size if performance issues are detected.\n(default: 1000)",
+        help=(
+            "Batch size for nova old database data archiving."
+            "\nDecrease the batch size if performance issues are detected.\n(default: 1000)"
+        ),
         type=batch_size_arg,
         default=1000,
     )
@@ -199,12 +184,12 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     subcommand_common_opts_parser.add_argument(
         "--purge-before-date",
         dest="purge_before",
-        action=PurgeBeforeArgumentAction,
         help=(
             "Providing this argument will delete data from all shadow tables"
             "\nthat is older than the date provided."
             "\nDate string format should be YYYY-MM-DD[HH:mm][:ss]."
             "\nWithout --purge-before-date the purge step will delete all the data."
+            "\nThis option requires --purge."
         ),
         type=purge_before_arg,
         required=False,
@@ -554,6 +539,13 @@ def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-sta
                 case "upgrade":
                     subparsers.choices["upgrade"].print_help()
             parser.exit()
+
+        # validate arguments
+        validation_errors = []
+        if parsed_args.purge_before and not getattr(parsed_args, "purge", None):
+            validation_errors.append("--purge-before-date requires --purge")
+        if len(validation_errors) > 0:
+            parser.error("\n" + "\n".join(validation_errors))
 
         return parsed_args
     except argparse.ArgumentError as exc:
