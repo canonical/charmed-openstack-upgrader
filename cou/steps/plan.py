@@ -417,11 +417,7 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             parallel=False,
             coro=verify_vault_is_unsealed(analysis_result.model),
         ),
-        PreUpgradeStep(
-            description="Verify ceph cluster 'noout' is unset",
-            parallel=False,
-            coro=ceph.assert_noout_state(analysis_result.model, False),
-        ),
+        *_get_set_noout_steps(analysis_result, args),
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
@@ -439,7 +435,6 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
     steps.extend(_get_backup_steps(analysis_result, args))
     steps.extend(_get_archive_data_steps(analysis_result, args))
     steps.extend(_get_purge_data_steps(analysis_result, args))
-    steps.extend(_get_set_noout_steps(analysis_result, args))
     return steps
 
 
@@ -531,7 +526,13 @@ def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUp
                 coro=ceph.ensure_noout(analysis_result.model, True),
             )
         ]
-    return []
+    return [
+        PreUpgradeStep(
+            description="Verify ceph cluster 'noout' is unset",
+            parallel=False,
+            coro=ceph.assert_noout_state(analysis_result.model, False),
+        )
+    ]
 
 
 def _get_unset_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PostUpgradeStep]:
