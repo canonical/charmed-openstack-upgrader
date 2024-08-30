@@ -28,7 +28,7 @@ from juju.application import Application as JujuApplication
 from juju.client._definitions import ApplicationStatus, Base, FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
-from juju.errors import JujuAppError, JujuError, JujuUnitError
+from juju.errors import JujuAppError, JujuConnectionError, JujuError, JujuUnitError
 from juju.model import Model as JujuModel
 from juju.unit import Unit as JujuUnit
 from juju.utils import get_version_series
@@ -346,7 +346,7 @@ class Model:
 
         return unit
 
-    @retry(no_retry_exceptions=(BakeryException,))
+    @retry(no_retry_exceptions=(BakeryException, JujuConnectionError))
     async def connect(self) -> None:
         """Make sure that model is connected."""
         await self._model.disconnect()
