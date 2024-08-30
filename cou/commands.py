@@ -160,6 +160,13 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         default=argparse.SUPPRESS,
     )
     subcommand_common_opts_parser.add_argument(
+        "--set-noout",
+        help="Set ceph noout across the cluster before cloud upgrade.\n"
+        "Default to disable set noout.",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+    )
+    subcommand_common_opts_parser.add_argument(
         "--archive",
         help="Archive old database data (nova) before cloud upgrade.\n"
         "Default to enabling archive.",
@@ -467,6 +474,7 @@ class CLIargs:
     command: str
     verbosity: int = 0
     backup: bool = True
+    set_noout: bool = False
     archive: bool = True
     archive_batch_size: int = 1000
     quiet: bool = False

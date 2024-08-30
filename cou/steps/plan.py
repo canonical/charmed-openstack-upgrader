@@ -48,10 +48,9 @@ from cou.exceptions import (
     NoTargetError,
     OutOfSupportRange,
 )
-from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
+from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan, ceph
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
-from cou.steps.ceph import verify_ceph_cluster_noout_unset
 from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
@@ -91,7 +90,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     :return: A plan with all upgrade steps necessary based on the Analysis.
     :rtype: UpgradePlan
     """
-    await _pre_plan_sanity_checks(args, analysis_result)
+    _pre_plan_sanity_checks(args, analysis_result)
     target = _determine_upgrade_target(analysis_result)
 
     plan = UpgradePlan(
@@ -121,10 +120,14 @@ async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
+    messages = []
     try:
-        await verify_ceph_cluster_noout_unset(analysis_result.model)
+        await ceph.assert_noout_state(analysis_result.model, False)
     except ApplicationError:
-        print("Upgrade completed, please unset noout for ceph cluster.")
+        messages.append("Detected ceph 'noout' set, please unset noout for ceph cluster.")
+
+    if messages:
+        print("/n".join(messages))
 
 
 def _generate_ovn_subordinate_plan(
@@ -180,7 +183,7 @@ async def _generate_data_plane_plan(
     return plans
 
 
-async def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
+def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> None:
     """Pre checks to generate the upgrade plan.
 
     :param args: CLI arguments
@@ -192,7 +195,6 @@ async def _pre_plan_sanity_checks(args: CLIargs, analysis_result: Analysis) -> N
     _verify_highest_release_achieved(analysis_result)
     _verify_data_plane_ready_to_upgrade(args, analysis_result)
     _verify_hypervisors_cli_input(args, analysis_result)
-    await verify_ceph_cluster_noout_unset(analysis_result.model)
 
 
 def _verify_supported_series(analysis_result: Analysis) -> None:
@@ -416,6 +418,11 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             coro=verify_vault_is_unsealed(analysis_result.model),
         ),
         PreUpgradeStep(
+            description="Verify ceph cluster 'noout' is unset",
+            parallel=False,
+            coro=ceph.assert_noout_state(analysis_result.model, False),
+        ),
+        PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
             coro=analysis_result.model.wait_for_idle(
@@ -432,6 +439,7 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
     steps.extend(_get_backup_steps(analysis_result, args))
     steps.extend(_get_archive_data_steps(analysis_result, args))
     steps.extend(_get_purge_data_steps(analysis_result, args))
+    steps.extend(_get_set_noout_steps(analysis_result, args))
     return steps
 
 
@@ -462,7 +470,7 @@ def _get_purge_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreU
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :return: List of post-upgrade steps.
+    :return: List of pre-upgrade steps.
     :rtype: list[PreUpgradeStep]
     """
     if args.purge and any(
@@ -493,7 +501,7 @@ def _get_archive_data_steps(analysis_result: Analysis, args: CLIargs) -> list[Pr
     :type analysis_result: Analysis
     :param args: CLI arguments
     :type args: CLIargs
-    :return: List of post-upgrade steps.
+    :return: List of pre-upgrade steps.
     :rtype: list[PreUpgradeStep]
     """
     if args.archive:
@@ -501,6 +509,46 @@ def _get_archive_data_steps(analysis_result: Analysis, args: CLIargs) -> list[Pr
             PreUpgradeStep(
                 description="Archive old database data on nova-cloud-controller",
                 coro=archive(analysis_result.model, batch_size=args.archive_batch_size),
+            )
+        ]
+    return []
+
+
+def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get set noout steps.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of pre-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
+    if args.set_noout and args.upgrade_group in {DATA_PLANE, None}:
+        return [
+            PreUpgradeStep(
+                description="Set ceph cluster 'noout' flag before data plane upgrade",
+                coro=ceph.ensure_noout(analysis_result.model, True),
+            )
+        ]
+    return []
+
+
+def _get_unset_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PostUpgradeStep]:
+    """Get unset noout steps.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of post-upgrade steps.
+    :rtype: list[PostUpgradeStep]
+    """
+    if args.set_noout and args.upgrade_group in {DATA_PLANE, None}:
+        return [
+            PostUpgradeStep(
+                description="Unset ceph cluster 'noout' flag after data plane upgrade",
+                coro=ceph.ensure_noout(analysis_result.model, False),
             )
         ]
     return []
@@ -514,11 +562,12 @@ def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Po
     :param args: CLI arguments
     :type args: CLIargs
     :return: List of post-upgrade steps.
-    :rtype: list[PreUpgradeStep]
+    :rtype: list[PostUpgradeStep]
     """
     steps = []
     if args.upgrade_group in {DATA_PLANE, None}:
         steps.extend(_get_ceph_mon_post_upgrade_steps(analysis_result.apps_control_plane))
+    steps.extend(_get_unset_noout_steps(analysis_result, args))
 
     return steps
 

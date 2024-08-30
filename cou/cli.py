@@ -195,8 +195,8 @@ async def run_finalizer(args: CLIargs) -> None:
 
     :param args: CLI arguments
     :type args: CLIargs
-    :raises RunUpgradeError: When some applications failed to generate their plans.
     """
+    print("Running post upgrade sanity check...")
     model = Model(args.model_name)
     await model.connect()
     analysis_result = await Analysis.create(model, skip_apps=args.skip_apps)
@@ -222,9 +222,8 @@ async def _run_finalizer_command(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    match args.command:
-        case "upgrade":
-            await run_finalizer(args)
+    if args.command == "upgrade":
+        await run_finalizer(args)
 
 
 def entrypoint() -> None:

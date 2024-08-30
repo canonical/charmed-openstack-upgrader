@@ -21,7 +21,6 @@ import tempfile
 from typing import Optional
 
 import hvac
-from aioconsole import ainput
 from packaging.version import Version
 
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
@@ -33,7 +32,6 @@ from cou.steps import (
     PreUpgradeStep,
     UnitUpgradeStep,
 )
-from cou.steps.ceph import verify_ceph_cluster_noout_unset
 from cou.utils import progress_indicator
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import Unit
@@ -338,7 +336,6 @@ class RabbitMQServer(AuxiliaryApplication):
 class CephMon(AuxiliaryApplication):
     """Application for Ceph Monitor charm."""
 
-    retry_counter = 3
     wait_timeout = LONG_IDLE_TIMEOUT
     wait_for_model = True
 
@@ -354,10 +351,8 @@ class CephMon(AuxiliaryApplication):
         :return:  List of pre upgrade steps.
         :rtype: list[PreUpgradeStep]
         """
-        return [
-            self._get_wait_until_noout_set_step(),
-            *super().pre_upgrade_steps(target, units),
-            self._get_change_require_osd_release_step(),
+        return super().pre_upgrade_steps(target, units) + [
+            self._get_change_require_osd_release_step()
         ]
 
     def _get_change_require_osd_release_step(self) -> PreUpgradeStep:
@@ -374,41 +369,6 @@ class CephMon(AuxiliaryApplication):
             "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version",
             coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
         )
-
-    def _get_wait_until_noout_set_step(self) -> PreUpgradeStep:
-        """Get wait until noout is set step.
-
-        :return: Step to wait until noout is set.
-        :rtype: PreUpgradeStep
-        """
-
-        async def _prompted_verification() -> None:
-            """Stop the upgrade and wait for noout is set.
-
-            :raises ApplicationError: When noout is unset
-            """
-            noout_set = False
-            progress_indicator.stop()
-            for i in range(1, self.retry_counter + 1):
-                try:
-                    await verify_ceph_cluster_noout_unset(self.model)
-                except ApplicationError:
-                    noout_set = True
-                    break
-                else:
-                    await ainput(
-                        "'noout' is unset, please set 'noout' and press "
-                        f"enter to continue ({i}/{self.retry_counter}) "
-                    )
-
-            if noout_set is False:
-                raise ApplicationError(
-                    "Detected 'noout' is unset for ceph cluster, please set 'noout' during the "
-                    "upgrade process. "
-                    "For more information, check https://charmhub.io/ceph-mon/actions."
-                )
-
-        return PreUpgradeStep("Ensure that 'noout' flag is set", coro=_prompted_verification())
 
 
 class OVN(AuxiliaryApplication):
