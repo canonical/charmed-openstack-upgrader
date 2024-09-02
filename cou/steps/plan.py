@@ -62,22 +62,31 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-class PlanWarnings:  # pylint: disable=too-few-public-methods
-    """Representation of a collection of warning messages from plan generation.
+class PlanStatus:  # pylint: disable=too-few-public-methods
+    """Representation of a collection of statuses from plan generation.
 
-    This class holds all warning messages returned by applications when generating a plan.
+    This class holds all statuses returned by applications when generating a plan.
     """
 
-    messages: list[str] = []
+    error_messages: list[str] = []
+    warning_messages: list[str] = []
 
     @classmethod
-    def add_message(cls, message: str) -> None:
-        """Add a new warning message to the collection.
+    def add_message(cls, message: str, message_type: str = "warning") -> None:
+        """Add a new message to the collection with a propriate type.
 
-        :param message: A warning message to be stored.
+        :param message: A message to be stored.
         :type message: str
+        :param message_type: The type of the message
+        :type message_type: str
         """
-        cls.messages.append(message)
+        match message_type:
+            case "error":
+                cls.error_messages.append(message)
+            case "warning":
+                cls.warning_messages.append(message)
+            case _:
+                logger.debug("Invalid type: '%s' to `PlanStatus`", type)
 
 
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
@@ -526,13 +535,20 @@ def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUp
                 coro=ceph.ensure_noout(analysis_result.model, True),
             )
         ]
-    return [
-        PreUpgradeStep(
-            description="Verify ceph cluster 'noout' is unset",
-            parallel=False,
-            coro=ceph.assert_noout_state(analysis_result.model, False),
+    if not args.set_noout and args.upgrade_group in {DATA_PLANE, None}:
+        PlanStatus.add_message(
+            "Setting noout during upgrade is optional but recommended. "
+            "You can use `--set-noout` to add this optional step.",
+            "warning",
         )
-    ]
+        return [
+            PreUpgradeStep(
+                description="Verify ceph cluster 'noout' is unset",
+                parallel=False,
+                coro=ceph.assert_noout_state(analysis_result.model, False),
+            )
+        ]
+    return []
 
 
 def _get_unset_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PostUpgradeStep]:
@@ -863,7 +879,7 @@ def _generate_instance_plan(
         logger.debug("'%s' halted the upgrade planning generation: %s", instance_id, exc)
     except COUException as exc:
         logger.debug("Cannot generate plan for '%s'\n\t%s", instance_id, exc)
-        PlanWarnings.add_message(f"Cannot generate plan for '{instance_id}'\n\t{exc}")
+        PlanStatus.add_message(f"Cannot generate plan for '{instance_id}'\n\t{exc}", "error")
     except Exception as exc:
         logger.error("Cannot generate upgrade plan for '%s': %s", instance_id, exc)
         raise

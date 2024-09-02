@@ -33,7 +33,7 @@ from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
-from cou.steps.plan import PlanWarnings, generate_plan, post_upgrade_sanity_checks
+from cou.steps.plan import PlanStatus, generate_plan, post_upgrade_sanity_checks
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import Model
@@ -143,10 +143,13 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if warnings := PlanWarnings.messages:
-        logger.warning("%s", "\n".join(warnings))
-        logger.warning(
-            "Running upgrades will not be possible until problems indicated in the warnings "
+    for warning in PlanStatus.warning_messages:
+        logger.warning(warning)
+
+    if errors := PlanStatus.error_messages:
+        logger.error("%s", "\n".join(errors))
+        logger.error(
+            "Running upgrades will not be possible until problems indicated in the errors "
             "are resolved."
         )
         return
@@ -167,10 +170,13 @@ async def run_upgrade(args: CLIargs) -> None:
     upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if warnings := PlanWarnings.messages:
-        logger.warning("%s", "\n".join(warnings))
+    for warning in PlanStatus.warning_messages:
+        logger.warning(warning)
+
+    if errors := PlanStatus.error_messages:
+        logger.error("%s", "\n".join(errors))
         raise RunUpgradeError(  # this will be caught as a COUException in entrypoint
-            "Cannot run upgrades. Please resolve the problems indicated in the warnings "
+            "Cannot run upgrades. Please resolve the problems indicated in the errors "
             "before proceeding."
         )
 
