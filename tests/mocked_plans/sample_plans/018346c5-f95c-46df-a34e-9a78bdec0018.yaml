@@ -116,7 +116,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'rabbitmq-server/1'
                     Ψ Upgrade software packages on unit 'rabbitmq-server/2'
                 WARNING: Changing 'rabbitmq-server' channel from latest/stable to 3.9/stable. This may be a charm downgrade, which is generally not supported.
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'rabbitmq-server' to reach the idle state
                 Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'rabbitmq-server' has been upgraded on units: rabbitmq-server/0, rabbitmq-server/1, rabbitmq-server/2
@@ -126,7 +126,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceph-mon/1'
                     Ψ Upgrade software packages on unit 'ceph-mon/2'
                 WARNING: Changing 'ceph-mon' channel from latest/stable to octopus/stable. This may be a charm downgrade, which is generally not supported.
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'ceph-mon' to reach the idle state
                 Ensure that the 'require-osd-release' option matches the 'ceph-osd' version
                 Change charm config of 'ceph-mon' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
@@ -137,9 +137,9 @@ plan: |
                     Ψ Upgrade software packages on unit 'keystone/1'
                     Ψ Upgrade software packages on unit 'keystone/2'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'keystone' to reach the idle state
                 Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'keystone' to reach the idle state
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0, keystone/1, keystone/2
@@ -300,9 +300,9 @@ plan: |
                     Ψ Upgrade software packages on unit 'octavia/8'
                     Ψ Upgrade software packages on unit 'octavia/9'
                 Refresh 'octavia' to the latest revision of 'ussuri/stable'
-                Wait for up to 2400s for app 'octavia' to reach the idle state
+                Wait for up to 300s for app 'octavia' to reach the idle state
                 Upgrade 'octavia' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 2400s for app 'octavia' to reach the idle state
+                Wait for up to 300s for app 'octavia' to reach the idle state
                 Change charm config of 'octavia' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'octavia' to reach the idle state
                 Verify that the workload of 'octavia' has been upgraded on units: octavia/10, octavia/8, octavia/9
@@ -318,7 +318,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'mysql-innodb-cluster/1'
                     Ψ Upgrade software packages on unit 'mysql-innodb-cluster/2'
                 Refresh 'mysql-innodb-cluster' to the latest revision of '8.0/stable'
-                Wait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state
+                Wait for up to 300s for app 'mysql-innodb-cluster' to reach the idle state
                 Change charm config of 'mysql-innodb-cluster' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state
                 Verify that the workload of 'mysql-innodb-cluster' has been upgraded on units: mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2
@@ -341,7 +341,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/3'
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/9'
                 Refresh 'nova-compute-kvm' to the latest revision of 'ussuri/stable'
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'nova-compute-kvm' to reach the idle state
                 Upgrade 'cinder-volume' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'cinder-volume' to reach the idle state
                 Change charm config of 'cinder-volume' 'openstack-origin' to 'cloud:focal-victoria'
@@ -363,7 +363,7 @@ plan: |
                         Upgrade the unit: 'cinder-volume/9'
                         Resume the unit: 'cinder-volume/9'
                 Upgrade 'nova-compute-kvm' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'nova-compute-kvm' to reach the idle state
                 Change charm config of 'nova-compute-kvm' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute-kvm/0, nova-compute-kvm/2, nova-compute-kvm/3, nova-compute-kvm/9
                     Ψ Upgrade plan for unit 'nova-compute-kvm/0'
@@ -416,7 +416,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/11'
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/5'
                 Refresh 'nova-compute-kvm' to the latest revision of 'ussuri/stable'
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'nova-compute-kvm' to reach the idle state
                 Upgrade 'cinder-volume' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'cinder-volume' to reach the idle state
                 Change charm config of 'cinder-volume' 'openstack-origin' to 'cloud:focal-victoria'
@@ -438,7 +438,7 @@ plan: |
                         Upgrade the unit: 'cinder-volume/5'
                         Resume the unit: 'cinder-volume/5'
                 Upgrade 'nova-compute-kvm' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'nova-compute-kvm' to reach the idle state
                 Change charm config of 'nova-compute-kvm' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute-kvm/1, nova-compute-kvm/10, nova-compute-kvm/11, nova-compute-kvm/5
                     Ψ Upgrade plan for unit 'nova-compute-kvm/1'
@@ -491,7 +491,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/7'
                     Ψ Upgrade software packages on unit 'nova-compute-kvm/8'
                 Refresh 'nova-compute-kvm' to the latest revision of 'ussuri/stable'
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'nova-compute-kvm' to reach the idle state
                 Upgrade 'cinder-volume' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'cinder-volume' to reach the idle state
                 Change charm config of 'cinder-volume' 'openstack-origin' to 'cloud:focal-victoria'
@@ -513,7 +513,7 @@ plan: |
                         Upgrade the unit: 'cinder-volume/8'
                         Resume the unit: 'cinder-volume/8'
                 Upgrade 'nova-compute-kvm' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
+                Wait for up to 300s for app 'nova-compute-kvm' to reach the idle state
                 Change charm config of 'nova-compute-kvm' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute-kvm/4, nova-compute-kvm/6, nova-compute-kvm/7, nova-compute-kvm/8
                     Ψ Upgrade plan for unit 'nova-compute-kvm/4'
