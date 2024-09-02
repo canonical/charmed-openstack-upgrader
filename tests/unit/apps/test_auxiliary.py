@@ -1918,7 +1918,9 @@ def test_vault_post_upgrade_steps_ussuri_to_victoria(model):
             coro=vault_o7k_app.model.upgrade_charm(vault_o7k_app.name, "1.7/stable"),
         ),
         PreUpgradeStep(
-            description=f"Wait for up to 300s for app '{vault_o7k_app.name}' to reach the idle state",
+            description=(
+                f"Wait for up to 300s for app '{vault_o7k_app.name}' to reach the idle state"
+            ),
             parallel=False,
             coro=model.wait_for_idle(300, apps=[vault_o7k_app.name]),
         ),
@@ -1976,8 +1978,7 @@ def test_vault_post_upgrade_steps_yoga_to_zed(vault_o7k_app):
         ),
         PreUpgradeStep(
             description=(
-                f"Wait for up to 300s for"
-                f" app '{vault_o7k_app.name}' to reach the idle state"
+                f"Wait for up to 300s for app '{vault_o7k_app.name}' to reach the idle state"
             ),
             parallel=False,
             coro=vault_o7k_app.model.wait_for_idle(
@@ -1995,8 +1996,7 @@ def test_vault_post_upgrade_steps_yoga_to_zed(vault_o7k_app):
         ),
         UpgradeStep(
             description=(
-                f"Wait for up to 300s for"
-                f" app '{vault_o7k_app.name}' to reach the idle state"
+                f"Wait for up to 300s for app '{vault_o7k_app.name}' to reach the idle state"
             ),
             parallel=False,
             coro=vault_o7k_app.model.wait_for_idle(
