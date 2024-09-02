@@ -580,7 +580,7 @@ class OpenStackApplication(Application):
         """
         wait_step = PreUpgradeStep(
             description=f"Wait for up to {STANDARD_IDLE_TIMEOUT}s for "
-            "app '{self.name}' to reach the idle state",
+            f"app '{self.name}' to reach the idle state",
             parallel=False,
             coro=self.model.wait_for_idle(STANDARD_IDLE_TIMEOUT, apps=[self.name]),
         )
@@ -692,7 +692,7 @@ class OpenStackApplication(Application):
                 ),
                 UpgradeStep(
                     description=f"Wait for up to {STANDARD_IDLE_TIMEOUT}s for "
-                    "app '{self.name}' to reach the idle state",
+                    f"app '{self.name}' to reach the idle state",
                     parallel=False,
                     coro=self.model.wait_for_idle(STANDARD_IDLE_TIMEOUT, apps=[self.name]),
                 ),

@@ -215,10 +215,10 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+        PreUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(2400, apps=None),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
@@ -232,10 +232,10 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(2400, apps=None),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -312,10 +312,10 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone"),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+        PreUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(2400, apps=None),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
@@ -329,10 +329,10 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(2400, apps=None),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -492,10 +492,10 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+        PreUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(2400, apps=None),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
@@ -509,10 +509,10 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(2400, apps=None),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
@@ -620,10 +620,10 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+        PreUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(2400, apps=None),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
@@ -631,10 +631,10 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
-        PostUpgradeStep(
-            description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(2400, apps=None),
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -886,10 +886,10 @@ def test_nova_compute_upgrade_plan(model):
             Ψ Upgrade software packages on unit 'nova-compute/1'
             Ψ Upgrade software packages on unit 'nova-compute/2'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-        Wait for up to 2400s for model 'test_model' to reach the idle state
+        Wait for up to 300s for app 'nova-compute' to reach the idle state
         Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
-        Wait for up to 2400s for model 'test_model' to reach the idle state
+        Wait for up to 300s for app 'nova-compute' to reach the idle state
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
             Ψ Upgrade plan for unit 'nova-compute/0'
@@ -959,10 +959,10 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Ψ Upgrade software packages on unit 'nova-compute/0'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-        Wait for up to 2400s for model 'test_model' to reach the idle state
+        Wait for up to 300s for app 'nova-compute' to reach the idle state
         Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
-        Wait for up to 2400s for model 'test_model' to reach the idle state
+        Wait for up to 300s for app 'nova-compute' to reach the idle state
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0
             Ψ Upgrade plan for unit 'nova-compute/0'

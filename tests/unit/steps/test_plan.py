@@ -174,10 +174,10 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade software packages of 'keystone' from the current APT repositories
                     Ψ Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
-                Wait for up to 2400s for model 'test_model' to reach the idle state
+                Wait for up to 300s for app 'keystone' to reach the idle state
                 Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 2400s for model 'test_model' to reach the idle state
+                Wait for up to 300s for app 'keystone' to reach the idle state
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0
@@ -187,10 +187,10 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Wait for up to 2400s for model 'test_model' to reach the idle state
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 2400s for model 'test_model' to reach the idle state
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Ψ Upgrade plan for unit 'nova-compute/0'
@@ -355,10 +355,10 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
                 Upgrade software packages of 'nova-compute' from the current APT repositories
                     Ψ Upgrade software packages on unit 'nova-compute/0'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
-                Wait for up to 2400s for model 'test_model' to reach the idle state
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 2400s for model 'test_model' to reach the idle state
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0
                     Ψ Upgrade plan for unit 'nova-compute/0'
