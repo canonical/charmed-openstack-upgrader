@@ -424,7 +424,7 @@ class OpenStackApplication(Application):
 
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[UpgradeStep]:
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -569,7 +569,7 @@ class OpenStackApplication(Application):
 
         return step
 
-    def _get_refresh_charm_steps(self, target: OpenStackRelease) -> list[UpgradeStep]:
+    def _get_refresh_charm_steps(self, target: OpenStackRelease) -> list[PreUpgradeStep]:
         """Get steps for refreshing the charm.
 
         :param target: OpenStack release as target to upgrade
@@ -578,18 +578,24 @@ class OpenStackApplication(Application):
         :return: Steps for refreshing the charm
         :rtype: list[PreUpgradeStep]
         """
+        wait_step = PreUpgradeStep(
+            description=f"Wait for up to {STANDARD_IDLE_TIMEOUT}s for "
+            "app '{self.name}' to reach the idle state",
+            parallel=False,
+            coro=self.model.wait_for_idle(STANDARD_IDLE_TIMEOUT, apps=[self.name]),
+        )
         if self.is_from_charm_store:
-            return [self._get_charmhub_migration_step(target), self._get_wait_step()]
+            return [self._get_charmhub_migration_step(target), wait_step]
         if self.channel in LATEST_STABLE:
             return [
                 self._get_change_channel_possible_downgrade_step(
                     target, self.expected_current_channel(target)
                 ),
-                self._get_wait_step(),
+                wait_step,
             ]
 
         if self._need_current_channel_refresh(target):
-            return [self._get_refresh_current_channel_step(), self._get_wait_step()]
+            return [self._get_refresh_current_channel_step(), wait_step]
         logger.info(
             "'%s' does not need to refresh the current channel: %s", self.name, self.channel
         )
@@ -684,7 +690,12 @@ class OpenStackApplication(Application):
                     f"'{self.target_channel(target)}'",
                     coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
                 ),
-                self._get_wait_step(),
+                UpgradeStep(
+                    description=f"Wait for up to {STANDARD_IDLE_TIMEOUT}s for "
+                    "app '{self.name}' to reach the idle state",
+                    parallel=False,
+                    coro=self.model.wait_for_idle(STANDARD_IDLE_TIMEOUT, apps=[self.name]),
+                ),
             ]
 
         raise ApplicationError(

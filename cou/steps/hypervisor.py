@@ -20,7 +20,13 @@ from itertools import chain
 from typing import Any
 
 from cou.apps.base import OpenStackApplication
-from cou.steps import HypervisorUpgradePlan, PostUpgradeStep, UpgradePlan, UpgradeStep
+from cou.steps import (
+    HypervisorUpgradePlan,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UpgradePlan,
+    UpgradeStep,
+)
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
 
@@ -182,7 +188,7 @@ class HypervisorUpgradePlanner:
 
     def _generate_pre_upgrade_steps(
         self, target: OpenStackRelease, group: HypervisorGroup
-    ) -> list[UpgradeStep]:
+    ) -> list[PreUpgradeStep]:
         """Generate pre upgrade plan for all applications.
 
         This section should create a list of steps like changing charm config option, etc.
@@ -192,7 +198,7 @@ class HypervisorUpgradePlanner:
         :param group: HypervisorGroup object
         :type group: HypervisorGroup
         :return: List of pre-upgrade steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[PreUpgradeStep]
         """
         steps = []
         for app in self.apps:

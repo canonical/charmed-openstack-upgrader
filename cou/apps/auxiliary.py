@@ -31,7 +31,6 @@ from cou.steps import (
     PostUpgradeStep,
     PreUpgradeStep,
     UnitUpgradeStep,
-    UpgradeStep,
 )
 from cou.utils import progress_indicator
 from cou.utils.app_utils import set_require_osd_release_option
@@ -289,7 +288,7 @@ class RabbitMQServer(AuxiliaryApplication):
 
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[UpgradeStep]:
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -297,7 +296,7 @@ class RabbitMQServer(AuxiliaryApplication):
         :param units: Units to generate upgrade plan
         :type units: Optional[list[Unit]]
         :return: List of pre upgrade steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[PreUpgradeStep]
         """
         steps = super().pre_upgrade_steps(target, units)
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
@@ -342,7 +341,7 @@ class CephMon(AuxiliaryApplication):
 
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[UpgradeStep]:
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -350,7 +349,7 @@ class CephMon(AuxiliaryApplication):
         :param units: Units to generate upgrade plan
         :type units: Optional[list[Unit]]
         :return:  List of pre upgrade steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[PreUpgradeStep]
         """
         return super().pre_upgrade_steps(target, units) + [
             self._get_change_require_osd_release_step()
@@ -463,7 +462,7 @@ class CephOsd(AuxiliaryApplication):
 
     def pre_upgrade_steps(
         self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> list[UpgradeStep]:
+    ) -> list[PreUpgradeStep]:
         """Pre Upgrade steps planning.
 
         :param target: OpenStack release as target to upgrade.
@@ -471,9 +470,9 @@ class CephOsd(AuxiliaryApplication):
         :param units: Units to generate upgrade plan
         :type units: Optional[list[Unit]]
         :return: List of pre upgrade steps.
-        :rtype: list[UpgradeStep]
+        :rtype: list[PreUpgradeStep]
         """
-        steps: list[UpgradeStep] = [
+        steps = [
             PreUpgradeStep(
                 description="Verify that all 'nova-compute' units has been upgraded",
                 coro=self._verify_nova_compute(target),
