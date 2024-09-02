@@ -542,9 +542,9 @@ def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-sta
 
         # validate arguments
         validation_errors = []
-        if parsed_args.purge_before and not getattr(parsed_args, "purge", None):
+        if parsed_args.purge_before and not parsed_args.purge:
             validation_errors.append("--purge-before-date requires --purge")
-        if len(validation_errors) > 0:
+        if validation_errors:
             parser.error("\n" + "\n".join(validation_errors))
 
         return parsed_args
