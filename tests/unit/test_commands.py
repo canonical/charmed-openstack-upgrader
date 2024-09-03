@@ -935,31 +935,9 @@ def test_purge_before_arg(val, raise_err):
 
 
 @patch("cou.commands.setattr")
-def test_purge_before_argument_action(mock_setattr):
-    parser = ArgumentParser()
-    parser.add_argument("--purge", action="store_true", default=False)
-    parser.add_argument(
-        "--purge-before-date",
-        dest="purge_before",
-        type=str,
-        action=commands.PurgeBeforeArgumentAction,
-    )
-    parser.parse_args("--purge --purge-before-date 2000-01-02".split())
-    mock_setattr.assert_called()
-
-
-@patch("cou.commands.setattr")
-def test_purge_before_argument_action_failed(mock_setattr):
-    parser = ArgumentParser()
-    parser.add_argument("--purge", action="store_true", default=False)
-    parser.add_argument(
-        "--purge-before-date",
-        dest="purge_before",
-        type=str,
-        action=commands.PurgeBeforeArgumentAction,
-    )
+def test_purge_before_argument_missing_dependency(mock_setattr):
     with pytest.raises(SystemExit, match="2"):
-        parser.parse_args("--purge-before-date 2000-01-02".split())
+        commands.parse_args("plan --purge-before-date 2000-01-02".split())
 
 
 @patch("cou.commands.setattr")
