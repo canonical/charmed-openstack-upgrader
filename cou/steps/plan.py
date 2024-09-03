@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from typing import Optional, Union
 
 # NOTE we need to import the modules to register the charms with the register_application
@@ -54,12 +55,20 @@ from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
+from cou.utils import print_and_debug
 from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 
 logger = logging.getLogger(__name__)
+
+
+class MessageType(Enum):
+    """Representation of a collection of message type."""
+
+    ERROR = 1
+    WARNING = 2
 
 
 class PlanStatus:  # pylint: disable=too-few-public-methods
@@ -72,7 +81,7 @@ class PlanStatus:  # pylint: disable=too-few-public-methods
     warning_messages: list[str] = []
 
     @classmethod
-    def add_message(cls, message: str, message_type: str = "warning") -> None:
+    def add_message(cls, message: str, message_type: MessageType = MessageType.WARNING) -> None:
         """Add a new message to the collection with a propriate type.
 
         :param message: A message to be stored.
@@ -81,12 +90,10 @@ class PlanStatus:  # pylint: disable=too-few-public-methods
         :type message_type: str
         """
         match message_type:
-            case "error":
+            case MessageType.ERROR:
                 cls.error_messages.append(message)
-            case "warning":
+            case MessageType.WARNING:
                 cls.warning_messages.append(message)
-            case _:
-                logger.debug("Invalid type: '%s' to `PlanStatus`", type)
 
 
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
@@ -131,12 +138,12 @@ async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
     """
     messages = []
     try:
-        await ceph.assert_noout_state(analysis_result.model, False)
+        await ceph.assert_noout_state(analysis_result.model, unset=True)
     except ApplicationError:
         messages.append("Detected ceph 'noout' set, please unset noout for ceph cluster.")
 
-    if messages:
-        print("/n".join(messages))
+    for message in messages:
+        print_and_debug(message)
 
 
 def _generate_ovn_subordinate_plan(
@@ -537,15 +544,16 @@ def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUp
         ]
     if not args.set_noout and args.upgrade_group in {DATA_PLANE, None}:
         PlanStatus.add_message(
-            "Setting noout during upgrade is optional but recommended. "
-            "You can use `--set-noout` to add this optional step.",
-            "warning",
+            "Setting noout for ceph cluster during upgrade is optional but recommended. "
+            "You can use `--set-noout` to add this optional step. For more information, "
+            "Please refer to set-noout action: https://charmhub.io/ceph-mon/actions#set-noout",
+            MessageType.WARNING,
         )
         return [
             PreUpgradeStep(
                 description="Verify ceph cluster 'noout' is unset",
                 parallel=False,
-                coro=ceph.assert_noout_state(analysis_result.model, False),
+                coro=ceph.assert_noout_state(analysis_result.model, unset=True),
             )
         ]
     return []
@@ -879,7 +887,9 @@ def _generate_instance_plan(
         logger.debug("'%s' halted the upgrade planning generation: %s", instance_id, exc)
     except COUException as exc:
         logger.debug("Cannot generate plan for '%s'\n\t%s", instance_id, exc)
-        PlanStatus.add_message(f"Cannot generate plan for '{instance_id}'\n\t{exc}", "error")
+        PlanStatus.add_message(
+            f"Cannot generate plan for '{instance_id}'\n\t{exc}", MessageType.ERROR
+        )
     except Exception as exc:
         logger.error("Cannot generate upgrade plan for '%s': %s", instance_id, exc)
         raise

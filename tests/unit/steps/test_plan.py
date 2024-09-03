@@ -511,7 +511,7 @@ def test_PlanStatus_warnings_property():
     exp_warnings = ["Mock warning message1", "Mock warning message2"]
 
     for warning in exp_warnings:
-        cou_plan.PlanStatus.add_message(warning, message_type="warning")
+        cou_plan.PlanStatus.add_message(warning, message_type=cou_plan.MessageType.WARNING)
 
     # Check only the last two entries because this is a singleton class which is
     # also being tested in other functions
@@ -1754,7 +1754,8 @@ def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
     assert plan is None
     app.generate_upgrade_plan.assert_called_once_with(target, False)
     mock_plan_warnings.add_message.assert_called_once_with(
-        "Cannot generate plan for 'test-app'\n\tmock message", "error"
+        "Cannot generate plan for 'test-app'\n\tmock message",
+        cou_plan.MessageType.ERROR
     )
 
 

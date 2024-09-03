@@ -234,9 +234,8 @@ async def _run_finalizer_command(args: CLIargs) -> None:
 
 def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
+    args = parse_args(sys.argv[1:])
     try:
-        args = parse_args(sys.argv[1:])
-
         # disable progress indicator when in quiet mode to suppress its console output
         progress_indicator.enabled = not args.quiet
         log_level = get_log_level(quiet=args.quiet, verbosity=args.verbosity)
@@ -280,5 +279,6 @@ def entrypoint() -> None:
         logger.exception(exc)
         sys.exit(2)
     finally:
-        loop.run_until_complete(_run_finalizer_command(args))
+        if args.command == "upgrade":
+            loop.run_until_complete(_run_finalizer_command(args))
         progress_indicator.stop()

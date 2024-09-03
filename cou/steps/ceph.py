@@ -48,49 +48,27 @@ async def _get_leader_unit_name(model: Model) -> str:
     return ceph_mon_units[0]
 
 
-async def get_noout(model: Model, unit_name: str) -> bool:
-    """Ensure ceph cluster has the noout flag unset.
+async def is_noout_unset(model: Model, unit_name: str) -> bool:
+    """Check if noout is set on ceph cluster or not.
 
     :param model: The juju model to work with
     :type model: Model
     :param unit_name: The name of the unit
     :type unit_name: str
-    :return: True if noout is set, otherwise False
+    :return: True if noout is unset, otherwise False
     :type: bool
     """
     results = await model.run_on_unit(unit_name, "ceph osd dump -f json")
-    return "noout" in json.loads(results["stdout"].strip()).get("flags_set", [])
+    return "noout" not in json.loads(results["stdout"].strip()).get("flags_set", [])
 
 
-async def set_noout(model: Model, unit_name: str) -> None:
-    """Set noout for ceph cluster.
-
-    :param model: The juju model to work with
-    :type model: Model
-    :param unit_name: The name of the unit
-    :type unit_name: str
-    """
-    await model.run_action(unit_name, "set-noout", raise_on_failure=True)
-
-
-async def unset_noout(model: Model, unit_name: str) -> None:
-    """Unset noout for ceph cluster.
-
-    :param model: The juju model to work with
-    :type model: Model
-    :param unit_name: The name of the unit
-    :type unit_name: str
-    """
-    await model.run_action(unit_name, "unset-noout", raise_on_failure=True)
-
-
-async def ensure_noout(model: Model, state: bool) -> None:
+async def ensure_noout(model: Model, unset: bool) -> None:
     """Ensure ceph cluster has noout flag set or unset.
 
     :param model: The juju model to work with
     :type model: Model
-    :param state: True to set noout, False to unset noout
-    :type state: bool
+    :param unset: True to unset noout, False to set noout
+    :type unset: bool
     """
     try:
         unit_name = await _get_leader_unit_name(model)
@@ -98,23 +76,22 @@ async def ensure_noout(model: Model, state: bool) -> None:
         logger.warning("%s, %s", str(e), "skip changing 'noout'.")
         return
 
-    if await get_noout(model, unit_name) == state:
-        logger.warning("'noout' already '%s', skip changing 'noout'", "set" if state else "unset")
+    if await is_noout_unset(model, unit_name) is unset:
+        logger.warning("'noout' already '%s', skip changing 'noout'", "unset" if unset else "set")
         return
 
-    if state:
-        await set_noout(model, unit_name)
-    else:
-        await unset_noout(model, unit_name)
+    await model.run_action(
+        unit_name, f"{'unset' if unset else 'set'}-noout", raise_on_failure=True
+    )
 
 
-async def assert_noout_state(model: Model, state: bool) -> None:
-    """Assert ceph cluster is set (state=True) or unset (state=False).
+async def assert_noout_state(model: Model, unset: bool) -> None:
+    """Assert ceph cluster is set (unset=False) or unset (unset=True).
 
     :param model: The juju model to work with
     :type model: Model
-    :param state: True to set noout, False to unset noout
-    :type state: bool
+    :param unset: True to unset noout, False to set noout
+    :type unset: bool
     :raise ApplicationError: if noout is not in desired state
     """
     try:
@@ -123,5 +100,5 @@ async def assert_noout_state(model: Model, state: bool) -> None:
         logger.warning("%s, %s", str(e), "skip verifying 'noout'.")
         return
 
-    if await get_noout(model, unit_name) != state:
-        raise ApplicationError(f"'noout' is expected to be {'set' if state else 'unset'}")
+    if await is_noout_unset(model, unit_name) is unset:
+        raise ApplicationError(f"'noout' is expected to be {'unset' if unset else 'set'}")
