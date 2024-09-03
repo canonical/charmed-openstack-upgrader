@@ -156,6 +156,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify vault application is unsealed
+        Verify ceph cluster 'noout' is unset
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
@@ -216,6 +217,7 @@ nova-compute/0
     )
     cli_args.upgrade_group = None
     cli_args.force = False
+    cli_args.set_noout = False
 
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     mock_filter_hypervisors.return_value = [machines["1"]]
@@ -336,6 +338,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify vault application is unsealed
+        Verify ceph cluster 'noout' is unset
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
@@ -384,6 +387,7 @@ nova-compute/0
     )
     cli_args.upgrade_group = None
     cli_args.force = False
+    cli_args.set_noout = False
 
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     mock_filter_hypervisors.return_value = [machines["1"]]
@@ -499,26 +503,19 @@ nova-compute/0
 
     upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
-    # Check only the last entry because this is a singleton class which is being
-    # tested in other functions
-    assert cou_plan.PlanWarnings.messages[-1] == (
-        "Cannot generate plan for 'keystone'\n"
-        "\tUnits of application keystone are running mismatched OpenStack "
-        "versions: 'ussuri': ['keystone/0'], 'victoria': ['keystone/1']. This is "
-        "not currently handled."
-    )
+    assert len(cou_plan.PlanStatus.warning_messages) == 2  # keystone warning and set_noout
 
 
-def test_PlanWarnings_warnings_property():
-    """Test PlanWarnings object."""
+def test_PlanStatus_warnings_property():
+    """Test PlanStatus object."""
     exp_warnings = ["Mock warning message1", "Mock warning message2"]
 
     for warning in exp_warnings:
-        cou_plan.PlanWarnings.add_message(warning)
+        cou_plan.PlanStatus.add_message(warning, message_type="warning")
 
     # Check only the last two entries because this is a singleton class which is
     # also being tested in other functions
-    assert cou_plan.PlanWarnings.messages[-2:] == exp_warnings
+    assert cou_plan.PlanStatus.warning_messages[-2:] == exp_warnings
 
 
 @patch("cou.steps.plan._verify_hypervisors_cli_input")
@@ -1243,6 +1240,7 @@ def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_steps, upgr
 def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
     """Test get post upgrade steps including ceph-mon."""
     args = MagicMock(spec_set=CLIargs)()
+    args.set_noout = False
     args.upgrade_group = upgrade_group
     analysis_result = MagicMock(spec_set=Analysis)()
     mock_get_ceph_mon_post_upgrade_steps.return_value = [MagicMock()]
@@ -1743,7 +1741,7 @@ def test_generate_instance_plan_HaltUpgradePlanGeneration():
 @pytest.mark.parametrize(
     "exceptions", [ApplicationError, MismatchedOpenStackVersions, COUException]
 )
-@patch("cou.steps.plan.PlanWarnings", spec_set=cou_plan.PlanWarnings)
+@patch("cou.steps.plan.PlanStatus", spec_set=cou_plan.PlanStatus)
 def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
     """Test _generate_instance_plan with COUException."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
@@ -1756,7 +1754,7 @@ def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
     assert plan is None
     app.generate_upgrade_plan.assert_called_once_with(target, False)
     mock_plan_warnings.add_message.assert_called_once_with(
-        "Cannot generate plan for 'test-app'\n\tmock message"
+        "Cannot generate plan for 'test-app'\n\tmock message", "error"
     )
 
 

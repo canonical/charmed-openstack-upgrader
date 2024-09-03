@@ -882,6 +882,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
                         )
                         for subordinate_name, subordinate in unit.subordinates.items()
                     ],
+                    unit.leader,
                 )
                 for name, unit in exp_units_from_status[app].items()
             },

@@ -820,7 +820,7 @@ def _create_upgrade_group(
     """Create upgrade group.
 
     COUExceptions (except HaltUpgradePlanGeneration) raised by application will be stored
-    in the PlanWarnings object.
+    in the PlanStatus object.
 
     :param apps: Apps to create the group.
     :type apps: list[OpenStackApplication]
@@ -851,7 +851,7 @@ def _generate_instance_plan(
     """Generate upgrade plan for an instance and handle exceptions.
 
     COUExceptions (except HaltUpgradePlanGeneration) raised by application will be stored
-    in the PlanWarnings object.
+    in the PlanStatus object.
 
     :param instance: An OpenStackApplication or HypervisorUpgradePlanner instance to generate
                      plan for.
