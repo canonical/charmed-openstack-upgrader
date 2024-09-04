@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, call, patch
 import pytest
 
 from cou.exceptions import RunUpgradeError
+from cou.steps import ceph
 from cou.utils import app_utils
 
 
@@ -89,8 +90,8 @@ async def test_application_upgrade_packages_with_hold(model):
         ("pacific", "quincy"),
     ],
 )
-@patch("cou.utils.app_utils._get_required_osd_release", new_callable=AsyncMock)
-@patch("cou.utils.app_utils._get_current_osd_release", new_callable=AsyncMock)
+@patch("cou.steps.ceph._get_required_osd_release", new_callable=AsyncMock)
+@patch("cou.steps.ceph._get_current_osd_release", new_callable=AsyncMock)
 async def test_set_require_osd_release_option_different_releases(
     mock_get_current_osd_release,
     mock_get_required_osd_release,
@@ -102,7 +103,7 @@ async def test_set_require_osd_release_option_different_releases(
     mock_get_current_osd_release.return_value = current_osd_release
     model.run_on_unit.return_value = {"return-code": 0, "stdout": "Success"}
 
-    await app_utils.set_require_osd_release_option(unit="ceph-mon/0", model=model)
+    await ceph.set_require_osd_release_option_on_unit(model, "ceph-mon/0")
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
@@ -119,8 +120,8 @@ async def test_set_require_osd_release_option_different_releases(
         ("pacific", "pacific"),
     ],
 )
-@patch("cou.utils.app_utils._get_required_osd_release", new_callable=AsyncMock)
-@patch("cou.utils.app_utils._get_current_osd_release", new_callable=AsyncMock)
+@patch("cou.steps.ceph._get_required_osd_release", new_callable=AsyncMock)
+@patch("cou.steps.ceph._get_current_osd_release", new_callable=AsyncMock)
 async def test_set_require_osd_release_option_same_release(
     mock_get_current_osd_release,
     mock_get_required_osd_release,
@@ -131,7 +132,7 @@ async def test_set_require_osd_release_option_same_release(
     mock_get_required_osd_release.return_value = current_required_osd_release
     mock_get_current_osd_release.return_value = current_osd_release
 
-    await app_utils.set_require_osd_release_option(unit="ceph-mon/0", model=model)
+    await ceph.set_require_osd_release_option_on_unit(model, "ceph-mon/0")
 
     assert not model.run_on_unit.called
 
@@ -143,9 +144,7 @@ async def test_get_required_osd_release(model):
         {"crush_version":7,"min_compat_client":"jewel","require_osd_release":"octopus"}
     """
     model.run_on_unit.return_value = {"return-code": 0, "stdout": check_result}
-    actual_current_release = await app_utils._get_required_osd_release(
-        unit="ceph-mon/0", model=model
-    )
+    actual_current_release = await ceph._get_required_osd_release(unit="ceph-mon/0", model=model)
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
@@ -178,7 +177,7 @@ async def test_get_current_osd_release(model):
         expected_osd_release
     )
     model.run_on_unit.return_value = {"return-code": 0, "stdout": check_output}
-    actual_osd_release = await app_utils._get_current_osd_release(unit="ceph-mon/0", model=model)
+    actual_osd_release = await ceph._get_current_osd_release(unit="ceph-mon/0", model=model)
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",
@@ -233,7 +232,7 @@ async def test_get_current_osd_release_unsuccessful(model, osd_release_output, e
     )
     model.run_on_unit.return_value = {"return-code": 0, "stdout": check_output}
     with pytest.raises(RunUpgradeError, match=error_message):
-        await app_utils._get_current_osd_release(unit="ceph-mon/0", model=model)
+        await ceph._get_current_osd_release(unit="ceph-mon/0", model=model)
 
     model.run_on_unit.assert_called_once_with(
         unit_name="ceph-mon/0",

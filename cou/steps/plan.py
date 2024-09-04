@@ -56,7 +56,6 @@ from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
 from cou.utils import print_and_debug
-from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
@@ -82,7 +81,7 @@ class PlanStatus:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def add_message(cls, message: str, message_type: MessageType = MessageType.WARNING) -> None:
-        """Add a new message to the collection with a propriate type.
+        """Add a new message to the collection with the appropriate type.
 
         :param message: A message to be stored.
         :type message: str
@@ -138,7 +137,7 @@ async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
     """
     messages = []
     try:
-        await ceph.assert_noout_state(analysis_result.model, unset=True)
+        await ceph.assert_osd_noout_state(analysis_result.model, state=False)
     except ApplicationError:
         messages.append("Detected ceph 'noout' set, please unset noout for ceph cluster.")
 
@@ -539,7 +538,7 @@ def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUp
         return [
             PreUpgradeStep(
                 description="Set ceph cluster 'noout' flag before data plane upgrade",
-                coro=ceph.ensure_noout(analysis_result.model, True),
+                coro=ceph.osd_noout(analysis_result.model, enable=True),
             )
         ]
     if not args.set_noout and args.upgrade_group in {DATA_PLANE, None}:
@@ -553,27 +552,7 @@ def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUp
             PreUpgradeStep(
                 description="Verify ceph cluster 'noout' is unset",
                 parallel=False,
-                coro=ceph.assert_noout_state(analysis_result.model, unset=True),
-            )
-        ]
-    return []
-
-
-def _get_unset_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PostUpgradeStep]:
-    """Get unset noout steps.
-
-    :param analysis_result: Analysis result
-    :type analysis_result: Analysis
-    :param args: CLI arguments
-    :type args: CLIargs
-    :return: List of post-upgrade steps.
-    :rtype: list[PostUpgradeStep]
-    """
-    if args.set_noout and args.upgrade_group in {DATA_PLANE, None}:
-        return [
-            PostUpgradeStep(
-                description="Unset ceph cluster 'noout' flag after data plane upgrade",
-                coro=ceph.ensure_noout(analysis_result.model, False),
+                coro=ceph.assert_osd_noout_state(analysis_result.model, state=False),
             )
         ]
     return []
@@ -591,37 +570,19 @@ def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Po
     """
     steps = []
     if args.upgrade_group in {DATA_PLANE, None}:
-        steps.extend(_get_ceph_mon_post_upgrade_steps(analysis_result.apps_control_plane))
-    steps.extend(_get_unset_noout_steps(analysis_result, args))
-
-    return steps
-
-
-def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[PostUpgradeStep]:
-    """Get the post-upgrade step for ceph-mon, where we check the require-osd-release option.
-
-    :param apps: List of OpenStackApplication.
-    :type apps: list[OpenStackApplication]
-    :return: List of post-upgrade steps.
-    :rtype: list[PostUpgradeStep]
-    """
-    ceph_mons_apps = [app for app in apps if isinstance(app, CephMon)]
-
-    steps: list[PostUpgradeStep] = []
-    if not ceph_mons_apps:
-        logger.warning("There is no ceph-mon application. Is this a valid OpenStack cloud?")
-        return steps
-
-    for app in ceph_mons_apps:
-        unit = list(app.units.values())[0]  # getting the first unit, since we don't care which one
         steps.append(
             PostUpgradeStep(
-                f"Ensure that the 'require-osd-release' option in '{app.name}' matches the "
-                "'ceph-osd' version",
-                coro=set_require_osd_release_option(unit.name, app.model),
+                "Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version",
+                coro=ceph.set_require_osd_release_option(analysis_result.model),
             )
         )
-
+        if args.set_noout:
+            steps.append(
+                PostUpgradeStep(
+                    description="Unset ceph cluster 'noout' flag after data plane upgrade",
+                    coro=ceph.osd_noout(analysis_result.model, enable=False),
+                )
+            )
     return steps
 
 

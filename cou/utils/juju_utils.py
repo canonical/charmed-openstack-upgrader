@@ -149,7 +149,6 @@ class Unit:
     machine: Machine
     workload_version: str
     subordinates: List[SubordinateUnit] = field(default_factory=lambda: [], compare=False)
-    leader: bool = False
 
     def __repr__(self) -> str:
         """App representation.
@@ -401,7 +400,6 @@ class Model:
                             )
                             for subordinate, subordinate_unit in unit.subordinates.items()
                         ],
-                        unit.leader,
                     )
                     for name, unit in status.units.items()
                 },

@@ -196,17 +196,19 @@ async def run_upgrade(args: CLIargs) -> None:
     print("Upgrade completed.")
 
 
-async def run_finalizer(args: CLIargs) -> None:
-    """Run finalizer.
+async def run_post_upgrade_sanity_check(args: CLIargs) -> None:
+    """Run post upgrade sanity check.
 
     :param args: CLI arguments
     :type args: CLIargs
     """
-    print("Running post upgrade sanity check...")
+    if not args.quiet:
+        print("Running post upgrade sanity check...")
     model = Model(args.model_name)
     await model.connect()
     analysis_result = await Analysis.create(model, skip_apps=args.skip_apps)
     await post_upgrade_sanity_checks(analysis_result)
+    print("Post upgrade sanity check completed.")
 
 
 async def _run_command(args: CLIargs) -> None:
@@ -220,16 +222,6 @@ async def _run_command(args: CLIargs) -> None:
             await get_upgrade_plan(args)
         case "upgrade":
             await run_upgrade(args)
-
-
-async def _run_finalizer_command(args: CLIargs) -> None:
-    """Run finalizer command.
-
-    :param args: CLI arguments
-    :type args: CLIargs
-    """
-    if args.command == "upgrade":
-        await run_finalizer(args)
 
 
 def entrypoint() -> None:
@@ -280,5 +272,5 @@ def entrypoint() -> None:
         sys.exit(2)
     finally:
         if args.command == "upgrade":
-            loop.run_until_complete(_run_finalizer_command(args))
+            loop.run_until_complete(run_post_upgrade_sanity_check(args))
         progress_indicator.stop()

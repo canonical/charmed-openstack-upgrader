@@ -32,8 +32,8 @@ from cou.steps import (
     PreUpgradeStep,
     UnitUpgradeStep,
 )
+from cou.steps.ceph import set_require_osd_release_option_on_unit
 from cou.utils import progress_indicator
-from cou.utils.app_utils import set_require_osd_release_option
 from cou.utils.juju_utils import Unit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
@@ -367,7 +367,7 @@ class CephMon(AuxiliaryApplication):
         ceph_mon_unit, *_ = self.units.values()
         return PreUpgradeStep(
             "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version",
-            coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
+            coro=set_require_osd_release_option_on_unit(self.model, ceph_mon_unit.name),
         )
 
 

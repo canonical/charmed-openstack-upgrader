@@ -16,89 +16,255 @@
 import json
 import logging
 
-from cou.exceptions import ApplicationError, ApplicationNotFound, UnitNotFound
-from cou.utils.juju_utils import Model
+from cou.exceptions import (
+    ApplicationError,
+    ApplicationNotFound,
+    RunUpgradeError,
+    UnitNotFound,
+)
+from cou.utils.juju_utils import Application, Model
+from cou.utils.openstack import CEPH_RELEASES
 
 logger = logging.getLogger(__name__)
 
 
-async def _get_leader_unit_name(model: Model) -> str:
-    """Get the leader unit_name of ceph mon.
+# Private functions
+async def _get_required_osd_release(unit: str, model: Model) -> str:
+    """Get the value of require-osd-release option on a ceph-mon unit.
+
+    :param unit: The ceph-mon unit name where the check command runs on.
+    :type unit: str
+    :param model: Model object
+    :type model: Model
+    :return: the value of require-osd-release option
+    :rtype: str
+    :raises CommandRunFailed: When a command fails to run.
+    """
+    check_command = "ceph osd dump -f json"
+
+    check_option_result = await model.run_on_unit(
+        unit_name=unit, command=check_command, timeout=600
+    )
+    current_require_osd_release = json.loads(check_option_result["stdout"]).get(
+        "require_osd_release", ""
+    )
+    logger.debug("Current require-osd-release is set to: %s", current_require_osd_release)
+
+    return current_require_osd_release
+
+
+async def _get_current_osd_release(unit: str, model: Model) -> str:
+    """Get the current release of OSDs.
+
+    The release of OSDs is parsed from the output of running `ceph versions` command
+    on a ceph-mon unit.
+    :param unit: The ceph-mon unit name where the check command runs on.
+    :type unit: str
+    :param model: Model object
+    :type model: Model
+    :return: the release which OSDs are on
+    :rtype: str
+    :raises RunUpgradeError: When an upgrade fails.
+    :raises CommandRunFailed: When a command fails to run.
+    """
+    check_command = "ceph versions -f json"
+
+    check_osd_result = await model.run_on_unit(unit_name=unit, command=check_command, timeout=600)
+
+    osd_release_output = json.loads(check_osd_result["stdout"]).get("osd", None)
+    # throw exception if ceph-mon doesn't contain osd release information in `ceph`
+    if not osd_release_output:
+        raise RunUpgradeError(f"Cannot get OSD release information on ceph-mon unit '{unit}'.")
+    # throw exception if OSDs are on mismatched releases
+    if len(osd_release_output) > 1:
+        raise RunUpgradeError(
+            f"OSDs are on mismatched releases:\n{osd_release_output}."
+            "Please manually upgrade them to be on the same release before proceeding."
+        )
+
+    # get release name from "osd_release_output". Example value of "osd_release_output":
+    # {'ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)': 1}
+    osd_release_key, *_ = osd_release_output.keys()
+    current_osd_release = osd_release_key.split(" ")[4].strip()
+    ceph_releases = ", ".join(CEPH_RELEASES)
+    if current_osd_release not in ceph_releases:
+        raise RunUpgradeError(
+            f"Cannot recognize Ceph release '{current_osd_release}'. The supporting "
+            f"releases are: {ceph_releases}"
+        )
+    logger.debug("Currently OSDs are on the '%s' release", current_osd_release)
+
+    return current_osd_release
+
+
+async def _get_applications(model: Model) -> list[Application]:
+    """Get the all ceph mon application(s) from the model.
 
     :param model: The juju model to work with
     :type model: Model
-    :return: True if noout is set, otherwise False
-    :type: bool
+    :return: A list of ceph-mon applications
+    :type: Application
     :raise ApplicationNotFound: if ceph-mon no founnd
-    :raise UnitNotFound: if ceph-mon has no leader unit
     """
     apps = await model.get_applications()
     ceph_mon_apps = [app for app in apps.values() if app.charm == "ceph-mon"]
-    if len(ceph_mon_apps) == 0:
-        raise ApplicationNotFound("'ceph-mon' application not found")
-
-    ceph_mon_units = list(ceph_mon_apps[0].units.values())
-    if len(ceph_mon_units) == 0:
-        raise UnitNotFound("'ceph-mon' has no units")
-
-    for unit in ceph_mon_units:
-        if unit.leader:
-            return unit.name
-    logger.warning("cannot find ceph-mon leader unit, using one of the unit instead.")
-    return ceph_mon_units[0]
+    if not ceph_mon_apps:
+        raise ApplicationNotFound(
+            "'ceph-mon' application not found, is this a valid OpenStack cloud?"
+        )
+    return ceph_mon_apps
 
 
-async def is_noout_unset(model: Model, unit_name: str) -> bool:
+async def _get_unit_name(ceph_mon_app: Application) -> str:
+    """Get the one of the unit's name from ceph mon application.
+
+    :param ceph_mon_app: The ceph mon application
+    :type ceph_mon_app: Application
+    :return: ceph-mon's unit name
+    :type: str
+    :raise UnitNotFound: if ceph-mon has no units
+    """
+    ceph_mon_units = list(ceph_mon_app.units.values())
+    if not ceph_mon_units:
+        raise UnitNotFound(f"'{ceph_mon_app.name}' has no units, is this a valid OpenStack cloud?")
+    return ceph_mon_units[0].name
+
+
+async def osd_noout(model: Model, enable: bool) -> None:
+    """Set or unset 'noout' for ceph cluster(s).
+
+    :param model: The juju model to work with
+    :type model: Model
+    :param enable: True to set noout, False to unset noout
+    :type enable: bool
+    """
+    try:
+        ceph_mon_apps = await _get_applications(model)
+    except ApplicationNotFound as e:
+        logger.warning("%s", str(e))
+        logger.warning("Skip changing 'noout', because there's no ceph-mon applications.")
+        return
+
+    for ceph_mon_app in ceph_mon_apps:
+        try:
+            ceph_mon_unit_name = await _get_unit_name(ceph_mon_app)
+        except UnitNotFound as e:
+            logger.warning("%s", str(e))
+            logger.warning(
+                "Skip changing 'noout', because there's no %s units.", ceph_mon_app.name
+            )
+            continue
+
+        await model.run_action(
+            ceph_mon_unit_name, f"{'set' if enable else 'unset'}-noout", raise_on_failure=True
+        )
+
+
+async def get_osd_noout_state(model: Model, unit_name: str) -> bool:
     """Check if noout is set on ceph cluster or not.
 
     :param model: The juju model to work with
     :type model: Model
     :param unit_name: The name of the unit
     :type unit_name: str
-    :return: True if noout is unset, otherwise False
+    :return: True if noout is set, otherwise False
     :type: bool
     """
     results = await model.run_on_unit(unit_name, "ceph osd dump -f json")
-    return "noout" not in json.loads(results["stdout"].strip()).get("flags_set", [])
+    return "noout" in json.loads(results["stdout"].strip()).get("flags_set", [])
 
 
-async def ensure_noout(model: Model, unset: bool) -> None:
-    """Ensure ceph cluster has noout flag set or unset.
-
-    :param model: The juju model to work with
-    :type model: Model
-    :param unset: True to unset noout, False to set noout
-    :type unset: bool
-    """
-    try:
-        unit_name = await _get_leader_unit_name(model)
-    except (ApplicationNotFound, UnitNotFound) as e:
-        logger.warning("%s, %s", str(e), "skip changing 'noout'.")
-        return
-
-    if await is_noout_unset(model, unit_name) is unset:
-        logger.warning("'noout' already '%s', skip changing 'noout'", "unset" if unset else "set")
-        return
-
-    await model.run_action(
-        unit_name, f"{'unset' if unset else 'set'}-noout", raise_on_failure=True
-    )
-
-
-async def assert_noout_state(model: Model, unset: bool) -> None:
-    """Assert ceph cluster is set (unset=False) or unset (unset=True).
+async def assert_osd_noout_state(model: Model, state: bool) -> None:
+    """Assert ceph cluster is set (state=True) or unset (state=False).
 
     :param model: The juju model to work with
     :type model: Model
-    :param unset: True to unset noout, False to set noout
-    :type unset: bool
+    :param state: True noout is set, otherwise False
+    :type state: bool
     :raise ApplicationError: if noout is not in desired state
     """
     try:
-        unit_name = await _get_leader_unit_name(model)
-    except (ApplicationNotFound, UnitNotFound) as e:
-        logger.warning("%s, %s", str(e), "skip verifying 'noout'.")
+        ceph_mon_apps = await _get_applications(model)
+    except ApplicationNotFound as e:
+        logger.warning("%s", str(e))
+        logger.warning("Skip verifying 'noout', because there's no ceph-mon applications.")
         return
 
-    if await is_noout_unset(model, unit_name) is unset:
-        raise ApplicationError(f"'noout' is expected to be {'unset' if unset else 'set'}")
+    error = False
+    for ceph_mon_app in ceph_mon_apps:
+        try:
+            ceph_mon_unit_name = await _get_unit_name(ceph_mon_app)
+        except UnitNotFound as e:
+            logger.warning("%s", str(e))
+            logger.warning(
+                "Skip verifying 'noout', because there's no %s units.", ceph_mon_app.name
+            )
+            continue
+
+        if await get_osd_noout_state(model, ceph_mon_unit_name) is not state:
+            error = True
+            logger.error(
+                "'noout' is expected to be %s for %s",
+                "set" if state else "unset",
+                ceph_mon_app.name,
+            )
+
+    if error:
+        raise ApplicationError("Ceph cluster's 'noout' is not in expected state.")
+
+
+async def set_require_osd_release_option_on_unit(model: Model, unit_name: str) -> None:
+    """Check and set the correct value for require-osd-release on one ceph-mon unit.
+
+    This function compares the value of require-osd-release option with the
+    current release of OSDs. If they are not the same, set the OSDs release as
+    the value for require-osd-release.
+
+    :param model: Model object
+    :type model: Model
+    :param unit_name: The name of the unit
+    :type unit_name: str
+    :raises CommandRunFailed: When a command fails to run.
+    """
+    # The current `require_osd_release` value set on the ceph-mon unit
+    current_require_osd_release = await _get_required_osd_release(unit_name, model)
+    # The actual release which OSDs are on
+    current_running_osd_release = await _get_current_osd_release(unit_name, model)
+
+    if current_require_osd_release != current_running_osd_release:
+        set_command = f"ceph osd require-osd-release {current_running_osd_release}"
+        await model.run_on_unit(unit_name=unit_name, command=set_command, timeout=600)
+
+
+async def set_require_osd_release_option(model: Model) -> None:
+    """Check and set the correct value for require-osd-release on all ceph-mon unit.
+
+    This function compares the value of require-osd-release option with the
+    current release of OSDs. If they are not the same, set the OSDs release as
+    the value for require-osd-release.
+
+    :param model: Model object
+    :type model: Model
+    :raises CommandRunFailed: When a command fails to run.
+    """
+    try:
+        ceph_mon_apps = await _get_applications(model)
+    except ApplicationNotFound as e:
+        logger.warning("%s", str(e))
+        logger.warning(
+            "Skip ensuring 'require-osd-release' option, because there's no ceph-mon applications."
+        )
+        return
+
+    for ceph_mon_app in ceph_mon_apps:
+        try:
+            ceph_mon_unit_name = await _get_unit_name(ceph_mon_app)
+        except UnitNotFound as e:
+            logger.warning("%s", str(e))
+            logger.warning(
+                "Skip ensuring 'require-osd-release' option, because there's no %s units.",
+                ceph_mon_app.name,
+            )
+            continue
+
+        await set_require_osd_release_option_on_unit(model, ceph_mon_unit_name)

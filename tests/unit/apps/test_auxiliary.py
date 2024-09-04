@@ -33,6 +33,7 @@ from cou.steps import (
     PreUpgradeStep,
     UnitUpgradeStep,
     UpgradeStep,
+    ceph,
 )
 from cou.utils import app_utils
 from cou.utils.juju_utils import Unit
@@ -849,7 +850,7 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
             description="Ensure that the 'require-osd-release' option matches the 'ceph-osd' "
             "version",
             parallel=False,
-            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
+            coro=ceph.set_require_osd_release_option_on_unit(model, "ceph-mon/0"),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' from 'pacific/stable' "
@@ -944,7 +945,7 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         PreUpgradeStep(
             "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version",
             parallel=False,
-            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
+            coro=ceph.set_require_osd_release_option_on_unit(model, "ceph-mon/0"),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "

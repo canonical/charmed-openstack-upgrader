@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, PropertyMock, call, patch
 
 import pytest
 
-from cou.apps.auxiliary import CephMon, CephOsd
+from cou.apps.auxiliary import CephOsd
 from cou.apps.auxiliary_subordinate import OVNSubordinate
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone, NovaCompute
@@ -43,6 +43,7 @@ from cou.steps import (
 from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.steps.ceph import set_require_osd_release_option
 from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
@@ -213,6 +214,7 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
+        Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
@@ -383,6 +385,7 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
+        Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
@@ -1223,81 +1226,32 @@ def test_get_purge_data_steps(
 
 
 @pytest.mark.parametrize("upgrade_group", [CONTROL_PLANE, HYPERVISORS])
-@patch("cou.steps.plan._get_ceph_mon_post_upgrade_steps")
-def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
+def test_get_post_upgrade_steps_empty(upgrade_group):
     """Test get post upgrade steps not run for control-plane or hypervisors group."""
     args = MagicMock(spec_set=CLIargs)()
     args.upgrade_group = upgrade_group
 
-    pre_upgrade_steps = cou_plan._get_post_upgrade_steps(MagicMock(), args)
+    post_upgrade_steps = cou_plan._get_post_upgrade_steps(MagicMock(), args)
 
-    assert pre_upgrade_steps == []
-    mock_get_ceph_mon_post_upgrade_steps.assert_not_called()
+    assert post_upgrade_steps == []
 
 
 @pytest.mark.parametrize("upgrade_group", [DATA_PLANE, None])
-@patch("cou.steps.plan._get_ceph_mon_post_upgrade_steps")
-def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
+def test_get_post_upgrade_steps_ceph_mon(upgrade_group):
     """Test get post upgrade steps including ceph-mon."""
     args = MagicMock(spec_set=CLIargs)()
     args.set_noout = False
     args.upgrade_group = upgrade_group
     analysis_result = MagicMock(spec_set=Analysis)()
-    mock_get_ceph_mon_post_upgrade_steps.return_value = [MagicMock()]
 
-    pre_upgrade_steps = cou_plan._get_post_upgrade_steps(analysis_result, args)
+    post_upgrade_steps = cou_plan._get_post_upgrade_steps(analysis_result, args)
 
-    assert pre_upgrade_steps == mock_get_ceph_mon_post_upgrade_steps.return_value
-    mock_get_ceph_mon_post_upgrade_steps.assert_called_with(analysis_result.apps_control_plane)
-
-
-def test_get_ceph_mon_post_upgrade_steps_zero(model):
-    """Test get post upgrade step for ceph-mon without any ceph-mon app."""
-    analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.apps_control_plane = []
-
-    step = cou_plan._get_ceph_mon_post_upgrade_steps(analysis_result)
-
-    assert bool(step) is False
-
-
-def test_get_ceph_mon_post_upgrade_steps_multiple(model):
-    """Test get post upgrade step for ceph-mon with multiple ceph-mon."""
-    machines = {"0": MagicMock(spec_set=Machine)}
-    units = {
-        "ceph-mon/0": Unit(
-            name="ceph-mon/0",
-            workload_version="17.0.1",
-            machine=machines["0"],
-        )
-    }
-    ceph_mon = CephMon(
-        name="ceph-mon",
-        can_upgrade_to="",
-        charm="ceph-mon",
-        channel="quincy/stable",
-        config={"source": {"value": "distro"}},
-        machines={},
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        subordinate_units=[],
-        units=units,
-        workload_version="17.0.1",
-    )
-
-    exp_steps = 2 * [
+    assert post_upgrade_steps == [
         PostUpgradeStep(
-            "Ensure that the 'require-osd-release' option in 'ceph-mon' matches the "
-            "'ceph-osd' version",
-            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
+            "Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version",
+            coro=set_require_osd_release_option(analysis_result.model),
         )
     ]
-
-    steps = cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon, ceph_mon])
-
-    assert steps == exp_steps
 
 
 @patch("cou.steps.plan._create_upgrade_group")
@@ -1754,8 +1708,7 @@ def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
     assert plan is None
     app.generate_upgrade_plan.assert_called_once_with(target, False)
     mock_plan_warnings.add_message.assert_called_once_with(
-        "Cannot generate plan for 'test-app'\n\tmock message",
-        cou_plan.MessageType.ERROR
+        "Cannot generate plan for 'test-app'\n\tmock message", cou_plan.MessageType.ERROR
     )
 
 
