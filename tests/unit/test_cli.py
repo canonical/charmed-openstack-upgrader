@@ -422,24 +422,32 @@ async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command, cli
         mock_get_upgrade_plan.assert_not_called()
 
 
+@patch("cou.cli.run_post_upgrade_sanity_check")
 @patch("cou.cli.sys")
 @patch("cou.cli.parse_args")
 @patch("cou.cli.get_log_level")
 @patch("cou.cli.setup_logging")
 @patch("cou.cli._run_command")
 def test_entrypoint(
-    mock_run_command, mock_setup_logging, mock_get_log_level, mock_parse_args, mock_sys
+    mock_run_command,
+    mock_setup_logging,
+    mock_get_log_level,
+    mock_parse_args,
+    mock_sys,
+    mock_run_post_upgrade_sanity_check,
 ):
     """Test successful entrypoint execution."""
     mock_sys.argv = ["cou", "upgrade"]
+    args = mock_parse_args.return_value
+    args.command = "upgrade"
 
     cli.entrypoint()
 
     mock_parse_args.assert_called_once_with(["upgrade"])
-    args = mock_parse_args.return_value
     mock_get_log_level.assert_called_once_with(quiet=args.quiet, verbosity=args.verbosity)
     mock_setup_logging.assert_called_once_with(mock_get_log_level.return_value)
     mock_run_command.assert_awaited_once_with(args)
+    mock_run_post_upgrade_sanity_check.await_count == 2
 
 
 @patch("cou.cli.progress_indicator")
@@ -540,3 +548,42 @@ def test_entrypoint_failure_unexpected_exception(mock_run_command, mock_indicato
         cli.entrypoint()
 
     mock_indicator.stop.assert_called_once_with()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "quiet, expected_print_count",
+    [
+        (True, 1),
+        (False, 2),
+    ],
+)
+@patch("builtins.print")
+@patch("cou.cli.Model")
+@patch("cou.cli.post_upgrade_sanity_checks", new_callable=AsyncMock)
+@patch("cou.cli.Analysis", new_callable=AsyncMock)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
+async def test_run_run_post_upgrade_sanity_check(
+    mock_plan_status,
+    mock_analyze,
+    mock_post_upgrade_sanity_checks,
+    cou_model,
+    mock_print,
+    quiet,
+    expected_print_count,
+    cli_args,
+):
+    """Test run_post_upgrade_sanity_check function in either quiet or non-quiet mode."""
+    cli_args.quiet = quiet
+
+    cou_model.return_value.connect.side_effect = AsyncMock()
+    analysis_result = Analysis(model=cou_model, apps=[])
+    mock_analyze.return_value = analysis_result
+
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = []
+
+    await cli.run_post_upgrade_sanity_check(cli_args)
+
+    mock_post_upgrade_sanity_checks.assert_called_once()
+    mock_print.call_count == expected_print_count

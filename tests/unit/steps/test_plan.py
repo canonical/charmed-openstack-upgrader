@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import MagicMock, PropertyMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
 
@@ -39,6 +39,7 @@ from cou.steps import (
     UnitUpgradeStep,
     UpgradePlan,
     UpgradeStep,
+    ceph,
 )
 from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
@@ -1240,7 +1241,7 @@ def test_get_post_upgrade_steps_empty(upgrade_group):
 def test_get_post_upgrade_steps_ceph_mon(upgrade_group):
     """Test get post upgrade steps including ceph-mon."""
     args = MagicMock(spec_set=CLIargs)()
-    args.set_noout = False
+    args.set_noout = True
     args.upgrade_group = upgrade_group
     analysis_result = MagicMock(spec_set=Analysis)()
 
@@ -1250,7 +1251,11 @@ def test_get_post_upgrade_steps_ceph_mon(upgrade_group):
         PostUpgradeStep(
             "Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version",
             coro=set_require_osd_release_option(analysis_result.model),
-        )
+        ),
+        PostUpgradeStep(
+            description="Unset ceph cluster 'noout' flag after data plane upgrade",
+            coro=ceph.osd_noout(analysis_result.model, enable=False),
+        ),
     ]
 
 
@@ -1720,3 +1725,42 @@ def test_create_upgrade_plan_failed():
 
     with pytest.raises(Exception, match="test"):
         cou_plan._create_upgrade_group([app], "victoria", "test", False)
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.print_and_debug")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph")
+async def test_post_upgrade_sanity_checks(mock_ceph, mock_analysis, mock_print_and_debug):
+    """Test post_upgrade_sanity_checks with exception."""
+    mock_ceph.assert_osd_noout_state = AsyncMock(side_effect=ApplicationError)
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+    mock_print_and_debug.assert_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.print_and_debug")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph")
+async def test_post_upgrade_sanity_checks_no_exception(
+    mock_ceph, mock_analysis, mock_print_and_debug
+):
+    """Test post_upgrade_sanity_checks without exception."""
+    mock_ceph.assert_osd_noout_state = AsyncMock()
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+    mock_print_and_debug.assert_not_called()
+
+
+@patch("cou.steps.analyze.Analysis")
+def test_get_set_noout_steps(mock_analysis, cli_args):
+    """Test _get_set_noout_steps with --set-noout."""
+    cli_args.set_noout = True
+    cli_args.upgrade_group = None
+
+    step = cou_plan._get_set_noout_steps(mock_analysis, cli_args)
+    assert step == [
+        PreUpgradeStep(
+            description="Set ceph cluster 'noout' flag before data plane upgrade",
+            coro=ceph.osd_noout(mock_analysis.model, enable=True),
+        )
+    ]
