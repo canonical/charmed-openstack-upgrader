@@ -7,105 +7,164 @@ plan: |
         OVN subordinate upgrade plan
             Upgrade plan for 'octavia-ovn-chassis' to 'victoria'
                 WARNING: Changing 'octavia-ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+                Wait for up to 300s for app 'octavia-ovn-chassis' to reach the idle state
             Upgrade plan for 'ovn-chassis' to 'victoria'
                 WARNING: Changing 'ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+                Wait for up to 300s for app 'ovn-chassis' to reach the idle state
         Control Plane subordinate(s) upgrade plan
             Upgrade plan for 'barbican-vault' to 'victoria'
                 Upgrade 'barbican-vault' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'barbican-vault' to reach the idle state
             Upgrade plan for 'ceph-dashboard' to 'victoria'
                 Refresh 'ceph-dashboard' to the latest revision of 'octopus/stable'
+                Wait for up to 300s for app 'ceph-dashboard' to reach the idle state
             Upgrade plan for 'cinder-ceph' to 'victoria'
                 Refresh 'cinder-ceph' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'cinder-ceph' to reach the idle state
                 Upgrade 'cinder-ceph' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'cinder-ceph' to reach the idle state
             Upgrade plan for 'hacluster-aodh' to 'victoria'
                 Refresh 'hacluster-aodh' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-aodh' to reach the idle state
                 Upgrade 'hacluster-aodh' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-aodh' to reach the idle state
             Upgrade plan for 'hacluster-barbican' to 'victoria'
                 Refresh 'hacluster-barbican' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-barbican' to reach the idle state
                 Upgrade 'hacluster-barbican' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-barbican' to reach the idle state
             Upgrade plan for 'hacluster-ceilometer' to 'victoria'
                 Refresh 'hacluster-ceilometer' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-ceilometer' to reach the idle state
                 Upgrade 'hacluster-ceilometer' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-ceilometer' to reach the idle state
             Upgrade plan for 'hacluster-ceph-radosgw' to 'victoria'
                 Refresh 'hacluster-ceph-radosgw' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-ceph-radosgw' to reach the idle state
                 Upgrade 'hacluster-ceph-radosgw' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-ceph-radosgw' to reach the idle state
             Upgrade plan for 'hacluster-cinder' to 'victoria'
                 Refresh 'hacluster-cinder' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-cinder' to reach the idle state
                 Upgrade 'hacluster-cinder' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-cinder' to reach the idle state
             Upgrade plan for 'hacluster-designate' to 'victoria'
                 Refresh 'hacluster-designate' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-designate' to reach the idle state
                 Upgrade 'hacluster-designate' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-designate' to reach the idle state
             Upgrade plan for 'hacluster-glance' to 'victoria'
                 Refresh 'hacluster-glance' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-glance' to reach the idle state
                 Upgrade 'hacluster-glance' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-glance' to reach the idle state
             Upgrade plan for 'hacluster-gnocchi' to 'victoria'
                 Refresh 'hacluster-gnocchi' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-gnocchi' to reach the idle state
                 Upgrade 'hacluster-gnocchi' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-gnocchi' to reach the idle state
             Upgrade plan for 'hacluster-heat' to 'victoria'
                 Refresh 'hacluster-heat' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-heat' to reach the idle state
                 Upgrade 'hacluster-heat' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-heat' to reach the idle state
             Upgrade plan for 'hacluster-keystone' to 'victoria'
                 Refresh 'hacluster-keystone' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-keystone' to reach the idle state
                 Upgrade 'hacluster-keystone' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-keystone' to reach the idle state
             Upgrade plan for 'hacluster-neutron-api' to 'victoria'
                 Refresh 'hacluster-neutron-api' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-neutron-api' to reach the idle state
                 Upgrade 'hacluster-neutron-api' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-neutron-api' to reach the idle state
             Upgrade plan for 'hacluster-nova-cloud-controller' to 'victoria'
                 Refresh 'hacluster-nova-cloud-controller' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-nova-cloud-controller' to reach the idle state
                 Upgrade 'hacluster-nova-cloud-controller' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-nova-cloud-controller' to reach the idle state
             Upgrade plan for 'hacluster-octavia' to 'victoria'
                 Refresh 'hacluster-octavia' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-octavia' to reach the idle state
                 Upgrade 'hacluster-octavia' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-octavia' to reach the idle state
             Upgrade plan for 'hacluster-openstack-dashboard' to 'victoria'
                 Refresh 'hacluster-openstack-dashboard' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-openstack-dashboard' to reach the idle state
                 Upgrade 'hacluster-openstack-dashboard' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-openstack-dashboard' to reach the idle state
             Upgrade plan for 'hacluster-placement' to 'victoria'
                 Refresh 'hacluster-placement' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-placement' to reach the idle state
                 Upgrade 'hacluster-placement' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-placement' to reach the idle state
             Upgrade plan for 'hacluster-vault' to 'victoria'
                 Refresh 'hacluster-vault' to the latest revision of '2.0.3/stable'
+                Wait for up to 300s for app 'hacluster-vault' to reach the idle state
                 Upgrade 'hacluster-vault' from '2.0.3/stable' to the new channel: '2.4/stable'
+                Wait for up to 300s for app 'hacluster-vault' to reach the idle state
             Upgrade plan for 'openstack-loadbalancer-hacluster' to 'victoria'
                 WARNING: Changing 'openstack-loadbalancer-hacluster' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
+                Wait for up to 300s for app 'openstack-loadbalancer-hacluster' to reach the idle state
             Upgrade plan for 'keystone-saml-mellon' to 'victoria'
                 Upgrade 'keystone-saml-mellon' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'keystone-saml-mellon' to reach the idle state
             Upgrade plan for 'aodh-mysql-router' to 'victoria'
                 Refresh 'aodh-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'aodh-mysql-router' to reach the idle state
             Upgrade plan for 'barbican-mysql-router' to 'victoria'
                 Refresh 'barbican-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'barbican-mysql-router' to reach the idle state
             Upgrade plan for 'cinder-mysql-router' to 'victoria'
                 Refresh 'cinder-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'cinder-mysql-router' to reach the idle state
             Upgrade plan for 'designate-mysql-router' to 'victoria'
                 Refresh 'designate-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'designate-mysql-router' to reach the idle state
             Upgrade plan for 'glance-mysql-router' to 'victoria'
                 Refresh 'glance-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'glance-mysql-router' to reach the idle state
             Upgrade plan for 'gnocchi-mysql-router' to 'victoria'
                 Refresh 'gnocchi-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'gnocchi-mysql-router' to reach the idle state
             Upgrade plan for 'heat-mysql-router' to 'victoria'
                 Refresh 'heat-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'heat-mysql-router' to reach the idle state
             Upgrade plan for 'keystone-mysql-router' to 'victoria'
                 Refresh 'keystone-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'keystone-mysql-router' to reach the idle state
             Upgrade plan for 'neutron-api-mysql-router' to 'victoria'
                 Refresh 'neutron-api-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'neutron-api-mysql-router' to reach the idle state
             Upgrade plan for 'nova-cloud-controller-mysql-router' to 'victoria'
                 Refresh 'nova-cloud-controller-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'nova-cloud-controller-mysql-router' to reach the idle state
             Upgrade plan for 'octavia-mysql-router' to 'victoria'
                 Refresh 'octavia-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'octavia-mysql-router' to reach the idle state
             Upgrade plan for 'openstack-dashboard-mysql-router' to 'victoria'
                 Refresh 'openstack-dashboard-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'openstack-dashboard-mysql-router' to reach the idle state
             Upgrade plan for 'placement-mysql-router' to 'victoria'
                 Refresh 'placement-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'placement-mysql-router' to reach the idle state
             Upgrade plan for 'vault-mysql-router' to 'victoria'
                 Refresh 'vault-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'vault-mysql-router' to reach the idle state
             Upgrade plan for 'neutron-api-plugin-ovn' to 'victoria'
                 Upgrade 'neutron-api-plugin-ovn' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'neutron-api-plugin-ovn' to reach the idle state
             Upgrade plan for 'octavia-dashboard' to 'victoria'
                 Upgrade 'octavia-dashboard' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'octavia-dashboard' to reach the idle state
             Upgrade plan for 'octavia-diskimage-retrofit' to 'victoria'
                 Refresh 'octavia-diskimage-retrofit' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'octavia-diskimage-retrofit' to reach the idle state
                 Upgrade 'octavia-diskimage-retrofit' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'octavia-diskimage-retrofit' to reach the idle state
             Upgrade plan for 'octavia-ovn-chassis' to 'victoria'
                 WARNING: Changing 'octavia-ovn-chassis' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+                Wait for up to 300s for app 'octavia-ovn-chassis' to reach the idle state
         Control Plane principal(s) upgrade plan
             Upgrade plan for 'vault' to 'victoria'
                 Upgrade software packages of 'vault' from the current APT repositories
@@ -113,6 +172,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'vault/1'
                     Ψ Upgrade software packages on unit 'vault/2'
                 Refresh 'vault' to the latest revision of '1.7/stable'
+                Wait for up to 300s for app 'vault' to reach the idle state
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'vault' has been upgraded on units: vault/0, vault/1, vault/2
             Upgrade plan for 'rabbitmq-server' to 'victoria'
@@ -121,7 +181,9 @@ plan: |
                     Ψ Upgrade software packages on unit 'rabbitmq-server/1'
                     Ψ Upgrade software packages on unit 'rabbitmq-server/2'
                 Refresh 'rabbitmq-server' to the latest revision of '3.8/stable'
+                Wait for up to 300s for app 'rabbitmq-server' to reach the idle state
                 Upgrade 'rabbitmq-server' from '3.8/stable' to the new channel: '3.9/stable'
+                Wait for up to 300s for app 'rabbitmq-server' to reach the idle state
                 Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'rabbitmq-server' has been upgraded on units: rabbitmq-server/0, rabbitmq-server/1, rabbitmq-server/2
@@ -131,6 +193,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceph-mon/1'
                     Ψ Upgrade software packages on unit 'ceph-mon/2'
                 Refresh 'ceph-mon' to the latest revision of 'octopus/stable'
+                Wait for up to 300s for app 'ceph-mon' to reach the idle state
                 Ensure that the 'require-osd-release' option matches the 'ceph-osd' version
                 Change charm config of 'ceph-mon' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
@@ -142,6 +205,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'keystone/2'
                 Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'keystone' to reach the idle state
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0, keystone/1, keystone/2
@@ -152,6 +216,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'aodh/2'
                 Change charm config of 'aodh' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'aodh' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'aodh' to reach the idle state
                 Change charm config of 'aodh' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'aodh' to reach the idle state
                 Verify that the workload of 'aodh' has been upgraded on units: aodh/0, aodh/1, aodh/2
@@ -162,6 +227,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'barbican/2'
                 Change charm config of 'barbican' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'barbican' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'barbican' to reach the idle state
                 Change charm config of 'barbican' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'barbican' to reach the idle state
                 Verify that the workload of 'barbican' has been upgraded on units: barbican/0, barbican/1, barbican/2
@@ -172,6 +238,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceilometer/2'
                 Change charm config of 'ceilometer' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'ceilometer' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'ceilometer' to reach the idle state
                 Change charm config of 'ceilometer' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceilometer' to reach the idle state
                 Verify that the workload of 'ceilometer' has been upgraded on units: ceilometer/0, ceilometer/1, ceilometer/2
@@ -181,6 +248,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceph-radosgw/1'
                     Ψ Upgrade software packages on unit 'ceph-radosgw/2'
                 Refresh 'ceph-radosgw' to the latest revision of 'octopus/stable'
+                Wait for up to 300s for app 'ceph-radosgw' to reach the idle state
                 Change charm config of 'ceph-radosgw' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-radosgw' to reach the idle state
                 Verify that the workload of 'ceph-radosgw' has been upgraded on units: ceph-radosgw/0, ceph-radosgw/1, ceph-radosgw/2
@@ -191,6 +259,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'cinder/2'
                 Change charm config of 'cinder' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'cinder' to reach the idle state
                 Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'cinder' to reach the idle state
                 Verify that the workload of 'cinder' has been upgraded on units: cinder/0, cinder/1, cinder/2
@@ -201,6 +270,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'designate/2'
                 Change charm config of 'designate' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'designate' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'designate' to reach the idle state
                 Change charm config of 'designate' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'designate' to reach the idle state
                 Verify that the workload of 'designate' has been upgraded on units: designate/0, designate/1, designate/2
@@ -209,7 +279,9 @@ plan: |
                     Ψ Upgrade software packages on unit 'designate-bind/0'
                     Ψ Upgrade software packages on unit 'designate-bind/1'
                 Refresh 'designate-bind' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'designate-bind' to reach the idle state
                 Upgrade 'designate-bind' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'designate-bind' to reach the idle state
                 Wait for up to 300s for app 'designate-bind' to reach the idle state
                 Verify that the workload of 'designate-bind' has been upgraded on units: designate-bind/0, designate-bind/1
             Upgrade plan for 'glance' to 'victoria'
@@ -218,8 +290,10 @@ plan: |
                     Ψ Upgrade software packages on unit 'glance/1'
                     Ψ Upgrade software packages on unit 'glance/2'
                 Refresh 'glance' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'glance' to reach the idle state
                 Change charm config of 'glance' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'glance' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'glance' to reach the idle state
                 Change charm config of 'glance' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'glance' to reach the idle state
                 Verify that the workload of 'glance' has been upgraded on units: glance/0, glance/1, glance/2
@@ -230,6 +304,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'gnocchi/2'
                 Change charm config of 'gnocchi' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'gnocchi' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'gnocchi' to reach the idle state
                 Change charm config of 'gnocchi' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'gnocchi' to reach the idle state
                 Verify that the workload of 'gnocchi' has been upgraded on units: gnocchi/0, gnocchi/1, gnocchi/2
@@ -240,6 +315,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'heat/2'
                 Change charm config of 'heat' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'heat' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'heat' to reach the idle state
                 Change charm config of 'heat' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'heat' to reach the idle state
                 Verify that the workload of 'heat' has been upgraded on units: heat/0, heat/1, heat/2
@@ -250,6 +326,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'neutron-api/2'
                 Change charm config of 'neutron-api' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'neutron-api' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'neutron-api' to reach the idle state
                 Change charm config of 'neutron-api' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'neutron-api' to reach the idle state
                 Verify that the workload of 'neutron-api' has been upgraded on units: neutron-api/0, neutron-api/1, neutron-api/2
@@ -259,6 +336,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'ovn-central/1'
                     Ψ Upgrade software packages on unit 'ovn-central/2'
                 WARNING: Changing 'ovn-central' channel from latest/stable to 22.03/stable. This may be a charm downgrade, which is generally not supported.
+                Wait for up to 300s for app 'ovn-central' to reach the idle state
                 Change charm config of 'ovn-central' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ovn-central' to reach the idle state
                 Verify that the workload of 'ovn-central' has been upgraded on units: ovn-central/0, ovn-central/1, ovn-central/2
@@ -269,6 +347,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'placement/2'
                 Change charm config of 'placement' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'placement' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'placement' to reach the idle state
                 Change charm config of 'placement' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'placement' to reach the idle state
                 Verify that the workload of 'placement' has been upgraded on units: placement/0, placement/1, placement/2
@@ -279,6 +358,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-cloud-controller/2'
                 Change charm config of 'nova-cloud-controller' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'nova-cloud-controller' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'nova-cloud-controller' to reach the idle state
                 Change charm config of 'nova-cloud-controller' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'nova-cloud-controller' to reach the idle state
                 Verify that the workload of 'nova-cloud-controller' has been upgraded on units: nova-cloud-controller/0, nova-cloud-controller/1, nova-cloud-controller/2
@@ -288,8 +368,10 @@ plan: |
                     Ψ Upgrade software packages on unit 'openstack-dashboard/1'
                     Ψ Upgrade software packages on unit 'openstack-dashboard/2'
                 Refresh 'openstack-dashboard' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'openstack-dashboard' to reach the idle state
                 Change charm config of 'openstack-dashboard' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'openstack-dashboard' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'openstack-dashboard' to reach the idle state
                 Change charm config of 'openstack-dashboard' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'openstack-dashboard' to reach the idle state
                 Verify that the workload of 'openstack-dashboard' has been upgraded on units: openstack-dashboard/0, openstack-dashboard/1, openstack-dashboard/2
@@ -300,6 +382,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'octavia/2'
                 Change charm config of 'octavia' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'octavia' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'octavia' to reach the idle state
                 Change charm config of 'octavia' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'octavia' to reach the idle state
                 Verify that the workload of 'octavia' has been upgraded on units: octavia/0, octavia/1, octavia/2
@@ -307,6 +390,7 @@ plan: |
                 Upgrade software packages of 'glance-simplestreams-sync' from the current APT repositories
                     Ψ Upgrade software packages on unit 'glance-simplestreams-sync/0'
                 Upgrade 'glance-simplestreams-sync' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'glance-simplestreams-sync' to reach the idle state
                 Change charm config of 'glance-simplestreams-sync' 'source' to 'cloud:focal-victoria'
             Upgrade plan for 'mysql-innodb-cluster' to 'victoria'
                 Upgrade software packages of 'mysql-innodb-cluster' from the current APT repositories
@@ -314,6 +398,7 @@ plan: |
                     Ψ Upgrade software packages on unit 'mysql-innodb-cluster/1'
                     Ψ Upgrade software packages on unit 'mysql-innodb-cluster/2'
                 Refresh 'mysql-innodb-cluster' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'mysql-innodb-cluster' to reach the idle state
                 Change charm config of 'mysql-innodb-cluster' 'source' to 'cloud:focal-victoria'
                 Wait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state
                 Verify that the workload of 'mysql-innodb-cluster' has been upgraded on units: mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2
@@ -327,7 +412,9 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute/2'
                     Ψ Upgrade software packages on unit 'nova-compute/3'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/0, nova-compute/2, nova-compute/3
                     Ψ Upgrade plan for unit 'nova-compute/0'
@@ -362,7 +449,9 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute/6'
                     Ψ Upgrade software packages on unit 'nova-compute/8'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/1, nova-compute/6, nova-compute/8
                     Ψ Upgrade plan for unit 'nova-compute/1'
@@ -397,7 +486,9 @@ plan: |
                     Ψ Upgrade software packages on unit 'nova-compute/5'
                     Ψ Upgrade software packages on unit 'nova-compute/7'
                 Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'nova-compute' to reach the idle state
                 Change charm config of 'nova-compute' 'openstack-origin' to 'cloud:focal-victoria'
                 Upgrade plan for units: nova-compute/4, nova-compute/5, nova-compute/7
                     Ψ Upgrade plan for unit 'nova-compute/4'
@@ -437,12 +528,14 @@ plan: |
                     Ψ Upgrade software packages on unit 'ceph-osd/7'
                     Ψ Upgrade software packages on unit 'ceph-osd/8'
                 Refresh 'ceph-osd' to the latest revision of 'octopus/stable'
+                Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2, ceph-osd/3, ceph-osd/4, ceph-osd/5, ceph-osd/6, ceph-osd/7, ceph-osd/8
         Data Plane subordinate(s) upgrade plan
             Upgrade plan for 'ceilometer-agent' to 'victoria'
                 Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'ceilometer-agent' to reach the idle state
         Ensure that the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version
 
 applications:

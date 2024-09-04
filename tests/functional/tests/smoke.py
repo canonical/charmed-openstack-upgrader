@@ -146,6 +146,7 @@ class SmokeTest(unittest.TestCase):
             "\t\t\tUpgrade 'designate-bind' from 'ussuri/stable' to the new channel: "
             "'victoria/stable'\n"
             "\t\t\tWait for up to 300s for app 'designate-bind' to reach the idle state\n"
+            "\t\t\tWait for up to 300s for app 'designate-bind' to reach the idle state\n"
             "\t\t\tVerify that the workload of 'designate-bind' has been upgraded on units:"
             " designate-bind/0\n"
             "\t\tUpgrade plan for 'mysql-innodb-cluster' to 'victoria'\n"

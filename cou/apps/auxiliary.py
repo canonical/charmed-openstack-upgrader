@@ -628,7 +628,7 @@ class Vault(AuxiliaryApplication):
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
-        upgrade_step = self._get_upgrade_charm_step(target=target)
+        upgrade_step = self._get_upgrade_charm_steps(target=target)
         steps = []
 
         # Add unseal steps only if chaneel is changed.
