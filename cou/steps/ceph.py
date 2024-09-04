@@ -133,6 +133,9 @@ async def _get_unit_name(ceph_mon_app: Application) -> str:
 async def osd_noout(model: Model, enable: bool) -> None:
     """Set or unset 'noout' for ceph cluster(s).
 
+    Note this will set or unset 'noout' flag for all ceph clusters present in
+    the model.
+
     :param model: The juju model to work with
     :type model: Model
     :param enable: True to set noout, False to unset noout
@@ -176,6 +179,9 @@ async def get_osd_noout_state(model: Model, unit_name: str) -> bool:
 
 async def assert_osd_noout_state(model: Model, state: bool) -> None:
     """Assert ceph cluster is set (state=True) or unset (state=False).
+
+    Note this will assert 'noout' flag is in the desired state for all ceph
+    clusters present in the model.
 
     :param model: The juju model to work with
     :type model: Model
@@ -242,6 +248,9 @@ async def set_require_osd_release_option(model: Model) -> None:
     This function compares the value of require-osd-release option with the
     current release of OSDs. If they are not the same, set the OSDs release as
     the value for require-osd-release.
+
+    Note this will set 'require-osd-release' option with the current release of
+    OSDs for all ceph clusters present in the model.
 
     :param model: Model object
     :type model: Model
