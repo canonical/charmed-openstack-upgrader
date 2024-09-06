@@ -1083,6 +1083,11 @@ def test_get_pre_upgrade_steps(
                 coro=verify_vault_is_unsealed(mock_analysis_result.model),
             ),
             PreUpgradeStep(
+                description="Verify ceph cluster 'noout' is unset",
+                parallel=False,
+                coro=ceph.assert_osd_noout_state(mock_analysis_result.model, state=False),
+            ),
+            PreUpgradeStep(
                 description="Verify that all OpenStack applications are in idle state",
                 parallel=False,
                 coro=mock_analysis_result.model.wait_for_idle(

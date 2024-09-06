@@ -432,7 +432,11 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             parallel=False,
             coro=verify_vault_is_unsealed(analysis_result.model),
         ),
-        *_get_set_noout_steps(analysis_result, args),
+        PreUpgradeStep(
+            description="Verify ceph cluster 'noout' is unset",
+            parallel=False,
+            coro=ceph.assert_osd_noout_state(analysis_result.model, state=False),
+        ),
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
@@ -447,6 +451,7 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
             ),
         ),
     ]
+    steps.extend(_get_set_noout_steps(analysis_result, args))
     steps.extend(_get_backup_steps(analysis_result, args))
     steps.extend(_get_archive_data_steps(analysis_result, args))
     steps.extend(_get_purge_data_steps(analysis_result, args))
@@ -541,20 +546,12 @@ def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUp
                 coro=ceph.osd_noout(analysis_result.model, enable=True),
             )
         ]
-    if not args.set_noout and args.upgrade_group in {DATA_PLANE, None}:
-        PlanStatus.add_message(
-            "Setting noout for ceph cluster during upgrade is optional but recommended. "
-            "You can use `--set-noout` to add this optional step. For more information, "
-            "Please refer to set-noout action: https://charmhub.io/ceph-mon/actions#set-noout",
-            MessageType.WARNING,
-        )
-        return [
-            PreUpgradeStep(
-                description="Verify ceph cluster 'noout' is unset",
-                parallel=False,
-                coro=ceph.assert_osd_noout_state(analysis_result.model, state=False),
-            )
-        ]
+    PlanStatus.add_message(
+        "Setting noout for ceph cluster during upgrade is optional but recommended. "
+        "You can use `--set-noout` to add this optional step. For more information, "
+        "Please refer to set-noout action: https://charmhub.io/ceph-mon/actions#set-noout",
+        MessageType.WARNING,
+    )
     return []
 
 
