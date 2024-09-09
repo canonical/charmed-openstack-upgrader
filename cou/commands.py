@@ -161,8 +161,11 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     )
     subcommand_common_opts_parser.add_argument(
         "--set-noout",
-        help="Set ceph noout across the cluster before cloud upgrade.\n"
-        "Default to disable set noout.",
+        help=(
+            "Set ceph noout across the cluster before cloud upgrade.\n"
+            "And unset ceph noout across the cluster after cloud upgrade.\n"
+            "Default to disable this step."
+        ),
         action=argparse.BooleanOptionalAction,
         default=argparse.SUPPRESS,
     )
