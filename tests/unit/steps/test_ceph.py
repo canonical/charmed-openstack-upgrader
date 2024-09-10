@@ -238,7 +238,7 @@ async def test_set_require_osd_release_option(
 
 @pytest.mark.asyncio
 @patch("cou.steps.ceph.set_require_osd_release_option_on_unit")
-async def test_nset_require_osd_release_optio_no_app(
+async def test_set_require_osd_release_option_no_app(
     mock_set_require_osd_release_option_on_unit, model
 ) -> None:
     model.get_applications.return_value = {}
