@@ -15,6 +15,7 @@
 """Functions for prereq steps related to ceph."""
 import json
 import logging
+from typing import Sequence
 
 from cou.exceptions import (
     ApplicationError,
@@ -22,7 +23,7 @@ from cou.exceptions import (
     RunUpgradeError,
     UnitNotFound,
 )
-from cou.utils.juju_utils import Application, Model
+from cou.utils.juju_utils import Application, Model, get_applications_by_charm_name
 from cou.utils.openstack import CEPH_RELEASES
 
 logger = logging.getLogger(__name__)
@@ -97,24 +98,6 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
     return current_osd_release
 
 
-async def _get_applications(model: Model) -> list[Application]:
-    """Get the all ceph mon application(s) from the model.
-
-    :param model: The juju model to work with
-    :type model: Model
-    :return: A list of ceph-mon applications
-    :type: Application
-    :raise ApplicationNotFound: if ceph-mon no founnd
-    """
-    apps = await model.get_applications()
-    ceph_mon_apps = [app for app in apps.values() if app.charm == "ceph-mon"]
-    if not ceph_mon_apps:
-        raise ApplicationNotFound(
-            "'ceph-mon' application not found, is this a valid OpenStack cloud?"
-        )
-    return ceph_mon_apps
-
-
 async def _get_unit_name(ceph_mon_app: Application) -> str:
     """Get the one of the unit's name from ceph mon application.
 
@@ -130,7 +113,7 @@ async def _get_unit_name(ceph_mon_app: Application) -> str:
     return ceph_mon_units[0].name
 
 
-async def osd_noout(model: Model, enable: bool) -> None:
+async def osd_noout(model: Model, apps: Sequence[Application], enable: bool) -> None:
     """Set or unset 'noout' for ceph cluster(s).
 
     Note this will set or unset 'noout' flag for all ceph clusters present in
@@ -138,11 +121,13 @@ async def osd_noout(model: Model, enable: bool) -> None:
 
     :param model: The juju model to work with
     :type model: Model
+    :param apps: List of Application
+    :type apps: Sequence[Application]
     :param enable: True to set noout, False to unset noout
     :type enable: bool
     """
     try:
-        ceph_mon_apps = await _get_applications(model)
+        ceph_mon_apps = await get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
         logger.warning("%s", str(e))
         logger.warning("Skip changing 'noout', because there's no ceph-mon applications.")
@@ -177,7 +162,7 @@ async def get_osd_noout_state(model: Model, unit_name: str) -> bool:
     return "noout" in json.loads(results["stdout"].strip()).get("flags_set", [])
 
 
-async def assert_osd_noout_state(model: Model, state: bool) -> None:
+async def assert_osd_noout_state(model: Model, apps: Sequence[Application], state: bool) -> None:
     """Assert ceph cluster is set (state=True) or unset (state=False).
 
     Note this will assert 'noout' flag is in the desired state for all ceph
@@ -185,12 +170,14 @@ async def assert_osd_noout_state(model: Model, state: bool) -> None:
 
     :param model: The juju model to work with
     :type model: Model
+    :param apps:List of Application
+    :type apps: Sequence[Application]
     :param state: True noout is set, otherwise False
     :type state: bool
     :raise ApplicationError: if noout is not in desired state
     """
     try:
-        ceph_mon_apps = await _get_applications(model)
+        ceph_mon_apps = await get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
         logger.warning("%s", str(e))
         logger.warning("Skip verifying 'noout', because there's no ceph-mon applications.")
@@ -242,7 +229,7 @@ async def set_require_osd_release_option_on_unit(model: Model, unit_name: str) -
         await model.run_on_unit(unit_name=unit_name, command=set_command, timeout=600)
 
 
-async def set_require_osd_release_option(model: Model) -> None:
+async def set_require_osd_release_option(model: Model, apps: Sequence[Application]) -> None:
     """Check and set the correct value for require-osd-release on all ceph-mon unit.
 
     This function compares the value of require-osd-release option with the
@@ -254,10 +241,12 @@ async def set_require_osd_release_option(model: Model) -> None:
 
     :param model: Model object
     :type model: Model
+    :param apps:List of Application
+    :type apps: Sequence[Application]
     :raises CommandRunFailed: When a command fails to run.
     """
     try:
-        ceph_mon_apps = await _get_applications(model)
+        ceph_mon_apps = await get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
         logger.warning("%s", str(e))
         logger.warning(

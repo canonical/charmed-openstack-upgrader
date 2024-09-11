@@ -13,27 +13,31 @@
 # limitations under the License.
 """Functions for prereq steps relating to vault."""
 import logging
+from typing import Sequence
 
 from cou.exceptions import ApplicationNotFound, VaultSealed
-from cou.utils.juju_utils import Model
+from cou.utils.juju_utils import Application, get_applications_by_charm_name
 
 logger = logging.getLogger(__name__)
 
 
-async def verify_vault_is_unsealed(model: Model) -> None:
+async def verify_vault_is_unsealed(apps: Sequence[Application]) -> None:
     """Verify vault is unsealed.
 
     Check vault status. If vault is sealed, raise VaultSealed.
 
-    :param model: juju model to work with
-    :type model: Model
+    :param apps: List of Application
+    :type apps: Sequence[Application]
     :raises VaultSealed: if application in sealed
     """
     try:
-        app_names = await model.get_application_names(charm_name="vault")
-        for app_name in app_names:
-            app = await model.get_application_status(app_name=app_name)
-            if app.status.info == "Unit is sealed" and app.status.status == "blocked":
+        apps = await get_applications_by_charm_name(apps, "vault")
+        for app in apps:
+            app_status = app.status
+            if (
+                app_status.status.info == "Unit is sealed"
+                and app_status.status.status == "blocked"
+            ):
                 raise VaultSealed(
                     "Vault is sealed, please follow the steps on "
                     "https://charmhub.io/vault to unseal the vault manually before upgrade"
