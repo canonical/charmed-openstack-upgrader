@@ -26,7 +26,7 @@ from cou.exceptions import (
 )
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
-from cou.steps.plan import PlanWarnings
+from cou.steps.plan import PlanStatus
 
 
 @pytest.mark.parametrize(
@@ -90,14 +90,15 @@ async def test_analyze_and_plan(mock_analyze, mock_generate_plan, cou_model, cli
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.print_and_debug")
 @patch("builtins.print")
-@patch("cou.cli.PlanWarnings", spec_set=PlanWarnings)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
 async def test_get_upgrade_plan(
-    mock_plan_warnings, mock_print, mock_print_and_debug, mock_analyze_and_plan, cli_args
+    mock_plan_status, mock_print, mock_print_and_debug, mock_analyze_and_plan, cli_args
 ):
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_plan_warnings.messages = []
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = []
     mock_analyze_and_plan.return_value = plan
 
     await cli.get_upgrade_plan(cli_args)
@@ -114,14 +115,15 @@ async def test_get_upgrade_plan(
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.print_and_debug")
 @patch("cou.cli.logger")
-@patch("cou.cli.PlanWarnings", spec_set=PlanWarnings)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
 async def test_get_upgrade_plan_with_warnings(
-    mock_plan_warnings, mock_logger, mock_print_and_debug, mock_analyze_and_plan, cli_args
+    mock_plan_status, mock_logger, mock_print_and_debug, mock_analyze_and_plan, cli_args
 ):
     """Test get_upgrade_plan function."""
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_plan_warnings.messages = ["Mock warning message1", "Mock warning message2"]
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = ["Mock warning message1", "Mock warning message2"]
     mock_analyze_and_plan.return_value = plan
 
     await cli.get_upgrade_plan(cli_args)
@@ -130,10 +132,37 @@ async def test_get_upgrade_plan_with_warnings(
     mock_print_and_debug.assert_called_once_with(plan)
     mock_logger.warning.assert_has_calls(
         [
-            call("%s", "Mock warning message1\nMock warning message2"),
+            call("Mock warning message1"),
+            call("Mock warning message2"),
+        ]
+    )
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.print_and_debug")
+@patch("cou.cli.logger")
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
+async def test_get_upgrade_plan_with_errors(
+    mock_plan_status, mock_logger, mock_print_and_debug, mock_analyze_and_plan, cli_args
+):
+    """Test get_upgrade_plan function."""
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
+    mock_plan_status.error_messages = ["Mock error message"]
+    mock_plan_status.warning_messages = []
+    mock_analyze_and_plan.return_value = plan
+
+    await cli.get_upgrade_plan(cli_args)
+
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
+    mock_print_and_debug.assert_called_once_with(plan)
+    mock_logger.error.assert_has_calls(
+        [
+            call("%s", "Mock error message"),
             call(
                 "Running upgrades will not be possible until problems indicated "
-                "in the warnings are resolved."
+                "in the errors are resolved."
             ),
         ]
     )
@@ -152,9 +181,9 @@ async def test_get_upgrade_plan_with_warnings(
 @patch("cou.cli.apply_step")
 @patch("builtins.print")
 @patch("cou.cli.print_and_debug")
-@patch("cou.cli.PlanWarnings", spec_set=PlanWarnings)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
 async def test_run_upgrade_quiet_no_prompt(
-    mock_plan_warnings,
+    mock_plan_status,
     mock_print_and_debug,
     mock_print,
     mock_apply_step,
@@ -172,7 +201,8 @@ async def test_run_upgrade_quiet_no_prompt(
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
-    mock_plan_warnings.messages = []
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = []
 
     await cli.run_upgrade(cli_args)
 
@@ -186,9 +216,9 @@ async def test_run_upgrade_quiet_no_prompt(
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("cou.cli.continue_upgrade")
-@patch("cou.cli.PlanWarnings", spec_set=PlanWarnings)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
 async def test_run_upgrade_with_prompt_continue(
-    mock_plan_warnings,
+    mock_plan_status,
     mock_continue_upgrade,
     mock_apply_step,
     mock_analyze_and_plan,
@@ -201,7 +231,8 @@ async def test_run_upgrade_with_prompt_continue(
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
-    mock_plan_warnings.messages = []
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = []
     mock_continue_upgrade.return_value = True
 
     await cli.run_upgrade(cli_args)
@@ -215,9 +246,9 @@ async def test_run_upgrade_with_prompt_continue(
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("cou.cli.continue_upgrade")
-@patch("cou.cli.PlanWarnings", spec_set=PlanWarnings)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
 async def test_run_upgrade_with_prompt_abort(
-    mock_plan_warnings,
+    mock_plan_status,
     mock_continue_upgrade,
     mock_apply_step,
     mock_analyze_and_plan,
@@ -230,7 +261,8 @@ async def test_run_upgrade_with_prompt_abort(
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
-    mock_plan_warnings.messages = []
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = []
     mock_continue_upgrade.return_value = False
 
     await cli.run_upgrade(cli_args)
@@ -244,9 +276,9 @@ async def test_run_upgrade_with_prompt_abort(
 @patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
 @patch("cou.cli.apply_step")
 @patch("cou.cli.continue_upgrade", new_callable=AsyncMock)
-@patch("cou.cli.PlanWarnings", spec_set=PlanWarnings)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
 async def test_run_upgrade_with_no_prompt(
-    mock_plan_warnings,
+    mock_plan_status,
     mock_continue_upgrade,
     mock_apply_step,
     mock_analyze_and_plan,
@@ -259,7 +291,8 @@ async def test_run_upgrade_with_no_prompt(
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
     mock_analyze_and_plan.return_value = plan
-    mock_plan_warnings.messages = []
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = []
 
     await cli.run_upgrade(cli_args)
 
@@ -273,9 +306,9 @@ async def test_run_upgrade_with_no_prompt(
 @patch("cou.cli.apply_step")
 @patch("cou.cli.print_and_debug")
 @patch("cou.cli.logger")
-@patch("cou.cli.PlanWarnings", spec_set=PlanWarnings)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
 async def test_run_upgrade_with_warnings(
-    mock_plan_warnings,
+    mock_plan_status,
     mock_logger,
     mock_print_and_debug,
     mock_apply_step,
@@ -283,12 +316,54 @@ async def test_run_upgrade_with_warnings(
     cli_args,
 ):
     """Test run_upgrade function with error messages from plan generation."""
+    cli_args.prompt = False
+    cli_args.quiet = True
+
     plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
     plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
-    mock_plan_warnings.messages = ["Mock warning message1", "Mock warning message2"]
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = ["Mock warning message1", "Mock warning message2"]
+
+    mock_analyze_and_plan.return_value = plan
+
+    await cli.run_upgrade(cli_args)
+
+    mock_analyze_and_plan.assert_awaited_once_with(cli_args)
+    mock_print_and_debug.assert_called_once_with(plan)
+    mock_logger.warning.assert_has_calls(
+        [
+            call("Mock warning message1"),
+            call("Mock warning message2"),
+        ]
+    )
+    mock_apply_step.assert_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.cli.analyze_and_plan", new_callable=AsyncMock)
+@patch("cou.cli.apply_step")
+@patch("cou.cli.print_and_debug")
+@patch("cou.cli.logger")
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
+async def test_run_upgrade_with_errors(
+    mock_plan_status,
+    mock_logger,
+    mock_print_and_debug,
+    mock_apply_step,
+    mock_analyze_and_plan,
+    cli_args,
+):
+    """Test run_upgrade function with error messages from plan generation."""
+    cli_args.prompt = False
+    cli_args.quiet = True
+
+    plan = UpgradePlan(description="Upgrade cloud from 'ussuri' to 'victoria'")
+    plan.add_step(PreUpgradeStep(description="Back up MySQL databases", parallel=False))
+    mock_plan_status.error_messages = ["Mock error message"]
+    mock_plan_status.warning_messages = []
     exc_message = (
         "Cannot run upgrades. "
-        "Please resolve the problems indicated in the warnings before proceeding."
+        "Please resolve the problems indicated in the errors before proceeding."
     )
 
     mock_analyze_and_plan.return_value = plan
@@ -298,9 +373,7 @@ async def test_run_upgrade_with_warnings(
 
     mock_analyze_and_plan.assert_awaited_once_with(cli_args)
     mock_print_and_debug.assert_called_once_with(plan)
-    mock_logger.warning.assert_called_once_with(
-        "%s", "Mock warning message1\nMock warning message2"
-    )
+    mock_logger.error.assert_called_once_with("%s", "Mock error message")
     mock_apply_step.assert_not_called()
 
 
@@ -349,24 +422,32 @@ async def test_run_command(mock_run_upgrade, mock_get_upgrade_plan, command, cli
         mock_get_upgrade_plan.assert_not_called()
 
 
+@patch("cou.cli.run_post_upgrade_sanity_check")
 @patch("cou.cli.sys")
 @patch("cou.cli.parse_args")
 @patch("cou.cli.get_log_level")
 @patch("cou.cli.setup_logging")
 @patch("cou.cli._run_command")
 def test_entrypoint(
-    mock_run_command, mock_setup_logging, mock_get_log_level, mock_parse_args, mock_sys
+    mock_run_command,
+    mock_setup_logging,
+    mock_get_log_level,
+    mock_parse_args,
+    mock_sys,
+    mock_run_post_upgrade_sanity_check,
 ):
     """Test successful entrypoint execution."""
     mock_sys.argv = ["cou", "upgrade"]
+    args = mock_parse_args.return_value
+    args.command = "upgrade"
 
     cli.entrypoint()
 
     mock_parse_args.assert_called_once_with(["upgrade"])
-    args = mock_parse_args.return_value
     mock_get_log_level.assert_called_once_with(quiet=args.quiet, verbosity=args.verbosity)
     mock_setup_logging.assert_called_once_with(mock_get_log_level.return_value)
     mock_run_command.assert_awaited_once_with(args)
+    mock_run_post_upgrade_sanity_check.await_count == 2
 
 
 @patch("cou.cli.progress_indicator")
@@ -467,3 +548,42 @@ def test_entrypoint_failure_unexpected_exception(mock_run_command, mock_indicato
         cli.entrypoint()
 
     mock_indicator.stop.assert_called_once_with()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "quiet, expected_print_count",
+    [
+        (True, 1),
+        (False, 2),
+    ],
+)
+@patch("builtins.print")
+@patch("cou.cli.Model")
+@patch("cou.cli.post_upgrade_sanity_checks", new_callable=AsyncMock)
+@patch("cou.cli.Analysis", new_callable=AsyncMock)
+@patch("cou.cli.PlanStatus", spec_set=PlanStatus)
+async def test_run_run_post_upgrade_sanity_check(
+    mock_plan_status,
+    mock_analyze,
+    mock_post_upgrade_sanity_checks,
+    cou_model,
+    mock_print,
+    quiet,
+    expected_print_count,
+    cli_args,
+):
+    """Test run_post_upgrade_sanity_check function in either quiet or non-quiet mode."""
+    cli_args.quiet = quiet
+
+    cou_model.return_value.connect.side_effect = AsyncMock()
+    analysis_result = Analysis(model=cou_model, apps=[])
+    mock_analyze.return_value = analysis_result
+
+    mock_plan_status.error_messages = []
+    mock_plan_status.warning_messages = []
+
+    await cli.run_post_upgrade_sanity_check(cli_args)
+
+    mock_post_upgrade_sanity_checks.assert_called_once()
+    mock_print.call_count == expected_print_count

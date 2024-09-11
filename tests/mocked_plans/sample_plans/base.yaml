@@ -1,6 +1,7 @@
 plan: |
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify vault application is unsealed
+        Verify ceph cluster 'noout' is unset
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
@@ -57,6 +58,7 @@ plan: |
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
+        Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version
 
 applications:
   keystone:

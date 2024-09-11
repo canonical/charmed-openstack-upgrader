@@ -135,6 +135,7 @@ class SmokeTest(unittest.TestCase):
         return (
             "Upgrade cloud from 'ussuri' to 'victoria'\n"
             "\tVerify vault application is unsealed\n"
+            "\tVerify ceph cluster 'noout' is unset\n"
             "\tVerify that all OpenStack applications are in idle state\n"
             f"{backup_plan}"
             "\tArchive old database data on nova-cloud-controller\n"
@@ -160,6 +161,7 @@ class SmokeTest(unittest.TestCase):
             "\t\t\tWait for up to 2400s for app 'mysql-innodb-cluster' to reach the idle state\n"
             "\t\t\tVerify that the workload of 'mysql-innodb-cluster' has been upgraded on units: "
             "mysql-innodb-cluster/0, mysql-innodb-cluster/1, mysql-innodb-cluster/2\n"
+            "\tEnsure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version\n"
         )
 
     def test_help(self) -> None:

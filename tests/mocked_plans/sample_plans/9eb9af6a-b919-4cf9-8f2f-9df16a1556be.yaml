@@ -1,6 +1,7 @@
 plan: |
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify vault application is unsealed
+        Verify ceph cluster 'noout' is unset
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
@@ -536,7 +537,7 @@ plan: |
             Upgrade plan for 'ceilometer-agent' to 'victoria'
                 Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'ceilometer-agent' to reach the idle state
-        Ensure that the 'require-osd-release' option in 'ceph-mon' matches the 'ceph-osd' version
+        Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version
 
 applications:
   rabbitmq-server:

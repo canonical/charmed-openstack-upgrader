@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import MagicMock, PropertyMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
 
-from cou.apps.auxiliary import CephMon, CephOsd
+from cou.apps.auxiliary import CephOsd
 from cou.apps.auxiliary_subordinate import OVNSubordinate
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone, NovaCompute
@@ -39,10 +39,12 @@ from cou.steps import (
     UnitUpgradeStep,
     UpgradePlan,
     UpgradeStep,
+    ceph,
 )
 from cou.steps import plan as cou_plan
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
+from cou.steps.ceph import set_require_osd_release_option
 from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
@@ -156,6 +158,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify vault application is unsealed
+        Verify ceph cluster 'noout' is unset
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
@@ -212,10 +215,12 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
+        Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
     cli_args.force = False
+    cli_args.set_noout = False
 
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     mock_filter_hypervisors.return_value = [machines["1"]]
@@ -336,6 +341,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify vault application is unsealed
+        Verify ceph cluster 'noout' is unset
         Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
@@ -380,10 +386,12 @@ nova-compute/0
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0
+        Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version
     """  # noqa: E501 line too long
     )
     cli_args.upgrade_group = None
     cli_args.force = False
+    cli_args.set_noout = False
 
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     mock_filter_hypervisors.return_value = [machines["1"]]
@@ -499,26 +507,19 @@ nova-compute/0
 
     upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
-    # Check only the last entry because this is a singleton class which is being
-    # tested in other functions
-    assert cou_plan.PlanWarnings.messages[-1] == (
-        "Cannot generate plan for 'keystone'\n"
-        "\tUnits of application keystone are running mismatched OpenStack "
-        "versions: 'ussuri': ['keystone/0'], 'victoria': ['keystone/1']. This is "
-        "not currently handled."
-    )
+    assert len(cou_plan.PlanStatus.warning_messages) == 2  # keystone warning and set_noout
 
 
-def test_PlanWarnings_warnings_property():
-    """Test PlanWarnings object."""
+def test_PlanStatus_warnings_property():
+    """Test PlanStatus object."""
     exp_warnings = ["Mock warning message1", "Mock warning message2"]
 
     for warning in exp_warnings:
-        cou_plan.PlanWarnings.add_message(warning)
+        cou_plan.PlanStatus.add_message(warning, message_type=cou_plan.MessageType.WARNING)
 
     # Check only the last two entries because this is a singleton class which is
     # also being tested in other functions
-    assert cou_plan.PlanWarnings.messages[-2:] == exp_warnings
+    assert cou_plan.PlanStatus.warning_messages[-2:] == exp_warnings
 
 
 @patch("cou.steps.plan._verify_hypervisors_cli_input")
@@ -1082,6 +1083,11 @@ def test_get_pre_upgrade_steps(
                 coro=verify_vault_is_unsealed(mock_analysis_result.model),
             ),
             PreUpgradeStep(
+                description="Verify ceph cluster 'noout' is unset",
+                parallel=False,
+                coro=ceph.assert_osd_noout_state(mock_analysis_result.model, state=False),
+            ),
+            PreUpgradeStep(
                 description="Verify that all OpenStack applications are in idle state",
                 parallel=False,
                 coro=mock_analysis_result.model.wait_for_idle(
@@ -1226,80 +1232,36 @@ def test_get_purge_data_steps(
 
 
 @pytest.mark.parametrize("upgrade_group", [CONTROL_PLANE, HYPERVISORS])
-@patch("cou.steps.plan._get_ceph_mon_post_upgrade_steps")
-def test_get_post_upgrade_steps_empty(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
+def test_get_post_upgrade_steps_empty(upgrade_group):
     """Test get post upgrade steps not run for control-plane or hypervisors group."""
     args = MagicMock(spec_set=CLIargs)()
     args.upgrade_group = upgrade_group
 
-    pre_upgrade_steps = cou_plan._get_post_upgrade_steps(MagicMock(), args)
+    post_upgrade_steps = cou_plan._get_post_upgrade_steps(MagicMock(), args)
 
-    assert pre_upgrade_steps == []
-    mock_get_ceph_mon_post_upgrade_steps.assert_not_called()
+    assert post_upgrade_steps == []
 
 
 @pytest.mark.parametrize("upgrade_group", [DATA_PLANE, None])
-@patch("cou.steps.plan._get_ceph_mon_post_upgrade_steps")
-def test_get_post_upgrade_steps_ceph_mon(mock_get_ceph_mon_post_upgrade_steps, upgrade_group):
+def test_get_post_upgrade_steps_ceph_mon(upgrade_group):
     """Test get post upgrade steps including ceph-mon."""
     args = MagicMock(spec_set=CLIargs)()
+    args.set_noout = True
     args.upgrade_group = upgrade_group
     analysis_result = MagicMock(spec_set=Analysis)()
-    mock_get_ceph_mon_post_upgrade_steps.return_value = [MagicMock()]
 
-    pre_upgrade_steps = cou_plan._get_post_upgrade_steps(analysis_result, args)
+    post_upgrade_steps = cou_plan._get_post_upgrade_steps(analysis_result, args)
 
-    assert pre_upgrade_steps == mock_get_ceph_mon_post_upgrade_steps.return_value
-    mock_get_ceph_mon_post_upgrade_steps.assert_called_with(analysis_result.apps_control_plane)
-
-
-def test_get_ceph_mon_post_upgrade_steps_zero(model):
-    """Test get post upgrade step for ceph-mon without any ceph-mon app."""
-    analysis_result = MagicMock(spec_set=Analysis)()
-    analysis_result.apps_control_plane = []
-
-    step = cou_plan._get_ceph_mon_post_upgrade_steps(analysis_result)
-
-    assert bool(step) is False
-
-
-def test_get_ceph_mon_post_upgrade_steps_multiple(model):
-    """Test get post upgrade step for ceph-mon with multiple ceph-mon."""
-    machines = {"0": MagicMock(spec_set=Machine)}
-    units = {
-        "ceph-mon/0": Unit(
-            name="ceph-mon/0",
-            workload_version="17.0.1",
-            machine=machines["0"],
-        )
-    }
-    ceph_mon = CephMon(
-        name="ceph-mon",
-        can_upgrade_to="",
-        charm="ceph-mon",
-        channel="quincy/stable",
-        config={"source": {"value": "distro"}},
-        machines={},
-        model=model,
-        origin="ch",
-        series="focal",
-        subordinate_to=[],
-        subordinate_units=[],
-        units=units,
-        workload_version="17.0.1",
-    )
-
-    exp_steps = 2 * [
+    assert post_upgrade_steps == [
         PostUpgradeStep(
-            "Ensure that the 'require-osd-release' option in 'ceph-mon' matches the "
-            "'ceph-osd' version",
-            coro=app_utils.set_require_osd_release_option("ceph-mon/0", model),
-        )
+            "Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version",
+            coro=set_require_osd_release_option(analysis_result.model),
+        ),
+        PostUpgradeStep(
+            description="Unset ceph cluster 'noout' flag after data plane upgrade",
+            coro=ceph.osd_noout(analysis_result.model, enable=False),
+        ),
     ]
-
-    steps = cou_plan._get_ceph_mon_post_upgrade_steps([ceph_mon, ceph_mon])
-
-    assert steps == exp_steps
 
 
 @patch("cou.steps.plan._create_upgrade_group")
@@ -1743,7 +1705,7 @@ def test_generate_instance_plan_HaltUpgradePlanGeneration():
 @pytest.mark.parametrize(
     "exceptions", [ApplicationError, MismatchedOpenStackVersions, COUException]
 )
-@patch("cou.steps.plan.PlanWarnings", spec_set=cou_plan.PlanWarnings)
+@patch("cou.steps.plan.PlanStatus", spec_set=cou_plan.PlanStatus)
 def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
     """Test _generate_instance_plan with COUException."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
@@ -1756,7 +1718,7 @@ def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
     assert plan is None
     app.generate_upgrade_plan.assert_called_once_with(target, False)
     mock_plan_warnings.add_message.assert_called_once_with(
-        "Cannot generate plan for 'test-app'\n\tmock message"
+        "Cannot generate plan for 'test-app'\n\tmock message", cou_plan.MessageType.ERROR
     )
 
 
@@ -1768,3 +1730,42 @@ def test_create_upgrade_plan_failed():
 
     with pytest.raises(Exception, match="test"):
         cou_plan._create_upgrade_group([app], "victoria", "test", False)
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.print_and_debug")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph")
+async def test_post_upgrade_sanity_checks(mock_ceph, mock_analysis, mock_print_and_debug):
+    """Test post_upgrade_sanity_checks with exception."""
+    mock_ceph.assert_osd_noout_state = AsyncMock(side_effect=ApplicationError)
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+    mock_print_and_debug.assert_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.print_and_debug")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph")
+async def test_post_upgrade_sanity_checks_no_exception(
+    mock_ceph, mock_analysis, mock_print_and_debug
+):
+    """Test post_upgrade_sanity_checks without exception."""
+    mock_ceph.assert_osd_noout_state = AsyncMock()
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+    mock_print_and_debug.assert_not_called()
+
+
+@patch("cou.steps.analyze.Analysis")
+def test_get_set_noout_steps(mock_analysis, cli_args):
+    """Test _get_set_noout_steps with --set-noout."""
+    cli_args.set_noout = True
+    cli_args.upgrade_group = None
+
+    step = cou_plan._get_set_noout_steps(mock_analysis, cli_args)
+    assert step == [
+        PreUpgradeStep(
+            description="Set ceph cluster 'noout' flag before data plane upgrade",
+            coro=ceph.osd_noout(mock_analysis.model, enable=True),
+        )
+    ]
