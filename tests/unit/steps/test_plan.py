@@ -49,7 +49,7 @@ from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
 from cou.utils import app_utils
-from cou.utils.juju_utils import Machine, SubordinateUnit, Unit
+from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import dedent_plan, generate_cou_machine
 
@@ -238,7 +238,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -259,7 +258,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=["keystone"],
-        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="17.0.1",
     )
@@ -275,7 +273,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "nova-compute/0": Unit(
                 name="nova-compute/0",
@@ -297,7 +294,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "ceph-osd/0": Unit(
                 name="ceph-osd/0",
@@ -319,7 +315,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        subordinate_units=[SubordinateUnit("ovn-chassis/0", "ovn-chassis")],
         units={},
         workload_version="22.3",
     )
@@ -409,7 +404,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -435,7 +429,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=["keystone"],
-        subordinate_units=[SubordinateUnit("keystone-ldap/0", "keystone-ldap")],
         units={},
         workload_version="17.0.1",
     )
@@ -451,7 +444,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "nova-compute/0": Unit(
                 name="nova-compute/0",
@@ -473,7 +465,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "ceph-osd/0": Unit(
                 name="ceph-osd/0",
@@ -495,7 +486,6 @@ nova-compute/0
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        subordinate_units=[SubordinateUnit("ovn-chassis/0", "ovn-chassis")],
         units={},
         workload_version="22.3",
     )
@@ -1468,7 +1458,6 @@ def test_separate_hypervisors_apps(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "nova-compute/0": Unit(
                 name="nova-compute/0",
@@ -1494,7 +1483,6 @@ def test_separate_hypervisors_apps(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -1517,7 +1505,6 @@ def test_separate_hypervisors_apps(model):
         origin="ch",
         series="focal",
         subordinate_to=["nova-compute"],
-        subordinate_units=[SubordinateUnit("ovn-chassis/0", "ovn-chassis")],
         units={},
         workload_version="22.3",
     )
@@ -1534,7 +1521,6 @@ def test_separate_hypervisors_apps(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "ceph-osd/0": Unit(
                 name="ceph-osd/0",
@@ -1557,7 +1543,6 @@ def test_separate_hypervisors_apps(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "ceph-osd/0": Unit(
                 name="ceph-osd/0",

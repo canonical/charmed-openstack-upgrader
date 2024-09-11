@@ -484,7 +484,6 @@ def test_hypervisor_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -505,7 +504,6 @@ def test_hypervisor_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"nova-compute/{unit}": Unit(
                 name=f"nova-compute/{unit}",
@@ -587,7 +585,6 @@ def test_hypervisor_upgrade_plan_single_machine(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -608,7 +605,6 @@ def test_hypervisor_upgrade_plan_single_machine(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"nova-compute/{unit}": Unit(
                 name=f"nova-compute/{unit}",
@@ -689,7 +685,6 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -724,7 +719,6 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "nova-compute/0": Unit(
                 name="nova-compute/0",

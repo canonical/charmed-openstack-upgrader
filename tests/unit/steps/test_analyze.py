@@ -28,7 +28,6 @@ from cou.utils.openstack import OpenStackRelease
 from tests.unit.utils import generate_cou_machine
 
 
-@pytest.mark.asyncio
 def test_analysis_dump(model):
     """Test analysis dump."""
     expected_result = dedent(
@@ -45,7 +44,6 @@ def test_analysis_dump(model):
           origin: ch
           series: focal
           subordinate_to: []
-          subordinate_units: []
           workload_version: 17.0.1
           units:
             keystone/0:
@@ -91,7 +89,6 @@ def test_analysis_dump(model):
           origin: ch
           series: focal
           subordinate_to: []
-          subordinate_units: []
           workload_version: 16.4.2
           units:
             cinder/0:
@@ -137,7 +134,6 @@ def test_analysis_dump(model):
           origin: ch
           series: focal
           subordinate_to: []
-          subordinate_units: []
           workload_version: '3.8'
           units:
             rabbitmq-server/0:
@@ -170,7 +166,6 @@ def test_analysis_dump(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"keystone/{unit}": Unit(
                 name=f"keystone/{unit}", workload_version="17.0.1", machine=machines[f"{unit}"]
@@ -190,7 +185,6 @@ def test_analysis_dump(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -211,7 +205,6 @@ def test_analysis_dump(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"cinder/{unit}": Unit(
                 name=f"cinder/{unit}",
@@ -278,7 +271,6 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -299,7 +291,6 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -320,7 +311,6 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -465,7 +455,6 @@ async def test_analysis_detect_current_cloud_o7k_release_different_releases(mode
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -486,7 +475,6 @@ async def test_analysis_detect_current_cloud_o7k_release_different_releases(mode
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -507,7 +495,6 @@ async def test_analysis_detect_current_cloud_o7k_release_different_releases(mode
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -541,7 +528,6 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -562,7 +548,6 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -583,7 +568,6 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
         origin="ch",
         series="bionic",  # change cinder to Bionic series
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -692,7 +676,6 @@ def test_min_o7k_release_apps(model, channel_keystone, channel_gnocchi, origin, 
         origin=origin,
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -714,7 +697,6 @@ def test_min_o7k_release_apps(model, channel_keystone, channel_gnocchi, origin, 
         origin=origin,
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "gnocchi": Unit(
                 name="gnocchi/0",

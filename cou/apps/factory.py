@@ -57,7 +57,6 @@ class AppFactory:
                 series=app.series,
                 subordinate_to=app.subordinate_to,
                 units=app.units,
-                subordinate_units=app.subordinate_units,
                 workload_version=app.workload_version,
                 actions=app.actions,
             )

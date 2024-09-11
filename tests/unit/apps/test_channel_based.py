@@ -50,7 +50,6 @@ def test_application_versionless(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="",
     )
@@ -101,7 +100,6 @@ This may be a charm downgrade, which is generally not supported.
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="",
     )
@@ -130,7 +128,6 @@ def test_application_gnocchi_ussuri(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "gnocchi/0": Unit(
                 name="gnocchi/0",
@@ -163,7 +160,6 @@ def test_application_gnocchi_xena(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "gnocchi/0": Unit(
                 name="gnocchi/0",
@@ -199,7 +195,6 @@ def test_application_designate_bind_ussuri(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "designate-bind/0": Unit(
                 name="designate-bind/0",
@@ -229,7 +224,6 @@ def test_application_versionless_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "glance-simplestreams-sync/0": Unit(
                 name="glance-simplestreams-sync/0",
@@ -315,7 +309,6 @@ def test_application_gnocchi_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "gnocchi/0": Unit(
                 name="gnocchi/0",
@@ -410,7 +403,6 @@ def test_application_designate_bind_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "designate-bind/0": Unit(
                 name="designate-bind/0",
@@ -522,7 +514,6 @@ def test_expected_current_channel_channel_based(
         origin=origin,
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
