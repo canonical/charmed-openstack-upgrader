@@ -1075,7 +1075,11 @@ def test_get_pre_upgrade_steps(
             PreUpgradeStep(
                 description="Verify ceph cluster 'noout' is unset",
                 parallel=False,
-                coro=ceph.assert_osd_noout_state(mock_analysis_result.model, state=False),
+                coro=ceph.assert_osd_noout_state(
+                    mock_analysis_result.model,
+                    mock_analysis_result.apps_control_plane,
+                    state=False,
+                ),
             ),
             PreUpgradeStep(
                 description="Verify that all OpenStack applications are in idle state",
@@ -1131,7 +1135,9 @@ def test_get_archive_data_steps(cli_args, model):
     assert steps == [
         PreUpgradeStep(
             description="Archive old database data on nova-cloud-controller",
-            coro=archive(mock_analysis_result.model, batch_size=2000),
+            coro=archive(
+                mock_analysis_result.model, mock_analysis_result.apps_data_plane, batch_size=2000
+            ),
         )
     ]
 
@@ -1214,7 +1220,11 @@ def test_get_purge_data_steps(
     expected_steps = [
         PreUpgradeStep(
             description=msg,
-            coro=purge(mock_analysis_result.model, before=cli_args.purge_before),
+            coro=purge(
+                mock_analysis_result.model,
+                mock_analysis_result.apps_data_plane,
+                before=cli_args.purge_before,
+            ),
         )
     ]
     steps = cou_plan._get_purge_data_steps(mock_analysis_result, cli_args)
@@ -1245,11 +1255,15 @@ def test_get_post_upgrade_steps_ceph_mon(upgrade_group):
     assert post_upgrade_steps == [
         PostUpgradeStep(
             "Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version",
-            coro=set_require_osd_release_option(analysis_result.model),
+            coro=set_require_osd_release_option(
+                analysis_result.model, analysis_result.apps_control_plane
+            ),
         ),
         PostUpgradeStep(
             description="Unset ceph cluster 'noout' flag after data plane upgrade",
-            coro=ceph.osd_noout(analysis_result.model, enable=False),
+            coro=ceph.osd_noout(
+                analysis_result.model, analysis_result.apps_control_plane, enable=False
+            ),
         ),
     ]
 
@@ -1751,6 +1765,8 @@ def test_get_set_noout_steps(mock_analysis, cli_args):
     assert step == [
         PreUpgradeStep(
             description="Set ceph cluster 'noout' flag before data plane upgrade",
-            coro=ceph.osd_noout(mock_analysis.model, enable=True),
+            coro=ceph.osd_noout(
+                mock_analysis.model, mock_analysis.apps_control_plane, enable=True
+            ),
         )
     ]

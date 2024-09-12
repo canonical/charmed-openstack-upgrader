@@ -1676,7 +1676,6 @@ def get_vault_o7k_app(model, config, series: str = "jammy"):
         origin="ch",
         series=series,
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",

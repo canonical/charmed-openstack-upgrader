@@ -177,7 +177,6 @@ class Application:
     subordinate_to: list[str]
     units: dict[str, Unit]
     workload_version: str
-    status: ApplicationStatus
     actions: dict[str, str] = field(default_factory=lambda: {}, compare=False)
 
     @property
@@ -399,7 +398,6 @@ class Model:
                     )
                     for name, unit in status.units.items()
                 },
-                status=status,
                 workload_version=status.workload_version,
                 actions=await model.applications[app].get_actions(),
             )
@@ -728,6 +726,40 @@ class Model:
             for unit in juju_app.units:
                 if unit.workload_status == "error":
                     await unit.resolved(retry=True)
+
+    async def get_application_names(self, charm_name: str) -> list[str]:
+        """Get application name by charm name.
+
+        :param charm_name: charm name of application
+        :type charm_name: str
+        :return: ApplicationStatus object
+        :rtype: ApplicationStatus
+        :raises ApplicationNotFound: When charm is not found in the model.
+        """
+        app_names = []
+        model = await self._get_model()
+        for app_name, app in model.applications.items():
+            if app.charm_name == charm_name:
+                app_names.append(app_name)
+        if not app_names:
+            raise ApplicationNotFound(f"Cannot find '{charm_name}' charm in model '{self.name}'.")
+        return app_names
+
+    async def get_application_status(self, app_name: str) -> ApplicationStatus:
+        """Get ApplicationStatus by charm name.
+
+        :param app_name: name of application
+        :type app_name: str
+        :return: ApplicationStatus object
+        :rtype: ApplicationStatus
+        :raises ApplicationNotFound: When application is not found in the model.
+        """
+        model = await self._get_model()
+        status = await model.get_status(filters=[app_name])
+        for name, app in status.applications.items():
+            if name == app_name:
+                return app
+        raise ApplicationNotFound(f"Cannot find '{app_name}' in model '{self.name}'.")
 
 
 async def get_applications_by_charm_name(

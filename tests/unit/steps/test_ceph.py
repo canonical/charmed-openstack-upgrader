@@ -12,90 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cou.exceptions import (
-    ApplicationError,
-    ApplicationNotFound,
-    RunUpgradeError,
-    UnitNotFound,
-)
+from cou.exceptions import ApplicationError, RunUpgradeError, UnitNotFound
 from cou.steps import ceph
-from cou.utils.juju_utils import Application, Unit
-
-
-@pytest.mark.asyncio
-async def test_get_application(model) -> None:
-    ceph_mon_1 = MagicMock(spec_set=Application)()
-    ceph_mon_1.name = "ceph-mon-1"
-    ceph_mon_1.charm = "ceph-mon"
-
-    ceph_mon_2 = MagicMock(spec_set=Application)()
-    ceph_mon_2.name = "ceph-mon-2"
-    ceph_mon_2.charm = "ceph-mon"
-
-    model.get_applications.return_value = {
-        "ceph-mon-1": ceph_mon_1,
-        "ceph-mon-2": ceph_mon_2,
-    }
-    ceph_mon_apps = await ceph._get_applications(model)
-    assert len(ceph_mon_apps) == 2
-
-
-@pytest.mark.asyncio
-async def test_get_application_error(model) -> None:
-    model.get_applications.return_value = {}
-
-    with pytest.raises(ApplicationNotFound):
-        await ceph._get_applications(model)
+from tests.unit.utils import get_applications
 
 
 @pytest.mark.asyncio
 async def test_get_unit_name(model) -> None:
-    ceph_mon_1 = MagicMock(spec_set=Application)()
-    ceph_mon_1.name = "ceph-mon"
-    ceph_mon_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_unit.name = "ceph-mon/0"
-    ceph_mon_1.units = {"ceph-mon/0": ceph_mon_unit}
+    apps = get_applications("ceph-mon")
 
-    ceph_mon_unit_name = await ceph._get_unit_name(ceph_mon_1)
-    assert ceph_mon_unit_name == "ceph-mon/0"
+    ceph_mon_unit_name = await ceph._get_unit_name(apps[0])
+
+    assert ceph_mon_unit_name == "ceph-mon-0/0"
 
 
 @pytest.mark.asyncio
 async def test_get_unit_name_error(model) -> None:
-    ceph_mon_1 = MagicMock(spec_set=Application)()
-    ceph_mon_1.name = "ceph-mon"
-    ceph_mon_1.units = {}
+    apps = get_applications("ceph-mon", unit_count=0)
 
     with pytest.raises(UnitNotFound):
-        await ceph._get_unit_name(ceph_mon_1)
+        await ceph._get_unit_name(apps[0])
 
 
 @pytest.mark.asyncio
 async def test_osd_noout(model) -> None:
-    ceph_mon_1_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_1_unit.name = "ceph-mon-1/0"
-    ceph_mon_1 = MagicMock(spec_set=Application)()
-    ceph_mon_1.name = "ceph-mon-1"
-    ceph_mon_1.charm = "ceph-mon"
-    ceph_mon_1.units = {"ceph-mon-1/0": ceph_mon_1_unit}
+    apps = get_applications("ceph-mon", app_count=2)
 
-    ceph_mon_2_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_2_unit.name = "ceph-mon-2/0"
-    ceph_mon_2 = MagicMock(spec_set=Application)()
-    ceph_mon_2.name = "ceph-mon-2"
-    ceph_mon_2.charm = "ceph-mon"
-    ceph_mon_2.units = {"ceph-mon-2/0": ceph_mon_2_unit}
-
-    model.get_applications.return_value = {
-        "ceph-mon-1": ceph_mon_1,
-        "ceph-mon-2": ceph_mon_2,
-    }
-
-    await ceph.osd_noout(model, True)
+    await ceph.osd_noout(model, apps, True)
 
     model.run_action.assert_awaited()
     assert model.run_action.await_count == 2
@@ -103,25 +50,18 @@ async def test_osd_noout(model) -> None:
 
 @pytest.mark.asyncio
 async def test_osd_noout_no_ceph_mon_app(model) -> None:
-    model.get_applications.return_value = {}
+    apps = []
 
-    await ceph.osd_noout(model, True)
+    await ceph.osd_noout(model, apps, True)
 
     model.run_action.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 async def test_osd_noout_no_ceph_mon_units(model) -> None:
-    ceph_mon = MagicMock(spec_set=Application)()
-    ceph_mon.name = "ceph-mon"
-    ceph_mon.charm = "ceph-mon"
-    ceph_mon.units = {}
+    apps = get_applications("ceph-mon", unit_count=0)
 
-    model.get_applications.return_value = {
-        "ceph-mon": ceph_mon,
-    }
-
-    await ceph.osd_noout(model, True)
+    await ceph.osd_noout(model, apps, True)
 
     model.run_action.assert_not_awaited()
 
@@ -129,62 +69,28 @@ async def test_osd_noout_no_ceph_mon_units(model) -> None:
 @pytest.mark.asyncio
 @patch("cou.steps.ceph.get_osd_noout_state")
 async def test_assert_osd_noout_state_same(mock_get_osd_noout_state, model) -> None:
-    ceph_mon_1_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_1_unit.name = "ceph-mon-1/0"
-    ceph_mon_1 = MagicMock(spec_set=Application)()
-    ceph_mon_1.name = "ceph-mon-1"
-    ceph_mon_1.charm = "ceph-mon"
-    ceph_mon_1.units = {"ceph-mon-1/0": ceph_mon_1_unit}
-
-    ceph_mon_2_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_2_unit.name = "ceph-mon-2/0"
-    ceph_mon_2 = MagicMock(spec_set=Application)()
-    ceph_mon_2.name = "ceph-mon-2"
-    ceph_mon_2.charm = "ceph-mon"
-    ceph_mon_2.units = {"ceph-mon-2/0": ceph_mon_2_unit}
-
-    model.get_applications.return_value = {
-        "ceph-mon-1": ceph_mon_1,
-        "ceph-mon-2": ceph_mon_2,
-    }
-
+    apps = get_applications("ceph-mon", app_count=2)
     mock_get_osd_noout_state.return_value = True
-    await ceph.assert_osd_noout_state(model, True)
+
+    await ceph.assert_osd_noout_state(model, apps, True)
 
 
 @pytest.mark.asyncio
 @patch("cou.steps.ceph.get_osd_noout_state")
 async def test_assert_osd_noout_state_different(mock_get_osd_noout_state, model) -> None:
-    ceph_mon_1_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_1_unit.name = "ceph-mon-1/0"
-    ceph_mon_1 = MagicMock(spec_set=Application)()
-    ceph_mon_1.name = "ceph-mon-1"
-    ceph_mon_1.charm = "ceph-mon"
-    ceph_mon_1.units = {"ceph-mon-1/0": ceph_mon_1_unit}
-
-    ceph_mon_2_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_2_unit.name = "ceph-mon-2/0"
-    ceph_mon_2 = MagicMock(spec_set=Application)()
-    ceph_mon_2.name = "ceph-mon-2"
-    ceph_mon_2.charm = "ceph-mon"
-    ceph_mon_2.units = {"ceph-mon-2/0": ceph_mon_2_unit}
-
-    model.get_applications.return_value = {
-        "ceph-mon-1": ceph_mon_1,
-        "ceph-mon-2": ceph_mon_2,
-    }
-
+    apps = get_applications("ceph-mon", app_count=2)
     mock_get_osd_noout_state.return_value = False
+
     with pytest.raises(ApplicationError):
-        await ceph.assert_osd_noout_state(model, True)
+        await ceph.assert_osd_noout_state(model, apps, True)
 
 
 @pytest.mark.asyncio
 @patch("cou.steps.ceph.get_osd_noout_state")
 async def test_assert_osd_noout_state_no_app(mock_get_osd_noout_state, model) -> None:
-    model.get_applications.return_value = {}
+    apps = []
 
-    await ceph.assert_osd_noout_state(model, True)
+    await ceph.assert_osd_noout_state(model, apps, True)
 
     mock_get_osd_noout_state.assert_not_awaited()
 
@@ -192,16 +98,9 @@ async def test_assert_osd_noout_state_no_app(mock_get_osd_noout_state, model) ->
 @pytest.mark.asyncio
 @patch("cou.steps.ceph.get_osd_noout_state")
 async def test_assert_osd_noout_state_no_units(mock_get_osd_noout_state, model) -> None:
-    ceph_mon = MagicMock(spec_set=Application)()
-    ceph_mon.name = "ceph-mon"
-    ceph_mon.charm = "ceph-mon"
-    ceph_mon.units = {}
+    apps = get_applications("ceph-mon", unit_count=0)
 
-    model.get_applications.return_value = {
-        "ceph-mon": ceph_mon,
-    }
-
-    await ceph.assert_osd_noout_state(model, True)
+    await ceph.assert_osd_noout_state(model, apps, True)
 
     mock_get_osd_noout_state.assert_not_awaited()
 
@@ -211,26 +110,9 @@ async def test_assert_osd_noout_state_no_units(mock_get_osd_noout_state, model) 
 async def test_set_require_osd_release_option(
     mock_set_require_osd_release_option_on_unit, model
 ) -> None:
-    ceph_mon_1_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_1_unit.name = "ceph-mon-1/0"
-    ceph_mon_1 = MagicMock(spec_set=Application)()
-    ceph_mon_1.name = "ceph-mon-1"
-    ceph_mon_1.charm = "ceph-mon"
-    ceph_mon_1.units = {"ceph-mon-1/0": ceph_mon_1_unit}
+    apps = get_applications("ceph-mon", app_count=2)
 
-    ceph_mon_2_unit = MagicMock(spec_set=Unit)()
-    ceph_mon_2_unit.name = "ceph-mon-2/0"
-    ceph_mon_2 = MagicMock(spec_set=Application)()
-    ceph_mon_2.name = "ceph-mon-2"
-    ceph_mon_2.charm = "ceph-mon"
-    ceph_mon_2.units = {"ceph-mon-2/0": ceph_mon_2_unit}
-
-    model.get_applications.return_value = {
-        "ceph-mon-1": ceph_mon_1,
-        "ceph-mon-2": ceph_mon_2,
-    }
-
-    await ceph.set_require_osd_release_option(model)
+    await ceph.set_require_osd_release_option(model, apps)
 
     mock_set_require_osd_release_option_on_unit.assert_awaited()
     assert mock_set_require_osd_release_option_on_unit.await_count == 2
@@ -241,9 +123,9 @@ async def test_set_require_osd_release_option(
 async def test_set_require_osd_release_option_no_app(
     mock_set_require_osd_release_option_on_unit, model
 ) -> None:
-    model.get_applications.return_value = {}
+    apps = []
 
-    await ceph.set_require_osd_release_option(model)
+    await ceph.set_require_osd_release_option(model, apps)
 
     mock_set_require_osd_release_option_on_unit.assert_not_awaited()
 
@@ -253,16 +135,9 @@ async def test_set_require_osd_release_option_no_app(
 async def test_set_require_osd_release_option_no_units(
     mock_set_require_osd_release_option_on_unit, model
 ) -> None:
-    ceph_mon = MagicMock(spec_set=Application)()
-    ceph_mon.name = "ceph-mon"
-    ceph_mon.charm = "ceph-mon"
-    ceph_mon.units = {}
+    apps = get_applications("ceph-mon", unit_count=0)
 
-    model.get_applications.return_value = {
-        "ceph-mon": ceph_mon,
-    }
-
-    await ceph.set_require_osd_release_option(model)
+    await ceph.set_require_osd_release_option(model, apps)
 
     mock_set_require_osd_release_option_on_unit.assert_not_awaited()
 

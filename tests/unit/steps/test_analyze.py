@@ -351,7 +351,6 @@ async def test_analysis_create_with_skip_apps(mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -372,7 +371,6 @@ async def test_analysis_create_with_skip_apps(mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -393,7 +391,6 @@ async def test_analysis_create_with_skip_apps(mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -414,7 +411,6 @@ async def test_analysis_create_with_skip_apps(mock_populate, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "vault/0": Unit(
                 name="vault/0",

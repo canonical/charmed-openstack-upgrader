@@ -432,7 +432,7 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
         PreUpgradeStep(
             description="Verify vault application is unsealed",
             parallel=False,
-            coro=verify_vault_is_unsealed(analysis_result.apps),
+            coro=verify_vault_is_unsealed(analysis_result.model),
         ),
         PreUpgradeStep(
             description="Verify ceph cluster 'noout' is unset",
