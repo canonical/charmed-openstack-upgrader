@@ -436,9 +436,6 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute/0'
                 Enable nova-compute scheduler from unit: 'nova-compute/2'
                 Enable nova-compute scheduler from unit: 'nova-compute/3'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/2'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/3'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/2, nova-compute/3
             Upgrade plan for [nova-compute/1, nova-compute/6, nova-compute/8] in 'az3' to 'victoria'
@@ -473,9 +470,6 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute/1'
                 Enable nova-compute scheduler from unit: 'nova-compute/6'
                 Enable nova-compute scheduler from unit: 'nova-compute/8'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/1'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/6'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/8'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/1, nova-compute/6, nova-compute/8
             Upgrade plan for [nova-compute/4, nova-compute/5, nova-compute/7] in 'az2' to 'victoria'
@@ -510,9 +504,6 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute/4'
                 Enable nova-compute scheduler from unit: 'nova-compute/5'
                 Enable nova-compute scheduler from unit: 'nova-compute/7'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/4'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/5'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/7'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/4, nova-compute/5, nova-compute/7
         Remaining Data Plane principal(s) upgrade plan
