@@ -129,18 +129,16 @@ async def osd_noout(model: Model, apps: Sequence[Application], enable: bool) -> 
     try:
         ceph_mon_apps = get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
-        logger.warning("%s", str(e))
-        logger.warning("Skip changing 'noout', because there's no ceph-mon applications.")
+        logger.debug("%s", str(e))
+        logger.debug("Skip changing 'noout', because there's no ceph-mon applications.")
         return
 
     for ceph_mon_app in ceph_mon_apps:
         try:
             ceph_mon_unit_name = _get_unit_name(ceph_mon_app)
         except UnitNotFound as e:
-            logger.warning("%s", str(e))
-            logger.warning(
-                "Skip changing 'noout', because there's no %s units.", ceph_mon_app.name
-            )
+            logger.debug("%s", str(e))
+            logger.debug("Skip changing 'noout', because there's no %s units.", ceph_mon_app.name)
             continue
 
         await model.run_action(
@@ -179,8 +177,8 @@ async def assert_osd_noout_state(model: Model, apps: Sequence[Application], stat
     try:
         ceph_mon_apps = get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
-        logger.warning("%s", str(e))
-        logger.warning("Skip verifying 'noout', because there's no ceph-mon applications.")
+        logger.debug("%s", str(e))
+        logger.debug("Skip verifying 'noout', because there's no ceph-mon applications.")
         return
 
     error = False
@@ -188,16 +186,14 @@ async def assert_osd_noout_state(model: Model, apps: Sequence[Application], stat
         try:
             ceph_mon_unit_name = _get_unit_name(ceph_mon_app)
         except UnitNotFound as e:
-            logger.warning("%s", str(e))
-            logger.warning(
-                "Skip verifying 'noout', because there's no %s units.", ceph_mon_app.name
-            )
+            logger.debug("%s", str(e))
+            logger.debug("Skip verifying 'noout', because there's no %s units.", ceph_mon_app.name)
             continue
 
         if await get_osd_noout_state(model, ceph_mon_unit_name) is not state:
             error = True
-            logger.error(
-                "'noout' is expected to be %s for %s",
+            logger.debug(
+                "'noout' is expected to be %s for '%s'",
                 "set" if state else "unset",
                 ceph_mon_app.name,
             )
@@ -248,8 +244,8 @@ async def set_require_osd_release_option(model: Model, apps: Sequence[Applicatio
     try:
         ceph_mon_apps = get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
-        logger.warning("%s", str(e))
-        logger.warning(
+        logger.debug("%s", str(e))
+        logger.debug(
             "Skip ensuring 'require-osd-release' option, because there's no ceph-mon applications."
         )
         return
@@ -258,8 +254,8 @@ async def set_require_osd_release_option(model: Model, apps: Sequence[Applicatio
         try:
             ceph_mon_unit_name = _get_unit_name(ceph_mon_app)
         except UnitNotFound as e:
-            logger.warning("%s", str(e))
-            logger.warning(
+            logger.debug("%s", str(e))
+            logger.debug(
                 "Skip ensuring 'require-osd-release' option, because there's no %s units.",
                 ceph_mon_app.name,
             )

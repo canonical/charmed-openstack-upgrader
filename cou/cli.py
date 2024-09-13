@@ -147,15 +147,15 @@ async def analyze_and_generate_plan(model: Model, args: CLIargs) -> UpgradePlan:
 
     progress_indicator.start("Verifying cloud...")
     await verify_cloud(analysis_result, args=args)
+    progress_indicator.succeed()
 
     if errors := PlanStatus.error_messages:
-        progress_indicator.fail()
-        logger.error("%s", "\n".join(errors))
+        for error in errors:
+            logger.error(error)
         raise CloudVerificationError(
             "Running upgrades will not be possible until problems indicated in the errors "
-            "are resolved."
+            "are resolved"
         )
-    progress_indicator.succeed()
 
     progress_indicator.start("Generating upgrade plan...")
     upgrade_plan = await generate_plan(analysis_result, args)
@@ -163,7 +163,6 @@ async def analyze_and_generate_plan(model: Model, args: CLIargs) -> UpgradePlan:
 
     print_and_debug(upgrade_plan)
 
-    # improve UI, the progress indicator messes with the output..
     for warning in PlanStatus.warning_messages:
         logger.warning(warning)
 
@@ -244,7 +243,6 @@ def entrypoint() -> None:
         )
         sys.exit(1)
     except CloudVerificationError as exc:
-        progress_indicator.fail()
         logger.error(exc)
         sys.exit(1)
     except COUException as exc:

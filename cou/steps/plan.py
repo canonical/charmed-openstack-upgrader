@@ -302,8 +302,11 @@ async def _verify_osd_noout_unset(analysis_result: Analysis) -> None:
     """
     try:
         await ceph.assert_osd_noout_state(analysis_result.model, state=False)
-    except ApplicationError as e:
-        PlanStatus.add_message(str(e), MessageType.ERROR)
+    except ApplicationError:
+        PlanStatus.add_message(
+            "'noout' should be set for ceph cluster",
+            MessageType.ERROR,
+        )
 
 
 async def _verify_model_idle(analysis_result: Analysis) -> None:

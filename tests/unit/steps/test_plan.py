@@ -24,13 +24,12 @@ from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     ApplicationError,
     COUException,
-    DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
-    HighestReleaseAchieved,
     MismatchedOpenStackVersions,
     NoTargetError,
     OutOfSupportRange,
+    VaultSealed,
 )
 from cou.steps import (
     ApplicationUpgradePlan,
@@ -47,7 +46,6 @@ from cou.steps.backup import backup
 from cou.steps.ceph import set_require_osd_release_option
 from cou.steps.hypervisor import HypervisorGroup, HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
-from cou.steps.vault import verify_vault_is_unsealed
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
@@ -157,9 +155,6 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
     exp_plan = dedent_plan(
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
-        Verify vault application is unsealed
-        Verify ceph cluster 'noout' is unset
-        Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
         OVN subordinate upgrade plan
@@ -335,9 +330,6 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
     exp_plan = dedent_plan(
         """\
     Upgrade cloud from 'ussuri' to 'victoria'
-        Verify vault application is unsealed
-        Verify ceph cluster 'noout' is unset
-        Verify that all OpenStack applications are in idle state
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
         OVN subordinate upgrade plan
@@ -512,25 +504,35 @@ def test_PlanStatus_warnings_property():
     assert cou_plan.PlanStatus.warning_messages[-2:] == exp_warnings
 
 
+@pytest.mark.asyncio
+@patch("cou.steps.plan._verify_model_idle")
+@patch("cou.steps.plan._verify_osd_noout_unset")
+@patch("cou.steps.plan._verify_vault_is_unsealed")
 @patch("cou.steps.plan._verify_hypervisors_cli_input")
 @patch("cou.steps.plan._verify_supported_series")
 @patch("cou.steps.plan._verify_highest_release_achieved")
 @patch("cou.steps.plan._verify_data_plane_ready_to_upgrade")
-def test_pre_plan_sanity_checks(
+async def test_pre_plan_sanity_checks(
     mock_verify_data_plane_ready_to_upgrade,
     mock_verify_highest_release_achieved,
     mock_verify_supported_series,
     mock_verify_hypervisors_cli_input,
+    mock_verify_vault_is_unsealed,
+    mock_verify_osd_noout_unset,
+    mock_verify_model_idle,
     cli_args,
 ):
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("ussuri")
     mock_analysis_result.current_cloud_series = "focal"
-    cou_plan._pre_plan_sanity_checks(cli_args, mock_analysis_result)
+    await cou_plan.verify_cloud(mock_analysis_result, cli_args)
     mock_verify_highest_release_achieved.assert_called_once_with(mock_analysis_result)
     mock_verify_supported_series.assert_called_once_with(mock_analysis_result)
     mock_verify_data_plane_ready_to_upgrade.assert_called_once_with(cli_args, mock_analysis_result)
     mock_verify_hypervisors_cli_input.assert_called_once_with(cli_args, mock_analysis_result)
+    mock_verify_vault_is_unsealed.assert_awaited_once_with(mock_analysis_result)
+    mock_verify_osd_noout_unset.assert_awaited_once_with(mock_analysis_result)
+    mock_verify_model_idle.assert_awaited_once_with(mock_analysis_result)
 
 
 @pytest.mark.parametrize(
@@ -552,10 +554,10 @@ def test_pre_plan_sanity_checks(
 )
 def test_verify_supported_series(o7k_release, current_series, exp_error_msg):
     mock_analysis_result = MagicMock(spec=Analysis)()
-    with pytest.raises(OutOfSupportRange, match=exp_error_msg):
-        mock_analysis_result.current_cloud_o7k_release = o7k_release
-        mock_analysis_result.current_cloud_series = current_series
-        cou_plan._verify_supported_series(mock_analysis_result)
+    mock_analysis_result.current_cloud_o7k_release = o7k_release
+    mock_analysis_result.current_cloud_series = current_series
+    cou_plan._verify_supported_series(mock_analysis_result)
+    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
 
 
 @pytest.mark.parametrize(
@@ -578,8 +580,8 @@ def test_verify_highest_release_achieved(o7k_release, series):
         "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series.html\n"
         "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series-openstack.html"
     )
-    with pytest.raises(HighestReleaseAchieved, match=exp_error_msg):
-        cou_plan._verify_highest_release_achieved(mock_analysis_result)
+    cou_plan._verify_highest_release_achieved(mock_analysis_result)
+    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
 
 
 @pytest.mark.parametrize(
@@ -605,8 +607,8 @@ def test_verify_data_plane_ready_to_upgrade_error(
     mock_analysis_result.current_cloud_series = "focal"
     mock_analysis_result.min_o7k_version_control_plane = min_o7k_version_control_plane
     mock_analysis_result.min_o7k_version_data_plane = min_o7k_version_data_plane
-    with pytest.raises(DataPlaneCannotUpgrade, match=exp_error_msg):
-        cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
+    cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
+    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
 
 
 @pytest.mark.parametrize("upgrade_group", [DATA_PLANE, HYPERVISORS])
@@ -1065,32 +1067,6 @@ def test_get_pre_upgrade_steps(
     mock_analysis_result.model = model
 
     expected_steps = []
-    expected_steps.extend(
-        [
-            PreUpgradeStep(
-                description="Verify vault application is unsealed",
-                parallel=False,
-                coro=verify_vault_is_unsealed(mock_analysis_result.model),
-            ),
-            PreUpgradeStep(
-                description="Verify ceph cluster 'noout' is unset",
-                parallel=False,
-                coro=ceph.assert_osd_noout_state(
-                    mock_analysis_result.model,
-                    mock_analysis_result.apps_control_plane,
-                    state=False,
-                ),
-            ),
-            PreUpgradeStep(
-                description="Verify that all OpenStack applications are in idle state",
-                parallel=False,
-                coro=mock_analysis_result.model.wait_for_idle(
-                    timeout=120, idle_period=10, raise_on_blocked=True
-                ),
-            ),
-        ]
-    )
-
     expected_steps.append("backup_step")
     expected_steps.append("archive_step")
     expected_steps.append("purge_step")
@@ -1300,7 +1276,6 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan._pre_plan_sanity_checks")
 @patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan", return_value=MagicMock())
@@ -1319,7 +1294,6 @@ async def test_generate_plan_upgrade_group_None(
     mock_control_plane,
     mock_pre_upgrade_steps,
     mock_determine_upgrade_target,
-    mock_pre_plan_sanity_checks,
     cli_args,
 ):
     cli_args.upgrade_group = None
@@ -1327,7 +1301,6 @@ async def test_generate_plan_upgrade_group_None(
 
     await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
-    mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
     mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_called_once()
@@ -1339,7 +1312,6 @@ async def test_generate_plan_upgrade_group_None(
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan._pre_plan_sanity_checks")
 @patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
@@ -1361,7 +1333,6 @@ async def test_generate_plan_upgrade_group_control_plane(
     mock_control_plane,
     mock_pre_upgrade_steps,
     mock_determine_upgrade_target,
-    mock_pre_plan_sanity_checks,
     cli_args,
 ):
     cli_args.upgrade_group = CONTROL_PLANE
@@ -1369,7 +1340,6 @@ async def test_generate_plan_upgrade_group_control_plane(
 
     await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
-    mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
     mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_called_once()
@@ -1381,7 +1351,6 @@ async def test_generate_plan_upgrade_group_control_plane(
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan._pre_plan_sanity_checks")
 @patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch(
@@ -1403,7 +1372,6 @@ async def test_generate_plan_upgrade_group_data_plane(
     mock_control_plane,
     mock_pre_upgrade_steps,
     mock_determine_upgrade_target,
-    mock_pre_plan_sanity_checks,
     cli_args,
 ):
     cli_args.upgrade_group = DATA_PLANE
@@ -1411,7 +1379,6 @@ async def test_generate_plan_upgrade_group_data_plane(
 
     await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
-    mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
     mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_not_called()
@@ -1423,7 +1390,6 @@ async def test_generate_plan_upgrade_group_data_plane(
 
 
 @pytest.mark.asyncio
-@patch("cou.steps.plan._pre_plan_sanity_checks")
 @patch("cou.steps.plan._determine_upgrade_target")
 @patch("cou.steps.plan._get_pre_upgrade_steps")
 @patch("cou.steps.plan._generate_control_plane_plan")
@@ -1439,7 +1405,6 @@ async def test_generate_plan_upgrade_group_hypervisors(
     mock_control_plane,
     mock_pre_upgrade_steps,
     mock_determine_upgrade_target,
-    mock_pre_plan_sanity_checks,
     cli_args,
 ):
     cli_args.upgrade_group = HYPERVISORS
@@ -1447,7 +1412,6 @@ async def test_generate_plan_upgrade_group_hypervisors(
 
     await cou_plan.generate_plan(mock_analysis_result, cli_args)
 
-    mock_pre_plan_sanity_checks.assert_called_once()
     mock_determine_upgrade_target.assert_called_once()
     mock_pre_upgrade_steps.assert_called_once()
     mock_control_plane.assert_not_called()
@@ -1735,10 +1699,10 @@ def test_create_upgrade_plan_failed():
 @patch("cou.steps.plan.print_and_debug")
 @patch("cou.steps.analyze.Analysis")
 @patch("cou.steps.plan.ceph")
-async def test_post_upgrade_sanity_checks(mock_ceph, mock_analysis, mock_print_and_debug):
+async def test_post_upgrade_sanity_check(mock_ceph, mock_analysis, mock_print_and_debug):
     """Test post_upgrade_sanity_checks with exception."""
     mock_ceph.assert_osd_noout_state = AsyncMock(side_effect=ApplicationError)
-    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+    await cou_plan.post_upgrade_sanity_check(mock_analysis)
     mock_print_and_debug.assert_called()
 
 
@@ -1746,12 +1710,12 @@ async def test_post_upgrade_sanity_checks(mock_ceph, mock_analysis, mock_print_a
 @patch("cou.steps.plan.print_and_debug")
 @patch("cou.steps.analyze.Analysis")
 @patch("cou.steps.plan.ceph")
-async def test_post_upgrade_sanity_checks_no_exception(
+async def test_post_upgrade_sanity_check_no_exception(
     mock_ceph, mock_analysis, mock_print_and_debug
 ):
     """Test post_upgrade_sanity_checks without exception."""
     mock_ceph.assert_osd_noout_state = AsyncMock()
-    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+    await cou_plan.post_upgrade_sanity_check(mock_analysis)
     mock_print_and_debug.assert_not_called()
 
 
@@ -1770,3 +1734,40 @@ def test_get_set_noout_steps(mock_analysis, cli_args):
             ),
         )
     ]
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.PlanStatus")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.verify_vault_is_unsealed")
+async def test_verify_vault_is_unsealed_failed(
+    mock_verify_vault_is_unsealed, mock_analysis, mock_plan_status
+):
+    """Test _verify_vault_is_unsealed."""
+    mock_verify_vault_is_unsealed.side_effect = VaultSealed()
+    await cou_plan._verify_vault_is_unsealed(mock_analysis)
+    mock_plan_status.add_message.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.PlanStatus")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.assert_osd_noout_state")
+async def test_verify_osd_noout_unset_failed(
+    mock_verify_osd_noout_unset, mock_analysis, mock_plan_status
+):
+    """Test _verify_osd_noout_unset."""
+    mock_verify_osd_noout_unset.side_effect = ApplicationError()
+    await cou_plan._verify_osd_noout_unset(mock_analysis)
+    mock_plan_status.add_message.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.PlanStatus")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.verify_vault_is_unsealed")
+async def test_verify_model_idle_failed(mock_verify_model_idle, mock_analysis, mock_plan_status):
+    """Test _verify_model_idle."""
+    mock_verify_model_idle.side_effect = Exception()
+    await cou_plan._verify_model_idle(mock_analysis)
+    mock_plan_status.add_message.assert_called_once()

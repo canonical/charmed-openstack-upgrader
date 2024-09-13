@@ -220,6 +220,7 @@ def test_analysis_dump(model):
         apps=[keystone, cinder, rabbitmq_server],
     )
 
+    assert len(result.machines.keys()) == 3
     assert str(result) == expected_result
 
 
