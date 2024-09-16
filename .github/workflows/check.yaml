@@ -77,12 +77,12 @@ jobs:
       - name: Install snapcraft
         run: sudo snap install snapcraft --classic
       - name: Build snap
-        run: make build
+        run: snapcraft --use-lxd
       - name: Upload the built snap as an artifact
         uses: actions/upload-artifact@v4
         with:
           name: SNAP_FILE
-          path: charmed-openstack-upgrader.snap
+          path: charmed-openstack-upgrader_*.snap
 
   func:
     name: Functional tests
@@ -113,4 +113,4 @@ jobs:
         with:
           name: SNAP_FILE
       - name: Run func tests
-        run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader.snap tox -e func
+        run: TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader_*.snap tox -e func
