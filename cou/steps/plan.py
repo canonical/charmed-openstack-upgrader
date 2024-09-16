@@ -509,7 +509,7 @@ def _get_purge_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreU
                 description=msg,
                 coro=purge(
                     analysis_result.model,
-                    analysis_result.apps_data_plane,
+                    analysis_result.apps_data_plane,  # we only need to pass nova-cloud-controller
                     before=args.purge_before,
                 ),
             )
