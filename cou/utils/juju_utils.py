@@ -762,10 +762,10 @@ class Model:
         raise ApplicationNotFound(f"Cannot find '{app_name}' in model '{self.name}'.")
 
 
-async def get_applications_by_charm_name(
+def get_applications_by_charm_name(
     apps: Sequence[Application], charm_name: str
 ) -> Sequence[Application]:
-    """Get the all applications based on the charm name.
+    """Get all applications based on the charm name.
 
     :param apps: List of Application
     :type apps: Sequence[Application]

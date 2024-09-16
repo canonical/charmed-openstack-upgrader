@@ -98,7 +98,7 @@ async def _get_current_osd_release(unit: str, model: Model) -> str:
     return current_osd_release
 
 
-async def _get_unit_name(ceph_mon_app: Application) -> str:
+def _get_unit_name(ceph_mon_app: Application) -> str:
     """Get the one of the unit's name from ceph mon application.
 
     :param ceph_mon_app: The ceph mon application
@@ -127,7 +127,7 @@ async def osd_noout(model: Model, apps: Sequence[Application], enable: bool) -> 
     :type enable: bool
     """
     try:
-        ceph_mon_apps = await get_applications_by_charm_name(apps, "ceph-mon")
+        ceph_mon_apps = get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
         logger.warning("%s", str(e))
         logger.warning("Skip changing 'noout', because there's no ceph-mon applications.")
@@ -135,7 +135,7 @@ async def osd_noout(model: Model, apps: Sequence[Application], enable: bool) -> 
 
     for ceph_mon_app in ceph_mon_apps:
         try:
-            ceph_mon_unit_name = await _get_unit_name(ceph_mon_app)
+            ceph_mon_unit_name = _get_unit_name(ceph_mon_app)
         except UnitNotFound as e:
             logger.warning("%s", str(e))
             logger.warning(
@@ -177,7 +177,7 @@ async def assert_osd_noout_state(model: Model, apps: Sequence[Application], stat
     :raise ApplicationError: if noout is not in desired state
     """
     try:
-        ceph_mon_apps = await get_applications_by_charm_name(apps, "ceph-mon")
+        ceph_mon_apps = get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
         logger.warning("%s", str(e))
         logger.warning("Skip verifying 'noout', because there's no ceph-mon applications.")
@@ -186,7 +186,7 @@ async def assert_osd_noout_state(model: Model, apps: Sequence[Application], stat
     error = False
     for ceph_mon_app in ceph_mon_apps:
         try:
-            ceph_mon_unit_name = await _get_unit_name(ceph_mon_app)
+            ceph_mon_unit_name = _get_unit_name(ceph_mon_app)
         except UnitNotFound as e:
             logger.warning("%s", str(e))
             logger.warning(
@@ -246,7 +246,7 @@ async def set_require_osd_release_option(model: Model, apps: Sequence[Applicatio
     :raises CommandRunFailed: When a command fails to run.
     """
     try:
-        ceph_mon_apps = await get_applications_by_charm_name(apps, "ceph-mon")
+        ceph_mon_apps = get_applications_by_charm_name(apps, "ceph-mon")
     except ApplicationNotFound as e:
         logger.warning("%s", str(e))
         logger.warning(
@@ -256,7 +256,7 @@ async def set_require_osd_release_option(model: Model, apps: Sequence[Applicatio
 
     for ceph_mon_app in ceph_mon_apps:
         try:
-            ceph_mon_unit_name = await _get_unit_name(ceph_mon_app)
+            ceph_mon_unit_name = _get_unit_name(ceph_mon_app)
         except UnitNotFound as e:
             logger.warning("%s", str(e))
             logger.warning(

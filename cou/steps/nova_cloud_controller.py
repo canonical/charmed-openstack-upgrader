@@ -39,7 +39,7 @@ async def archive(model: Model, apps: Sequence[Application], *, batch_size: int)
     :type batch_size: int
     :raises COUException: if action returned unexpected output
     """  # noqa: E501 line too long
-    unit_name: str = await _get_nova_cloud_controller_unit_name(apps)
+    unit_name: str = _get_nova_cloud_controller_unit_name(apps)
     # The archive-data action only archives a single batch,
     # so we must run it in a loop until everything is archived.
     while True:
@@ -83,7 +83,7 @@ async def purge(model: Model, apps: Sequence[Application], before: Optional[str]
     if before is not None:
         action_params = {"before": before}
 
-    unit_name: str = await _get_nova_cloud_controller_unit_name(apps)
+    unit_name: str = _get_nova_cloud_controller_unit_name(apps)
     action = await model.run_action(
         unit_name=unit_name,
         action_name="purge-data",
@@ -106,7 +106,7 @@ async def purge(model: Model, apps: Sequence[Application], before: Optional[str]
         logger.info("purge-data action succeeded on %s", unit_name)
 
 
-async def _get_nova_cloud_controller_unit_name(apps: Sequence[Application]) -> str:
+def _get_nova_cloud_controller_unit_name(apps: Sequence[Application]) -> str:
     """Get nova-cloud-controller application's first unit's name.
 
     Assumes only a single nova-cloud-controller application is deployed.
@@ -118,7 +118,7 @@ async def _get_nova_cloud_controller_unit_name(apps: Sequence[Application]) -> s
     :raises UnitNotFound: When cannot find a valid unit for 'nova-cloud-controller'
     :raises ApplicationNotFound: When cannot find a 'nova-cloud-controller' application
     """
-    apps = await get_applications_by_charm_name(apps, "nova-cloud-controller")
+    apps = get_applications_by_charm_name(apps, "nova-cloud-controller")
     for app in apps:
         units = list(app.units.keys())
         if units:

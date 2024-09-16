@@ -25,7 +25,7 @@ from tests.unit.utils import get_applications
 async def test_get_unit_name(model) -> None:
     apps = get_applications("ceph-mon")
 
-    ceph_mon_unit_name = await ceph._get_unit_name(apps[0])
+    ceph_mon_unit_name = ceph._get_unit_name(apps[0])
 
     assert ceph_mon_unit_name == "ceph-mon-0/0"
 
