@@ -123,12 +123,11 @@ async def test_analyze_and_generate_plan_with_errors(
 
     mock_analyze.assert_awaited_once()
     mock_verify_cloud.assert_awaited_once()
+    mock_print_and_debug.assert_called_once()
+    mock_generate_plan.assert_awaited_once()
+    mock_logger.warning.assert_not_called()
     mock_logger.error.assert_called()
     mock_logger.error.called_counts = len(mock_plan_status.error_messages)
-
-    mock_generate_plan.assert_not_awaited()
-    mock_print_and_debug.assert_not_called()
-    mock_logger.warning.assert_not_called()
 
 
 @pytest.mark.asyncio

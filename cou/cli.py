@@ -149,14 +149,6 @@ async def analyze_and_generate_plan(model: Model, args: CLIargs) -> UpgradePlan:
     await verify_cloud(analysis_result, args=args)
     progress_indicator.succeed()
 
-    if errors := PlanStatus.error_messages:
-        for error in errors:
-            logger.error(error)
-        raise CloudVerificationError(
-            "Running upgrades will not be possible until problems indicated in the errors "
-            "are resolved"
-        )
-
     progress_indicator.start("Generating upgrade plan...")
     upgrade_plan = await generate_plan(analysis_result, args)
     progress_indicator.succeed()
@@ -165,6 +157,14 @@ async def analyze_and_generate_plan(model: Model, args: CLIargs) -> UpgradePlan:
 
     for warning in PlanStatus.warning_messages:
         logger.warning(warning)
+
+    if errors := PlanStatus.error_messages:
+        for error in errors:
+            logger.error(error)
+        raise CloudVerificationError(
+            "Running upgrades will not be possible until problems indicated in the errors "
+            "are resolved"
+        )
 
     return upgrade_plan
 
