@@ -114,5 +114,6 @@ jobs:
           name: SNAP_FILE
       - name: Run func tests
         run: |
-          export TEST_SNAP=$GITHUB_WORKSPACE/charmed-openstack-upgrader_*.snap
+          export TEST_SNAP="$(pwd)/$(ls | grep '.*charmed-openstack-upgrader_.*\.snap$')"
+          echo "$TEST_SNAP"
           tox -e func
