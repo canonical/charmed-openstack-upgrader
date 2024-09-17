@@ -301,7 +301,9 @@ async def _verify_osd_noout_unset(analysis_result: Analysis) -> None:
     :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
     try:
-        await ceph.assert_osd_noout_state(analysis_result.model, state=False)
+        await ceph.assert_osd_noout_state(
+            analysis_result.model, analysis_result.apps_control_plane, state=False
+        )
     except ApplicationError:
         PlanStatus.add_message(
             "'noout' should be set for ceph cluster",
