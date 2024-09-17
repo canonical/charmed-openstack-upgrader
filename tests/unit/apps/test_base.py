@@ -41,7 +41,6 @@ def test_openstack_application_magic_functions(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -78,7 +77,6 @@ def test_application_get_latest_o7k_version_failed(mock_find_compatible_versions
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={f"{app_name}/0": unit},
         workload_version=unit.workload_version,
     )
@@ -132,7 +130,6 @@ def test_set_action_managed_upgrade(charm_config, enable, exp_description, model
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -166,7 +163,6 @@ def test_get_pause_unit_step(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={f"{unit.name}": unit},
         workload_version="1",
     )
@@ -200,7 +196,6 @@ def test_get_resume_unit_step(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={f"{app_name}/0": unit},
         workload_version="1",
     )
@@ -234,7 +229,6 @@ def test_get_openstack_upgrade_step(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={f"{app_name}/0": unit},
         workload_version="1",
     )
@@ -262,7 +256,7 @@ def test_get_upgrade_current_release_packages_step(mock_upgrade_packages, units,
     }
 
     app = OpenStackApplication(
-        app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, [], "21.0.1"
+        app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
     )
 
     expected_calls = (
@@ -294,7 +288,7 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
     app_units = {f"my_app/{unit}": Unit(f"my_app/{unit}", mock, mock) for unit in range(3)}
 
     app = OpenStackApplication(
-        app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, [], "21.0.1"
+        app_name, "", charm, channel, {}, {}, model, "ch", "focal", [], app_units, "21.0.1"
     )
 
     expected_calls = [call(target, units)] if units else [call(target, list(app.units.values()))]
@@ -329,7 +323,7 @@ def test_check_channel_error():
         "are using the right track."
     )
     app = OpenStackApplication(
-        name, "", name, channel, {}, {}, MagicMock(), "ch", series, [], {}, [], "1"
+        name, "", name, channel, {}, {}, MagicMock(), "ch", series, [], {}, "1"
     )
 
     with pytest.raises(ApplicationError, match=exp_error_msg):
@@ -341,7 +335,7 @@ def test_check_auto_restarts(config):
     """Test function to verify that enable-auto-restarts is disabled."""
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, [], "1"
+        app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
 
     app._check_auto_restarts()
@@ -357,7 +351,7 @@ def test_check_auto_restarts_error():
     )
     config = {"enable-auto-restarts": {"value": False}}
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, [], "1"
+        app_name, "", app_name, "stable", config, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
 
     with pytest.raises(ApplicationError, match=exp_error_msg):
@@ -372,7 +366,7 @@ def test_check_application_target(o7k_release, apt_source_codename):
     release = OpenStackRelease("ussuri")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, [], "1"
+        app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
     o7k_release.return_value = apt_source_codename.return_value = release
 
@@ -387,7 +381,7 @@ def test_check_application_target_can_upgrade(o7k_release, apt_source_codename):
     release = OpenStackRelease("ussuri")
     app_name = "app"
     app = OpenStackApplication(
-        app_name, "stable", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, [], "1"
+        app_name, "stable", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
     o7k_release.return_value = apt_source_codename.return_value = release
 
@@ -405,7 +399,7 @@ def test_check_application_target_error(o7k_release, apt_source_codename):
         f"{target}. Ignoring."
     )
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, [], "1"
+        app_name, "", app_name, "stable", {}, {}, MagicMock(), "ch", "focal", [], {}, "1"
     )
     o7k_release.return_value = apt_source_codename.return_value = target
 
@@ -457,7 +451,6 @@ def test_check_mismatched_versions_exception(mock_o7k_release_units, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="18.1.0",
     )
@@ -509,7 +502,6 @@ def test_check_mismatched_versions_with_nova_compute(mock_o7k_release_units, mod
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="18.1.0",
     )
@@ -554,7 +546,6 @@ def test_check_mismatched_versions(mock_o7k_release_units, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="17.0.1",
     )
@@ -579,7 +570,6 @@ def test_get_charmhub_migration_step(o7k_release, model):
         origin="cs",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -613,7 +603,6 @@ def test_get_change_channel_possible_downgrade_step(o7k_release, model, channel)
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -644,7 +633,6 @@ def test_get_refresh_current_channel_step(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -676,7 +664,6 @@ def test_get_refresh_charm_step_skip(
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -708,7 +695,6 @@ def test_get_refresh_charm_step_refresh_current_channel(
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -760,7 +746,6 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -816,7 +801,6 @@ def test_get_refresh_charm_step_charmhub_migration(
         origin="cs",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -863,7 +847,6 @@ def test_extract_from_uca_source(model, config, exp_result):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -884,7 +867,6 @@ def test_extract_from_uca_source_raise(wrong_uca, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -916,7 +898,6 @@ def test_apt_source_codename(config, exp_result, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "app/0": Unit(
                 name="app/0",
@@ -956,7 +937,6 @@ def test_apt_source_codename_empty_or_without_origin_setting(mock_o7k_release, c
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "app/0": Unit(
                 name="app/0",
@@ -989,7 +969,6 @@ def test_apt_source_codename_unknown_source(source_value, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "app/0": Unit(
                 name="app/0",
@@ -1027,7 +1006,6 @@ def test_need_crossgrade(model, channel, origin, exp_result):
         origin=origin,
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )
@@ -1055,7 +1033,6 @@ def test_expected_current_channel(mock_o7k_release, model, channel, origin):
         origin=origin,
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="1",
     )

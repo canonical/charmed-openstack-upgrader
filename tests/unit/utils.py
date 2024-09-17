@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 from juju.client.client import FullStatus
 
 from cou.steps import BaseStep
-from cou.utils.juju_utils import Machine
+from cou.utils.juju_utils import Application, Machine, Unit
 
 
 def assert_steps(step_1: BaseStep, step_2: BaseStep) -> None:
@@ -43,6 +43,25 @@ def dedent_plan(plan: str) -> str:
     result = dedent(plan)
     result = result.replace("    ", "\t")  # replace 4 spaces with tap
     return result
+
+
+def get_applications(
+    charm_name: str, app_count: int = 1, unit_count: int = 1
+) -> list[Application]:
+    """Get mocked applications."""
+    apps = []
+    for i in range(app_count):
+        app = MagicMock(spec_set=Application)()
+        app.name = f"{charm_name}-{i}"
+        app.charm = charm_name
+        units = {}
+        for j in range(unit_count):
+            unit = MagicMock(spec_set=Unit)()
+            unit.name = f"{charm_name}-{i}/{j}"
+            units[unit.name] = unit
+        app.units = units
+        apps.append(app)
+    return apps
 
 
 def get_status():

@@ -137,7 +137,9 @@ async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
     """
     messages = []
     try:
-        await ceph.assert_osd_noout_state(analysis_result.model, state=False)
+        await ceph.assert_osd_noout_state(
+            analysis_result.model, analysis_result.apps_control_plane, state=False
+        )
     except ApplicationError:
         messages.append("Detected ceph 'noout' set, please unset noout for ceph cluster.")
 
@@ -435,7 +437,9 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
         PreUpgradeStep(
             description="Verify ceph cluster 'noout' is unset",
             parallel=False,
-            coro=ceph.assert_osd_noout_state(analysis_result.model, state=False),
+            coro=ceph.assert_osd_noout_state(
+                analysis_result.model, analysis_result.apps_control_plane, state=False
+            ),
         ),
         PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
@@ -503,7 +507,11 @@ def _get_purge_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreU
         return [
             PreUpgradeStep(
                 description=msg,
-                coro=purge(analysis_result.model, before=args.purge_before),
+                coro=purge(
+                    analysis_result.model,
+                    analysis_result.apps_data_plane,  # we only need to pass nova-cloud-controller
+                    before=args.purge_before,
+                ),
             )
         ]
     return []
@@ -523,7 +531,11 @@ def _get_archive_data_steps(analysis_result: Analysis, args: CLIargs) -> list[Pr
         return [
             PreUpgradeStep(
                 description="Archive old database data on nova-cloud-controller",
-                coro=archive(analysis_result.model, batch_size=args.archive_batch_size),
+                coro=archive(
+                    analysis_result.model,
+                    analysis_result.apps_data_plane,
+                    batch_size=args.archive_batch_size,
+                ),
             )
         ]
     return []
@@ -543,7 +555,9 @@ def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUp
         return [
             PreUpgradeStep(
                 description="Set ceph cluster 'noout' flag before data plane upgrade",
-                coro=ceph.osd_noout(analysis_result.model, enable=True),
+                coro=ceph.osd_noout(
+                    analysis_result.model, analysis_result.apps_control_plane, enable=True
+                ),
             )
         ]
     PlanStatus.add_message(
@@ -570,14 +584,18 @@ def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Po
         steps.append(
             PostUpgradeStep(
                 "Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version",
-                coro=ceph.set_require_osd_release_option(analysis_result.model),
+                coro=ceph.set_require_osd_release_option(
+                    analysis_result.model, analysis_result.apps_control_plane
+                ),
             )
         )
         if args.set_noout:
             steps.append(
                 PostUpgradeStep(
                     description="Unset ceph cluster 'noout' flag after data plane upgrade",
-                    coro=ceph.osd_noout(analysis_result.model, enable=False),
+                    coro=ceph.osd_noout(
+                        analysis_result.model, analysis_result.apps_control_plane, enable=False
+                    ),
                 )
             )
     return steps

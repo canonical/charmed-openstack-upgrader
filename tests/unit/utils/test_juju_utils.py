@@ -810,8 +810,6 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     app1/2    active    idle   2        10.147.4.3
     app2/0*   active    idle   0        10.147.4.1
       app4/0* active    idle            10.147.4.1
-      app4/1* active    idle            10.147.4.1
-      app4/2* active    idle            10.147.4.1
     app3/0*   active    idle   1        10.147.4.2
 
     Machine  State    Address     Inst id        Base          AZ  Message
@@ -841,7 +839,6 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     }
 
     mocked_model.applications = {app: MagicMock(spec_set=Application)() for app in exp_apps}
-    mocked_model.subordinate_units = {f"app4/{i}" for i in range(3)}
 
     for app in exp_apps:
         mocked_model.applications[app].get_actions = AsyncMock()
@@ -852,10 +849,6 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     full_status_apps = {app: _generate_app_status(exp_units_from_status[app]) for app in exp_apps}
     mock_get_status.return_value.applications = full_status_apps
     mock_get_machines.return_value = exp_machines
-    mock_subordinate_units = {
-        juju_utils.SubordinateUnit(name, mocked_model.applications[name.split("/")[0]].charm_name)
-        for name in mocked_model.subordinate_units
-    }
 
     model = juju_utils.Model("test-model")
     exp_apps = {
@@ -885,9 +878,6 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
                 )
                 for name, unit in exp_units_from_status[app].items()
             },
-            subordinate_units=[
-                su for su in mock_subordinate_units if su.name.split("/")[0] == app
-            ],
             workload_version=status.workload_version,
         )
         for app, status in full_status_apps.items()

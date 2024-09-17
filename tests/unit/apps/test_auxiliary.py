@@ -59,7 +59,6 @@ def test_auxiliary_app(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -96,7 +95,6 @@ def test_auxiliary_app_cs(model):
         origin="cs",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -136,7 +134,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -229,7 +226,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -309,7 +305,6 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         origin="cs",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -388,7 +383,6 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -519,7 +513,6 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -553,7 +546,6 @@ def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={unit.name: unit},
         workload_version=version,
     )
@@ -579,7 +571,6 @@ def test_auxiliary_raise_error_unknown_series(model):
         origin="ch",
         series=series,
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -618,7 +609,6 @@ def test_auxiliary_raise_error_o7k_not_on_lookup(o7k_release, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "rabbitmq-server/0": Unit(
                 name="rabbitmq-server/0",
@@ -656,7 +646,6 @@ def test_auxiliary_raise_halt_upgrade(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -693,7 +682,6 @@ def test_auxiliary_no_origin_setting_raise_halt_upgrade(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -745,7 +733,6 @@ def test_auxiliary_no_suitable_channel(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -775,7 +762,6 @@ def test_ceph_mon_app(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -810,7 +796,6 @@ def test_ceph_mon_upgrade_plan_xena_to_yoga(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -906,7 +891,6 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -989,7 +973,6 @@ def test_ovn_principal(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -1029,7 +1012,6 @@ def test_ovn_workload_ver_lower_than_22_principal(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -1061,7 +1043,6 @@ def test_ovn_version_pinning_principal(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -1100,7 +1081,6 @@ def test_ovn_no_compatible_o7k_release(channel, model):
             origin="ch",
             series="focal",
             subordinate_to=[],
-            subordinate_units=[],
             units={
                 f"{charm}/0": Unit(
                     name=f"{charm}/0",
@@ -1137,7 +1117,6 @@ def test_ovn_check_version_pinning_version_pinning_config_False(app, config, mod
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{app}/0": Unit(
                 name=f"{app}/0",
@@ -1163,7 +1142,6 @@ def test_ovn_check_version_pinning_version_pinning_config_True(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "ovn-dedicated-chassis/0": Unit(
                 name="ovn-dedicated-chassis/0",
@@ -1194,7 +1172,6 @@ def test_ovn_principal_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -1276,7 +1253,6 @@ def test_mysql_innodb_cluster_upgrade(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -1356,7 +1332,6 @@ def test_ceph_osd_pre_upgrade_steps(mock_pre_upgrade_steps, target, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
@@ -1395,7 +1370,6 @@ async def test_ceph_osd_verify_nova_compute_no_app(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
@@ -1430,7 +1404,6 @@ def test_auxiliary_upgrade_by_unit(mock_super, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -1479,7 +1452,6 @@ async def test_ceph_osd_verify_nova_compute_pass(mock_lookup, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
@@ -1519,7 +1491,6 @@ async def test_ceph_osd_verify_nova_compute_fail(mock_lookup, model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
@@ -1566,7 +1537,6 @@ def test_ceph_osd_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"ceph-osd/{i}": Unit(
                 name=f"ceph-osd/{i}",
@@ -1617,19 +1587,7 @@ def test_need_current_channel_refresh_auxiliary(
     target = OpenStackRelease("victoria")
     app_name = "app"
     app = AuxiliaryApplication(
-        app_name,
-        can_upgrade_to,
-        app_name,
-        "3.9/stable",
-        {},
-        {},
-        model,
-        "ch",
-        "focal",
-        [],
-        {},
-        [],
-        "1",
+        app_name, can_upgrade_to, app_name, "3.9/stable", {}, {}, model, "ch", "focal", [], {}, "1"
     )
     assert app._need_current_channel_refresh(target) is exp_result
 
@@ -1659,7 +1617,6 @@ def test_expected_current_channel_auxiliary(mock_o7k_release, model, channel, or
         origin=origin,
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={},
         workload_version="15.2.0",
     )
@@ -1683,7 +1640,6 @@ def test_auxiliary_wrong_channel(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",
@@ -1720,7 +1676,6 @@ def get_vault_o7k_app(model, config, series: str = "jammy"):
         origin="ch",
         series=series,
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"{charm}/0": Unit(
                 name=f"{charm}/0",

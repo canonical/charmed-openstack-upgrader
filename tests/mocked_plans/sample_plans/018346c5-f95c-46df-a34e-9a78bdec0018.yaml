@@ -393,10 +393,6 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/2'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/3'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/9'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/2'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/3'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/9'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/0, nova-compute-kvm/2, nova-compute-kvm/3, nova-compute-kvm/9
             Upgrade plan for [cinder-volume/1, cinder-volume/10, cinder-volume/11, cinder-volume/5, nova-compute-kvm/1, nova-compute-kvm/10, nova-compute-kvm/11, nova-compute-kvm/5] in 'zone3' to 'victoria'
@@ -468,10 +464,6 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/10'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/11'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/5'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/1'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/10'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/11'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/5'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/1, nova-compute-kvm/10, nova-compute-kvm/11, nova-compute-kvm/5
             Upgrade plan for [cinder-volume/4, cinder-volume/6, cinder-volume/7, cinder-volume/8, nova-compute-kvm/4, nova-compute-kvm/6, nova-compute-kvm/7, nova-compute-kvm/8] in 'zone1' to 'victoria'
@@ -543,10 +535,6 @@ plan: |
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/6'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/7'
                 Enable nova-compute scheduler from unit: 'nova-compute-kvm/8'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/4'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/6'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/7'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/8'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/4, nova-compute-kvm/6, nova-compute-kvm/7, nova-compute-kvm/8
         Remaining Data Plane principal(s) upgrade plan
@@ -623,7 +611,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 10.0.0
     units:
       aodh/0:
@@ -724,7 +711,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - aodh
     workload_version: 8.0.32
@@ -839,7 +825,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 14.1.0
     units:
       ceilometer/0:
@@ -909,7 +894,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nova-compute-kvm
     workload_version: 14.1.0
@@ -1248,7 +1232,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - ceph-mon
     workload_version: ''
@@ -1311,7 +1294,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 15.2.17
     units:
       ceph-mon/0:
@@ -1387,7 +1369,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 15.2.17
     units:
       ceph-osd/0:
@@ -1499,7 +1480,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 15.2.17
     units:
       ceph-radosgw/0:
@@ -1624,7 +1604,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 16.4.2
     units:
       cinder/0:
@@ -1703,7 +1682,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - cinder
     workload_version: 16.4.2
@@ -1769,7 +1747,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - cinder-volume
     workload_version: 16.4.2
@@ -2108,7 +2085,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - cinder-volume
     workload_version: 16.4.2
@@ -2447,7 +2423,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - cinder-volume
     workload_version: 16.4.2
@@ -2814,7 +2789,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - cinder
     workload_version: 8.0.32
@@ -2935,7 +2909,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 16.4.2
     units:
       cinder-volume/0:
@@ -3360,7 +3333,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - cinder-volume
     workload_version: 8.0.32
@@ -3731,7 +3703,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 10.0.2
     units:
       designate/1:
@@ -3808,7 +3779,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 9.16.48
     units:
       designate-bind/0:
@@ -3905,7 +3875,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - designate
     workload_version: 8.0.32
@@ -4023,7 +3992,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 20.2.0
     units:
       glance/0:
@@ -4127,7 +4095,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - glance
     workload_version: 8.0.32
@@ -4195,7 +4162,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: ''
     units:
       glance-simplestreams-sync/0:
@@ -4259,7 +4225,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 4.3.4
     units:
       gnocchi/0:
@@ -4360,7 +4325,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - gnocchi
     workload_version: 8.0.32
@@ -4420,7 +4384,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - aodh
     - nrpe-container
@@ -4481,7 +4444,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - ceilometer
     - nrpe-container
@@ -4539,7 +4501,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - cinder
     - nrpe-container
@@ -4606,7 +4567,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - designate
     - nrpe-container
@@ -4670,7 +4630,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - glance
     - nrpe-container
@@ -4734,7 +4693,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - gnocchi
     - nrpe-container
@@ -4795,7 +4753,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - heat
     - nrpe-container
@@ -4859,7 +4816,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nrpe-container
     - openstack-dashboard
@@ -4926,7 +4882,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - keystone
     - nrpe-container
@@ -4993,7 +4948,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - neutron-api
     - nrpe-container
@@ -5057,7 +5011,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nova-cloud-controller
     - nrpe-container
@@ -5121,7 +5074,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nrpe-container
     - octavia
@@ -5188,7 +5140,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nrpe-container
     - placement
@@ -5249,7 +5200,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - ceph-radosgw
     - nrpe-container
@@ -5307,7 +5257,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nrpe-host
     - vault
@@ -5420,7 +5369,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 14.2.0
     units:
       heat/0:
@@ -5524,7 +5472,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - heat
     workload_version: 8.0.32
@@ -5650,7 +5597,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 17.0.1
     units:
       keystone/0:
@@ -5729,7 +5675,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - keystone
     workload_version: 17.0.1
@@ -5823,7 +5768,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - keystone
     workload_version: 8.0.32
@@ -5909,7 +5853,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 3.8.2
     units:
       landscape-rabbitmq-server/0:
@@ -6005,7 +5948,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 8.0.32
     units:
       mysql-innodb-cluster/0:
@@ -6124,7 +6066,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 16.4.2
     units:
       neutron-api/0:
@@ -6228,7 +6169,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - neutron-api
     workload_version: 8.0.32
@@ -6302,7 +6242,6 @@ applications:
         value: false
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nova-compute-kvm
     workload_version: 16.4.2
@@ -6652,7 +6591,6 @@ applications:
         value: true
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - octavia
     workload_version: 16.4.2
@@ -6773,7 +6711,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 21.2.4
     units:
       nova-cloud-controller/0:
@@ -6883,7 +6820,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 21.2.4
     units:
       nova-compute-kvm/0:
@@ -7355,7 +7291,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nova-cloud-controller
     workload_version: 8.0.32
@@ -7450,7 +7385,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 6.2.2
     units:
       octavia/10:
@@ -7529,7 +7463,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - openstack-dashboard
     workload_version: 5.0.0
@@ -7595,7 +7528,6 @@ applications:
     config: {}
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - glance-simplestreams-sync
     workload_version: 0.9.12
@@ -7652,7 +7584,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - octavia
     workload_version: 8.0.32
@@ -7773,7 +7704,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 18.3.5
     units:
       openstack-dashboard/0:
@@ -7880,7 +7810,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - openstack-dashboard
     workload_version: 8.0.32
@@ -7978,7 +7907,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 3.0.1
     units:
       placement/3:
@@ -8079,7 +8007,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - placement
     workload_version: 8.0.32
@@ -8160,7 +8087,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 3.8.2
     units:
       rabbitmq-server/0:
@@ -8252,7 +8178,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - vault
     workload_version: 8.0.32
