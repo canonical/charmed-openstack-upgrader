@@ -21,7 +21,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, Sequence
 
 from juju.action import Action
 from juju.application import Application as JujuApplication
@@ -175,8 +175,7 @@ class Application:
     origin: str
     series: str
     subordinate_to: list[str]
-    units: dict[str, Unit]  # subordainte apps does not have units, use subodinate_units instead
-    subordinate_units: list[SubordinateUnit]  # this is the units for subordinate apps
+    units: dict[str, Unit]
     workload_version: str
     actions: dict[str, str] = field(default_factory=lambda: {}, compare=False)
 
@@ -368,10 +367,6 @@ class Model:
         #                 information the status than from objects. e.g. workload_version for unit
         full_status = await self.get_status()
         machines = await self._get_machines()
-        subordinate_units = {
-            SubordinateUnit(name, model.applications[name.split("/")[0]].charm_name)
-            for name in model.subordinate_units
-        }
 
         return {
             app: Application(
@@ -403,7 +398,6 @@ class Model:
                     )
                     for name, unit in status.units.items()
                 },
-                subordinate_units=[su for su in subordinate_units if su.name.split("/")[0] == app],
                 workload_version=status.workload_version,
                 actions=await model.applications[app].get_actions(),
             )
@@ -766,3 +760,22 @@ class Model:
             if name == app_name:
                 return app
         raise ApplicationNotFound(f"Cannot find '{app_name}' in model '{self.name}'.")
+
+
+def get_applications_by_charm_name(
+    apps: Sequence[Application], charm_name: str
+) -> Sequence[Application]:
+    """Get all applications based on the charm name.
+
+    :param apps: List of Application
+    :type apps: Sequence[Application]
+    :param charm_name: The charm name
+    :type charm_name: str
+    :return: A list of Application filtered by charm name
+    :type: Sequence[Application]
+    :raise ApplicationNotFound: When cannot find a valid application with that name
+    """
+    filtered_apps = [app for app in apps if app.charm == charm_name]
+    if not filtered_apps:
+        raise ApplicationNotFound(f"Application with '{charm_name}' not found")
+    return filtered_apps

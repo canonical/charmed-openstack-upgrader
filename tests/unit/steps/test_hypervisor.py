@@ -424,7 +424,6 @@ def test_hypervisor_upgrade_plan(model):
             Wait for up to 300s for app 'cinder' to reach the idle state
             Verify that the workload of 'cinder' has been upgraded on units: cinder/0
             Enable nova-compute scheduler from unit: 'nova-compute/0'
-            Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
             Wait for up to 2400s for model 'test_model' to reach the idle state
             Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
         Upgrade plan for [nova-compute/1] in 'az-1' to 'victoria'
@@ -444,7 +443,6 @@ def test_hypervisor_upgrade_plan(model):
                     ├── Upgrade the unit: 'nova-compute/1'
                     ├── Resume the unit: 'nova-compute/1'
             Enable nova-compute scheduler from unit: 'nova-compute/1'
-            Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/1'
             Wait for up to 2400s for model 'test_model' to reach the idle state
             Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/1
         Upgrade plan for [nova-compute/2] in 'az-2' to 'victoria'
@@ -464,7 +462,6 @@ def test_hypervisor_upgrade_plan(model):
                     ├── Upgrade the unit: 'nova-compute/2'
                     ├── Resume the unit: 'nova-compute/2'
             Enable nova-compute scheduler from unit: 'nova-compute/2'
-            Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/2'
             Wait for up to 2400s for model 'test_model' to reach the idle state
             Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/2
     """
@@ -484,7 +481,6 @@ def test_hypervisor_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -505,7 +501,6 @@ def test_hypervisor_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"nova-compute/{unit}": Unit(
                 name=f"nova-compute/{unit}",
@@ -567,7 +562,6 @@ def test_hypervisor_upgrade_plan_single_machine(model):
             Wait for up to 300s for app 'cinder' to reach the idle state
             Verify that the workload of 'cinder' has been upgraded on units: cinder/0
             Enable nova-compute scheduler from unit: 'nova-compute/0'
-            Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
             Wait for up to 2400s for model 'test_model' to reach the idle state
             Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
@@ -587,7 +581,6 @@ def test_hypervisor_upgrade_plan_single_machine(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -608,7 +601,6 @@ def test_hypervisor_upgrade_plan_single_machine(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"nova-compute/{unit}": Unit(
                 name=f"nova-compute/{unit}",
@@ -665,7 +657,6 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
             Wait for up to 300s for app 'cinder' to reach the idle state
             Verify that the workload of 'cinder' has been upgraded on units: cinder/2
             Enable nova-compute scheduler from unit: 'nova-compute/2'
-            Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/2'
             Wait for up to 2400s for model 'test_model' to reach the idle state
             Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/2
     """
@@ -689,7 +680,6 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "cinder/0": Unit(
                 name="cinder/0",
@@ -724,7 +714,6 @@ def test_hypervisor_upgrade_plan_some_units_upgraded(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "nova-compute/0": Unit(
                 name="nova-compute/0",

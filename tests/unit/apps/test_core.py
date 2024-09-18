@@ -69,7 +69,6 @@ def test_application_different_wl(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="18.1.0",
     )
@@ -96,7 +95,6 @@ async def test_application_verify_workload_upgrade(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -142,7 +140,6 @@ async def test_application_verify_workload_upgrade_fail(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",
@@ -184,7 +181,6 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"keystone/{unit}": Unit(
                 name=f"keystone/{unit}",
@@ -281,7 +277,6 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         origin="cs",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"keystone/{unit}": Unit(
                 name=f"keystone/{unit}",
@@ -381,7 +376,6 @@ def test_upgrade_plan_channel_on_next_o7k_release(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"keystone/{unit}": Unit(
                 name=f"keystone/{unit}",
@@ -461,7 +455,6 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"keystone/{unit}": Unit(
                 name=f"keystone/{unit}",
@@ -554,7 +547,6 @@ def test_upgrade_plan_application_already_upgraded(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"keystone/{unit}": Unit(
                 name=f"keystone/{unit}",
@@ -589,7 +581,6 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             f"keystone/{unit}": Unit(
                 name=f"keystone/{unit}",
@@ -681,14 +672,7 @@ def test_nova_compute_pre_upgrade_steps(
 @patch("cou.apps.base.OpenStackApplication._get_wait_step")
 @patch("cou.apps.base.OpenStackApplication._get_reached_expected_target_step")
 @patch("cou.apps.core.NovaCompute._get_enable_scheduler_step")
-@patch("cou.apps.core.NovaCompute._get_restart_subordinate_services_steps")
-def test_nova_compute_post_upgrade_steps(
-    mock_restart_subordinate,
-    mock_enable,
-    mock_expected_target,
-    mock_wait_step,
-    model,
-):
+def test_nova_compute_post_upgrade_steps(mock_enable, mock_expected_target, mock_wait_step, model):
     app = _generate_nova_compute_app(model)
     target = OpenStackRelease("victoria")
     units = list(app.units.values())
@@ -697,7 +681,6 @@ def test_nova_compute_post_upgrade_steps(
     mock_enable.assert_called_once_with(units)
     mock_expected_target.assert_called_once_with(target, units)
     mock_wait_step.assert_called_once_with()
-    mock_restart_subordinate.assert_called_once_with(units)
 
 
 @pytest.mark.parametrize("force", [True, False])
@@ -764,35 +747,6 @@ def test_nova_compute_get_enable_scheduler_step(model, units):
         for unit in units_selected
     ]
     assert app._get_enable_scheduler_step(units_selected) == expected_step
-
-
-@pytest.mark.parametrize(
-    "units",
-    [
-        ["nova-compute/0"],
-        ["nova-compute/0", "nova-compute/1"],
-        ["nova-compute/0", "nova-compute/1", "nova-compute/2"],
-    ],
-)
-def test_nova_compute_get_restart_subordinate_services_steps(model, units):
-    app = _generate_nova_compute_app(model)
-    units_selected = [app.units[unit] for unit in units]
-    assert app._get_restart_subordinate_services_steps(units_selected) == [
-        PostUpgradeStep(
-            description=(
-                "Restart service ceilometer-agent-compute "
-                f"for subordinate unit: '{unit.subordinates[0].name}'"
-            ),
-            coro=model.run_on_unit(
-                unit_name=unit.subordinates[0].name,
-                command=(
-                    "systemctl is-active --quiet ceilometer-agent-compute"
-                    " || systemctl restart ceilometer-agent-compute"
-                ),
-            ),
-        )
-        for unit in units_selected
-    ]
 
 
 def test_nova_compute_get_enable_scheduler_step_no_units(model):
@@ -866,7 +820,7 @@ def _generate_nova_compute_app(model):
         for unit_num in range(3)
     }
     app = NovaCompute(
-        app_name, "", charm, channel, {}, {}, model, "cs", "focal", [], units, [], "21.0.1"
+        app_name, "", charm, channel, {}, {}, model, "cs", "focal", [], units, "21.0.1"
     )
 
     return app
@@ -910,9 +864,6 @@ def test_nova_compute_upgrade_plan(model):
         Enable nova-compute scheduler from unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/1'
         Enable nova-compute scheduler from unit: 'nova-compute/2'
-        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
-        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/1'
-        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/2'
         Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
@@ -940,7 +891,6 @@ def test_nova_compute_upgrade_plan(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="21.0.0",
     )
@@ -971,7 +921,6 @@ def test_nova_compute_upgrade_plan_single_unit(model):
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/0'
-        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
         Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
@@ -999,7 +948,6 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="21.0.0",
     )
@@ -1052,7 +1000,6 @@ cinder/0, cinder/1, cinder/2
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="16.4.2",
     )
@@ -1108,7 +1055,6 @@ def test_cinder_upgrade_plan_single_unit(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units=units,
         workload_version="16.4.2",
     )
@@ -1133,7 +1079,6 @@ def test_swift_application_not_supported(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "swift-proxy/0": Unit(
                 name="swift-proxy/0",
@@ -1171,7 +1116,6 @@ def test_core_wrong_channel(model):
         origin="ch",
         series="focal",
         subordinate_to=[],
-        subordinate_units=[],
         units={
             "keystone/0": Unit(
                 name="keystone/0",

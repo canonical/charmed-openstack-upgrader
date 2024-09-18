@@ -45,7 +45,6 @@ plan: |
                         ├── Upgrade the unit: 'nova-compute/0'
                         ├── Resume the unit: 'nova-compute/0'
                 Enable nova-compute scheduler from unit: 'nova-compute/0'
-                Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
                 Wait for up to 2400s for model 'base' to reach the idle state
                 Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
         Remaining Data Plane principal(s) upgrade plan
@@ -73,7 +72,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 17.0.1
     units:
       keystone/0:
@@ -96,7 +94,6 @@ applications:
     series: focal
     subordinate_to:
     - keystone
-    subordinate_units: []
     workload_version: 17.0.1
     units: {}
     machines:
@@ -114,7 +111,6 @@ applications:
         value: distro
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to: []
     workload_version: 15.2.0
     units:
@@ -141,7 +137,6 @@ applications:
     origin: ch
     series: focal
     subordinate_to: []
-    subordinate_units: []
     workload_version: 21.0.0
     units:
       nova-compute/0:
@@ -168,10 +163,8 @@ applications:
         value: false
     origin: ch
     series: focal
-    subordinate_units: []
     subordinate_to:
     - nova-compute
-    subordinate_units: []
     workload_version: '22.3'
     units: {}
     machines:

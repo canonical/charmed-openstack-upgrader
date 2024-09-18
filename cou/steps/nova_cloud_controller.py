@@ -14,15 +14,15 @@
 
 """Functions for prereq steps relating to nova."""
 import logging
-from typing import Optional
+from typing import Optional, Sequence
 
-from cou.exceptions import ApplicationNotFound, COUException, UnitNotFound
-from cou.utils.juju_utils import Model
+from cou.exceptions import COUException, UnitNotFound
+from cou.utils.juju_utils import Application, Model, get_applications_by_charm_name
 
 logger = logging.getLogger(__name__)
 
 
-async def archive(model: Model, *, batch_size: int) -> None:
+async def archive(model: Model, apps: Sequence[Application], *, batch_size: int) -> None:
     """Archive data on a nova-cloud-controller unit.
 
     The archive-data action only runs a single batch,
@@ -32,12 +32,14 @@ async def archive(model: Model, *, batch_size: int) -> None:
     https://docs.openstack.org/project-deploy-guide/charm-deployment-guide/wallaby/upgrade-openstack.html#archive-old-database-data
     :param model: juju model to work with
     :type model: Model
+    :param apps: Applications in the model
+    :type apps: Sequence of Applications
     :param batch_size: batch-size to pass to the archive-data action
         (default is 1000; decrease if performance issues seen)
     :type batch_size: int
     :raises COUException: if action returned unexpected output
     """  # noqa: E501 line too long
-    unit_name: str = await _get_nova_cloud_controller_unit_name(model)
+    unit_name: str = _get_nova_cloud_controller_unit_name(apps)
     # The archive-data action only archives a single batch,
     # so we must run it in a loop until everything is archived.
     while True:
@@ -64,12 +66,14 @@ async def archive(model: Model, *, batch_size: int) -> None:
         logger.debug("Potentially more data to archive...")
 
 
-async def purge(model: Model, before: Optional[str]) -> None:
+async def purge(model: Model, apps: Sequence[Application], before: Optional[str]) -> None:
     """Purge data on a nova-cloud-controller unit.
 
     The purge-data action delete rows from shadow tables.
     :param model: juju model to work with
     :type model: Model
+    :param apps: Applications in the model
+    :type apps: Sequence of Applications
     :param before: specifying before will delete data from all shadow tables
         that is older than the data provided.
         Date string format should be YYYY-MM-DD[HH:mm][:ss]
@@ -79,7 +83,7 @@ async def purge(model: Model, before: Optional[str]) -> None:
     if before is not None:
         action_params = {"before": before}
 
-    unit_name: str = await _get_nova_cloud_controller_unit_name(model)
+    unit_name: str = _get_nova_cloud_controller_unit_name(apps)
     action = await model.run_action(
         unit_name=unit_name,
         action_name="purge-data",
@@ -102,27 +106,21 @@ async def purge(model: Model, before: Optional[str]) -> None:
         logger.info("purge-data action succeeded on %s", unit_name)
 
 
-async def _get_nova_cloud_controller_unit_name(model: Model) -> str:
+def _get_nova_cloud_controller_unit_name(apps: Sequence[Application]) -> str:
     """Get nova-cloud-controller application's first unit's name.
 
     Assumes only a single nova-cloud-controller application is deployed.
 
-    :param model: juju model to work with
-    :type model: Model
+    :param apps: Applications in the model
+    :type apps: Sequence of Applications
     :return: unit name
     :rtype: str
     :raises UnitNotFound: When cannot find a valid unit for 'nova-cloud-controller'
     :raises ApplicationNotFound: When cannot find a 'nova-cloud-controller' application
     """
-    status = await model.get_status()
-    for app_name, app_config in status.applications.items():
-        charm_name = await model.get_charm_name(app_name)
-        if charm_name == "nova-cloud-controller":
-            units = list(app_config.units.keys())
-            if units:
-                return units[0]
-            raise UnitNotFound(
-                f"Cannot find unit for 'nova-cloud-controller' in model '{model.name}'."
-            )
-
-    raise ApplicationNotFound(f"Cannot find 'nova-cloud-controller' in model '{model.name}'.")
+    apps = get_applications_by_charm_name(apps, "nova-cloud-controller")
+    for app in apps:
+        units = list(app.units.keys())
+        if units:
+            return units[0]
+    raise UnitNotFound("Cannot find unit for 'nova-cloud-controller'.")
