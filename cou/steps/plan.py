@@ -98,6 +98,9 @@ class PlanStatus:  # pylint: disable=too-few-public-methods
 async def verify_cloud(analysis_result: Analysis, args: CLIargs) -> None:
     """Verify the cloud is ready for upgrade.
 
+    This will run a sequence of verification functions which populate the
+    `PlanStatus` singleton with messages when errors are found.
+
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     :param args: CLI arguments
