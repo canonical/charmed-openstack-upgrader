@@ -18,12 +18,7 @@ import pytest
 from juju.errors import JujuError
 
 from cou import cli
-from cou.exceptions import (
-    CloudVerificationError,
-    COUException,
-    HighestReleaseAchieved,
-    TimeoutException,
-)
+from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.plan import PlanStatus
@@ -118,7 +113,7 @@ async def test_analyze_and_generate_plan_with_errors(
     mock_plan_status.error_messages = ["Mock error message"]
     mock_plan_status.warning_messages = []
 
-    with pytest.raises(CloudVerificationError):
+    with pytest.raises(COUException):
         await cli.analyze_and_generate_plan(model, cli_args)
 
     mock_analyze.assert_awaited_once()
@@ -325,7 +320,7 @@ async def test_run_command(
         mock_apply_upgrade_plan.assert_awaited_once()
 
 
-@patch("cou.cli.run_post_upgrade_sanity_check")
+@patch("cou.cli.run_post_upgrade_sanity_checks")
 @patch("cou.cli.sys")
 @patch("cou.cli.parse_args")
 @patch("cou.cli.get_log_level")
@@ -337,7 +332,7 @@ def test_entrypoint(
     mock_get_log_level,
     mock_parse_args,
     mock_sys,
-    mock_run_post_upgrade_sanity_check,
+    mock_run_post_upgrade_sanity_checks,
 ):
     """Test successful entrypoint execution."""
     mock_sys.argv = ["cou", "upgrade"]
@@ -350,7 +345,7 @@ def test_entrypoint(
     mock_get_log_level.assert_called_once_with(quiet=args.quiet, verbosity=args.verbosity)
     mock_setup_logging.assert_called_once_with(mock_get_log_level.return_value)
     mock_run_command.assert_awaited_once_with(args)
-    mock_run_post_upgrade_sanity_check.await_count == 2
+    mock_run_post_upgrade_sanity_checks.await_count == 2
 
 
 @patch("cou.cli.progress_indicator")
@@ -390,8 +385,8 @@ def test_entrypoint_failure_timeout(mock_run_command, mock_indicator):
 @patch("cou.cli.setup_logging", new=MagicMock())
 @patch("cou.cli._run_command")
 def test_entrypoint_failure_validation_error(mock_run_command, mock_indicator):
-    """Test CloudVerificationError exception during entrypoint execution."""
-    mock_run_command.side_effect = CloudVerificationError
+    """Test COUException exception during entrypoint execution."""
+    mock_run_command.side_effect = COUException
 
     with pytest.raises(SystemExit, match="1"):
         cli.entrypoint()
@@ -478,20 +473,20 @@ def test_entrypoint_failure_unexpected_exception(mock_run_command, mock_indicato
 )
 @patch("builtins.print")
 @patch("cou.cli.Model")
-@patch("cou.cli.post_upgrade_sanity_check", new_callable=AsyncMock)
+@patch("cou.cli.post_upgrade_sanity_checks", new_callable=AsyncMock)
 @patch("cou.cli.Analysis", new_callable=AsyncMock)
 @patch("cou.cli.PlanStatus", spec_set=PlanStatus)
-async def test_run_run_post_upgrade_sanity_check(
+async def test_run_run_post_upgrade_sanity_checks(
     mock_plan_status,
     mock_analyze,
-    mock_post_upgrade_sanity_check,
+    mock_post_upgrade_sanity_checks,
     cou_model,
     mock_print,
     quiet,
     expected_print_count,
     cli_args,
 ):
-    """Test run_post_upgrade_sanity_check function in either quiet or non-quiet mode."""
+    """Test run_post_upgrade_sanity_checks function in either quiet or non-quiet mode."""
     cli_args.quiet = quiet
 
     cou_model.return_value.connect.side_effect = AsyncMock()
@@ -501,7 +496,7 @@ async def test_run_run_post_upgrade_sanity_check(
     mock_plan_status.error_messages = []
     mock_plan_status.warning_messages = []
 
-    await cli.run_post_upgrade_sanity_check(cli_args)
+    await cli.run_post_upgrade_sanity_checks(cli_args)
 
-    mock_post_upgrade_sanity_check.assert_called_once()
+    mock_post_upgrade_sanity_checks.assert_called_once()
     mock_print.call_count == expected_print_count

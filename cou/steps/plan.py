@@ -145,8 +145,8 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     return plan
 
 
-async def post_upgrade_sanity_check(analysis_result: Analysis) -> None:
-    """Run post upgrade sanity check.
+async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
+    """Run post upgrade sanity checks.
 
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
@@ -219,16 +219,18 @@ async def _generate_data_plane_plan(
 def _verify_supported_series(analysis_result: Analysis) -> None:
     """Verify the Ubuntu series of the cloud to see if it is supported.
 
+    Verify the Ubuntu series of the cloud to see if it is supported. If not, an
+    error message will be added to `PlanStatus` class.
+
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
-    :raises OutOfSupportRange: When series is not supported.
     """
     supporting_lts_series = ", ".join(LTS_TO_OS_RELEASE)
     current_series = analysis_result.current_cloud_series
     if current_series not in LTS_TO_OS_RELEASE:
         PlanStatus.add_message(
             f"Cloud series '{current_series}' is not a Ubuntu LTS series supported by COU. "
-            f"The supporting series are: {supporting_lts_series}",
+            f"The supported series are: {supporting_lts_series}",
             MessageType.ERROR,
         )
 
@@ -236,9 +238,11 @@ def _verify_supported_series(analysis_result: Analysis) -> None:
 def _verify_highest_release_achieved(analysis_result: Analysis) -> None:
     """Verify if the highest OpenStack release is reached for the current Ubuntu series.
 
+    Verify if the highest OpenStack release is reached for the current Ubuntu
+    series. If not, an error message will be added to `PlanStatus` class.
+
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
-    :raises HighestReleaseAchieved: When the OpenStack release is the last supported by the series.
     """
     o7k_release = analysis_result.current_cloud_o7k_release
     current_series = analysis_result.current_cloud_series or ""
@@ -259,13 +263,15 @@ def _verify_highest_release_achieved(analysis_result: Analysis) -> None:
 def _verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis) -> None:
     """Verify if data plane is ready to upgrade.
 
-    To be able to upgrade data-plane, first all control plane apps should be upgraded.
+    Verify if data plane is ready to upgrade. If not, an error message will be
+    added to `PlanStatus` class.
+
+    Note: To be able to upgrade data-plane, first all control plane apps should be upgraded.
 
     :param args: CLI arguments
     :type args: CLIargs
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
-    :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
     if args.upgrade_group in {DATA_PLANE, HYPERVISORS}:
         if not analysis_result.min_o7k_version_data_plane:
@@ -283,9 +289,11 @@ def _verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis
 async def _verify_vault_is_unsealed(analysis_result: Analysis) -> None:
     """Verify if vault is unsealed.
 
+    Verify if vault is unsealed. If not, an error message will be added to
+    `PlanStatus` class.
+
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
-    :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
     try:
         await verify_vault_is_unsealed(analysis_result.model)
@@ -296,9 +304,11 @@ async def _verify_vault_is_unsealed(analysis_result: Analysis) -> None:
 async def _verify_osd_noout_unset(analysis_result: Analysis) -> None:
     """Verify Ceph OSD has noout unset.
 
+    Verify Ceph OSD has noout unset. If not, an error message will be added to
+    `PlanStatus` class.
+
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
-    :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
     try:
         await ceph.assert_osd_noout_state(
@@ -306,7 +316,7 @@ async def _verify_osd_noout_unset(analysis_result: Analysis) -> None:
         )
     except ApplicationError:
         PlanStatus.add_message(
-            "'noout' should be set for ceph cluster",
+            "'noout' should be unset for ceph cluster",
             MessageType.ERROR,
         )
 
@@ -314,9 +324,11 @@ async def _verify_osd_noout_unset(analysis_result: Analysis) -> None:
 async def _verify_model_idle(analysis_result: Analysis) -> None:
     """Verify the model is active idle.
 
+    Verify the model is active idle. If not, an error message will be added to
+    `PlanStatus` class.
+
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
-    :raises DataPlaneCannotUpgrade: When data-plane is not ready to upgrade.
     """
     try:
         await analysis_result.model.wait_for_idle(

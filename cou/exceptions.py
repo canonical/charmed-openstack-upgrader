@@ -151,7 +151,3 @@ class ApplicationNotSupported(COUException):
 
 class VaultSealed(COUException):
     """COU exception when the application vault is sealed."""
-
-
-class CloudVerificationError(COUException):
-    """Exception raised when the cloud is not ready for upgrade."""

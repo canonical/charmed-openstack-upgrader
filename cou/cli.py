@@ -23,12 +23,7 @@ from signal import SIGINT, SIGTERM
 from juju.errors import JujuError
 
 from cou.commands import CLIargs, parse_args
-from cou.exceptions import (
-    CloudVerificationError,
-    COUException,
-    HighestReleaseAchieved,
-    TimeoutException,
-)
+from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
 from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
@@ -36,7 +31,7 @@ from cou.steps.execute import apply_step
 from cou.steps.plan import (
     PlanStatus,
     generate_plan,
-    post_upgrade_sanity_check,
+    post_upgrade_sanity_checks,
     verify_cloud,
 )
 from cou.utils import print_and_debug, progress_indicator, prompt_input
@@ -138,7 +133,7 @@ async def analyze_and_generate_plan(model: Model, args: CLIargs) -> UpgradePlan:
     :type args: CLIargs
     :return: The generated upgrade plan.
     :rtype: UpgradePlan
-    :raises CloudVerificationError: when cloud is not ready for upgrade
+    :raises COUException: when cloud is not ready for upgrade
     """
     progress_indicator.start("Analyzing cloud...")
     analysis_result = await Analysis.create(model, skip_apps=args.skip_apps)
@@ -161,10 +156,15 @@ async def analyze_and_generate_plan(model: Model, args: CLIargs) -> UpgradePlan:
     if errors := PlanStatus.error_messages:
         for error in errors:
             logger.error(error)
-        raise CloudVerificationError(
+        raise COUException(
             "Running upgrades will not be possible until problems indicated in the errors "
             "are resolved"
         )
+
+    print(
+        "Please note that the actual upgrade steps could be different if the cloud state "
+        "changes because the plan will be re-calculated at upgrade time."
+    )
 
     return upgrade_plan
 
@@ -193,7 +193,7 @@ async def apply_upgrade_plan(upgrade_plan: UpgradePlan, args: CLIargs) -> None:
     print("Upgrade completed.")
 
 
-async def run_post_upgrade_sanity_check(args: CLIargs) -> None:
+async def run_post_upgrade_sanity_checks(args: CLIargs) -> None:
     """Run post upgrade sanity check.
 
     :param args: CLI arguments
@@ -204,8 +204,29 @@ async def run_post_upgrade_sanity_check(args: CLIargs) -> None:
     model = Model(args.model_name)
     await model.connect()
     analysis_result = await Analysis.create(model, skip_apps=args.skip_apps)
-    await post_upgrade_sanity_check(analysis_result)
+    await post_upgrade_sanity_checks(analysis_result)
     print("Post upgrade sanity check completed.")
+
+
+async def run_plan_subcommand(args: CLIargs) -> None:
+    """Run the `plan` subcommand.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    """
+    model = await get_model(args)
+    await analyze_and_generate_plan(model, args)
+
+
+async def run_upgrade_subcommand(args: CLIargs) -> None:
+    """Run the `upgrade` subcommand.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    """
+    model = await get_model(args)
+    cloud_upgrade_plan = await analyze_and_generate_plan(model, args)
+    await apply_upgrade_plan(cloud_upgrade_plan, args)
 
 
 async def _run_command(args: CLIargs) -> None:
@@ -214,21 +235,23 @@ async def _run_command(args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
-    model = await get_model(args)
-    cloud_upgrade_plan = await analyze_and_generate_plan(model, args)
-    if args.command == "upgrade":
-        await apply_upgrade_plan(cloud_upgrade_plan, args)
+    match args.command:
+        case "plan":
+            await run_plan_subcommand(args)
+        case "upgrade":
+            await run_upgrade_subcommand(args)
 
 
 def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     args = parse_args(sys.argv[1:])
-    # disable progress indicator when in quiet mode to suppress its console output
-    progress_indicator.enabled = not args.quiet
-    log_level = get_log_level(quiet=args.quiet, verbosity=args.verbosity)
-    setup_logging(log_level)
-    loop = asyncio.get_event_loop()
     try:
+        # disable progress indicator when in quiet mode to suppress its console output
+        progress_indicator.enabled = not args.quiet
+        log_level = get_log_level(quiet=args.quiet, verbosity=args.verbosity)
+        setup_logging(log_level)
+
+        loop = asyncio.get_event_loop()
         loop.run_until_complete(_run_command(args))
     except HighestReleaseAchieved as exc:
         progress_indicator.succeed()
@@ -241,9 +264,6 @@ def entrypoint() -> None:
             "Default timeout is 10s; to increase to 60s for example:\n"
             "$ COU_TIMEOUT=60 cou plan"
         )
-        sys.exit(1)
-    except CloudVerificationError as exc:
-        logger.error(exc)
         sys.exit(1)
     except COUException as exc:
         progress_indicator.fail()
@@ -270,5 +290,5 @@ def entrypoint() -> None:
         sys.exit(2)
     finally:
         if args.command == "upgrade":
-            loop.run_until_complete(run_post_upgrade_sanity_check(args))
+            loop.run_until_complete(run_post_upgrade_sanity_checks(args))
         progress_indicator.stop()

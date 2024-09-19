@@ -1699,10 +1699,10 @@ def test_create_upgrade_plan_failed():
 @patch("cou.steps.plan.print_and_debug")
 @patch("cou.steps.analyze.Analysis")
 @patch("cou.steps.plan.ceph")
-async def test_post_upgrade_sanity_check(mock_ceph, mock_analysis, mock_print_and_debug):
+async def test_post_upgrade_sanity_checks(mock_ceph, mock_analysis, mock_print_and_debug):
     """Test post_upgrade_sanity_checks with exception."""
     mock_ceph.assert_osd_noout_state = AsyncMock(side_effect=ApplicationError)
-    await cou_plan.post_upgrade_sanity_check(mock_analysis)
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
     mock_print_and_debug.assert_called()
 
 
@@ -1710,12 +1710,12 @@ async def test_post_upgrade_sanity_check(mock_ceph, mock_analysis, mock_print_an
 @patch("cou.steps.plan.print_and_debug")
 @patch("cou.steps.analyze.Analysis")
 @patch("cou.steps.plan.ceph")
-async def test_post_upgrade_sanity_check_no_exception(
+async def test_post_upgrade_sanity_checks_no_exception(
     mock_ceph, mock_analysis, mock_print_and_debug
 ):
     """Test post_upgrade_sanity_checks without exception."""
     mock_ceph.assert_osd_noout_state = AsyncMock()
-    await cou_plan.post_upgrade_sanity_check(mock_analysis)
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
     mock_print_and_debug.assert_not_called()
 
 

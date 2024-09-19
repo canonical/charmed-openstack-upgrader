@@ -39,5 +39,5 @@ async def verify_vault_is_unsealed(model: Model) -> None:
                     "https://charmhub.io/vault to unseal the vault manually before upgrade"
                 )
     except ApplicationNotFound:
-        logger.debug("Application vault not found, skip")
+        logger.warning("Application vault not found, skip")
     logger.debug("Vault not in sealed status")
