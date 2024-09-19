@@ -193,7 +193,7 @@ async def apply_upgrade_plan(upgrade_plan: UpgradePlan, args: CLIargs) -> None:
     print("Upgrade completed.")
 
 
-async def run_post_upgrade_sanity_checks(args: CLIargs) -> None:
+async def run_post_upgrade_sanity_check(args: CLIargs) -> None:
     """Run post upgrade sanity check.
 
     :param args: CLI arguments
@@ -290,5 +290,5 @@ def entrypoint() -> None:
         sys.exit(2)
     finally:
         if args.command == "upgrade":
-            loop.run_until_complete(run_post_upgrade_sanity_checks(args))
+            loop.run_until_complete(run_post_upgrade_sanity_check(args))
         progress_indicator.stop()
