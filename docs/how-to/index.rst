@@ -15,5 +15,8 @@ are possible with **COU**.
    interruption
    configure-connection
    no-backup
+   skip-upgrading-applications
    archive-old-data
    verbosity
+   purge-data-on-shadow-table
+   test-on-juju-openstack-provider

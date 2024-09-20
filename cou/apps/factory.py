@@ -58,6 +58,7 @@ class AppFactory:
                 subordinate_to=app.subordinate_to,
                 units=app.units,
                 workload_version=app.workload_version,
+                actions=app.actions,
             )
 
         logger.debug(

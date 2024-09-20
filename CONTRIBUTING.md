@@ -58,6 +58,13 @@ Please adhere to the following guidelines prior to submitting your changes:
   of the changes made
 - Commits must be signed (refer to the [Prerequisites](#prerequisites) section)
 
+## Add new or update OpenStack upgrade paths
+COU relies on external documentation to define the OpenStack upgrade paths (e.g.
+the version, charm tracks, and Ubuntu base). The external documatation may not
+align with the development and release cycle of this project, so the information
+in COU may be out-of-date. You can follow this [document](./developing/how-to-update-openstack-upgrade-path.md)
+to learn how to update the OpenStack upgrade paths.
+
 ## Find issues to work on
 [GitHub Issues](https://github.com/canonical/charmed-openstack-upgrader/issues)
 is our central hub for bug tracking and issue management, with labels used to

@@ -35,39 +35,105 @@ def test_version_range_raises_ValueError(lower, upper):
     [
         (
             "keystone",
-            ["17.1.0", "18.3.1", "19.4.5", "20.6.7", "21.8.9"],
-            [["ussuri"], ["victoria"], ["wallaby"], ["xena"], ["yoga"]],
+            [
+                "17.1.0",
+                "18.3.1",
+                "19.4.5",
+                "20.6.7",
+                "21.8.9",
+                "22.0.0",
+                "23.0.0",
+                "24.0.0",
+                "25.0.0",
+            ],
+            [
+                ["ussuri"],
+                ["victoria"],
+                ["wallaby"],
+                ["xena"],
+                ["yoga"],
+                ["zed"],
+                ["antelope"],
+                ["bobcat"],
+                ["caracal"],
+            ],
         ),
         (
             "ceph-mon",
-            ["15.2.17", "16.2.14", "17.2.6"],
-            [["ussuri", "victoria"], ["wallaby", "xena"], ["yoga"]],
+            ["15.2.17", "16.2.14", "17.2.6", "18.2.1"],
+            [
+                ["ussuri", "victoria"],
+                ["wallaby", "xena"],
+                ["yoga", "zed", "antelope"],
+                ["bobcat", "caracal"],
+            ],
         ),  # version 15 (octopus) can be ussuri or victoria
         # version 16 (pacific) can be wallaby or xena
         (
             "gnocchi",
-            ["4.3.4", "4.4.0", "4.4.1"],
-            [["ussuri"], ["victoria", "wallaby"], ["xena", "yoga"]],
+            ["4.3.4", "4.4.0", "4.4.1", "4.4.2", "4.5.5", "4.6.0"],
+            [
+                ["ussuri"],
+                ["victoria", "wallaby"],
+                ["xena", "yoga"],
+                ["zed"],
+                ["antelope"],
+                ["bobcat", "caracal"],
+            ],
         ),
         (
             "openstack-dashboard",
-            ["18.3.5", "18.6.3", "19.3.0", "20.1.4", "20.2.0"],
-            [["ussuri"], ["victoria"], ["wallaby"], ["xena"], ["yoga"]],
+            [
+                "18.3.5",
+                "18.6.3",
+                "19.3.0",
+                "20.1.4",
+                "20.2.0",
+                "22.2.0",
+                "23.1.0",
+                "23.2.0",
+                "23.4.0",
+            ],
+            [
+                ["ussuri"],
+                ["victoria"],
+                ["wallaby"],
+                ["xena"],
+                ["yoga"],
+                ["zed"],
+                ["antelope"],
+                ["bobcat"],
+                ["caracal"],
+            ],
         ),
         (
             "rabbitmq-server",  # yoga can be 3.8 or 3.9
             ["3.8", "3.9", "3.10"],
-            [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
+            [
+                ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+                ["yoga", "zed", "antelope", "bobcat", "caracal"],
+                [],
+            ],
         ),
         (
             "vault",  # yoga can be 1.7 to 1.8
             ["1.7", "1.8", "1.9"],
-            [["ussuri", "victoria", "wallaby", "xena", "yoga"], ["yoga"], []],
+            [
+                ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+                ["yoga", "zed", "antelope", "bobcat", "caracal"],
+                [],
+            ],
         ),
         (
             "ovn-central",
-            ["22.03.02"],
-            [["ussuri", "victoria", "wallaby", "xena", "yoga"]],
+            ["22.03.02", "22.09", "23.03", "23.09", "24.03"],
+            [
+                ["ussuri", "victoria", "wallaby", "xena", "yoga"],
+                ["zed"],
+                ["antelope"],
+                ["bobcat"],
+                ["caracal"],
+            ],
         ),
         ("my_charm", ["13.1.2"], [[]]),  # unknown charm
         ("keystone", ["63.5.7"], [[]]),  # out-of-bounds of a known charm
@@ -227,6 +293,18 @@ def test_openstack_release_setter_by_date():
     assert openstack_release.date == "2023.1"
 
 
+def test_openstack_release_track_before_zed():
+    openstack_release = OpenStackRelease("yoga")
+    assert openstack_release.codename == "yoga"
+    assert openstack_release.track == "yoga"
+
+
+def test_openstack_release_track_after_zed():
+    openstack_release = OpenStackRelease("antelope")
+    assert openstack_release.codename == "antelope"
+    assert openstack_release.track == "2023.1"
+
+
 @pytest.mark.parametrize("o7k_release", ["victoria", "wallaby"])
 def test_compare_openstack_repr_str(o7k_release):
     o7k_compare = OpenStackRelease(o7k_release)
@@ -283,6 +361,9 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "ceph-mon", "yoga", ["quincy"]),
         ("jammy", "ceph-mon", "yoga", ["quincy"]),
         ("jammy", "ceph-mon", "zed", ["quincy"]),
+        ("jammy", "ceph-mon", "2023.1", ["quincy"]),
+        ("jammy", "ceph-mon", "2023.2", ["reef"]),
+        ("jammy", "ceph-mon", "2024.1", ["reef"]),
         ("focal", "ovn-central", "ussuri", ["20.03", "22.03"]),
         ("focal", "ovn-central", "victoria", ["20.03", "22.03"]),
         ("focal", "ovn-central", "wallaby", ["20.12", "22.03"]),
@@ -290,6 +371,9 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "ovn-central", "yoga", ["22.03"]),
         ("jammy", "ovn-central", "yoga", ["22.03"]),
         ("jammy", "ovn-central", "zed", ["22.09"]),
+        ("jammy", "ovn-central", "2023.1", ["23.03"]),
+        ("jammy", "ovn-central", "2023.2", ["23.09"]),
+        ("jammy", "ovn-central", "2024.1", ["24.03"]),
         ("focal", "mysql-router", "ussuri", ["8.0"]),
         ("focal", "mysql-router", "victoria", ["8.0"]),
         ("focal", "mysql-router", "wallaby", ["8.0"]),
@@ -297,6 +381,9 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "mysql-router", "yoga", ["8.0"]),
         ("jammy", "mysql-router", "yoga", ["8.0"]),
         ("jammy", "mysql-router", "zed", ["8.0"]),
+        ("jammy", "mysql-router", "2023.1", ["8.0"]),
+        ("jammy", "mysql-router", "2023.2", ["8.0"]),
+        ("jammy", "mysql-router", "2024.1", ["8.0"]),
         ("focal", "hacluster", "ussuri", ["2.0.3", "2.4"]),
         ("focal", "hacluster", "victoria", ["2.0.3", "2.4"]),
         ("focal", "hacluster", "wallaby", ["2.0.3", "2.4"]),
@@ -304,6 +391,9 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "hacluster", "yoga", ["2.0.3", "2.4"]),
         ("jammy", "hacluster", "yoga", ["2.4"]),
         ("jammy", "hacluster", "zed", ["2.4"]),
+        ("jammy", "hacluster", "2023.1", ["2.4"]),
+        ("jammy", "hacluster", "2023.2", ["2.4"]),
+        ("jammy", "hacluster", "2024.1", ["2.4"]),
         ("focal", "rabbitmq-server", "ussuri", ["3.8", "3.9"]),
         ("focal", "rabbitmq-server", "victoria", ["3.8", "3.9"]),
         ("focal", "rabbitmq-server", "wallaby", ["3.8", "3.9"]),
@@ -311,13 +401,19 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("focal", "rabbitmq-server", "yoga", ["3.8", "3.9"]),
         ("jammy", "rabbitmq-server", "yoga", ["3.9"]),
         ("jammy", "rabbitmq-server", "zed", ["3.9"]),
+        ("jammy", "rabbitmq-server", "2023.1", ["3.9"]),
+        ("jammy", "rabbitmq-server", "2023.2", ["3.9"]),
+        ("jammy", "rabbitmq-server", "2024.1", ["3.9"]),
         ("focal", "vault", "ussuri", ["1.7"]),
         ("focal", "vault", "victoria", ["1.7"]),
         ("focal", "vault", "wallaby", ["1.7"]),
         ("focal", "vault", "xena", ["1.7"]),
         ("focal", "vault", "yoga", ["1.7"]),
-        ("jammy", "vault", "yoga", ["1.8"]),
+        ("jammy", "vault", "yoga", ["1.7", "1.8"]),
         ("jammy", "vault", "zed", ["1.8"]),
+        ("jammy", "vault", "2023.1", ["1.8"]),
+        ("jammy", "vault", "2023.2", ["1.8"]),
+        ("jammy", "vault", "2024.1", ["1.8"]),
         ("bionic", "vault", "zed", None),  # release not mapped
         ("jammy", "my-service", "zed", None),  # family not mapped
     ],
@@ -399,7 +495,13 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
             "jammy",
             "mysql-router",
             "8.0",
-            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+            [
+                OpenStackRelease("yoga"),
+                OpenStackRelease("zed"),
+                OpenStackRelease("2023.1"),
+                OpenStackRelease("2023.2"),
+                OpenStackRelease("2024.1"),
+            ],
         ),
         (
             "focal",
@@ -417,7 +519,13 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
             "jammy",
             "hacluster",
             "2.4",
-            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+            [
+                OpenStackRelease("yoga"),
+                OpenStackRelease("zed"),
+                OpenStackRelease("2023.1"),
+                OpenStackRelease("2023.2"),
+                OpenStackRelease("2024.1"),
+            ],
         ),
         (
             "focal",
@@ -435,7 +543,13 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
             "jammy",
             "rabbitmq-server",
             "3.9",
-            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+            [
+                OpenStackRelease("yoga"),
+                OpenStackRelease("zed"),
+                OpenStackRelease("2023.1"),
+                OpenStackRelease("2023.2"),
+                OpenStackRelease("2024.1"),
+            ],
         ),
         (
             "focal",
@@ -453,7 +567,13 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
             "jammy",
             "vault",
             "1.8",
-            [OpenStackRelease("yoga"), OpenStackRelease("zed"), OpenStackRelease("2023.1")],
+            [
+                OpenStackRelease("yoga"),
+                OpenStackRelease("zed"),
+                OpenStackRelease("2023.1"),
+                OpenStackRelease("2023.2"),
+                OpenStackRelease("2024.1"),
+            ],
         ),
     ],
 )

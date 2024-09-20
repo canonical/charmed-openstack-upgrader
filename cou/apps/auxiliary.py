@@ -13,16 +13,27 @@
 # limitations under the License.
 """Auxiliary application class."""
 import abc
+import base64
+import getpass
 import logging
+import os
+import tempfile
 from typing import Optional
 
+import hvac
 from packaging.version import Version
 
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
-from cou.steps import ApplicationUpgradePlan, PostUpgradeStep, PreUpgradeStep
-from cou.utils.app_utils import set_require_osd_release_option
+from cou.steps import (
+    ApplicationUpgradePlan,
+    PostUpgradeStep,
+    PreUpgradeStep,
+    UnitUpgradeStep,
+)
+from cou.steps.ceph import set_require_osd_release_option_on_unit
+from cou.utils import progress_indicator
 from cou.utils.juju_utils import Unit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
@@ -34,7 +45,7 @@ from cou.utils.openstack import (
 logger = logging.getLogger(__name__)
 
 
-@AppFactory.register_application(["vault", "ceph-fs", "ceph-radosgw"])
+@AppFactory.register_application(["ceph-fs", "ceph-radosgw"])
 class AuxiliaryApplication(OpenStackApplication):
     """Application for charms that can have multiple OpenStack releases for a workload."""
 
@@ -51,7 +62,7 @@ class AuxiliaryApplication(OpenStackApplication):
         """
         current_track = self._get_track_from_channel(charm_channel)
         possible_tracks = OPENSTACK_TO_TRACK_MAPPING.get(
-            (self.charm, self.series, self.o7k_release.codename), []
+            (self.charm, self.series, self.o7k_release.track), []
         )
         return (
             self.charm,
@@ -77,7 +88,7 @@ class AuxiliaryApplication(OpenStackApplication):
             ]
         else:
             *_, track = OPENSTACK_TO_TRACK_MAPPING[
-                (self.charm, self.series, self.o7k_release.codename)
+                (self.charm, self.series, self.o7k_release.track)
             ]
 
         return f"{track}/stable"
@@ -91,13 +102,13 @@ class AuxiliaryApplication(OpenStackApplication):
         :rtype: str
         :raises ApplicationError: When cannot find a track.
         """
-        tracks = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.codename))
+        tracks = OPENSTACK_TO_TRACK_MAPPING.get((self.charm, self.series, target.track))
         if tracks:
             return f"{tracks[-1]}/stable"
 
         raise ApplicationError(
             (
-                f"Cannot find a suitable '{self.charm}' charm channel for {target.codename} "
+                f"Cannot find a suitable '{self.charm}' charm channel for {target.track} "
                 f"on series '{self.series}'. Please take a look at the documentation: "
                 "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
             )
@@ -169,6 +180,98 @@ class AuxiliaryApplication(OpenStackApplication):
             o7k_release <= target for o7k_release in compatible_o7k_releases
         )
 
+    def get_run_deferred_hooks_and_restart_pre_upgrade_step(
+        self, units: Optional[list[Unit]]
+    ) -> list[PreUpgradeStep]:
+        """Get the steps for run deferred hook and restart services for before upgrade.
+
+        This step will run the `run-deferred-hooks` action to clear any
+        potential event and wait until the app is ready before performing
+        upgrade. If there are no pending events, this step should be a no-op,
+        so it's safe to run anyways.
+
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: Steps for run deferred hooks and restart service
+        :rtype: List of PreUpgradeStep
+        """
+        run_hook_step = PreUpgradeStep(
+            description=(
+                f"Execute run-deferred-hooks for all '{self.name}' units "
+                "to clear any leftover events"
+            ),
+            parallel=False,
+        )
+        run_hook_step.add_steps(
+            [
+                UnitUpgradeStep(
+                    description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
+                )
+                for unit in units or self.units.values()
+            ]
+        )
+        wait_step = PreUpgradeStep(
+            description=(
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
+                " to reach the idle state"
+            ),
+            parallel=False,
+            coro=self.model.wait_for_idle(self.wait_timeout, apps=[self.name]),
+        )
+        return [
+            run_hook_step,
+            wait_step,
+        ]
+
+    def get_run_deferred_hooks_and_restart_post_upgrade_step(
+        self, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
+        """Get the step for run deferred hook and restart services for after upgrade.
+
+        This step will wait for the app to complete the upgrade step and then
+        run the `run-deferred-hooks` action to restart the service. If there
+        are no pending events, this step should be a no-op, so it's safe to run
+        anyways.
+
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: Step for run deferred hooks and restart service
+        :rtype: PostUpgradeStep
+        """
+        wait_step = PostUpgradeStep(
+            description=(
+                f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
+                " to reach the idle state"
+            ),
+            parallel=False,
+            coro=self.model.wait_for_idle(self.wait_timeout, apps=[self.name]),
+        )
+        run_hook_step = PostUpgradeStep(
+            description=(
+                f"Execute run-deferred-hooks for all '{self.name}' units "
+                "to restart the service after upgrade"
+            ),
+            parallel=False,
+        )
+        run_hook_step.add_steps(
+            [
+                UnitUpgradeStep(
+                    description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                    coro=self.model.run_action(
+                        unit.name, "run-deferred-hooks", raise_on_failure=True
+                    ),
+                )
+                for unit in units or self.units.values()
+            ]
+        )
+        return [
+            wait_step,
+            run_hook_step,
+        ]
+
 
 @AppFactory.register_application(["rabbitmq-server"])
 class RabbitMQServer(AuxiliaryApplication):
@@ -196,35 +299,8 @@ class RabbitMQServer(AuxiliaryApplication):
         :rtype: list[PreUpgradeStep]
         """
         steps = super().pre_upgrade_steps(target, units)
-        # Since auto restart is disabled, we don't know the if the service
-        # has pending events or not, so we want to run `run-deferred-hooks`
-        # action to clear the events before performing upgrade. If there
-        # are no pending events, this step should be a no-op, so it's safe
-        # to run anyway
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            # Run any deferred events and restart the service. See
-            # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
-            units_to_run_action = self.units.values() if units is None else units
-            steps += [
-                PreUpgradeStep(
-                    description="Auto restarts is disabled, will"
-                    f" execute run-deferred-hooks for unit: '{unit.name}'",
-                    coro=self.model.run_action(
-                        unit.name, "run-deferred-hooks", raise_on_failure=True
-                    ),
-                )
-                for unit in units_to_run_action
-            ]
-            steps += [
-                PreUpgradeStep(
-                    description=(
-                        f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
-                        " to reach the idle state"
-                    ),
-                    parallel=False,
-                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
-                )
-            ]
+            steps.extend(self.get_run_deferred_hooks_and_restart_pre_upgrade_step(units))
         return steps
 
     def post_upgrade_steps(
@@ -242,34 +318,9 @@ class RabbitMQServer(AuxiliaryApplication):
         :rtype: list[PostUpgradeStep]
         """
         steps = []
-        # Since the auto restart is disabled, we need to run the
-        # `run-deferred-hooks` action, and restart the service after the
-        # upgrade.
         if self.config.get("enable-auto-restarts", {}).get("value") is False:
-            steps += [
-                PostUpgradeStep(
-                    description=(
-                        f"Wait for up to {self.wait_timeout}s for app '{self.name}'"
-                        " to reach the idle state"
-                    ),
-                    parallel=False,
-                    coro=self.model.wait_for_active_idle(self.wait_timeout, apps=[self.name]),
-                )
-            ]
-            # Run any deferred events and restart the service. See
-            # https://charmhub.io/rabbitmq-server/actions#run-deferred-hooks
-            units_to_run_action = self.units.values() if units is None else units
-            steps += [
-                PostUpgradeStep(
-                    description="Auto restarts is disabled, will"
-                    f" execute run-deferred-hooks for unit: '{unit.name}'",
-                    coro=self.model.run_action(
-                        unit.name, "run-deferred-hooks", raise_on_failure=True
-                    ),
-                )
-                for unit in units_to_run_action
-            ]
-        steps += super().post_upgrade_steps(target, units)
+            steps.extend(self.get_run_deferred_hooks_and_restart_post_upgrade_step(units))
+        steps.extend(super().post_upgrade_steps(target, units))
         return steps
 
     def _check_auto_restarts(self) -> None:
@@ -316,7 +367,7 @@ class CephMon(AuxiliaryApplication):
         ceph_mon_unit, *_ = self.units.values()
         return PreUpgradeStep(
             "Ensure that the 'require-osd-release' option matches the 'ceph-osd' version",
-            coro=set_require_osd_release_option(ceph_mon_unit.name, self.model),
+            coro=set_require_osd_release_option_on_unit(self.model, ceph_mon_unit.name),
         )
 
 
@@ -457,3 +508,164 @@ class CephOsd(AuxiliaryApplication):
             raise ApplicationError(
                 f"Units '{', '.join(units_not_upgraded)}' did not reach {target}."
             )
+
+
+@AppFactory.register_application(["vault"])
+class Vault(AuxiliaryApplication):
+    """Application for vault."""
+
+    wait_timeout = LONG_IDLE_TIMEOUT
+    wait_for_model = True
+
+    def _get_cacert_file(self) -> Optional[str]:
+        """Read cert file and write into temporary file.
+
+        :return: Temporary file path
+        :rtype: str
+        """
+        cacert_b64 = self.config["ssl-ca"].get("value")
+        cacert_file = None
+        if cacert_b64:
+            with tempfile.NamedTemporaryFile(mode="wb", delete=False) as fp:
+                fp.write(base64.b64decode(cacert_b64))
+                cacert_file = fp.name
+                logger.debug("Create tempfile: %s", cacert_file)
+        return cacert_file
+
+    async def _get_unit_api_url(self, unit_name: str) -> str:
+        """Get unit's vault api address.
+
+        :param unit_name: vault unit name
+        :type unit_name: str
+        :return: unit's vault api url
+        :rtype: str
+        """
+        if self.config["hostname"].get("value"):  # Use hostname if hostname is being used.
+            address = self.config["hostname"].get("value")
+        elif self.config["vip"].get("value"):  # Use vip as address if vip is being used.
+            address = self.config["vip"].get("value")
+        else:
+            juju_unit = await self.model.get_unit(unit_name)
+            address = juju_unit.public_address
+
+        transport = "https" if self.config["ssl-cert"].get("value") else "http"
+        return f"{transport}://{address}:8200"
+
+    async def _wait_for_sealed_status(self) -> None:
+        """Wait for application vault go into sealed.
+
+        :raises ApplicationError: When application vault is not in sealed.
+        """
+        await self.model.wait_for_idle(
+            timeout=self.wait_timeout,
+            status="blocked",
+            apps=[self.name],
+            # The Vault application will first enter an error state, followed by a blocked state.
+            # This occurs due to a race condition in the Vault charm's hook. The charm will then
+            # auto-recover from the error state.
+            raise_on_error=False,
+        )
+
+        app_status = await self.model.get_application_status(app_name=self.name)
+        if not app_status.status.info == "Unit is sealed":
+            # It's an exception if vault not in sealed after upgrading.
+            raise ApplicationError(
+                "Application vault not in sealed."
+                " The vault expected to be sealed after upgrading."
+                " Please check application log for more details."
+            )
+        logger.debug("Application 'vault' in sealed status")
+
+    async def _get_vault_client(self, unit_name: str, cacert_file: Optional[str]) -> hvac.Client:
+        """Get vault client.
+
+        :param unit_name: vault unit name
+        :type unit_name: str
+        :param cacert_file: cacert file path
+        :type cacert_file: str
+        :return: hvac vault Client object
+        :rtype: hvac.Client
+        """
+        vault_url = await self._get_unit_api_url(unit_name)
+        client = hvac.Client(url=vault_url, verify=cacert_file)
+        return client
+
+    async def _unseal_vault(self) -> None:
+        """Unseal vault on every vault unit."""
+        # Stop progress_indicator because it will clear the unseal key input.
+        progress_indicator.stop()
+
+        for unit_name in self.units:
+            logger.debug("Start unseal %s", unit_name)
+            cacert_file = self._get_cacert_file()
+            client = await self._get_vault_client(unit_name, cacert_file)
+            while True:
+                status = client.sys.read_seal_status()
+                if not status["sealed"]:
+                    break
+                unseal_key = getpass.getpass("Unseal Key (will be hidden):")
+                if unseal_key:
+                    client.sys.submit_unseal_key(key=unseal_key)
+                # remove unseal key from memory
+                del unseal_key
+
+            # Delete temporary ca file
+            if cacert_file:
+                os.remove(cacert_file)
+                logger.debug("Remove tempfile: %s", cacert_file)
+
+    def post_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> list[PostUpgradeStep]:
+        """Post Upgrade steps planning.
+
+        Wait until the application reaches the idle state and then check the target workload.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate post upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: List of post upgrade steps.
+        :rtype: list[PostUpgradeStep]
+        """
+        upgrade_step = self._get_upgrade_charm_steps(target=target)
+        steps = []
+
+        # Add unseal steps only if chaneel is changed.
+        if upgrade_step:
+            steps.extend(
+                [
+                    # Vault application should get into blocked and sealed status after upgrading.
+                    PostUpgradeStep(
+                        description=(
+                            f"Wait for up to {self.wait_timeout}s"
+                            " for vault to reach the sealed status"
+                        ),
+                        coro=self._wait_for_sealed_status(),
+                    ),
+                    PostUpgradeStep(
+                        description="Unseal vault",
+                        coro=self._unseal_vault(),
+                    ),
+                    PostUpgradeStep(
+                        description=(
+                            f"Wait for up to {self.wait_timeout}s for vault to reach active status"
+                        ),
+                        coro=self.model.wait_for_idle(
+                            timeout=self.wait_timeout,
+                            status="active",
+                            apps=[self.name],
+                            raise_on_blocked=False,
+                            raise_on_error=False,
+                        ),
+                    ),
+                    # Some applications will get into error status because vault in sealed status.
+                    # Need to resolve them.
+                    PostUpgradeStep(
+                        description="Resolve all applications in error status",
+                        coro=self.model.resolve_all(),
+                    ),
+                ]
+            )
+        steps.extend(super().post_upgrade_steps(target, units))
+        return steps

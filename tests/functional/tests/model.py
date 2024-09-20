@@ -45,12 +45,13 @@ class ModelTest(unittest.TestCase):
     def test_run_action(self):
         """Test run action."""
         action = zaza.sync_wrapper(self.model.run_action)(TESTED_UNIT, "resume")
+        self.assertEqual(0, action.results["return-code"])
         self.assertEqual("completed", action.data["status"])
 
     def test_run_on_unit(self):
         """Test run command on unit."""
         results = zaza.sync_wrapper(self.model.run_on_unit)(TESTED_UNIT, "actions/resume")
-        self.assertIn("active", results["Stdout"])
+        self.assertIn("active", results["stdout"])
 
     def test_scp_from_unit(self):
         """Test copy file from unit."""
@@ -75,7 +76,7 @@ class ModelTest(unittest.TestCase):
 
         # changing configuration and validating it was changed
         zaza.sync_wrapper(self.model.set_application_config)(TESTED_APP, new_config)
-        zaza.sync_wrapper(self.model.wait_for_active_idle)(120, apps=[TESTED_APP])
+        zaza.sync_wrapper(self.model.wait_for_idle)(120, apps=[TESTED_APP])
         config = zaza.sync_wrapper(self.model.get_application_config)(TESTED_APP)
 
         self.assertTrue(config["debug"]["value"])
@@ -89,4 +90,4 @@ class ModelTest(unittest.TestCase):
         # get the current channel, so we will not change it
         channel = status.applications[TESTED_APP].charm_channel
         zaza.sync_wrapper(self.model.upgrade_charm)(TESTED_APP, channel=channel)
-        zaza.sync_wrapper(self.model.wait_for_active_idle)(120, apps=[TESTED_APP])
+        zaza.sync_wrapper(self.model.wait_for_idle)(120, apps=[TESTED_APP])

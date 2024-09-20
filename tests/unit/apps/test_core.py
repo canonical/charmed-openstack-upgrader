@@ -11,14 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
 
 import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import OpenStackApplication
-from cou.apps.core import Keystone, NovaCompute, Swift
+from cou.apps.core import Keystone, NovaCompute, Swift, resume_nova_compute_unit
 from cou.exceptions import (
+    ActionFailed,
     ApplicationError,
     ApplicationNotSupported,
     HaltUpgradePlanGeneration,
@@ -210,6 +211,11 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
+        PreUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
             "from 'True' to 'False'",
@@ -223,6 +229,11 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+        UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
@@ -233,7 +244,7 @@ def test_upgrade_plan_ussuri_to_victoria(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -296,6 +307,11 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone"),
         ),
+        PreUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
             "from 'True' to 'False'",
@@ -309,6 +325,11 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+        UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
             parallel=False,
@@ -319,7 +340,7 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -398,7 +419,7 @@ def test_upgrade_plan_channel_on_next_o7k_release(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -464,6 +485,11 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
+        PreUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
             "from 'True' to 'False'",
@@ -476,10 +502,15 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -580,11 +611,21 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             parallel=False,
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
+        PreUpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
             "'victoria/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "victoria/stable"),
+        ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -597,7 +638,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_active_idle(2400, apps=None),
+            coro=model.wait_for_idle(2400, apps=None),
         ),
         PostUpgradeStep(
             description=f"Verify that the workload of '{app.name}' has been upgraded on units: "
@@ -612,7 +653,7 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
     assert_steps(upgrade_plan, expected_plan)
 
 
-@patch("cou.apps.base.OpenStackApplication._get_refresh_charm_step")
+@patch("cou.apps.base.OpenStackApplication._get_refresh_charm_steps")
 @patch("cou.apps.base.OpenStackApplication._get_upgrade_current_release_packages_step")
 @patch("cou.apps.core.NovaCompute._get_disable_scheduler_step")
 def test_nova_compute_pre_upgrade_steps(
@@ -631,14 +672,7 @@ def test_nova_compute_pre_upgrade_steps(
 @patch("cou.apps.base.OpenStackApplication._get_wait_step")
 @patch("cou.apps.base.OpenStackApplication._get_reached_expected_target_step")
 @patch("cou.apps.core.NovaCompute._get_enable_scheduler_step")
-@patch("cou.apps.core.NovaCompute._get_restart_subordinate_services_steps")
-def test_nova_compute_post_upgrade_steps(
-    mock_restart_subordinate,
-    mock_enable,
-    mock_expected_target,
-    mock_wait_step,
-    model,
-):
+def test_nova_compute_post_upgrade_steps(mock_enable, mock_expected_target, mock_wait_step, model):
     app = _generate_nova_compute_app(model)
     target = OpenStackRelease("victoria")
     units = list(app.units.values())
@@ -647,7 +681,6 @@ def test_nova_compute_post_upgrade_steps(
     mock_enable.assert_called_once_with(units)
     mock_expected_target.assert_called_once_with(target, units)
     mock_wait_step.assert_called_once_with()
-    mock_restart_subordinate.assert_called_once_with(units)
 
 
 @pytest.mark.parametrize("force", [True, False])
@@ -714,35 +747,6 @@ def test_nova_compute_get_enable_scheduler_step(model, units):
         for unit in units_selected
     ]
     assert app._get_enable_scheduler_step(units_selected) == expected_step
-
-
-@pytest.mark.parametrize(
-    "units",
-    [
-        ["nova-compute/0"],
-        ["nova-compute/0", "nova-compute/1"],
-        ["nova-compute/0", "nova-compute/1", "nova-compute/2"],
-    ],
-)
-def test_nova_compute_get_restart_subordinate_services_steps(model, units):
-    app = _generate_nova_compute_app(model)
-    units_selected = [app.units[unit] for unit in units]
-    assert app._get_restart_subordinate_services_steps(units_selected) == [
-        PostUpgradeStep(
-            description=(
-                "Restart service ceilometer-agent-compute "
-                f"for subordinate unit: '{unit.subordinates[0].name}'"
-            ),
-            coro=model.run_on_unit(
-                unit_name=unit.subordinates[0].name,
-                command=(
-                    "systemctl is-active --quiet ceilometer-agent-compute"
-                    " || systemctl restart ceilometer-agent-compute"
-                ),
-            ),
-        )
-        for unit in units_selected
-    ]
 
 
 def test_nova_compute_get_enable_scheduler_step_no_units(model):
@@ -836,8 +840,10 @@ def test_nova_compute_upgrade_plan(model):
             Ψ Upgrade software packages on unit 'nova-compute/1'
             Ψ Upgrade software packages on unit 'nova-compute/2'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+        Wait for up to 300s for app 'nova-compute' to reach the idle state
         Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
+        Wait for up to 300s for app 'nova-compute' to reach the idle state
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0, nova-compute/1, nova-compute/2
             Ψ Upgrade plan for unit 'nova-compute/0'
@@ -858,9 +864,6 @@ def test_nova_compute_upgrade_plan(model):
         Enable nova-compute scheduler from unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/1'
         Enable nova-compute scheduler from unit: 'nova-compute/2'
-        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
-        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/1'
-        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/2'
         Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0, nova-compute/1, nova-compute/2
     """  # noqa: E501 line too long
@@ -906,8 +909,10 @@ def test_nova_compute_upgrade_plan_single_unit(model):
         Upgrade software packages of 'nova-compute' from the current APT repositories
             Ψ Upgrade software packages on unit 'nova-compute/0'
         Refresh 'nova-compute' to the latest revision of 'ussuri/stable'
+        Wait for up to 300s for app 'nova-compute' to reach the idle state
         Change charm config of 'nova-compute' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'nova-compute' from 'ussuri/stable' to the new channel: 'victoria/stable'
+        Wait for up to 300s for app 'nova-compute' to reach the idle state
         Change charm config of 'nova-compute' 'source' to 'cloud:focal-victoria'
         Upgrade plan for units: nova-compute/0
             Ψ Upgrade plan for unit 'nova-compute/0'
@@ -916,7 +921,6 @@ def test_nova_compute_upgrade_plan_single_unit(model):
                 ├── Upgrade the unit: 'nova-compute/0'
                 ├── Resume the unit: 'nova-compute/0'
         Enable nova-compute scheduler from unit: 'nova-compute/0'
-        Restart service ceilometer-agent-compute for subordinate unit: 'ceilometer-agent/0'
         Wait for up to 2400s for model 'test_model' to reach the idle state
         Verify that the workload of 'nova-compute' has been upgraded on units: nova-compute/0
     """
@@ -964,7 +968,9 @@ def test_cinder_upgrade_plan(model):
             Ψ Upgrade software packages on unit 'cinder/1'
             Ψ Upgrade software packages on unit 'cinder/2'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
+        Wait for up to 300s for app 'cinder' to reach the idle state
         Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
+        Wait for up to 300s for app 'cinder' to reach the idle state
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
         Wait for up to 300s for app 'cinder' to reach the idle state
         Verify that the workload of 'cinder' has been upgraded on units: \
@@ -1012,8 +1018,10 @@ def test_cinder_upgrade_plan_single_unit(model):
         Upgrade software packages of 'cinder' from the current APT repositories
             Ψ Upgrade software packages on unit 'cinder/0'
         Refresh 'cinder' to the latest revision of 'ussuri/stable'
+        Wait for up to 300s for app 'cinder' to reach the idle state
         Change charm config of 'cinder' 'action-managed-upgrade' from 'False' to 'True'
         Upgrade 'cinder' from 'ussuri/stable' to the new channel: 'victoria/stable'
+        Wait for up to 300s for app 'cinder' to reach the idle state
         Change charm config of 'cinder' 'openstack-origin' to 'cloud:focal-victoria'
         Upgrade plan for units: cinder/0
             Ψ Upgrade plan for unit 'cinder/0'
@@ -1129,3 +1137,72 @@ def test_core_wrong_channel(model):
 
     with pytest.raises(ApplicationError, match=exp_msg):
         app.generate_upgrade_plan(target, force=False)
+
+
+@pytest.mark.asyncio
+async def test_resume_nova_compute_success(model):
+    """Verify that the success case resumes without calling workarounds."""
+    model.run_action.return_value = Mock(status="completed")
+    unit = Unit(
+        name="nova-compute/0",
+        machine=generate_cou_machine("0", "az-0"),
+        workload_version="21.2.4",
+        subordinates=[SubordinateUnit(name="ceilometer-agent/0", charm="ceilometer-agent")],
+    )
+
+    await resume_nova_compute_unit(model, unit)
+
+    model.run_action.assert_awaited_once_with("nova-compute/0", "resume", raise_on_failure=False)
+    model.run_on_unit.assert_not_awaited()
+    model.update_status.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resume_nova_compute_unknown_failure(model):
+    """Verify that the unknown failure case bails out."""
+    model.run_action.return_value = Mock(
+        status="failed", safe_data={"message": "it crashed and we don't know why"}
+    )
+    unit = Unit(
+        name="nova-compute/0",
+        machine=generate_cou_machine("0", "az-0"),
+        workload_version="21.2.4",
+        subordinates=[SubordinateUnit(name="ceilometer-agent/0", charm="ceilometer-agent")],
+    )
+
+    with pytest.raises(ActionFailed, match="it crashed and we don't know why"):
+        await resume_nova_compute_unit(model, unit)
+
+    model.run_action.assert_awaited_once_with("nova-compute/0", "resume", raise_on_failure=False)
+    model.run_on_unit.assert_not_awaited()
+    model.update_status.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resume_nova_compute_ceilometer_failure(model):
+    """Verify that the ceilometer failure case performs the workaround."""
+    model.run_action.return_value = Mock(
+        status="failed",
+        safe_data={
+            "message": (
+                "Action resume failed: Couldn't resume: "
+                "ceilometer-agent-compute didn't resume cleanly.; "
+                "Services not running that should be: ceilometer-agent-compute"
+            ),
+        },
+    )
+    unit = Unit(
+        name="nova-compute/0",
+        machine=generate_cou_machine("0", "az-0"),
+        workload_version="21.2.4",
+        subordinates=[SubordinateUnit(name="ceilometer-agent/0", charm="ceilometer-agent")],
+    )
+
+    await resume_nova_compute_unit(model, unit)
+
+    model.run_action.assert_awaited_once_with("nova-compute/0", "resume", raise_on_failure=False)
+    model.run_on_unit.assert_awaited_once_with(
+        "nova-compute/0", "sudo systemctl restart ceilometer-agent-compute"
+    )
+    model.update_status.has_awaits(call("nova-compute/0"), call("ceilometer-agent/0"))
+    assert model.update_status.await_count == 2

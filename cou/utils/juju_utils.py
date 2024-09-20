@@ -21,16 +21,17 @@ import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, Sequence
 
 from juju.action import Action
 from juju.application import Application as JujuApplication
-from juju.client._definitions import FullStatus
+from juju.client._definitions import ApplicationStatus, Base, FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
-from juju.errors import JujuAppError, JujuError, JujuUnitError
+from juju.errors import JujuAppError, JujuConnectionError, JujuError, JujuUnitError
 from juju.model import Model as JujuModel
 from juju.unit import Unit as JujuUnit
+from juju.utils import get_version_series
 from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
@@ -45,6 +46,9 @@ from cou.exceptions import (
 )
 from cou.utils.openstack import is_charm_supported
 
+# Increase Juju websocket connection MAX_FRAME_SIZE to 1024MiB to stop
+# "RPC: Connection closed, reconnecting" errors and then a failure in the log.
+# See https://github.com/juju/python-libjuju/issues/458 for more details
 JUJU_MAX_FRAME_SIZE: int = 2**30
 DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 10))
 DEFAULT_MAX_WAIT: int = 5
@@ -56,37 +60,16 @@ DEFAULT_MODEL_IDLE_PERIOD: int = 30
 logger = logging.getLogger(__name__)
 
 
-def _normalize_action_results(results: dict[str, str]) -> dict[str, str]:
-    """Unify action results format.
+def _convert_base_to_series(base: Base) -> str:
+    """Convert base to series.
 
-    :param results: Results dictionary to process.
-    :type results: dict[str, str]
-    :returns: {
-        'Code': '',
-        'Stderr': '',
-        'Stdout': '',
-        'stderr': '',
-        'stdout': ''}
-    :rtype: dict[str, str]
+    :param base: Base object
+    :type base: juju.client._definitions.Base
+    :return: converted channel to series, e.g. 20.04 -> focal
+    :rtype: str
     """
-    if results:
-        # In Juju 2.7 some keys are dropped from the results if their
-        # value was empty. This breaks some functions downstream, so
-        # ensure the keys are always present.
-        for key in ["Stderr", "Stdout", "stderr", "stdout"]:
-            results[key] = results.get(key, "")
-        # Juju has started using a lowercase "stdout" key in new action
-        # commands in recent versions. Ensure the old capatalised keys and
-        # the new lowercase keys are present and point to the same value to
-        # avoid breaking functions downstream.
-        for key in ["stderr", "stdout"]:
-            old_key = key.capitalize()
-            if results.get(key) and not results.get(old_key):
-                results[old_key] = results[key]
-            elif results.get(old_key) and not results.get(key):
-                results[key] = results[old_key]
-        return results
-    return {}
+    version, *_ = base.channel.split("/")
+    return get_version_series(version)
 
 
 def retry(
@@ -194,6 +177,7 @@ class Application:
     subordinate_to: list[str]
     units: dict[str, Unit]
     workload_version: str
+    actions: dict[str, str] = field(default_factory=lambda: {}, compare=False)
 
     @property
     def is_subordinate(self) -> bool:
@@ -345,7 +329,7 @@ class Model:
             name for name, app in model.applications.items() if is_charm_supported(app.charm_name)
         ]
 
-    async def _get_unit(self, name: str) -> JujuUnit:
+    async def get_unit(self, name: str) -> JujuUnit:
         """Get juju.unit.unit from model.
 
         :param name: Name of unit
@@ -361,7 +345,7 @@ class Model:
 
         return unit
 
-    @retry(no_retry_exceptions=(BakeryException,))
+    @retry(no_retry_exceptions=(BakeryException, JujuConnectionError))
     async def connect(self) -> None:
         """Make sure that model is connected."""
         await self._model.disconnect()
@@ -397,7 +381,7 @@ class Model:
                 },
                 model=self,
                 origin=status.charm.split(":")[0],
-                series=status.series,
+                series=_convert_base_to_series(status.base),
                 subordinate_to=status.subordinate_to,
                 units={
                     name: Unit(
@@ -415,6 +399,7 @@ class Model:
                     for name, unit in status.units.items()
                 },
                 workload_version=status.workload_version,
+                actions=await model.applications[app].get_actions(),
             )
             for app, status in full_status.applications.items()
         }
@@ -457,6 +442,61 @@ class Model:
         model = await self._get_model()
         return await model.get_status()
 
+    async def _dispatch_update_status_hook(self, unit_name: str) -> None:
+        """Use dispatch to run the update-status hook.
+
+        Legacy and reactive charm allows the operators to directly run hooks
+        inside the charm code directly; while the operator framework uses
+        ./dispatch script to dispatch the hooks. This method use dispatch to
+        run the hook.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
+        :raises CommandRunFailed: When update-status hook failed
+        """
+        await self.run_on_unit(unit_name, "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch")
+
+    async def _run_update_status_hook(self, unit_name: str) -> None:
+        """Run the update-status hook directly.
+
+        Legacy and reactive charm allows the operators to directly run hooks
+        inside the charm code directly; while the operator framework uses
+        ./dispatch script to dispatch the hooks. This method run the hook
+        directly.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
+        :raises CommandRunFailed: When update-status hook failed
+        """
+        await self.run_on_unit(unit_name, "hooks/update-status")
+
+    async def update_status(self, unit_name: str) -> None:
+        """Run the update_status hook on the given unit.
+
+        :param unit_name: Name of the unit to run update-status hook
+        :type unit_name: str
+        :raises CommandRunFailed: When update-status hook failed
+        """
+        # For charm written in operator framework
+        try:
+            await self._dispatch_update_status_hook(unit_name)
+        except CommandRunFailed as e:
+            if "No such file or directory" not in str(e):
+                raise e
+        else:
+            return
+
+        # For charm written in legacy / reactive framework
+        try:
+            await self._run_update_status_hook(unit_name)
+        except CommandRunFailed as e:
+            if "No such file or directory" not in str(e):
+                raise e
+        else:
+            return
+
+        logger.debug("Skipped updating status: file does not exist")
+
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
     # `unit.run_action(...)` and the rest of the function is covered by retry.
     async def run_action(
@@ -482,7 +522,7 @@ class Model:
         :rtype: Action
         """
         action_params = action_params or {}
-        unit = await self._get_unit(unit_name)
+        unit = await self.get_unit(unit_name)
         action = await unit.run_action(action_name, **action_params)
         action_obj = await self._get_waited_action_object(action, raise_on_failure)
         return action_obj
@@ -500,23 +540,22 @@ class Model:
         :type command: str
         :param timeout: How long in seconds to wait for command to complete
         :type timeout: Optional[int]
-        :returns: action.data['results'] {'Code': '', 'Stderr': '', 'Stdout': ''}
+        :returns: action.results {'return-code': 0, 'stderr': '', 'stdout': ''}
         :rtype: dict[str, str]
         :raises UnitNotFound: When a valid unit cannot be found.
         :raises CommandRunFailed: When a command fails to run.
         """
         logger.debug("Running '%s' on '%s'", command, unit_name)
 
-        unit = await self._get_unit(unit_name)
-        action = await unit.run(command, timeout=timeout)
-        results = action.data.get("results")
-        normalize_results = _normalize_action_results(results)
+        unit = await self.get_unit(unit_name)
+        action = await unit.run(command, timeout=timeout, block=True)
+        results = action.results
+        logger.debug("results: %s", results)
 
-        if str(normalize_results["Code"]) != "0":
-            raise CommandRunFailed(cmd=command, result=normalize_results)
-        logger.debug(normalize_results["Stdout"])
+        if results["return-code"] != 0:
+            raise CommandRunFailed(cmd=command, result=results)
 
-        return normalize_results
+        return results
 
     @retry(no_retry_exceptions=(ApplicationNotFound,))
     async def set_application_config(self, name: str, configuration: dict[str, str]) -> None:
@@ -557,7 +596,7 @@ class Model:
         :type scp_opts: str
         :raises: UnitNotFound
         """
-        unit = await self._get_unit(unit_name)
+        unit = await self.get_unit(unit_name)
         await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
 
     # pylint: disable=too-many-arguments
@@ -610,20 +649,24 @@ class Model:
             switch=switch,
         )
 
-    async def wait_for_active_idle(
+    async def wait_for_idle(
         self,
         timeout: int,
+        status: str = "active",
         idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
         apps: Optional[list[str]] = None,
         raise_on_blocked: bool = False,
+        raise_on_error: bool = True,
     ) -> None:
-        """Wait for application(s) to reach active idle state.
+        """Wait for application(s) to reach target idle state.
 
         If no applications are provided, this function will wait for all COU-related applications.
 
         :param timeout: How long (in seconds) to wait for the bundle settles before raising an
                         WaitForApplicationsTimeout.
         :type timeout: int
+        :param status: The status to wait for.
+        :type status: str
         :param idle_period: How long (in seconds) statuses of all apps need to be `idle`. This
                             delay is used to ensure that any pending hooks have a chance to start
                             to avoid false positives.
@@ -633,13 +676,16 @@ class Model:
         :param raise_on_blocked: If any unit or app going into "blocked" status immediately raises
                                  WaitForApplicationsTimeout, defaults to False.
         :type raise_on_blocked: bool
+        :param raise_on_error: If any unit or app going into "error" status immediately raises
+                                 WaitForApplicationsTimeout, defaults to True.
+        :type raise_on_error: bool
         """
         if apps is None:
             apps = await self._get_supported_apps()
 
         @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
-        @wraps(self.wait_for_active_idle)
-        async def _wait_for_active_idle() -> None:
+        @wraps(self.wait_for_idle)
+        async def _wait_for_idle() -> None:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
             model = await self._get_model()
             try:
@@ -653,7 +699,8 @@ class Model:
                             timeout=timeout,
                             idle_period=idle_period,
                             raise_on_blocked=raise_on_blocked,
-                            status="active",
+                            raise_on_error=raise_on_error,
+                            status=status,
                         )
                         for app in apps
                     )
@@ -670,4 +717,65 @@ class Model:
                 msg = str(error).replace("\n", "\n  ", 1)
                 raise WaitForApplicationsTimeout(msg) from error
 
-        await _wait_for_active_idle()
+        await _wait_for_idle()
+
+    async def resolve_all(self) -> None:
+        """Resolve all the units in the model if they are in error status."""
+        model = await self._get_model()
+        for _, juju_app in model.applications.items():
+            for unit in juju_app.units:
+                if unit.workload_status == "error":
+                    await unit.resolved(retry=True)
+
+    async def get_application_names(self, charm_name: str) -> list[str]:
+        """Get application name by charm name.
+
+        :param charm_name: charm name of application
+        :type charm_name: str
+        :return: ApplicationStatus object
+        :rtype: ApplicationStatus
+        :raises ApplicationNotFound: When charm is not found in the model.
+        """
+        app_names = []
+        model = await self._get_model()
+        for app_name, app in model.applications.items():
+            if app.charm_name == charm_name:
+                app_names.append(app_name)
+        if not app_names:
+            raise ApplicationNotFound(f"Cannot find '{charm_name}' charm in model '{self.name}'.")
+        return app_names
+
+    async def get_application_status(self, app_name: str) -> ApplicationStatus:
+        """Get ApplicationStatus by charm name.
+
+        :param app_name: name of application
+        :type app_name: str
+        :return: ApplicationStatus object
+        :rtype: ApplicationStatus
+        :raises ApplicationNotFound: When application is not found in the model.
+        """
+        model = await self._get_model()
+        status = await model.get_status(filters=[app_name])
+        for name, app in status.applications.items():
+            if name == app_name:
+                return app
+        raise ApplicationNotFound(f"Cannot find '{app_name}' in model '{self.name}'.")
+
+
+def get_applications_by_charm_name(
+    apps: Sequence[Application], charm_name: str
+) -> Sequence[Application]:
+    """Get all applications based on the charm name.
+
+    :param apps: List of Application
+    :type apps: Sequence[Application]
+    :param charm_name: The charm name
+    :type charm_name: str
+    :return: A list of Application filtered by charm name
+    :type: Sequence[Application]
+    :raise ApplicationNotFound: When cannot find a valid application with that name
+    """
+    filtered_apps = [app for app in apps if app.charm == charm_name]
+    if not filtered_apps:
+        raise ApplicationNotFound(f"Application with '{charm_name}' not found")
+    return filtered_apps

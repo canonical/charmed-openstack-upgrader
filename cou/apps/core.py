@@ -18,9 +18,9 @@ from typing import Optional
 
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
-from cou.exceptions import ApplicationNotSupported
+from cou.exceptions import ActionFailed, ApplicationNotSupported
 from cou.steps import PostUpgradeStep, PreUpgradeStep, UnitUpgradeStep, UpgradeStep
-from cou.utils.juju_utils import Unit
+from cou.utils.juju_utils import Model, Unit
 from cou.utils.nova_compute import verify_empty_hypervisor
 from cou.utils.openstack import OpenStackRelease
 
@@ -106,45 +106,7 @@ class NovaCompute(OpenStackApplication):
         :return: List of post upgrade steps.
         :rtype: list[PostUpgradeStep]
         """
-        return (
-            self._get_enable_scheduler_step(units)
-            + self._get_restart_subordinate_services_steps(units)
-            + super().post_upgrade_steps(target, units)
-        )
-
-    def _get_restart_subordinate_services_steps(
-        self, units: Optional[list[Unit]]
-    ) -> list[PostUpgradeStep]:
-        """Get step to restart all subordinate services if they aren't running.
-
-        :param units: Units to restart subordinate services.
-        :type units: Optional[list[Unit]]
-        :return: Steps to restart to subordinate services
-        :rtype: list[PostUpgradeStep]
-        """
-        if not units:
-            units = list(self.units.values())
-        steps = []
-        for unit in units:
-            for subordinate in unit.subordinates:
-                if "ceilometer-agent" == subordinate.charm:
-                    service = "ceilometer-agent-compute"
-                    steps.append(
-                        PostUpgradeStep(
-                            description=(
-                                "Restart service ceilometer-agent-compute "
-                                f"for subordinate unit: '{subordinate.name}'"
-                            ),
-                            coro=self.model.run_on_unit(
-                                unit_name=subordinate.name,
-                                command=(
-                                    f"systemctl is-active --quiet {service}"
-                                    f" || systemctl restart {service}"
-                                ),
-                            ),
-                        )
-                    )
-        return steps
+        return self._get_enable_scheduler_step(units) + super().post_upgrade_steps(target, units)
 
     def _get_unit_upgrade_steps(self, unit: Unit, force: bool) -> UnitUpgradeStep:
         """Get the upgrade steps for a single unit.
@@ -220,6 +182,61 @@ class NovaCompute(OpenStackApplication):
             )
             for unit in units_to_disable
         ]
+
+    def _get_resume_unit_step(self, unit: Unit, dependent: bool = False) -> UnitUpgradeStep:
+        """Override the resume unit step, because extra error handling is required.
+
+        :param unit: Unit to be resumed.
+        :type unit: Unit
+        :param dependent: Whether the step is dependent of another step, defaults to False
+        :type dependent: bool, optional
+        :return: Step to resume a unit.
+        :rtype: UnitUpgradeStep
+        """
+        # workaround for https://bugs.launchpad.net/charm-ceilometer-agent/+bug/1947585
+        return UnitUpgradeStep(
+            description=(f"Resume the unit: '{unit.name}'"),
+            coro=resume_nova_compute_unit(self.model, unit),
+            dependent=dependent,
+        )
+
+
+async def resume_nova_compute_unit(model: Model, unit: Unit) -> None:
+    """Run the resume action on nova-compute, with workarounds.
+
+    Includes a workaround for https://bugs.launchpad.net/charm-ceilometer-agent/+bug/1947585
+
+    :param model: juju model to work with
+    :type model: Model
+    :param unit: nova-compute unit to resume
+    :type unit: Unit
+    :raises ActionFailed: when the resume action fails with an unknown failure
+    """
+    action = await model.run_action(unit.name, "resume", raise_on_failure=False)
+
+    # If the action was successful, there is nothing left to do
+    if action.status == "completed":
+        return
+
+    # If it failed because of https://bugs.launchpad.net/charm-ceilometer-agent/+bug/1947585 ,
+    # apply the workaround.
+    if "Services not running that should be: ceilometer-agent-compute" in action.safe_data.get(
+        "message", ""
+    ):
+        logger.debug("Resume failed because ceilometer-agent-compute not running.")
+        logger.debug("Restarting ceilometer-agent-compute on %s", unit.name)
+        await model.run_on_unit(unit.name, "sudo systemctl restart ceilometer-agent-compute")
+
+        # Update status manually, otherwise nova-compute and ceilometer-agent
+        # will be blocked until next update-status hook.
+        await model.update_status(unit.name)
+        for subordinate in unit.subordinates:
+            if subordinate.charm == "ceilometer-agent":
+                await model.update_status(subordinate.name)
+
+    # Otherwise, it's an unknown error, so raise the exception
+    else:
+        raise ActionFailed(action)
 
 
 @AppFactory.register_application(["swift-proxy", "swift-storage"])

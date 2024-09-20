@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from typing import Optional, Union
 
 # NOTE we need to import the modules to register the charms with the register_application
@@ -39,6 +40,7 @@ from cou.apps.core import Keystone, Octavia, Swift  # noqa: F401
 from cou.apps.subordinate import SubordinateApplication  # noqa: F401
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
+    ApplicationError,
     COUException,
     DataPlaneCannotUpgrade,
     DataPlaneMachineFilterError,
@@ -47,12 +49,13 @@ from cou.exceptions import (
     NoTargetError,
     OutOfSupportRange,
 )
-from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan
+from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan, ceph
 from cou.steps.analyze import Analysis
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
-from cou.steps.nova_cloud_controller import archive
-from cou.utils.app_utils import set_require_osd_release_option
+from cou.steps.nova_cloud_controller import archive, purge
+from cou.steps.vault import verify_vault_is_unsealed
+from cou.utils import print_and_debug
 from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
@@ -60,22 +63,36 @@ from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 logger = logging.getLogger(__name__)
 
 
-class PlanWarnings:  # pylint: disable=too-few-public-methods
-    """Representation of a collection of warning messages from plan generation.
+class MessageType(Enum):
+    """Representation of a collection of message type."""
 
-    This class holds all warning messages returned by applications when generating a plan.
+    ERROR = 1
+    WARNING = 2
+
+
+class PlanStatus:  # pylint: disable=too-few-public-methods
+    """Representation of a collection of statuses from plan generation.
+
+    This class holds all statuses returned by applications when generating a plan.
     """
 
-    messages: list[str] = []
+    error_messages: list[str] = []
+    warning_messages: list[str] = []
 
     @classmethod
-    def add_message(cls, message: str) -> None:
-        """Add a new warning message to the collection.
+    def add_message(cls, message: str, message_type: MessageType = MessageType.WARNING) -> None:
+        """Add a new message to the collection with the appropriate type.
 
-        :param message: A warning message to be stored.
+        :param message: A message to be stored.
         :type message: str
+        :param message_type: The type of the message
+        :type message_type: str
         """
-        cls.messages.append(message)
+        match message_type:
+            case MessageType.ERROR:
+                cls.error_messages.append(message)
+            case MessageType.WARNING:
+                cls.warning_messages.append(message)
 
 
 async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan:
@@ -99,6 +116,7 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
     #  the whole cloud.
     if args.upgrade_group in {CONTROL_PLANE, None}:
+        plan.add_steps(_generate_ovn_subordinate_plan(target, analysis_result, args))
         plan.add_steps(
             _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
         )
@@ -109,6 +127,48 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     plan.add_steps(_get_post_upgrade_steps(analysis_result, args))
 
     return plan
+
+
+async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
+    """Run post upgrade sanity checks.
+
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    """
+    messages = []
+    try:
+        await ceph.assert_osd_noout_state(
+            analysis_result.model, analysis_result.apps_control_plane, state=False
+        )
+    except ApplicationError:
+        messages.append("Detected ceph 'noout' set, please unset noout for ceph cluster.")
+
+    for message in messages:
+        print_and_debug(message)
+
+
+def _generate_ovn_subordinate_plan(
+    target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
+) -> list[UpgradePlan]:
+    """Generate upgrade plan for ovn subordinate applications.
+
+    :param target: Target OpenStack release.
+    :type target: OpenStackRelease
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: A list of the upgrade plans for ovn subordinate applications.
+    :rtype: list[UpgradePlan]
+    """
+    return [
+        _create_upgrade_group(
+            apps=analysis_result.apps_ovn_subordinate,
+            description="OVN subordinate upgrade plan",
+            target=target,
+            force=args.force,
+        )
+    ]
 
 
 async def _generate_data_plane_plan(
@@ -370,9 +430,21 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
     """
     steps = [
         PreUpgradeStep(
+            description="Verify vault application is unsealed",
+            parallel=False,
+            coro=verify_vault_is_unsealed(analysis_result.model),
+        ),
+        PreUpgradeStep(
+            description="Verify ceph cluster 'noout' is unset",
+            parallel=False,
+            coro=ceph.assert_osd_noout_state(
+                analysis_result.model, analysis_result.apps_control_plane, state=False
+            ),
+        ),
+        PreUpgradeStep(
             description="Verify that all OpenStack applications are in idle state",
             parallel=False,
-            coro=analysis_result.model.wait_for_active_idle(
+            coro=analysis_result.model.wait_for_idle(
                 # NOTE (rgildein): We need to DEFAULT_TIMEOUT so it's possible to change if
                 # a network is too slow, this could cause an issue.
                 # We are using max function to ensure timeout is always at least 120 (110 seconds
@@ -381,27 +453,120 @@ def _get_pre_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Pre
                 idle_period=10,
                 raise_on_blocked=True,
             ),
-        )
+        ),
     ]
+    steps.extend(_get_set_noout_steps(analysis_result, args))
+    steps.extend(_get_backup_steps(analysis_result, args))
+    steps.extend(_get_archive_data_steps(analysis_result, args))
+    steps.extend(_get_purge_data_steps(analysis_result, args))
+    return steps
+
+
+def _get_backup_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get back up MySQL databases step.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of post-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
     if args.backup:
-        steps.append(
+        return [
             PreUpgradeStep(
                 description="Back up MySQL databases",
                 coro=backup(analysis_result.model),
             )
-        )
+        ]
+    return []
 
-    # Add a pre-upgrade step to archive old database data.
-    # This is a performance optimisation.
+
+def _get_purge_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get purge nova db data step.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of pre-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
+    if args.purge and any(
+        app.charm == "nova-cloud-controller" and "purge-data" in app.actions
+        for app in analysis_result.apps_control_plane
+    ):
+        msg: str = ""
+        if args.purge_before is not None:
+            msg = (
+                f"Purge data before {args.purge_before}"
+                " from shadow tables on nova-cloud-controller"
+            )
+        else:
+            msg = "Purge all data from shadow tables on nova-cloud-controller"
+        return [
+            PreUpgradeStep(
+                description=msg,
+                coro=purge(
+                    analysis_result.model,
+                    analysis_result.apps_data_plane,  # we only need to pass nova-cloud-controller
+                    before=args.purge_before,
+                ),
+            )
+        ]
+    return []
+
+
+def _get_archive_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get the archive nova db data step.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of pre-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
     if args.archive:
-        steps.append(
+        return [
             PreUpgradeStep(
                 description="Archive old database data on nova-cloud-controller",
-                coro=archive(analysis_result.model, batch_size=args.archive_batch_size),
+                coro=archive(
+                    analysis_result.model,
+                    analysis_result.apps_data_plane,
+                    batch_size=args.archive_batch_size,
+                ),
             )
-        )
+        ]
+    return []
 
-    return steps
+
+def _get_set_noout_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:
+    """Get set noout steps.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    :param args: CLI arguments
+    :type args: CLIargs
+    :return: List of pre-upgrade steps.
+    :rtype: list[PreUpgradeStep]
+    """
+    if args.set_noout and args.upgrade_group in {DATA_PLANE, None}:
+        return [
+            PreUpgradeStep(
+                description="Set ceph cluster 'noout' flag before data plane upgrade",
+                coro=ceph.osd_noout(
+                    analysis_result.model, analysis_result.apps_control_plane, enable=True
+                ),
+            )
+        ]
+    PlanStatus.add_message(
+        "Setting noout for ceph cluster during upgrade is optional but recommended. "
+        "You can use `--set-noout` to add this optional step. For more information, "
+        "Please refer to set-noout action: https://charmhub.io/ceph-mon/actions#set-noout",
+        MessageType.WARNING,
+    )
+    return []
 
 
 def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[PostUpgradeStep]:
@@ -412,40 +577,27 @@ def _get_post_upgrade_steps(analysis_result: Analysis, args: CLIargs) -> list[Po
     :param args: CLI arguments
     :type args: CLIargs
     :return: List of post-upgrade steps.
-    :rtype: list[PreUpgradeStep]
+    :rtype: list[PostUpgradeStep]
     """
     steps = []
     if args.upgrade_group in {DATA_PLANE, None}:
-        steps.extend(_get_ceph_mon_post_upgrade_steps(analysis_result.apps_control_plane))
-
-    return steps
-
-
-def _get_ceph_mon_post_upgrade_steps(apps: list[OpenStackApplication]) -> list[PostUpgradeStep]:
-    """Get the post-upgrade step for ceph-mon, where we check the require-osd-release option.
-
-    :param apps: List of OpenStackApplication.
-    :type apps: list[OpenStackApplication]
-    :return: List of post-upgrade steps.
-    :rtype: list[PreUpgradeStep]
-    """
-    ceph_mons_apps = [app for app in apps if isinstance(app, CephMon)]
-
-    steps: list[PostUpgradeStep] = []
-    if not ceph_mons_apps:
-        logger.warning("There is no ceph-mon application. Is this a valid OpenStack cloud?")
-        return steps
-
-    for app in ceph_mons_apps:
-        unit = list(app.units.values())[0]  # getting the first unit, since we don't care which one
         steps.append(
             PostUpgradeStep(
-                f"Ensure that the 'require-osd-release' option in '{app.name}' matches the "
-                "'ceph-osd' version",
-                coro=set_require_osd_release_option(unit.name, app.model),
+                "Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version",
+                coro=ceph.set_require_osd_release_option(
+                    analysis_result.model, analysis_result.apps_control_plane
+                ),
             )
         )
-
+        if args.set_noout:
+            steps.append(
+                PostUpgradeStep(
+                    description="Unset ceph cluster 'noout' flag after data plane upgrade",
+                    coro=ceph.osd_noout(
+                        analysis_result.model, analysis_result.apps_control_plane, enable=False
+                    ),
+                )
+            )
     return steps
 
 
@@ -478,7 +630,11 @@ def _generate_control_plane_plan(
     )
 
     logger.debug("Generation of the control plane upgrade plan complete")
-    control_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
+    # Subordinate charms should be upgraded before principal charms to avoid the
+    # subordinates being on an unsupported platform after principal charms are upgraded.
+    # Check more information:
+    #   https://github.com/canonical/charmed-openstack-upgrader/issues/466#issuecomment-2209991680
+    control_plane_upgrade_plan = [subordinate_upgrade_plan, principal_upgrade_plan]
 
     return control_plane_upgrade_plan
 
@@ -648,7 +804,7 @@ def _create_upgrade_group(
     """Create upgrade group.
 
     COUExceptions (except HaltUpgradePlanGeneration) raised by application will be stored
-    in the PlanWarnings object.
+    in the PlanStatus object.
 
     :param apps: Apps to create the group.
     :type apps: list[OpenStackApplication]
@@ -679,7 +835,7 @@ def _generate_instance_plan(
     """Generate upgrade plan for an instance and handle exceptions.
 
     COUExceptions (except HaltUpgradePlanGeneration) raised by application will be stored
-    in the PlanWarnings object.
+    in the PlanStatus object.
 
     :param instance: An OpenStackApplication or HypervisorUpgradePlanner instance to generate
                      plan for.
@@ -707,7 +863,9 @@ def _generate_instance_plan(
         logger.debug("'%s' halted the upgrade planning generation: %s", instance_id, exc)
     except COUException as exc:
         logger.debug("Cannot generate plan for '%s'\n\t%s", instance_id, exc)
-        PlanWarnings.add_message(f"Cannot generate plan for '{instance_id}'\n\t{exc}")
+        PlanStatus.add_message(
+            f"Cannot generate plan for '{instance_id}'\n\t{exc}", MessageType.ERROR
+        )
     except Exception as exc:
         logger.error("Cannot generate upgrade plan for '%s': %s", instance_id, exc)
         raise

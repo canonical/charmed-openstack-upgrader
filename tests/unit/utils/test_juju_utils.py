@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import pytest
 from juju.action import Action
 from juju.application import Application
-from juju.client._definitions import ApplicationStatus, UnitStatus
+from juju.client._definitions import ApplicationStatus, Base, UnitStatus
 from juju.client.connector import NoConnectionException
 from juju.machine import Machine
 from juju.model import Model
@@ -35,6 +35,19 @@ from cou.exceptions import (
 from cou.utils import juju_utils
 
 
+@pytest.mark.parametrize(
+    "base, exp_series",
+    [
+        (Base("18.04/stable", "ubuntu"), "bionic"),
+        (Base("20.04/stable", "ubuntu"), "focal"),
+        (Base("22.04/stable", "ubuntu"), "jammy"),
+    ],
+)
+def test_convert_base_to_series(base, exp_series):
+    """Test helper function to convert base to series."""
+    assert juju_utils._convert_base_to_series(base) == exp_series
+
+
 @pytest.fixture
 def mocked_model(mocker):
     """Fixture providing mocked juju.model.Model object."""
@@ -48,24 +61,6 @@ def mocked_model(mocker):
     model.connect = AsyncMock()
     model.wait_for_idle = AsyncMock()
     yield model
-
-
-def test_normalize_action_results():
-    results = {"Stderr": "error", "stdout": "output"}
-    expected = {"Stderr": "error", "Stdout": "output", "stderr": "error", "stdout": "output"}
-
-    normalized_results = juju_utils._normalize_action_results(results)
-
-    assert normalized_results == expected
-
-
-def test_normalize_action_results_empty_results():
-    results = {}
-    expected = {}
-
-    normalized_results = juju_utils._normalize_action_results(results)
-
-    assert normalized_results == expected
 
 
 @pytest.mark.asyncio
@@ -296,7 +291,7 @@ async def test_coumodel_get_unit(mocked_model):
     unit_name = "test-unit"
     model = juju_utils.Model("test-model")
 
-    unit = await model._get_unit(unit_name)
+    unit = await model.get_unit(unit_name)
 
     mocked_model.units.get.assert_called_once_with(unit_name)
     assert unit == mocked_model.units.get.return_value
@@ -309,7 +304,7 @@ async def test_coumodel_get_unit_failure(mocked_model):
     mocked_model.units.get.return_value = None
 
     with pytest.raises(UnitNotFound):
-        await model._get_unit("test-unit")
+        await model.get_unit("test-unit")
 
 
 @pytest.mark.asyncio
@@ -417,38 +412,153 @@ async def test_coumodel_run_action(mock_get_waited_action_object, mocked_model):
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils._normalize_action_results")
-async def test_coumodel_run_on_unit(mock_normalize_action_results, mocked_model):
+async def test_coumodel_run_on_unit(mocked_model):
     """Test Model run on unit."""
     command = "test-command"
+    expected_results = {"return-code": 0, "stdout": "some results"}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    results = mocked_action.data.get.return_value
-    mock_normalize_action_results.return_value = {"Code": "0", "Stdout": "some results"}
+    mocked_action.results = expected_results
     model = juju_utils.Model("test-model")
 
-    await model.run_on_unit("test-unit/0", command)
+    results = await model.run_on_unit("test-unit/0", command)
 
-    mocked_unit.run.assert_awaited_once_with(command, timeout=None)
-    mock_normalize_action_results.assert_called_once_with(results)
+    mocked_unit.run.assert_awaited_once_with(command, timeout=None, block=True)
+    assert results == expected_results
 
 
 @pytest.mark.asyncio
-@patch("cou.utils.juju_utils._normalize_action_results")
-async def test_coumodel_run_on_unit_failed_command(mock_normalize_action_results, mocked_model):
+async def test_coumodel_run_on_unit_failed_command(mocked_model):
     """Test Model run on unit."""
     command = "test-command"
+    expected_results = {"return-code": 1, "stderr": "Error!"}
     mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    results = mocked_action.data.get.return_value
-    mock_normalize_action_results.return_value = {"Code": "1", "Stderr": "Error!"}
+    mocked_action.results = expected_results
+    model = juju_utils.Model("test-model")
+
+    expected_err = "Command test-command failed with code 1, output None and error Error!"
+    with pytest.raises(CommandRunFailed, match=expected_err):
+        await model.run_on_unit("test-unit/0", command)
+
+    mocked_unit.run.assert_awaited_once_with(command, timeout=None, block=True)
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_dispatch(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test Model update_status using dispatch."""
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_not_awaited()
+    mocked_logger.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_dispatch_failed(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test Model update_status using dispatch failed."""
+    use_dispatch.side_effect = CommandRunFailed("some cmd", result={})
     model = juju_utils.Model("test-model")
 
     with pytest.raises(CommandRunFailed):
-        await model.run_on_unit("test-unit/0", command)
+        await model.update_status("test-unit/0")
+        use_dispatch.assert_awaited_once()
+        use_hooks.assert_not_awaited()
+        mocked_logger.assert_not_called()
 
-    mocked_unit.run.assert_awaited_once_with(command, timeout=None)
-    mock_normalize_action_results.assert_called_once_with(results)
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_hooks(use_dispatch, use_hooks, mocked_model):
+    """Test Model update_status using hooks."""
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            ),
+        },
+    )
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_use_hooks_failed(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test Model update_status using hooks failed."""
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            )
+        },
+    )
+    use_hooks.side_effect = CommandRunFailed("some cmd", result={})
+    model = juju_utils.Model("test-model")
+
+    with pytest.raises(CommandRunFailed):
+        await model.update_status("test-unit/0")
+        use_dispatch.assert_awaited_once()
+        use_hooks.assert_not_awaited()
+        mocked_logger.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.utils.juju_utils.logger")
+@patch("cou.utils.juju_utils.Model._run_update_status_hook")
+@patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
+async def test_coumodel_update_status_skipped(
+    use_dispatch, use_hooks, mocked_logger, mocked_model
+):
+    """Test skip Model update_status."""
+    use_dispatch.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec4159838212/script.sh: "
+                "line 1: ./dispatch: No such file or directory"
+            )
+        },
+    )
+    use_hooks.side_effect = CommandRunFailed(
+        "some cmd",
+        result={
+            "stderr": (
+                "/tmp/juju-exec1660320022/script.sh: "
+                "line 1: hooks/update-status: No such file or directory"
+            )
+        },
+    )
+    model = juju_utils.Model("test-model")
+    await model.update_status("test-unit/0")
+
+    use_dispatch.assert_awaited_once()
+    use_hooks.assert_awaited_once()
+    mocked_logger.debug.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -499,13 +609,37 @@ async def test_coumodel_upgrade_charm(mocked_model):
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
-async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_model):
+@pytest.mark.parametrize(
+    "case, status,timeout,raise_on_blocked,raise_on_error",
+    [
+        # status
+        ("active status", "active", 60, False, True),
+        ("blocked status", "blocked", 60, False, True),
+        ("error status", "error", 60, False, True),
+        ("raise_on_blocked", "active", 60, True, True),
+        ("raise_on_error", "active", 60, False, False),
+        ("timeout", "active", 120, False, True),
+    ],
+)
+async def test_coumodel_wait_for_idle(
+    mock_get_supported_apps,
+    case,
+    status,
+    timeout,
+    raise_on_blocked,
+    raise_on_error,
+    mocked_model,
+):
     """Test Model wait for related apps to be active idle."""
-    timeout = 60
     model = juju_utils.Model("test-model")
     mock_get_supported_apps.return_value = ["app1", "app2"]
 
-    await model.wait_for_active_idle(timeout)
+    await model.wait_for_idle(
+        timeout=timeout,
+        status=status,
+        raise_on_error=raise_on_error,
+        raise_on_blocked=raise_on_blocked,
+    )
 
     mocked_model.wait_for_idle.assert_has_awaits(
         [
@@ -513,15 +647,17 @@ async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_mod
                 apps=["app1"],
                 timeout=timeout,
                 idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-                raise_on_blocked=False,
-                status="active",
+                raise_on_blocked=raise_on_blocked,
+                raise_on_error=raise_on_error,
+                status=status,
             ),
             call(
                 apps=["app2"],
                 timeout=timeout,
                 idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-                raise_on_blocked=False,
-                status="active",
+                raise_on_blocked=raise_on_blocked,
+                raise_on_error=raise_on_error,
+                status=status,
             ),
         ]
     )
@@ -530,18 +666,19 @@ async def test_coumodel_wait_for_active_idle(mock_get_supported_apps, mocked_mod
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
-async def test_coumodel_wait_for_active_idle_apps(mock_get_supported_apps, mocked_model):
+async def test_coumodel_wait_for_idle_apps(mock_get_supported_apps, mocked_model):
     """Test Model wait for specific apps to be active idle."""
     timeout = 60
     model = juju_utils.Model("test-model")
 
-    await model.wait_for_active_idle(timeout, apps=["app1"])
+    await model.wait_for_idle(timeout, apps=["app1"])
 
     mocked_model.wait_for_idle.assert_awaited_once_with(
         apps=["app1"],
         timeout=timeout,
         idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
         raise_on_blocked=False,
+        raise_on_error=True,
         status="active",
     )
     mock_get_supported_apps.assert_not_awaited()
@@ -549,7 +686,7 @@ async def test_coumodel_wait_for_active_idle_apps(mock_get_supported_apps, mocke
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
-async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mocked_model):
+async def test_coumodel_wait_for_idle_timeout(mock_get_supported_apps, mocked_model):
     """Test Model wait for model to be active idle reach timeout."""
     timeout = 60
     exp_apps = ["app1", "app2"]
@@ -557,7 +694,7 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
     model = juju_utils.Model(None)
 
     with pytest.raises(WaitForApplicationsTimeout):
-        await model.wait_for_active_idle(timeout, apps=exp_apps)
+        await model.wait_for_idle(timeout, apps=exp_apps)
 
     mocked_model.wait_for_idle.assert_has_awaits(
         [
@@ -566,6 +703,7 @@ async def test_coumodel_wait_for_active_idle_timeout(mock_get_supported_apps, mo
                 timeout=timeout,
                 idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
                 raise_on_blocked=False,
+                raise_on_error=True,
                 status="active",
             )
             for app in exp_apps
@@ -644,6 +782,7 @@ def _generate_app_status(units: dict[str, MagicMock]) -> MagicMock:
     """Generate app status with units."""
     status = MagicMock(spec_set=ApplicationStatus)()
     status.units = units
+    status.base = Base("20.04/stable", "ubuntu")
     return status
 
 
@@ -702,6 +841,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
     mocked_model.applications = {app: MagicMock(spec_set=Application)() for app in exp_apps}
 
     for app in exp_apps:
+        mocked_model.applications[app].get_actions = AsyncMock()
         mocked_model.applications[app].get_config = AsyncMock()
         mocked_model.applications[app].units = exp_units[app]
         mocked_model.applications[app].charm_name = app
@@ -721,7 +861,7 @@ async def test_get_applications(mock_get_machines, mock_get_status, mocked_model
             machines={unit.machine.id: exp_machines[unit.machine.id] for unit in exp_units[app]},
             model=model,
             origin=status.charm.split(":")[0],
-            series=status.series,
+            series="focal",
             subordinate_to=status.subordinate_to,
             units={
                 name: juju_utils.Unit(
@@ -774,3 +914,116 @@ def test_unit_repr():
 def test_suborinate_unit_repr():
     unit = juju_utils.SubordinateUnit(name="foo/0", charm="foo")
     assert repr(unit) == "foo/0"
+
+
+@pytest.mark.asyncio
+async def test_run_update_status_hook(mocked_model):
+    """Test Model _run_update_status hook."""
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = {"return-code": 0, "stderr": ""}
+    model = juju_utils.Model("test-model")
+    await model._run_update_status_hook(mocked_unit)
+    mocked_unit.run.assert_awaited_once_with("hooks/update-status", timeout=None, block=True)
+
+
+@pytest.mark.asyncio
+async def test_dispatch_update_status_hook(mocked_model):
+    """Test Model _dispatch_update_status hook."""
+    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
+    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
+    mocked_action.results = {"return-code": 0, "stderr": ""}
+    model = juju_utils.Model("test-model")
+    await model._dispatch_update_status_hook(mocked_unit)
+    mocked_unit.run.assert_awaited_once_with(
+        "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch", timeout=None, block=True
+    )
+
+
+@pytest.mark.asyncio
+async def test_coumodel_resolve_all(mocked_model):
+    model = juju_utils.Model("test-model")
+
+    mock_active_juju_app = AsyncMock()
+    mock_active_juju_app.status = "active"
+
+    mock_error_juju_app = AsyncMock()
+    mock_error_juju_app.status = "error"
+
+    mocked_model.applications = {"app1": mock_active_juju_app, "app2": mock_error_juju_app}
+
+    mock_active_juju_unit = AsyncMock()
+    mock_active_juju_unit.workload_status = "active"
+    mock_error_juju_unit = AsyncMock()
+    mock_error_juju_unit.workload_status = "error"
+
+    mock_error_juju_app.units = [mock_active_juju_unit, mock_error_juju_unit]
+
+    await model.resolve_all()
+
+    mock_error_juju_unit.resolved.assert_awaited_once_with(retry=True)
+
+
+@pytest.mark.asyncio
+async def test_get_application_names(mocked_model):
+    model = juju_utils.Model("test-model")
+    test_apps = {
+        "app1": MagicMock(),
+        "app2": MagicMock(),
+        "app3": MagicMock(),
+    }
+    test_apps["app1"].charm_name = "target_charm_name"
+    test_apps["app2"].charm_name = "target_charm_name"
+    test_apps["app3"].charm_name = "not_target_charm_name"
+    mocked_model.applications = test_apps
+
+    names = await model.get_application_names("target_charm_name")
+    assert names == ["app1", "app2"]
+
+
+@pytest.mark.asyncio
+async def test_get_application_names_failed(mocked_model):
+    model = juju_utils.Model("test-model")
+    test_apps = {
+        "app1": MagicMock(),
+        "app2": MagicMock(),
+        "app3": MagicMock(),
+    }
+    mocked_model.applications = test_apps
+    mocked_model.name = "mocked-model"
+
+    with pytest.raises(
+        ApplicationNotFound, match="Cannot find 'app1_charm_name' charm in model 'mocked-model'"
+    ):
+        await model.get_application_names("app1_charm_name")
+
+
+@pytest.mark.asyncio
+async def test_coumodel_get_application_status(mocked_model):
+    model = juju_utils.Model("test-model")
+    data = {
+        "app1": "app-status-1",
+        "app2": "app-status-2",
+        "app3": "app-status-3",
+    }
+    mocked_model.get_status.return_value.applications = data
+    status = await model.get_application_status(app_name="app1")
+    assert status == "app-status-1"
+    mocked_model.get_status.assert_awaited_once_with(filters=["app1"])
+
+
+@pytest.mark.asyncio
+async def test_coumodel_get_application_status_failed(mocked_model):
+    model = juju_utils.Model("test-model")
+    mocked_model.name = "mocked-model"
+
+    data = {
+        "app1": "app-status-1",
+        "app2": "app-status-2",
+        "app3": "app-status-3",
+    }
+    mocked_model.get_status.return_value.applications = data
+    with pytest.raises(
+        ApplicationNotFound, match="Cannot find 'app-not-exists' in model 'mocked-model'."
+    ):
+        await model.get_application_status(app_name="app-not-exists")

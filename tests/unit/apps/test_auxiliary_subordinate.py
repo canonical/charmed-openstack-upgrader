@@ -81,6 +81,13 @@ def test_auxiliary_subordinate_upgrade_plan_to_victoria(model):
             coro=model.upgrade_charm(app.name, "8.0/stable"),
         ),
     )
+    expected_plan.add_step(
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+    )
 
     upgrade_plan = app.generate_upgrade_plan(target, False)
 
@@ -195,7 +202,12 @@ def test_ovn_subordinate_upgrade_plan(model):
             description=f"Refresh '{app.name}' to the latest revision of '22.03/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "22.03/stable"),
-        )
+        ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
     ]
     expected_plan.add_steps(upgrade_steps)
 
@@ -262,7 +274,12 @@ def test_ceph_dashboard_upgrade_plan_ussuri_to_victoria(model):
             description=f"Refresh '{app.name}' to the latest revision of 'octopus/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "octopus/stable"),
-        )
+        ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
     ]
 
     expected_plan.add_steps(upgrade_steps)
@@ -302,10 +319,20 @@ def test_ceph_dashboard_upgrade_plan_xena_to_yoga(model):
             coro=model.upgrade_charm(app.name, "pacific/stable"),
         ),
         UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+        UpgradeStep(
             description=f"Upgrade '{app.name}' from 'pacific/stable' to the new channel: "
             "'quincy/stable'",
             parallel=False,
             coro=model.upgrade_charm(app.name, "quincy/stable"),
+        ),
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
         ),
     ]
     expected_plan.add_steps(upgrade_steps)
@@ -323,6 +350,7 @@ def test_auxiliary_subordinate_latest_stable(model):
         Upgrade plan for 'keystone-hacluster' to 'victoria'
             WARNING: Changing 'keystone-hacluster' channel from latest/stable to 2.4/stable. \
 This may be a charm downgrade, which is generally not supported.
+            Wait for up to 300s for app 'keystone-hacluster' to reach the idle state
     """
     )
 
@@ -398,7 +426,9 @@ def test_hacluster_change_channel(model):
         """\
     Upgrade plan for 'keystone-hacluster' to 'victoria'
         Refresh 'keystone-hacluster' to the latest revision of '2.0.3/stable'
+        Wait for up to 300s for app 'keystone-hacluster' to reach the idle state
         Upgrade 'keystone-hacluster' from '2.0.3/stable' to the new channel: '2.4/stable'
+        Wait for up to 300s for app 'keystone-hacluster' to reach the idle state
         """
     )
 

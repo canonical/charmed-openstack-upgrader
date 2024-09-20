@@ -33,7 +33,7 @@ from cou.logging import setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
-from cou.steps.plan import PlanWarnings, generate_plan
+from cou.steps.plan import PlanStatus, generate_plan, post_upgrade_sanity_checks
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import Model
@@ -123,7 +123,7 @@ async def analyze_and_plan(args: CLIargs) -> UpgradePlan:
     progress_indicator.succeed(f"Connected to '{model.name}'")
 
     progress_indicator.start("Analyzing cloud...")
-    analysis_result = await Analysis.create(model)
+    analysis_result = await Analysis.create(model, skip_apps=args.skip_apps)
     logger.info(analysis_result)
     progress_indicator.succeed()
 
@@ -143,10 +143,13 @@ async def get_upgrade_plan(args: CLIargs) -> None:
     upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if warnings := PlanWarnings.messages:
-        logger.warning("%s", "\n".join(warnings))
-        logger.warning(
-            "Running upgrades will not be possible until problems indicated in the warnings "
+    for warning in PlanStatus.warning_messages:
+        logger.warning(warning)
+
+    if errors := PlanStatus.error_messages:
+        logger.error("%s", "\n".join(errors))
+        logger.error(
+            "Running upgrades will not be possible until problems indicated in the errors "
             "are resolved."
         )
         return
@@ -167,10 +170,13 @@ async def run_upgrade(args: CLIargs) -> None:
     upgrade_plan = await analyze_and_plan(args)
     print_and_debug(upgrade_plan)
 
-    if warnings := PlanWarnings.messages:
-        logger.warning("%s", "\n".join(warnings))
+    for warning in PlanStatus.warning_messages:
+        logger.warning(warning)
+
+    if errors := PlanStatus.error_messages:
+        logger.error("%s", "\n".join(errors))
         raise RunUpgradeError(  # this will be caught as a COUException in entrypoint
-            "Cannot run upgrades. Please resolve the problems indicated in the warnings "
+            "Cannot run upgrades. Please resolve the problems indicated in the errors "
             "before proceeding."
         )
 
@@ -190,6 +196,21 @@ async def run_upgrade(args: CLIargs) -> None:
     print("Upgrade completed.")
 
 
+async def run_post_upgrade_sanity_check(args: CLIargs) -> None:
+    """Run post upgrade sanity check.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    """
+    if not args.quiet:
+        print("Running post upgrade sanity check...")
+    model = Model(args.model_name)
+    await model.connect()
+    analysis_result = await Analysis.create(model, skip_apps=args.skip_apps)
+    await post_upgrade_sanity_checks(analysis_result)
+    print("Post upgrade sanity check completed.")
+
+
 async def _run_command(args: CLIargs) -> None:
     """Run 'charmed-openstack-upgrade' command.
 
@@ -205,9 +226,8 @@ async def _run_command(args: CLIargs) -> None:
 
 def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
+    args = parse_args(sys.argv[1:])
     try:
-        args = parse_args(sys.argv[1:])
-
         # disable progress indicator when in quiet mode to suppress its console output
         progress_indicator.enabled = not args.quiet
         log_level = get_log_level(quiet=args.quiet, verbosity=args.verbosity)
@@ -220,7 +240,12 @@ def entrypoint() -> None:
         print(exc)
     except TimeoutException:
         progress_indicator.fail()
-        print("The connection was lost. Check your connection or increase the timeout.")
+        print(
+            "The connection was lost.\n"
+            "Check your connection or increase the timeout.\n"
+            "Default timeout is 10s; to increase to 60s for example:\n"
+            "$ COU_TIMEOUT=60 cou plan"
+        )
         sys.exit(1)
     except COUException as exc:
         progress_indicator.fail()
@@ -246,4 +271,6 @@ def entrypoint() -> None:
         logger.exception(exc)
         sys.exit(2)
     finally:
+        if args.command == "upgrade":
+            loop.run_until_complete(run_post_upgrade_sanity_check(args))
         progress_indicator.stop()

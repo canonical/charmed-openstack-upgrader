@@ -36,6 +36,8 @@ def model() -> AsyncMock:
     model.scp_from_unit = AsyncMock()
     model.set_application_config = AsyncMock()
     model.get_application_config = AsyncMock()
+    model.update_status = AsyncMock()
+    model.get_application_status = AsyncMock()
 
     return model
 

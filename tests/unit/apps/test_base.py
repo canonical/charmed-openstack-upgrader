@@ -298,22 +298,23 @@ def test_get_reached_expected_target_step(mock_workload_upgrade, units, model):
 
 
 @pytest.mark.parametrize("origin", ["cs", "ch"])
-@patch("cou.apps.base.OpenStackApplication.is_valid_track", return_value=True)
-def test_check_channel(_, origin):
+@pytest.mark.parametrize("channel", ["stable", "latest/stable", "ussuri/stable"])
+def test_check_channel(channel, origin):
     """Test function to verify validity of the charm channel."""
-    app_name = "app"
+    name = "app"
+    channel = channel
+    series = "focal"
     app = OpenStackApplication(
-        app_name, "", app_name, "stable", {}, {}, MagicMock(), origin, "focal", [], {}, "1"
+        name, "", name, channel, {}, {}, MagicMock(), origin, series, [], {}, [], "1"
     )
 
     app._check_channel()
 
 
-@patch("cou.apps.base.OpenStackApplication.is_valid_track", return_value=False)
-def test_check_channel_error(_):
+def test_check_channel_error():
     """Test function to verify validity of the charm channel when it's not valid."""
     name = "app"
-    channel = "stable"
+    channel = "unknown/stable"
     series = "focal"
     exp_error_msg = (
         f"Channel: {channel} for charm '{name}' on series '{series}' is not supported by COU. "
@@ -580,9 +581,14 @@ def test_get_charmhub_migration_step(o7k_release, model):
     )
 
 
+@pytest.mark.parametrize("channel", ["stable", "latest/stable"])
 @patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)
-def test_get_change_channel_possible_downgrade_step(o7k_release, model):
-    """Applications using latest/stable should be switched to a release-specific channel."""
+def test_get_change_channel_possible_downgrade_step(o7k_release, model, channel):
+    """Test possible downgrade scenario.
+
+    Applications using 'stable' or 'latest/stable' should be switched to a
+    release-specific channel.
+    """
     o7k_release.return_value = OpenStackRelease("ussuri")
     target = OpenStackRelease("victoria")
 
@@ -590,7 +596,7 @@ def test_get_change_channel_possible_downgrade_step(o7k_release, model):
         name="app",
         can_upgrade_to="",
         charm="app",
-        channel="latest/stable",
+        channel=channel,
         config={},
         machines={},
         model=model,
@@ -602,7 +608,7 @@ def test_get_change_channel_possible_downgrade_step(o7k_release, model):
     )
 
     description = (
-        f"WARNING: Changing '{app.name}' channel from latest/stable to "
+        f"WARNING: Changing '{app.name}' channel from {app.channel} to "
         "ussuri/stable. This may be a charm downgrade, which is generally not supported."
     )
 
@@ -661,7 +667,7 @@ def test_get_refresh_charm_step_skip(
         units={},
         workload_version="1",
     )
-    assert app._get_refresh_charm_step(target) == PreUpgradeStep()
+    assert app._get_refresh_charm_steps(target) == []
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_not_called()
     mock_refresh_current_channel.assert_not_called()
@@ -692,13 +698,22 @@ def test_get_refresh_charm_step_refresh_current_channel(
         units={},
         workload_version="1",
     )
-    expected_result = PreUpgradeStep(
+    upgrade_step = PreUpgradeStep(
         f"Refresh '{app.name}' to the latest revision of '{app.channel}'",
         coro=model.upgrade_charm(app.name, app.channel),
     )
-    mock_refresh_current_channel.return_value = expected_result
+    mock_refresh_current_channel.return_value = upgrade_step
 
-    assert app._get_refresh_charm_step(target) == expected_result
+    expected_result = [
+        upgrade_step,
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+    ]
+
+    assert app._get_refresh_charm_steps(target) == expected_result
 
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_not_called()
@@ -741,11 +756,19 @@ def test_get_refresh_charm_step_change_to_openstack_channels(
     )
 
     coro = model.upgrade_charm(app.name, app.expected_current_channel)
-    expected_step = PreUpgradeStep(description=description, coro=coro)
+    upgrade_step = PreUpgradeStep(description=description, coro=coro)
+    mock_possible_downgrade_step.return_value = upgrade_step
 
-    mock_possible_downgrade_step.return_value = expected_step
+    expected_steps = [
+        upgrade_step,
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+    ]
 
-    assert app._get_refresh_charm_step(target) == expected_step
+    assert app._get_refresh_charm_steps(target) == expected_steps
 
     mock_ch_migration.assert_not_called()
     mock_possible_downgrade_step.assert_called_once_with(target, "ussuri/stable")
@@ -781,13 +804,22 @@ def test_get_refresh_charm_step_charmhub_migration(
         units={},
         workload_version="1",
     )
-    expected_result = PreUpgradeStep(
+    migrate_step = PreUpgradeStep(
         f"Migrate '{app.name}' from charmstore to charmhub",
         coro=model.upgrade_charm(app.name, app.expected_current_channel, switch=f"ch:{app.charm}"),
     )
-    mock_ch_migration.return_value = expected_result
+    mock_ch_migration.return_value = migrate_step
 
-    assert app._get_refresh_charm_step(target) == expected_result
+    expected_result = [
+        migrate_step,
+        UpgradeStep(
+            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            parallel=False,
+            coro=model.wait_for_idle(300, apps=[app.name]),
+        ),
+    ]
+
+    assert app._get_refresh_charm_steps(target) == expected_result
 
     mock_ch_migration.assert_called_once()
     mock_possible_downgrade_step.assert_not_called()

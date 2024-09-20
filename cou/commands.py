@@ -15,7 +15,8 @@
 """Command line arguments parsing for 'charmed-openstack-upgrader'."""
 import argparse
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Iterable, Optional
 
 import pkg_resources
@@ -108,6 +109,25 @@ def batch_size_arg(value: str) -> int:
     return batch_size
 
 
+def purge_before_arg(value: str) -> str:
+    """Verify the datetime string is acceptable.
+
+    :param value: input arg value to validate
+    :type value: str
+    :return: same as input string
+    :rtype: str
+    :raises argparse.ArgumentTypeError: if string format is invalid
+    """
+    formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"]
+    for fmt in formats:
+        try:
+            datetime.strptime(value, fmt)
+            return value
+        except ValueError:
+            pass
+    raise argparse.ArgumentTypeError("purge before format must be YYYY-MM-DD[HH:mm][:ss]")
+
+
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     """Create a shared parser for options specific to subcommands.
 
@@ -140,6 +160,16 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         default=argparse.SUPPRESS,
     )
     subcommand_common_opts_parser.add_argument(
+        "--set-noout",
+        help=(
+            "Set ceph noout across the cluster before cloud upgrade.\n"
+            "And unset ceph noout across the cluster after cloud upgrade.\n"
+            "Default to disable this step."
+        ),
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+    )
+    subcommand_common_opts_parser.add_argument(
         "--archive",
         help="Archive old database data (nova) before cloud upgrade.\n"
         "Default to enabling archive.",
@@ -148,10 +178,46 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     )
     subcommand_common_opts_parser.add_argument(
         "--archive-batch-size",
-        help="Batch size for nova old database data archiving.\n"
-        "Decrease the batch size if performance issues are detected.\n(default: 1000)",
+        help=(
+            "Batch size for nova old database data archiving."
+            "\nDecrease the batch size if performance issues are detected.\n(default: 1000)"
+        ),
         type=batch_size_arg,
         default=1000,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--purge",
+        help="Delete data from shadow tables. before cloud upgrade.\n" "Default to disable purge.",
+        action="store_true",
+        default=False,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--purge-before-date",
+        dest="purge_before",
+        help=(
+            "Providing this argument will delete data from all shadow tables"
+            "\nthat is older than the date provided."
+            "\nDate string format should be YYYY-MM-DD[HH:mm][:ss]."
+            "\nWithout --purge-before-date the purge step will delete all the data."
+            "\nThis option requires --purge."
+        ),
+        type=purge_before_arg,
+        required=False,
+    )
+    subcommand_common_opts_parser.add_argument(
+        "--skip-apps",
+        dest="skip_apps",
+        default=[],
+        choices=["vault"],
+        nargs="+",
+        help=(
+            "Skip upgrading the given applications."
+            "\nNote that skip upgrading applications is dangerous, and could leave"
+            "\nthe cloud in an unstable state. You should only use this option if"
+            "\nyou know the applications will not affect the cloud during an upgrade."
+            "\nCurrently, it only supports skip upgrading vault."
+        ),
+        required=False,
     )
     subcommand_common_opts_parser.add_argument(
         "--force",
@@ -411,6 +477,7 @@ class CLIargs:
     command: str
     verbosity: int = 0
     backup: bool = True
+    set_noout: bool = False
     archive: bool = True
     archive_batch_size: int = 1000
     quiet: bool = False
@@ -421,6 +488,9 @@ class CLIargs:
     subcommand: Optional[str] = None  # for help option
     machines: Optional[set[str]] = None
     availability_zones: Optional[set[str]] = None
+    purge: bool = False
+    purge_before: Optional[str] = None
+    skip_apps: list[str] = field(default_factory=list)
 
     @property
     def prompt(self) -> bool:
@@ -480,6 +550,13 @@ def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-sta
                 case "upgrade":
                     subparsers.choices["upgrade"].print_help()
             parser.exit()
+
+        # validate arguments
+        validation_errors = []
+        if parsed_args.purge_before and not parsed_args.purge:
+            validation_errors.append("--purge-before-date requires --purge")
+        if validation_errors:
+            parser.error("\n" + "\n".join(validation_errors))
 
         return parsed_args
     except argparse.ArgumentError as exc:
