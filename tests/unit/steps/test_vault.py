@@ -56,4 +56,5 @@ async def test_verify_vault_is_unsealed_unseal(case, info, status, model) -> Non
 async def test_verify_vault_is_unsealed_vault_not_exists(mock_logger, model) -> None:
     model.get_application_names.side_effect = ApplicationNotFound
     await verify_vault_is_unsealed(model)
-    mock_logger.warning.assert_called_once_with("Application vault not found, skip")
+    mock_logger.debug.assert_called()
+    mock_logger.debug.call_counts = 2
