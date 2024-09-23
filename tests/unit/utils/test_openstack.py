@@ -63,6 +63,7 @@ def test_version_range_raises_ValueError(lower, upper):
                 ["ussuri", "victoria"],
                 ["wallaby", "xena"],
                 ["yoga", "zed", "antelope"],
+                ["cacarcal"],
             ],
         ),  # version 15 (octopus) can be ussuri or victoria
         # version 16 (pacific) can be wallaby or xena
@@ -75,6 +76,7 @@ def test_version_range_raises_ValueError(lower, upper):
                 ["xena", "yoga"],
                 ["zed"],
                 ["antelope"],
+                ["caracal"],
             ],
         ),
         (
