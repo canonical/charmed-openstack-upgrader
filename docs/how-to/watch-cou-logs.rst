@@ -10,7 +10,7 @@ This script watches every log file in the directory, even newly created files.
     #!/bin/bash
 
     # Change LOG_DIR to the target directory
-    DIRECTORY="$LOG_DIR"
+    DIRECTORY="~/.local/share/cou/log/"
     CHECK_INTERVAL=2  # Check for new files every 2 seconds
     LOGFILE=".tailed_files.log"
 
