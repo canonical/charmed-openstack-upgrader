@@ -48,14 +48,17 @@ Commands:
 
 ## Supported Upgrade Paths
 
-Application supports:
+Charmed OpenStack Upgrader (cou) supports the following upgrades:
 
-- Focal/Ussuri -> Focal/Victoria
-- Focal/Victoria -> Focal/Wallaby
-- Focal/Wallaby -> Focal/Xena
-- Focal/Xena -> Focal/Yoga
-
-upgrades.
+| From           | To             |
+| -------------- | -------------- |
+| Focal/Ussuri   | Focal/Victoria |
+| Focal/Victoria | Focal/Wallaby  |
+| Focal/Wallaby  | Focal/Xena     |
+| Focal/Xena     | Focal/Yoga     |
+| Jammy/Yoga     | Jammy/Zed      |
+| Jammy/Zed      | Jammy/Antelop  |
+| Jammy/Antelop  | Jammy/Caracal  |
 
 # License
 Charmed OpenStack Upgrader is a free software, distributed under the Apache-2.0 license. Refer to the
