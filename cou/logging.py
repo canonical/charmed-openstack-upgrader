@@ -16,6 +16,7 @@
 import logging
 import logging.handlers
 from datetime import datetime
+from pathlib import Path
 
 from cou.utils import COU_DATA, progress_indicator
 
@@ -39,15 +40,25 @@ class TracebackInfoFilter(logging.Filter):  # pylint: disable=too-few-public-met
         return True
 
 
-def setup_logging(log_level: str = "INFO") -> None:
+def get_log_file() -> Path:
+    """Get log file path.
+
+    :return: Returns log file path
+    :rtype: Path
+    """
+    time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    return Path(f"{COU_DIR_LOG}/cou-{time_stamp}.log")
+
+
+def setup_logging(log_file: Path, log_level: str = "INFO") -> None:
     """Do setup for logging.
 
+    :param log_file: Logging file.
+    :type log_level: Path
     :param log_level: Logging level, defaults to "INFO"
     :type log_level: str, optional
     """
     progress_indicator.start("Configuring logging...")
-    time_stamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    file_name = f"{COU_DIR_LOG}/cou-{time_stamp}.log"
     COU_DIR_LOG.mkdir(parents=True, exist_ok=True)
 
     log_formatter_file = logging.Formatter(
@@ -60,7 +71,7 @@ def setup_logging(log_level: str = "INFO") -> None:
     root_logger.setLevel("NOTSET")
 
     # handler for the log file. Log level is "NOTSET"
-    log_file_handler = logging.FileHandler(file_name)
+    log_file_handler = logging.FileHandler(log_file)
     log_file_handler.setFormatter(log_formatter_file)
     # suppress python libjuju and websockets debug logs
     if log_level != "NOTSET":
@@ -78,7 +89,7 @@ def setup_logging(log_level: str = "INFO") -> None:
     root_logger.addHandler(log_file_handler)
     root_logger.addHandler(console_handler)
 
-    progress_indicator.stop_and_persist(text=f"Full execution log: '{file_name}'")
+    progress_indicator.stop_and_persist(text=f"Full execution log: '{log_file}'")
 
 
 def filter_debug_logs(record: logging.LogRecord) -> bool:
