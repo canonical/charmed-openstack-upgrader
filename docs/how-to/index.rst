@@ -20,3 +20,4 @@ are possible with **COU**.
    verbosity
    purge-data-on-shadow-table
    test-on-juju-openstack-provider
+   watch-cou-logs
