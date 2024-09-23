@@ -569,9 +569,8 @@ class Model:
         app = await self._get_application(name)
         await app.set_config(configuration)
 
-    # pylint: disable=too-many-arguments
     @retry(no_retry_exceptions=(UnitNotFound,))
-    async def scp_from_unit(
+    async def scp_from_unit(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         unit_name: str,
         source: str,
@@ -599,7 +598,6 @@ class Model:
         unit = await self.get_unit(unit_name)
         await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
 
-    # pylint: disable=too-many-arguments
     @retry(
         no_retry_exceptions=(
             ApplicationNotFound,
@@ -608,7 +606,7 @@ class Model:
             JujuError,
         )
     )
-    async def upgrade_charm(
+    async def upgrade_charm(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         application_name: str,
         channel: Optional[str] = None,
@@ -649,7 +647,7 @@ class Model:
             switch=switch,
         )
 
-    async def wait_for_idle(
+    async def wait_for_idle(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         timeout: int,
         status: str = "active",
