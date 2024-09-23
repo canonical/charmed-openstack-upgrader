@@ -92,3 +92,18 @@ pip install -e .
 # run cou!
 cou --version
 ```
+
+## Testing the snap
+
+Installing a local snap has some manual steps,
+because aliases are not automatically setup,
+and interfaces that normally require approval are not automatically connected.
+
+```
+make build
+sudo snap install --dangerous ./charmed-openstack-upgrader.snap
+sudo snap alias charmed-openstack-upgrader.cou cou
+sudo snap connect charmed-openstack-upgrader:juju-client-observe
+sudo snap connect charmed-openstack-upgrader:dot-local-share-cou
+sudo snap connect charmed-openstack-upgrader:ssh-public-keys
+```
