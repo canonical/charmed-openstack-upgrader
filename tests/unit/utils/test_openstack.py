@@ -43,7 +43,6 @@ def test_version_range_raises_ValueError(lower, upper):
                 "21.8.9",
                 "22.0.0",
                 "23.0.0",
-                "24.0.0",
                 "25.0.0",
             ],
             [
@@ -54,7 +53,6 @@ def test_version_range_raises_ValueError(lower, upper):
                 ["yoga"],
                 ["zed"],
                 ["antelope"],
-                ["bobcat"],
                 ["caracal"],
             ],
         ),
@@ -65,7 +63,6 @@ def test_version_range_raises_ValueError(lower, upper):
                 ["ussuri", "victoria"],
                 ["wallaby", "xena"],
                 ["yoga", "zed", "antelope"],
-                ["bobcat", "caracal"],
             ],
         ),  # version 15 (octopus) can be ussuri or victoria
         # version 16 (pacific) can be wallaby or xena
@@ -78,7 +75,6 @@ def test_version_range_raises_ValueError(lower, upper):
                 ["xena", "yoga"],
                 ["zed"],
                 ["antelope"],
-                ["bobcat", "caracal"],
             ],
         ),
         (
@@ -91,7 +87,6 @@ def test_version_range_raises_ValueError(lower, upper):
                 "20.2.0",
                 "22.2.0",
                 "23.1.0",
-                "23.2.0",
                 "23.4.0",
             ],
             [
@@ -102,7 +97,6 @@ def test_version_range_raises_ValueError(lower, upper):
                 ["yoga"],
                 ["zed"],
                 ["antelope"],
-                ["bobcat"],
                 ["caracal"],
             ],
         ),
@@ -111,7 +105,7 @@ def test_version_range_raises_ValueError(lower, upper):
             ["3.8", "3.9", "3.10"],
             [
                 ["ussuri", "victoria", "wallaby", "xena", "yoga"],
-                ["yoga", "zed", "antelope", "bobcat", "caracal"],
+                ["yoga", "zed", "antelope", "caracal"],
                 [],
             ],
         ),
@@ -120,18 +114,17 @@ def test_version_range_raises_ValueError(lower, upper):
             ["1.7", "1.8", "1.9"],
             [
                 ["ussuri", "victoria", "wallaby", "xena", "yoga"],
-                ["yoga", "zed", "antelope", "bobcat", "caracal"],
+                ["yoga", "zed", "antelope", "caracal"],
                 [],
             ],
         ),
         (
             "ovn-central",
-            ["22.03.02", "22.09", "23.03", "23.09", "24.03"],
+            ["22.03.02", "22.09", "23.03", "24.03"],
             [
                 ["ussuri", "victoria", "wallaby", "xena", "yoga"],
                 ["zed"],
                 ["antelope"],
-                ["bobcat"],
                 ["caracal"],
             ],
         ),
@@ -264,18 +257,16 @@ def test_compare_openstack_release_order():
     ussuri = OpenStackRelease("ussuri")
     wallaby = OpenStackRelease("wallaby")
     antelope = OpenStackRelease("antelope")
-    bobcat = OpenStackRelease("bobcat")
     caracal = OpenStackRelease("2024.1")
     o7k_releases = {
         caracal,
         wallaby,
         ussuri,
-        bobcat,
         antelope,
     }
     assert min(o7k_releases) == ussuri
     assert max(o7k_releases) == caracal
-    assert sorted(o7k_releases) == [ussuri, wallaby, antelope, bobcat, caracal]
+    assert sorted(o7k_releases) == [ussuri, wallaby, antelope, caracal]
 
 
 def test_openstack_release_setter():
@@ -289,7 +280,6 @@ def test_openstack_release_setter():
 def test_openstack_release_setter_by_date():
     openstack_release = OpenStackRelease("2023.1")
     assert openstack_release.codename == "antelope"
-    assert openstack_release.next_release == "bobcat"
     assert openstack_release.date == "2023.1"
 
 
@@ -362,7 +352,6 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("jammy", "ceph-mon", "yoga", ["quincy"]),
         ("jammy", "ceph-mon", "zed", ["quincy"]),
         ("jammy", "ceph-mon", "2023.1", ["quincy"]),
-        ("jammy", "ceph-mon", "2023.2", ["reef"]),
         ("jammy", "ceph-mon", "2024.1", ["reef"]),
         ("focal", "ovn-central", "ussuri", ["20.03", "22.03"]),
         ("focal", "ovn-central", "victoria", ["20.03", "22.03"]),
@@ -372,7 +361,6 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("jammy", "ovn-central", "yoga", ["22.03"]),
         ("jammy", "ovn-central", "zed", ["22.09"]),
         ("jammy", "ovn-central", "2023.1", ["23.03"]),
-        ("jammy", "ovn-central", "2023.2", ["23.09"]),
         ("jammy", "ovn-central", "2024.1", ["24.03"]),
         ("focal", "mysql-router", "ussuri", ["8.0"]),
         ("focal", "mysql-router", "victoria", ["8.0"]),
@@ -382,7 +370,6 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("jammy", "mysql-router", "yoga", ["8.0"]),
         ("jammy", "mysql-router", "zed", ["8.0"]),
         ("jammy", "mysql-router", "2023.1", ["8.0"]),
-        ("jammy", "mysql-router", "2023.2", ["8.0"]),
         ("jammy", "mysql-router", "2024.1", ["8.0"]),
         ("focal", "hacluster", "ussuri", ["2.0.3", "2.4"]),
         ("focal", "hacluster", "victoria", ["2.0.3", "2.4"]),
@@ -392,7 +379,6 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("jammy", "hacluster", "yoga", ["2.4"]),
         ("jammy", "hacluster", "zed", ["2.4"]),
         ("jammy", "hacluster", "2023.1", ["2.4"]),
-        ("jammy", "hacluster", "2023.2", ["2.4"]),
         ("jammy", "hacluster", "2024.1", ["2.4"]),
         ("focal", "rabbitmq-server", "ussuri", ["3.8", "3.9"]),
         ("focal", "rabbitmq-server", "victoria", ["3.8", "3.9"]),
@@ -402,7 +388,6 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("jammy", "rabbitmq-server", "yoga", ["3.9"]),
         ("jammy", "rabbitmq-server", "zed", ["3.9"]),
         ("jammy", "rabbitmq-server", "2023.1", ["3.9"]),
-        ("jammy", "rabbitmq-server", "2023.2", ["3.9"]),
         ("jammy", "rabbitmq-server", "2024.1", ["3.9"]),
         ("focal", "vault", "ussuri", ["1.7"]),
         ("focal", "vault", "victoria", ["1.7"]),
@@ -412,7 +397,6 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("jammy", "vault", "yoga", ["1.7", "1.8"]),
         ("jammy", "vault", "zed", ["1.8"]),
         ("jammy", "vault", "2023.1", ["1.8"]),
-        ("jammy", "vault", "2023.2", ["1.8"]),
         ("jammy", "vault", "2024.1", ["1.8"]),
         ("bionic", "vault", "zed", None),  # release not mapped
         ("jammy", "my-service", "zed", None),  # family not mapped
@@ -499,7 +483,6 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
                 OpenStackRelease("yoga"),
                 OpenStackRelease("zed"),
                 OpenStackRelease("2023.1"),
-                OpenStackRelease("2023.2"),
                 OpenStackRelease("2024.1"),
             ],
         ),
@@ -523,7 +506,6 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
                 OpenStackRelease("yoga"),
                 OpenStackRelease("zed"),
                 OpenStackRelease("2023.1"),
-                OpenStackRelease("2023.2"),
                 OpenStackRelease("2024.1"),
             ],
         ),
@@ -547,7 +529,6 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
                 OpenStackRelease("yoga"),
                 OpenStackRelease("zed"),
                 OpenStackRelease("2023.1"),
-                OpenStackRelease("2023.2"),
                 OpenStackRelease("2024.1"),
             ],
         ),
@@ -571,7 +552,6 @@ def test_openstack_to_track(charm, series, o7k_release, exp_result):
                 OpenStackRelease("yoga"),
                 OpenStackRelease("zed"),
                 OpenStackRelease("2023.1"),
-                OpenStackRelease("2023.2"),
                 OpenStackRelease("2024.1"),
             ],
         ),
