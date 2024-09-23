@@ -95,7 +95,9 @@ cou --version
 
 ## Testing the snap
 
-Installing a local snap has some manual steps because it must be installed in 'dangerous' mode:
+Installing a local snap has some manual steps,
+because aliases are not automatically setup,
+and interfaces that normally require approval are not automatically connected.
 
 ```
 make build
