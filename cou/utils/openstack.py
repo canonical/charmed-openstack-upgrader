@@ -136,7 +136,6 @@ OPENSTACK_CODENAMES = OrderedDict(
         ("yoga", "2022.1"),
         ("zed", "2022.2"),
         ("antelope", "2023.1"),
-        ("bobcat", "2023.2"),
         ("caracal", "2024.1"),
     ]
 )
@@ -154,7 +153,6 @@ DISTRO_TO_OPENSTACK_MAPPING = {
     "jammy": "yoga",
     "kinetic": "zed",
     "lunar": "antelope",
-    "mantic": "bobcat",
     "noble": "caracal",
 }
 
@@ -163,7 +161,7 @@ DISTRO_TO_OPENSTACK_MAPPING = {
 # https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
 LTS_TO_OS_RELEASE = {
     "focal": ["ussuri", "victoria", "wallaby", "xena", "yoga"],
-    "jammy": ["yoga", "zed", "antelope", "bobcat", "caracal"],
+    "jammy": ["yoga", "zed", "antelope", "caracal"],
 }
 
 # https://docs.ceph.com/en/latest/releases/
