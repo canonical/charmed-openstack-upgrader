@@ -344,6 +344,7 @@ def test_entrypoint(
     mock_sys.argv = ["cou", "upgrade"]
     args = mock_parse_args.return_value
     args.command = "upgrade"
+    args.quiet = False
 
     cli.entrypoint()
 

@@ -295,6 +295,6 @@ def entrypoint() -> None:
     finally:
         if args.command == "upgrade":
             loop.run_until_complete(run_post_upgrade_sanity_check(args))
-        if log_file is not None:
+        if log_file is not None and not args.quiet:
             print(f"Full execution log: '{log_file}'")
         progress_indicator.stop()
