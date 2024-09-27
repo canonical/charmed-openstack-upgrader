@@ -23,7 +23,7 @@ Focal/Wallaby   Focal/Xena
 Focal/Xena      Focal/Yoga
 Jammy/Yoga      Jammy/Zed
 Jammy/Zed       Jammy/Antelope
-Jammy/Antelope   Jammy/Caracal
+Jammy/Antelope  Jammy/Caracal
 ==============  ==============
 
 Source code available on `Github`_.
