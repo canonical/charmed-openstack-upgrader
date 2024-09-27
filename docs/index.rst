@@ -6,11 +6,25 @@ a Canonical distribution of `Charmed OpenStack`_
 in an automated and frictionless manner. The application detects the version of the
 running cloud and proposes an upgrade plan to the next available OpenStack release.
 
-**COU** follows the steps defined in the `charm-guide`_ upgrades overview.
+**COU** follows the steps defined in the `charm-guide`_ upgrades overview, and
+it supports the upgrades for the following OpenStack releases:
 
-Notes:
+.. Warning::
 
-- The tool supports upgrades from focal-ussuri to focal-yoga.
+    Skip-Level-Upgrade (SLURP) Releases, such as Jammy/Bobcat, are not
+    supported in **COU**.
+
+==============  ==============
+From            To
+==============  ==============
+Focal/Ussuri    Focal/Victoria
+Focal/Victoria  Focal/Wallaby
+Focal/Wallaby   Focal/Xena
+Focal/Xena      Focal/Yoga
+Jammy/Yoga      Jammy/Zed
+Jammy/Zed       Jammy/Antelope
+Jammy/Antelope  Jammy/Caracal
+==============  ==============
 
 Source code available on `Github`_.
 
@@ -32,7 +46,7 @@ In this documentation
    .. grid-item:: :doc:`Reference <reference/index>`
 
       **Technical information** - commands, environmental variables, and known issues
-   
+
    .. grid-item:: :doc:`Explanation <explanation/index>`
 
       **Additional information** - details of upgrade phases and scopes defined in **COU**
