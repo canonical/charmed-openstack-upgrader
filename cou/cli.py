@@ -18,13 +18,15 @@ import logging
 import logging.handlers
 import sys
 from enum import Enum
+from pathlib import Path
 from signal import SIGINT, SIGTERM
+from typing import Optional
 
 from juju.errors import JujuError
 
 from cou.commands import CLIargs, parse_args
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
-from cou.logging import setup_logging
+from cou.logging import get_log_file, setup_logging
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
@@ -245,11 +247,13 @@ async def _run_command(args: CLIargs) -> None:
 def entrypoint() -> None:
     """Execute 'charmed-openstack-upgrade' command."""
     args = parse_args(sys.argv[1:])
+    log_file: Optional[Path] = None
     try:
         # disable progress indicator when in quiet mode to suppress its console output
         progress_indicator.enabled = not args.quiet
         log_level = get_log_level(quiet=args.quiet, verbosity=args.verbosity)
-        setup_logging(log_level)
+        log_file = get_log_file()
+        setup_logging(log_file, log_level)
 
         loop = asyncio.get_event_loop()
         loop.run_until_complete(_run_command(args))
@@ -291,4 +295,6 @@ def entrypoint() -> None:
     finally:
         if args.command == "upgrade":
             loop.run_until_complete(run_post_upgrade_sanity_check(args))
+        if log_file is not None and not args.quiet:
+            print(f"Full execution log: '{log_file}'")
         progress_indicator.stop()

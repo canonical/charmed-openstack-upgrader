@@ -16,7 +16,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cou.logging import TracebackInfoFilter, filter_debug_logs, setup_logging
+from cou.logging import (
+    TracebackInfoFilter,
+    filter_debug_logs,
+    get_log_file,
+    setup_logging,
+)
 
 
 def test_filter_clears_exc_info_and_text():
@@ -36,6 +41,7 @@ def test_filter_clears_exc_info_and_text():
 @pytest.mark.parametrize("log_level", ["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR"])
 def test_setup_logging(log_level):
     """Test setting up logging."""
+    log_file = get_log_file()
     with (
         patch("cou.logging.logging") as mock_logging,
         patch("cou.logging.progress_indicator") as mock_indicator,
@@ -46,8 +52,9 @@ def test_setup_logging(log_level):
         mock_logging.FileHandler.return_value = log_file_handler
         mock_logging.StreamHandler.return_value = console_handler
 
-        setup_logging(log_level)
+        setup_logging(log_file, log_level)
 
+        mock_logging.FileHandler.assert_called_with(log_file)
         mock_root_logger.addHandler.assert_any_call(log_file_handler)
         mock_root_logger.addHandler.assert_any_call(console_handler)
         mock_indicator.start.assert_called_once()

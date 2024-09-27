@@ -320,9 +320,12 @@ async def test_run_command(
         mock_apply_upgrade_plan.assert_awaited_once()
 
 
+@patch("cou.cli.print")
+@patch("cou.cli.progress_indicator")
 @patch("cou.cli.run_post_upgrade_sanity_check")
 @patch("cou.cli.sys")
 @patch("cou.cli.parse_args")
+@patch("cou.cli.get_log_file")
 @patch("cou.cli.get_log_level")
 @patch("cou.cli.setup_logging")
 @patch("cou.cli._run_command")
@@ -330,22 +333,33 @@ def test_entrypoint(
     mock_run_command,
     mock_setup_logging,
     mock_get_log_level,
+    mock_get_log_file,
     mock_parse_args,
     mock_sys,
     mock_run_post_upgrade_sanity_check,
+    mock_indicator,
+    mock_print,
 ):
     """Test successful entrypoint execution."""
     mock_sys.argv = ["cou", "upgrade"]
     args = mock_parse_args.return_value
     args.command = "upgrade"
+    args.quiet = False
 
     cli.entrypoint()
 
     mock_parse_args.assert_called_once_with(["upgrade"])
     mock_get_log_level.assert_called_once_with(quiet=args.quiet, verbosity=args.verbosity)
-    mock_setup_logging.assert_called_once_with(mock_get_log_level.return_value)
+    mock_setup_logging.assert_called_once_with(
+        mock_get_log_file.return_value,
+        mock_get_log_level.return_value,
+    )
     mock_run_command.assert_awaited_once_with(args)
     mock_run_post_upgrade_sanity_check.await_count == 2
+    mock_print.assert_called_once_with(
+        f"Full execution log: '{mock_get_log_file.return_value}'",
+    )
+    mock_indicator.stop.assert_called_once()
 
 
 @patch("cou.cli.progress_indicator")
@@ -442,7 +456,7 @@ def test_entrypoint_failure_keyboard_interrupt(
     with pytest.raises(SystemExit, match="130"):
         cli.entrypoint()
 
-    mock_print.assert_called_once_with(message or "charmed-openstack-upgrader has been terminated")
+    mock_print.assert_any_call(message or "charmed-openstack-upgrader has been terminated")
     mock_indicator.fail.assert_called_once_with()
     mock_indicator.stop.assert_called_once_with()
 
