@@ -1111,7 +1111,9 @@ def test_get_archive_data_steps(cli_args, model):
         PreUpgradeStep(
             description="Archive old database data on nova-cloud-controller",
             coro=archive(
-                mock_analysis_result.model, mock_analysis_result.apps_control_plane, batch_size=2000
+                mock_analysis_result.model,
+                mock_analysis_result.apps_control_plane,
+                batch_size=2000,
             ),
         )
     ]
