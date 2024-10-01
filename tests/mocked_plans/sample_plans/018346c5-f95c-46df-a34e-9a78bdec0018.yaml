@@ -3,12 +3,26 @@ plan: |
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
         Control Plane subordinate(s) upgrade plan
+            Upgrade plan for 'ceilometer-agent' to 'victoria'
+                Refresh 'ceilometer-agent' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'ceilometer-agent' to reach the idle state
+                Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'ceilometer-agent' to reach the idle state
             Upgrade plan for 'ceph-dashboard' to 'victoria'
                 Refresh 'ceph-dashboard' to the latest revision of 'octopus/stable'
                 Wait for up to 300s for app 'ceph-dashboard' to reach the idle state
             Upgrade plan for 'cinder-ceph' to 'victoria'
                 Upgrade 'cinder-ceph' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'cinder-ceph' to reach the idle state
+            Upgrade plan for 'cinder-lvm-fast' to 'victoria'
+                Upgrade 'cinder-lvm-fast' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'cinder-lvm-fast' to reach the idle state
+            Upgrade plan for 'cinder-lvm-fast2' to 'victoria'
+                Upgrade 'cinder-lvm-fast2' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'cinder-lvm-fast2' to reach the idle state
+            Upgrade plan for 'cinder-lvm-slow' to 'victoria'
+                Upgrade 'cinder-lvm-slow' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'cinder-lvm-slow' to reach the idle state
             Upgrade plan for 'hacluster-aodh' to 'victoria'
                 WARNING: Changing 'hacluster-aodh' channel from latest/stable to 2.4/stable. This may be a charm downgrade, which is generally not supported.
                 Wait for up to 300s for app 'hacluster-aodh' to reach the idle state
@@ -65,6 +79,9 @@ plan: |
             Upgrade plan for 'cinder-mysql-router' to 'victoria'
                 Refresh 'cinder-mysql-router' to the latest revision of '8.0/stable'
                 Wait for up to 300s for app 'cinder-mysql-router' to reach the idle state
+            Upgrade plan for 'cinder-volume-mysql-router' to 'victoria'
+                Refresh 'cinder-volume-mysql-router' to the latest revision of '8.0/stable'
+                Wait for up to 300s for app 'cinder-volume-mysql-router' to reach the idle state
             Upgrade plan for 'designate-mysql-router' to 'victoria'
                 Refresh 'designate-mysql-router' to the latest revision of '8.0/stable'
                 Wait for up to 300s for app 'designate-mysql-router' to reach the idle state
@@ -546,24 +563,6 @@ plan: |
                 Change charm config of 'ceph-osd' 'source' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'ceph-osd' to reach the idle state
                 Verify that the workload of 'ceph-osd' has been upgraded on units: ceph-osd/0, ceph-osd/1, ceph-osd/2
-        Data Plane subordinate(s) upgrade plan
-            Upgrade plan for 'ceilometer-agent' to 'victoria'
-                Refresh 'ceilometer-agent' to the latest revision of 'ussuri/stable'
-                Wait for up to 300s for app 'ceilometer-agent' to reach the idle state
-                Upgrade 'ceilometer-agent' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 300s for app 'ceilometer-agent' to reach the idle state
-            Upgrade plan for 'cinder-lvm-fast' to 'victoria'
-                Upgrade 'cinder-lvm-fast' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 300s for app 'cinder-lvm-fast' to reach the idle state
-            Upgrade plan for 'cinder-lvm-fast2' to 'victoria'
-                Upgrade 'cinder-lvm-fast2' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 300s for app 'cinder-lvm-fast2' to reach the idle state
-            Upgrade plan for 'cinder-lvm-slow' to 'victoria'
-                Upgrade 'cinder-lvm-slow' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 300s for app 'cinder-lvm-slow' to reach the idle state
-            Upgrade plan for 'cinder-volume-mysql-router' to 'victoria'
-                Refresh 'cinder-volume-mysql-router' to the latest revision of '8.0/stable'
-                Wait for up to 300s for app 'cinder-volume-mysql-router' to reach the idle state
         Ensure ceph-mon's 'require-osd-release' option matches the 'ceph-osd' version
 
 

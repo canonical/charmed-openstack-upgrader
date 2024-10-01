@@ -22,12 +22,7 @@ from typing import Optional
 from cou.apps.base import OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.utils import juju_utils
-from cou.utils.openstack import (
-    DATA_PLANE_CHARMS,
-    OVN_SUBORDINATES,
-    UPGRADE_ORDER,
-    OpenStackRelease,
-)
+from cou.utils.openstack import DATA_PLANE_CHARMS, UPGRADE_ORDER, OpenStackRelease
 
 logger = logging.getLogger(__name__)
 
@@ -66,74 +61,35 @@ class Analysis:
         :return: Control plane application lists.
         :rtype: list[OpenStackApplication]
         """
-        control_plane, _ = self._split_apps(self.apps)
-        return control_plane
+        return [app for app in self.apps if app not in self.apps_data_plane]
 
     @property
     def apps_data_plane(self) -> list[OpenStackApplication]:
-        """Return list of data plane applications.
+        """Return list of data plane principal applications.
 
-        OVN_SUBORDINATES is not part of the data plane apps because they need to be
-        upgraded before the ovn-contral.
+        These are charms in the known DATA_PLANE_CHARMS,
+        plus any principal charms colocated with nova-compute
+        (upgrades for these must be interleaved with nova-compute).
 
         :return: data plane application lists.
         :rtype: list[OpenStackApplication]
         """
-        _, data_plane = self._split_apps(self.apps)
-        # Remove ovn subordinates from the data plane since they have to upgrade before
-        # ovn-central
-        data_plane = [app for app in data_plane if app.charm not in OVN_SUBORDINATES]
-        return data_plane
+        nova_compute_machines = set(
+            unit.machine
+            for app in self.apps
+            for unit in app.units.values()
+            if app.charm == "nova-compute"
+        )
 
-    @property
-    def apps_ovn_subordinate(self) -> list[OpenStackApplication]:
-        """Return list of ovn subordinate applications.
-
-        :return: ovn subordinate application lists.
-        :rtype: list[OpenStackApplication]
-        """
-        apps = []
-        for app in self.apps:
-            if app.charm in OVN_SUBORDINATES:
-                apps.append(app)
-        return apps
-
-    @staticmethod
-    def _split_apps(
-        apps: list[OpenStackApplication],
-    ) -> tuple[list[OpenStackApplication], list[OpenStackApplication]]:
-        """Split applications to control plane and data plane apps.
-
-        :param apps: List of applications to split.
-        :type apps: Iterable[OpenStackApplication]
-        :return: Control plane and data plane application lists.
-        :rtype: tuple[list[OpenStackApplication], list[OpenStackApplication]]
-        """
-
-        def is_data_plane(app: OpenStackApplication) -> bool:
-            """Check if app belong to data plane.
-
-            :param app: application
-            :type app: OpenStackApplication
-            :return: boolean
-            :rtype: bool
-            """
-            return app.charm in DATA_PLANE_CHARMS
-
-        control_plane, data_plane = [], []
-        data_plane_machines = {
-            unit.machine for app in apps if is_data_plane(app) for unit in app.units.values()
-        }
-
-        for app in apps:
-            if is_data_plane(app):
-                data_plane.append(app)
-            elif any(machine in data_plane_machines for machine in app.machines.values()):
-                data_plane.append(app)
-            else:
-                control_plane.append(app)
-
-        return control_plane, data_plane
+        return [
+            app
+            for app in self.apps
+            if app.charm in DATA_PLANE_CHARMS
+            or (
+                not app.is_subordinate
+                and any(unit.machine in nova_compute_machines for unit in app.units.values())
+            )
+        ]
 
     @classmethod
     async def create(cls, model: juju_utils.Model, skip_apps: list[str]) -> Analysis:
@@ -240,35 +196,9 @@ class Analysis:
         :rtype: Optional[str]
         """
         return min(
-            (app.series for app in self.apps_control_plane + self.apps_data_plane),
+            (app.series for app in self.apps),
             default=None,
         )
-
-    @property
-    def data_plane_machines(self) -> dict[str, juju_utils.Machine]:
-        """Data-plane machines of the model.
-
-        :return: Data-plane machines of the model.
-        :rtype: dict[str, Machine]
-        """
-        return {
-            machine_id: app.machines[machine_id]
-            for app in self.apps_data_plane
-            for machine_id in app.machines
-        }
-
-    @property
-    def control_plane_machines(self) -> dict[str, juju_utils.Machine]:
-        """Control-plane machines of the model.
-
-        :return: Control-plane machines of the model.
-        :rtype: dict[str, Machine]
-        """
-        return {
-            machine_id: app.machines[machine_id]
-            for app in self.apps_control_plane
-            for machine_id in app.machines
-        }
 
     @property
     def machines(self) -> dict[str, juju_utils.Machine]:
@@ -277,4 +207,8 @@ class Analysis:
         :return: All OpenStack machines of the model.
         :rtype: dict[str, Machine]
         """
-        return {**self.data_plane_machines, **self.control_plane_machines}
+        return {
+            machine_id: app.machines[machine_id]
+            for app in self.apps
+            for machine_id in app.machines
+        }
