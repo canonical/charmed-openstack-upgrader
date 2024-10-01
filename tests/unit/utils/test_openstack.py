@@ -354,7 +354,7 @@ def test_determine_previous_openstack_release(o7k_release, previous_o7k_release)
         ("jammy", "ceph-mon", "yoga", ["quincy"]),
         ("jammy", "ceph-mon", "zed", ["quincy"]),
         ("jammy", "ceph-mon", "2023.1", ["quincy"]),
-        ("jammy", "ceph-mon", "2024.1", ["reef"]),
+        ("jammy", "ceph-mon", "2024.1", ["squid"]),
         ("focal", "ovn-central", "ussuri", ["20.03", "22.03"]),
         ("focal", "ovn-central", "victoria", ["20.03", "22.03"]),
         ("focal", "ovn-central", "wallaby", ["20.12", "22.03"]),
