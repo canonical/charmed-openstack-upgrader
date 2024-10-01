@@ -582,7 +582,7 @@ def _get_archive_data_steps(analysis_result: Analysis, args: CLIargs) -> list[Pr
                 description="Archive old database data on nova-cloud-controller",
                 coro=archive(
                     analysis_result.model,
-                    analysis_result.apps_data_plane,
+                    analysis_result.apps_control_plane,
                     batch_size=args.archive_batch_size,
                 ),
             )
