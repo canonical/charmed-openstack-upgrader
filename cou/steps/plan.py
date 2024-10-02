@@ -645,6 +645,9 @@ def _generate_control_plane_plan(
         force=force,
     )
 
+    # NOTE: these are all subordinates on the cloud,
+    # not just those related to the control plane.
+    # This should be refactored later to separate from control plane methods.
     subordinate_upgrade_plan = _create_upgrade_group(
         apps=[app for app in apps if app.is_subordinate],
         description="Subordinate(s) upgrade plan",
