@@ -196,9 +196,35 @@ class Analysis:
         :rtype: Optional[str]
         """
         return min(
-            (app.series for app in self.apps),
+            (app.series for app in self.apps_control_plane + self.apps_data_plane),
             default=None,
         )
+
+    @property
+    def data_plane_machines(self) -> dict[str, juju_utils.Machine]:
+        """Data-plane machines of the model.
+
+        :return: Data-plane machines of the model.
+        :rtype: dict[str, Machine]
+        """
+        return {
+            machine_id: app.machines[machine_id]
+            for app in self.apps_data_plane
+            for machine_id in app.machines
+        }
+
+    @property
+    def control_plane_machines(self) -> dict[str, juju_utils.Machine]:
+        """Control-plane machines of the model.
+
+        :return: Control-plane machines of the model.
+        :rtype: dict[str, Machine]
+        """
+        return {
+            machine_id: app.machines[machine_id]
+            for app in self.apps_control_plane
+            for machine_id in app.machines
+        }
 
     @property
     def machines(self) -> dict[str, juju_utils.Machine]:
@@ -207,8 +233,4 @@ class Analysis:
         :return: All OpenStack machines of the model.
         :rtype: dict[str, Machine]
         """
-        return {
-            machine_id: app.machines[machine_id]
-            for app in self.apps
-            for machine_id in app.machines
-        }
+        return {**self.data_plane_machines, **self.control_plane_machines}
