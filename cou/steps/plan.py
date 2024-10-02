@@ -647,7 +647,7 @@ def _generate_control_plane_plan(
 
     subordinate_upgrade_plan = _create_upgrade_group(
         apps=[app for app in apps if app.is_subordinate],
-        description="Control Plane subordinate(s) upgrade plan",
+        description="Subordinate(s) upgrade plan",
         target=target,
         force=force,
     )

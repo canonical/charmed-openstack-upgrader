@@ -2,7 +2,7 @@ plan: |
     Upgrade cloud from 'ussuri' to 'victoria'
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
-        Control Plane subordinate(s) upgrade plan
+        Subordinate(s) upgrade plan
             Upgrade plan for 'ceilometer-agent' to 'victoria'
                 Refresh 'ceilometer-agent' to the latest revision of 'ussuri/stable'
                 Wait for up to 300s for app 'ceilometer-agent' to reach the idle state

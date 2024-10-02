@@ -2,7 +2,7 @@ plan: |
     Upgrade cloud from 'ussuri' to 'victoria'
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
-        Control Plane subordinate(s) upgrade plan
+        Subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Wait for up to 300s for app 'keystone-ldap' to reach the idle state

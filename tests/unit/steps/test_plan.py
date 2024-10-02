@@ -157,7 +157,7 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
     Upgrade cloud from 'ussuri' to 'victoria'
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
-        Control Plane subordinate(s) upgrade plan
+        Subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Wait for up to 300s for app 'keystone-ldap' to reach the idle state
@@ -331,7 +331,7 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
     Upgrade cloud from 'ussuri' to 'victoria'
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
-        Control Plane subordinate(s) upgrade plan
+        Subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Wait for up to 300s for app 'keystone-ldap' to reach the idle state
@@ -1265,7 +1265,7 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
         ),
         call(
             apps=[keystone_ldap],
-            description="Control Plane subordinate(s) upgrade plan",
+            description="Subordinate(s) upgrade plan",
             target=target,
             force=force,
         ),
