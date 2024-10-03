@@ -9,11 +9,6 @@ running cloud and proposes an upgrade plan to the next available OpenStack relea
 **COU** follows the steps defined in the `charm-guide`_ upgrades overview, and
 it supports the upgrades for the following OpenStack releases:
 
-.. Warning::
-
-    Skip-Level-Upgrade (SLURP) Releases, such as Jammy/Bobcat, are not
-    supported in **COU**.
-
 ==============  ==============
 From            To
 ==============  ==============
@@ -23,7 +18,8 @@ Focal/Wallaby   Focal/Xena
 Focal/Xena      Focal/Yoga
 Jammy/Yoga      Jammy/Zed
 Jammy/Zed       Jammy/Antelope
-Jammy/Antelope  Jammy/Caracal
+Jammy/Antelope  Jammy/Bobcat
+Jammy/Bobcat    Jammy/Caracal
 ==============  ==============
 
 Source code available on `Github`_.
