@@ -699,6 +699,7 @@ class Model:
                             raise_on_blocked=raise_on_blocked,
                             raise_on_error=raise_on_error,
                             status=status,
+                            wait_for_at_least_units=0,  # don't hang if an app has no units
                         )
                         for app in apps
                     )

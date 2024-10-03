@@ -58,7 +58,8 @@ Charmed OpenStack Upgrader (cou) supports the following upgrades:
 | Focal/Xena     | Focal/Yoga     |
 | Jammy/Yoga     | Jammy/Zed      |
 | Jammy/Zed      | Jammy/Antelope |
-| Jammy/Antelope | Jammy/Caracal  |
+| Jammy/Antelope | Jammy/Bobcat   |
+| Jammy/Bobcat   | Jammy/Caracal  |
 
 # License
 Charmed OpenStack Upgrader is a free software, distributed under the Apache-2.0 license. Refer to the

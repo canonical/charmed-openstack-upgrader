@@ -662,7 +662,8 @@ def test_is_control_plane_upgraded(
         (OpenStackRelease("xena"), "focal", "yoga"),
         (OpenStackRelease("yoga"), "jammy", "zed"),
         (OpenStackRelease("zed"), "jammy", "antelope"),
-        (OpenStackRelease("antelope"), "jammy", "caracal"),
+        (OpenStackRelease("antelope"), "jammy", "bobcat"),
+        (OpenStackRelease("bobcat"), "jammy", "caracal"),
     ],
 )
 def test_determine_upgrade_target(o7k_release, current_series, next_release):
