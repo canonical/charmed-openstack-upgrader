@@ -83,7 +83,7 @@ jobs:
       - name: Upload the built snap as an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: snap_$${{ env.SYSTEM_ARCH }}
+          name: snap_${{ env.SYSTEM_ARCH }}
           path: charmed-openstack-upgrader_*.snap
 
   func:
@@ -115,7 +115,7 @@ jobs:
       - name: Download snap file artifact
         uses: actions/download-artifact@v4
         with:
-          name: snap_$${{ env.SYSTEM_ARCH }}
+          name: snap_${{ env.SYSTEM_ARCH }}
       - name: Run func tests
         run: |
           export TEST_SNAP="$(pwd)/$(ls | grep '.*charmed-openstack-upgrader_.*\.snap$')"
