@@ -170,6 +170,7 @@ CEPH_RELEASES = [
     "pacific",
     "quincy",
     "reef",
+    "squid",
 ]
 
 
