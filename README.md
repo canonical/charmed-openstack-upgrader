@@ -48,7 +48,7 @@ Commands:
 
 ## Supported Upgrade Paths
 
-Application supports:
+Charmed OpenStack Upgrader (cou) supports the following upgrades:
 
 | From           | To             |
 | -------------- | -------------- |
