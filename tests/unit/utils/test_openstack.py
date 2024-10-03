@@ -60,12 +60,13 @@ def test_version_range_raises_ValueError(lower, upper):
         ),
         (
             "ceph-mon",
-            ["15.2.17", "16.2.14", "17.2.6", "18.2.1"],
+            ["15.2.17", "16.2.14", "17.2.6", "18.2.1", "19.2.0"],
             [
                 ["ussuri", "victoria"],
                 ["wallaby", "xena"],
                 ["yoga", "zed", "antelope"],
-                ["bobcat", "caracal"],
+                ["bobcat"],
+                ["caracal"],
             ],
         ),  # version 15 (octopus) can be ussuri or victoria
         # version 16 (pacific) can be wallaby or xena
