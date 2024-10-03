@@ -78,10 +78,12 @@ jobs:
         run: sudo snap install snapcraft --classic
       - name: Build snap
         run: snapcraft --use-lxd
+      - name: Determine system architecture
+        run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
       - name: Upload the built snap as an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SNAP_FILE
+          name: snap_$${{ env.SYSTEM_ARCH }}
           path: charmed-openstack-upgrader_*.snap
 
   func:
@@ -108,10 +110,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install tox
+      - name: Determine system architecture
+        run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
       - name: Download snap file artifact
         uses: actions/download-artifact@v4
         with:
-          name: SNAP_FILE
+          name: snap_$${{ env.SYSTEM_ARCH }}
       - name: Run func tests
         run: |
           export TEST_SNAP="$(pwd)/$(ls | grep '.*charmed-openstack-upgrader_.*\.snap$')"
