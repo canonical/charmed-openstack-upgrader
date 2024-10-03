@@ -650,6 +650,7 @@ async def test_coumodel_wait_for_idle(
                 raise_on_blocked=raise_on_blocked,
                 raise_on_error=raise_on_error,
                 status=status,
+                wait_for_at_least_units=0,
             ),
             call(
                 apps=["app2"],
@@ -658,6 +659,7 @@ async def test_coumodel_wait_for_idle(
                 raise_on_blocked=raise_on_blocked,
                 raise_on_error=raise_on_error,
                 status=status,
+                wait_for_at_least_units=0,
             ),
         ]
     )
@@ -680,6 +682,7 @@ async def test_coumodel_wait_for_idle_apps(mock_get_supported_apps, mocked_model
         raise_on_blocked=False,
         raise_on_error=True,
         status="active",
+        wait_for_at_least_units=0,
     )
     mock_get_supported_apps.assert_not_awaited()
 
@@ -705,6 +708,7 @@ async def test_coumodel_wait_for_idle_timeout(mock_get_supported_apps, mocked_mo
                 raise_on_blocked=False,
                 raise_on_error=True,
                 status="active",
+                wait_for_at_least_units=0,
             )
             for app in exp_apps
         ]
