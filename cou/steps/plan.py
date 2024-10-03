@@ -132,10 +132,8 @@ async def generate_plan(analysis_result: Analysis, args: CLIargs) -> UpgradePlan
     )
     plan.add_steps(_get_pre_upgrade_steps(analysis_result, args))
 
-    # NOTE (gabrielcocenza) upgrade group as None means that the user wants to upgrade
-    #  the whole cloud.
+    # upgrade_group == None means that the user wants to upgrade the whole cloud.
     if args.upgrade_group in {CONTROL_PLANE, None}:
-        plan.add_steps(_generate_ovn_subordinate_plan(target, analysis_result, args))
         plan.add_steps(
             _generate_control_plane_plan(target, analysis_result.apps_control_plane, args.force)
         )
@@ -164,30 +162,6 @@ async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
 
     for message in messages:
         print_and_debug(message)
-
-
-def _generate_ovn_subordinate_plan(
-    target: OpenStackRelease, analysis_result: Analysis, args: CLIargs
-) -> list[UpgradePlan]:
-    """Generate upgrade plan for ovn subordinate applications.
-
-    :param target: Target OpenStack release.
-    :type target: OpenStackRelease
-    :param analysis_result: Analysis result
-    :type analysis_result: Analysis
-    :param args: CLI arguments
-    :type args: CLIargs
-    :return: A list of the upgrade plans for ovn subordinate applications.
-    :rtype: list[UpgradePlan]
-    """
-    return [
-        _create_upgrade_group(
-            apps=analysis_result.apps_ovn_subordinate,
-            description="OVN subordinate upgrade plan",
-            target=target,
-            force=args.force,
-        )
-    ]
 
 
 async def _generate_data_plane_plan(
@@ -671,9 +645,12 @@ def _generate_control_plane_plan(
         force=force,
     )
 
+    # NOTE: these are all subordinates on the cloud,
+    # not just those related to the control plane.
+    # This should be refactored later to separate from control plane methods.
     subordinate_upgrade_plan = _create_upgrade_group(
         apps=[app for app in apps if app.is_subordinate],
-        description="Control Plane subordinate(s) upgrade plan",
+        description="Subordinate(s) upgrade plan",
         target=target,
         force=force,
     )
@@ -706,7 +683,7 @@ def _separate_hypervisors_apps(
         if (
             any(unit.machine in nova_compute_machines for unit in app.units.values())
             and app.charm != "ceph-osd"
-            and app.is_subordinate is False
+            and not app.is_subordinate
         ):
             hypervisor_apps.append(app)
         else:
@@ -748,7 +725,7 @@ async def _generate_data_plane_hypervisors_plan(
 def _generate_data_plane_remaining_plan(
     target: OpenStackRelease, apps: list[OpenStackApplication], force: bool
 ) -> list[UpgradePlan]:
-    """Generate upgrade plan for principals and subordinates data-plane apps.
+    """Generate upgrade plan for remaining principal data-plane apps.
 
     Those plans are done using the all-in-one upgrade strategy.
 
@@ -768,17 +745,8 @@ def _generate_data_plane_remaining_plan(
         force=force,
     )
 
-    subordinate_upgrade_plan = _create_upgrade_group(
-        apps=[app for app in apps if app.is_subordinate],
-        description="Data Plane subordinate(s) upgrade plan",
-        target=target,
-        force=force,
-    )
-
     logger.debug("Generation of remaining data plane upgrade plan complete")
-    data_plane_upgrade_plan = [principal_upgrade_plan, subordinate_upgrade_plan]
-
-    return data_plane_upgrade_plan
+    return [principal_upgrade_plan]
 
 
 async def _filter_hypervisors_machines(args: CLIargs, analysis_result: Analysis) -> list[Machine]:

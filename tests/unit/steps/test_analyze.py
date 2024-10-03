@@ -254,11 +254,7 @@ async def test_populate_model(mock_create, model):
 
 @pytest.mark.asyncio
 @patch.object(analyze.Analysis, "_populate", new_callable=AsyncMock)
-@patch.object(
-    analyze.Analysis,
-    "_split_apps",
-)
-async def test_analysis_create(mock_split_apps, mock_populate, model):
+async def test_analysis_create(mock_populate, model):
     """Test analysis object creation."""
     machines = {"0": MagicMock(spec_set=Machine)}
     keystone = Keystone(
@@ -323,7 +319,6 @@ async def test_analysis_create(mock_split_apps, mock_populate, model):
     )
     exp_apps = [keystone, rabbitmq_server, cinder]
     mock_populate.return_value = exp_apps
-    mock_split_apps.return_value = exp_apps, []
 
     result = await Analysis.create(model=model, skip_apps=[])
 
@@ -583,20 +578,18 @@ async def test_analysis_detect_current_cloud_series_different_series(model):
     assert result.current_cloud_series == "bionic"
 
 
-def _app(name, units):
-    app = MagicMock(spec_set=OpenStackApplication).return_value
+def _app(name, machine_ids, is_subordinate):
+    app = MagicMock(
+        spec_set=SubordinateApplication if is_subordinate else OpenStackApplication
+    ).return_value
+    app.__repr__ = lambda _: name
     app.charm = name
-    app.units = units
-    app.machines = {unit.machine.machine_id: unit.machine for unit in units.values()}
-    return app
-
-
-def _subordinate_app(name, machines_ids):
-    app = MagicMock(spec_set=SubordinateApplication).return_value
-    app.charm = name
-    app.machines = {
-        machine_id: Machine(machine_id, ("", ""), "zone-1") for machine_id in machines_ids
-    }
+    # different name to the charm name, to test that the app is not relying on the name
+    app.name = name + "-name"
+    app.series = "jammy"
+    app.units = {machine_id: _unit(machine_id) for machine_id in machine_ids}
+    app.is_subordinate = is_subordinate
+    app.machines = [unit.machine for unit in app.units.values()]
     return app
 
 
@@ -611,39 +604,39 @@ def _unit(machine_id):
     [
         (
             [
-                _app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
+                _app("keystone", ["0", "1", "2"], False),
                 # subordinate deployed on a control-plane machine is considered control-plane
-                _subordinate_app("keystone-ldap", ["0", "1", "2"]),
+                _app("keystone-ldap", ["0", "1", "2"], True),
+                # subordinate deployed on a data-plane machine is still considered control-plane
+                _app("my-data-plane-subordinate", ["3", "4", "5"], True),
             ],
             [
-                _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
-                # subordinate deployed on a data-plane machine is considered data-plane
-                _subordinate_app("my-data-plane-subordinate", ["3", "4", "5"]),
+                _app("ceph-osd", ["3", "4", "5"], False),
             ],
         ),
         (
             [],
             [
-                _app("nova-compute", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
-                # control-plane application deployed on data-plane machine is considered data-plane
-                _app("keystone", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
-                _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
+                _app("nova-compute", ["0", "1", "2"], False),
+                # principal control-plane application deployed on data-plane machine
+                # is considered data-plane for upgrade purposes
+                _app("keystone", ["0", "1", "2"], False),
+                _app("ceph-osd", ["3", "4", "5"], False),
             ],
         ),
         (
-            [_app("keystone", {"6": _unit("6"), "7": _unit("7"), "8": _unit("8")})],
+            [_app("keystone", ["6", "7", "8"], False)],
             [
-                _app("nova-compute", {"0": _unit("0"), "1": _unit("1"), "2": _unit("2")}),
-                _app("ceph-osd", {"3": _unit("3"), "4": _unit("4"), "5": _unit("5")}),
+                _app("nova-compute", ["0", "1", "2"], False),
+                _app("ceph-osd", ["3", "4", "5"], False),
             ],
         ),
     ],
 )
 def test_split_apps(exp_control_plane, exp_data_plane):
-    all_apps = exp_control_plane + exp_data_plane
-    control_plane, data_plane = Analysis._split_apps(all_apps)
-    assert exp_control_plane == control_plane
-    assert exp_data_plane == data_plane
+    analysis = Analysis(model=MagicMock(), apps=exp_control_plane + exp_data_plane)
+    assert exp_data_plane == analysis.apps_data_plane
+    assert exp_control_plane == analysis.apps_control_plane
 
 
 @pytest.mark.parametrize(

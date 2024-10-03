@@ -44,8 +44,8 @@ CHARM_FAMILIES = {
     "mysql": ["mysql-innodb-cluster", "mysql-router"],
 }
 
+# nova-compute + other principal charms that must be upgraded after nova-compute
 DATA_PLANE_CHARMS = ["nova-compute", "ceph-osd", "swift-proxy", "swift-storage"]
-OVN_SUBORDINATES = ["ovn-chassis"]
 
 # https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
 UCA_UPGRADE_ORDER = [
@@ -103,6 +103,7 @@ SUBORDINATES = [
     "neutron-openvswitch",
     "octavia-dashboard",
     "octavia-diskimage-retrofit",
+    "ovn-chassis",
 ]
 
 AUXILIARY_SUBORDINATES = ["hacluster", "mysql-router", "ceph-dashboard"]

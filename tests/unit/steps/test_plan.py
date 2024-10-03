@@ -157,16 +157,15 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
     Upgrade cloud from 'ussuri' to 'victoria'
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
-        OVN subordinate upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
-                Wait for up to 300s for app 'ovn-chassis' to reach the idle state
-        Control Plane subordinate(s) upgrade plan
+        Subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Wait for up to 300s for app 'keystone-ldap' to reach the idle state
                 Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'keystone-ldap' to reach the idle state
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
+                Wait for up to 300s for app 'ovn-chassis' to reach the idle state
         Control Plane principal(s) upgrade plan
             Upgrade plan for 'keystone' to 'victoria'
                 Upgrade software packages of 'keystone' from the current APT repositories
@@ -332,16 +331,15 @@ async def test_generate_plan_with_warning_messages(mock_filter_hypervisors, mode
     Upgrade cloud from 'ussuri' to 'victoria'
         Back up MySQL databases
         Archive old database data on nova-cloud-controller
-        OVN subordinate upgrade plan
-            Upgrade plan for 'ovn-chassis' to 'victoria'
-                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
-                Wait for up to 300s for app 'ovn-chassis' to reach the idle state
-        Control Plane subordinate(s) upgrade plan
+        Subordinate(s) upgrade plan
             Upgrade plan for 'keystone-ldap' to 'victoria'
                 Refresh 'keystone-ldap' to the latest revision of 'ussuri/stable'
                 Wait for up to 300s for app 'keystone-ldap' to reach the idle state
                 Upgrade 'keystone-ldap' from 'ussuri/stable' to the new channel: 'victoria/stable'
                 Wait for up to 300s for app 'keystone-ldap' to reach the idle state
+            Upgrade plan for 'ovn-chassis' to 'victoria'
+                Refresh 'ovn-chassis' to the latest revision of '22.03/stable'
+                Wait for up to 300s for app 'ovn-chassis' to reach the idle state
         Upgrading all applications deployed on machines with hypervisor.
             Upgrade plan for [nova-compute/0] in 'az-1' to 'victoria'
                 Disable nova-compute scheduler from unit: 'nova-compute/0'
@@ -1268,7 +1266,7 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
         ),
         call(
             apps=[keystone_ldap],
-            description="Control Plane subordinate(s) upgrade plan",
+            description="Subordinate(s) upgrade plan",
             target=target,
             force=force,
         ),
@@ -1612,12 +1610,6 @@ def test_generate_data_plane_remaining_plan(mock_create_upgrade_group):
         call(
             apps=[ceph_osd],
             description="Remaining Data Plane principal(s) upgrade plan",
-            target=target,
-            force=force,
-        ),
-        call(
-            apps=[ovn_chassis],
-            description="Data Plane subordinate(s) upgrade plan",
             target=target,
             force=force,
         ),
