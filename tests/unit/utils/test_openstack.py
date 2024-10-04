@@ -103,7 +103,7 @@ def test_version_range_raises_ValueError(lower, upper):
                 ["yoga"],
                 ["zed"],
                 ["antelope"],
-                ["bobcat"],
+                ["antelope", "bobcat"],
                 ["caracal"],
             ],
         ),
