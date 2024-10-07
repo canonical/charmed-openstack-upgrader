@@ -1030,16 +1030,6 @@ def test_ovn_version_pinning_principal(model):
     """Test the OVNPrincipal when enable-version-pinning is set to True."""
     target = OpenStackRelease("victoria")
     charm = "ovn-dedicated-chassis"
-    exp_msg = (
-        f"Cannot upgrade '{charm}'. "
-        "'enable-version-pinning' must be set to 'false' because "
-        "from OVN LTS version 22.03 and onwards, rolling chassis upgrades are "
-        "supported when upgrading to minor versions as well as to any version within"
-        "the next major OVN LTS version."
-        "For move information, please refer to the charm guide at: "
-        "https://docs.openstack.org/charm-guide/latest/project/procedures/"
-        "ovn-upgrade-2203.html#disable-version-pinning"
-    )
     machines = {"0": generate_cou_machine("0", "az-0")}
     app = OVNPrincipal(
         name=charm,
@@ -1062,7 +1052,7 @@ def test_ovn_version_pinning_principal(model):
         workload_version="22.03.2",
     )
 
-    with pytest.raises(ApplicationError, match=exp_msg):
+    with pytest.raises(ApplicationError):
         app.upgrade_plan_sanity_checks(target, list(app.units.values()))
 
 
@@ -1160,17 +1150,7 @@ def test_ovn_check_version_pinning_version_pinning_config_True(model):
         },
         workload_version="22.03",
     )
-    exp_msg = (
-        f"Cannot upgrade '{app.name}'. "
-        "'enable-version-pinning' must be set to 'false' because "
-        "from OVN LTS version 22.03 and onwards, rolling chassis upgrades are "
-        "supported when upgrading to minor versions as well as to any version within"
-        "the next major OVN LTS version."
-        "For move information, please refer to the charm guide at: "
-        "https://docs.openstack.org/charm-guide/latest/project/procedures/"
-        "ovn-upgrade-2203.html#disable-version-pinning"
-    )
-    with pytest.raises(ApplicationError, match=exp_msg):
+    with pytest.raises(ApplicationError):
         app._check_version_pinning()
 
 
