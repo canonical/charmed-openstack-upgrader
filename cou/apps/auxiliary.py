@@ -411,7 +411,16 @@ class OVN(AuxiliaryApplication):
             return
         if self.config["enable-version-pinning"].get("value"):
             raise ApplicationError(
-                f"Cannot upgrade '{self.name}'. 'enable-version-pinning' must be set to 'false'."
+                (
+                    f"Cannot upgrade '{self.name}'. "
+                    "'enable-version-pinning' must be set to 'false' because "
+                    "from OVN LTS version 22.03 and onwards, rolling chassis upgrades are "
+                    "supported when upgrading to minor versions as well as to any version within"
+                    "the next major OVN LTS version."
+                    "For move information, please refer to the charm guide at: "
+                    "https://docs.openstack.org/charm-guide/latest/project/procedures/"
+                    "ovn-upgrade-2203.html#disable-version-pinning"
+                )
             )
 
     def upgrade_plan_sanity_checks(

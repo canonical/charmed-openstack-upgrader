@@ -155,7 +155,16 @@ def test_ovn_version_pinning_subordinate(model):
     charm = "ovn-chassis"
     target = OpenStackRelease("victoria")
     machines = {"0": generate_cou_machine("0", "az-0")}
-    exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
+    exp_msg = (
+        f"Cannot upgrade '{charm}'. "
+        "'enable-version-pinning' must be set to 'false' because "
+        "from OVN LTS version 22.03 and onwards, rolling chassis upgrades are "
+        "supported when upgrading to minor versions as well as to any version within"
+        "the next major OVN LTS version."
+        "For move information, please refer to the charm guide at: "
+        "https://docs.openstack.org/charm-guide/latest/project/procedures/"
+        "ovn-upgrade-2203.html#disable-version-pinning"
+    )
     app = OVNSubordinate(
         name=charm,
         can_upgrade_to="",
