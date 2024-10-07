@@ -680,30 +680,26 @@ class Model:
         """
         if apps is None:
             apps = await self._get_supported_apps()
+        semaphore = asyncio.Semaphore(5)
 
         @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
         @wraps(self.wait_for_idle)
-        async def _wait_for_idle() -> None:
+        async def _wait_for_idle(app: str) -> None:
             # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
             model = await self._get_model()
             try:
-                # NOTE(rgildein): Use asyncio.gather because we always go through the application
-                # list (apps will never be None) and libjuju is very slow here.
-                # https://github.com/juju/python-libjuju/issues/1055
-                await asyncio.gather(
-                    *(
-                        model.wait_for_idle(
-                            apps=[app],
-                            timeout=timeout,
-                            idle_period=idle_period,
-                            raise_on_blocked=raise_on_blocked,
-                            raise_on_error=raise_on_error,
-                            status=status,
-                            wait_for_at_least_units=0,  # don't hang if an app has no units
-                        )
-                        for app in apps
+                # NOTE(jneo8): Use semaphore to limit the number of tasks to avoid sending too much
+                # request to API server at the same time.
+                async with semaphore:
+                    await model.wait_for_idle(
+                        apps=[app],
+                        timeout=timeout,
+                        idle_period=idle_period,
+                        raise_on_blocked=raise_on_blocked,
+                        raise_on_error=raise_on_error,
+                        status=status,
+                        wait_for_at_least_units=0,  # don't hang if an app has no units
                     )
-                )
             except (asyncio.exceptions.TimeoutError, JujuAppError, JujuUnitError) as error:
                 # NOTE(rgildein): Catching TimeoutError raised as exception when wait_for_idle
                 # reached timeout. Also adding two spaces to make it more user friendly.
@@ -716,7 +712,8 @@ class Model:
                 msg = str(error).replace("\n", "\n  ", 1)
                 raise WaitForApplicationsTimeout(msg) from error
 
-        await _wait_for_idle()
+        tasks = [_wait_for_idle(app=app) for app in apps]
+        await asyncio.gather(*tasks)
 
     async def resolve_all(self) -> None:
         """Resolve all the units in the model if they are in error status."""
