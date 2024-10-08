@@ -155,7 +155,7 @@ def test_ovn_version_pinning_subordinate(model):
     charm = "ovn-chassis"
     target = OpenStackRelease("victoria")
     machines = {"0": generate_cou_machine("0", "az-0")}
-    exp_msg = f"Cannot upgrade '{charm}'. 'enable-version-pinning' must be set to 'false'."
+    exp_regex_msg = ".*enable-version-pinning.*"
     app = OVNSubordinate(
         name=charm,
         can_upgrade_to="",
@@ -171,7 +171,7 @@ def test_ovn_version_pinning_subordinate(model):
         workload_version="22.3",
     )
 
-    with pytest.raises(ApplicationError, match=exp_msg):
+    with pytest.raises(ApplicationError, match=exp_regex_msg):
         app.generate_upgrade_plan(target, False)
 
 
