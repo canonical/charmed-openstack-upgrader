@@ -1031,6 +1031,7 @@ def test_ovn_version_pinning_principal(model):
     target = OpenStackRelease("victoria")
     charm = "ovn-dedicated-chassis"
     machines = {"0": generate_cou_machine("0", "az-0")}
+    exp_regex_msg = ".*enable-version-pinning.*"
     app = OVNPrincipal(
         name=charm,
         can_upgrade_to="22.03/stable",
@@ -1052,7 +1053,7 @@ def test_ovn_version_pinning_principal(model):
         workload_version="22.03.2",
     )
 
-    with pytest.raises(ApplicationError):
+    with pytest.raises(ApplicationError, match=exp_regex_msg):
         app.upgrade_plan_sanity_checks(target, list(app.units.values()))
 
 
@@ -1130,6 +1131,7 @@ def test_ovn_check_version_pinning_version_pinning_config_False(app, config, mod
 
 def test_ovn_check_version_pinning_version_pinning_config_True(model):
     machines = {"0": generate_cou_machine("0", "az-0")}
+    exp_regex_msg = ".*enable-version-pinning.*"
     app = OVNPrincipal(
         name="ovn-dedicated-chassis",
         can_upgrade_to="",
@@ -1150,7 +1152,7 @@ def test_ovn_check_version_pinning_version_pinning_config_True(model):
         },
         workload_version="22.03",
     )
-    with pytest.raises(ApplicationError):
+    with pytest.raises(ApplicationError, match=exp_regex_msg):
         app._check_version_pinning()
 
 
