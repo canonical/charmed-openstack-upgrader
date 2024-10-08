@@ -118,7 +118,7 @@ def purge_before_arg(value: str) -> str:
     :rtype: str
     :raises argparse.ArgumentTypeError: if string format is invalid
     """
-    formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"]
+    formats = ["%Y-%m-%d%H:%M:%S", "%Y-%m-%d%H:%M", "%Y-%m-%d"]
     for fmt in formats:
         try:
             datetime.strptime(value, fmt)
@@ -502,14 +502,17 @@ class CLIargs:
         return not self.auto_approve
 
 
-def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements
+def parse_args(args: list[str]) -> CLIargs:  # pylint: disable=inconsistent-return-statements
     """Parse cli arguments.
 
-    :param args: Arguments parser.
-    :type args: Any
+    Calls sys.exit via the argparse methods
+    if there are errors with the arguments,
+    or a help command is used.
+
+    :param args: List of arguments to parse
+    :type args: list[str]
     :return: CLIargs custom object.
     :rtype: CLIargs
-    :raises argparse.ArgumentError: Unexpected arguments input.
     """
     # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
@@ -538,6 +541,8 @@ def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-sta
     if len(args) == 0 or (len(args) == 1 and args[0] == "help"):
         parser.print_help()
         parser.exit()
+        # This line is reachable in unit tests when .exit() is mocked.
+        return  # type: ignore[unreachable]
 
     try:
         parsed_args = CLIargs(**vars(parser.parse_args(args)))
@@ -550,6 +555,8 @@ def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-sta
                 case "upgrade":
                     subparsers.choices["upgrade"].print_help()
             parser.exit()
+            # This line is reachable in unit tests when .exit() is mocked.
+            return  # type: ignore[unreachable]
 
         # validate arguments
         validation_errors = []
@@ -557,6 +564,8 @@ def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-sta
             validation_errors.append("--purge-before-date requires --purge")
         if validation_errors:
             parser.error("\n" + "\n".join(validation_errors))
+            # This line is reachable in unit tests when .error() is mocked.
+            return  # type: ignore[unreachable]
 
         return parsed_args
     except argparse.ArgumentError as exc:
