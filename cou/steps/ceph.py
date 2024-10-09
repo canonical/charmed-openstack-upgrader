@@ -266,3 +266,57 @@ async def set_require_osd_release_option(model: Model, apps: Sequence[Applicatio
             continue
 
         await set_require_osd_release_option_on_unit(model, ceph_mon_unit_name)
+
+
+def get_mon_apps(apps: Sequence[Application]) -> Sequence[Application]:
+    """Get a list of ceph-mon apps in the model.
+
+    :param apps: list of applications to search through for ceph-mon apps
+    :type apps: list[Application]
+    :return: list of ceph-mon applications
+    :rtype: list[Application]
+    """
+    try:
+        return get_applications_by_charm_name(apps, "ceph-mon")
+    except ApplicationNotFound:
+        return []
+
+
+async def get_versions(model: Model, ceph_mon_unit_name: str) -> dict[str, dict[str, int]]:
+    """Get from `ceph versions` for a ceph-mon unit.
+
+    Output from `ceph versions` looks like this:
+
+    {
+      "mon": {
+        "ceph version 16.2.14 (238ba602515df21ea7ffc75c88db29f9e5ef12c9) pacific (stable)": 2,
+        "ceph version 16.2.15 (618f440892089921c3e944a991122ddc44e60516) pacific (stable)": 1
+      },
+      "mgr": {
+        "ceph version 16.2.14 (238ba602515df21ea7ffc75c88db29f9e5ef12c9) pacific (stable)": 2,
+        "ceph version 16.2.15 (618f440892089921c3e944a991122ddc44e60516) pacific (stable)": 1
+      },
+      "osd": {
+        "ceph version 16.2.15 (618f440892089921c3e944a991122ddc44e60516) pacific (stable)": 18
+      },
+      "mds": {},
+      "rgw": {
+        "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632ac146dc4) octopus (stable)": 2,
+        "ceph version 16.2.14 (238ba602515df21ea7ffc75c88db29f9e5ef12c9) pacific (stable)": 1
+      },
+      "overall": {
+        "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632ac146dc4) octopus (stable)": 2,
+        "ceph version 16.2.14 (238ba602515df21ea7ffc75c88db29f9e5ef12c9) pacific (stable)": 5,
+        "ceph version 16.2.15 (618f440892089921c3e944a991122ddc44e60516) pacific (stable)": 20
+      }
+    }
+
+    :param model: The juju model to work with
+    :type model: Model
+    :param ceph_mon_unit_name: name of a ceph-mon unit to run commands on
+    :type ceph_mon_unit_name: str
+    :return: ceph version information
+    :rtype: dict[str, dict[str, int]]
+    """
+    result = await model.run_on_unit(ceph_mon_unit_name, "ceph versions")
+    return json.loads(result["stdout"])
