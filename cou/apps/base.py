@@ -398,15 +398,11 @@ class OpenStackApplication(Application):
                 "COU in a few minutes."
             )
 
-    def upgrade_plan_sanity_checks(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> None:
+    def upgrade_plan_sanity_checks(self, target: OpenStackRelease) -> None:
         """Run sanity checks before generating upgrade plan.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan, defaults to None
-        :type units: Optional[list[Unit]], optional
         :raises ApplicationError: When application is wrongly configured.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :raises MismatchedOpenStackVersions: When the units of the app are running
@@ -414,7 +410,7 @@ class OpenStackApplication(Application):
         """
         self._check_channel()
         self._check_application_target(target)
-        self._check_mismatched_versions(units)
+        self._check_mismatched_versions()
         self._check_auto_restarts()
         logger.info(
             "%s application met all the necessary prerequisites to generate the upgrade plan",
@@ -497,7 +493,7 @@ class OpenStackApplication(Application):
         :return: Full upgrade plan if the Application is able to generate it.
         :rtype: ApplicationUpgradePlan
         """
-        self.upgrade_plan_sanity_checks(target, units)
+        self.upgrade_plan_sanity_checks(target)
 
         upgrade_plan = ApplicationUpgradePlan(f"Upgrade plan for '{self.name}' to '{target}'")
         upgrade_plan.add_steps(self.pre_upgrade_steps(target, units))
@@ -912,14 +908,9 @@ class OpenStackApplication(Application):
                 f"than {target}. Ignoring."
             )
 
-    def _check_mismatched_versions(self, units: Optional[list[Unit]]) -> None:
+    def _check_mismatched_versions(self) -> None:
         """Check that there are no mismatched versions on app units.
 
-        If units are passed, the application will be upgraded in unit-by-unit fashion,
-        and mismatch is not checked.
-
-        :param units: Units to generate upgrade plan
-        :type units: Optional[list[Unit]]
         :raises MismatchedOpenStackVersions: When the units of the app are running
                                              different OpenStack versions.
         """
