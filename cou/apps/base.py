@@ -669,7 +669,7 @@ class OpenStackApplication(Application):
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :raises ApplicationError: When the current channel is ahead from expected and the target.
+        :raises ApplicationError: When the current channel is ahead of the upgrade target.
         :return: List of steps for upgrading the charm.
         :rtype: list[UpgradeStep]
         """
@@ -698,9 +698,11 @@ class OpenStackApplication(Application):
             ]
 
         raise ApplicationError(
-            f"The '{self.name}' application is using channel '{self.channel}'. Channels supported "
-            f"during this transition: '{self.expected_current_channel(target)}', "
-            f"'{self.target_channel(target)}'. Manual intervention is required."
+            f"The '{self.name}' application is using an unexpected channel: '{self.channel}'. "
+            "Channels supported during this upgrade are, "
+            f"before upgrade: '{self.expected_current_channel(target)}', "
+            f"or after upgrade: '{self.target_channel(target)}'. "
+            "Please manually downgrade to a supported release."
         )
 
     def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:
