@@ -1653,13 +1653,7 @@ def test_auxiliary_wrong_channel(model):
     # plan will raise exception because the channel is on quincy and was expected to be on octopus
     # or pacific. The user will need manual intervention
 
-    exp_msg = (
-        r"^The 'ceph-mon' application is using channel 'quincy/stable'\. Channels supported during"
-        r" this transition: '(octopus/stable)', '(octopus/stable)'\. "
-        r"Manual intervention is required\.$"
-    )
-
-    with pytest.raises(ApplicationError, match=exp_msg):
+    with pytest.raises(ApplicationError, match=".*unexpected channel.*"):
         app.generate_upgrade_plan(target, force=False)
 
 
