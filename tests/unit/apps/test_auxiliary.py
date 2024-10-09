@@ -1054,7 +1054,7 @@ def test_ovn_version_pinning_principal(model):
     )
 
     with pytest.raises(ApplicationError, match=exp_regex_msg):
-        app.upgrade_plan_sanity_checks(target, list(app.units.values()))
+        app.upgrade_plan_sanity_checks(target)
 
 
 @pytest.mark.parametrize("channel", ["55.7", "19.03"])

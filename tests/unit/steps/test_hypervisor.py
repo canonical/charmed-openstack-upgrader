@@ -57,8 +57,8 @@ def test_upgrade_plan_sanity_checks():
 
     planner._upgrade_plan_sanity_checks(target, group)
 
-    apps[0].upgrade_plan_sanity_checks.assert_called_once_with(target, app_units["app1"])
-    apps[1].upgrade_plan_sanity_checks.assert_called_once_with(target, app_units["app2"])
+    apps[0].upgrade_plan_sanity_checks.assert_called_once_with(target)
+    apps[1].upgrade_plan_sanity_checks.assert_called_once_with(target)
     apps[2].upgrade_plan_sanity_checks.assert_not_called()
 
 

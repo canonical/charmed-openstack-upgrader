@@ -423,15 +423,11 @@ class OVN(AuxiliaryApplication):
                 )
             )
 
-    def upgrade_plan_sanity_checks(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> None:
+    def upgrade_plan_sanity_checks(self, target: OpenStackRelease) -> None:
         """Run sanity checks before generating upgrade plan.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan, defaults to None
-        :type units: Optional[list[Unit]], optional
         :raises ApplicationError: When application is wrongly configured.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
         :raises MismatchedOpenStackVersions: When the units of the app are running different
@@ -439,7 +435,7 @@ class OVN(AuxiliaryApplication):
         """
         self._check_ovn_support()
         self._check_version_pinning()
-        super().upgrade_plan_sanity_checks(target, units)
+        super().upgrade_plan_sanity_checks(target)
 
 
 @AppFactory.register_application(["ovn-central", "ovn-dedicated-chassis"])
