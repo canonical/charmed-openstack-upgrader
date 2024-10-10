@@ -702,7 +702,8 @@ class OpenStackApplication(Application):
             "Channels supported during this upgrade are, "
             f"before upgrade: '{self.expected_current_channel(target)}', "
             f"or after upgrade: '{self.target_channel(target)}'. "
-            "Please manually downgrade to a supported release."
+            "Manual intervention required, most likely to manually upgrade "
+            "other cloud components until all are consistent releases."
         )
 
     def _set_action_managed_upgrade(self, enable: bool) -> UpgradeStep:
