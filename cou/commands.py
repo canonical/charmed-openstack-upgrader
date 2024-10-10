@@ -118,14 +118,14 @@ def purge_before_arg(value: str) -> str:
     :rtype: str
     :raises argparse.ArgumentTypeError: if string format is invalid
     """
-    formats = ["%Y-%m-%d%H:%M:%S", "%Y-%m-%d%H:%M", "%Y-%m-%d"]
+    formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"]
     for fmt in formats:
         try:
             datetime.strptime(value, fmt)
             return value
         except ValueError:
             pass
-    raise argparse.ArgumentTypeError("purge before format must be YYYY-MM-DD[HH:mm][:ss]")
+    raise argparse.ArgumentTypeError("format must be YYYY-MM-DD[ HH:mm[:ss]]")
 
 
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
@@ -197,7 +197,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         help=(
             "Providing this argument will delete data from all shadow tables"
             "\nthat is older than the date provided."
-            "\nDate string format should be YYYY-MM-DD[HH:mm][:ss]."
+            "\nDate string format should be YYYY-MM-DD[ HH:mm[:ss]]."
             "\nWithout --purge-before-date the purge step will delete all the data."
             "\nThis option requires --purge."
         ),

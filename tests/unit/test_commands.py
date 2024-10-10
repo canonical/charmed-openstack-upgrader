@@ -191,7 +191,7 @@ def test_parse_args_quiet_verbose_exclusive(mock_error, args):
             ),
         ),
         (
-            ["plan", "--purge", "--purge-before-date", "2000-01-0203:04"],
+            ["plan", "--purge", "--purge-before-date", "2000-01-02 03:04"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -200,12 +200,12 @@ def test_parse_args_quiet_verbose_exclusive(mock_error, args):
                 backup=True,
                 force=False,
                 purge=True,
-                purge_before="2000-01-0203:04",
+                purge_before="2000-01-02 03:04",
                 **{"upgrade_group": None}
             ),
         ),
         (
-            ["plan", "--purge", "--purge-before-date", "2000-01-0203:04:05"],
+            ["plan", "--purge", "--purge-before-date", "2000-01-02 03:04:05"],
             CLIargs(
                 command="plan",
                 model_name=None,
@@ -214,7 +214,7 @@ def test_parse_args_quiet_verbose_exclusive(mock_error, args):
                 backup=True,
                 force=False,
                 purge=True,
-                purge_before="2000-01-0203:04:05",
+                purge_before="2000-01-02 03:04:05",
                 **{"upgrade_group": None}
             ),
         ),
@@ -551,7 +551,7 @@ def test_parse_args_plan(args, expected_CLIargs):
             ),
         ),
         (
-            ["upgrade", "--purge", "--purge-before-date", "2000-01-0203:04:05"],
+            ["upgrade", "--purge", "--purge-before-date", "2000-01-02 03:04:05"],
             CLIargs(
                 command="upgrade",
                 model_name=None,
@@ -561,7 +561,7 @@ def test_parse_args_plan(args, expected_CLIargs):
                 backup=True,
                 force=False,
                 purge=True,
-                purge_before="2000-01-0203:04:05",
+                purge_before="2000-01-02 03:04:05",
                 **{"upgrade_group": None}
             ),
         ),
@@ -862,8 +862,8 @@ def test_parse_args_hypervisors_exclusive_options_reverse_order(mock_error):
         ["upgrade", "--archive-batch-size", "0"],
         ["plan", "--archive-batch-size", "0"],
         ["plan", "--purge_before", "2000-01-02"],
-        ["plan", "--purge_before", "2000-01-0203:04"],
-        ["plan", "--purge_before", "2000-01-0203:04:05"],
+        ["plan", "--purge_before", "2000-01-02 03:04"],
+        ["plan", "--purge_before", "2000-01-02 03:04:05"],
         ["upgrade", "--skip-apps", "vault keystone"],
         ["plan", "--skip_apps", "vault keystone"],
     ],
@@ -929,8 +929,8 @@ def test_capitalize_help_message():
 @pytest.mark.parametrize(
     "val",
     [
-        "2000-01-02 03:04",
-        "2000-01-02 03:04:05",
+        "2000-01-0203:04",
+        "2000-01-0203:04:05",
         "2000-01-02 03:04:05 something-wrong",
     ],
 )
@@ -944,8 +944,8 @@ def test_purge_before_arg_invalid(val):
     "val",
     [
         "2000-01-02",
-        "2000-01-0203:04",
-        "2000-01-0203:04:05",
+        "2000-01-02 03:04",
+        "2000-01-02 03:04:05",
     ],
 )
 def test_purge_before_arg_valid(val):
