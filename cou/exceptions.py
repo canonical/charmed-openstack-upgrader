@@ -45,7 +45,7 @@ class ApplicationNotFound(COUException):
     """Exception raised when an application is not found in the model."""
 
 
-class MismatchedOpenStackVersions(COUException):
+class MismatchedWorkloadVersions(COUException):
     """Exception raised when more than one OpenStack version is found in the Application."""
 
 

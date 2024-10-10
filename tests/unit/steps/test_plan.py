@@ -26,7 +26,7 @@ from cou.exceptions import (
     COUException,
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
-    MismatchedOpenStackVersions,
+    MismatchedWorkloadVersions,
     NoTargetError,
     OutOfSupportRange,
     VaultSealed,
@@ -1660,7 +1660,7 @@ def test_generate_instance_plan_HaltUpgradePlanGeneration():
 
 
 @pytest.mark.parametrize(
-    "exceptions", [ApplicationError, MismatchedOpenStackVersions, COUException]
+    "exceptions", [ApplicationError, MismatchedWorkloadVersions, COUException]
 )
 @patch("cou.steps.plan.PlanStatus", spec_set=cou_plan.PlanStatus)
 def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):

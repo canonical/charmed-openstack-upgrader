@@ -430,7 +430,7 @@ class OVN(AuxiliaryApplication):
         :type target: OpenStackRelease
         :raises ApplicationError: When application is wrongly configured.
         :raises HaltUpgradePlanGeneration: When the application halt the upgrade plan generation.
-        :raises MismatchedOpenStackVersions: When the units of the app are running different
+        :raises MismatchedWorkloadVersions: When the units of the app are running different
                                              OpenStack versions.
         """
         self._check_ovn_support()
