@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from argparse import ArgumentParser, ArgumentTypeError
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -46,14 +46,15 @@ def test_CLIargs_prompt(auto_approve, expected_result):
         ["upgrade", "hypervisors", "-h"],
     ],
 )
-def test_parse_args_help(args):
+@patch("cou.commands.argparse.ArgumentParser.print_help")
+@patch("cou.commands.argparse.ArgumentParser.exit")
+def test_parse_args_help(mock_exit, mock_print_help, args):
     """Test printing help messages."""
-    with patch("cou.commands.argparse.ArgumentParser.print_help") as mock_print_help, patch(
-        "cou.commands.argparse.ArgumentParser.exit"
-    ) as mock_exit:
+    mock_exit.side_effect = SystemExit
+    with pytest.raises(SystemExit):
         commands.parse_args(args)
-        mock_print_help.assert_called_once()
-        mock_exit.assert_called_once_with()
+    mock_print_help.assert_called_once()
+    mock_exit.assert_called_once_with()
 
 
 @pytest.mark.parametrize(
@@ -64,13 +65,15 @@ def test_parse_args_help(args):
         ["plan", "--quiet", "-vvv"],
     ],
 )
-def test_parse_args_quiet_verbose_exclusive(args):
+@patch("cou.commands.argparse.ArgumentParser.error")
+def test_parse_args_quiet_verbose_exclusive(mock_error, args):
     """Test that quiet and verbose options are mutually exclusive."""
-    with patch("cou.commands.argparse.ArgumentParser.error") as mock_error:
+    mock_error.side_effect = SystemExit
+    with pytest.raises(SystemExit):
         commands.parse_args(args)
-        mock_error.assert_has_calls(
-            [call("argument --verbose/-v: not allowed with argument --quiet/-q")]
-        )
+    mock_error.assert_called_once_with(
+        "argument --verbose/-v: not allowed with argument --quiet/-q"
+    )
 
 
 @pytest.mark.parametrize(
@@ -826,22 +829,26 @@ def test_parse_args_upgrade(args, expected_CLIargs):
     assert parsed_args == expected_CLIargs
 
 
-def test_parse_args_hypervisors_exclusive_options():
+@patch("cou.commands.argparse.ArgumentParser.error")
+def test_parse_args_hypervisors_exclusive_options(mock_error):
     """Test parsing mutually exclusive hypervisors specific options."""
-    with patch("cou.commands.argparse.ArgumentParser.error") as mock_error:
+    mock_error.side_effect = SystemExit
+    with pytest.raises(SystemExit):
         commands.parse_args(["upgrade", "hypervisors", "--machine", "1", "--az", "2"])
-        mock_error.assert_has_calls(
-            [call("argument --availability-zone/--az: not allowed with argument --machine/-m")]
-        )
+    mock_error.assert_called_once_with(
+        "argument --availability-zone/--az: not allowed with argument --machine/-m"
+    )
 
 
-def test_parse_args_hypervisors_exclusive_options_reverse_order():
+@patch("cou.commands.argparse.ArgumentParser.error")
+def test_parse_args_hypervisors_exclusive_options_reverse_order(mock_error):
     """Test parsing mutually exclusive hypervisors specific options (reverse order)."""
-    with patch("cou.commands.argparse.ArgumentParser.error") as mock_error:
+    mock_error.side_effect = SystemExit
+    with pytest.raises(SystemExit):
         commands.parse_args(["upgrade", "hypervisors", "--az", "1", "-m", "2"])
-        mock_error.assert_has_calls(
-            [call("argument --machine/-m: not allowed with argument --availability-zone/--az")]
-        )
+    mock_error.assert_called_once_with(
+        "argument --machine/-m: not allowed with argument --availability-zone/--az"
+    )
 
 
 @pytest.mark.parametrize(
@@ -861,11 +868,13 @@ def test_parse_args_hypervisors_exclusive_options_reverse_order():
         ["plan", "--skip_apps", "vault keystone"],
     ],
 )
-def test_parse_invalid_args(args):
+@patch("cou.commands.argparse.ArgumentParser.error")
+def test_parse_invalid_args(mock_error, args):
     """Generic test for various invalid sets of args."""
-    with patch("cou.commands.argparse.ArgumentParser.error") as mock_error:
+    mock_error.side_effect = SystemExit
+    with pytest.raises(SystemExit):
         commands.parse_args(args)
-        mock_error.assert_called()
+    mock_error.assert_called()
 
 
 @pytest.mark.parametrize(
@@ -878,13 +887,14 @@ def test_parse_invalid_args(args):
         ["upgrade", "data-plane", "--availability-zone zone-1"],
     ],
 )
-def test_parse_args_raise_exception(args):
+@patch("cou.commands.argparse.ArgumentParser.error")
+def test_parse_args_raise_exception(mock_error, args):
     """Test parsing unknown arguments."""
-    with patch("cou.commands.argparse.ArgumentParser.error") as mock_error:
+    mock_error.side_effect = SystemExit
+    with pytest.raises(SystemExit):
         commands.parse_args(args)
-        mock_error.assert_called_once()
-        print(mock_error.call_args)
-        assert "unrecognized arguments" in mock_error.call_args[0][0]
+    mock_error.assert_called_once()
+    assert "unrecognized arguments" in mock_error.call_args[0][0]
 
 
 def test_capitalize_usage_prefix():
@@ -944,11 +954,13 @@ def test_purge_before_arg_valid(val):
     assert val == result
 
 
+@patch("cou.commands.argparse.ArgumentParser.error")
 @patch("cou.commands.setattr")
-def test_purge_before_argument_missing_dependency(mock_setattr):
-    with patch("cou.commands.argparse.ArgumentParser.error") as mock_error:
+def test_purge_before_argument_missing_dependency(mock_setattr, mock_error):
+    mock_error.side_effect = SystemExit
+    with pytest.raises(SystemExit):
         commands.parse_args(["plan", "--purge-before-date", "2000-01-02"])
-        mock_error.assert_has_calls([call("\n--purge-before-date requires --purge")])
+    mock_error.assert_called_once_with("\n--purge-before-date requires --purge")
 
 
 @patch("cou.commands.setattr")
@@ -957,8 +969,12 @@ def test_skip_apps(mock_setattr):
     args.skip_apps == ["vault", "vault", "vault"]
 
 
+@patch("cou.commands.argparse.ArgumentParser.error")
 @patch("cou.commands.setattr")
-def test_skip_apps_failed(mock_setattr):
-    with patch("cou.commands.argparse.ArgumentParser.error") as mock_error:
+def test_skip_apps_failed(mock_setattr, mock_error):
+    mock_error.side_effect = SystemExit
+    with pytest.raises(SystemExit):
         commands.parse_args(["upgrade", "--skip-apps", "vault", "keystone"])
-        mock_error.assert_has_calls([call("unrecognized arguments: --skip-apps vault keystone")])
+    mock_error.assert_called_once_with(
+        "argument --skip-apps: invalid choice: 'keystone' (choose from 'vault')"
+    )

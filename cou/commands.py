@@ -541,8 +541,6 @@ def parse_args(args: list[str]) -> CLIargs:  # pylint: disable=inconsistent-retu
     if len(args) == 0 or (len(args) == 1 and args[0] == "help"):
         parser.print_help()
         parser.exit()
-        # This line is reachable in unit tests when .exit() is mocked.
-        return  # type: ignore[unreachable]
 
     try:
         parsed_args = CLIargs(**vars(parser.parse_args(args)))
@@ -555,8 +553,6 @@ def parse_args(args: list[str]) -> CLIargs:  # pylint: disable=inconsistent-retu
                 case "upgrade":
                     subparsers.choices["upgrade"].print_help()
             parser.exit()
-            # This line is reachable in unit tests when .exit() is mocked.
-            return  # type: ignore[unreachable]
 
         # validate arguments
         validation_errors = []
@@ -564,8 +560,6 @@ def parse_args(args: list[str]) -> CLIargs:  # pylint: disable=inconsistent-retu
             validation_errors.append("--purge-before-date requires --purge")
         if validation_errors:
             parser.error("\n" + "\n".join(validation_errors))
-            # This line is reachable in unit tests when .error() is mocked.
-            return  # type: ignore[unreachable]
 
         return parsed_args
     except argparse.ArgumentError as exc:
