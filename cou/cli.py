@@ -245,8 +245,14 @@ async def _run_command(args: CLIargs) -> None:
 
 
 def entrypoint() -> None:
-    """Execute 'charmed-openstack-upgrade' command."""
+    """Run the cli app.
+
+    Only this function and parse_args() should call sys.exit.
+    Other functions that find a blocking error should raise an Exception
+    and let it be handled by this function.
+    """
     args = parse_args(sys.argv[1:])
+
     log_file: Optional[Path] = None
     try:
         # disable progress indicator when in quiet mode to suppress its console output
