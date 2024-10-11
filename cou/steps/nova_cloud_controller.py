@@ -76,7 +76,7 @@ async def purge(model: Model, apps: Sequence[Application], before: Optional[str]
     :type apps: Sequence of Applications
     :param before: specifying before will delete data from all shadow tables
         that is older than the data provided.
-        Date string format should be YYYY-MM-DD[HH:mm][:ss]
+        Date string format should be YYYY-MM-DD[ HH:mm[:ss]]
     :raises COUException: if action returned unexpected output or failed
     """
     action_params = {}
