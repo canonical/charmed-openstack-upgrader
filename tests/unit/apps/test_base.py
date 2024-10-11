@@ -456,7 +456,7 @@ def test_check_mismatched_versions_exception(mock_o7k_release_units, model):
     )
 
     with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
-        app._check_mismatched_versions(None)
+        app._check_mismatched_versions()
 
 
 @patch("cou.apps.base.OpenStackApplication.o7k_release_units", new_callable=PropertyMock)
@@ -506,7 +506,7 @@ def test_check_mismatched_versions_with_nova_compute(mock_o7k_release_units, mod
         workload_version="18.1.0",
     )
 
-    assert app._check_mismatched_versions(None) is None
+    assert app._check_mismatched_versions() is None
 
 
 @patch("cou.apps.base.OpenStackApplication.o7k_release_units", new_callable=PropertyMock)
@@ -550,7 +550,7 @@ def test_check_mismatched_versions(mock_o7k_release_units, model):
         workload_version="17.0.1",
     )
 
-    assert app._check_mismatched_versions([units["my-app/0"]]) is None
+    assert app._check_mismatched_versions() is None
 
 
 @patch("cou.apps.base.OpenStackApplication.o7k_release", new_callable=PropertyMock)

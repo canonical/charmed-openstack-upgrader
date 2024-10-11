@@ -180,11 +180,10 @@ class HypervisorUpgradePlanner:
                 )
                 continue
 
-            units = group.app_units[app.name]
-            logger.info("running sanity checks for %s units of %s app", app.name, units)
+            logger.info("running sanity checks for %s app", app.name)
             # Note(rgildein): We don't catch the error here because we shouldn't generate any
             #                 update plan if sanity checks for any application fails.
-            app.upgrade_plan_sanity_checks(target, units)
+            app.upgrade_plan_sanity_checks(target)
 
     def _generate_pre_upgrade_steps(
         self, target: OpenStackRelease, group: HypervisorGroup

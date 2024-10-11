@@ -247,15 +247,11 @@ class Swift(OpenStackApplication):
     valid OpenStack components, but not currently supported by COU for upgrade.
     """
 
-    def upgrade_plan_sanity_checks(
-        self, target: OpenStackRelease, units: Optional[list[Unit]]
-    ) -> None:
+    def upgrade_plan_sanity_checks(self, target: OpenStackRelease) -> None:
         """Run sanity checks before generating upgrade plan.
 
         :param target: OpenStack release as target to upgrade.
         :type target: OpenStackRelease
-        :param units: Units to generate upgrade plan, defaults to None
-        :type units: Optional[list[Unit]], optional
         :raises ApplicationNotSupported: When application is known but not currently
                                          supported by COU.
         """

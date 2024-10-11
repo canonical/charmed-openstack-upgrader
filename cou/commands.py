@@ -125,7 +125,7 @@ def purge_before_arg(value: str) -> str:
             return value
         except ValueError:
             pass
-    raise argparse.ArgumentTypeError("purge before format must be YYYY-MM-DD[HH:mm][:ss]")
+    raise argparse.ArgumentTypeError("format must be YYYY-MM-DD[ HH:mm[:ss]]")
 
 
 def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
@@ -197,7 +197,7 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
         help=(
             "Providing this argument will delete data from all shadow tables"
             "\nthat is older than the date provided."
-            "\nDate string format should be YYYY-MM-DD[HH:mm][:ss]."
+            "\nDate string format should be YYYY-MM-DD[ HH:mm[:ss]]."
             "\nWithout --purge-before-date the purge step will delete all the data."
             "\nThis option requires --purge."
         ),
@@ -502,14 +502,17 @@ class CLIargs:
         return not self.auto_approve
 
 
-def parse_args(args: Any) -> CLIargs:  # pylint: disable=inconsistent-return-statements
+def parse_args(args: list[str]) -> CLIargs:  # pylint: disable=inconsistent-return-statements
     """Parse cli arguments.
 
-    :param args: Arguments parser.
-    :type args: Any
+    Calls sys.exit via the argparse methods
+    if there are errors with the arguments,
+    or a help command is used.
+
+    :param args: List of arguments to parse
+    :type args: list[str]
     :return: CLIargs custom object.
     :rtype: CLIargs
-    :raises argparse.ArgumentError: Unexpected arguments input.
     """
     # Configure top level argparser and its options
     parser = argparse.ArgumentParser(
