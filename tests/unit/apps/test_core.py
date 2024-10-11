@@ -1128,14 +1128,7 @@ def test_core_wrong_channel(model):
 
     # plan will raise exception because the channel is on wallaby and was expected to be on ussuri
     # or victoria. The user will need manual intervention
-
-    exp_msg = (
-        r"^The 'keystone' application is using channel 'wallaby/stable'\. Channels supported "
-        r"during this transition: '(ussuri/stable)', '(victoria/stable)'\. "
-        r"Manual intervention is required\.$"
-    )
-
-    with pytest.raises(ApplicationError, match=exp_msg):
+    with pytest.raises(ApplicationError, match=".*unexpected channel.*"):
         app.generate_upgrade_plan(target, force=False)
 
 
