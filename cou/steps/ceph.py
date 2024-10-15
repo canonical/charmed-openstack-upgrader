@@ -319,5 +319,5 @@ async def get_versions(model: Model, ceph_mon_unit_name: str) -> dict[str, dict[
     :return: ceph version information
     :rtype: dict[str, dict[str, int]]
     """
-    result = await model.run_on_unit(ceph_mon_unit_name, "ceph versions")
+    result = await model.run_on_unit(ceph_mon_unit_name, "ceph versions -f json")
     return json.loads(result["stdout"])

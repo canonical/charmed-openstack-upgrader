@@ -173,8 +173,8 @@ async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
         version_data = await ceph.get_versions(analysis_result.model, units[0].name)
         if len(version_data["overall"]) > 1:
             messages.append(
-                "Ceph mon sees mismatched versions in ceph daemons:\n"
-                "\n{json.dumps(version_data, indent=2)}\n\n"
+                f"Ceph mon ({units[0].name}) sees mismatched versions in ceph daemons:\n"
+                f"\n{json.dumps(version_data, indent=2)}\n\n"
                 "This is unexpected: at the end of a clean upgrade, "
                 "all ceph applications should be running the same version."
             )
