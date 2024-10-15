@@ -407,15 +407,9 @@ def test_check_application_target_error(o7k_release, apt_source_codename):
         app._check_application_target(target)
 
 
-@patch("cou.apps.base.OpenStackApplication.o7k_release_units", new_callable=PropertyMock)
-def test_check_mismatched_versions_exception(mock_o7k_release_units, model):
+@patch("cou.apps.base.OpenStackApplication.get_latest_o7k_version", new_callable=MagicMock)
+def test_check_mismatched_versions_exception(mock_get_latest_o7k_version, model):
     """Raise exception if workload version is different on units of a control-plane application."""
-    exp_error_msg = (
-        "Units of application my-app are running mismatched OpenStack versions: "
-        r"'ussuri': \['my-app\/0', 'my-app\/1'\], 'victoria': \['my-app\/2'\]. "
-        "This is not currently handled."
-    )
-
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     units = {
         "my-app/0": Unit(
@@ -435,10 +429,11 @@ def test_check_mismatched_versions_exception(mock_o7k_release_units, model):
         ),
     }
 
-    mock_o7k_release_units.return_value = {
-        OpenStackRelease("ussuri"): ["my-app/0", "my-app/1"],
-        OpenStackRelease("victoria"): ["my-app/2"],
-    }
+    mock_get_latest_o7k_version.side_effect = lambda unit: (
+        OpenStackRelease("ussuri")
+        if unit.name in ["my-app/0", "my-app/1"]
+        else OpenStackRelease("victoria")
+    )
 
     app = OpenStackApplication(
         name="my-app",
@@ -455,12 +450,12 @@ def test_check_mismatched_versions_exception(mock_o7k_release_units, model):
         workload_version="18.1.0",
     )
 
-    with pytest.raises(MismatchedOpenStackVersions, match=exp_error_msg):
+    with pytest.raises(MismatchedOpenStackVersions, match=".*mismatched OpenStack releases.*"):
         app._check_mismatched_versions()
 
 
-@patch("cou.apps.base.OpenStackApplication.o7k_release_units", new_callable=PropertyMock)
-def test_check_mismatched_versions_with_nova_compute(mock_o7k_release_units, model):
+@patch("cou.apps.base.OpenStackApplication.get_latest_o7k_version", new_callable=MagicMock)
+def test_check_mismatched_versions_with_nova_compute(mock_get_latest_o7k_version, model):
     """Not raise exception if workload version is different, but is colocated with nova-compute."""
     machines = {
         f"{i}": generate_cou_machine(
@@ -486,10 +481,11 @@ def test_check_mismatched_versions_with_nova_compute(mock_o7k_release_units, mod
         ),
     }
 
-    mock_o7k_release_units.return_value = {
-        OpenStackRelease("ussuri"): ["my-app/0", "my-app/1"],
-        OpenStackRelease("victoria"): ["my-app/2"],
-    }
+    mock_get_latest_o7k_version.side_effect = lambda unit: (
+        OpenStackRelease("ussuri")
+        if unit.name in ["my-app/0", "my-app/1"]
+        else OpenStackRelease("victoria")
+    )
 
     app = OpenStackApplication(
         name="my-app",
@@ -509,8 +505,8 @@ def test_check_mismatched_versions_with_nova_compute(mock_o7k_release_units, mod
     assert app._check_mismatched_versions() is None
 
 
-@patch("cou.apps.base.OpenStackApplication.o7k_release_units", new_callable=PropertyMock)
-def test_check_mismatched_versions(mock_o7k_release_units, model):
+@patch("cou.apps.base.OpenStackApplication.get_latest_o7k_version", new_callable=MagicMock)
+def test_check_mismatched_versions(mock_get_latest_o7k_version, model):
     """Test that no exceptions is raised if units of the app have the same OpenStack version."""
     machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
     units = {
@@ -531,9 +527,7 @@ def test_check_mismatched_versions(mock_o7k_release_units, model):
         ),
     }
 
-    mock_o7k_release_units.return_value = {
-        OpenStackRelease("ussuri"): ["my-app/0", "my-app/1", "my-app/2"],
-    }
+    mock_get_latest_o7k_version.side_effect = lambda _unit: OpenStackRelease("ussuri")
 
     app = OpenStackApplication(
         name="my-app",

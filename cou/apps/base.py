@@ -912,14 +912,18 @@ class OpenStackApplication(Application):
             )
 
     def _check_mismatched_versions(self) -> None:
-        """Check that there are no mismatched versions on app units.
+        """Check that there are no unexpected mismatched versions on app units.
+
+        For cases where mismatched versions may be expected
+        (eg. nova-compute which is upgraded unit-by-unit),
+        then it will not check.
 
         :raises MismatchedOpenStackVersions: When the units of the app are running
                                              different OpenStack versions.
         """
-        # NOTE (gabrielcocenza) nova-compute is upgraded using paused-single-unit,
-        # so it's possible to have mismatched version in applications units that are
-        # nova-compute or colocated with it.
+        # nova-compute is upgraded one unit at a time,
+        # so it's possible to have mismatched version in
+        # units of applications that are nova-compute or colocated with it.
         if any(
             "nova-compute" in app_charm
             for machine in self.machines.values()
@@ -927,14 +931,16 @@ class OpenStackApplication(Application):
         ):
             return
 
-        o7k_versions = self.o7k_release_units
-        if len(o7k_versions.keys()) > 1:
-            mismatched_repr = [
-                f"'{openstack_release.codename}': {units}"
-                for openstack_release, units in o7k_versions.items()
-            ]
-
+        if len({self.get_latest_o7k_version(unit) for unit in self.units.values()}) > 1:
+            formatted_results = "\n".join(
+                f"  {unit.name}: {self.get_latest_o7k_version(unit)} "
+                f"(workload: {unit.workload_version})"
+                for unit in sorted(self.units.values(), key=lambda unit: unit.name)
+            )
             raise MismatchedOpenStackVersions(
-                f"Units of application {self.name} are running mismatched OpenStack versions: "
-                f"{', '.join(mismatched_repr)}. This is not currently handled."
+                f"Units of application {self.name} are running mismatched OpenStack releases, "
+                "based on the workload versions as reported by juju status. "
+                "Observed OpenStack releases for each unit:\n"
+                f"{formatted_results}\n"
+                "This requires manually resolving the issue to continue."
             )
