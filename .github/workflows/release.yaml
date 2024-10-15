@@ -25,8 +25,6 @@ jobs:
         runs-on: [[ubuntu-22.04]]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Complete git history is required to generate the version from git tags.
 
       - name: Determine system architecture
         run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
