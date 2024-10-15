@@ -15,6 +15,7 @@
 """Upgrade planning utilities."""
 from __future__ import annotations
 
+import json
 import logging
 from enum import Enum
 from typing import Optional, Union
@@ -161,7 +162,7 @@ async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
     except ApplicationError:
         messages.append("Detected ceph 'noout' set, please unset noout for ceph cluster.")
 
-    for app in ceph.get_mon_apps(analysis_result.apps_control_plane):
+    for app in ceph.get_mon_apps(analysis_result):
         units = list(app.units.values())
         if not units:
             logger.warning(
@@ -304,7 +305,7 @@ async def _verify_ceph_running_versions_consistent(analysis_result: Analysis) ->
     :param analysis_result: Analysis result
     :type analysis_result: Analysis
     """
-    for app in ceph.get_mon_apps(analysis_result.apps_control_plane):
+    for app in ceph.get_mon_apps(analysis_result):
         units = list(app.units.values())
         if not units:
             logger.warning(
@@ -315,8 +316,8 @@ async def _verify_ceph_running_versions_consistent(analysis_result: Analysis) ->
         version_data = await ceph.get_versions(analysis_result.model, units[0].name)
         if len(version_data["overall"]) > 1:
             PlanStatus.add_message(
-                "Ceph mon sees mismatched versions in ceph daemons:\n"
-                "\n{json.dumps(version_data, indent=2)}\n\n"
+                f"Ceph mon ({units[0].name}) sees mismatched versions in ceph daemons:\n"
+                f"\n{json.dumps(version_data, indent=2)}\n\n"
                 "If this is unexpected, please stop the upgrade and manually investigate.",
                 MessageType.WARNING,
             )

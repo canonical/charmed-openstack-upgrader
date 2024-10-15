@@ -1765,3 +1765,77 @@ async def test_verify_model_idle_failed(mock_verify_model_idle, mock_analysis, m
     mock_verify_model_idle.side_effect = Exception()
     await cou_plan._verify_model_idle(mock_analysis)
     mock_plan_status.add_message.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.PlanStatus", autospec=True)
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.get_versions", autospec=True)
+async def test_verify_ceph_running_versions_inconsistent(
+    mock_get_versions, mock_analysis, mock_plan_status
+):
+    """Test _verify_ceph_running_versions_consistent (failure case)."""
+    # the scenario: two ceph clouds, both with inconsistent running versions
+    mock_analysis.apps_control_plane = [
+        MagicMock(charm="ceph-mon", units={"first/0": MagicMock(name="first/0")}),
+        MagicMock(charm="ceph-mon", units={"second/0": MagicMock(name="second/0")}),
+    ]
+    mock_get_versions.side_effect = [
+        {
+            "mon": {
+                # hashes truncated for brevity in tests
+                "ceph version 16.2.14 (238ba60) pacific (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 1,
+            },
+            "osd": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 18,
+            },
+            "overall": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.14 (238ba60) pacific (stable)": 5,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 20,
+            },
+        },
+        {
+            "mon": {"ceph version 16.2.15 (618f440) pacific (stable)": 1},
+            "osd": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 18,
+            },
+            "overall": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 20,
+            },
+        },
+    ]
+
+    await cou_plan._verify_ceph_running_versions_consistent(mock_analysis)
+
+    # verify that for this scenario, there is a plan warning message added
+    assert mock_plan_status.add_message.call_count == 2
+    assert "first" in mock_plan_status.add_message.call_args_list[0].args[0]
+    assert "mismatched versions" in mock_plan_status.add_message.call_args_list[0].args[0]
+    assert "pacific" in mock_plan_status.add_message.call_args_list[0].args[0]
+    assert mock_plan_status.add_message.call_args_list[0].args[1] == cou_plan.MessageType.WARNING
+    assert "second" in mock_plan_status.add_message.call_args_list[1].args[0]
+    assert "mismatched versions" in mock_plan_status.add_message.call_args_list[1].args[0]
+    assert "pacific" in mock_plan_status.add_message.call_args_list[1].args[0]
+    assert mock_plan_status.add_message.call_args_list[1].args[1] == cou_plan.MessageType.WARNING
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.PlanStatus", autospec=True)
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.get_versions", autospec=True)
+async def test_verify_ceph_running_versions_no_units(
+    mock_get_versions, mock_analysis, mock_plan_status
+):
+    """Test _verify_ceph_running_versions_consistent (no units edge case)."""
+    mock_analysis.apps_control_plane = [
+        MagicMock(charm="ceph-mon", units={}),
+    ]
+
+    await cou_plan._verify_ceph_running_versions_consistent(mock_analysis)
+
+    mock_plan_status.add_message.assert_not_called()

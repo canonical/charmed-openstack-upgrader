@@ -23,6 +23,7 @@ from cou.exceptions import (
     RunUpgradeError,
     UnitNotFound,
 )
+from cou.steps.analyze import Analysis
 from cou.utils.juju_utils import Application, Model, get_applications_by_charm_name
 from cou.utils.openstack import CEPH_RELEASES
 
@@ -268,16 +269,16 @@ async def set_require_osd_release_option(model: Model, apps: Sequence[Applicatio
         await set_require_osd_release_option_on_unit(model, ceph_mon_unit_name)
 
 
-def get_mon_apps(apps: Sequence[Application]) -> Sequence[Application]:
+def get_mon_apps(analysis: Analysis) -> Sequence[Application]:
     """Get a list of ceph-mon apps in the model.
 
-    :param apps: list of applications to search through for ceph-mon apps
-    :type apps: list[Application]
+    :param analysis: analysis object which contains a snapshot of the control plane apps
+    :type analysis: Analysis
     :return: list of ceph-mon applications
-    :rtype: list[Application]
+    :rtype: Sequence[Application]
     """
     try:
-        return get_applications_by_charm_name(apps, "ceph-mon")
+        return get_applications_by_charm_name(analysis.apps_control_plane, "ceph-mon")
     except ApplicationNotFound:
         return []
 
