@@ -44,8 +44,9 @@ async def backup(model: Model) -> Path:
     await model.run_on_unit(unit_name, f"chmod o+rx {basedir}")
 
     local_file = COU_DATA / os.path.basename(remote_file)
-    logger.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
+    logger.info("SCP from mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
     await model.scp_from_unit(unit_name, remote_file, str(local_file))
+    logger.info("Backup MySQL to %s", local_file)
 
     logger.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
     await model.run_on_unit(unit_name, f"chmod o-rx {basedir}")
