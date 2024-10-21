@@ -113,7 +113,7 @@ def test_version_range_raises_ValueError(lower, upper):
             [
                 ["ussuri", "victoria", "wallaby", "xena", "yoga"],
                 ["yoga", "zed", "antelope", "bobcat", "caracal"],
-                [],
+                ["caracal"],
             ],
         ),
         (
