@@ -14,11 +14,10 @@ are possible with **COU**.
    different-model
    interruption
    configure-connection
-   no-backup
    skip-upgrading-applications
    archive-old-data
    verbosity
    purge-data-on-shadow-table
    test-on-juju-openstack-provider
    watch-cou-logs
-   find-mysql-backup-file
+   backup

@@ -1,12 +1,24 @@
 ==========================================
-Plan/Upgrade without cloud database backup
+Backup database
 ==========================================
 
 By default, **COU** plans for and runs a backup step of the cloud database before
-proceeding to actual upgrade steps. This can be turned off with `--no-backup`  flag.
+proceeding to actual upgrade steps.
+
+Find mysql backup file
+~~~~~~~~~~~~~~~~~~~~~~
+
+The file is store under `$COU_DATA`, which is `/home/$USER/.local/share/cou` if `$USER` exists else current directory.
+
+
+Plan/Upgrade without cloud database backup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To plan/upgrade without backup, this can be turned off with `--no-backup` flag.
 
 Usage examples
---------------
+^^^^^^^^^^^^^^
+
 
 Plan:
 
