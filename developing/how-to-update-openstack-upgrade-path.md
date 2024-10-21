@@ -59,16 +59,43 @@ rmadison gnocchi
 rmadison bind9
 rmadison rabbitmq-server
 
-# The following are found in https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html
-# - mysql
-# - vault
-# - ovn
+# For example, the upper version for rabbitmq-server in Jammy/2023.2 (Bobcat) is
+# 3.9.27 + next major/minor/patch version, e.g. 3.10
 
-# The following are found in https://docs.ceph.com/en/latest/releases/
-# - ceph
-
-# The rest of the openstack components are found in https://releases.openstack.org/index.html
+root@enabling-stallion:~# rmadison rabbitmq-server
+ rabbitmq-server | 3.2.4-1                      | trusty           | source, all
+ rabbitmq-server | 3.2.4-1ubuntu0.1             | trusty-security  | source, all
+ rabbitmq-server | 3.2.4-1ubuntu0.1             | trusty-updates   | source, all
+ rabbitmq-server | 3.5.7-1                      | xenial           | source, all
+ rabbitmq-server | 3.5.7-1ubuntu0.16.04.2       | xenial-security  | source, all
+ rabbitmq-server | 3.5.7-1ubuntu0.16.04.4       | xenial-updates   | source, all
+ rabbitmq-server | 3.6.10-1                     | bionic           | source, all
+ rabbitmq-server | 3.6.10-1ubuntu0.5            | bionic-security  | source, all
+ rabbitmq-server | 3.6.10-1ubuntu0.5            | bionic-updates   | source, all
+ rabbitmq-server | 3.8.2-0ubuntu1~ubuntu18.04.1 | bionic-backports | source, all
+ rabbitmq-server | 3.8.2-0ubuntu1               | focal            | source, all
+ rabbitmq-server | 3.8.2-0ubuntu1.5             | focal-security   | source, all
+ rabbitmq-server | 3.8.2-0ubuntu1.5             | focal-updates    | source, all
+ rabbitmq-server | 3.8.3-0ubuntu0.1             | focal-proposed   | source, all
+ rabbitmq-server | 3.9.13-1                     | jammy            | source, all
+ rabbitmq-server | 3.9.13-1ubuntu0.22.04.2      | jammy-security   | source, all
+ rabbitmq-server | 3.9.13-1ubuntu0.22.04.2      | jammy-updates    | source, all
+ rabbitmq-server | 3.9.27-0ubuntu0.1            | jammy-proposed   | source, all
+ rabbitmq-server | 3.12.1-1ubuntu1              | noble            | source, all
+ rabbitmq-server | 3.12.1-1ubuntu1.1            | noble-proposed   | source, all
+ rabbitmq-server | 3.12.1-1ubuntu2              | oracular         | source, all
+ rabbitmq-server | 3.12.1-1ubuntu2              | plucky           | source, all
 ```
+
+The following are found in [charm delivery][5]
+- mysql
+- vault
+- ovn
+
+The following are found in [ceph release page][6]
+- ceph
+
+The rest of the openstack components are found in [release page][7]
 
 **Note**: Generally, the `upper_version` of the last release is unknown, we
 should use educated guess to set the `upper_version` (e.g. based on the past
