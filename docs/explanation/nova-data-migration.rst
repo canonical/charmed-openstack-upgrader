@@ -73,7 +73,7 @@ Make sure to check the details of database schema migrations and online data mig
 
 Performing **archive** and **purge** before the cloud upgrade or during a maintenance window is generally recommended, since it can
 
-- optimize the upgrade process
+- optimise the upgrade process
 - reduce the database size and disk usage
 - improve performance of database queries during cloud operation since the database is smaller
 
