@@ -24,7 +24,7 @@ If affected, refresh the manila-ganesha charm to its most recent version (within
 channel) and re-run COU.
 
 Rabbitmq Server
---------------
+---------------
 
 The rabbitmq-server charm must have `enable-auto-restarts=False` for **COU** to
 work properly due to the known charm bug.
