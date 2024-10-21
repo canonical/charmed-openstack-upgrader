@@ -27,6 +27,12 @@ in a sequential manner, performing upgrades on units within a single zone in par
 *all-in-one* method for upgrades. because its charm is designed to maintain service
 availability throughout the upgrade process.
 
+
+SRULP support
+~~~~~~~~~~~~~
+
+COU follows Charmed OpenStack's upgrade strategy. So SRULP is not supported by COU.
+
 .. LINKS
 .. _all-in-one: https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#perform-the-upgrade
 .. _paused-single-unit: https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#perform-the-upgrade
