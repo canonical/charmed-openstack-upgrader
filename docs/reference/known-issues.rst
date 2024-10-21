@@ -23,6 +23,19 @@ See `bug 2060751`_ for details.
 If affected, refresh the manila-ganesha charm to its most recent version (within the same release
 channel) and re-run COU.
 
+Rabbitmq Server
+--------------
+
+The rabbitmq-server charm must have `enable-auto-restarts=False` for **COU** to
+work properly due to the known charm bug.
+
+See `bug 2046381`_ for details.
+
+We suggest that users should temporarily set `enable-auto-restarts=False` when
+performing `cou upgrade`, and rollback to original setting after the upgrade is
+completed.
+
 .. LINKS:
 .. _Issues, charm procedures, and OpenStack upgrade notes: https://docs.openstack.org/charm-guide/latest/project/issues-and-procedures.html
 .. _bug 2060751: https://bugs.launchpad.net/charm-manila-ganesha/+bug/2060751
+.. _bug 2046381: https://bugs.launchpad.net/charm-rabbitmq-server/+bug/2046381
