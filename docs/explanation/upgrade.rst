@@ -28,10 +28,10 @@ in a sequential manner, performing upgrades on units within a single zone in par
 availability throughout the upgrade process.
 
 
-SRULP support
+SLURP support
 ~~~~~~~~~~~~~
 
-COU follows Charmed OpenStack's upgrade strategy. So SRULP is not supported by COU.
+COU aligns with Charmed OpenStack's upgrade strategy. Since Charmed OpenStack does not support SLURP, COU also does not provide support for it.
 
 .. LINKS
 .. _all-in-one: https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#perform-the-upgrade
