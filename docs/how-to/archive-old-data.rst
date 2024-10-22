@@ -4,7 +4,7 @@ Archive old data
 
 By default, **COU** plans for and runs an archive step
 before proceeding to actual upgrade steps.
-This can be turned off with the `--no-archive` flag.
+This can be turned off with the ``no-archive`` flag.
 
 This archive step is a performance optimisation,
 moving data for soft deleted nova instances into a shadow table.
@@ -12,7 +12,7 @@ moving data for soft deleted nova instances into a shadow table.
 The archiving is run in batches.
 The default batch size is 1000.
 On some clouds, it may be desirable to reduce the batch size to reduce database load.
-The batch size can be configured with `--archive-batch-size N`, where `N` is a positive integer.
+The batch size can be configured with ``archive-batch-size <size>`` where ``size`` is a positive integer.
 
 Usage examples
 --------------
@@ -52,7 +52,7 @@ More information
 ----------------
 
 - `nova-cloud-controller charm actions`_
-- `nova-manage reference`_ - see `archive_deleted_rows` subcommand
+- `nova-manage reference`_ - see ``archive_deleted_rows`` subcommand
 - OpenStack upgrade guide information on `archiving old database data`_
 - :doc:`Purge data on shadow table <purge-data-on-shadow-table>`
 - :doc:`Nova data migration <../explanation/nova-data-migration>`
