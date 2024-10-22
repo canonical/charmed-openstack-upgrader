@@ -49,6 +49,8 @@ async def backup(model: Model) -> Path:
 
     # Note: a spinner is already running when this function is called,
     # so to cleanly print text, we can use .info(), then restart the spinner.
+    # Not using `print` directly, because that will cause corrupted output
+    # while the spinner is running.
     # info() stop the current spinner and print the text with symbol ℹ.
     progress_indicator.info(f"Backed up MySQL to {local_file}")
     # Restart the spinner with previous text
