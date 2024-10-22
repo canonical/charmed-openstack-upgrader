@@ -46,7 +46,7 @@ the debian package `bind9`, and we can use `rmadison bind9` to find all the
 versions for charm `designate-bind`. Similarly, for charm `gnocchi`, the
 versions can be found using `cmadison gnocchi`.
 
-The list of package need to be updated are:
+The list of packages need to be updated are:
 
 ```shell
 # Install rmadison
@@ -54,13 +54,14 @@ apt install devscripts
 # Install cmadison
 snap install cmadison
 
-# Find the upper version for the specific releases
+# For the following packages, guess an appropriate upper version for the
+specific release from the list
 rmadison gnocchi
 rmadison bind9
 rmadison rabbitmq-server
 
 # For example, the upper version for rabbitmq-server in Jammy/2023.2 (Bobcat) is
-# 3.9.27 + next major/minor/patch version, e.g. 3.10
+# 3.9.27, an educated guess for the upper version will be 3.10.
 
 root@enabling-stallion:~# rmadison rabbitmq-server
  rabbitmq-server | 3.2.4-1                      | trusty           | source, all
@@ -87,12 +88,14 @@ root@enabling-stallion:~# rmadison rabbitmq-server
  rabbitmq-server | 3.12.1-1ubuntu2              | plucky           | source, all
 ```
 
-The following are found in [charm delivery][5]
+For the following packages, the upper version can be found found in [charm
+delivery][5]
 - mysql
 - vault
 - ovn
 
-The following are found in [ceph release page][6]
+For `ceph` packages, the upper version can be found found in [ceph release
+page][6]
 - ceph
 
 The rest of the openstack components are found in [release page][7]
