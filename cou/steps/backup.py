@@ -47,8 +47,9 @@ async def backup(model: Model) -> Path:
     logger.info("SCP from mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
     await model.scp_from_unit(unit_name, remote_file, str(local_file))
 
-    # info() stop the current spinner and print the text with
-    # symbol ℹ.
+    # Note: a spinner is already running when this function is called,
+    # so to cleanly print text, we can use .info(), then restart the spinner.
+    # info() stop the current spinner and print the text with symbol ℹ.
     progress_indicator.info(f"Backed up MySQL to {local_file}")
     # Restart the spinner with previous text
     progress_indicator.start()
