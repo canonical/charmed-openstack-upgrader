@@ -4,7 +4,7 @@ Archive old data
 
 By default, **COU** plans for and runs an archive step
 before proceeding to actual upgrade steps.
-This can be turned off with the ``no-archive`` flag.
+This can be turned off with the ``--no-archive`` flag.
 
 This archive step is a performance optimisation,
 moving data for soft deleted nova instances into a shadow table.

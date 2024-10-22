@@ -66,12 +66,12 @@ There are only two online migration cases after Victoria:
 db archive_deleted_rows
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-When an instance is deleted, an entry will still be kept in the active table but marked as **deleted**. This command will move those entries from the active table to the shadow table.
+When an instance is deleted, an entry will still be kept in the active table but marked as **deleted**. This command will move those entries from the active table to the shadow table, and improve the performance of queries over the the active tables.
 
 db purge
 ~~~~~~~~
 
-This command will remove the entries in the shadow table.
+This command will remove the entries in the shadow table, and reduce the size of the database.
 
 On COU
 ------
@@ -85,14 +85,14 @@ Generally, the data migration operation load is not too high, as observed from p
 
     Performing ``archive`` and ``purge`` before the cloud upgrade or during a
     maintenance window is generally **recommended**, since metadata of deleted
-    instances will still be remained in the active table of the database and
-    can grow unbounded. A large active table can slow down database queries
-    during cloud operation and affect the upgrade process.
+    instances remain in the active table of the database, and so the database
+    size can grow unbounded. A large active table can slow down database
+    queries during cloud operation and affect the upgrade process.
 
 
 Make sure to check the details of database schema migrations and online data migrations before each upgrade.
 
-Please refer to the following documents on how to run :doc:`archive <../how-to/archive-old-data>` and :doc:`purge <../how-to/purge-data-on-shadow-table>` step in **COU**.
+Please refer to :doc:`archive <../how-to/archive-old-data>` and :doc:`purge <../how-to/purge-data-on-shadow-table>` in **COU**.
 
 More Information
 ----------------
