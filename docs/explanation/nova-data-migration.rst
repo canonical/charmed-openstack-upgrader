@@ -85,14 +85,14 @@ Generally, the data migration operation load is not too high, as observed from p
 
     Performing ``archive`` and ``purge`` before the cloud upgrade or during a
     maintenance window is generally **recommended**, since metadata of deleted
-    instances will still be remained in the active table of the database, and
+    instances will still be remained in the active table of the database and
     can grow unbounded. A large active table can slow down database queries
     during cloud operation and affect the upgrade process.
 
 
 Make sure to check the details of database schema migrations and online data migrations before each upgrade.
 
-Please refer to the following documentation on how to run :doc:`archive <../how-to/archive-old-data>` and :doc:`purge <../how-to/purge-data-on-shadow-table>` step in **COU**.
+Please refer to the following documents on how to run :doc:`archive <../how-to/archive-old-data>` and :doc:`purge <../how-to/purge-data-on-shadow-table>` step in **COU**.
 
 More Information
 ----------------
