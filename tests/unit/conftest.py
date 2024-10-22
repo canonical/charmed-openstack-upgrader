@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 import pytest
 
 from cou.commands import CLIargs
+from cou.steps.plan import PlanStatus
 from cou.utils.juju_utils import Model
 from tests.unit.utils import get_charm_name, get_status
 
@@ -58,3 +59,10 @@ def cli_args() -> MagicMock:
     """
     # spec_set needs an instantiated class to be strict with the fields.
     return MagicMock(spec_set=CLIargs(command="plan"))()
+
+
+@pytest.fixture(autouse=True)
+def plan_status() -> None:
+    """Get an empty PlanStatus for every test case."""
+    PlanStatus.error_messages = []
+    PlanStatus.warning_messages = []

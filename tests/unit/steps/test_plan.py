@@ -49,7 +49,7 @@ from cou.steps.nova_cloud_controller import archive, purge
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import dedent_plan, generate_cou_machine
+from tests.unit.utils import dedent_plan, generate_cou_machine, get_applications
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
@@ -487,7 +487,8 @@ nova-compute/0
 
     upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
-    assert len(cou_plan.PlanStatus.warning_messages) == 2  # keystone warning and set_noout
+    assert len(cou_plan.PlanStatus.error_messages) == 1  # set_noout error
+    assert len(cou_plan.PlanStatus.warning_messages) == 1  # keystone mismatch warning
 
 
 def test_PlanStatus_warnings_property():
@@ -510,7 +511,9 @@ def test_PlanStatus_warnings_property():
 @patch("cou.steps.plan._verify_supported_series")
 @patch("cou.steps.plan._verify_highest_release_achieved")
 @patch("cou.steps.plan._verify_data_plane_ready_to_upgrade")
+@patch("cou.steps.plan._verify_nova_cloud_controller_scheduler_default_filters")
 async def test_pre_plan_sanity_checks(
+    mock_verify_nova_cloud_controller_scheduler_default_filters,
     mock_verify_data_plane_ready_to_upgrade,
     mock_verify_highest_release_achieved,
     mock_verify_supported_series,
@@ -528,6 +531,9 @@ async def test_pre_plan_sanity_checks(
     mock_verify_supported_series.assert_called_once_with(mock_analysis_result)
     mock_verify_data_plane_ready_to_upgrade.assert_called_once_with(cli_args, mock_analysis_result)
     mock_verify_hypervisors_cli_input.assert_called_once_with(cli_args, mock_analysis_result)
+    mock_verify_nova_cloud_controller_scheduler_default_filters.assert_called_once_with(
+        cli_args, mock_analysis_result
+    )
     mock_verify_vault_is_unsealed.assert_awaited_once_with(mock_analysis_result)
     mock_verify_osd_noout_unset.assert_awaited_once_with(mock_analysis_result)
     mock_verify_model_idle.assert_awaited_once_with(mock_analysis_result)
@@ -539,14 +545,12 @@ async def test_pre_plan_sanity_checks(
         (
             OpenStackRelease("caracal"),
             "noble",
-            "Cloud series 'noble' is not a Ubuntu LTS series supported by COU. "
-            "The supporting series are: focal, jammy",
+            "Cloud series 'noble' is not a Ubuntu LTS series supported by COU. ",
         ),
         (
             OpenStackRelease("train"),
             "bionic",
-            "Cloud series 'bionic' is not a Ubuntu LTS series supported by COU. "
-            "The supporting series are: focal, jammy",
+            "Cloud series 'bionic' is not a Ubuntu LTS series supported by COU. ",
         ),
     ],
 )
@@ -555,7 +559,7 @@ def test_verify_supported_series(o7k_release, current_series, exp_error_msg):
     mock_analysis_result.current_cloud_o7k_release = o7k_release
     mock_analysis_result.current_cloud_series = current_series
     cou_plan._verify_supported_series(mock_analysis_result)
-    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
+    assert exp_error_msg in cou_plan.PlanStatus.error_messages[0]
 
 
 @pytest.mark.parametrize(
@@ -579,7 +583,66 @@ def test_verify_highest_release_achieved(o7k_release, series):
         "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series-openstack.html"
     )
     cou_plan._verify_highest_release_achieved(mock_analysis_result)
-    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
+    assert cou_plan.PlanStatus.error_messages[0] == exp_error_msg
+
+
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_failed(
+    mock_get_applications_by_charm_name, cli_args
+):
+    app_count = 2
+    cli_args.upgrade_group = CONTROL_PLANE
+    nova_cloud_controllers = get_applications("nova-cloud-controller", app_count=app_count)
+    for nova_cloud_controller in nova_cloud_controllers:
+        nova_cloud_controller.config = {"scheduler-default-filters": "AvailabilityZoneFilter"}
+    mock_get_applications_by_charm_name.return_value = nova_cloud_controllers
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("antelope")
+    exp_error_msg = (
+        "Upgrade from 'antelope' to 'bobcat' is not possible "
+        "if `AvailabilityZoneFilter` is in `scheduler-default-filters` option"
+    )
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    print(nova_cloud_controllers[1].config)
+    print(cou_plan.PlanStatus.error_messages)
+    for i in range(app_count):
+        assert exp_error_msg in cou_plan.PlanStatus.error_messages[i]
+
+
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_skip_upgrade_group(
+    mock_get_applications_by_charm_name, cli_args
+):
+    app_count = 2
+    cli_args.upgrade_group = DATA_PLANE
+    mock_get_applications_by_charm_name.return_value = get_applications(
+        "nova-cloud-controller", app_count=app_count
+    )
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("antelope")
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    assert not cou_plan.PlanStatus.error_messages
+
+
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_skip_not_antelope(
+    mock_get_applications_by_charm_name, cli_args
+):
+    app_count = 2
+    cli_args.upgrade_group = DATA_PLANE
+    mock_get_applications_by_charm_name.return_value = get_applications(
+        "nova-cloud-controller", app_count=app_count
+    )
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("yoga")  # not antelope
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    assert not cou_plan.PlanStatus.error_messages
 
 
 @pytest.mark.parametrize(
@@ -588,7 +651,7 @@ def test_verify_highest_release_achieved(o7k_release, series):
         (
             OpenStackRelease("ussuri"),
             OpenStackRelease("ussuri"),
-            "Please, upgrade control-plane before data-plane",
+            "Please upgrade control-plane before data-plane",
         ),
         (
             OpenStackRelease("ussuri"),
@@ -606,7 +669,7 @@ def test_verify_data_plane_ready_to_upgrade_error(
     mock_analysis_result.min_o7k_version_control_plane = min_o7k_version_control_plane
     mock_analysis_result.min_o7k_version_data_plane = min_o7k_version_data_plane
     cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
-    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
+    assert exp_error_msg in cou_plan.PlanStatus.error_messages[0]
 
 
 @pytest.mark.parametrize("upgrade_group", [DATA_PLANE, HYPERVISORS])
