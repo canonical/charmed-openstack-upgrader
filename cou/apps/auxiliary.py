@@ -336,7 +336,7 @@ class RabbitMQServer(AuxiliaryApplication):
                 "`enable-auto-restarts` must be `False` due to "
                 "https://bugs.launchpad.net/charm-rabbitmq-server/+bug/2046381 "
                 f"Please run `juju config {self.name} enable-auto-restarts=False` "
-                "when performing upgrades and rollback to original value when "
+                "before performing upgrades and rollback to original value after "
                 "upgrade is completed"
             )
 
