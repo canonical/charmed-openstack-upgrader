@@ -66,7 +66,7 @@ There are only two online migration cases after Victoria:
 db archive_deleted_rows
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-When an instance is deleted, an entry will still be kept in the active table but marked as **deleted**. This command will move those entries from the active table to the shadow table, and improve the performance of queries over the the active tables.
+When an instance is deleted, an entry will still be kept in the active table but marked as **deleted**. This command will move those entries from the active table to the shadow table, and hence improve the performance of queries over the active table.
 
 db purge
 ~~~~~~~~
