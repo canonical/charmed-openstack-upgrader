@@ -115,7 +115,7 @@ async def verify_cloud(analysis_result: Analysis, args: CLIargs) -> None:
     _verify_highest_release_achieved(analysis_result)
     _verify_data_plane_ready_to_upgrade(args, analysis_result)
     _verify_hypervisors_cli_input(args, analysis_result)
-    _verify_nova_cloud_controller_scheduler_default_filters(args, analysis_result)
+    _verify_nova_cloud_controller_scheduler_default_filters(analysis_result)
     await _verify_vault_is_unsealed(analysis_result)
     await _verify_osd_noout_unset(analysis_result)
     await _verify_model_idle(analysis_result)
@@ -243,22 +243,15 @@ def _verify_highest_release_achieved(analysis_result: Analysis) -> None:
         )
 
 
-def _verify_nova_cloud_controller_scheduler_default_filters(
-    args: CLIargs, analysis_result: Analysis
-) -> None:
+def _verify_nova_cloud_controller_scheduler_default_filters(analysis_result: Analysis) -> None:
     """Verify scheduler_default_filters option is set correctly for each OpenStack release.
 
-    :param args: CLI arguments
-    :type args: CLIargs
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
-    if args.upgrade_group != CONTROL_PLANE:
-        return
-
     curr_release = analysis_result.current_cloud_o7k_release
     nova_cloud_controllers = get_applications_by_charm_name(
-        analysis_result.apps_control_plane, "nova-cloud-controller"
+        analysis_result.apps, "nova-cloud-controller"
     )
     for nova_cloud_controller in nova_cloud_controllers:
         config = nova_cloud_controller.config.get("scheduler-default-filters", "")
