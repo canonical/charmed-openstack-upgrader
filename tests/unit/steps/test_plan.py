@@ -532,7 +532,7 @@ async def test_pre_plan_sanity_checks(
     mock_verify_data_plane_ready_to_upgrade.assert_called_once_with(cli_args, mock_analysis_result)
     mock_verify_hypervisors_cli_input.assert_called_once_with(cli_args, mock_analysis_result)
     mock_verify_nova_cloud_controller_scheduler_default_filters.assert_called_once_with(
-        mock_analysis_result
+        cli_args, mock_analysis_result
     )
     mock_verify_vault_is_unsealed.assert_awaited_once_with(mock_analysis_result)
     mock_verify_osd_noout_unset.assert_awaited_once_with(mock_analysis_result)
@@ -588,9 +588,10 @@ def test_verify_highest_release_achieved(o7k_release, series):
 
 @patch("cou.steps.plan.get_applications_by_charm_name")
 def test_verify_nova_cloud_controller_scheduler_default_filters_failed(
-    mock_get_applications_by_charm_name,
+    mock_get_applications_by_charm_name, cli_args
 ):
     app_count = 2
+    cli_args.upgrade_group = CONTROL_PLANE
     nova_cloud_controllers = get_applications("nova-cloud-controller", app_count=app_count)
     for nova_cloud_controller in nova_cloud_controllers:
         nova_cloud_controller.config = {"scheduler-default-filters": "AvailabilityZoneFilter"}
@@ -601,22 +602,46 @@ def test_verify_nova_cloud_controller_scheduler_default_filters_failed(
         "Upgrade from 'antelope' to 'bobcat' is not possible "
         "if `AvailabilityZoneFilter` is in `scheduler-default-filters` option"
     )
-    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(mock_analysis_result)
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    print(nova_cloud_controllers[1].config)
+    print(cou_plan.PlanStatus.error_messages)
     for i in range(app_count):
         assert exp_error_msg in cou_plan.PlanStatus.error_messages[i]
 
 
 @patch("cou.steps.plan.get_applications_by_charm_name")
-def test_verify_nova_cloud_controller_scheduler_default_filters_skip_not_antelope(
-    mock_get_applications_by_charm_name,
+def test_verify_nova_cloud_controller_scheduler_default_filters_skip_upgrade_group(
+    mock_get_applications_by_charm_name, cli_args
 ):
     app_count = 2
+    cli_args.upgrade_group = DATA_PLANE
+    mock_get_applications_by_charm_name.return_value = get_applications(
+        "nova-cloud-controller", app_count=app_count
+    )
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("antelope")
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    assert not cou_plan.PlanStatus.error_messages
+
+
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_skip_not_antelope(
+    mock_get_applications_by_charm_name, cli_args
+):
+    app_count = 2
+    cli_args.upgrade_group = DATA_PLANE
     mock_get_applications_by_charm_name.return_value = get_applications(
         "nova-cloud-controller", app_count=app_count
     )
     mock_analysis_result = MagicMock(spec=Analysis)()
     mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("yoga")  # not antelope
-    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(mock_analysis_result)
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
     assert not cou_plan.PlanStatus.error_messages
 
 
