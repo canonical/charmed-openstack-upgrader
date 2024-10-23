@@ -41,6 +41,7 @@ from cou.apps.subordinate import SubordinateApplication  # noqa: F401
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     ApplicationError,
+    ApplicationNotFound,
     COUException,
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
@@ -256,10 +257,18 @@ def _verify_nova_cloud_controller_scheduler_default_filters(
     if args.upgrade_group not in {CONTROL_PLANE, None}:
         return
 
+    try:
+        nova_cloud_controllers = get_applications_by_charm_name(
+            analysis_result.apps_control_plane, "nova-cloud-controller"
+        )
+    except ApplicationNotFound:
+        PlanStatus.add_message(
+            "Cannot find nova-cloud-controller apps. Is this a valid OpenStack cloud?",
+            MessageType.WARNING,
+        )
+        return
+
     curr_release = analysis_result.current_cloud_o7k_release
-    nova_cloud_controllers = get_applications_by_charm_name(
-        analysis_result.apps_control_plane, "nova-cloud-controller"
-    )
     for nova_cloud_controller in nova_cloud_controllers:
         config = nova_cloud_controller.config.get("scheduler-default-filters", "")
         if curr_release == "antelope" and "AvailabilityZoneFilter" in config:

@@ -23,6 +23,7 @@ from cou.apps.subordinate import SubordinateApplication
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     ApplicationError,
+    ApplicationNotFound,
     COUException,
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
@@ -611,6 +612,25 @@ def test_verify_nova_cloud_controller_scheduler_default_filters_failed(
     )
     for i in range(app_count):
         assert exp_error_msg in cou_plan.PlanStatus.error_messages[i]
+
+
+@pytest.mark.parametrize(
+    "upgrade_group",
+    [CONTROL_PLANE, None],
+)
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_missing_app(
+    mock_get_applications_by_charm_name, upgrade_group, cli_args
+):
+    cli_args.upgrade_group = upgrade_group
+    mock_get_applications_by_charm_name.side_effect = ApplicationNotFound
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("antelope")
+    exp_error_msg = "Cannot find nova-cloud-controller apps"
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    assert exp_error_msg in cou_plan.PlanStatus.warning_messages[0]
 
 
 @patch("cou.steps.plan.get_applications_by_charm_name")
