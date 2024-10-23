@@ -586,12 +586,16 @@ def test_verify_highest_release_achieved(o7k_release, series):
     assert cou_plan.PlanStatus.error_messages[0] == exp_error_msg
 
 
+@pytest.mark.parametrize(
+    "upgrade_group",
+    [CONTROL_PLANE, None],
+)
 @patch("cou.steps.plan.get_applications_by_charm_name")
 def test_verify_nova_cloud_controller_scheduler_default_filters_failed(
-    mock_get_applications_by_charm_name, cli_args
+    mock_get_applications_by_charm_name, upgrade_group, cli_args
 ):
     app_count = 2
-    cli_args.upgrade_group = CONTROL_PLANE
+    cli_args.upgrade_group = upgrade_group
     nova_cloud_controllers = get_applications("nova-cloud-controller", app_count=app_count)
     for nova_cloud_controller in nova_cloud_controllers:
         nova_cloud_controller.config = {"scheduler-default-filters": "AvailabilityZoneFilter"}
@@ -605,8 +609,6 @@ def test_verify_nova_cloud_controller_scheduler_default_filters_failed(
     cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
         cli_args, mock_analysis_result
     )
-    print(nova_cloud_controllers[1].config)
-    print(cou_plan.PlanStatus.error_messages)
     for i in range(app_count):
         assert exp_error_msg in cou_plan.PlanStatus.error_messages[i]
 
@@ -633,7 +635,7 @@ def test_verify_nova_cloud_controller_scheduler_default_filters_skip_not_antelop
     mock_get_applications_by_charm_name, cli_args
 ):
     app_count = 2
-    cli_args.upgrade_group = DATA_PLANE
+    cli_args.upgrade_group = CONTROL_PLANE
     mock_get_applications_by_charm_name.return_value = get_applications(
         "nova-cloud-controller", app_count=app_count
     )

@@ -253,7 +253,7 @@ def _verify_nova_cloud_controller_scheduler_default_filters(
     :param analysis_result: Analysis result.
     :type analysis_result: Analysis
     """
-    if args.upgrade_group != CONTROL_PLANE:
+    if args.upgrade_group not in {CONTROL_PLANE, None}:
         return
 
     curr_release = analysis_result.current_cloud_o7k_release
