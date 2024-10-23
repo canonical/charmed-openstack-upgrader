@@ -901,7 +901,7 @@ def test_parse_args_raise_exception(mock_error, args):
     with pytest.raises(SystemExit):
         commands.parse_args(args)
     mock_error.assert_called_once()
-    assert "unrecognized arguments" in mock_error.call_args[0][1]
+    assert "unrecognized arguments" in str(mock_error.call_args)
 
 
 def test_capitalize_usage_prefix():
