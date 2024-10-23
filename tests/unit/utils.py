@@ -54,6 +54,7 @@ def get_applications(
         app = MagicMock(spec_set=Application)()
         app.name = f"{charm_name}-{i}"
         app.charm = charm_name
+        app.config = {}
         units = {}
         for j in range(unit_count):
             unit = MagicMock(spec_set=Unit)()
