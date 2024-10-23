@@ -179,9 +179,19 @@ plan: |
                     Ψ Upgrade software packages on unit 'rabbitmq-server/2'
                 Refresh 'rabbitmq-server' to the latest revision of '3.8/stable'
                 Wait for up to 300s for app 'rabbitmq-server' to reach the idle state
+                Execute run-deferred-hooks for all 'rabbitmq-server' units to clear any leftover events
+                    Execute run-deferred-hooks on unit: 'rabbitmq-server/0'
+                    Execute run-deferred-hooks on unit: 'rabbitmq-server/1'
+                    Execute run-deferred-hooks on unit: 'rabbitmq-server/2'
+                Wait for up to 2400s for app 'rabbitmq-server' to reach the idle state
                 Upgrade 'rabbitmq-server' from '3.8/stable' to the new channel: '3.9/stable'
                 Wait for up to 300s for app 'rabbitmq-server' to reach the idle state
                 Change charm config of 'rabbitmq-server' 'source' to 'cloud:focal-victoria'
+                Wait for up to 2400s for app 'rabbitmq-server' to reach the idle state
+                Execute run-deferred-hooks for all 'rabbitmq-server' units to restart the service after upgrade
+                    Execute run-deferred-hooks on unit: 'rabbitmq-server/0'
+                    Execute run-deferred-hooks on unit: 'rabbitmq-server/1'
+                    Execute run-deferred-hooks on unit: 'rabbitmq-server/2'
                 Wait for up to 2400s for model '9eb9af6a-b919-4cf9-8f2f-9df16a1556be' to reach the idle state
                 Verify that the workload of 'rabbitmq-server' has been upgraded on units: rabbitmq-server/0, rabbitmq-server/1, rabbitmq-server/2
             Upgrade plan for 'ceph-mon' to 'victoria'
@@ -539,7 +549,7 @@ applications:
           '
         source: user
         type: boolean
-        value: true
+        value: false
       source:
         description: "Optional configuration to support use of additional sources such\
           \ as:\n.\n  - ppa:myteam/ppa\n  - cloud:xenial-proposed/ocata\n  - http://my.archive.com/ubuntu\
