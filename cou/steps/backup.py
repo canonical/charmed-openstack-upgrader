@@ -18,7 +18,7 @@ import os
 from pathlib import Path
 
 from cou.exceptions import UnitNotFound
-from cou.utils import COU_DATA
+from cou.utils import COU_DATA, progress_indicator
 from cou.utils.juju_utils import Model
 
 logger = logging.getLogger(__name__)
@@ -44,8 +44,17 @@ async def backup(model: Model) -> Path:
     await model.run_on_unit(unit_name, f"chmod o+rx {basedir}")
 
     local_file = COU_DATA / os.path.basename(remote_file)
-    logger.info("SCP from  mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
+    logger.info("SCP from mysql-innodb-cluster:%s to %s ...", remote_file, local_file)
     await model.scp_from_unit(unit_name, remote_file, str(local_file))
+
+    # Note: a spinner is already running when this function is called,
+    # so to cleanly print text, we can use .info(), then restart the spinner.
+    # Not using `print` directly, because that will cause corrupted output
+    # while the spinner is running.
+    # info() stop the current spinner and print the text with symbol ℹ.
+    progress_indicator.info(f"Backed up MySQL to {local_file}")
+    # Restart the spinner with previous text
+    progress_indicator.start()
 
     logger.info("Remove permissions to read mysql-innodb-cluster:%s ...", basedir)
     await model.run_on_unit(unit_name, f"chmod o-rx {basedir}")
