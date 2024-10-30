@@ -42,6 +42,7 @@ from cou.apps.subordinate import SubordinateApplication  # noqa: F401
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     ApplicationError,
+    ApplicationNotFound,
     COUException,
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
@@ -56,7 +57,12 @@ from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
 from cou.utils import print_and_debug
-from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit
+from cou.utils.juju_utils import (
+    DEFAULT_TIMEOUT,
+    Machine,
+    Unit,
+    get_applications_by_charm_name,
+)
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 
@@ -111,6 +117,7 @@ async def verify_cloud(analysis_result: Analysis, args: CLIargs) -> None:
     _verify_highest_release_achieved(analysis_result)
     _verify_data_plane_ready_to_upgrade(args, analysis_result)
     _verify_hypervisors_cli_input(args, analysis_result)
+    _verify_nova_cloud_controller_scheduler_default_filters(args, analysis_result)
     await _verify_vault_is_unsealed(analysis_result)
     await _verify_ceph_running_versions_consistent(analysis_result)
     await _verify_osd_noout_unset(analysis_result)
@@ -254,6 +261,45 @@ def _verify_highest_release_achieved(analysis_result: Analysis) -> None:
             "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series-openstack.html",
             MessageType.ERROR,
         )
+
+
+def _verify_nova_cloud_controller_scheduler_default_filters(
+    args: CLIargs, analysis_result: Analysis
+) -> None:
+    """Verify scheduler_default_filters option is set correctly for each OpenStack release.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    :param analysis_result: Analysis result.
+    :type analysis_result: Analysis
+    """
+    if args.upgrade_group not in {CONTROL_PLANE, None}:
+        return
+
+    try:
+        nova_cloud_controllers = get_applications_by_charm_name(
+            analysis_result.apps_control_plane, "nova-cloud-controller"
+        )
+    except ApplicationNotFound:
+        PlanStatus.add_message(
+            "Cannot find nova-cloud-controller apps. Is this a valid OpenStack cloud?",
+            MessageType.WARNING,
+        )
+        return
+
+    curr_release = analysis_result.current_cloud_o7k_release
+    for nova_cloud_controller in nova_cloud_controllers:
+        config = nova_cloud_controller.config.get("scheduler-default-filters", "")
+        if curr_release == "antelope" and "AvailabilityZoneFilter" in config:
+            PlanStatus.add_message(
+                f"Upgrade from '{curr_release}' to 'bobcat' is not possible "
+                "if `AvailabilityZoneFilter` is in `scheduler-default-filters` option for app: "
+                f"{nova_cloud_controller.name}. \n"
+                "This is because `AvailabilityZoneFilter` is removed from the filters: "
+                "https://docs.openstack.org/charm-guide/latest/release-notes/2023.2-bobcat.html"
+                "#nova-availabilityzonefilter-removal-in-2023-2",
+                MessageType.ERROR,
+            )
 
 
 def _verify_data_plane_ready_to_upgrade(args: CLIargs, analysis_result: Analysis) -> None:
