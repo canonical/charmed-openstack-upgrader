@@ -41,7 +41,10 @@ async def get_empty_hypervisors(units: list[Unit], model: Model) -> list[Machine
 
     if skipped_units:
         logger.warning(
-            "Found non-empty hypervisors: %s", sorted(skipped_units, key=lambda unit: unit.name)
+            "Found non-empty hypervisors (hypervisors with VMs still scheduled on them): %s. "
+            "Upgrade will be skipped for these units to avoid downtime. "
+            "Use the --force flag on cou to upgrade these anyway (not recommended on production).",
+            sorted(skipped_units, key=lambda unit: unit.name),
         )
     logger.info("Selected hypervisors: %s", sorted(empty_units, key=lambda unit: unit.name))
 

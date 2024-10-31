@@ -7,15 +7,17 @@ This document explains the details of the database migration for nova-cloud-cont
 nova-cloud-controller Database Migration Details
 ------------------------------------------------
 
-When users upgrade the Juju application nova-cloud-controller, the commands **nova-manage db sync** and **nova-manage db online_data_migration** will be executed.
+When users upgrade the Juju application nova-cloud-controller, the commands ``nova-manage db sync`` and ``nova-manage db online_data_migration`` will be executed. In addition, **COU** supports running ``nova-manage db archive_deleted_rows`` and ``nova-manage db purge`` to enhance the performance of data migration.
 
-* **nova-manage db sync** - Upgrades the main database schema to the most recent version.
-* **nova-manage db online_data_migration** - Performs data migration to update all live data.
+* ``nova-manage db sync`` - Upgrades the main database schema to the most recent version.
+* ``nova-manage db online_data_migration`` - Performs data migration to update all live data.
+* ``nova-manage db archive_deleted_rows`` - Moves deleted rows from production tables to shadow tables.
+* ``nova-manage db purge`` - Deletes rows from shadow tables.
 
 db sync
 ~~~~~~~
 
-Before the Yoga version, nova-cloud-controller used SQLAlchemy to handle database migrations. Starting from Yoga, it switched to Alembic, a migrations tool for SQLAlchemy.
+Before the Yoga version, nova-cloud-controller used **SQLAlchemy** to handle database migrations. Starting from Yoga, it switched to **Alembic**, a migrations tool for **SQLAlchemy**.
 
 Below is a table showing the migration versions from Ussuri to Caracal.
 
@@ -61,15 +63,36 @@ There are only two online migration cases after Victoria:
 - ``pci_device_obj.PciDevice.populate_dev_uuids``, added in Victoria
 - ``instance_obj.populate_instance_compute_id``, added in 2023.2
 
+db archive_deleted_rows
+~~~~~~~~~~~~~~~~~~~~~~~
+
+When an instance is deleted, an entry will still be kept in the active table but marked as **deleted**. This command will move those entries from the active table to the shadow table, and hence improve the performance of queries over the active table.
+
+db purge
+~~~~~~~~
+
+This command will remove the entries in the shadow table, and reduce the size of the database.
+
 On COU
 ------
 
-Generally, the data migration operation load is not too high, as observed from previous information. COU provides two optional steps, **purge** and **archive**, to reduce the possible load during the upgrade. These two COU steps run the following commands on the nova-cloud-controller Juju unit:
+Generally, the data migration operation load is not too high, as observed from previous information. **COU** provides two optional steps, ``archive`` and ``purge`` to reduce the possible load during the upgrade. These two steps run the following commands on the nova-cloud-controller Juju unit respectively:
 
-* **db archive_deleted_rows** - Run during the archive step; this command moves deleted rows from production tables to shadow tables.
-* **db purge** - Run during the purge step; this command deletes rows from shadow tables.
+* ``db archive_deleted_rows``
+* ``db purge``
+
+.. tip::
+
+    Performing ``archive`` and ``purge`` before the cloud upgrade or during a
+    maintenance window is generally **recommended**, since metadata of deleted
+    instances remain in the active table of the database, and so the database
+    size can grow unbounded. A large active table can slow down database
+    queries during cloud operation and affect the upgrade process.
+
 
 Make sure to check the details of database schema migrations and online data migrations before each upgrade.
+
+Please refer to :doc:`archive <../how-to/archive-old-data>` and :doc:`purge <../how-to/purge-data-on-shadow-table>` in **COU**.
 
 More Information
 ----------------

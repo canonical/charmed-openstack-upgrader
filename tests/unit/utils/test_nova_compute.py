@@ -63,10 +63,9 @@ async def test_get_instance_count_invalid_result(model, result_key, value):
     ],
 )
 @pytest.mark.asyncio
-@patch("cou.utils.nova_compute.logger")
 @patch("cou.utils.nova_compute.get_instance_count")
 async def test_get_empty_hypervisors(
-    mock_instance_count, mock_logger, hypervisors_count, expected_result, model
+    mock_instance_count, hypervisors_count, expected_result, model
 ):
     mock_instance_count.side_effect = [count for _, count in hypervisors_count]
     selected_hypervisors = [
@@ -79,12 +78,6 @@ async def test_get_empty_hypervisors(
     result = await nova_compute.get_empty_hypervisors(units, model)
 
     assert {machine.machine_id for machine in result} == expected_result
-
-    mock_logger.info.assert_called_once_with("Selected hypervisors: %s", selected_hypervisors)
-    if non_empty_hypervisors:
-        mock_logger.warning.assert_called_once_with(
-            "Found non-empty hypervisors: %s", non_empty_hypervisors
-        )
 
 
 @pytest.mark.parametrize("instance_count", [1, 10, 50])

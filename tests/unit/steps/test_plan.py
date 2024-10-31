@@ -23,6 +23,7 @@ from cou.apps.subordinate import SubordinateApplication
 from cou.commands import CONTROL_PLANE, DATA_PLANE, HYPERVISORS, CLIargs
 from cou.exceptions import (
     ApplicationError,
+    ApplicationNotFound,
     COUException,
     DataPlaneMachineFilterError,
     HaltUpgradePlanGeneration,
@@ -49,7 +50,7 @@ from cou.steps.nova_cloud_controller import archive, purge
 from cou.utils import app_utils
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease
-from tests.unit.utils import dedent_plan, generate_cou_machine
+from tests.unit.utils import dedent_plan, generate_cou_machine, get_applications
 
 
 def generate_expected_upgrade_plan_principal(app, target, model):
@@ -487,7 +488,8 @@ nova-compute/0
 
     upgrade_plan = await cou_plan.generate_plan(analysis_result, cli_args)
     assert str(upgrade_plan) == exp_plan
-    assert len(cou_plan.PlanStatus.warning_messages) == 2  # keystone warning and set_noout
+    assert len(cou_plan.PlanStatus.error_messages) == 1  # set_noout error
+    assert len(cou_plan.PlanStatus.warning_messages) == 1  # keystone mismatch warning
 
 
 def test_PlanStatus_warnings_property():
@@ -510,7 +512,9 @@ def test_PlanStatus_warnings_property():
 @patch("cou.steps.plan._verify_supported_series")
 @patch("cou.steps.plan._verify_highest_release_achieved")
 @patch("cou.steps.plan._verify_data_plane_ready_to_upgrade")
+@patch("cou.steps.plan._verify_nova_cloud_controller_scheduler_default_filters")
 async def test_pre_plan_sanity_checks(
+    mock_verify_nova_cloud_controller_scheduler_default_filters,
     mock_verify_data_plane_ready_to_upgrade,
     mock_verify_highest_release_achieved,
     mock_verify_supported_series,
@@ -528,6 +532,9 @@ async def test_pre_plan_sanity_checks(
     mock_verify_supported_series.assert_called_once_with(mock_analysis_result)
     mock_verify_data_plane_ready_to_upgrade.assert_called_once_with(cli_args, mock_analysis_result)
     mock_verify_hypervisors_cli_input.assert_called_once_with(cli_args, mock_analysis_result)
+    mock_verify_nova_cloud_controller_scheduler_default_filters.assert_called_once_with(
+        cli_args, mock_analysis_result
+    )
     mock_verify_vault_is_unsealed.assert_awaited_once_with(mock_analysis_result)
     mock_verify_osd_noout_unset.assert_awaited_once_with(mock_analysis_result)
     mock_verify_model_idle.assert_awaited_once_with(mock_analysis_result)
@@ -539,14 +546,12 @@ async def test_pre_plan_sanity_checks(
         (
             OpenStackRelease("caracal"),
             "noble",
-            "Cloud series 'noble' is not a Ubuntu LTS series supported by COU. "
-            "The supporting series are: focal, jammy",
+            "Cloud series 'noble' is not a Ubuntu LTS series supported by COU. ",
         ),
         (
             OpenStackRelease("train"),
             "bionic",
-            "Cloud series 'bionic' is not a Ubuntu LTS series supported by COU. "
-            "The supporting series are: focal, jammy",
+            "Cloud series 'bionic' is not a Ubuntu LTS series supported by COU. ",
         ),
     ],
 )
@@ -555,7 +560,7 @@ def test_verify_supported_series(o7k_release, current_series, exp_error_msg):
     mock_analysis_result.current_cloud_o7k_release = o7k_release
     mock_analysis_result.current_cloud_series = current_series
     cou_plan._verify_supported_series(mock_analysis_result)
-    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
+    assert exp_error_msg in cou_plan.PlanStatus.error_messages[0]
 
 
 @pytest.mark.parametrize(
@@ -579,7 +584,87 @@ def test_verify_highest_release_achieved(o7k_release, series):
         "- https://docs.openstack.org/charm-guide/latest/admin/upgrades/series-openstack.html"
     )
     cou_plan._verify_highest_release_achieved(mock_analysis_result)
-    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
+    assert cou_plan.PlanStatus.error_messages[0] == exp_error_msg
+
+
+@pytest.mark.parametrize(
+    "upgrade_group",
+    [CONTROL_PLANE, None],
+)
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_failed(
+    mock_get_applications_by_charm_name, upgrade_group, cli_args
+):
+    app_count = 2
+    cli_args.upgrade_group = upgrade_group
+    nova_cloud_controllers = get_applications("nova-cloud-controller", app_count=app_count)
+    for nova_cloud_controller in nova_cloud_controllers:
+        nova_cloud_controller.config = {"scheduler-default-filters": "AvailabilityZoneFilter"}
+    mock_get_applications_by_charm_name.return_value = nova_cloud_controllers
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("antelope")
+    exp_error_msg = (
+        "Upgrade from 'antelope' to 'bobcat' is not possible "
+        "if `AvailabilityZoneFilter` is in `scheduler-default-filters` option"
+    )
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    for i in range(app_count):
+        assert exp_error_msg in cou_plan.PlanStatus.error_messages[i]
+
+
+@pytest.mark.parametrize(
+    "upgrade_group",
+    [CONTROL_PLANE, None],
+)
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_missing_app(
+    mock_get_applications_by_charm_name, upgrade_group, cli_args
+):
+    cli_args.upgrade_group = upgrade_group
+    mock_get_applications_by_charm_name.side_effect = ApplicationNotFound
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("antelope")
+    exp_error_msg = "Cannot find nova-cloud-controller apps"
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    assert exp_error_msg in cou_plan.PlanStatus.warning_messages[0]
+
+
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_skip_upgrade_group(
+    mock_get_applications_by_charm_name, cli_args
+):
+    app_count = 2
+    cli_args.upgrade_group = DATA_PLANE
+    mock_get_applications_by_charm_name.return_value = get_applications(
+        "nova-cloud-controller", app_count=app_count
+    )
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("antelope")
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    assert not cou_plan.PlanStatus.error_messages
+
+
+@patch("cou.steps.plan.get_applications_by_charm_name")
+def test_verify_nova_cloud_controller_scheduler_default_filters_skip_not_antelope(
+    mock_get_applications_by_charm_name, cli_args
+):
+    app_count = 2
+    cli_args.upgrade_group = CONTROL_PLANE
+    mock_get_applications_by_charm_name.return_value = get_applications(
+        "nova-cloud-controller", app_count=app_count
+    )
+    mock_analysis_result = MagicMock(spec=Analysis)()
+    mock_analysis_result.current_cloud_o7k_release = OpenStackRelease("yoga")  # not antelope
+    cou_plan._verify_nova_cloud_controller_scheduler_default_filters(
+        cli_args, mock_analysis_result
+    )
+    assert not cou_plan.PlanStatus.error_messages
 
 
 @pytest.mark.parametrize(
@@ -588,7 +673,7 @@ def test_verify_highest_release_achieved(o7k_release, series):
         (
             OpenStackRelease("ussuri"),
             OpenStackRelease("ussuri"),
-            "Please, upgrade control-plane before data-plane",
+            "Please upgrade control-plane before data-plane",
         ),
         (
             OpenStackRelease("ussuri"),
@@ -606,7 +691,7 @@ def test_verify_data_plane_ready_to_upgrade_error(
     mock_analysis_result.min_o7k_version_control_plane = min_o7k_version_control_plane
     mock_analysis_result.min_o7k_version_data_plane = min_o7k_version_data_plane
     cou_plan._verify_data_plane_ready_to_upgrade(cli_args, mock_analysis_result)
-    cou_plan.PlanStatus.error_messages[0] == exp_error_msg
+    assert exp_error_msg in cou_plan.PlanStatus.error_messages[0]
 
 
 @pytest.mark.parametrize("upgrade_group", [DATA_PLANE, HYPERVISORS])
@@ -1765,3 +1850,235 @@ async def test_verify_model_idle_failed(mock_verify_model_idle, mock_analysis, m
     mock_verify_model_idle.side_effect = Exception()
     await cou_plan._verify_model_idle(mock_analysis)
     mock_plan_status.add_message.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.PlanStatus", autospec=True)
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.get_versions", autospec=True)
+async def test_verify_ceph_running_versions_consistent(
+    mock_get_versions, mock_analysis, mock_plan_status
+):
+    """Test _verify_ceph_running_versions_consistent (normal success case)."""
+    # the scenario: two ceph clouds, both with consistent running versions
+    mock_analysis.apps_control_plane = [
+        MagicMock(charm="ceph-mon", units={"first/0": MagicMock(name="first/0")}),
+        MagicMock(charm="ceph-mon", units={"second/0": MagicMock(name="second/0")}),
+    ]
+    mock_get_versions.side_effect = [
+        {
+            "mon": {
+                # hashes truncated for brevity in tests
+                "ceph version 16.2.15 (618f440) pacific (stable)": 1,
+            },
+            "osd": {
+                "ceph version 16.2.15 (618f440) pacific (stable)": 18,
+            },
+            "overall": {
+                "ceph version 16.2.15 (618f440) pacific (stable)": 20,
+            },
+        },
+        {
+            "mon": {"ceph version 15.2.17 (8a82819) octopus (stable)": 1},
+            "osd": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+            },
+            "overall": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+            },
+        },
+    ]
+
+    await cou_plan._verify_ceph_running_versions_consistent(mock_analysis)
+
+    # verify that for this scenario, no warnings were generated
+    mock_plan_status.add_message.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.PlanStatus", autospec=True)
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.get_versions", autospec=True)
+async def test_verify_ceph_running_versions_inconsistent(
+    mock_get_versions, mock_analysis, mock_plan_status
+):
+    """Test _verify_ceph_running_versions_consistent (failure case)."""
+    # the scenario: two ceph clouds, both with inconsistent running versions
+    mock_analysis.apps_control_plane = [
+        MagicMock(charm="ceph-mon", units={"first/0": MagicMock(name="first/0")}),
+        MagicMock(charm="ceph-mon", units={"second/0": MagicMock(name="second/0")}),
+    ]
+    mock_get_versions.side_effect = [
+        {
+            "mon": {
+                # hashes truncated for brevity in tests
+                "ceph version 16.2.14 (238ba60) pacific (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 1,
+            },
+            "osd": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 18,
+            },
+            "overall": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.14 (238ba60) pacific (stable)": 5,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 20,
+            },
+        },
+        {
+            "mon": {"ceph version 16.2.15 (618f440) pacific (stable)": 1},
+            "osd": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 18,
+            },
+            "overall": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 20,
+            },
+        },
+    ]
+
+    await cou_plan._verify_ceph_running_versions_consistent(mock_analysis)
+
+    # verify that for this scenario, there is a plan warning message added
+    assert mock_plan_status.add_message.call_count == 2
+    assert "first" in mock_plan_status.add_message.call_args_list[0].args[0]
+    assert "mismatched versions" in mock_plan_status.add_message.call_args_list[0].args[0]
+    assert "pacific" in mock_plan_status.add_message.call_args_list[0].args[0]
+    assert mock_plan_status.add_message.call_args_list[0].args[1] == cou_plan.MessageType.WARNING
+    assert "second" in mock_plan_status.add_message.call_args_list[1].args[0]
+    assert "mismatched versions" in mock_plan_status.add_message.call_args_list[1].args[0]
+    assert "pacific" in mock_plan_status.add_message.call_args_list[1].args[0]
+    assert mock_plan_status.add_message.call_args_list[1].args[1] == cou_plan.MessageType.WARNING
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.PlanStatus", autospec=True)
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.get_versions", autospec=True)
+async def test_verify_ceph_running_versions_no_units(
+    mock_get_versions, mock_analysis, mock_plan_status
+):
+    """Test _verify_ceph_running_versions_consistent (no units edge case)."""
+    mock_analysis.apps_control_plane = [
+        MagicMock(charm="ceph-mon", units={}),
+    ]
+
+    await cou_plan._verify_ceph_running_versions_consistent(mock_analysis)
+
+    mock_plan_status.add_message.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.print_and_debug")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.assert_osd_noout_state", AsyncMock())
+async def test_post_upgrade_sanity_checks_ceph_mon_versions_no_units(
+    mock_analysis, mock_print_and_debug
+):
+    """Test post_upgrade_sanity_checks with exception."""
+    mock_analysis.apps_control_plane = [
+        MagicMock(charm="ceph-mon", units={}),
+    ]
+
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+
+    mock_print_and_debug.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.print_and_debug")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.assert_osd_noout_state", AsyncMock())
+@patch("cou.steps.plan.ceph.get_versions", autospec=True)
+async def test_post_upgrade_sanity_checks_ceph_mon_versions_inconsistent(
+    mock_get_versions, mock_analysis, mock_print_and_debug
+):
+    """Test post_upgrade_sanity_checks with exception."""
+    # the scenario: two ceph clouds, both with inconsistent running versions
+    mock_analysis.apps_control_plane = [
+        MagicMock(charm="ceph-mon", units={"first/0": MagicMock(name="first/0")}),
+        MagicMock(charm="ceph-mon", units={"second/0": MagicMock(name="second/0")}),
+    ]
+    mock_get_versions.side_effect = [
+        {
+            "mon": {
+                # hashes truncated for brevity in tests
+                "ceph version 16.2.14 (238ba60) pacific (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 1,
+            },
+            "osd": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 18,
+            },
+            "overall": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.14 (238ba60) pacific (stable)": 5,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 20,
+            },
+        },
+        {
+            "mon": {"ceph version 16.2.15 (618f440) pacific (stable)": 1},
+            "osd": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 18,
+            },
+            "overall": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+                "ceph version 16.2.15 (618f440) pacific (stable)": 20,
+            },
+        },
+    ]
+
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+
+    assert mock_print_and_debug.call_count == 2
+    assert "first" in mock_print_and_debug.call_args_list[0].args[0]
+    assert "mismatched versions" in mock_print_and_debug.call_args_list[0].args[0]
+    assert "pacific" in mock_print_and_debug.call_args_list[0].args[0]
+    assert "second" in mock_print_and_debug.call_args_list[1].args[0]
+    assert "mismatched versions" in mock_print_and_debug.call_args_list[1].args[0]
+    assert "pacific" in mock_print_and_debug.call_args_list[1].args[0]
+
+
+@pytest.mark.asyncio
+@patch("cou.steps.plan.print_and_debug")
+@patch("cou.steps.analyze.Analysis")
+@patch("cou.steps.plan.ceph.assert_osd_noout_state", AsyncMock())
+@patch("cou.steps.plan.ceph.get_versions", autospec=True)
+async def test_post_upgrade_sanity_checks_ceph_mon_versions_consistent(
+    mock_get_versions, mock_analysis, mock_print_and_debug
+):
+    """Test post_upgrade_sanity_checks with exception."""
+    # the scenario: two ceph clouds, both with consistent running versions
+    mock_analysis.apps_control_plane = [
+        MagicMock(charm="ceph-mon", units={"first/0": MagicMock(name="first/0")}),
+        MagicMock(charm="ceph-mon", units={"second/0": MagicMock(name="second/0")}),
+    ]
+    mock_get_versions.side_effect = [
+        {
+            "mon": {
+                # hashes truncated for brevity in tests
+                "ceph version 16.2.15 (618f440) pacific (stable)": 1,
+            },
+            "osd": {
+                "ceph version 16.2.15 (618f440) pacific (stable)": 18,
+            },
+            "overall": {
+                "ceph version 16.2.15 (618f440) pacific (stable)": 20,
+            },
+        },
+        {
+            "mon": {"ceph version 15.2.17 (8a82819) octopus (stable)": 1},
+            "osd": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+            },
+            "overall": {
+                "ceph version 15.2.17 (8a82819) octopus (stable)": 2,
+            },
+        },
+    ]
+
+    await cou_plan.post_upgrade_sanity_checks(mock_analysis)
+
+    mock_print_and_debug.assert_not_called()
