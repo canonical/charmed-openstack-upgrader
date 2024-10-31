@@ -309,3 +309,37 @@ async def test_get_current_osd_release_unsuccessful(model, osd_release_output, e
         command="ceph versions -f json",
         timeout=600,
     )
+
+
+@pytest.mark.asyncio
+async def test_get_versions(model):
+    check_output = """
+    {
+        "mon": {
+            "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 1
+        },
+        "mgr": {
+            "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 1
+        },
+        "osd": {
+            "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 3
+        },
+        "mds": {},
+        "overall": {
+            "ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)": 5
+        }
+    }
+    """
+    model.run_on_unit.return_value = {"return-code": 0, "stdout": check_output}
+
+    versions = await ceph.get_versions(model, "my-ceph-mon/0")
+
+    model.run_on_unit.assert_called_once_with(
+        "my-ceph-mon/0",
+        "ceph versions -f json",
+    )
+
+    assert (
+        versions["mon"]["ceph version 15.2.17 (8a82819d84cf884bd39c17e3236e0632) octopus (stable)"]
+        == 1
+    )

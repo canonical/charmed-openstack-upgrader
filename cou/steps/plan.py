@@ -15,6 +15,7 @@
 """Upgrade planning utilities."""
 from __future__ import annotations
 
+import json
 import logging
 from enum import Enum
 from typing import Optional, Union
@@ -118,6 +119,7 @@ async def verify_cloud(analysis_result: Analysis, args: CLIargs) -> None:
     _verify_hypervisors_cli_input(args, analysis_result)
     _verify_nova_cloud_controller_scheduler_default_filters(args, analysis_result)
     await _verify_vault_is_unsealed(analysis_result)
+    await _verify_ceph_running_versions_consistent(analysis_result)
     await _verify_osd_noout_unset(analysis_result)
     await _verify_model_idle(analysis_result)
 
@@ -166,6 +168,23 @@ async def post_upgrade_sanity_checks(analysis_result: Analysis) -> None:
         )
     except ApplicationError:
         messages.append("Detected ceph 'noout' set, please unset noout for ceph cluster.")
+
+    for app in ceph.get_mon_apps(analysis_result):
+        units = list(app.units.values())
+        if not units:
+            logger.warning(
+                "Skipping checking ceph versions for %s, because it has no units.", app.name
+            )
+            continue
+
+        version_data = await ceph.get_versions(analysis_result.model, units[0].name)
+        if len(version_data["overall"]) > 1:
+            messages.append(
+                f"Ceph mon ({units[0].name}) sees mismatched versions in ceph daemons:\n"
+                f"\n{json.dumps(version_data, indent=2)}\n\n"
+                "This is unexpected: at the end of a clean upgrade, "
+                "all ceph applications should be running the same version."
+            )
 
     for message in messages:
         print_and_debug(message)
@@ -322,6 +341,32 @@ async def _verify_vault_is_unsealed(analysis_result: Analysis) -> None:
         await verify_vault_is_unsealed(analysis_result.model)
     except VaultSealed as e:
         PlanStatus.add_message(str(e), MessageType.ERROR)
+
+
+async def _verify_ceph_running_versions_consistent(analysis_result: Analysis) -> None:
+    """Verify that ceph-mon sees a cloud with consistent versions.
+
+    For each ceph cloud.
+
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    """
+    for app in ceph.get_mon_apps(analysis_result):
+        units = list(app.units.values())
+        if not units:
+            logger.warning(
+                "Skipping checking ceph versions for %s, because it has no units.", app.name
+            )
+            continue
+
+        version_data = await ceph.get_versions(analysis_result.model, units[0].name)
+        if len(version_data["overall"]) > 1:
+            PlanStatus.add_message(
+                f"Ceph mon ({units[0].name}) sees mismatched versions in ceph daemons:\n"
+                f"\n{json.dumps(version_data, indent=2)}\n\n"
+                "If this is unexpected, please stop the upgrade and manually investigate.",
+                MessageType.WARNING,
+            )
 
 
 async def _verify_osd_noout_unset(analysis_result: Analysis) -> None:
