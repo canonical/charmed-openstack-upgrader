@@ -127,7 +127,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         channel="3.8/stable",
         config={
             "source": {"value": "distro"},
-            "enable-auto-restarts": {"value": True},
+            "enable-auto-restarts": {"value": False},
         },
         machines=machines,
         model=model,
@@ -158,6 +158,50 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
         for unit in app.units.keys()
     )
 
+    run_deferred_hooks_and_restart_pre_upgrades = PreUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to clear any leftover events"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_pre_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+    run_deferred_hooks_and_restart_pre_wait_step = PreUpgradeStep(
+        description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_idle(2400, apps=[app.name]),
+    )
+
+    run_deferred_hooks_and_restart_post_wait_step = PostUpgradeStep(
+        description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_idle(2400, apps=[app.name]),
+    )
+    run_deferred_hooks_and_restart_post_upgrades = PostUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to restart the service after upgrade"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_post_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+
     upgrade_steps = [
         expected_upgrade_package_step,
         PreUpgradeStep(
@@ -170,6 +214,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
             parallel=False,
             coro=model.wait_for_idle(300, apps=[app.name]),
         ),
+        run_deferred_hooks_and_restart_pre_upgrades,
+        run_deferred_hooks_and_restart_pre_wait_step,
         UpgradeStep(
             description=f"Upgrade '{app.name}' from '3.8/stable' to the new channel: '3.9/stable'",
             parallel=False,
@@ -189,6 +235,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
                 {f"{app.origin_setting}": "cloud:focal-victoria"},
             ),
         ),
+        run_deferred_hooks_and_restart_post_wait_step,
+        run_deferred_hooks_and_restart_post_upgrades,
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
             parallel=False,
@@ -219,7 +267,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         channel="3.9/stable",
         config={
             "source": {"value": "distro"},
-            "enable-auto-restarts": {"value": True},
+            "enable-auto-restarts": {"value": False},
         },
         machines=machines,
         model=model,
@@ -249,6 +297,50 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
         for unit in app.units.values()
     )
 
+    run_deferred_hooks_and_restart_pre_upgrades = PreUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to clear any leftover events"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_pre_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+    run_deferred_hooks_and_restart_pre_wait_step = PreUpgradeStep(
+        description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_idle(2400, apps=[app.name]),
+    )
+
+    run_deferred_hooks_and_restart_post_wait_step = PostUpgradeStep(
+        description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_idle(2400, apps=[app.name]),
+    )
+    run_deferred_hooks_and_restart_post_upgrades = PostUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to restart the service after upgrade"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_post_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -260,6 +352,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
             parallel=False,
             coro=model.wait_for_idle(300, apps=[app.name]),
         ),
+        run_deferred_hooks_and_restart_pre_upgrades,
+        run_deferred_hooks_and_restart_pre_wait_step,
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -268,6 +362,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria(model):
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
+        run_deferred_hooks_and_restart_post_wait_step,
+        run_deferred_hooks_and_restart_post_upgrades,
         PostUpgradeStep(
             description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
@@ -298,7 +394,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         channel="stable",
         config={
             "source": {"value": "distro"},
-            "enable-auto-restarts": {"value": True},
+            "enable-auto-restarts": {"value": False},
         },
         machines=machines,
         model=model,
@@ -328,6 +424,50 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
         for unit in app.units.values()
     )
 
+    run_deferred_hooks_and_restart_pre_upgrades = PreUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to clear any leftover events"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_pre_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+    run_deferred_hooks_and_restart_pre_wait_step = PreUpgradeStep(
+        description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_idle(2400, apps=[app.name]),
+    )
+
+    run_deferred_hooks_and_restart_post_wait_step = PostUpgradeStep(
+        description=(f"Wait for up to 2400s for app '{app.name}'" " to reach the idle state"),
+        parallel=False,
+        coro=model.wait_for_idle(2400, apps=[app.name]),
+    )
+    run_deferred_hooks_and_restart_post_upgrades = PostUpgradeStep(
+        description=(
+            f"Execute run-deferred-hooks for all '{app.name}' units "
+            "to restart the service after upgrade"
+        ),
+        parallel=False,
+    )
+    run_deferred_hooks_and_restart_post_upgrades.add_steps(
+        [
+            UnitUpgradeStep(
+                description=f"Execute run-deferred-hooks on unit: '{unit.name}'",
+                coro=model.run_action(unit.name, "run-deferred-hooks", raise_on_failure=True),
+            )
+            for unit in app.units.values()
+        ]
+    )
+
     upgrade_steps = [
         upgrade_packages,
         PreUpgradeStep(
@@ -339,6 +479,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             parallel=False,
             coro=model.wait_for_idle(300, apps=[app.name]),
         ),
+        run_deferred_hooks_and_restart_pre_upgrades,
+        run_deferred_hooks_and_restart_pre_wait_step,
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
             f"'{app.origin_setting}' to 'cloud:focal-victoria'",
@@ -347,6 +489,8 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
                 app.name, {f"{app.origin_setting}": "cloud:focal-victoria"}
             ),
         ),
+        run_deferred_hooks_and_restart_post_wait_step,
+        run_deferred_hooks_and_restart_post_upgrades,
         PostUpgradeStep(
             description=(f"Wait for up to 2400s for model '{model.name}' to reach the idle state"),
             parallel=False,
@@ -490,6 +634,39 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
     upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
+
+
+def test_rabbitmq_server_upgrade_plan_auto_restart_True(model):
+    """Test rabbitmq server upgrade with enable-auto-restarts=True."""
+    target = OpenStackRelease("victoria")
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    app = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="3.9/stable",
+        charm="rabbitmq-server",
+        channel="3.9/stable",
+        config={
+            "source": {"value": "distro"},
+            "enable-auto-restarts": {"value": True},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "rabbitmq-server/0": Unit(
+                name="rabbitmq-server/0",
+                workload_version="3.9",
+                machine=machines["0"],
+            ),
+        },
+        workload_version="3.9",
+    )
+
+    exp_msg = "`enable-auto-restarts` must be `False`"
+    with pytest.raises(ApplicationError, match=exp_msg):
+        app.generate_upgrade_plan(target, False)
 
 
 def test_auxiliary_upgrade_plan_unknown_track(model):

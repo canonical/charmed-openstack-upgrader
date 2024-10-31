@@ -324,12 +324,21 @@ class RabbitMQServer(AuxiliaryApplication):
         return steps
 
     def _check_auto_restarts(self) -> None:
-        """No-op, skip check auto restarts option.
+        """Check if enable-auto-restarts is enabled.
 
-        This method override the parent class's `_check_auto_restarts()` method
-        because the parent class's will raise an `ApplicationError` if
-        `enable-auto-restarts` is `True`.
+        Due to the charm [bug](https://bugs.launchpad.net/charm-rabbitmq-server/+bug/2046381),
+        if the `enable-auto-restarts` option is enabled, this check will raise an exception.
+
+        :raises ApplicationError: When enable-auto-restarts is enabled.
         """
+        if self.config["enable-auto-restarts"].get("value") is True:
+            raise ApplicationError(
+                "`enable-auto-restarts` must be `False` due to "
+                "https://bugs.launchpad.net/charm-rabbitmq-server/+bug/2046381 "
+                f"Please run `juju config {self.name} enable-auto-restarts=False` "
+                "before performing upgrades and rollback to original value after "
+                "upgrade is completed"
+            )
 
 
 @AppFactory.register_application(["ceph-mon"])
