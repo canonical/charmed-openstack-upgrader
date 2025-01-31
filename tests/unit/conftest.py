@@ -68,6 +68,7 @@ def plan_status() -> None:
     PlanStatus.error_messages = []
     PlanStatus.warning_messages = []
 
+
 @pytest.fixture
 def event_loop():
     """Create a fresh event loop for each test."""
