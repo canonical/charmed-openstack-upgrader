@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
@@ -67,12 +66,3 @@ def plan_status() -> None:
     """Get an empty PlanStatus for every test case."""
     PlanStatus.error_messages = []
     PlanStatus.warning_messages = []
-
-
-@pytest.fixture
-def event_loop():
-    """Create a fresh event loop for each test."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)  # Ensure it's the active loop
-    yield loop
-    loop.close()  # Properly close the loop after the test

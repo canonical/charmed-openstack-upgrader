@@ -261,8 +261,7 @@ def entrypoint() -> None:
         log_file = get_log_file()
         setup_logging(log_file, log_level)
 
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_run_command(args))
+        asyncio.run(_run_command(args))
     except HighestReleaseAchieved as exc:
         progress_indicator.succeed()
         print(exc)
@@ -300,7 +299,7 @@ def entrypoint() -> None:
         sys.exit(2)
     finally:
         if args.command == "upgrade":
-            loop.run_until_complete(run_post_upgrade_sanity_check(args))
+            asyncio.run(run_post_upgrade_sanity_check(args))
         if log_file is not None and not args.quiet:
             print(f"Full execution log: '{log_file}'")
         progress_indicator.stop()
