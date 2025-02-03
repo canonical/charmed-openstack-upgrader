@@ -17,9 +17,8 @@ import argparse
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
+from importlib.metadata import version
 from typing import Any, Iterable, Optional
-
-import pkg_resources
 
 CONTROL_PLANE = "control-plane"
 DATA_PLANE = "data-plane"
@@ -531,7 +530,7 @@ def parse_args(args: list[str]) -> CLIargs:  # pylint: disable=inconsistent-retu
         action="version",
         default=argparse.SUPPRESS,
         help="Show version details.",
-        version=pkg_resources.require("charmed_openstack_upgrader")[0].version,
+        version=version("charmed_openstack_upgrader"),
     )
 
     # Configure subparsers for subcommands and their options
