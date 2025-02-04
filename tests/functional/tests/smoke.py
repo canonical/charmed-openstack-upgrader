@@ -19,10 +19,16 @@ class FuncSmokeException(Exception):
 class SmokeTest(unittest.TestCase):
     """COU smoke functional tests."""
 
+    def setUp(self) -> None:
+        zaza.get_or_create_libjuju_thread()
+        self.model_name = zaza.model.get_juju_model()
+
+    def tearDown(self) -> None:
+        zaza.clean_up_libjuju_thread()
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.create_local_share_folder()
-        cls.model_name = zaza.model.get_juju_model()
         cls.configure_executable_path()
 
     @classmethod

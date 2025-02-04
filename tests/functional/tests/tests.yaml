@@ -1,6 +1,6 @@
 tests:
-  - tests.functional.tests.model.ModelTest
   - tests.functional.tests.smoke.SmokeTest
+  - tests.functional.tests.model.ModelTest
   - tests.functional.tests.backup.BackupTest
 gate_bundles:
   - smoke
