@@ -39,7 +39,12 @@ def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutin
     :return: True if coroutines are equal
     :rtype: bool
     """
-    if coro1 is None or coro2 is None:
+    if (
+        coro1 is None
+        or coro2 is None
+        or not hasattr(coro1, "cr_code")
+        or not hasattr(coro2, "cr_code")
+    ):
         # compare two None or one None and one Coroutine
         return coro1 == coro2
 
