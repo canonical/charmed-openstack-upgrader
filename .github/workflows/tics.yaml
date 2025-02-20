@@ -1,0 +1,49 @@
+name: TICS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  tics-analysis:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          python -m pip install --upgrade pip
+          # pin tox to the current major version to avoid
+          # workflows breaking all at once when a new major version is released.
+          python -m pip install 'tox<5'
+
+        # The snap is built already in the check workflow and available as an artifact,
+        # but we want this TICS workflow to be independent,
+        # so we can run the workflow periodically or on demand.
+      - name: Build the snap
+        id: build
+        uses: canonical/action-build@v1
+
+      - name: Test with tox and produce coverage report
+        # Create an environment in /tmp for the TICS action to use.
+        run: tox --workdir /tmp/tox -e tics
+
+      - name: Run TICS analysis
+        uses: tiobe/tics-github-action@v3
+        env:
+          # TICS action requires all the project's dependencies to be present to run the analysis.
+          # Add the the tox bin directory to the PATH so that the TICS action can find the tests dependencies.
+          # Other paths are added to the PATH to make sure that the TICS action can find the required binaries.
+          PATH: "/tmp/tox/tics/bin:/snap/bin:/home/runner/.local/bin:/home/runner/.cargo/bin:/bin:/usr/bin:/usr/local/bin:"
+        with:
+          mode: qserver
+          project: charmed-openstack-upgrader
+          viewerUrl: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=default
+          branchdir: ${{ github.workspace }}
+          ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
+          installTics: true
