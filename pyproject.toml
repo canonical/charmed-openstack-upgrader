@@ -98,7 +98,7 @@ fail_under = 100
 show_missing = true
 
 [tool.coverage.html]
-directory = "tests/report/html"
+directory = ".cover/html"
 
 [tool.coverage.xml]
-output = "tests/report/coverage.xml"
+output = ".cover/coverage.xml"
