@@ -89,9 +89,9 @@ def retry(
     :rtype: Callable
     """
 
-    def _wrapper(func: Callable) -> Callable:  # pylint: disable=W9011
+    def _wrapper(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:  # pylint: disable=W9011
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             attempt: int = 0
             start_time = datetime.now()
             while (datetime.now() - start_time).seconds <= timeout:
