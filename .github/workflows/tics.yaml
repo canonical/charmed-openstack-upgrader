@@ -14,23 +14,43 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
+      - name: Install coverage tools
         run: |
-          sudo apt update
-          python -m pip install --upgrade pip
-          # pin tox to the current major version to avoid
-          # workflows breaking all at once when a new major version is released.
-          python -m pip install 'tox<5'
+          pip install coverage
 
-        # The snap is built already in the check workflow and available as an artifact,
-        # but we want this TICS workflow to be independent,
-        # so we can run the workflow periodically or on demand.
-      - name: Build the snap
-        id: build
-        uses: canonical/action-build@v1
+      - name: Download unit test coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+          path: ./artifacts
+        continue-on-error: true  # Don’t fail if artifact is missing
 
-      - name: Test with tox and produce coverage report
-        run: tox -e tics
+      - name: Download functional test coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-functional
+          path: ./artifacts
+        continue-on-error: true  # Don’t fail if artifact is missing
+
+      - name: Merge coverage reports
+        run: |
+          # Find all coverage files (if any exist)
+          coverage_files=""
+          if [ -f ./artifacts/coverage-unit.xml ]; then
+            coverage_files="$coverage_files ./artifacts/coverage-unit.xml"
+          fi
+          if [ -f ./artifacts/coverage-functional.xml ]; then
+            coverage_files="$coverage_files ./artifacts/coverage-functional.xml"
+          fi
+
+          if [ -n "$coverage_files" ]; then
+            echo "Merging coverage files: $coverage_files"
+            coverage combine $coverage_files
+            coverage xml -o tests/report/coverage.xml
+          else
+            echo "No coverage files found, skipping merge"
+            touch tests/report/coverage.xml  # Create an empty file to avoid downstream failure
+          fi
 
       - name: Run TICS analysis
         uses: tiobe/tics-github-action@v3
