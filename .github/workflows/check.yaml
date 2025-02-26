@@ -52,6 +52,21 @@ jobs:
     - name: Run unit tests
       run: tox -e unit
 
+    - name: Check for unit test coverage file
+      id: check_unit_coverage
+      run: |
+        if [ -f tests/report/coverage-unit.xml ]; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+    - name: Upload Unit Test Coverage Artifact
+      if: ${{ steps.check_unit_coverage.outputs.exists == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-unit
+        path: tests/report/coverage-unit.xml
+
   mocked-plans:
     name: Mocked plans
     runs-on: ubuntu-latest
@@ -140,3 +155,19 @@ jobs:
           export TEST_SNAP="$(pwd)/$(ls | grep '.*charmed-openstack-upgrader_.*\.snap$')"
           echo "$TEST_SNAP"
           tox -e func
+
+      - name: Check for functional test coverage file
+        id: check_functional_coverage
+        run: |
+          if [ -f tests/report/coverage-functional.xml ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Functional Test Coverage Artifact
+        if: ${{ steps.check_functional_coverage.outputs.exists == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-functional
+          path: tests/report/coverage-functional.xml
