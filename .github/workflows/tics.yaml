@@ -29,31 +29,28 @@ jobs:
         run: |
           pip install coverage
 
-      - name: Download unit test coverage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-unit
-          path: artifacts/
-        continue-on-error: true  # Don’t fail if artifact is missing
+      - name: Determine system architecture
+        run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
 
-      - name: Download functional test coverage artifact
+      - name: Download Coverage Files
         uses: actions/download-artifact@v4
         with:
-          name: coverage-functional
+          pattern: coverage-*-${{ env.SYSTEM_ARCH }}
+          merge-multiple: true
           path: artifacts/
         continue-on-error: true  # Don’t fail if artifact is missing
 
       - name: Merge coverage reports
         run: |
-          # Find all coverage files (if any exist)
+          # Create the path that is expected to have a coverage.xml for tics
           mkdir -p tests/report/
+
           coverage_files=""
-          if [ -f ./artifacts/coverage-unit ]; then
-            coverage_files="$coverage_files ./artifacts/coverage-unit"
-          fi
-          if [ -f ./artifacts/coverage-functional ]; then
-            coverage_files="$coverage_files ./artifacts/coverage-functional"
-          fi
+          for file in ./artifacts/coverage-*; do
+            if [ -f "$file" ]; then
+              coverage_files="$coverage_files $file"
+            fi
+          done
 
           if [ -n "$coverage_files" ]; then
             echo "Merging coverage files: $coverage_files"
@@ -61,7 +58,8 @@ jobs:
             coverage xml -o tests/report/coverage.xml
           else
             echo "No coverage files found, skipping merge"
-            touch tests/report/merged-coverage.xml  # Create an empty file to avoid downstream failure
+            # Create an empty file to avoid downstream failure
+            touch tests/report/merged-coverage.xml
           fi
 
       - name: Run TICS analysis

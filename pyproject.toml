@@ -96,3 +96,9 @@ omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py", "mod
 [tool.coverage.report]
 fail_under = 100
 show_missing = true
+
+[tool.coverage.html]
+directory = "tests/report/html"
+
+[tool.coverage.xml]
+output = "tests/report/coverage.xml"
