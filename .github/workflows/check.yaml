@@ -55,7 +55,7 @@ jobs:
     - name: Check for unit test coverage file
       id: check_unit_coverage
       run: |
-        if [ -f tests/report/coverage-unit.xml ]; then
+        if [ -f .coverage ]; then
           echo "exists=true" >> $GITHUB_OUTPUT
         else
           echo "exists=false" >> $GITHUB_OUTPUT
@@ -65,7 +65,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: coverage-unit
-        path: tests/report/coverage-unit.xml
+        path: .coverage
 
   mocked-plans:
     name: Mocked plans
@@ -159,7 +159,7 @@ jobs:
       - name: Check for functional test coverage file
         id: check_functional_coverage
         run: |
-          if [ -f tests/report/coverage-functional.xml ]; then
+          if [ -f .coverage ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -170,4 +170,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-functional
-          path: tests/report/coverage-functional.xml
+          path: .coverage

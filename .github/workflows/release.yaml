@@ -49,6 +49,7 @@ jobs:
 
   tics-analysis:
     runs-on: ubuntu-22.04
+    needs: check
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,35 +63,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage-unit
-          path: ./artifacts
+          path: .coverage-files/
         continue-on-error: true  # Don’t fail if artifact is missing
 
       - name: Download functional test coverage artifact
         uses: actions/download-artifact@v4
         with:
           name: coverage-functional
-          path: ./artifacts
+          path: .coverage-files/
         continue-on-error: true  # Don’t fail if artifact is missing
 
       - name: Merge coverage reports
         run: |
+          ls .coverage-files/
           mkdir -p tests/report/
-          # Find all coverage files (if any exist)
-          coverage_files=""
-          if [ -f ./artifacts/coverage-unit.xml ]; then
-            coverage_files="$coverage_files ./artifacts/coverage-unit.xml"
-          fi
-          if [ -f ./artifacts/coverage-functional.xml ]; then
-            coverage_files="$coverage_files ./artifacts/coverage-functional.xml"
-          fi
-          if [ -n "$coverage_files" ]; then
-            echo "Merging coverage files: $coverage_files"
-            coverage combine $coverage_files
-            coverage xml -o tests/report/coverage.xml
-          else
-            echo "No coverage files found, skipping merge"
-            touch tests/report/coverage.xml  # Create an empty file to avoid downstream failure
-          fi
+          coverage combine .coverage-files
+          coverage xml -o tests/report/coverage.xml
+          coverage report
 
       - name: Run TICS analysis
         uses: tiobe/tics-github-action@v3
