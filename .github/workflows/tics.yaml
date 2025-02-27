@@ -33,23 +33,37 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage-unit
-          path: .coverage-files/
+          path: artifacts/
         continue-on-error: true  # Don’t fail if artifact is missing
 
       - name: Download functional test coverage artifact
         uses: actions/download-artifact@v4
         with:
           name: coverage-functional
-          path: .coverage-files/
+          path: artifacts/
         continue-on-error: true  # Don’t fail if artifact is missing
 
       - name: Merge coverage reports
         run: |
-          ls .coverage-files/
+          # Find all coverage files (if any exist)
           mkdir -p tests/report/
-          coverage combine .coverage-files
-          coverage xml -o tests/report/coverage.xml
-          coverage report
+          ls -ahl ./artifacts/
+          coverage_files=""
+          if [ -f ./artifacts/coverage-unit.xml ]; then
+            coverage_files="$coverage_files ./artifacts/coverage-unit.xml"
+          fi
+          if [ -f ./artifacts/coverage-functional.xml ]; then
+            coverage_files="$coverage_files ./artifacts/coverage-functional.xml"
+          fi
+
+          if [ -n "$coverage_files" ]; then
+            echo "Merging coverage files: $coverage_files"
+            coverage combine $coverage_files
+            coverage xml -o tests/report/coverage.xml
+          else
+            echo "No coverage files found, skipping merge"
+            touch tests/report/merged-coverage.xml  # Create an empty file to avoid downstream failure
+          fi
 
       - name: Run TICS analysis
         uses: tiobe/tics-github-action@v3
