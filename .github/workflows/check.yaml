@@ -64,6 +64,7 @@ jobs:
       if: env.exists == 'true'
       uses: actions/upload-artifact@v4
       with:
+        include-hidden-files: true
         name: coverage-unit
         path: .coverage
 
