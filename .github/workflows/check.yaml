@@ -52,21 +52,14 @@ jobs:
     - name: Run unit tests
       run: tox -e unit
 
-    - name: Check for unit test coverage file
-      id: check_unit_coverage
-      run: |
-        if [ -f tests/report/coverage-unit.xml ]; then
-          echo "exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "exists=false" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Upload Unit Test Coverage Artifact
-      if: ${{ steps.check_unit_coverage.outputs.exists == 'true' }}
+    - name: Determine system architecture
+      run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
+    - name: Upload Unit Test Coverage File
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-unit
-        path: tests/report/coverage-unit.xml
+        if-no-files-found: ignore
+        name: coverage-unit-${{ env.SYSTEM_ARCH }}
+        path: coverage-unit
 
 
   mocked-plans:
@@ -158,21 +151,12 @@ jobs:
           echo "$TEST_SNAP"
           tox -e func
 
-      - name: Check for functional test coverage file
-        id: check_functional_coverage
-        run: |
-          if [ -f tests/report/coverage-functional.xml ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Upload Functional Test Coverage Artifact
-        if: ${{ steps.check_functional_coverage.outputs.exists == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-functional
-          path: tests/report/coverage-functional.xml
+          if-no-files-found: ignore
+          name: coverage-functional-${{ env.SYSTEM_ARCH }}
+          path: coverage-functional
 
   tics-analysis:
     runs-on: ubuntu-22.04
