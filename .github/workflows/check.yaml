@@ -52,6 +52,12 @@ jobs:
     - name: Run unit tests
       run: tox -e unit
 
+    - name: Debug Coverage File
+      run: ls -lah
+
+    - name: Debug Coverage File in `.tox` Directories
+      run: find . -name ".coverage" -print
+
     - name: Check for unit test coverage file
       id: check_unit_coverage
       run: |
