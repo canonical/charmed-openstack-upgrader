@@ -52,22 +52,16 @@ jobs:
     - name: Run unit tests
       run: tox -e unit
 
-    - name: Debug Coverage File
-      run: ls -lah
-
-    - name: Debug Coverage File in `.tox` Directories
-      run: find . -name ".coverage" -print
-
     - name: Check for unit test coverage file
       id: check_unit_coverage
       run: |
         if [ -f .coverage ]; then
-          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "exists=true" >> "$GITHUB_ENV"
         else
-          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "exists=false" >> "$GITHUB_ENV"
         fi
     - name: Upload Unit Test Coverage Artifact
-      if: ${{ steps.check_unit_coverage.outputs.exists == 'true' }}
+      if: env.exists == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-unit
