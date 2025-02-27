@@ -5,41 +5,65 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches: [ master, main ]
+    paths-ignore:
+      - '**.md'
+      - '**.rst'
 
 jobs:
+  check:
+    uses: ./.github/workflows/check.yaml
+    secrets: inherit
+
   tics-analysis:
     runs-on: ubuntu-22.04
+    needs: check
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
+      - name: Install coverage tools
         run: |
-          sudo apt update
-          python -m pip install --upgrade pip
-          # pin tox to the current major version to avoid
-          # workflows breaking all at once when a new major version is released.
-          python -m pip install 'tox<5'
+          pip install coverage
 
-        # The snap is built already in the check workflow and available as an artifact,
-        # but we want this TICS workflow to be independent,
-        # so we can run the workflow periodically or on demand.
-      - name: Build the snap
-        id: build
-        uses: canonical/action-build@v1
+      - name: Determine system architecture
+        run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
 
-      - name: Test with tox and produce coverage report
-        # Create an environment in /tmp for the TICS action to use.
-        run: tox --workdir /tmp/tox -e tics
+      - name: Download Coverage Files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*-${{ env.SYSTEM_ARCH }}
+          merge-multiple: true
+          path: artifacts/
+        continue-on-error: true  # Don’t fail if artifact is missing
+
+      - name: Merge coverage reports
+        run: |
+          # Create the path that is expected to have a coverage.xml for tics
+          mkdir -p tests/report/
+
+          coverage_files=""
+          for file in ./artifacts/coverage-*; do
+            if [ -f "$file" ]; then
+              coverage_files="$coverage_files $file"
+            fi
+          done
+
+          if [ -n "$coverage_files" ]; then
+            echo "Merging coverage files: $coverage_files"
+            coverage combine $coverage_files
+            coverage xml -o tests/report/coverage.xml
+          else
+            echo "No coverage files found, skipping merge"
+            # Create an empty file to avoid downstream failure
+            touch tests/report/merged-coverage.xml
+          fi
 
       - name: Run TICS analysis
         uses: tiobe/tics-github-action@v3
-        env:
-          # TICS action requires all the project's dependencies to be present to run the analysis.
-          # Add the the tox bin directory to the PATH so that the TICS action can find the tests dependencies.
-          # Other paths are added to the PATH to make sure that the TICS action can find the required binaries.
-          PATH: "/tmp/tox/tics/bin:/snap/bin:/home/runner/.local/bin:/home/runner/.cargo/bin:/bin:/usr/bin:/usr/local/bin:"
         with:
           mode: qserver
           project: charmed-openstack-upgrader
