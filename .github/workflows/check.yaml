@@ -57,6 +57,7 @@ jobs:
       run: |
         if [ -f .coverage ]; then
           echo "exists=true" >> "$GITHUB_ENV"
+          mv .coverage coverage-unit
         else
           echo "exists=false" >> "$GITHUB_ENV"
         fi
@@ -66,7 +67,7 @@ jobs:
       with:
         include-hidden-files: true
         name: coverage-unit
-        path: .coverage
+        path: coverage-unit
 
   mocked-plans:
     name: Mocked plans
@@ -157,18 +158,19 @@ jobs:
   #         echo "$TEST_SNAP"
   #         tox -e func
 
-  #     - name: Check for functional test coverage file
-  #       id: check_functional_coverage
-  #       run: |
-  #         if [ -f .coverage ]; then
-  #           echo "exists=true" >> $GITHUB_OUTPUT
-  #         else
-  #           echo "exists=false" >> $GITHUB_OUTPUT
-  #         fi
+      # - name: Check for functional test coverage file
+      #   id: check_functional_coverage
+      #   run: |
+      #     if [ -f .coverage ]; then
+      #       mv .coverage coverage-functional
+      #       echo "exists=true" >> $GITHUB_OUTPUT
+      #     else
+      #       echo "exists=false" >> $GITHUB_OUTPUT
+      #     fi
 
   #     - name: Upload Functional Test Coverage Artifact
   #       if: ${{ steps.check_functional_coverage.outputs.exists == 'true' }}
   #       uses: actions/upload-artifact@v4
   #       with:
   #         name: coverage-functional
-  #         path: .coverage
+  #         path: coverage-functional

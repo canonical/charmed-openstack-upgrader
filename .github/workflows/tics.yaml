@@ -47,13 +47,12 @@ jobs:
         run: |
           # Find all coverage files (if any exist)
           mkdir -p tests/report/
-          ls -ahl ./artifacts/
           coverage_files=""
-          if [ -f ./artifacts/coverage-unit.xml ]; then
-            coverage_files="$coverage_files ./artifacts/coverage-unit.xml"
+          if [ -f ./artifacts/coverage-unit ]; then
+            coverage_files="$coverage_files ./artifacts/coverage-unit"
           fi
-          if [ -f ./artifacts/coverage-functional.xml ]; then
-            coverage_files="$coverage_files ./artifacts/coverage-functional.xml"
+          if [ -f ./artifacts/coverage-functional ]; then
+            coverage_files="$coverage_files ./artifacts/coverage-functional"
           fi
 
           if [ -n "$coverage_files" ]; then
