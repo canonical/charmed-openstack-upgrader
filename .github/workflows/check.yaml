@@ -182,7 +182,7 @@ jobs:
           pattern: coverage-*-${{ env.SYSTEM_ARCH }}
           merge-multiple: true
           path: artifacts/
-        continue-on-error: true  # Don’t fail if artifact is missing
+        continue-on-error: true
 
       - name: Merge coverage reports
         run: |
