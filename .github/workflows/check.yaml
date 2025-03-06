@@ -59,7 +59,7 @@ jobs:
       with:
         if-no-files-found: ignore
         name: coverage-unit-${{ env.SYSTEM_ARCH }}
-        path: coverage-unit
+        path: .coverage-unit
 
 
   mocked-plans:
@@ -156,7 +156,7 @@ jobs:
         with:
           if-no-files-found: ignore
           name: coverage-functional-${{ env.SYSTEM_ARCH }}
-          path: coverage-functional
+          path: .coverage-functional
 
   tics-analysis:
     runs-on: ubuntu-22.04
@@ -189,7 +189,7 @@ jobs:
           # Create the path that is expected to have a coverage.xml for tics
           mkdir -p tests/report/
 
-          coverage_files=$(echo ./artifacts/coverage-*)
+          coverage_files=$(echo ./artifacts/.coverage-*)
 
           if [ -n "$coverage_files" ]; then
             echo "Merging coverage files: $coverage_files"
