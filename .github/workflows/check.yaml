@@ -51,6 +51,15 @@ jobs:
         python -m pip install tox
     - name: Run unit tests
       run: tox -e unit
+    - name: Determine system architecture
+      run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
+    - name: Upload Unit Test Coverage File
+      uses: actions/upload-artifact@v4
+      with:
+        include-hidden-files: true
+        if-no-files-found: ignore
+        name: coverage-unit-${{ env.SYSTEM_ARCH }}
+        path: .coverage-unit
 
   mocked-plans:
     name: Mocked plans
@@ -140,3 +149,11 @@ jobs:
           export TEST_SNAP="$(pwd)/$(ls | grep '.*charmed-openstack-upgrader_.*\.snap$')"
           echo "$TEST_SNAP"
           tox -e func
+
+      - name: Upload Functional Test Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          include-hidden-files: true
+          if-no-files-found: ignore
+          name: coverage-functional-${{ env.SYSTEM_ARCH }}
+          path: .coverage-functional
