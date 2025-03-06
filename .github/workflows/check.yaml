@@ -58,7 +58,7 @@ jobs:
       with:
         if-no-files-found: ignore
         name: coverage-unit-${{ env.SYSTEM_ARCH }}
-        path: coverage-unit
+        path: .coverage-unit
 
   mocked-plans:
     name: Mocked plans
@@ -153,4 +153,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-functional-${{ env.SYSTEM_ARCH }}
-          path: coverage-functional
+          path: .coverage-functional
