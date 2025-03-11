@@ -53,6 +53,7 @@ jobs:
       run: tox -e unit
     - name: Determine system architecture
       run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
+
     - name: Upload Unit Test Coverage File
       uses: actions/upload-artifact@v4
       with:
@@ -186,7 +187,7 @@ jobs:
           # Create the path that is expected to have a coverage.xml for tics
           mkdir -p tests/report/
 
-          coverage_files=./artifacts/.coverage-*
+          coverage_files=./artifacts/.coverage*
 
           if [ -n "$coverage_files" ]; then
             echo "Merging coverage files: $coverage_files"
