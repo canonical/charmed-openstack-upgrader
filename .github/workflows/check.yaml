@@ -160,7 +160,7 @@ jobs:
           path: .coverage-functional
 
   tics-analysis:
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, linux, amd64, tiobe, jammy]
     needs: func
     steps:
       - uses: actions/checkout@v4
@@ -169,7 +169,7 @@ jobs:
 
       - name: Install coverage tools
         run: |
-          pip install coverage
+          pip install coverage toml
 
       - name: Determine system architecture
         run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
