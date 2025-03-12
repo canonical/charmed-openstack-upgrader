@@ -51,16 +51,6 @@ jobs:
         python -m pip install tox
     - name: Run unit tests
       run: tox -e unit
-    - name: Determine system architecture
-      run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
-
-    - name: Upload Unit Test Coverage File
-      uses: actions/upload-artifact@v4
-      with:
-        include-hidden-files: true
-        if-no-files-found: ignore
-        name: coverage-unit-${{ env.SYSTEM_ARCH }}
-        path: .coverage-unit
 
     - name: Determine system architecture
       run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
