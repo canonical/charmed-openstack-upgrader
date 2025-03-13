@@ -1,54 +1,75 @@
+# This file is centrally managed as a template file in https://github.com/canonical/solutions-engineering-automation
+# To update the file:
+# - Edit it in the canonical/solutions-engineering-automation repository.
+# - Open a PR with the changes.
+# - When the PR merges, the soleng-terraform bot will open a PR to the target repositories with the changes.
 name: Tests
 
 on:
   workflow_call:
   workflow_dispatch:
   pull_request:
-    types: [ opened, synchronize, reopened ]
-    branches: [ master, main ]
+    types: [opened, synchronize, reopened]
+    branches: [main]
     paths-ignore:
-      - '**.md'
-      - '**.rst'
+      - "**.md"
+      - "**.rst"
 
 concurrency:
-      # We do not want to run multiple jobs for single PR.
-      group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-      cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
-    name: Linters
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: true
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install tox
-    - name: Run lint checkers
-      run: tox -e lint
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Complete git history is required to generate the version from git tags.
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y yamllint
+          python -m pip install --upgrade pip
+          # pin tox to the current major version to avoid
+          # workflows breaking all at once when a new major version is released.
+          python -m pip install 'tox<5'
+
+      - name: Run linters
+        run: tox -e lint
+
+      - name: Lint yaml files
+        run: |
+          yamllint .yamllint snap/snapcraft.yaml
 
   unit:
-    name: Unit tests
-    runs-on: ubuntu-latest
+    name: Unit
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10']
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Set up Python 3.10
+
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install tox
+        python -m pip install 'tox<5'
+
     - name: Run unit tests
       run: tox -e unit
 
@@ -60,96 +81,69 @@ jobs:
       with:
         include-hidden-files: true
         if-no-files-found: ignore
-        name: coverage-unit-${{ env.SYSTEM_ARCH }}
+        name: coverage-unit-${{ matrix.python-version }}-${{ env.SYSTEM_ARCH }}
         path: .coverage-unit
 
-
-  mocked-plans:
-    name: Mocked plans
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install tox
-    - name: Run mocked-plans tests
-      run: tox -e mocked-plans
-
-  snap-build:
-    name: Build snap
+  build:
     needs:
       - lint
-      - unit
-      - mocked-plans
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [[ubuntu-22.04]]
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
           fetch-depth: 0  # Complete git history is required to generate the version from git tags.
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Install tox
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install tox
-      - name: Setup LXD
-        uses: canonical/setup-lxd@v0.1.1
-        with:
-          channel: latest/stable
-      - name: Install snapcraft
-        run: sudo snap install snapcraft --classic
-      - name: Build snap
-        run: snapcraft --use-lxd
+
+      - name: Verify snap builds successfully
+        id: build
+        uses: canonical/action-build@v1
+
       - name: Determine system architecture
         run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
-      - name: Upload the built snap as an artifact
+
+      - name: Upload the built snap
         uses: actions/upload-artifact@v4
         with:
           name: snap_${{ env.SYSTEM_ARCH }}
-          path: charmed-openstack-upgrader_*.snap
+          path: ${{ steps.build.outputs.snap }}
 
   func:
-    name: Functional tests
-    needs: snap-build
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
+    needs:
+      - build
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [[ubuntu-22.04]]
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Setup Juju 3.6/stable environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: lxd
-          juju-channel: 3.6/stable
-      - name: Remove tox install by actions-operator
-        run: sudo apt remove tox -y
-      - name: Install tox
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install tox
+          fetch-depth: 0  # Complete git history is required to generate the version from git tags.
+
       - name: Determine system architecture
         run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
+
       - name: Download snap file artifact
         uses: actions/download-artifact@v4
         with:
           name: snap_${{ env.SYSTEM_ARCH }}
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'tox<5'
+
       - name: Run func tests
         run: |
-          export TEST_SNAP="$(pwd)/$(ls | grep '.*charmed-openstack-upgrader_.*\.snap$')"
+          export TEST_SNAP="$(pwd)/$(ls | grep '.*_.*\.snap$')"
           echo "$TEST_SNAP"
           tox -e func
 
@@ -159,7 +153,7 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           name: coverage-functional-${{ env.SYSTEM_ARCH }}
-          path: .coverage-functional
+          path: .coverage-func
 
   tics-analysis:
     runs-on: ubuntu-22.04
