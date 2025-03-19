@@ -136,6 +136,12 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Setup Juju 3.6/stable environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: lxd
+          juju-channel: 3.6/stable
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
