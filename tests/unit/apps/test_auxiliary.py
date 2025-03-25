@@ -509,7 +509,7 @@ def test_auxiliary_upgrade_plan_ussuri_to_victoria_ch_migration(model):
     assert_steps(upgrade_plan, expected_plan)
 
 
-def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(model):
+def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_false(model):
     """Test rabbitmq server upgrade plan from Ussuri to Victoria with enable_auto_restart=False."""
     target = OpenStackRelease("victoria")
     machines = {"0": generate_cou_machine("0", "az-0")}
@@ -636,7 +636,7 @@ def test_rabbitmq_server_upgrade_plan_ussuri_to_victoria_auto_restart_False(mode
     assert_steps(upgrade_plan, expected_plan)
 
 
-def test_rabbitmq_server_upgrade_plan_auto_restart_True(model):
+def test_rabbitmq_server_upgrade_plan_auto_restart_true(model):
     """Test rabbitmq server upgrade with enable-auto-restarts=True."""
     target = OpenStackRelease("victoria")
     machines = {"0": generate_cou_machine("0", "az-0")}
@@ -704,7 +704,7 @@ def test_auxiliary_upgrade_plan_unknown_track(model):
         app._check_channel()
 
 
-def test_auxiliary_app_unknown_version_raise_ApplicationError(model):
+def test_auxiliary_app_unknown_version_raise_applicationerror(model):
     """Test auxiliary application with unknown workload version."""
     version = "80.5"
     charm = "rabbitmq-server"
@@ -1281,7 +1281,7 @@ def test_ovn_no_compatible_o7k_release(channel, model):
         ("ovn-central", {"source": {"value": "distro"}}),
     ],
 )
-def test_ovn_check_version_pinning_version_pinning_config_False(app, config, model):
+def test_ovn_check_version_pinning_version_pinning_config_false(app, config, model):
     machines = {"0": generate_cou_machine("0", "az-0")}
     app = OVNPrincipal(
         name=app,
@@ -1306,7 +1306,7 @@ def test_ovn_check_version_pinning_version_pinning_config_False(app, config, mod
     assert app._check_version_pinning() is None
 
 
-def test_ovn_check_version_pinning_version_pinning_config_True(model):
+def test_ovn_check_version_pinning_version_pinning_config_true(model):
     machines = {"0": generate_cou_machine("0", "az-0")}
     exp_regex_msg = ".*enable-version-pinning.*"
     app = OVNPrincipal(
