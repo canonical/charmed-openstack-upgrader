@@ -492,7 +492,7 @@ nova-compute/0
     assert len(cou_plan.PlanStatus.warning_messages) == 1  # keystone mismatch warning
 
 
-def test_PlanStatus_warnings_property():
+def test_planstatus_warnings_property():
     """Test PlanStatus object."""
     exp_warnings = ["Mock warning message1", "Mock warning message2"]
 
@@ -908,7 +908,7 @@ def test_verify_hypervisors_cli_input_azs(
 
 @patch("cou.steps.plan._get_nova_compute_units_and_machines")
 @patch("cou.steps.plan.verify_hypervisors_membership")
-def test_verify_hypervisors_cli_input_None(
+def test_verify_hypervisors_cli_input_none(
     mock_verify_hypervisors_membership, mock_nova_compute, cli_args
 ):
     mock_nova_compute.return_value = [MagicMock(), MagicMock()]
@@ -1371,7 +1371,7 @@ def test_generate_control_plane_plan(mock_create_upgrade_group):
     return_value=MagicMock(),
 )
 @patch("cou.steps.plan._get_post_upgrade_steps")
-async def test_generate_plan_upgrade_group_None(
+async def test_generate_plan_upgrade_group_none(
     mock_post_upgrade_steps,
     mock_ceph_osd_subordinates,
     mock_generate_data_plane_hypervisors_plan,
@@ -1658,7 +1658,7 @@ async def test_generate_data_plane_hypervisors_plan(
 @patch("cou.steps.plan.HypervisorUpgradePlanner")
 @patch("cou.steps.plan._filter_hypervisors_machines")
 @patch("cou.steps.plan._generate_instance_plan")
-async def test_generate_data_plane_hypervisors_plan_None(
+async def test_generate_data_plane_hypervisors_plan_none(
     mock_generate_instance_plan, mock_filter_hypervisors, mock_hypervisor_planner, cli_args
 ):
     """Test hypervisor plan is not None when _generate_instance_plan return None."""
@@ -1731,7 +1731,7 @@ def test_generate_instance_plan_hypervisors():
     hypervisors.generate_upgrade_plan.assert_called_once_with(target, False)
 
 
-def test_generate_instance_plan_HaltUpgradePlanGeneration():
+def test_generate_instance_plan_haltupgradeplangeneration():
     """Test _generate_instance_plan with HaltUpgradePlanGeneration."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"
@@ -1748,7 +1748,7 @@ def test_generate_instance_plan_HaltUpgradePlanGeneration():
     "exceptions", [ApplicationError, MismatchedOpenStackVersions, COUException]
 )
 @patch("cou.steps.plan.PlanStatus", spec_set=cou_plan.PlanStatus)
-def test_generate_instance_plan_COUException(mock_plan_warnings, exceptions):
+def test_generate_instance_plan_couexception(mock_plan_warnings, exceptions):
     """Test _generate_instance_plan with COUException."""
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.name = "test-app"

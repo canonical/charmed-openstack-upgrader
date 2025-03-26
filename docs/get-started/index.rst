@@ -16,7 +16,7 @@ user's model-scoped access level, run the following Juju command and look for
 your OpenStack model.
 
 .. code:: bash
-    
+
     juju models
 
 Installation
@@ -24,11 +24,11 @@ Installation
 Install the **COU** snap from the `Snap Store`_:
 
 .. code:: bash
-    
+
     sudo snap install charmed-openstack-upgrader
 
 .. LINKS
 .. _Charmed OpenStack: https://ubuntu.com/openstack/docs
-.. _Juju: https://juju.is/docs/juju
-.. _User access levels: https://juju.is/docs/juju/user-permissions
+.. _Juju: https://documentation.ubuntu.com/juju/latest/
+.. _User access levels: https://documentation.ubuntu.com/juju/latest/user/reference/user/#user-access-levels
 .. _Snap Store: https://snapcraft.io/

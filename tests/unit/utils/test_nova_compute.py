@@ -84,7 +84,7 @@ async def test_get_empty_hypervisors(
 @pytest.mark.asyncio
 @patch("cou.utils.nova_compute.logger")
 @patch("cou.utils.nova_compute.get_instance_count")
-async def test_verify_empty_hypervisor_HaltUpgradeExecution(
+async def test_verify_empty_hypervisor_haltupgradeexecution(
     mock_instance_count, mock_logger, instance_count, model
 ):
     mock_instance_count.return_value = instance_count

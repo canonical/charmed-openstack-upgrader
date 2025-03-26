@@ -98,6 +98,7 @@ class SmokeTest(unittest.TestCase):
         assert Path("/snap/bin/cou").exists(), "Cannot find the cou executable snap path."
         cls.exc_path = "/snap/bin/cou"
 
+    @staticmethod
     def snap_install_commands(cmd: list[str], custom_err_msg: str):
         """Commands to run and install the cou snap.
 

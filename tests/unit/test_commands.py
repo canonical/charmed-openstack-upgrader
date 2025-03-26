@@ -22,7 +22,7 @@ from cou.commands import CLIargs
 
 
 @pytest.mark.parametrize("auto_approve, expected_result", [(True, False), (False, True)])
-def test_CLIargs_prompt(auto_approve, expected_result):
+def test_cliargs_prompt(auto_approve, expected_result):
     args = CLIargs(command="foo", auto_approve=auto_approve)
     assert args.prompt is expected_result
 
@@ -87,7 +87,7 @@ def test_parse_args_quiet_verbose_exclusive(mock_error, args):
 
 
 @pytest.mark.parametrize(
-    "args, expected_CLIargs",
+    "args, expected_cliargs",
     [
         (
             ["plan"],
@@ -431,15 +431,15 @@ def test_parse_args_quiet_verbose_exclusive(mock_error, args):
         ),
     ],
 )
-def test_parse_args_plan(args, expected_CLIargs):
+def test_parse_args_plan(args, expected_cliargs):
     """Test parsing 'plan' subcommand and its arguments/options."""
     parsed_args = commands.parse_args(args)
 
-    assert parsed_args == expected_CLIargs
+    assert parsed_args == expected_cliargs
 
 
 @pytest.mark.parametrize(
-    "args, expected_CLIargs",
+    "args, expected_cliargs",
     [
         (
             ["upgrade"],
@@ -832,11 +832,11 @@ def test_parse_args_plan(args, expected_CLIargs):
         ),
     ],
 )
-def test_parse_args_upgrade(args, expected_CLIargs):
+def test_parse_args_upgrade(args, expected_cliargs):
     """Test parsing 'run' subcommand and its arguments/options."""
     parsed_args = commands.parse_args(args)
 
-    assert parsed_args == expected_CLIargs
+    assert parsed_args == expected_cliargs
 
 
 @patch("cou.commands.argparse.ArgumentParser.error", autospec=True)
