@@ -30,5 +30,5 @@ Install the **COU** snap from the `Snap Store`_:
 .. LINKS
 .. _Charmed OpenStack: https://ubuntu.com/openstack/docs
 .. _Juju: https://documentation.ubuntu.com/juju/latest/
-.. _User access levels: https://documentation.ubuntu.com/juju/latest/user/reference/user/#user-access-levels
+.. _User access levels: https://documentation.ubuntu.com/juju/latest/reference/user/index.html#user-access-levels
 .. _Snap Store: https://snapcraft.io/

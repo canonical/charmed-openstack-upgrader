@@ -30,4 +30,4 @@ configuration files.
 .. LINKS
 .. _python-libjuju: https://github.com/juju/python-libjuju
 .. _Juju environment variables: https://documentation.ubuntu.com/juju/latest/user/reference/juju-cli/juju-environment-variables/
-.. _JUJU_DATA: https://documentation.ubuntu.com/juju/latest/user/reference/juju-cli/juju-environment-variables/#juju-data
+.. _JUJU_DATA: https://documentation.ubuntu.com/juju/latest/reference/juju-cli/juju-environment-variables/index.html#juju-data
