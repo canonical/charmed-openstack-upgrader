@@ -606,29 +606,35 @@ def _get_purge_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreU
     :return: List of pre-upgrade steps.
     :rtype: list[PreUpgradeStep]
     """
-    if args.purge and any(
-        app.charm == "nova-cloud-controller" and "purge-data" in app.actions
+    if not args.purge:
+        return []
+
+    # We need to extract only the nova-cloud-controller applications that support this newly
+    # created action: "purge-data". If there is not, we shouldn't perform this step.
+    nova_cloud_controllers = [
+        app
         for app in analysis_result.apps_control_plane
-    ):
-        msg: str = ""
-        if args.purge_before is not None:
-            msg = (
-                f"Purge data before {args.purge_before}"
-                " from shadow tables on nova-cloud-controller"
-            )
-        else:
-            msg = "Purge all data from shadow tables on nova-cloud-controller"
-        return [
-            PreUpgradeStep(
-                description=msg,
-                coro=purge(
-                    analysis_result.model,
-                    analysis_result.apps_data_plane,  # we only need to pass nova-cloud-controller
-                    before=args.purge_before,
-                ),
-            )
-        ]
-    return []
+        if app.charm == "nova-cloud-controller" and "purge-data" in app.actions
+    ]
+    if not nova_cloud_controllers:
+        return []
+
+    msg: str = ""
+    if args.purge_before is not None:
+        msg = f"Purge data before {args.purge_before} from shadow tables on nova-cloud-controller"
+    else:
+        msg = "Purge all data from shadow tables on nova-cloud-controller"
+
+    return [
+        PreUpgradeStep(
+            description=msg,
+            coro=purge(
+                analysis_result.model,
+                nova_cloud_controllers,
+                before=args.purge_before,
+            ),
+        )
+    ]
 
 
 def _get_archive_data_steps(analysis_result: Analysis, args: CLIargs) -> list[PreUpgradeStep]:

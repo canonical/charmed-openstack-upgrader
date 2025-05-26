@@ -1275,17 +1275,15 @@ def test_get_purge_data_steps(
 
     app: OpenStackApplication = MagicMock(spec=OpenStackApplication)
     app.charm = "nova-cloud-controller"
-    mock_analysis_result.apps_control_plane = [app]
     app.actions = {"purge-data": True}
+
+    # nova-cloud-controller is a control plane app
+    mock_analysis_result.apps_control_plane = [app]
 
     expected_steps = [
         PreUpgradeStep(
             description=msg,
-            coro=purge(
-                mock_analysis_result.model,
-                mock_analysis_result.apps_data_plane,
-                before=cli_args.purge_before,
-            ),
+            coro=purge(mock_analysis_result.model, [app], before=cli_args.purge_before),
         )
     ]
     steps = cou_plan._get_purge_data_steps(mock_analysis_result, cli_args)
