@@ -17,6 +17,7 @@
 import inspect
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Any, Optional
 
@@ -26,7 +27,43 @@ from halo import Halo
 from cou.utils.text_styler import bold, normal
 
 COU_DATA = Path(f"/home/{os.getenv('USER')}/.local/share/cou") if os.getenv("USER") else Path(".")
-progress_indicator = Halo(spinner="line", placement="right")
+
+
+class SmartHalo:
+    """SmartHalo detects non-TTY and disable spinner accordingly."""
+
+    def __init__(self) -> None:
+        self.is_tty = sys.stdout.isatty()
+        self.spinner = Halo(spinner="line", placement="right") if self.is_tty else None
+
+    def start(self, text: Optional[str] = None) -> None:
+        if self.spinner:
+            self.spinner.start(text)
+        elif text:
+            print(text, flush=True)
+
+    def info(self, text: str) -> None:
+        self.spinner.info(text) if self.spinner else print(text, flush=True)
+
+    def stop(self) -> None:
+        if self.spinner:
+            self.spinner.stop()
+
+    def succeed(self, text: Optional[str] = None) -> None:
+        if self.spinner:
+            self.spinner.succeed(text)
+        elif text:
+            print(text, flush=True)
+
+    def fail(self) -> None:
+        if self.spinner:
+            self.spinner.fail()
+
+    def stop_and_persist(self, text: str) -> None:
+        self.spinner.stop_and_persist(text) if self.spinner else print(text, flush=True)
+
+
+progress_indicator = SmartHalo()
 
 
 def print_and_debug(message: Any) -> None:

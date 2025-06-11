@@ -1,9 +1,10 @@
 import itertools
 import logging
 import os
+import tempfile
 import unittest
 from pathlib import Path
-from subprocess import CalledProcessError, CompletedProcess, check_call, run
+from subprocess import STDOUT, CalledProcessError, CompletedProcess, check_call, run
 
 import zaza
 
@@ -227,3 +228,29 @@ class SmokeTest(unittest.TestCase):
         for expected_msg in expected_msg_after_upgrade:
             with self.subTest(expected_msg):
                 self.assertIn(expected_msg, result_after_upgrade)
+
+    def test_output_cou_non_tty(self) -> None:
+        with tempfile.NamedTemporaryFile(mode="r+", delete=False) as tmp_file:
+            tmp_filename = tmp_file.name
+
+        try:
+            run(
+                [
+                    self.exc_path,
+                    "plan",
+                    "--model",
+                    self.model_name,
+                ],
+                stdout=open(tmp_filename, "w"),
+                stderr=STDOUT,
+                text=True,
+            )
+
+            with open(tmp_filename, "r") as f:
+                result = f.read()
+
+            expected_plan = self.generate_expected_plan()
+            self.assertIn(expected_plan, result)
+
+        finally:
+            os.remove(tmp_filename)
