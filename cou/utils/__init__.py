@@ -62,6 +62,10 @@ class SmartHalo:
     def stop_and_persist(self, text: str) -> None:
         self.spinner.stop_and_persist(text) if self.spinner else print(text, flush=True)
 
+    @property
+    def spinner_id(self) -> Optional[str]:
+        return self.spinner.spinner_id if self.spinner else None
+
 
 progress_indicator = SmartHalo()
 

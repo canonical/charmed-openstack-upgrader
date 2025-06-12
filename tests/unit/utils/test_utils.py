@@ -135,3 +135,22 @@ def test_smart_halo_behavior_non_tty(
         mock_print.assert_called_once_with(*[arg for arg in args], flush=True)
     else:
         mock_print.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "isatty, spinner_id",
+    [
+        (
+            True,
+            "my-id",
+        ),
+        (False, None),
+    ],
+)
+def test_smart_halo_behavior_spinner_id(mocker, fake_halo, isatty, spinner_id):
+    mocker.patch("sys.stdout.isatty", return_value=isatty)
+    fake_halo.return_value.spinner_id = spinner_id
+
+    halo = SmartHalo()
+
+    assert halo.spinner_id == spinner_id
