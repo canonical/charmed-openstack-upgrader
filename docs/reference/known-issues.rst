@@ -64,11 +64,12 @@ doesn't update automatically. You might find a message like this
         }
     }
 
-See `bug 2046381`_ and `#401`_ for more details.
+See `bug 2068151`_ and `#401`_ for more details.
 
 
 .. LINKS:
 .. _Issues, charm procedures, and OpenStack upgrade notes: https://docs.openstack.org/charm-guide/latest/project/issues-and-procedures.html
 .. _bug 2060751: https://bugs.launchpad.net/charm-manila-ganesha/+bug/2060751
 .. _bug 2046381: https://bugs.launchpad.net/charm-rabbitmq-server/+bug/2046381
+.. _bug 2068151: https://bugs.launchpad.net/charm-ceph-osd/+bug/2068151
 .. _#401: https://github.com/canonical/charmed-openstack-upgrader/issues/401
