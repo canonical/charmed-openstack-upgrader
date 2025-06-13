@@ -42,30 +42,29 @@ Ceph not updating version
 Ceph applications might need manual intervention after the upgrade because the payload version
 doesn't update automatically. You might find a message like this
 
-```
-[WARNING] Ceph mon (ceph-mon/0) sees mismatched versions in ceph daemons:
+.. code::
 
-{
-  "mon": {
-    "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 3
-  },
-  "mgr": {
-    "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 3
-  },
-  "osd": {
-    "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 9
-  },
-  "rgw": {
-    "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 3
-  },
-  "overall": {
-    "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 12,
-    "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 6
-  }
-}
-```
+    [WARNING] Ceph mon (ceph-mon/0) sees mismatched versions in ceph daemons:
+    {
+        "mon": {
+            "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 3
+        },
+        "mgr": {
+            "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 3
+        },
+        "osd": {
+            "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 9
+        },
+        "rgw": {
+            "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 3
+        },
+        "overall": {
+            "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 12,
+            "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 6
+        }
+    }
 
-See `bug 2068151`_ for details and `#401`_.
+See `bug 2046381`_ and `#401`_ for more details.
 
 
 .. LINKS:
