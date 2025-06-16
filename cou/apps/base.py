@@ -944,3 +944,40 @@ class OpenStackApplication(Application):
                 f"{formatted_results}\n"
                 "This requires manually resolving the issue to continue."
             )
+
+    async def _verify_nova_compute(self, target: OpenStackRelease) -> None:
+        """Check if all units of nova-compute applications has upgraded their workload version.
+
+        Data-plane applications need to check if nova-compute was upgraded.
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :raises ApplicationError: When any nova-compute app workload version isn't reached.
+        """
+        units_not_upgraded = []
+        apps = await self.model.get_applications()
+
+        for app in apps.values():
+            if app.charm != "nova-compute":
+                logger.debug("skipping application %s", app.name)
+                continue
+
+            for unit in app.units.values():
+                compatible_o7k_versions = OpenStackCodenameLookup.find_compatible_versions(
+                    app.charm, unit.workload_version
+                )
+
+                if target not in compatible_o7k_versions:
+                    units_not_upgraded.append(unit.name)
+
+        if units_not_upgraded:
+            raise ApplicationError(
+                f"Units '{', '.join(units_not_upgraded)}' did not reach {target}."
+            )
+
+    def _verify_nova_compute_step(self, target: OpenStackRelease):
+        return [
+            PreUpgradeStep(
+                description="Verify that all 'nova-compute' units has been upgraded",
+                coro=self._verify_nova_compute(target),
+            )
+        ]
