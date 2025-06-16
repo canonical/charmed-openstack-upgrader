@@ -35,7 +35,41 @@ We suggest that users should temporarily set `enable-auto-restarts=False` when
 performing `cou upgrade`, and rollback to original setting after the upgrade is
 completed.
 
+
+Ceph not updating version
+-------------------------
+
+Ceph applications might need manual intervention after the upgrade because the payload version
+doesn't update automatically. You might find a message like this
+
+.. code::
+
+    [WARNING] Ceph mon (ceph-mon/0) sees mismatched versions in ceph daemons:
+    {
+        "mon": {
+            "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 3
+        },
+        "mgr": {
+            "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 3
+        },
+        "osd": {
+            "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 9
+        },
+        "rgw": {
+            "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 3
+        },
+        "overall": {
+            "ceph version 17.2.7 (b12291d110049b2f35e32e0de30d70e9a4c060d2) quincy (stable)": 12,
+            "ceph version 18.2.4 (e7ad5345525c7aa95470c26863873b581076945d) reef (stable)": 6
+        }
+    }
+
+See `bug 2068151`_ and `#401`_ for more details.
+
+
 .. LINKS:
 .. _Issues, charm procedures, and OpenStack upgrade notes: https://docs.openstack.org/charm-guide/latest/project/issues-and-procedures.html
 .. _bug 2060751: https://bugs.launchpad.net/charm-manila-ganesha/+bug/2060751
 .. _bug 2046381: https://bugs.launchpad.net/charm-rabbitmq-server/+bug/2046381
+.. _bug 2068151: https://bugs.launchpad.net/charm-ceph-osd/+bug/2068151
+.. _#401: https://github.com/canonical/charmed-openstack-upgrader/issues/401
