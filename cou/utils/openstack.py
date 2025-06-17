@@ -45,7 +45,14 @@ CHARM_FAMILIES = {
 }
 
 # nova-compute + other principal charms that must be upgraded after nova-compute
-DATA_PLANE_CHARMS = ["nova-compute", "ceph-osd", "swift-proxy", "swift-storage"]
+DATA_PLANE_CHARMS = [
+    "nova-compute",
+    "ovn-central",
+    "neutron-api",
+    "ceph-osd",
+    "swift-proxy",
+    "swift-storage",
+]
 
 # https://docs.openstack.org/charm-guide/latest/admin/upgrades/openstack.html#list-the-upgrade-order
 UCA_UPGRADE_ORDER = [
@@ -64,23 +71,17 @@ UCA_UPGRADE_ORDER = [
     "heat",
     "manila",
     "manila-ganesha",
-    "neutron-api",
     "neutron-gateway",
     "ovn-dedicated-chassis",
-    "ovn-central",
     "placement",
     "nova-cloud-controller",
-    "nova-compute",
     "openstack-dashboard",
-    "ceph-osd",
-    "swift-proxy",
-    "swift-storage",
     "octavia",
 ]
 
 NON_UCA_UPGRADE_ORDER = ["vault", "rabbitmq-server"]
 
-UPGRADE_ORDER = NON_UCA_UPGRADE_ORDER + UCA_UPGRADE_ORDER
+UPGRADE_ORDER = NON_UCA_UPGRADE_ORDER + UCA_UPGRADE_ORDER + DATA_PLANE_CHARMS
 
 SUBORDINATES = [
     "barbican-vault",
