@@ -38,7 +38,6 @@ from cou.utils.juju_utils import Unit
 from cou.utils.openstack import (
     OPENSTACK_TO_TRACK_MAPPING,
     TRACK_TO_OPENSTACK_MAPPING,
-    OpenStackCodenameLookup,
     OpenStackRelease,
 )
 

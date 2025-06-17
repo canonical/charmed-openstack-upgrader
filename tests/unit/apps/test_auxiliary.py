@@ -21,6 +21,7 @@ from cou.apps.auxiliary import (
     CephMon,
     CephOsd,
     MysqlInnodbCluster,
+    OVNCentral,
     OVNPrincipal,
     RabbitMQServer,
     Vault,
@@ -1133,6 +1134,46 @@ def test_ceph_mon_upgrade_plan_ussuri_to_victoria(model):
     upgrade_plan = app.generate_upgrade_plan(target, False)
 
     assert_steps(upgrade_plan, expected_plan)
+
+
+@pytest.mark.asyncio
+@patch("cou.apps.auxiliary.AuxiliaryApplication.pre_upgrade_steps")
+async def test_ovn_central_pre_upgrade_steps(mock_pre_upgrade_steps, model):
+    """Test ovn central pre upgrade steps verifying all nova computes."""
+    target = OpenStackRelease("wallaby")
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    units = {
+        f"ovn-central/{i}": Unit(
+            name=f"ovn-central/{i}",
+            workload_version="20.03",
+            machine=machines[f"{i}"],
+        )
+        for i in range(3)
+    }
+    app = OVNCentral(
+        name="ovn-central",
+        can_upgrade_to="22.03/stable",
+        charm="ovn-central",
+        channel="20.03/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="20.03",
+    )
+    steps = app.pre_upgrade_steps(target, units)
+
+    assert steps == [
+        PreUpgradeStep(
+            description="Verify that all 'nova-compute' units has been upgraded",
+            coro=app._verify_nova_compute(target),
+        ),
+        *mock_pre_upgrade_steps.return_value,
+    ]
+    mock_pre_upgrade_steps.assert_called_once_with(target, units)
 
 
 def test_ovn_principal(model):

@@ -260,6 +260,7 @@ class Swift(OpenStackApplication):
             "upgrade it."
         )
 
+
 @AppFactory.register_application(["neutron-api"])
 class NeutronApi(OpenStackApplication):
     """Neutron API application class."""
