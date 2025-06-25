@@ -271,18 +271,6 @@ plan: |
                 Change charm config of 'heat' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 300s for app 'heat' to reach the idle state
                 Verify that the workload of 'heat' has been upgraded on units: heat/0, heat/1, heat/2
-            Upgrade plan for 'neutron-api' to 'victoria'
-                Upgrade software packages of 'neutron-api' from the current APT repositories
-                    Ψ Upgrade software packages on unit 'neutron-api/0'
-                    Ψ Upgrade software packages on unit 'neutron-api/1'
-                    Ψ Upgrade software packages on unit 'neutron-api/2'
-                Refresh 'neutron-api' to the latest revision of 'ussuri/stable'
-                Wait for up to 300s for app 'neutron-api' to reach the idle state
-                Upgrade 'neutron-api' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 300s for app 'neutron-api' to reach the idle state
-                Change charm config of 'neutron-api' 'openstack-origin' to 'cloud:focal-victoria'
-                Wait for up to 300s for app 'neutron-api' to reach the idle state
-                Verify that the workload of 'neutron-api' has been upgraded on units: neutron-api/0, neutron-api/1, neutron-api/2
             Upgrade plan for 'placement' to 'victoria'
                 Upgrade software packages of 'placement' from the current APT repositories
                     Ψ Upgrade software packages on unit 'placement/3'
@@ -562,6 +550,19 @@ plan: |
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'nova-compute-kvm' has been upgraded on units: nova-compute-kvm/4, nova-compute-kvm/6, nova-compute-kvm/7, nova-compute-kvm/8
         Remaining Data Plane principal(s) upgrade plan
+            Upgrade plan for 'neutron-api' to 'victoria'
+                Verify that all 'nova-compute' units has been upgraded
+                Upgrade software packages of 'neutron-api' from the current APT repositories
+                    Ψ Upgrade software packages on unit 'neutron-api/0'
+                    Ψ Upgrade software packages on unit 'neutron-api/1'
+                    Ψ Upgrade software packages on unit 'neutron-api/2'
+                Refresh 'neutron-api' to the latest revision of 'ussuri/stable'
+                Wait for up to 300s for app 'neutron-api' to reach the idle state
+                Upgrade 'neutron-api' from 'ussuri/stable' to the new channel: 'victoria/stable'
+                Wait for up to 300s for app 'neutron-api' to reach the idle state
+                Change charm config of 'neutron-api' 'openstack-origin' to 'cloud:focal-victoria'
+                Wait for up to 300s for app 'neutron-api' to reach the idle state
+                Verify that the workload of 'neutron-api' has been upgraded on units: neutron-api/0, neutron-api/1, neutron-api/2
             Upgrade plan for 'ceph-osd' to 'victoria'
                 Verify that all 'nova-compute' units has been upgraded
                 Upgrade software packages of 'ceph-osd' from the current APT repositories
