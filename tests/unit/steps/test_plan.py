@@ -172,10 +172,10 @@ async def test_generate_plan(mock_filter_hypervisors, model, cli_args):
                 Upgrade software packages of 'keystone' from the current APT repositories
                     Ψ Upgrade software packages on unit 'keystone/0'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
-                Wait for up to 300s for app 'keystone' to reach the idle state
+                Wait for up to 1200s for app 'keystone' to reach the idle state
                 Change charm config of 'keystone' 'action-managed-upgrade' from 'True' to 'False'
                 Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 300s for app 'keystone' to reach the idle state
+                Wait for up to 1200s for app 'keystone' to reach the idle state
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model 'test_model' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0

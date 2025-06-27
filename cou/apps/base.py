@@ -66,6 +66,7 @@ class OpenStackApplication(Application):
     """
 
     packages_to_hold: Optional[list] = field(default=None, init=False)
+    charm_refresh_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_timeout: int = field(default=STANDARD_IDLE_TIMEOUT, init=False)
     wait_for_model: bool = field(default=False, init=False)  # waiting only for application itself
     # OpenStack apps rely on the workload version of the packages to evaluate current OpenStack
@@ -574,10 +575,10 @@ class OpenStackApplication(Application):
         :rtype: list[PreUpgradeStep]
         """
         wait_step = PreUpgradeStep(
-            description=f"Wait for up to {STANDARD_IDLE_TIMEOUT}s for "
+            description=f"Wait for up to {self.charm_refresh_timeout}s for "
             f"app '{self.name}' to reach the idle state",
             parallel=False,
-            coro=self.model.wait_for_idle(STANDARD_IDLE_TIMEOUT, apps=[self.name]),
+            coro=self.model.wait_for_idle(self.charm_refresh_timeout, apps=[self.name]),
         )
         if self.is_from_charm_store:
             return [self._get_charmhub_migration_step(target), wait_step]
@@ -686,10 +687,10 @@ class OpenStackApplication(Application):
                     coro=self.model.upgrade_charm(self.name, self.target_channel(target)),
                 ),
                 UpgradeStep(
-                    description=f"Wait for up to {STANDARD_IDLE_TIMEOUT}s for "
+                    description=f"Wait for up to {self.charm_refresh_timeout}s for "
                     f"app '{self.name}' to reach the idle state",
                     parallel=False,
-                    coro=self.model.wait_for_idle(STANDARD_IDLE_TIMEOUT, apps=[self.name]),
+                    coro=self.model.wait_for_idle(self.charm_refresh_timeout, apps=[self.name]),
                 ),
             ]
 
