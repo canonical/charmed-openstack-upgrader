@@ -162,9 +162,9 @@ plan: |
                     Ψ Upgrade software packages on unit 'keystone/1'
                     Ψ Upgrade software packages on unit 'keystone/2'
                 Refresh 'keystone' to the latest revision of 'ussuri/stable'
-                Wait for up to 300s for app 'keystone' to reach the idle state
+                Wait for up to 1200s for app 'keystone' to reach the idle state
                 Upgrade 'keystone' from 'ussuri/stable' to the new channel: 'victoria/stable'
-                Wait for up to 300s for app 'keystone' to reach the idle state
+                Wait for up to 1200s for app 'keystone' to reach the idle state
                 Change charm config of 'keystone' 'openstack-origin' to 'cloud:focal-victoria'
                 Wait for up to 2400s for model '018346c5-f95c-46df-a34e-9a78bdec0018' to reach the idle state
                 Verify that the workload of 'keystone' has been upgraded on units: keystone/0, keystone/1, keystone/2
