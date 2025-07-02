@@ -35,6 +35,7 @@ class Keystone(OpenStackApplication):
     """
 
     wait_timeout = LONG_IDLE_TIMEOUT
+    charm_refresh_timeout = 1200
     wait_for_model = True
 
 

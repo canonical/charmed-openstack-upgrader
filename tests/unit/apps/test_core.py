@@ -212,9 +212,9 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         PreUpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            description=f"Wait for up to {app.charm_refresh_timeout}s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(app.charm_refresh_timeout, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
@@ -229,9 +229,9 @@ def test_upgrade_plan_ussuri_to_victoria(model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            description=f"Wait for up to {app.charm_refresh_timeout}s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(app.charm_refresh_timeout, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -308,9 +308,9 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable", switch="ch:keystone"),
         ),
         PreUpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            description=f"Wait for up to 1200s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(1200, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
@@ -325,9 +325,9 @@ def test_upgrade_plan_ussuri_to_victoria_ch_migration(model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            description=f"Wait for up to {app.charm_refresh_timeout}s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(app.charm_refresh_timeout, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
@@ -486,9 +486,9 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         PreUpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            description=f"Wait for up to {app.charm_refresh_timeout}s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(app.charm_refresh_timeout, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' 'action-managed-upgrade' "
@@ -503,9 +503,9 @@ def test_upgrade_plan_origin_already_on_next_openstack_release(model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            description=f"Wait for up to {app.charm_refresh_timeout}s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(app.charm_refresh_timeout, apps=[app.name]),
         ),
         PostUpgradeStep(
             description=f"Wait for up to 2400s for model '{model.name}' to reach the idle state",
@@ -612,9 +612,9 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             coro=model.upgrade_charm(app.name, "ussuri/stable"),
         ),
         PreUpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            description=f"Wait for up to {app.charm_refresh_timeout}s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(app.charm_refresh_timeout, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Upgrade '{app.name}' from 'ussuri/stable' to the new channel: "
@@ -623,9 +623,9 @@ def test_upgrade_plan_application_already_disable_action_managed(model):
             coro=model.upgrade_charm(app.name, "victoria/stable"),
         ),
         UpgradeStep(
-            description=f"Wait for up to 300s for app '{app.name}' to reach the idle state",
+            description=f"Wait for up to {app.charm_refresh_timeout}s for app '{app.name}' to reach the idle state",
             parallel=False,
-            coro=model.wait_for_idle(300, apps=[app.name]),
+            coro=model.wait_for_idle(app.charm_refresh_timeout, apps=[app.name]),
         ),
         UpgradeStep(
             description=f"Change charm config of '{app.name}' "
