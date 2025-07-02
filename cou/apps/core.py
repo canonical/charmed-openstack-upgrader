@@ -260,3 +260,24 @@ class Swift(OpenStackApplication):
             f"'{self.name}' application is not currently supported by COU. Please manually "
             "upgrade it."
         )
+
+
+@AppFactory.register_application(["neutron-api"])
+class NeutronApi(OpenStackApplication):
+    """Neutron API application class."""
+
+    def pre_upgrade_steps(
+        self, target: OpenStackRelease, units: Optional[list[Unit]]
+    ) -> list[PreUpgradeStep]:
+        """Pre Upgrade steps planning.
+
+        :param target: OpenStack release as target to upgrade.
+        :type target: OpenStackRelease
+        :param units: Units to generate upgrade plan
+        :type units: Optional[list[Unit]]
+        :return: List of pre upgrade steps.
+        :rtype: list[PreUpgradeStep]
+        """
+        steps = self._verify_nova_compute_step(target)
+        steps.extend(super().pre_upgrade_steps(target, units))
+        return steps

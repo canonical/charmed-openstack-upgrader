@@ -17,7 +17,7 @@ import pytest
 from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import OpenStackApplication
-from cou.apps.core import Keystone, NovaCompute, Swift, resume_nova_compute_unit
+from cou.apps.core import Keystone, NeutronApi, NovaCompute, Swift, resume_nova_compute_unit
 from cou.exceptions import (
     ActionFailed,
     ApplicationError,
@@ -1199,3 +1199,44 @@ async def test_resume_nova_compute_ceilometer_failure(model):
     )
     model.update_status.has_awaits(call("nova-compute/0"), call("ceilometer-agent/0"))
     assert model.update_status.await_count == 2
+
+
+@pytest.mark.asyncio
+@patch("cou.apps.base.OpenStackApplication._verify_nova_compute")
+@patch("cou.apps.base.OpenStackApplication._get_refresh_charm_steps")
+@patch("cou.apps.base.OpenStackApplication._get_upgrade_current_release_packages_step")
+async def test_neutron_api_pre_upgrade_steps(
+    mock_upgrade_package, mock_refresh_charm, mock_verify_nova_compute, model
+):
+    """Test neutron api pre upgrade steps verifying all nova computes."""
+    target = OpenStackRelease("wallaby")
+    machines = {f"{i}": generate_cou_machine(f"{i}", f"az-{i}") for i in range(3)}
+    units = (
+        {
+            f"neutron-api/{i}": Unit(
+                name=f"neutron-api/{i}",
+                workload_version="17.0.0",
+                machine=machines[f"{i}"],
+            )
+            for i in range(3)
+        },
+    )
+    app = NeutronApi(
+        name="neutron-api",
+        can_upgrade_to="wallaby/stable",
+        charm="neutron-api",
+        channel="victoria/stable",
+        config={"source": {"value": "distro"}},
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units=units,
+        workload_version="17.0.0",
+    )
+    app.pre_upgrade_steps(target, units)
+
+    mock_verify_nova_compute.assert_called_once_with(target)
+    mock_upgrade_package.assert_called_once_with(units)
+    mock_refresh_charm.assert_called_once_with(target)
