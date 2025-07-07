@@ -70,8 +70,8 @@ See `bug 2068151`_ and `#401`_ for more details.
 Manila and Manila Ganesha
 -------------------------
 
-The config-based upgrade does not work on certain version of Manila and Manila Ganesha charms. You
-might find a message like this
+The configuration based upgrade does not work on certain version of Manila and Manila Ganesha
+charms. You might find a message like this
 
 .. code::
 
