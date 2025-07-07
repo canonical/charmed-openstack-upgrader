@@ -67,9 +67,53 @@ doesn't update automatically. You might find a message like this
 See `bug 2068151`_ and `#401`_ for more details.
 
 
+Manila and Manila Ganesha
+-------------------------
+
+The config-based upgrade does not work on certain version of Manila and Manila Ganesha charms. You
+might find a message like this
+
+.. code::
+
+    Verify that the workload of 'manila' has been upgraded on units: manila/0, manila/1, manila/2 ✖
+
+    [ERROR] Unit(s) 'manila/0, manila/1, manila/2' did not complete the upgrade
+    to zed. Some local processes may still be executing; you may try re-running COU in a few
+    minutes.
+
+    Verify that the workload of 'manila-ganesha' has been upgraded on units: manila-ganesha/0,
+    manila-ganesha/1, manila-ganesha/2 ✖
+
+    [ERROR] Unit(s) 'manila-ganesha/0, manila-ganesha/1, manila-ganesha/2' did not complete the
+    upgrade to zed. Some local processes may still be executing; you may try re-running COU in a
+    few minutes.
+
+See `bug 2111738`_ for more details.
+
+
+Designate
+---------
+
+Refreshing designate charm from `yoga/stable` to `zed/stable` will leave the designate units in
+error state. You might find a message in `juju debug` like this
+
+.. code::
+
+    subprocess.CalledProcessError: Command '['/var/lib/juju/agents/unit-designate-1/.venv/bin/pip',
+    'install', '-U', '--force-reinstall', '--no-index', '--no-cache-dir', '-f', 'wheelhouse',
+    'pyparsing==3.0.9', 'flit-core==3.7.1', 'dnspython==2.2.1', 'pyaml==21.10.1', 'Jinja2==3.0.3',
+    'packaging==21.3', 'tomli==1.2.3', 'netifaces==0.11.0', 'netaddr==0.7.19', 'psutil==5.9.2',
+    'charms.openstack==0.0.1.dev1', 'pbr==5.10.0', 'charmhelpers==1.1.1.dev86', 'PyYAML==5.3.1',
+    'charms.reactive==1.5.1']' returned non-zero exit status 1.
+
+See `bug 2114254`_ for more details.
+
+
 .. LINKS:
 .. _Issues, charm procedures, and OpenStack upgrade notes: https://docs.openstack.org/charm-guide/latest/project/issues-and-procedures.html
 .. _bug 2060751: https://bugs.launchpad.net/charm-manila-ganesha/+bug/2060751
 .. _bug 2046381: https://bugs.launchpad.net/charm-rabbitmq-server/+bug/2046381
 .. _bug 2068151: https://bugs.launchpad.net/charm-ceph-osd/+bug/2068151
 .. _#401: https://github.com/canonical/charmed-openstack-upgrader/issues/401
+.. _bug 2111738: https://bugs.launchpad.net/charm-manila/+bug/2111738
+.. _bug 2114254: https://bugs.launchpad.net/charm-designate/+bug/2114254
