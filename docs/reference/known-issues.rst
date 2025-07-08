@@ -2,9 +2,10 @@
 Known issues
 ============
 
-The following issues are known to the OpenStack charms, and they are not related to **COU**. Some
-of the bug reporst might contains potential workarounds. If you encounter those issues, please
-check the relevant bug reports for more information.
+The following issues are known to the OpenStack charms, and they are not related to the **COU**
+project. Some of the bug reports might contains potential workarounds. If you encounter those
+issues, please check the relevant bug reports for more information.
+
 
 Ceph
 ----
@@ -38,6 +39,18 @@ doesn't update automatically. You might find a message like this
     }
 
 See `bug 2068151`_ and `#401`_ for more details.
+
+Ceph Dashboard
+--------------
+
+Upgrading from ``quincy/stable`` to ``reef/stable`` disables TLS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After the Ceph Dashboard charm is upgraded to ``reef/stable``, the units might go to ``blocked``
+state with a message includes something like: "Dashboard not responding". This is because the
+listening port was changed from ``8443`` to ``8080``.
+
+See `bug 2111793`_ for more details.
 
 
 Designate
@@ -118,6 +131,16 @@ channel) and re-run **COU**.
 
 See `bug 2060751`_ for details.
 
+Systemd service ``manila-share`` is masked after charm refresh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Certain versions of the Manila Ganesha charm will cause the ``manila-share`` service to be masked
+after the charm is refreshed. This will confuse the HA Cluster charm that deploys with Manila
+Ganesha charm, causing corosync to flap constantly which in turn causes the hacluster to go in and
+out of the blocked state.
+
+See `bug 2111818`_ for details.
+
 
 Rabbitmq Server
 ---------------
@@ -151,3 +174,6 @@ Potential known upgrade bugs and non-standard procedures are listed in the OpenS
 .. _#401: https://github.com/canonical/charmed-openstack-upgrader/issues/401
 .. _bug 2111738: https://bugs.launchpad.net/charm-manila/+bug/2111738
 .. _bug 2114254: https://bugs.launchpad.net/charm-designate/+bug/2114254
+.. _bug 2111818: https://bugs.launchpad.net/charm-manila-ganesha/+bug/2111818
+.. _bug 2111793: https://bugs.launchpad.net/charm-ceph-dashboard/+bug/2111793
+
