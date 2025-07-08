@@ -44,3 +44,6 @@ UI
 UUID
 VM
 YAML
+TLS
+corosync
+hacluster
