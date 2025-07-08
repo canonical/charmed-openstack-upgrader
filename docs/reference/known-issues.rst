@@ -131,8 +131,8 @@ channel) and re-run **COU**.
 
 See `bug 2060751`_ for details.
 
-Systemd service ``manila-share`` is masked after charm refresh
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Service ``manila-share`` is masked after charm refresh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Certain versions of the Manila Ganesha charm will cause the ``manila-share`` service to be masked
 after the charm is refreshed. This will confuse the HA Cluster charm that deploys with Manila
