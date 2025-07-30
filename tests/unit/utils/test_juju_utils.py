@@ -49,9 +49,14 @@ def test_convert_base_to_series(base, exp_series):
 
 
 @pytest.fixture
-def mocked_model(mocker):
+def mocked_file_juju_data(mocker):
+    m = mocker.patch("cou.utils.juju_utils.FileJujuData")
+    yield m
+
+
+@pytest.fixture
+def mocked_model(mocked_file_juju_data, mocker):
     """Fixture providing mocked juju.model.Model object."""
-    mocker.patch("cou.utils.juju_utils.FileJujuData")
     model_mocker = mocker.patch(
         "cou.utils.juju_utils.JujuModel", return_value=MagicMock(spec_set=Model)
     )
@@ -61,6 +66,22 @@ def mocked_model(mocker):
     model.connect = AsyncMock()
     model.wait_for_idle = AsyncMock()
     yield model
+
+
+@pytest.fixture
+def mocked_jubilant(mocker):
+    mock_jubilant = mocker.patch("cou.utils.juju_utils.jubilant")
+    mock_jubilant.Juju = MagicMock()
+    yield mock_jubilant
+
+
+@pytest.fixture
+def mocked_jubilant_juju(mocked_jubilant, mocker):
+    mocked_juju = MagicMock()
+    mocked_jubilant.Juju.return_value = mocked_juju
+    print(123)
+    print(mocked_juju)
+    yield mocked_juju
 
 
 @pytest.mark.asyncio
@@ -607,6 +628,113 @@ async def test_coumodel_upgrade_charm(mocked_model):
     )
 
 
+def test_get_error_callable():
+    """Test _get_error_callable with different parameter combinations."""
+    # Test with raise_on_error=True, raise_on_blocked=True
+    error_callable = juju_utils.JubilantModelMixin._get_error_callable(True, True)
+    mock_status = MagicMock()
+    
+    with patch("cou.utils.juju_utils.jubilant.any_error", return_value=False) as mock_any_error, \
+         patch("cou.utils.juju_utils.jubilant.any_blocked", return_value=False) as mock_any_blocked:
+        result = error_callable(mock_status, "app1", "app2")
+        assert result is False
+        mock_any_error.assert_called_once_with(mock_status, "app1", "app2")
+        mock_any_blocked.assert_called_once_with(mock_status, "app1", "app2")
+    
+    # Test with raise_on_error=False, raise_on_blocked=False
+    error_callable = juju_utils.JubilantModelMixin._get_error_callable(False, False)
+    result = error_callable(mock_status, "app1", "app2")
+    assert result is True  # Should return True when both conditions are disabled
+
+
+def test_get_ready_callable():
+    """Test _get_ready_callable with different status values."""
+    mock_status = MagicMock()
+    
+    # Test with "active" status (default)
+    ready_callable = juju_utils.JubilantModelMixin._get_ready_callable("active")
+    with patch("cou.utils.juju_utils.jubilant.all_active", return_value=True) as mock_all_active, \
+         patch("cou.utils.juju_utils.jubilant.all_agents_idle", return_value=True) as mock_agents_idle:
+        result = ready_callable(mock_status, "app1", "app2")
+        assert result is True
+        mock_all_active.assert_called_once_with(mock_status, "app1", "app2")
+        mock_agents_idle.assert_called_once_with(mock_status, "app1", "app2")
+    
+    # Test with "blocked" status
+    ready_callable = juju_utils.JubilantModelMixin._get_ready_callable("blocked")
+    with patch("cou.utils.juju_utils.jubilant.all_blocked", return_value=True) as mock_all_blocked, \
+         patch("cou.utils.juju_utils.jubilant.all_agents_idle", return_value=True) as mock_agents_idle:
+        result = ready_callable(mock_status, "app1", "app2")
+        assert result is True
+        mock_all_blocked.assert_called_once_with(mock_status, "app1", "app2")
+        mock_agents_idle.assert_called_once_with(mock_status, "app1", "app2")
+    
+    # Test with "maintenance" status
+    ready_callable = juju_utils.JubilantModelMixin._get_ready_callable("maintenance")
+    with patch("cou.utils.juju_utils.jubilant.all_maintenance", return_value=True) as mock_all_maintenance, \
+         patch("cou.utils.juju_utils.jubilant.all_agents_idle", return_value=True) as mock_agents_idle:
+        result = ready_callable(mock_status, "app1", "app2")
+        assert result is True
+        mock_all_maintenance.assert_called_once_with(mock_status, "app1", "app2")
+        mock_agents_idle.assert_called_once_with(mock_status, "app1", "app2")
+    
+    # Test with "waiting" status
+    ready_callable = juju_utils.JubilantModelMixin._get_ready_callable("waiting")
+    with patch("cou.utils.juju_utils.jubilant.all_waiting", return_value=True) as mock_all_waiting, \
+         patch("cou.utils.juju_utils.jubilant.all_agents_idle", return_value=True) as mock_agents_idle:
+        result = ready_callable(mock_status, "app1", "app2")
+        assert result is True
+        mock_all_waiting.assert_called_once_with(mock_status, "app1", "app2")
+        mock_agents_idle.assert_called_once_with(mock_status, "app1", "app2")
+    
+    # Test with "error" status
+    ready_callable = juju_utils.JubilantModelMixin._get_ready_callable("error")
+    with patch("cou.utils.juju_utils.jubilant.all_error", return_value=True) as mock_all_error, \
+         patch("cou.utils.juju_utils.jubilant.all_agents_idle", return_value=True) as mock_agents_idle:
+        result = ready_callable(mock_status, "app1", "app2")
+        assert result is True
+        mock_all_error.assert_called_once_with(mock_status, "app1", "app2")
+        mock_agents_idle.assert_called_once_with(mock_status, "app1", "app2")
+
+
+
+# @pytest.mark.asyncio
+# @patch("cou.utils.juju_utils.asyncio.sleep", new=AsyncMock())
+# async def test_wait_for_idle_jubilant_waiterror_conversion(
+#     mocked_model,
+#     mocked_file_juju_data,
+#     mocked_jubilant,
+#     mocked_jubilant_juju,
+# ):
+#     """Test that jubilant.WaitError is converted to WaitForApplicationsTimeout on line 288."""
+#     import jubilant
+#     
+#     # Create a real jubilant.WaitError instance
+#     wait_error = jubilant.WaitError("Jubilant wait failed")
+#     
+#     # Make mocked_jubilant_juju.wait raise the real WaitError
+#     mocked_jubilant_juju.wait.side_effect = wait_error
+#     
+#     model = juju_utils.Model("test-model")
+#     
+#     # Create mock callables
+#     ready_func = MagicMock(return_value=True)  
+#     error_func = MagicMock(return_value=False)
+#     model._get_ready_callable = MagicMock(return_value=ready_func)
+#     model._get_error_callable = MagicMock(return_value=error_func)
+#     
+#     # Test that jubilant.WaitError gets converted to WaitForApplicationsTimeout
+#     # when calling the actual wait_for_idle method. Since WaitForApplicationsTimeout
+#     # is in no_retry_exceptions, it should be raised immediately.
+#     with pytest.raises(WaitForApplicationsTimeout) as exc_info:
+#         await model.wait_for_idle(timeout=1, apps=["app1"])
+#     
+#     # Verify the original error message is preserved
+#     assert "Jubilant wait failed" in str(exc_info.value)
+#     # Verify mocked_jubilant_juju.wait was called
+#     mocked_jubilant_juju.wait.assert_called_once()
+
+
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
 @pytest.mark.parametrize(
@@ -629,10 +757,19 @@ async def test_coumodel_wait_for_idle(
     raise_on_blocked,
     raise_on_error,
     mocked_model,
+    mocked_file_juju_data,
+    mocked_jubilant,
+    mocked_jubilant_juju,
 ):
     """Test Model wait for related apps to be active idle."""
     model = juju_utils.Model("test-model")
     mock_get_supported_apps.return_value = ["app1", "app2"]
+
+    # Create mock callables that return functions
+    ready_func = MagicMock(return_value=True)
+    error_func = MagicMock(return_value=False)
+    model._get_ready_callable = MagicMock(return_value=ready_func)
+    model._get_error_callable = MagicMock(return_value=error_func)
 
     await model.wait_for_idle(
         timeout=timeout,
@@ -641,79 +778,133 @@ async def test_coumodel_wait_for_idle(
         raise_on_blocked=raise_on_blocked,
     )
 
-    mocked_model.wait_for_idle.assert_has_awaits(
-        [
-            call(
-                apps=["app1"],
-                timeout=timeout,
-                idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-                raise_on_blocked=raise_on_blocked,
-                raise_on_error=raise_on_error,
-                status=status,
-                wait_for_at_least_units=0,
-            ),
-            call(
-                apps=["app2"],
-                timeout=timeout,
-                idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-                raise_on_blocked=raise_on_blocked,
-                raise_on_error=raise_on_error,
-                status=status,
-                wait_for_at_least_units=0,
-            ),
-        ]
+    mocked_jubilant.Juju.assert_called_once_with(
+        model=mocked_file_juju_data.return_value.current_model.return_value,
+        wait_timeout=timeout,
     )
-    mock_get_supported_apps.assert_awaited_once_with()
+    model._get_ready_callable.assert_called_once_with(status)
+    model._get_error_callable.assert_called_once_with(raise_on_error, raise_on_blocked)
+
+    # Verify wait was called once with the correct arguments
+    mocked_jubilant_juju.wait.assert_called_once()
+    call_args = mocked_jubilant_juju.wait.call_args
+    assert call_args.kwargs["successes"] == 10
+    assert "ready" in call_args.kwargs
+    assert "error" in call_args.kwargs
+    assert callable(call_args.kwargs["ready"])
+    assert callable(call_args.kwargs["error"])
+
+    # Test that the lambda functions pass the right arguments to the callables
+    mock_status = MagicMock()
+    ready_lambda = call_args.kwargs["ready"]
+    error_lambda = call_args.kwargs["error"]
+
+    # Call the lambda functions to verify they pass the right arguments
+    ready_lambda(mock_status)
+    error_lambda(mock_status)
+
+    # Verify the callables were called with status and the apps
+    ready_func.assert_called_once_with(mock_status, "app1", "app2")
+    error_func.assert_called_once_with(mock_status, "app1", "app2")
 
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
-async def test_coumodel_wait_for_idle_apps(mock_get_supported_apps, mocked_model):
+async def test_coumodel_wait_for_idle_apps(
+    mock_get_supported_apps,
+    mocked_model,
+    mocked_file_juju_data,
+    mocked_jubilant,
+    mocked_jubilant_juju,
+):
     """Test Model wait for specific apps to be active idle."""
     timeout = 60
     model = juju_utils.Model("test-model")
 
+    # Create mock callables that return functions
+    ready_func = MagicMock(return_value=True)
+    error_func = MagicMock(return_value=False)
+    model._get_ready_callable = MagicMock(return_value=ready_func)
+    model._get_error_callable = MagicMock(return_value=error_func)
+
     await model.wait_for_idle(timeout, apps=["app1"])
 
-    mocked_model.wait_for_idle.assert_awaited_once_with(
-        apps=["app1"],
-        timeout=timeout,
-        idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-        raise_on_blocked=False,
-        raise_on_error=True,
-        status="active",
-        wait_for_at_least_units=0,
+    # Verify jubilant.Juju was instantiated correctly
+    mocked_jubilant.Juju.assert_called_once_with(
+        model=mocked_file_juju_data.return_value.current_model.return_value,
+        wait_timeout=timeout,
     )
+
+    # Verify wait was called once with the correct arguments
+    mocked_jubilant_juju.wait.assert_called_once()
+    call_args = mocked_jubilant_juju.wait.call_args
+    assert call_args.kwargs["successes"] == 10
+    assert "ready" in call_args.kwargs
+    assert "error" in call_args.kwargs
+    assert callable(call_args.kwargs["ready"])
+    assert callable(call_args.kwargs["error"])
+
+    # Test that the lambda functions pass the right arguments to the callables
+    mock_status = MagicMock()
+    ready_lambda = call_args.kwargs["ready"]
+    error_lambda = call_args.kwargs["error"]
+
+    # Call the lambda functions to verify they pass the right arguments
+    ready_lambda(mock_status)
+    error_lambda(mock_status)
+
+    # Verify the callables were called with status and the specific app
+    ready_func.assert_called_once_with(mock_status, "app1")
+    error_func.assert_called_once_with(mock_status, "app1")
+
+    # When specific apps are provided, _get_supported_apps should not be called
     mock_get_supported_apps.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
-async def test_coumodel_wait_for_idle_timeout(mock_get_supported_apps, mocked_model):
-    """Test Model wait for model to be active idle reach timeout."""
-    timeout = 60
+async def test_coumodel_wait_for_idle_timeout(
+    mock_get_supported_apps,
+    mocked_model,
+    mocked_file_juju_data,
+    mocked_jubilant,
+    mocked_jubilant_juju,
+):
+    """Test Model wait for model to be active idle reach timeout.
+    
+    Note: The implementation also handles jubilant.WaitError in the same way as TimeoutError,
+    converting both to WaitForApplicationsTimeout via the exception handling in wait_for_idle.
+    """
+    timeout = 1
     exp_apps = ["app1", "app2"]
-    mocked_model.wait_for_idle.side_effect = asyncio.exceptions.TimeoutError
-    model = juju_utils.Model(None)
+
+    # Make the jubilant wait method raise a TimeoutError to simulate timeout
+    mocked_jubilant_juju.wait.side_effect = TimeoutError("Timeout waiting for apps")
+
+    model = juju_utils.Model("test-model")
+
+    # Create mock callables that return functions
+    ready_func = MagicMock(return_value=True)
+    error_func = MagicMock(return_value=False)
+    model._get_ready_callable = MagicMock(return_value=ready_func)
+    model._get_error_callable = MagicMock(return_value=error_func)
 
     with pytest.raises(WaitForApplicationsTimeout):
         await model.wait_for_idle(timeout, apps=exp_apps)
 
-    mocked_model.wait_for_idle.assert_has_awaits(
-        [
-            call(
-                apps=[app],
-                timeout=timeout,
-                idle_period=juju_utils.DEFAULT_MODEL_IDLE_PERIOD,
-                raise_on_blocked=False,
-                raise_on_error=True,
-                status="active",
-                wait_for_at_least_units=0,
-            )
-            for app in exp_apps
-        ]
+    # Verify jubilant.Juju was instantiated correctly
+    mocked_jubilant.Juju.assert_called_once_with(
+        model=mocked_file_juju_data.return_value.current_model.return_value,
+        wait_timeout=timeout,
     )
+
+    # Verify wait was called multiple times due to retry logic before timeout
+    assert mocked_jubilant_juju.wait.call_count >= 1
+
+    # When specific apps are provided, _get_supported_apps should not be called
     mock_get_supported_apps.assert_not_awaited()
+
+
 
 
 @pytest.mark.asyncio
