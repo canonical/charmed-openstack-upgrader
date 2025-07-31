@@ -59,5 +59,7 @@ sudo snap install --dangerous ./charmed-openstack-upgrader.snap
 sudo snap alias charmed-openstack-upgrader.cou cou
 sudo snap connect charmed-openstack-upgrader:juju-client-observe
 sudo snap connect charmed-openstack-upgrader:dot-local-share-cou
+sudo snap connect charmed-openstack-upgrader:dot-local-share-juju
 sudo snap connect charmed-openstack-upgrader:ssh-public-keys
+sudo snap connect charmed-openstack-upgrader:juju-bin juju:juju-bin
 ```

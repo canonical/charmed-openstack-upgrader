@@ -23,12 +23,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, List, Optional, Sequence
 
+import jubilant
 from juju.action import Action
 from juju.application import Application as JujuApplication
 from juju.client._definitions import ApplicationStatus, Base, FullStatus
 from juju.client.connector import NoConnectionException
 from juju.client.jujudata import FileJujuData
-from juju.errors import JujuAppError, JujuConnectionError, JujuError, JujuUnitError
+from juju.errors import JujuConnectionError, JujuError
 from juju.model import Model as JujuModel
 from juju.unit import Unit as JujuUnit
 from juju.utils import get_version_series
@@ -198,7 +199,99 @@ class Application:
         return self.origin == "cs"
 
 
-class Model:
+class JubilantModelMixin:
+
+    @staticmethod
+    def _get_error_callable(
+        raise_on_error: bool, raise_on_blocked: bool
+    ) -> Callable[[jubilant.Status], bool]:
+        def callable(status: jubilant.Status, *apps: str) -> bool:
+            any_error: bool = True
+            any_blocked: bool = True
+            if raise_on_error:
+                any_error = jubilant.any_error(status, *apps)
+            if raise_on_blocked:
+                any_blocked = jubilant.any_blocked(status, *apps)
+            return any_error and any_blocked
+
+        return callable
+
+    @staticmethod
+    def _get_ready_callable(target_status: str) -> Callable[[jubilant.Status], bool]:
+        def callable(status: jubilant.Status, *apps: str) -> bool:
+            check_workload_status_func = jubilant.all_active
+            if target_status == "blocked":
+                check_workload_status_func = jubilant.all_blocked
+            elif target_status == "maintenance":
+                check_workload_status_func = jubilant.all_maintenance
+            elif target_status == "waiting":
+                check_workload_status_func = jubilant.all_waiting
+            elif target_status == "error":
+                check_workload_status_func = jubilant.all_error
+            return check_workload_status_func(status, *apps) and jubilant.all_agents_idle(
+                status, *apps
+            )
+
+        return callable
+
+    async def wait_for_idle(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        timeout: int,
+        status: str = "active",
+        idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
+        apps: Optional[list[str]] = None,
+        raise_on_blocked: bool = False,
+        raise_on_error: bool = True,
+    ) -> None:
+        """Wait for application(s) to reach target idle state.
+
+        If no applications are provided, this function will wait for all COU-related applications.
+
+        :param timeout: How long (in seconds) to wait for the bundle settles before raising an
+                        WaitForApplicationsTimeout.
+        :type timeout: int
+        :param status: The status to wait for.
+        :type status: str
+        :param idle_period: How long (in seconds) statuses of all apps need to be `idle`. This
+                            delay is used to ensure that any pending hooks have a chance to start
+                            to avoid false positives.
+        :type idle_period: int
+        :param apps: Applications to wait, defaults to None
+        :type apps: Optional[list[str]]
+        :param raise_on_blocked: If any unit or app going into "blocked" status immediately raises
+                                 WaitForApplicationsTimeout, defaults to False.
+        :type raise_on_blocked: bool
+        :param raise_on_error: If any unit or app going into "error" status immediately raises
+                                 WaitForApplicationsTimeout, defaults to True.
+        :type raise_on_error: bool
+        """
+        if apps is None:
+            apps = await self._get_supported_apps()
+
+        # jubilant init only init the python object, no connection is created.
+        # so it's safy to init every time.
+        _juju = jubilant.Juju(model=self._juju_data.current_model(), wait_timeout=timeout)
+
+        ready_callable = self._get_ready_callable(status)
+        error_callable = self._get_error_callable(raise_on_error, raise_on_blocked)
+
+        @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
+        @wraps(self.wait_for_idle)
+        async def _wait_for_idle(*apps: str) -> None:
+            try:
+                _juju.wait(
+                    ready=lambda status: ready_callable(status, *apps),
+                    error=lambda status: error_callable(status, *apps),
+                    successes=10,
+                )
+            except (TimeoutError, jubilant.WaitError) as error:
+                raise WaitForApplicationsTimeout(str(error)) from error
+
+        tasks = [_wait_for_idle(*apps)]
+        await asyncio.gather(*tasks)
+
+
+class Model(JubilantModelMixin):
     """COU model object.
 
     This version of the model provides better waiting for the model to turn idle, auto-reconnection
@@ -646,74 +739,6 @@ class Model:
             revision=revision,
             switch=switch,
         )
-
-    async def wait_for_idle(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self,
-        timeout: int,
-        status: str = "active",
-        idle_period: int = DEFAULT_MODEL_IDLE_PERIOD,
-        apps: Optional[list[str]] = None,
-        raise_on_blocked: bool = False,
-        raise_on_error: bool = True,
-    ) -> None:
-        """Wait for application(s) to reach target idle state.
-
-        If no applications are provided, this function will wait for all COU-related applications.
-
-        :param timeout: How long (in seconds) to wait for the bundle settles before raising an
-                        WaitForApplicationsTimeout.
-        :type timeout: int
-        :param status: The status to wait for.
-        :type status: str
-        :param idle_period: How long (in seconds) statuses of all apps need to be `idle`. This
-                            delay is used to ensure that any pending hooks have a chance to start
-                            to avoid false positives.
-        :type idle_period: int
-        :param apps: Applications to wait, defaults to None
-        :type apps: Optional[list[str]]
-        :param raise_on_blocked: If any unit or app going into "blocked" status immediately raises
-                                 WaitForApplicationsTimeout, defaults to False.
-        :type raise_on_blocked: bool
-        :param raise_on_error: If any unit or app going into "error" status immediately raises
-                                 WaitForApplicationsTimeout, defaults to True.
-        :type raise_on_error: bool
-        """
-        if apps is None:
-            apps = await self._get_supported_apps()
-        semaphore = asyncio.Semaphore(5)
-
-        @retry(timeout=timeout, no_retry_exceptions=(WaitForApplicationsTimeout,))
-        @wraps(self.wait_for_idle)
-        async def _wait_for_idle(app: str) -> None:
-            # NOTE(rgildein): Defining wrapper so we can use retry with proper timeout
-            model = await self._get_model()
-            try:
-                # NOTE(jneo8): Use semaphore to limit the number of tasks to avoid sending too much
-                # request to API server at the same time.
-                async with semaphore:
-                    await model.wait_for_idle(
-                        apps=[app],
-                        timeout=timeout,
-                        idle_period=idle_period,
-                        raise_on_blocked=raise_on_blocked,
-                        raise_on_error=raise_on_error,
-                        status=status,
-                        wait_for_at_least_units=0,  # don't hang if an app has no units
-                    )
-            except (asyncio.exceptions.TimeoutError, JujuAppError, JujuUnitError) as error:
-                # NOTE(rgildein): Catching TimeoutError raised as exception when wait_for_idle
-                # reached timeout. Also adding two spaces to make it more user friendly.
-                # example:
-                # Timed out waiting for model:
-                #   rabbitmq-server/0 [idle] active: Unit is ready
-                #   neutron-api/0 [idle] active: Unit is ready
-                #   glance/0 [idle] active: Unit is ready
-                #   cinder/0 [idle] active: Unit is ready
-                msg = str(error).replace("\n", "\n  ", 1)
-                raise WaitForApplicationsTimeout(msg) from error
-
-        tasks = [_wait_for_idle(app=app) for app in apps]
-        await asyncio.gather(*tasks)
 
     async def resolve_all(self) -> None:
         """Resolve all the units in the model if they are in error status."""
