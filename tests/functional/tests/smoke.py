@@ -76,6 +76,7 @@ class SmokeTest(unittest.TestCase):
             "juju-client-observe",
             "dot-local-share-cou",
             "ssh-public-keys",
+            "dot-local-share-juju",
         ]
         for interface in interfaces_to_connect:
             cls.snap_install_commands(
@@ -88,6 +89,10 @@ class SmokeTest(unittest.TestCase):
                 ],
                 f"Cannot connect the interface: {interface}",
             )
+        cls.snap_install_commands(
+            ["sudo", "snap", "connect", "charmed-openstack-upgrader:juju-bin", "juju:juju-bin"],
+            "Cannot connect the interface: juju-bin",
+        )
 
         # make the cou alias
         cls.snap_install_commands(
