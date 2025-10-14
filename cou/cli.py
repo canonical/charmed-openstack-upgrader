@@ -27,6 +27,7 @@ from juju.errors import JujuError
 from cou.commands import CLIargs, parse_args
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
 from cou.logging import get_log_file, setup_logging
+from cou.ssdlc import SSDLCSysEvent, log_ssdlc_system_event
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
@@ -261,12 +262,23 @@ def entrypoint() -> None:
         log_file = get_log_file()
         setup_logging(log_file, log_level)
 
+        # Log SSDLC startup event
+        log_ssdlc_system_event(SSDLCSysEvent.STARTUP)
+
         asyncio.run(_run_command(args))
+        # Log SSDLC shutdown event on successful completion
+        log_ssdlc_system_event(SSDLCSysEvent.SHUTDOWN)
     except HighestReleaseAchieved as exc:
         progress_indicator.succeed()
         print(exc)
+        # Log SSDLC shutdown event (this is a successful completion case)
+        log_ssdlc_system_event(SSDLCSysEvent.SHUTDOWN)
     except TimeoutException:
         progress_indicator.fail()
+        log_ssdlc_system_event(
+            SSDLCSysEvent.CRASH,
+            msg="Connection timeout - connection was lost or timed out during operation",
+        )
         print(
             "The connection was lost.\n"
             "Check your connection or increase the timeout.\n"
@@ -276,6 +288,9 @@ def entrypoint() -> None:
         sys.exit(1)
     except COUException as exc:
         progress_indicator.fail()
+        log_ssdlc_system_event(
+            SSDLCSysEvent.CRASH, msg=f"COU exception occurred: {type(exc).__name__} - {str(exc)}"
+        )
         logger.error(exc)
         logger.error(
             "See the known issues at https://canonical-charmed-openstack-upgrader.readthedocs-"
@@ -284,6 +299,9 @@ def entrypoint() -> None:
         sys.exit(1)
     except JujuError as exc:
         progress_indicator.fail()
+        log_ssdlc_system_event(
+            SSDLCSysEvent.CRASH, msg=f"Juju library error: {type(exc).__name__} - {str(exc)}"
+        )
         logger.error("Error occurred in Juju's Python library.")
         logger.error(exc)
         sys.exit(1)
@@ -291,9 +309,16 @@ def entrypoint() -> None:
         # NOTE(rgildein): if spinner_id is not None it means that indicator was not finished
         if progress_indicator.spinner_id is not None:
             progress_indicator.fail()
+        log_ssdlc_system_event(
+            SSDLCSysEvent.CRASH,
+            msg="Manual termination - user interrupted execution (SIGINT/SIGTERM)",
+        )
         print(str(exc) or "charmed-openstack-upgrader has been terminated")
         sys.exit(getattr(exc, "exit_code", 130))
     except Exception as exc:  # pylint: disable=broad-exception-caught
+        log_ssdlc_system_event(
+            SSDLCSysEvent.CRASH, msg=f"Unexpected error: {type(exc).__name__} - {str(exc)}"
+        )
         logger.error("Unexpected error occurred.")
         logger.exception(exc)
         sys.exit(2)
