@@ -19,6 +19,7 @@ from juju.errors import JujuError
 
 from cou import cli
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
+from cou.ssdlc import SSDLCSysEvent
 from cou.steps import PreUpgradeStep, UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.plan import PlanStatus
@@ -320,6 +321,7 @@ async def test_run_command(
         mock_apply_upgrade_plan.assert_awaited_once()
 
 
+@patch("cou.cli.log_ssdlc_system_event")
 @patch("cou.cli.print")
 @patch("cou.cli.progress_indicator")
 @patch("cou.cli.run_post_upgrade_sanity_check")
@@ -339,6 +341,7 @@ def test_entrypoint(
     mock_run_post_upgrade_sanity_check,
     mock_indicator,
     mock_print,
+    mock_log_ssdlc,
 ):
     """Test successful entrypoint execution."""
     mock_sys.argv = ["cou", "upgrade"]
@@ -360,29 +363,39 @@ def test_entrypoint(
         f"Full execution log: '{mock_get_log_file.return_value}'",
     )
     mock_indicator.stop.assert_called_once()
+    # Verify SSDLC logging
+    assert mock_log_ssdlc.call_count == 2  # STARTUP and SHUTDOWN
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.STARTUP)
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.SHUTDOWN)
 
 
+@patch("cou.cli.log_ssdlc_system_event")
 @patch("cou.cli.progress_indicator")
 @patch("cou.cli.parse_args", new=MagicMock())
 @patch("cou.cli.get_log_level", new=MagicMock())
 @patch("cou.cli.setup_logging", new=MagicMock())
 @patch("cou.cli._run_command")
-def test_entrypoint_highest_release(mock_run_command, mock_indicator):
-    """Test TimeoutException exception during entrypoint execution."""
+def test_entrypoint_highest_release(mock_run_command, mock_indicator, mock_log_ssdlc):
+    """Test HighestReleaseAchieved exception during entrypoint execution."""
     mock_run_command.side_effect = HighestReleaseAchieved
 
     cli.entrypoint()
 
     mock_indicator.succeed.assert_called_once_with()
     mock_indicator.stop.assert_called_once_with()
+    # Verify SSDLC logging: STARTUP + SHUTDOWN (successful case)
+    assert mock_log_ssdlc.call_count == 2
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.STARTUP)
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.SHUTDOWN)
 
 
+@patch("cou.cli.log_ssdlc_system_event")
 @patch("cou.cli.progress_indicator")
 @patch("cou.cli.parse_args", new=MagicMock())
 @patch("cou.cli.get_log_level", new=MagicMock())
 @patch("cou.cli.setup_logging", new=MagicMock())
 @patch("cou.cli._run_command")
-def test_entrypoint_failure_timeout(mock_run_command, mock_indicator):
+def test_entrypoint_failure_timeout(mock_run_command, mock_indicator, mock_log_ssdlc):
     """Test TimeoutException exception during entrypoint execution."""
     mock_run_command.side_effect = TimeoutException
 
@@ -391,6 +404,14 @@ def test_entrypoint_failure_timeout(mock_run_command, mock_indicator):
 
     mock_indicator.fail.assert_called_once_with()
     mock_indicator.stop.assert_called_once_with()
+    # Verify SSDLC logging: STARTUP + CRASH
+    assert mock_log_ssdlc.call_count == 2
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.STARTUP)
+    # Verify crash event with timeout message
+    crash_calls = [
+        call for call in mock_log_ssdlc.call_args_list if call[0][0] == SSDLCSysEvent.CRASH
+    ]
+    assert len(crash_calls) == 1
 
 
 @patch("cou.cli.progress_indicator")
@@ -408,12 +429,13 @@ def test_entrypoint_failure_validation_error(mock_run_command, mock_indicator):
     mock_indicator.stop.assert_called_once_with()
 
 
+@patch("cou.cli.log_ssdlc_system_event")
 @patch("cou.cli.progress_indicator")
 @patch("cou.cli.parse_args", new=MagicMock())
 @patch("cou.cli.get_log_level", new=MagicMock())
 @patch("cou.cli.setup_logging", new=MagicMock())
 @patch("cou.cli._run_command")
-def test_entrypoint_failure_cou_exception(mock_run_command, mock_indicator):
+def test_entrypoint_failure_cou_exception(mock_run_command, mock_indicator, mock_log_ssdlc):
     """Test COUException exception during entrypoint execution."""
     mock_run_command.side_effect = COUException
 
@@ -422,14 +444,22 @@ def test_entrypoint_failure_cou_exception(mock_run_command, mock_indicator):
 
     mock_indicator.fail.assert_called_once_with()
     mock_indicator.stop.assert_called_once_with()
+    # Verify SSDLC logging: STARTUP + CRASH
+    assert mock_log_ssdlc.call_count == 2
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.STARTUP)
+    crash_calls = [
+        call for call in mock_log_ssdlc.call_args_list if call[0][0] == SSDLCSysEvent.CRASH
+    ]
+    assert len(crash_calls) == 1
 
 
+@patch("cou.cli.log_ssdlc_system_event")
 @patch("cou.cli.progress_indicator")
 @patch("cou.cli.parse_args", new=MagicMock())
 @patch("cou.cli.get_log_level", new=MagicMock())
 @patch("cou.cli.setup_logging", new=MagicMock())
 @patch("cou.cli._run_command")
-def test_entrypoint_failure_juju_error(mock_run_command, mock_indicator):
+def test_entrypoint_failure_juju_error(mock_run_command, mock_indicator, mock_log_ssdlc):
     """Test JujuError exception during entrypoint execution."""
     mock_run_command.side_effect = JujuError
 
@@ -438,8 +468,16 @@ def test_entrypoint_failure_juju_error(mock_run_command, mock_indicator):
 
     mock_indicator.fail.assert_called_once_with()
     mock_indicator.stop.assert_called_once_with()
+    # Verify SSDLC logging: STARTUP + CRASH
+    assert mock_log_ssdlc.call_count == 2
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.STARTUP)
+    crash_calls = [
+        call for call in mock_log_ssdlc.call_args_list if call[0][0] == SSDLCSysEvent.CRASH
+    ]
+    assert len(crash_calls) == 1
 
 
+@patch("cou.cli.log_ssdlc_system_event")
 @patch("cou.cli.print")
 @patch("cou.cli.progress_indicator")
 @patch("cou.cli.parse_args", new=MagicMock())
@@ -448,7 +486,7 @@ def test_entrypoint_failure_juju_error(mock_run_command, mock_indicator):
 @patch("cou.cli._run_command")
 @pytest.mark.parametrize("message", ["test", "", "test2"])
 def test_entrypoint_failure_keyboard_interrupt(
-    mock_run_command, mock_indicator, mock_print, message
+    mock_run_command, mock_indicator, mock_print, mock_log_ssdlc, message
 ):
     """Test KeyboardInterrupt exception during entrypoint execution."""
     mock_run_command.side_effect = KeyboardInterrupt(message)
@@ -459,15 +497,25 @@ def test_entrypoint_failure_keyboard_interrupt(
     mock_print.assert_any_call(message or "charmed-openstack-upgrader has been terminated")
     mock_indicator.fail.assert_called_once_with()
     mock_indicator.stop.assert_called_once_with()
+    # Verify SSDLC logging: STARTUP + CRASH
+    assert mock_log_ssdlc.call_count == 2
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.STARTUP)
+    crash_calls = [
+        call for call in mock_log_ssdlc.call_args_list if call[0][0] == SSDLCSysEvent.CRASH
+    ]
+    assert len(crash_calls) == 1
 
 
+@patch("cou.cli.log_ssdlc_system_event")
 @patch("cou.cli.progress_indicator")
 @patch("cou.cli.parse_args", new=MagicMock())
 @patch("cou.cli.get_log_level", new=MagicMock())
 @patch("cou.cli.setup_logging", new=MagicMock())
 @patch("cou.cli._run_command")
 @pytest.mark.parametrize("exception", [ValueError, KeyError, RuntimeError])
-def test_entrypoint_failure_unexpected_exception(mock_run_command, mock_indicator, exception):
+def test_entrypoint_failure_unexpected_exception(
+    mock_run_command, mock_indicator, mock_log_ssdlc, exception
+):
     """Test Exception exception during entrypoint execution."""
     mock_run_command.side_effect = exception
 
@@ -475,6 +523,13 @@ def test_entrypoint_failure_unexpected_exception(mock_run_command, mock_indicato
         cli.entrypoint()
 
     mock_indicator.stop.assert_called_once_with()
+    # Verify SSDLC logging: STARTUP + CRASH
+    assert mock_log_ssdlc.call_count == 2
+    mock_log_ssdlc.assert_any_call(SSDLCSysEvent.STARTUP)
+    crash_calls = [
+        call for call in mock_log_ssdlc.call_args_list if call[0][0] == SSDLCSysEvent.CRASH
+    ]
+    assert len(crash_calls) == 1
 
 
 @pytest.mark.asyncio
