@@ -52,7 +52,7 @@ Below is a table showing the migration versions from Ussuri to Caracal.
 Details of each migration can be found at:
 
 - `unmaintained/yoga - nova/nova/db/main/legacy_migrations/versions`_
-- `2024.1 - nova/nova/db/main/migrations/versions`_
+- `unmaintained/2024.1 - nova/nova/db/main/migrations/versions`_
 
 db online_data_migration
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,6 +103,6 @@ More Information
 
 .. LINKS
 .. _unmaintained/yoga - nova/nova/db/main/legacy_migrations/versions: https://opendev.org/openstack/nova/src/branch/unmaintained/yoga/nova/db/main/legacy_migrations/versions
-.. _2024.1 - nova/nova/db/main/migrations/versions: https://opendev.org/openstack/nova/src/branch/stable/2024.1/nova/db/main/migrations/versions
+.. _unmaintained/2024.1 - nova/nova/db/main/migrations/versions: https://opendev.org/openstack/nova/src/branch/unmaintained/2024.1/nova/db/main/migrations/versions
 .. _opendev/openstack/nova: https://opendev.org/openstack/nova
 .. _nova_online_migrations: https://opendev.org/openstack/nova/src/commit/fcda90460f6831b67027c19ded655b5e7c5e5a1e/nova/cmd/manage.py#L195
