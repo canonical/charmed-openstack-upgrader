@@ -26,12 +26,7 @@ from packaging.version import Version
 from cou.apps.base import LONG_IDLE_TIMEOUT, OpenStackApplication
 from cou.apps.factory import AppFactory
 from cou.exceptions import ApplicationError
-from cou.steps import (
-    ApplicationUpgradePlan,
-    PostUpgradeStep,
-    PreUpgradeStep,
-    UnitUpgradeStep,
-)
+from cou.steps import ApplicationUpgradePlan, PostUpgradeStep, PreUpgradeStep, UnitUpgradeStep
 from cou.steps.ceph import set_require_osd_release_option_on_unit
 from cou.utils import progress_indicator
 from cou.utils.juju_utils import Unit

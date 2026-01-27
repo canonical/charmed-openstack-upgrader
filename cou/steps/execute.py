@@ -18,12 +18,7 @@ import sys
 import time
 
 from cou.exceptions import HaltUpgradeExecution, RunUpgradeError
-from cou.steps import (
-    ApplicationUpgradePlan,
-    BaseStep,
-    HypervisorUpgradePlan,
-    UpgradeStep,
-)
+from cou.steps import ApplicationUpgradePlan, BaseStep, HypervisorUpgradePlan, UpgradeStep
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 
 GROUP_STEPS = (ApplicationUpgradePlan, HypervisorUpgradePlan)

@@ -57,12 +57,7 @@ from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
 from cou.steps.vault import verify_vault_is_unsealed
 from cou.utils import print_and_debug
-from cou.utils.juju_utils import (
-    DEFAULT_TIMEOUT,
-    Machine,
-    Unit,
-    get_applications_by_charm_name,
-)
+from cou.utils.juju_utils import DEFAULT_TIMEOUT, Machine, Unit, get_applications_by_charm_name
 from cou.utils.nova_compute import get_empty_hypervisors
 from cou.utils.openstack import LTS_TO_OS_RELEASE, OpenStackRelease
 

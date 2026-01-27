@@ -17,11 +17,7 @@ from unittest.mock import MagicMock, PropertyMock, call, patch
 import pytest
 
 from cou.apps.base import OpenStackApplication
-from cou.exceptions import (
-    ApplicationError,
-    HaltUpgradePlanGeneration,
-    MismatchedOpenStackVersions,
-)
+from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration, MismatchedOpenStackVersions
 from cou.steps import PreUpgradeStep, UnitUpgradeStep, UpgradeStep
 from cou.utils.juju_utils import Machine, Unit
 from cou.utils.openstack import OpenStackRelease

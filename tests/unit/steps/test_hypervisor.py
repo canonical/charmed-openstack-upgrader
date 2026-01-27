@@ -18,12 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import NovaCompute
-from cou.steps import (
-    HypervisorUpgradePlan,
-    PostUpgradeStep,
-    PreUpgradeStep,
-    UpgradeStep,
-)
+from cou.steps import HypervisorUpgradePlan, PostUpgradeStep, PreUpgradeStep, UpgradeStep
 from cou.steps.hypervisor import AZs, HypervisorGroup, HypervisorUpgradePlanner
 from cou.utils.juju_utils import Application, Machine, SubordinateUnit, Unit
 from cou.utils.openstack import OpenStackRelease

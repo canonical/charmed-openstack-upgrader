@@ -31,12 +31,7 @@ from cou.ssdlc import SSDLCSysEvent, log_ssdlc_system_event
 from cou.steps import UpgradePlan
 from cou.steps.analyze import Analysis
 from cou.steps.execute import apply_step
-from cou.steps.plan import (
-    PlanStatus,
-    generate_plan,
-    post_upgrade_sanity_checks,
-    verify_cloud,
-)
+from cou.steps.plan import PlanStatus, generate_plan, post_upgrade_sanity_checks, verify_cloud
 from cou.utils import print_and_debug, progress_indicator, prompt_input
 from cou.utils.cli import interrupt_handler
 from cou.utils.juju_utils import Model
