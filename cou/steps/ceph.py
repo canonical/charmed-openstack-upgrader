@@ -17,12 +17,7 @@ import json
 import logging
 from typing import Sequence
 
-from cou.exceptions import (
-    ApplicationError,
-    ApplicationNotFound,
-    RunUpgradeError,
-    UnitNotFound,
-)
+from cou.exceptions import ApplicationError, ApplicationNotFound, RunUpgradeError, UnitNotFound
 from cou.steps.analyze import Analysis
 from cou.utils.juju_utils import Application, Model, get_applications_by_charm_name
 from cou.utils.openstack import CEPH_RELEASES

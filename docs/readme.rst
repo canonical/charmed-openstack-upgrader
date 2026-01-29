@@ -64,7 +64,7 @@ repository with the starter pack. Once this is done, documentation contributors
 should follow section `Work with your documentation`_.
 
 **Note:** After setting up your repository with the starter pack, you need to track the changes made to it and manually update your repository with the required files.
-The `change log <https://github.com/canonical/sphinx-docs-starter-pack/wiki/Change-log>`_ lists the most relevant (and of course all breaking) changes.
+The `change log <https://github.com/canonical/sphinx-docs-starter-pack/wiki/Change-log>`__ lists the most relevant (and of course all breaking) changes.
 We're planning to provide the contents of this repository as an installable package in the future to make updates easier.
 
 See the `Read the Docs at Canonical <https://library.canonical.com/documentation/read-the-docs>`_ and
@@ -230,7 +230,7 @@ The following links can help you with additional configuration:
 Change log
 ~~~~~~~~~~
 
-See the `change log <https://github.com/canonical/sphinx-docs-starter-pack/wiki/Change-log>`_ for a list of relevant changes to the starter pack.
+See the `change log <https://github.com/canonical/sphinx-docs-starter-pack/wiki/Change-log>`__ for a list of relevant changes to the starter pack.
 
 Work with your documentation
 ----------------------------

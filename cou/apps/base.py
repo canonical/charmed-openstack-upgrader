@@ -24,11 +24,7 @@ from typing import Any, Optional
 
 import yaml
 
-from cou.exceptions import (
-    ApplicationError,
-    HaltUpgradePlanGeneration,
-    MismatchedOpenStackVersions,
-)
+from cou.exceptions import ApplicationError, HaltUpgradePlanGeneration, MismatchedOpenStackVersions
 from cou.steps import (
     ApplicationUpgradePlan,
     PostUpgradeStep,

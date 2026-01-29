@@ -16,12 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cou.logging import (
-    TracebackInfoFilter,
-    filter_debug_logs,
-    get_log_file,
-    setup_logging,
-)
+from cou.logging import TracebackInfoFilter, filter_debug_logs, get_log_file, setup_logging
 
 
 def test_filter_clears_exc_info_and_text():
