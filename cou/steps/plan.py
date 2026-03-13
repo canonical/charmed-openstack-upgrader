@@ -404,7 +404,7 @@ async def _verify_model_idle(analysis_result: Analysis) -> None:
             raise_on_blocked=True,
         )
     except Exception as e:  # pylint: disable=broad-exception-caught
-        PlanStatus.add_message(str(e), MessageType.ERROR)
+        PlanStatus.add_message(f"Model is not idle: {str(e)}", MessageType.ERROR)
 
 
 def _is_control_plane_upgraded(analysis_result: Analysis) -> bool:
