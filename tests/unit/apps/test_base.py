@@ -1029,3 +1029,75 @@ def test_expected_current_channel(mock_o7k_release, model, channel, origin):
 
     # expected_current_channel is indifferent if the charm needs crossgrade
     assert app.expected_current_channel(target) == "victoria/stable"
+
+
+def _make_app_with_origin(origin_value: str) -> OpenStackApplication:
+    return OpenStackApplication(
+        name="test-app",
+        can_upgrade_to="",
+        charm="test-charm",
+        channel="ussuri/stable",
+        config={"source": {"value": origin_value}},
+        machines={},
+        model=object(),
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="1.0",
+    )
+
+
+def test_new_origin_uses_landscape_when_env_set(monkeypatch):
+    # Ensure environment variables are set for landscape mirror
+    mirror = "http://landscape-mirror"
+    component = "main"
+    monkeypatch.setenv("LANDSCAPE_MIRROR_URI", mirror)
+    monkeypatch.setenv("LANDSCAPE_APT_COMPONENT", component)
+
+    app = _make_app_with_origin("deb http://example.com focal-ussuri main")
+    # o7k_origin should start with 'deb' for landscape detection
+    assert app._is_landscape_source is True
+    assert app.apt_source_codename == "ussuri"
+
+    target = OpenStackRelease("victoria")
+    expected = f"deb {mirror} {app.series}-{target.codename} {component}"
+    assert app.new_origin(target) == expected
+
+
+def test_is_landscape_source_false_when_one_env_missing(monkeypatch):
+    # Missing mirror URI
+    monkeypatch.setenv("LANDSCAPE_MIRROR_URI", "")
+    monkeypatch.setenv("LANDSCAPE_APT_COMPONENT", "main")
+
+    app = _make_app_with_origin("deb http://example.com ubuntu focal-victoria")
+    assert app._is_landscape_source is False
+
+
+def test_new_origin_defaults_to_uca_when_not_landscape(monkeypatch):
+    monkeypatch.setenv("LANDSCAPE_MIRROR_URI", "")
+    monkeypatch.setenv("LANDSCAPE_APT_COMPONENT", "")
+
+    app = _make_app_with_origin("deb http://example.com ubuntu focal-victoria")
+    target = OpenStackRelease("victoria")
+    # When not a landscape source, new_origin should return a UCA cloud:... value
+    assert app.new_origin(target) == f"cloud:{app.series}-{target.codename}"
+
+
+@pytest.mark.parametrize(
+    "o7k_value,reason",
+    [
+        ("deb http://mirror.example", "IndexError - missing codename token"),
+        ("deb http://mirror.example focal", "ValueError - codename missing dash"),
+    ],
+)
+def test_apt_source_codename_landscape_raises_application_error(monkeypatch, o7k_value, reason):
+    """Ensure apt_source_codename raises ApplicationError for landscape parsing errors."""
+    # Ensure _is_landscape_source returns True
+    monkeypatch.setenv("LANDSCAPE_MIRROR_URI", "http://mirror.example")
+    monkeypatch.setenv("LANDSCAPE_APT_COMPONENT", "main")
+
+    app = _make_app_with_origin(o7k_value)
+
+    with pytest.raises(ApplicationError):
+        _ = app.apt_source_codename

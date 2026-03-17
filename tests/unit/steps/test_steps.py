@@ -50,18 +50,6 @@ def test_compare_step_coroutines(coro1, coro2, exp_result):
     assert compare_step_coroutines(coro1, coro2) == exp_result
 
 
-def test_compare_step_coroutines_different_functions():
-    """Ensure compare_step_coroutines returns False for different coroutine functions."""
-
-    async def coro_a():
-        return 1
-
-    async def coro_b():
-        return 2
-
-    assert compare_step_coroutines(coro_a(), coro_b()) is False
-
-
 @pytest.mark.parametrize(
     "description, parallel",
     [

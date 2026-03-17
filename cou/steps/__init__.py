@@ -20,7 +20,6 @@ import asyncio
 import inspect
 import logging
 import os
-import unittest.mock as _mock
 import warnings
 from typing import Any, Coroutine, Iterable, List, Optional
 
@@ -125,15 +124,10 @@ class BaseStep:
         if not isinstance(other, BaseStep):
             return NotImplemented
 
-        # avoid comparing empty steps as they are not expected to have any effect on the
-        # upgrade plan and may cause noisy mismatches
-        def _filter_steps(steps: Iterable[BaseStep]) -> List[BaseStep]:
-            return [s for s in steps if bool(s)]
-
         return (
             other.parallel == self.parallel
             and other.description == self.description
-            and _filter_steps(other.sub_steps) == _filter_steps(self.sub_steps)
+            and other.sub_steps == self.sub_steps
             and compare_step_coroutines(other._coro, self._coro)
         )
 

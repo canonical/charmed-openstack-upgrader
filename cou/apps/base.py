@@ -168,10 +168,24 @@ class OpenStackApplication(Application):
                 raise ApplicationError(f"Series '{self.series}' is not supported by COU.")
             return OpenStackRelease(DISTRO_TO_OPENSTACK_MAPPING[self.series])
 
+        if self._is_landscape_source:
+            return self._extract_from_landscape()
+
         # probably because user set a ppa or a url
         raise ApplicationError(
             f"'{self.name}' has an invalid '{self.origin_setting}': {self.o7k_origin}"
         )
+
+    @property
+    def _is_landscape_source(self) -> bool:
+        """Check if the source is a landscape mirror.
+
+        :return: True if the source is a landscape mirror, False otherwise.
+        :rtype: bool
+        """
+        mirror = os.environ.get("LANDSCAPE_MIRROR_URI", "")
+        component = os.environ.get("LANDSCAPE_APT_COMPONENT", "")
+        return bool(self.o7k_origin.startswith("deb") and mirror and component)
 
     def _extract_from_uca_source(self) -> OpenStackRelease:
         """Extract the OpenStack release from Ubuntu Cloud Archive (UCA) sources.
@@ -185,6 +199,22 @@ class OpenStackApplication(Application):
             _, o7k_origin_parsed = self.o7k_origin.rsplit("-", maxsplit=1)
             return OpenStackRelease(o7k_origin_parsed)
         except ValueError as exc:
+            raise ApplicationError(
+                f"'{self.name}' has an invalid '{self.origin_setting}': {self.o7k_origin}"
+            ) from exc
+
+    def _extract_from_landscape(self) -> OpenStackRelease:
+        """Extract the OpenStack release from Landscape sources.
+
+        :raises ApplicationError: When origin setting is not valid.
+        :return: OpenStackRelease object
+        :rtype: OpenStackRelease
+        """
+        try:
+            codename = self.o7k_origin.split()[2]
+            _, o7k_origin_parsed = codename.rsplit("-", maxsplit=1)
+            return OpenStackRelease(o7k_origin_parsed)
+        except (IndexError, ValueError) as exc:
             raise ApplicationError(
                 f"'{self.name}' has an invalid '{self.origin_setting}': {self.o7k_origin}"
             ) from exc
@@ -361,6 +391,10 @@ class OpenStackApplication(Application):
         :return: Repository from which to install.
         :rtype: str
         """
+        if self._is_landscape_source:
+            mirror = os.environ.get("LANDSCAPE_MIRROR_URI", "")
+            component = os.environ.get("LANDSCAPE_APT_COMPONENT", "")
+            return f"deb {mirror} {self.series}-{target.codename} {component}"
         return f"cloud:{self.series}-{target.codename}"
 
     async def _verify_workload_upgrade(self, target: OpenStackRelease, units: list[Unit]) -> None:
