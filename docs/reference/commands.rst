@@ -13,8 +13,8 @@ The **plan** command will analyse the cloud and output a human-readable represen
 of the proposed upgrade plan. It does not require any interaction. Refer to the
 output below for the description of all available options.
 
-.. terminal:: 
-    :input: cou plan --help
+.. terminal::
+    cou plan --help
 
     Usage: cou plan [options]
 
@@ -30,7 +30,7 @@ output below for the description of all available options.
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 3).
+                            Multiple -v flags yield progressively more detail (up to 3).
                             Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
@@ -56,11 +56,11 @@ Upgrade
 -------
 
 The **upgrade** command will implicitly generate a plan before moving onto the actual
-upgrade phase. Refer to the output below for a description of all available options. 
+upgrade phase. Refer to the output below for a description of all available options.
 
-.. terminal:: 
-    :input: cou upgrade --help
-    
+.. terminal::
+    cou upgrade --help
+
     Usage: cou upgrade [options]
 
     Run the cloud upgrade.
@@ -75,7 +75,7 @@ upgrade phase. Refer to the output below for a description of all available opti
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 3).
+                            Multiple -v flags yield progressively more detail (up to 3).
                             Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
@@ -107,8 +107,8 @@ are **control-plane**, **data-plane**, and **hypervisors**.
 
 The options available for **control-plane** upgrade are:
 
-.. terminal:: 
-    :input: cou upgrade control-plane --help
+.. terminal::
+    cou upgrade control-plane --help
 
     Usage: cou upgrade control-plane [options]
 
@@ -123,7 +123,7 @@ The options available for **control-plane** upgrade are:
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 3).
+                            Multiple -v flags yield progressively more detail (up to 3).
                             Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
@@ -134,8 +134,8 @@ The options available for **control-plane** upgrade are:
 The available options for a **data-plane** upgrade align closely with those offered for a
 **control-plane** upgrade.
 
-.. terminal:: 
-    :input: cou upgrade data-plane --help
+.. terminal::
+    cou upgrade data-plane --help
 
     Usage: cou upgrade data-plane [options]
 
@@ -152,7 +152,7 @@ The available options for a **data-plane** upgrade align closely with those offe
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 3).
+                            Multiple -v flags yield progressively more detail (up to 3).
                             Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
@@ -164,8 +164,8 @@ For upgrading **hypervisors**, in addition to the common options also found in
 **data-plane** upgrades, users can specify either **--machine** or **--az** to
 narrow the upgrade to a particular subset of nodes.
 
-.. terminal:: 
-    :input: cou upgrade hypervisors --help
+.. terminal::
+    cou upgrade hypervisors --help
 
     Usage: cou upgrade hypervisors [options]
 
@@ -187,7 +187,7 @@ narrow the upgrade to a particular subset of nodes.
                             Default to enabling database backup.
       --force               Force the plan/upgrade of non-empty hypervisors.
       --verbose, -v         Increase logging verbosity in STDOUT.
-                            Multiple 'v's yield progressively more detail (up to 3).
+                            Multiple -v flags yield progressively more detail (up to 3).
                             Note that by default the logfile will not include standard logs
                             from juju and websockets, as well as debug logs from all other
                             modules. To also include the debug level logs from juju and
