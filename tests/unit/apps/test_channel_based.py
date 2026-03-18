@@ -173,6 +173,7 @@ def test_application_gnocchi_xena(model):
     assert app.o7k_release == "xena"
     assert app.is_versionless is False
 
+
 def test_channel_based_application_landscape_origin(model, monkeypatch):
     """Test channel based application with landscape origin."""
     # Ensure environment variables are set for landscape mirror
@@ -188,9 +189,7 @@ def test_channel_based_application_landscape_origin(model, monkeypatch):
         charm="app",
         channel="latest/stable",
         config={
-            "openstack-origin": {
-                "value": f"deb {mirror} focal-ussuri {component}"
-            },
+            "openstack-origin": {"value": f"deb {mirror} focal-ussuri {component}"},
         },
         machines=machines,
         model=model,
@@ -214,6 +213,7 @@ def test_channel_based_application_landscape_origin(model, monkeypatch):
     target = OpenStackRelease("victoria")
     expected = f"deb {mirror} {app.series}-{target.codename} {component}"
     assert app.new_origin(target) == expected
+
 
 def test_application_designate_bind_ussuri(model):
     """Test the Designate-bind ChannelBasedApplication with Ussuri.
