@@ -11,12 +11,13 @@
 import glob
 import logging
 import os
-import requests
 import re
 import subprocess
 import sys
-from requests.exceptions import RequestException
+
+import requests
 from packaging.version import parse as parse_version
+from requests.exceptions import RequestException
 
 SPHINX_DIR = os.path.abspath(os.path.dirname(__file__))
 DOCS_DIR = os.path.abspath(os.path.join(SPHINX_DIR, '..'))
