@@ -44,6 +44,7 @@ subcommand
 subcommands
 Upgrader
 ussuri
+URI
 VMs
 VPN
 websockets
