@@ -23,7 +23,7 @@ import yaml
 
 # Project name
 #
-project = 'Charmed OpenStack Upgrader'
+project = 'COU'
 author = 'Canonical Group Ltd'
 
 
