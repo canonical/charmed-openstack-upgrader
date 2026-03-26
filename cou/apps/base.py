@@ -183,9 +183,9 @@ class OpenStackApplication(Application):
         :return: True if the source is a landscape mirror, False otherwise.
         :rtype: bool
         """
-        mirror = os.environ.get("LANDSCAPE_MIRROR_URI", "")
-        component = os.environ.get("LANDSCAPE_APT_COMPONENT", "")
-        return bool(self.o7k_origin.startswith("deb") and mirror and component)
+        return bool(
+            os.environ.get("LANDSCAPE_MIRROR_URI") and os.environ.get("LANDSCAPE_APT_COMPONENT")
+        )
 
     def _extract_from_uca_source(self) -> OpenStackRelease:
         """Extract the OpenStack release from Ubuntu Cloud Archive (UCA) sources.
