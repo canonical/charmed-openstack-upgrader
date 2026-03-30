@@ -150,6 +150,12 @@ jobs:
         with:
           python-version: "3.10"
 
+      # newer version of juju 3.6/stable has several conecctions issues with python-libjuju
+      - name: Install Juju client
+        run: |
+          sudo snap install juju --channel=3.6/stable --classic --revision=34273
+          sudo snap refresh --hold juju
+
       - name: Setup Juju 3.6/stable environment
         uses: charmed-kubernetes/actions-operator@main
         with:

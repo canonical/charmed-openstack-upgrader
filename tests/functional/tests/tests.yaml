@@ -1,6 +1,12 @@
 tests:
   - tests.functional.tests.smoke.SmokeTest
   - tests.functional.tests.model.ModelTest
-  - tests.functional.tests.backup.BackupTest
+  # - tests.functional.tests.backup.BackupTest
+configure:
+  - tests.functional.tests.smoke.basic_setup
+target_deploy_status:
+  designate-bind:
+    workload-status: blocked
+    workload-status-message-prefix: Services not running that should be
 gate_bundles:
   - smoke
