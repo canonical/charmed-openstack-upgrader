@@ -146,7 +146,7 @@ jobs:
           name: snap_${{ env.SYSTEM_ARCH }}
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v6	
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
@@ -155,6 +155,10 @@ jobs:
         with:
           provider: lxd
           juju-channel: 3.6/stable
+
+      - name: Set default lxc profile to privileged
+        run: |
+          lxc profile set default security.privileged true
 
       - name: Install dependencies
         run: |
