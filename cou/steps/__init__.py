@@ -52,7 +52,7 @@ def compare_step_coroutines(coro1: Optional[Coroutine], coro2: Optional[Coroutin
         # check if same coroutine was used
         coro1.cr_code == coro2.cr_code
         # check coroutine arguments
-        and inspect.getcoroutinelocals(coro1) == inspect.getcoroutinelocals(coro2)
+        and dict(inspect.getcoroutinelocals(coro1)) == dict(inspect.getcoroutinelocals(coro2))
     )
 
 
