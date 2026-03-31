@@ -21,3 +21,4 @@ are possible with **COU**.
    test-on-juju-openstack-provider
    watch-cou-logs
    backup
+   landscape
