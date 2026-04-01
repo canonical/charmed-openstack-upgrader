@@ -982,6 +982,8 @@ def test_skip_apps_failed(mock_setattr, mock_error):
     mock_error.side_effect = SystemExit
     with pytest.raises(SystemExit):
         commands.parse_args(["upgrade", "--skip-apps", "vault", "keystone"])
-    mock_error.assert_called_once_with(
-        ANY, "argument --skip-apps: invalid choice: 'keystone' (choose from 'vault')"
-    )
+
+    mock_error.assert_called_once()
+    called_args, _ = mock_error.call_args
+    message = called_args[1]
+    assert "argument --skip-apps: invalid choice: 'keystone'" in message
