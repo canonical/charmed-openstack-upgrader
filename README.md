@@ -45,6 +45,8 @@ Commands:
 - `COU_MODEL_RETRY_BACKOFF` - define number of seconds to increase the wait between connection to the Juju model retry attempts. Default value is 2 seconds.
 - `COU_STANDARD_IDLE_TIMEOUT` - how long COU will wait for an application to settle to active/idle and declare the upgrade complete. The default value is 300 seconds.
 - `COU_LONG_IDLE_TIMEOUT` - a longer version of COU_STANDARD_IDLE_TIMEOUT for applications that are known to need more time than usual to upgrade like such as Keystone and Octavia. The default value is 2400 seconds.
+- `LANDSCAPE_MIRROR_URI` - Defines the base URI of the Landscape-managed APT mirror. When set, it is used to construct the openstack-origin value so that charms pull packages from the private repository instead of public archives.
+- `LANDSCAPE_APT_COMPONENT` - sets the component part of the Debian/Ubuntu repository. Should be used with `LANDSCAPE_MIRROR_URI`.
 
 ## Supported Upgrade Paths
 

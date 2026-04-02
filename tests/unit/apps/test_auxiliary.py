@@ -117,6 +117,36 @@ def test_auxiliary_app_cs(model):
     assert app.o7k_release == "ussuri"
 
 
+def test_auxiliary_new_origin_uses_landscape_when_env_set(monkeypatch):
+    mirror = "http://landscape-mirror"
+    component = "component"
+    monkeypatch.setenv("LANDSCAPE_MIRROR_URI", mirror)
+    monkeypatch.setenv("LANDSCAPE_APT_COMPONENT", component)
+
+    app = RabbitMQServer(
+        name="rabbitmq-server",
+        can_upgrade_to="",
+        charm="rabbitmq-server",
+        channel="stable",
+        config={"source": {"value": "deb http://example.com focal-ussuri main"}},
+        machines={},
+        model=object(),
+        origin="cs",
+        series="focal",
+        subordinate_to=[],
+        units={},
+        workload_version="3.8",
+    )
+    assert app._is_landscape_source is True
+    assert app.apt_source_codename == "ussuri"
+    assert app.channel_o7k_release == "ussuri"
+    assert app.o7k_release == "ussuri"
+
+    target = OpenStackRelease("victoria")
+    expected = f"deb {mirror} {app.series}-{target.codename} {component}"
+    assert app.new_origin(target) == expected
+
+
 def test_auxiliary_upgrade_plan_ussuri_to_victoria_change_channel(model):
     """Test auxiliary upgrade plan from Ussuri to Victoria with change of channel."""
     target = OpenStackRelease("victoria")
