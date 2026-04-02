@@ -11,7 +11,9 @@ Plan/Upgrade without some applications
 
 .. Note::
 
-    This feature currently only supports vault.
+    This option accepts any application name. You can provide more than one
+    application either as comma-separated value, or by repeating the option.
+    Duplicate names are ignored.
 
 By default, COU plan and upgrade will generate upgrade plan and run the upgrade
 for all the applications supported by COU. However, it is possible that some
@@ -36,3 +38,15 @@ Upgrade without vault.
 .. code:: bash
 
     cou upgrade --skip-apps vault
+
+Multiple applications (comma-separated):
+
+.. code:: bash
+
+    cou upgrade --skip-apps vault, gnocchi
+
+Repeat the option:
+
+.. code:: bash
+
+    cou upgrade --skip-apps vault --skip-apps gnocchi

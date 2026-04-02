@@ -17,7 +17,9 @@ enablement
 frictionless
 fs
 ganesha
+gapped
 Github
+http
 innodb
 juju
 juju's
@@ -47,6 +49,7 @@ subcommands
 stringified
 Upgrader
 ussuri
+URI
 VMs
 VPN
 websockets

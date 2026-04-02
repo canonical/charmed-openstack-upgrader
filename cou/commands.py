@@ -88,7 +88,7 @@ class SplitArgs(argparse.Action):
     ) -> None:
         logger.debug("SplitArgs: %s %s %s %s", parser, namespace, values, option_string)
         new_items = {item.strip() for item in values.split(",")}
-        cli_input = getattr(namespace, self.dest) or set()
+        cli_input = getattr(namespace, self.dest, set())
         cli_input.update(new_items)
         setattr(namespace, self.dest, cli_input)
 
@@ -206,15 +206,15 @@ def get_subcommand_common_opts_parser() -> argparse.ArgumentParser:
     subcommand_common_opts_parser.add_argument(
         "--skip-apps",
         dest="skip_apps",
-        default=[],
-        choices=["vault"],
-        nargs="+",
+        action=SplitArgs,
+        default=argparse.SUPPRESS,
         help=(
             "Skip upgrading the given applications."
+            "\nThis option accepts a single application as well as a stringified"
+            "\ncomma-separated list of applications and can be repeated multiple times.\n"
             "\nNote that skip upgrading applications is dangerous, and could leave"
             "\nthe cloud in an unstable state. You should only use this option if"
             "\nyou know the applications will not affect the cloud during an upgrade."
-            "\nCurrently, it only supports skip upgrading vault."
         ),
         required=False,
     )
@@ -269,7 +269,7 @@ def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
         "This option cannot be used together with [--availability-zone/--az].",
         dest="machines",
         action=SplitArgs,
-        type=str,
+        default=argparse.SUPPRESS,
     )
     hypervisors_filters.add_argument(
         "--availability-zone",
@@ -280,7 +280,7 @@ def get_hypervisors_common_opts_parser() -> argparse.ArgumentParser:
         "[--machine/-m]",
         action=SplitArgs,
         dest="availability_zones",
-        type=str,
+        default=argparse.SUPPRESS,
     )
     return hypervisors_subparser
 
@@ -489,7 +489,7 @@ class CLIargs:
     availability_zones: Optional[set[str]] = None
     purge: bool = False
     purge_before: Optional[str] = None
-    skip_apps: list[str] = field(default_factory=list)
+    skip_apps: set[str] = field(default_factory=set)
 
     @property
     def prompt(self) -> bool:

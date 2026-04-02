@@ -15,3 +15,9 @@ Environment Variables
 * **COU_LONG_IDLE_TIMEOUT** - a longer version of **COU_STANDARD_IDLE_TIMEOUT** for applications
   that are known to need more time than usual to upgrade, such as Keystone and Octavia. The
   default value is 2400 seconds.
+* **LANDSCAPE_MIRROR_URI** - defines the base URI of the Landscape-managed APT mirror.
+  When set, it is used to construct the openstack-origin value so that charms pull packages from
+  the private repository instead of public archives.
+* **LANDSCAPE_APT_COMPONENT** - specifies the APT repository component (e.g., main, universe).
+  It is used together with **LANDSCAPE_MIRROR_URI** and the suite to fully define the
+  **openstack-origin** entry of charms.

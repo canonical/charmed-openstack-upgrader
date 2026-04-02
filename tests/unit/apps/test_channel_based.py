@@ -174,6 +174,47 @@ def test_application_gnocchi_xena(model):
     assert app.is_versionless is False
 
 
+def test_channel_based_application_landscape_origin(model, monkeypatch):
+    """Test channel based application with landscape origin."""
+    # Ensure environment variables are set for landscape mirror
+    mirror = "http://landscape-mirror"
+    component = "main"
+    monkeypatch.setenv("LANDSCAPE_MIRROR_URI", mirror)
+    monkeypatch.setenv("LANDSCAPE_APT_COMPONENT", component)
+
+    machines = {"0": generate_cou_machine("0", "az-0")}
+    app = ChannelBasedApplication(
+        name="app",
+        can_upgrade_to="",
+        charm="app",
+        channel="latest/stable",
+        config={
+            "openstack-origin": {"value": f"deb {mirror} focal-ussuri {component}"},
+        },
+        machines=machines,
+        model=model,
+        origin="ch",
+        series="focal",
+        subordinate_to=[],
+        units={
+            "app/0": Unit(
+                name="app/0",
+                workload_version="1",
+                machine=machines["0"],
+            )
+        },
+        workload_version="1",
+    )
+
+    assert app._is_landscape_source is True
+    assert app.o7k_release == "ussuri"
+    assert app.apt_source_codename == "ussuri"
+
+    target = OpenStackRelease("victoria")
+    expected = f"deb {mirror} {app.series}-{target.codename} {component}"
+    assert app.new_origin(target) == expected
+
+
 def test_application_designate_bind_ussuri(model):
     """Test the Designate-bind ChannelBasedApplication with Ussuri.
 

@@ -92,13 +92,13 @@ class Analysis:
         ]
 
     @classmethod
-    async def create(cls, model: juju_utils.Model, skip_apps: list[str]) -> Analysis:
+    async def create(cls, model: juju_utils.Model, skip_apps: set[str]) -> Analysis:
         """Analyze the deployment before planning.
 
         :param model: Model object
         :type model: Model
-        :param skip_apps: Application to skip upgrading
-        :type skip_apps: set of string
+        :param skip_apps: Applications to skip upgrading
+        :type skip_apps: set[str]
         :return: Analysis object populated with the model applications.
         :rtype: Analysis
         """
