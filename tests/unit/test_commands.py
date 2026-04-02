@@ -874,8 +874,6 @@ def test_parse_args_hypervisors_exclusive_options_reverse_order(mock_error):
         ["plan", "--purge_before", "2000-01-02"],
         ["plan", "--purge_before", "2000-01-02 03:04"],
         ["plan", "--purge_before", "2000-01-02 03:04:05"],
-        ["upgrade", "--skip-apps", "vault keystone"],
-        ["plan", "--skip_apps", "vault keystone"],
     ],
 )
 def test_parse_invalid_args(args):
@@ -970,20 +968,19 @@ def test_purge_before_argument_missing_dependency(mock_setattr, mock_error):
     mock_error.assert_called_once_with(ANY, "\n--purge-before-date requires --purge")
 
 
-@patch("cou.commands.setattr")
-def test_skip_apps(mock_setattr):
-    args = commands.parse_args(["upgrade", "--skip-apps", "vault", "vault", "vault"])
-    args.skip_apps == ["vault", "vault", "vault"]
+def test_skip_apps():
+    args = commands.parse_args(["upgrade", "--skip-apps=vault, vault,  vault"])
+    assert isinstance(args.skip_apps, set)
+    assert args.skip_apps == {"vault"}
 
 
-@patch("cou.commands.argparse.ArgumentParser.error", autospec=True)
-@patch("cou.commands.setattr")
-def test_skip_apps_failed(mock_setattr, mock_error):
-    mock_error.side_effect = SystemExit
-    with pytest.raises(SystemExit):
-        commands.parse_args(["upgrade", "--skip-apps", "vault", "keystone"])
+def test_skip_apps_multiple_apps():
+    # Ensure multiple different applications are accepted (comma-separated)
+    args = commands.parse_args(["upgrade", "--skip-apps=vault, gnocchi"])
+    assert args.skip_apps == {"vault", "gnocchi"}
 
-    mock_error.assert_called_once()
-    called_args, _ = mock_error.call_args
-    message = called_args[1]
-    assert "argument --skip-apps: invalid choice: 'keystone'" in message
+
+def test_skip_apps_multiple_apps_repeating():
+    # Ensure multiple different applications are accepted repeating the skip-apps option
+    args = commands.parse_args(["upgrade", "--skip-apps=vault", "--skip-apps=gnocchi"])
+    assert args.skip_apps == {"vault", "gnocchi"}
