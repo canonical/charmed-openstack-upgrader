@@ -22,7 +22,7 @@ from pathlib import Path
 from signal import SIGINT, SIGTERM
 from typing import Optional
 
-from juju.errors import JujuError
+import jubilant
 
 from cou.commands import CLIargs, parse_args
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
@@ -292,12 +292,12 @@ def entrypoint() -> None:
             "hosted.com/en/stable/reference/known-issues/"
         )
         sys.exit(1)
-    except JujuError as exc:
+    except jubilant.CLIError as exc:
         progress_indicator.fail()
         log_ssdlc_system_event(
-            SSDLCSysEvent.CRASH, msg=f"Juju library error: {type(exc).__name__} - {str(exc)}"
+            SSDLCSysEvent.CRASH, msg=f"Juju CLI error: {type(exc).__name__} - {str(exc)}"
         )
-        logger.error("Error occurred in Juju's Python library.")
+        logger.error("Error occurred in Juju's CLI.")
         logger.error(exc)
         sys.exit(1)
     except KeyboardInterrupt as exc:

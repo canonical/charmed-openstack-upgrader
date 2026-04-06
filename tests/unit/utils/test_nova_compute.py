@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
+import jubilant
 import pytest
-from juju.action import Action
 
 from cou.exceptions import HaltUpgradeExecution
 from cou.utils import nova_compute
@@ -24,8 +24,9 @@ from cou.utils.juju_utils import Machine, Unit
 @pytest.mark.asyncio
 async def test_get_instance_count(model):
     expected_count = 1
-    model.run_action.return_value = mocked_action = AsyncMock(spec_set=Action).return_value
-    mocked_action.results = {"return-code": 0, "instance-count": str(expected_count)}
+    model.run_action.return_value = jubilant.Task(
+        id="1", status="completed", results={"instance-count": str(expected_count)}
+    )
 
     actual_count = await nova_compute.get_instance_count(unit="nova-compute/0", model=model)
 
@@ -46,8 +47,9 @@ async def test_get_instance_count(model):
     ],
 )
 async def test_get_instance_count_invalid_result(model, result_key, value):
-    model.run_action.return_value = mocked_action = AsyncMock(spec_set=Action).return_value
-    mocked_action.results = {"return-code": 0, result_key: value}
+    model.run_action.return_value = jubilant.Task(
+        id="1", status="completed", results={result_key: value}
+    )
 
     with pytest.raises(ValueError):
         await nova_compute.get_instance_count(unit="nova-compute/0", model=model)

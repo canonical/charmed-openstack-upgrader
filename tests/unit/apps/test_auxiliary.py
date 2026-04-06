@@ -1945,7 +1945,7 @@ def vault_o7k_app(model):
 
 @pytest.mark.asyncio
 async def test_vault_wait_for_sealed_status(vault_o7k_app):
-    vault_o7k_app.model.get_application_status.return_value.status.info = "Unit is sealed"
+    vault_o7k_app.model.get_application_status.return_value.app_status.message = "Unit is sealed"
     await vault_o7k_app._wait_for_sealed_status()
 
     vault_o7k_app.model.wait_for_idle.assert_awaited_once_with(
@@ -1959,7 +1959,7 @@ async def test_vault_wait_for_sealed_status(vault_o7k_app):
 @pytest.mark.asyncio
 async def test_vault_wait_for_sealed_status_failed(vault_o7k_app):
     vault_o7k_app.model.wait_for_idle = AsyncMock()
-    vault_o7k_app.model.get_application_status.return_value.status.info = "Unit is ready"
+    vault_o7k_app.model.get_application_status.return_value.app_status.message = "Unit is ready"
     with pytest.raises(
         ApplicationError,
         match=(

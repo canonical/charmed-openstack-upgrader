@@ -33,7 +33,7 @@ async def verify_vault_is_unsealed(model: Model) -> None:
         app_names = await model.get_application_names(charm_name="vault")
         for app_name in app_names:
             app = await model.get_application_status(app_name=app_name)
-            if app.status.info == "Unit is sealed" and app.status.status == "blocked":
+            if app.app_status.message == "Unit is sealed" and app.is_blocked:
                 raise VaultSealed(
                     "Vault is sealed, please follow the steps on "
                     "https://charmhub.io/vault to unseal the vault manually before upgrade"

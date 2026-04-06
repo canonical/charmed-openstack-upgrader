@@ -563,7 +563,7 @@ class Vault(AuxiliaryApplication):
         )
 
         app_status = await self.model.get_application_status(app_name=self.name)
-        if not app_status.status.info == "Unit is sealed":
+        if not app_status.app_status.message == "Unit is sealed":
             # It's an exception if vault not in sealed after upgrading.
             raise ApplicationError(
                 "Application vault not in sealed."

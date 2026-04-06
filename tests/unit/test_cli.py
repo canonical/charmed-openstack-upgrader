@@ -14,8 +14,8 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import jubilant
 import pytest
-from juju.errors import JujuError
 
 from cou import cli
 from cou.exceptions import COUException, HighestReleaseAchieved, TimeoutException
@@ -460,8 +460,8 @@ def test_entrypoint_failure_cou_exception(mock_run_command, mock_indicator, mock
 @patch("cou.cli.setup_logging", new=MagicMock())
 @patch("cou.cli._run_command")
 def test_entrypoint_failure_juju_error(mock_run_command, mock_indicator, mock_log_ssdlc):
-    """Test JujuError exception during entrypoint execution."""
-    mock_run_command.side_effect = JujuError
+    """Test jubilant.CLIError exception during entrypoint execution."""
+    mock_run_command.side_effect = jubilant.CLIError(1, ["juju"], "", "juju error")
 
     with pytest.raises(SystemExit, match="1"):
         cli.entrypoint()
