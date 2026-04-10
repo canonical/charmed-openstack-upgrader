@@ -86,6 +86,7 @@ UPGRADE_ORDER = NON_UCA_UPGRADE_ORDER + UCA_UPGRADE_ORDER + DATA_PLANE_CHARMS
 SUBORDINATES = [
     "barbican-vault",
     "ceilometer-agent",
+    "cinder-backup",
     "cinder-backup-swift-proxy",
     "cinder-ceph",
     "cinder-lvm",
