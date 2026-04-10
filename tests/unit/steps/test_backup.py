@@ -15,6 +15,7 @@
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
+import jubilant
 import pytest
 
 from cou.exceptions import UnitNotFound
@@ -58,19 +59,22 @@ async def test_get_database_app_name(model):
 
 
 def test_check_db_relations():
-    app_config = {
-        "relations": {
-            "cluster": ["mysql"],
-            "coordinator": ["mysql"],
-            "db-router": [
-                "cinder-mysql-router",
-                "glance-mysql-router",
-                "neutron-api-mysql-router",
-                "nova-cloud-controller-mysql-router",
-                "openstack-dashboard-mysql-router",
-                "placement-mysql-router",
-            ],
-        }
+    app_config = MagicMock()
+    app_config.relations = {
+        "cluster": [jubilant.statustypes.AppStatusRelation("mysql", "", "global")],
+        "coordinator": [jubilant.statustypes.AppStatusRelation("mysql", "", "global")],
+        "db-router": [
+            jubilant.statustypes.AppStatusRelation("cinder-mysql-router", "", "global"),
+            jubilant.statustypes.AppStatusRelation("glance-mysql-router", "", "global"),
+            jubilant.statustypes.AppStatusRelation("neutron-api-mysql-router", "", "global"),
+            jubilant.statustypes.AppStatusRelation(
+                "nova-cloud-controller-mysql-router", "", "global"
+            ),
+            jubilant.statustypes.AppStatusRelation(
+                "openstack-dashboard-mysql-router", "", "global"
+            ),
+            jubilant.statustypes.AppStatusRelation("placement-mysql-router", "", "global"),
+        ],
     }
     result = _check_db_relations(app_config)
     assert not result

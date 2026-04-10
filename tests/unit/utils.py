@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module to provide helper for writing unit tests."""
+import json
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock
 
-from juju.client.client import FullStatus
+import jubilant
 
 from cou.steps import BaseStep
 from cou.utils.juju_utils import Application, Machine, Unit
@@ -69,9 +70,22 @@ def get_status():
     """Help function to load Juju status from json file."""
     current_path = Path(__file__).parent.resolve()
     with open(current_path / "jujustatus.json", "r") as file:
-        status = file.read().rstrip()
+        data = json.loads(file.read().rstrip())
 
-    return FullStatus.from_json(status)
+    # Convert old relations format (list of strings) to jubilant's expected format
+    # (list of dicts with related-application, interface, scope keys)
+    for app_data in data.get("applications", {}).values():
+        for rel_name, rel_list in app_data.get("relations", {}).items():
+            app_data["relations"][rel_name] = [
+                (
+                    {"related-application": r, "interface": "", "scope": "global"}
+                    if isinstance(r, str)
+                    else r
+                )
+                for r in rel_list
+            ]
+
+    return jubilant.Status._from_dict(data)
 
 
 async def get_charm_name(value: str):

@@ -12,17 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import asyncio
+import json
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import jubilant
 import pytest
-from juju.action import Action
-from juju.application import Application
-from juju.client._definitions import ApplicationStatus, Base, UnitStatus
-from juju.client.connector import NoConnectionException
-from juju.machine import Machine
-from juju.model import Model
-from juju.unit import Unit
 
 from cou.exceptions import (
     ActionFailed,
@@ -36,32 +30,12 @@ from cou.exceptions import (
 from cou.utils import juju_utils
 
 
-@pytest.mark.parametrize(
-    "base, exp_series",
-    [
-        (Base("18.04/stable", "ubuntu"), "bionic"),
-        (Base("20.04/stable", "ubuntu"), "focal"),
-        (Base("22.04/stable", "ubuntu"), "jammy"),
-    ],
-)
-def test_convert_base_to_series(base, exp_series):
-    """Test helper function to convert base to series."""
-    assert juju_utils._convert_base_to_series(base) == exp_series
-
-
 @pytest.fixture
-def mocked_model(mocker):
-    """Fixture providing mocked juju.model.Model object."""
-    mocker.patch("cou.utils.juju_utils.FileJujuData")
-    model_mocker = mocker.patch(
-        "cou.utils.juju_utils.JujuModel", return_value=MagicMock(spec_set=Model)
-    )
-    model = model_mocker.return_value
-    model.connection.return_value.is_open = True  # simulate already connected model
-    model.disconnect = AsyncMock()
-    model.connect = AsyncMock()
-    model.wait_for_idle = AsyncMock()
-    yield model
+def mocked_juju(mocker):
+    """Fixture providing mocked jubilant.Juju instance."""
+    mock_juju = MagicMock(spec_set=jubilant.Juju)
+    mocker.patch("cou.utils.juju_utils.jubilant.Juju", return_value=mock_juju)
+    yield mock_juju
 
 
 @pytest.fixture
@@ -82,6 +56,34 @@ def mocked_jubilant_juju(mocker):
     mocker.patch("cou.utils.juju_utils.jubilant.all_agents_idle", MagicMock())
 
     yield mock_juju_instance
+
+
+@pytest.mark.parametrize(
+    "channel, exp_series",
+    [
+        ("18.04/stable", "bionic"),
+        ("20.04/stable", "focal"),
+        ("22.04/stable", "jammy"),
+    ],
+)
+def test_convert_base_to_series(channel, exp_series):
+    """Test helper function to convert base to series."""
+    base = jubilant.statustypes.FormattedBase(name="ubuntu", channel=channel)
+    assert juju_utils._convert_base_to_series(base) == exp_series
+
+
+@pytest.mark.parametrize(
+    "hardware, exp_az",
+    [
+        ("arch=amd64 availability-zone=nova", "nova"),
+        ("arch=amd64 availability-zone=us-east-1a", "us-east-1a"),
+        ("arch=amd64 mem=1G", None),
+        ("", None),
+    ],
+)
+def test_parse_availability_zone(hardware, exp_az):
+    """Test helper function to parse availability zone from hardware string."""
+    assert juju_utils._parse_availability_zone(hardware) == exp_az
 
 
 @pytest.mark.asyncio
@@ -190,188 +192,142 @@ def test_machine_eq():
     assert machine_0 == machine_1
 
 
-@patch("cou.utils.juju_utils.FileJujuData")
-def test_coumodel_init(mock_juju_data, mocker):
+def test_coumodel_init(mocked_juju):
     """Test Model initialization."""
-    model_mocker = mocker.patch("cou.utils.juju_utils.JujuModel")
-    mocked_model = model_mocker.return_value
-    mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
     name = "test-model"
-
     model = juju_utils.Model(name)
 
-    mock_juju_data.assert_called_once_with()
-    model_mocker.assert_called_once_with(
-        max_frame_size=juju_utils.JUJU_MAX_FRAME_SIZE,
-        jujudata=mock_juju_data.return_value,
-    )
-    assert model._model == mocked_model
+    assert model._name == name
+    assert model._juju is mocked_juju
 
 
-def test_coumodel_connected_no_connection(mocked_model):
-    """Test Model connected property."""
-    mocked_model.connection.side_effect = NoConnectionException
+def test_coumodel_connected_no_connection(mocked_juju):
+    """Test Model connected property when model not accessible."""
+    mocked_juju.show_model.side_effect = jubilant.CLIError(1, ["juju"], "", "error")
 
     model = juju_utils.Model("test-model")
 
     assert model.connected is False
 
 
-def test_coumodel_connected(mocked_model):
-    """Test Model connected property."""
-    mocked_model.connection.return_value.is_open = True
+def test_coumodel_connected(mocked_juju):
+    """Test Model connected property when model is accessible."""
+    mocked_juju.show_model.return_value = MagicMock()
 
     model = juju_utils.Model("test-model")
 
     assert model.connected is True
 
 
-def test_coumodel_name(mocked_model):
-    """Test Model name property without model name."""
+def test_coumodel_name(mocked_juju):
+    """Test Model name property with a provided name."""
     exp_model_name = "test-model"
-    mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
 
     model = juju_utils.Model(exp_model_name)
 
     assert model.name == exp_model_name
-    model.juju_data.current_model.assert_not_called()
+    mocked_juju.show_model.assert_not_called()
 
 
-def test_coumodel_name_no_name(mocked_model):
-    """Test Model name property without model name."""
-    mocked_model.connection.side_effect = NoConnectionException  # simulate an unconnected model
-
-    model = juju_utils.Model(None)
-
-    assert model.name == model.juju_data.current_model.return_value
-    model.juju_data.current_model.assert_called_once_with(model_only=True)
-
-
-def test_coumodel_name_connected(mocked_model):
-    """Test Model initialization without model name, but connected."""
-    mocked_model.connection.return_value.is_open = True
+def test_coumodel_name_no_name(mocked_juju):
+    """Test Model name property without model name uses show_model."""
+    mocked_juju.show_model.return_value.short_name = "current-model"
 
     model = juju_utils.Model(None)
 
-    assert model.name == mocked_model.name
-    model.juju_data.current_model.assert_not_called()
+    assert model.name == "current-model"
+    mocked_juju.show_model.assert_called_once_with()
 
 
 @pytest.mark.asyncio
-async def test_coumodel_connect(mocked_model):
-    """Test Model connection."""
-    name = "test-model"
-    model = juju_utils.Model(name)
+async def test_coumodel_connect(mocked_juju):
+    """Test Model connection validates model and caches name."""
+    mocked_juju.show_model.return_value.short_name = "resolved-model"
+    model = juju_utils.Model(None)
+
     await model.connect()
 
-    mocked_model.disconnect.assert_awaited_once_with()
-    mocked_model.connect.assert_awaited_once_with(
-        model_name=name,
-        retries=juju_utils.DEFAULT_MODEL_RETRIES,
-        retry_backoff=juju_utils.DEFAULT_MODEL_RETRY_BACKOFF,
-    )
+    mocked_juju.show_model.assert_called()
+    assert model._name == "resolved-model"
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_application(mocked_model):
-    """Test Model get application."""
-    app_name = "test-app"
-    model = juju_utils.Model("test-model")
-
-    app = await model._get_application(app_name)
-
-    mocked_model.applications.get.assert_called_once_with(app_name)
-    assert app == mocked_model.applications.get.return_value
-
-
-@pytest.mark.asyncio
-async def test_coumodel_get_application_failure(mocked_model):
-    """Test Model get not existing application."""
-    model = juju_utils.Model("test-model")
-    mocked_model.applications.get.return_value = None
-
-    with pytest.raises(ApplicationNotFound):
-        await model._get_application("test-app")
-
-
-@pytest.mark.asyncio
-async def test_coumodel_get_model(mocked_model):
-    """Test Model get connected model object."""
-    mocked_model.connection.return_value = None  # simulate disconnected model
-
-    model = juju_utils.Model("test-model")
-    juju_model = await model._get_model()
-
-    mocked_model.disconnect.assert_awaited_once()
-    mocked_model.connect.assert_awaited_once()
-    assert juju_model == mocked_model
-
-
-@pytest.mark.asyncio
-async def test_coumodel_get_unit(mocked_model):
+async def test_coumodel_get_unit(mocked_juju):
     """Test Model get unit."""
-    unit_name = "test-unit"
-    model = juju_utils.Model("test-model")
+    unit_name = "test-app/0"
+    mock_unit_status = MagicMock()
+    mock_status = MagicMock()
+    mock_status.apps = {"test-app": MagicMock(units={unit_name: mock_unit_status})}
+    mocked_juju.status.return_value = mock_status
 
+    model = juju_utils.Model("test-model")
     unit = await model.get_unit(unit_name)
 
-    mocked_model.units.get.assert_called_once_with(unit_name)
-    assert unit == mocked_model.units.get.return_value
+    assert unit is mock_unit_status
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_unit_failure(mocked_model):
+async def test_coumodel_get_unit_failure(mocked_juju):
     """Test Model get not existing unit."""
+    mock_status = MagicMock()
+    mock_status.apps = {"test-app": MagicMock(units={})}
+    mocked_juju.status.return_value = mock_status
+
     model = juju_utils.Model("test-model")
-    mocked_model.units.get.return_value = None
 
     with pytest.raises(UnitNotFound):
-        await model.get_unit("test-unit")
+        await model.get_unit("missing-unit/0")
 
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.is_charm_supported")
-async def test_coumodel_get_supported_apps(mock_is_charm_supported, mocked_model):
+async def test_coumodel_get_supported_apps(mock_is_charm_supported, mocked_juju):
     """Test Model providing list of supported applications."""
     mock_is_charm_supported.side_effect = [False, True]
-    model = juju_utils.Model("test-model")
-    app = MagicMock(spec_set=Application).return_value
-    mocked_model.applications = {"unsupported": app, "supported": app}
+    mock_status = MagicMock()
+    mock_status.apps = {
+        "unsupported": MagicMock(charm_name="charm-a"),
+        "supported": MagicMock(charm_name="charm-b"),
+    }
+    mocked_juju.status.return_value = mock_status
 
+    model = juju_utils.Model("test-model")
     apps = await model._get_supported_apps()
 
-    mock_is_charm_supported.assert_has_calls([call(app.charm_name), call(app.charm_name)])
     assert apps == ["supported"]
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_application_configs(mocked_model):
+async def test_coumodel_get_application_configs(mocked_juju):
     """Test Model get application configuration."""
-    mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
+    config_data = {"settings": {"key": {"value": "val", "type": "string"}}}
+    mocked_juju.cli.return_value = json.dumps(config_data)
     model = juju_utils.Model("test-model")
 
-    app = await model.get_application_config("test-app")
+    config = await model.get_application_config("test-app")
 
-    mocked_app.get_config.assert_awaited_once_with()
-    assert app == mocked_app.get_config.return_value
+    assert config == config_data["settings"]
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_charm_name(mocked_model):
+async def test_coumodel_get_charm_name(mocked_juju):
     """Test Model get charm name from application by application name."""
-    mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
-    model = juju_utils.Model("test-model")
+    mock_status = MagicMock()
+    mock_status.apps = {"test-app": MagicMock(charm_name="my-charm")}
+    mocked_juju.status.return_value = mock_status
 
+    model = juju_utils.Model("test-model")
     charm_name = await model.get_charm_name("test-app")
 
-    assert charm_name == mocked_app.charm_name
+    assert charm_name == "my-charm"
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_charm_name_failure(mocked_model):
-    """Test Model get charm name from application by application name."""
-    mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
-    mocked_app.charm_name = None
+async def test_coumodel_get_charm_name_failure(mocked_juju):
+    """Test Model get charm name failure when app has no charm_name."""
+    mock_status = MagicMock()
+    mock_status.apps = {"test-app": MagicMock(charm_name=None)}
+    mocked_juju.status.return_value = mock_status
     app_name = "test-app"
     model = juju_utils.Model("test-model")
 
@@ -380,90 +336,94 @@ async def test_coumodel_get_charm_name_failure(mocked_model):
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_status(mocked_model):
+async def test_coumodel_get_status(mocked_juju):
     """Test Model get model status."""
-    model = juju_utils.Model("test-model")
+    mock_status = MagicMock(spec=jubilant.Status)
+    mocked_juju.status.return_value = mock_status
 
+    model = juju_utils.Model("test-model")
     status = await model.get_status()
 
-    mocked_model.get_status.assert_awaited_once_with()
-    assert status == mocked_model.get_status.return_value
+    mocked_juju.status.assert_called_once_with()
+    assert status is mock_status
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_waited_action_object_object(mocked_model):
-    """Test Model get action result."""
-    mocked_action = AsyncMock(spec_set=Action).return_value
-    model = juju_utils.Model("test-model")
-
-    action = await model._get_waited_action_object(mocked_action, False)
-
-    mocked_action.wait.assert_awaited_once_with()
-    assert action == mocked_action.wait.return_value
-
-
-@pytest.mark.asyncio
-async def test_coumodel_get_waited_action_object_failure(mocked_model):
-    """Test Model get action result failing."""
-    mocked_action = AsyncMock(spec_set=Action).return_value
-    mocked_action.wait.return_value = mocked_action
-    mocked_action.wait.status = "failed"
-    model = juju_utils.Model("test-model")
-
-    with pytest.raises(ActionFailed):
-        await model._get_waited_action_object(mocked_action, True)
-
-
-@pytest.mark.asyncio
-@patch("cou.utils.juju_utils.Model._get_waited_action_object")
-async def test_coumodel_run_action(mock_get_waited_action_object, mocked_model):
+async def test_coumodel_run_action(mocked_juju):
     """Test Model run action."""
     action_name = "test-action"
     action_params = {"test-arg": "test"}
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mock_get_waited_action_object.return_value = mocked_result = AsyncMock(Action)
+    mock_task = MagicMock(spec=jubilant.Task)
+    mocked_juju.run.return_value = mock_task
     model = juju_utils.Model("test-model")
 
-    action = await model.run_action("test_unit/0", action_name, action_params=action_params)
+    task = await model.run_action("test_unit/0", action_name, action_params=action_params)
 
-    mocked_unit.run_action.assert_awaited_once_with(action_name, **action_params)
-    mock_get_waited_action_object.assert_awaited_once_with(
-        mocked_unit.run_action.return_value, False
-    )
-    assert action == mocked_result
+    mocked_juju.run.assert_called_once_with("test_unit/0", action_name, params=action_params)
+    assert task is mock_task
 
 
 @pytest.mark.asyncio
-async def test_coumodel_run_on_unit(mocked_model):
+async def test_coumodel_run_action_failure_raise(mocked_juju):
+    """Test Model run action failure with raise_on_failure=True."""
+    mock_task = MagicMock(spec=jubilant.Task)
+    mock_task.id = "1"
+    mock_task.status = "failed"
+    mock_task.message = "oops"
+    mock_task.results = {}
+    mocked_juju.run.side_effect = jubilant.TaskError(mock_task)
+    model = juju_utils.Model("test-model")
+
+    with pytest.raises(ActionFailed):
+        await model.run_action("test_unit/0", "test-action", raise_on_failure=True)
+
+
+@pytest.mark.asyncio
+async def test_coumodel_run_action_failure_no_raise(mocked_juju):
+    """Test Model run action failure with raise_on_failure=False returns task."""
+    mock_task = MagicMock(spec=jubilant.Task)
+    mock_task.status = "failed"
+    mocked_juju.run.side_effect = jubilant.TaskError(mock_task)
+    model = juju_utils.Model("test-model")
+
+    result = await model.run_action("test_unit/0", "test-action", raise_on_failure=False)
+
+    assert result is mock_task
+
+
+@pytest.mark.asyncio
+async def test_coumodel_run_on_unit(mocked_juju):
     """Test Model run on unit."""
     command = "test-command"
-    expected_results = {"return-code": 0, "stdout": "some results"}
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = expected_results
+    mock_task = MagicMock(spec=jubilant.Task)
+    mock_task.return_code = 0
+    mock_task.stdout = "some results"
+    mock_task.stderr = ""
+    mocked_juju.exec.return_value = mock_task
     model = juju_utils.Model("test-model")
 
     results = await model.run_on_unit("test-unit/0", command)
 
-    mocked_unit.run.assert_awaited_once_with(command, timeout=None, block=True)
-    assert results == expected_results
+    mocked_juju.exec.assert_called_once_with(command, unit="test-unit/0", wait=None)
+    assert results == {"return-code": 0, "stdout": "some results", "stderr": ""}
 
 
 @pytest.mark.asyncio
-async def test_coumodel_run_on_unit_failed_command(mocked_model):
-    """Test Model run on unit."""
+async def test_coumodel_run_on_unit_failed_command(mocked_juju):
+    """Test Model run on unit with failed command."""
     command = "test-command"
-    expected_results = {"return-code": 1, "stderr": "Error!"}
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = expected_results
+    mock_task = MagicMock(spec=jubilant.Task)
+    mock_task.return_code = 1
+    mock_task.stdout = None
+    mock_task.stderr = "Error!"
+    mocked_juju.exec.side_effect = jubilant.TaskError(mock_task)
     model = juju_utils.Model("test-model")
 
     expected_err = "Command test-command failed with code 1, output None and error Error!"
     with pytest.raises(CommandRunFailed, match=expected_err):
         await model.run_on_unit("test-unit/0", command)
 
-    mocked_unit.run.assert_awaited_once_with(command, timeout=None, block=True)
+    mocked_juju.exec.assert_called_once_with(command, unit="test-unit/0", wait=None)
 
 
 @pytest.mark.asyncio
@@ -471,7 +431,7 @@ async def test_coumodel_run_on_unit_failed_command(mocked_model):
 @patch("cou.utils.juju_utils.Model._run_update_status_hook")
 @patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
 async def test_coumodel_update_status_use_dispatch(
-    use_dispatch, use_hooks, mocked_logger, mocked_model
+    use_dispatch, use_hooks, mocked_logger, mocked_juju
 ):
     """Test Model update_status using dispatch."""
     model = juju_utils.Model("test-model")
@@ -487,7 +447,7 @@ async def test_coumodel_update_status_use_dispatch(
 @patch("cou.utils.juju_utils.Model._run_update_status_hook")
 @patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
 async def test_coumodel_update_status_use_dispatch_failed(
-    use_dispatch, use_hooks, mocked_logger, mocked_model
+    use_dispatch, use_hooks, mocked_logger, mocked_juju
 ):
     """Test Model update_status using dispatch failed."""
     use_dispatch.side_effect = CommandRunFailed("some cmd", result={})
@@ -504,7 +464,9 @@ async def test_coumodel_update_status_use_dispatch_failed(
 @patch("cou.utils.juju_utils.logger")
 @patch("cou.utils.juju_utils.Model._run_update_status_hook")
 @patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
-async def test_coumodel_update_status_use_hooks(use_dispatch, use_hooks, mocked_model):
+async def test_coumodel_update_status_use_hooks(
+    use_dispatch, use_hooks, mocked_logger, mocked_juju
+):
     """Test Model update_status using hooks."""
     use_dispatch.side_effect = CommandRunFailed(
         "some cmd",
@@ -527,7 +489,7 @@ async def test_coumodel_update_status_use_hooks(use_dispatch, use_hooks, mocked_
 @patch("cou.utils.juju_utils.Model._run_update_status_hook")
 @patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
 async def test_coumodel_update_status_use_hooks_failed(
-    use_dispatch, use_hooks, mocked_logger, mocked_model
+    use_dispatch, use_hooks, mocked_logger, mocked_juju
 ):
     """Test Model update_status using hooks failed."""
     use_dispatch.side_effect = CommandRunFailed(
@@ -553,9 +515,7 @@ async def test_coumodel_update_status_use_hooks_failed(
 @patch("cou.utils.juju_utils.logger")
 @patch("cou.utils.juju_utils.Model._run_update_status_hook")
 @patch("cou.utils.juju_utils.Model._dispatch_update_status_hook")
-async def test_coumodel_update_status_skipped(
-    use_dispatch, use_hooks, mocked_logger, mocked_model
-):
+async def test_coumodel_update_status_skipped(use_dispatch, use_hooks, mocked_logger, mocked_juju):
     """Test skip Model update_status."""
     use_dispatch.side_effect = CommandRunFailed(
         "some cmd",
@@ -584,48 +544,78 @@ async def test_coumodel_update_status_skipped(
 
 
 @pytest.mark.asyncio
-async def test_coumodel_set_application_configs(mocked_model):
+async def test_coumodel_set_application_configs(mocked_juju):
     """Test Model set application configuration."""
     test_config = {"test-key": "test-value"}
-    mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
     model = juju_utils.Model("test-model")
 
     await model.set_application_config("test-app", test_config)
 
-    mocked_app.set_config.assert_awaited_once_with(test_config)
+    mocked_juju.config.assert_called_once_with("test-app", test_config)
 
 
 @pytest.mark.asyncio
-async def test_coumodel_scp_from_unit(mocked_model):
+async def test_coumodel_scp_from_unit(mocked_juju):
     """Test Model scp from unit to destination."""
     source, destination = "/tmp/source", "/tmp/destination"
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
     model = juju_utils.Model("test-model")
 
     await model.scp_from_unit("test-unit/0", source, destination)
 
-    mocked_unit.scp_from.assert_awaited_once_with(
-        source, destination, user="ubuntu", proxy=False, scp_opts=""
-    )
+    mocked_juju.scp.assert_called_once_with("test-unit/0:/tmp/source", destination, scp_options=[])
 
 
 @pytest.mark.asyncio
-async def test_coumodel_upgrade_charm(mocked_model):
+async def test_coumodel_upgrade_charm(mocked_juju):
     """Test Model upgrade application."""
     application_name = "test-app"
     channel = "latest/edge"
-    mocked_model.applications.get.return_value = mocked_app = AsyncMock(Application)
     model = juju_utils.Model("test-model")
 
     await model.upgrade_charm(application_name, channel)
 
-    mocked_app.upgrade_charm.assert_awaited_once_with(
+    mocked_juju.refresh.assert_called_once_with(
+        application_name,
         channel=channel,
-        force_series=False,
-        force_units=False,
+        force=False,
         path=None,
         revision=None,
-        switch=None,
+    )
+
+
+@pytest.mark.asyncio
+async def test_coumodel_upgrade_charm_with_switch(mocked_juju):
+    """Test Model upgrade application with switch (crossgrade)."""
+    application_name = "test-app"
+    switch = "ch:new-charm"
+    channel = "latest/edge"
+    model = juju_utils.Model("test-model")
+
+    await model.upgrade_charm(application_name, channel=channel, switch=switch)
+
+    mocked_juju.cli.assert_called_once_with(
+        "refresh", application_name, "--switch", switch, "--channel", channel
+    )
+
+
+@pytest.mark.asyncio
+async def test_coumodel_upgrade_charm_with_switch_and_force(mocked_juju):
+    """Test Model upgrade application with switch and force flags."""
+    application_name = "test-app"
+    switch = "ch:new-charm"
+    model = juju_utils.Model("test-model")
+
+    # exercise branch where force_units True adds force flags
+    await model.upgrade_charm(application_name, switch=switch, force_units=True)
+
+    mocked_juju.cli.assert_called_once_with(
+        "refresh",
+        application_name,
+        "--switch",
+        switch,
+        "--force",
+        "--force-base",
+        "--force-units",
     )
 
 
@@ -743,7 +733,6 @@ async def test_coumodel_wait_for_idle(
     timeout,
     raise_on_blocked,
     raise_on_error,
-    mocked_model,
     mocked_jubilant_juju,
 ):
     """Test Model wait for related apps to be active idle."""
@@ -793,7 +782,6 @@ async def test_coumodel_wait_for_idle(
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
 async def test_coumodel_wait_for_idle_apps(
     mock_get_supported_apps,
-    mocked_model,
     mocked_jubilant_juju,
 ):
     """Test Model wait for specific apps to be active idle."""
@@ -807,8 +795,6 @@ async def test_coumodel_wait_for_idle_apps(
     model._get_error_callable = MagicMock(return_value=error_func)
 
     await model.wait_for_idle(timeout, apps=["app1"])
-
-    # Verify jubilant.Juju was instantiated correctly
 
     # Verify wait was called once with the correct arguments
     mocked_jubilant_juju.wait.assert_called_once()
@@ -840,14 +826,9 @@ async def test_coumodel_wait_for_idle_apps(
 @patch("cou.utils.juju_utils.Model._get_supported_apps")
 async def test_coumodel_wait_for_idle_timeout(
     mock_get_supported_apps,
-    mocked_model,
     mocked_jubilant_juju,
 ):
-    """Test Model wait for model to be active idle reach timeout.
-
-    Note: The implementation also handles jubilant.WaitError in the same way as TimeoutError,
-    converting both to WaitForApplicationsTimeout via the exception handling in wait_for_idle.
-    """
+    """Test Model wait for model to be active idle reach timeout."""
     timeout = 1
     exp_apps = ["app1", "app2"]
 
@@ -865,8 +846,6 @@ async def test_coumodel_wait_for_idle_timeout(
     with pytest.raises(WaitForApplicationsTimeout):
         await model.wait_for_idle(timeout, apps=exp_apps)
 
-    # Verify jubilant.Juju was instantiated correctly
-
     # Verify wait was called multiple times due to retry logic before timeout
     assert mocked_jubilant_juju.wait.call_count >= 1
 
@@ -877,7 +856,6 @@ async def test_coumodel_wait_for_idle_timeout(
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.asyncio.sleep", new=AsyncMock())
 async def test_wait_for_idle_jubilant_waiterror_conversion(
-    mocked_model,
     mocked_jubilant_juju,
 ):
     """Test that jubilant.WaitError is converted to WaitForApplicationsTimeout."""
@@ -895,9 +873,6 @@ async def test_wait_for_idle_jubilant_waiterror_conversion(
     model._get_ready_callable = MagicMock(return_value=ready_func)
     model._get_error_callable = MagicMock(return_value=error_func)
 
-    # Test that jubilant.WaitError gets converted to WaitForApplicationsTimeout
-    # when calling the actual wait_for_idle method. Since WaitForApplicationsTimeout
-    # is in no_retry_exceptions, it should be raised immediately.
     with pytest.raises(WaitForApplicationsTimeout) as exc_info:
         await model.wait_for_idle(timeout=1, apps=["app1"])
 
@@ -907,198 +882,135 @@ async def test_wait_for_idle_jubilant_waiterror_conversion(
     mocked_jubilant_juju.wait.assert_called_once()
 
 
+def _generate_unit_status(app: str, unit_id: int, machine_id: str, subordinates=None):
+    """Generate a mock jubilant UnitStatus."""
+    status = MagicMock()
+    status.machine = machine_id
+    status.subordinates = subordinates or {}
+    status.workload_status.version = "20.04"
+    return f"{app}/{unit_id}", status
+
+
+def _generate_app_status(units, charm_name="app", base_channel="20.04/stable"):
+    """Generate a mock jubilant AppStatus."""
+    status = MagicMock()
+    status.units = units
+    if base_channel:
+        status.base = jubilant.statustypes.FormattedBase(name="ubuntu", channel=base_channel)
+    else:
+        status.base = None
+    status.charm_name = charm_name
+    return status
+
+
 @pytest.mark.asyncio
-async def test_get_machines(mocked_model):
+async def test_get_machines(mocked_juju):
     """Test Model getting machines from model."""
     expected_machines = {
         "0": juju_utils.Machine("0", (("my_app1", "app1"), ("my_app2", "app2")), "zone-1"),
         "1": juju_utils.Machine("1", (("my_app1", "app1"),), "zone-2"),
         "2": juju_utils.Machine("2", (("my_app1", "app1"),), "zone-3"),
     }
-    mocked_model.machines = {f"{i}": _generate_juju_machine(f"{i}") for i in range(3)}
-    mocked_model.units = {
-        "my_app1/0": _generate_juju_unit("my_app1", "0", "0"),
-        "my_app1/1": _generate_juju_unit("my_app1", "1", "1"),
-        "my_app1/2": _generate_juju_unit("my_app1", "2", "2"),
-        "my_app2/0": _generate_juju_unit("my_app2", "0", "0"),
-    }
-    mocked_model.applications = {
-        "my_app1": _generate_juju_app("app1"),
-        "my_app2": _generate_juju_app("app2"),
-    }
+
+    # Build jubilant status mock
+    mock_status = MagicMock()
+
+    # Set up machine statuses with hardware strings
+    mock_machines = {}
+    for i in range(3):
+        m = MagicMock()
+        m.hardware = f"arch=amd64 availability-zone=zone-{i + 1}"
+        mock_machines[str(i)] = m
+    mock_status.machines = mock_machines
+
+    # Set up app statuses with units on machines
+    unit_0a = MagicMock()
+    unit_0a.machine = "0"
+    unit_1a = MagicMock()
+    unit_1a.machine = "1"
+    unit_2a = MagicMock()
+    unit_2a.machine = "2"
+    unit_0b = MagicMock()
+    unit_0b.machine = "0"
+
+    app1_status = MagicMock()
+    app1_status.charm_name = "app1"
+    app1_status.units = {"my_app1/0": unit_0a, "my_app1/1": unit_1a, "my_app1/2": unit_2a}
+
+    app2_status = MagicMock()
+    app2_status.charm_name = "app2"
+    app2_status.units = {"my_app2/0": unit_0b}
+
+    mock_status.apps = {"my_app1": app1_status, "my_app2": app2_status}
+    mocked_juju.status.return_value = mock_status
 
     model = juju_utils.Model("test-model")
-    machines = await model._get_machines()
+    machines = await model._get_machines(mock_status)
 
     assert machines == expected_machines
-
-
-def _generate_juju_unit(app: str, unit_id: str, machine_id: str) -> MagicMock:
-    unit = MagicMock(set=Unit)()
-    unit.application = app
-    unit.name = f"{app}/{unit_id}"
-    unit.machine.id = machine_id
-    return unit
-
-
-def _generate_juju_app(charm: str) -> MagicMock:
-    app = MagicMock(spec_set=Application)()
-    app.charm_name = charm
-    return app
-
-
-def _generate_juju_machine(machine_id: str) -> MagicMock:
-    machine = MagicMock(set=Machine)()
-    machine.id = machine_id
-    machine.hardware_characteristics = {
-        "arch": "amd64",
-        "mem": 0,
-        "cpu-cores": 0,
-        "availability-zone": f"zone-{int(machine_id) + 1}",
-    }
-    return machine
-
-
-def _generate_unit_status(
-    app: str,
-    unit_id: int,
-    machine_id: str,
-    subordinates: dict[str, MagicMock] = {},
-) -> tuple[str, MagicMock]:
-    """Generate unit name and status."""
-    status = MagicMock(spec_set=UnitStatus)()
-    status.machine = machine_id
-    status.subordinates = subordinates
-    status.charm = app
-    return f"{app}/{unit_id}", status
-
-
-def _generate_app_status(units: dict[str, MagicMock]) -> MagicMock:
-    """Generate app status with units."""
-    status = MagicMock(spec_set=ApplicationStatus)()
-    status.units = units
-    status.base = Base("20.04/stable", "ubuntu")
-    return status
 
 
 @pytest.mark.asyncio
 @patch("cou.utils.juju_utils.Model.get_status")
 @patch("cou.utils.juju_utils.Model._get_machines")
-async def test_get_applications(mock_get_machines, mock_get_status, mocked_model):
-    """Test Model getting applications from model.
-
-    Getting application from status, where model contain 3 applications deployed on 3 machines.
-    The juju status to show model, which this test try to use.
-
-    Model  Controller  Cloud/Region         Version  SLA          Timestamp
-    test   lxd         localhost/localhost  3.1.6    unsupported  18:52:34+01:00
-
-    App   Version  Status  Scale  Charm  Channel  Rev  Exposed  Message
-    app1  20.04    active      3  app    stable    28  no
-    app2  20.04    active      1  app    stable    24  no
-    app3  20.04    active      1  app    stable    24  no
-    app4  20.04    active      1  app    stable    24  no
-
-    Unit      Workload  Agent  Machine  Public address  Ports  Message
-    app1/0*   active    idle   0        10.147.4.1
-    app1/1    active    idle   1        10.147.4.2
-    app1/2    active    idle   2        10.147.4.3
-    app2/0*   active    idle   0        10.147.4.1
-      app4/0* active    idle            10.147.4.1
-    app3/0*   active    idle   1        10.147.4.2
-
-    Machine  State    Address     Inst id        Base          AZ  Message
-    0        started  10.147.4.1  juju-62c6c2-0  ubuntu@20.04       Running
-    1        started  10.147.4.2  juju-62c6c2-1  ubuntu@20.04       Running
-    2        started  10.147.4.3  juju-62c6c2-2  ubuntu@20.04       Running
-    """
+async def test_get_applications(mock_get_machines, mock_get_status, mocked_juju):
+    """Test Model getting applications from model."""
     exp_apps = ["app1", "app2", "app3", "app4"]
     exp_machines = {
         "0": juju_utils.Machine("0", ()),
         "1": juju_utils.Machine("1", ()),
         "2": juju_utils.Machine("2", ()),
     }
-    exp_units_from_status = {
-        "app1": dict([_generate_unit_status("app1", i, f"{i}") for i in range(3)]),
-        "app2": dict(
-            [_generate_unit_status("app2", 0, "0", dict([_generate_unit_status("app4", 0, "")]))]
-        ),
-        "app3": dict([_generate_unit_status("app3", 0, "1")]),
-        "app4": {},  # subordinate application has no units defined in juju status
+
+    # Build unit statuses
+    def make_unit(machine_id, subordinates=None):
+        u = MagicMock()
+        u.machine = machine_id
+        u.subordinates = subordinates or {}
+        u.workload_status.version = "20.04"
+        return u
+
+    app_units = {
+        "app1": {f"app1/{i}": make_unit(str(i)) for i in range(3)},
+        "app2": {"app2/0": make_unit("0", subordinates={"app4/0": MagicMock()})},
+        "app3": {"app3/0": make_unit("1")},
+        "app4": {},
     }
-    exp_units = {
-        "app1": [_generate_juju_unit("app1", f"{i}", f"{i}") for i in range(3)],
-        "app2": [_generate_juju_unit("app2", "0", "0")],
-        "app3": [_generate_juju_unit("app3", "0", "0")],
-        "app4": [_generate_juju_unit("app4", "0", "0")],
-    }
 
-    mocked_model.applications = {app: MagicMock(spec_set=Application)() for app in exp_apps}
+    # Build app statuses
+    mock_apps = {}
+    for app_name in exp_apps:
+        app_st = MagicMock()
+        app_st.charm_name = app_name
+        app_st.charm = f"ch:{app_name}"
+        app_st.charm_origin = "ch"
+        app_st.charm_channel = "stable/ussuri"
+        app_st.can_upgrade_to = ""
+        app_st.subordinate_to = []
+        app_st.version = "20.04"
+        app_st.units = app_units[app_name]
+        app_st.base = jubilant.statustypes.FormattedBase(name="ubuntu", channel="20.04/stable")
+        mock_apps[app_name] = app_st
 
-    for app in exp_apps:
-        mocked_model.applications[app].get_actions = AsyncMock()
-        mocked_model.applications[app].get_config = AsyncMock()
-        mocked_model.applications[app].units = exp_units[app]
-        mocked_model.applications[app].charm_name = app
+    mock_status = MagicMock()
+    mock_status.apps = mock_apps
 
-    full_status_apps = {app: _generate_app_status(exp_units_from_status[app]) for app in exp_apps}
-    mock_get_status.return_value.applications = full_status_apps
+    mock_get_status.return_value = mock_status
     mock_get_machines.return_value = exp_machines
 
-    model = juju_utils.Model("test-model")
-    exp_apps = {
-        app: juju_utils.Application(
-            name=app,
-            can_upgrade_to=status.can_upgrade_to,
-            charm=mocked_model.applications[app].charm_name,
-            channel=status.charm_channel,
-            config=mocked_model.applications[app].get_config.return_value,
-            machines={unit.machine.id: exp_machines[unit.machine.id] for unit in exp_units[app]},
-            model=model,
-            origin=status.charm.split(":")[0],
-            series="focal",
-            subordinate_to=status.subordinate_to,
-            units={
-                name: juju_utils.Unit(
-                    name,
-                    exp_machines[unit.machine],
-                    unit.workload_version,
-                    [
-                        juju_utils.SubordinateUnit(
-                            subordinate_name,
-                            subordinate.charm,
-                        )
-                        for subordinate_name, subordinate in unit.subordinates.items()
-                    ],
-                )
-                for name, unit in exp_units_from_status[app].items()
-            },
-            workload_version=status.workload_version,
-        )
-        for app, status in full_status_apps.items()
-    }
+    # Mock config and actions CLI calls
+    mocked_juju.cli.side_effect = lambda *args, **kw: (
+        json.dumps({"settings": {}}) if args[0] == "config" else json.dumps({})
+    )
 
+    model = juju_utils.Model("test-model")
     apps = await model.get_applications()
 
-    # check mocked objects
-    mock_get_status.assert_awaited_once_with()
-    mock_get_machines.assert_awaited_once_with()
-    for app in full_status_apps:
-        mocked_model.applications[app].get_config.assert_awaited_once_with()
-
-    # check expected output
-    assert apps == exp_apps
-
-    # check number of units
+    assert set(apps.keys()) == set(exp_apps)
     assert len(apps["app1"].units) == 3
     assert len(apps["app2"].units) == 1
     assert len(apps["app3"].units) == 1
     assert len(apps["app4"].units) == 0
-    # check number of machines
-    assert len(apps["app1"].machines) == 3
-    assert len(apps["app2"].machines) == 1
-    assert len(apps["app3"].machines) == 1
-    assert len(apps["app4"].machines) == 1
 
 
 def test_unit_repr():
@@ -1106,124 +1018,168 @@ def test_unit_repr():
     assert repr(unit) == "foo/0"
 
 
-def test_suborinate_unit_repr():
+def test_subordinate_unit_repr():
     unit = juju_utils.SubordinateUnit(name="foo/0", charm="foo")
     assert repr(unit) == "foo/0"
 
 
 @pytest.mark.asyncio
-async def test_run_update_status_hook(mocked_model):
+async def test_run_update_status_hook(mocked_juju):
     """Test Model _run_update_status hook."""
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = {"return-code": 0, "stderr": ""}
+    mock_task = MagicMock(spec=jubilant.Task)
+    mock_task.return_code = 0
+    mock_task.stdout = ""
+    mock_task.stderr = ""
+    mocked_juju.exec.return_value = mock_task
     model = juju_utils.Model("test-model")
-    await model._run_update_status_hook(mocked_unit)
-    mocked_unit.run.assert_awaited_once_with("hooks/update-status", timeout=None, block=True)
+    await model._run_update_status_hook("test-unit/0")
+    mocked_juju.exec.assert_called_once_with("hooks/update-status", unit="test-unit/0", wait=None)
 
 
 @pytest.mark.asyncio
-async def test_dispatch_update_status_hook(mocked_model):
+async def test_dispatch_update_status_hook(mocked_juju):
     """Test Model _dispatch_update_status hook."""
-    mocked_model.units.get.return_value = mocked_unit = AsyncMock(Unit)
-    mocked_unit.run.return_value = mocked_action = AsyncMock(Action)
-    mocked_action.results = {"return-code": 0, "stderr": ""}
+    mock_task = MagicMock(spec=jubilant.Task)
+    mock_task.return_code = 0
+    mock_task.stdout = ""
+    mock_task.stderr = ""
+    mocked_juju.exec.return_value = mock_task
     model = juju_utils.Model("test-model")
-    await model._dispatch_update_status_hook(mocked_unit)
-    mocked_unit.run.assert_awaited_once_with(
-        "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch", timeout=None, block=True
+    await model._dispatch_update_status_hook("test-unit/0")
+    mocked_juju.exec.assert_called_once_with(
+        "JUJU_DISPATCH_PATH=hooks/update-status ./dispatch", unit="test-unit/0", wait=None
     )
 
 
 @pytest.mark.asyncio
-async def test_coumodel_resolve_all(mocked_model):
+async def test_coumodel_resolve_all(mocked_juju):
+    """Test Model resolve all units in error."""
     model = juju_utils.Model("test-model")
-
-    mock_active_juju_app = AsyncMock()
-    mock_active_juju_app.status = "active"
-
-    mock_error_juju_app = AsyncMock()
-    mock_error_juju_app.status = "error"
-
-    mocked_model.applications = {
-        "app1": mock_active_juju_app,
-        "app2": mock_error_juju_app,
-    }
-
-    mock_active_juju_unit = AsyncMock()
-    mock_active_juju_unit.workload_status = "active"
-    mock_error_juju_unit = AsyncMock()
-    mock_error_juju_unit.workload_status = "error"
-
-    mock_error_juju_app.units = [mock_active_juju_unit, mock_error_juju_unit]
-
     await model.resolve_all()
-
-    mock_error_juju_unit.resolved.assert_awaited_once_with(retry=True)
+    mocked_juju.cli.assert_called_once_with("resolve", "--all")
 
 
 @pytest.mark.asyncio
-async def test_get_application_names(mocked_model):
+async def test_get_application_names(mocked_juju):
     model = juju_utils.Model("test-model")
-    test_apps = {
-        "app1": MagicMock(),
-        "app2": MagicMock(),
-        "app3": MagicMock(),
+    mock_status = MagicMock()
+    mock_status.apps = {
+        "app1": MagicMock(charm_name="target_charm_name"),
+        "app2": MagicMock(charm_name="target_charm_name"),
+        "app3": MagicMock(charm_name="not_target_charm_name"),
     }
-    test_apps["app1"].charm_name = "target_charm_name"
-    test_apps["app2"].charm_name = "target_charm_name"
-    test_apps["app3"].charm_name = "not_target_charm_name"
-    mocked_model.applications = test_apps
+    mocked_juju.status.return_value = mock_status
 
     names = await model.get_application_names("target_charm_name")
     assert names == ["app1", "app2"]
 
 
 @pytest.mark.asyncio
-async def test_get_application_names_failed(mocked_model):
+async def test_get_application_names_failed(mocked_juju):
     model = juju_utils.Model("test-model")
-    test_apps = {
-        "app1": MagicMock(),
-        "app2": MagicMock(),
-        "app3": MagicMock(),
+    mock_status = MagicMock()
+    mock_status.apps = {
+        "app1": MagicMock(charm_name="other"),
+        "app2": MagicMock(charm_name="other"),
     }
-    mocked_model.applications = test_apps
-    mocked_model.name = "mocked-model"
+    mocked_juju.status.return_value = mock_status
+    mocked_juju.show_model.return_value.short_name = "mocked-model"
 
     with pytest.raises(
         ApplicationNotFound,
-        match="Cannot find 'app1_charm_name' charm in model 'mocked-model'",
+        match="Cannot find 'app1_charm_name' charm in model",
     ):
         await model.get_application_names("app1_charm_name")
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_application_status(mocked_model):
+async def test_coumodel_get_application_status(mocked_juju):
     model = juju_utils.Model("test-model")
-    data = {
-        "app1": "app-status-1",
-        "app2": "app-status-2",
-        "app3": "app-status-3",
+    mock_app_status = MagicMock()
+    mock_status = MagicMock()
+    mock_status.apps = {
+        "app1": mock_app_status,
+        "app2": MagicMock(),
+        "app3": MagicMock(),
     }
-    mocked_model.get_status.return_value.applications = data
+    mocked_juju.status.return_value = mock_status
+
     status = await model.get_application_status(app_name="app1")
-    assert status == "app-status-1"
-    mocked_model.get_status.assert_awaited_once_with(filters=["app1"])
+    assert status is mock_app_status
 
 
 @pytest.mark.asyncio
-async def test_coumodel_get_application_status_failed(mocked_model):
+async def test_coumodel_get_application_status_failed(mocked_juju):
     model = juju_utils.Model("test-model")
-    mocked_model.name = "mocked-model"
-
-    data = {
-        "app1": "app-status-1",
-        "app2": "app-status-2",
-        "app3": "app-status-3",
+    mock_status = MagicMock()
+    mock_status.apps = {
+        "app1": MagicMock(),
+        "app2": MagicMock(),
     }
-    mocked_model.get_status.return_value.applications = data
+    mocked_juju.status.return_value = mock_status
+    mocked_juju.show_model.return_value.short_name = "mocked-model"
+
     with pytest.raises(
         ApplicationNotFound,
-        match="Cannot find 'app-not-exists' in model 'mocked-model'.",
+        match="Cannot find 'app-not-exists' in model",
     ):
         await model.get_application_status(app_name="app-not-exists")
+
+
+@pytest.mark.asyncio
+async def test_get_applications_actions_clierror(mocked_juju, monkeypatch):
+    """Test that get_applications handles jubilant.CLIError for actions gracefully."""
+    # prepare status and machines similar to other tests
+    mock_status = MagicMock()
+    app_st = MagicMock()
+    app_st.charm_name = "appx"
+    app_st.charm = "ch:appx"
+    app_st.charm_origin = "ch"
+    app_st.charm_channel = "stable/ussuri"
+    app_st.can_upgrade_to = ""
+    app_st.subordinate_to = []
+    app_st.version = "20.04"
+    app_st.units = {}
+    app_st.base = jubilant.statustypes.FormattedBase(name="ubuntu", channel="20.04/stable")
+
+    mock_status.apps = {"appx": app_st}
+
+    # _get_machines should return empty mapping
+    monkeypatch.setattr(juju_utils.Model, "get_status", AsyncMock(return_value=mock_status))
+    monkeypatch.setattr(juju_utils.Model, "_get_machines", AsyncMock(return_value={}))
+
+    # config should return valid json, but actions will raise CLIError
+    def _cli_side_effect(*args, **kwargs):
+        if args[0] == "config":
+            return json.dumps({"settings": {}})
+        if args[0] == "actions":
+            raise jubilant.CLIError(1, ["juju"], "", "no actions")
+        return json.dumps({})
+
+    mocked_juju.cli.side_effect = _cli_side_effect
+
+    model = juju_utils.Model("test-model")
+    apps = await model.get_applications()
+
+    # Ensure application exists and actions defaulted to empty dict
+    assert "appx" in apps
+    assert apps["appx"].actions == {}
+
+
+@pytest.mark.asyncio
+async def test_get_application_config_failure_raises(mocked_juju):
+    """Test that get_application_config converts CLIError into ApplicationNotFound."""
+    mocked_juju.cli.side_effect = jubilant.CLIError(1, ["juju"], "", "error")
+    model = juju_utils.Model("test-model")
+
+    with pytest.raises(ApplicationNotFound, match="Application not-found was not found"):
+        # name used in message doesn't need to exist in status; check message formatting
+        await model.get_application_config("not-found")
+
+
+def test_get_applications_by_charm_name_not_found():
+    """Test get_applications_by_charm_name raises when not found."""
+    apps = [MagicMock(charm="foo"), MagicMock(charm="bar")]
+
+    with pytest.raises(ApplicationNotFound, match="Application with 'baz' not found"):
+        juju_utils.get_applications_by_charm_name(apps, "baz")

@@ -412,10 +412,10 @@ class OpenStackApplication(Application):
         await asyncio.gather(*tasks)
 
         status = await self.model.get_status()
-        app_status = status.applications.get(self.name)
+        app_status = status.apps.get(self.name)
         units_not_upgraded = []
         for unit in units:
-            workload_version = app_status.units[unit.name].workload_version
+            workload_version = app_status.units[unit.name].workload_status.version
             compatible_o7k_versions = OpenStackCodenameLookup.find_compatible_versions(
                 self.charm, workload_version
             )

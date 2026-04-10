@@ -1,11 +1,13 @@
 """Generic setup for functional tests."""
 
+import asyncio
 import logging
 import os
 import unittest
 from unittest.mock import patch
 
 import zaza
+import zaza.model
 
 from cou.steps.backup import backup
 from cou.utils import COU_DATA
@@ -18,14 +20,12 @@ class BackupTest(unittest.TestCase):
     """Code for backup test."""
 
     def setUp(self) -> None:
-        zaza.get_or_create_libjuju_thread()
         model_name = zaza.model.get_juju_model()
         self.model = Model(model_name)
-        zaza.sync_wrapper(self.model.connect)()
+        asyncio.get_event_loop().run_until_complete(self.model.connect())
 
     def tearDown(self) -> None:
-        zaza.sync_wrapper(self.model._model.disconnect)()
-        zaza.clean_up_libjuju_thread()
+        pass  # jubilant is CLI-based; no persistent connection to tear down
 
     def test_backup(self):
         """Backup Test."""
