@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module of exceptions that charmed-openstack-upgrader may raise."""
-from juju.action import Action
+import jubilant
 
 
 class COUException(Exception):
@@ -76,32 +76,15 @@ class DataPlaneMachineFilterError(COUException):
 class ActionFailed(COUException):
     """Exception raised when action fails."""
 
-    # pylint: disable=consider-using-f-string
-    def __init__(self, action: Action):
+    def __init__(self, task: jubilant.Task):
         """Set information about action failure in message and raise.
 
-        :param action: Action that failed.
-        :type action: Action
+        :param task: Task that failed.
+        :type task: jubilant.Task
         """
-        params = {"output": action.safe_data}
-        for key in [
-            "name",
-            "parameters",
-            "receiver",
-            "message",
-            "id",
-            "status",
-            "enqueued",
-            "started",
-            "completed",
-        ]:
-            params[key] = action.safe_data.get(key, "<not-set>")
-
         message = (
-            "Run of action '{name}' with parameters '{parameters}' on "
-            "'{receiver}' failed with '{message}' (id={id} "
-            "status={status} enqueued={enqueued} started={started} "
-            "completed={completed} output={output})".format(**params)
+            f"Action '{task.id}' failed with status '{task.status}', "
+            f"message: '{task.message}', results: {task.results}"
         )
         super().__init__(message)
 

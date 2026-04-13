@@ -13,8 +13,8 @@
 #  limitations under the License.
 from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
 
+import jubilant
 import pytest
-from juju.client._definitions import ApplicationStatus, UnitStatus
 
 from cou.apps.base import OpenStackApplication
 from cou.apps.core import Keystone, NeutronApi, NovaCompute, Swift, resume_nova_compute_unit
@@ -107,11 +107,11 @@ async def test_application_verify_workload_upgrade(model):
 
     # workload version changed from ussuri to victoria
     mock_status = AsyncMock()
-    mock_app_status = MagicMock(spec_set=ApplicationStatus())
-    mock_unit_status = MagicMock(spec_set=UnitStatus())
-    mock_unit_status.workload_version = "18.1.0"
+    mock_app_status = MagicMock()
+    mock_unit_status = MagicMock()
+    mock_unit_status.workload_status.version = "18.1.0"
     mock_app_status.units = {"keystone/0": mock_unit_status}
-    mock_status.return_value.applications = {"keystone": mock_app_status}
+    mock_status.return_value.apps = {"keystone": mock_app_status}
     model.get_status = mock_status
 
     assert await app._verify_workload_upgrade(target, app.units.values()) is None
@@ -152,11 +152,11 @@ async def test_application_verify_workload_upgrade_fail(model):
 
     # workload version didn't change from ussuri to victoria
     mock_status = AsyncMock()
-    mock_app_status = MagicMock(spec_set=ApplicationStatus())
-    mock_unit_status = MagicMock(spec_set=UnitStatus())
-    mock_unit_status.workload_version = "17.1.0"
+    mock_app_status = MagicMock()
+    mock_unit_status = MagicMock()
+    mock_unit_status.workload_status.version = "17.1.0"
     mock_app_status.units = {"keystone/0": mock_unit_status}
-    mock_status.return_value.applications = {"keystone": mock_app_status}
+    mock_status.return_value.apps = {"keystone": mock_app_status}
     model.get_status = mock_status
 
     with pytest.raises(ApplicationError, match=exp_msg):
@@ -1153,8 +1153,8 @@ async def test_resume_nova_compute_success(model):
 @pytest.mark.asyncio
 async def test_resume_nova_compute_unknown_failure(model):
     """Verify that the unknown failure case bails out."""
-    model.run_action.return_value = Mock(
-        status="failed", safe_data={"message": "it crashed and we don't know why"}
+    model.run_action.return_value = jubilant.Task(
+        id="1", status="failed", message="it crashed and we don't know why"
     )
     unit = Unit(
         name="nova-compute/0",
@@ -1174,15 +1174,14 @@ async def test_resume_nova_compute_unknown_failure(model):
 @pytest.mark.asyncio
 async def test_resume_nova_compute_ceilometer_failure(model):
     """Verify that the ceilometer failure case performs the workaround."""
-    model.run_action.return_value = Mock(
+    model.run_action.return_value = jubilant.Task(
+        id="1",
         status="failed",
-        safe_data={
-            "message": (
-                "Action resume failed: Couldn't resume: "
-                "ceilometer-agent-compute didn't resume cleanly.; "
-                "Services not running that should be: ceilometer-agent-compute"
-            ),
-        },
+        message=(
+            "Action resume failed: Couldn't resume: "
+            "ceilometer-agent-compute didn't resume cleanly.; "
+            "Services not running that should be: ceilometer-agent-compute"
+        ),
     )
     unit = Unit(
         name="nova-compute/0",
