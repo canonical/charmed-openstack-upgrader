@@ -146,25 +146,15 @@ jobs:
           name: snap_${{ env.SYSTEM_ARCH }}
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6	
         with:
           python-version: "3.10"
-
-      # newer version of juju 3.6/stable has several conecctions issues with python-libjuju
-      - name: Install Juju client
-        run: |
-          sudo snap install juju --channel=3.6/stable --classic --revision=34273
-          sudo snap refresh --hold juju
 
       - name: Setup Juju 3.6/stable environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: lxd
           juju-channel: 3.6/stable
-
-      - name: Set default lxc profile to privileged
-        run: |
-          lxc profile set default security.privileged true
 
       - name: Install dependencies
         run: |
@@ -210,20 +200,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install coverage tools
-        run: |
-          pip install coverage[toml]
-
       # Install everything from all requirements.txt files otherwise TICS errors.
       - name: Install all snap dependencies
         env:
           # to ensure that zaza installs correctly
           TEST_JUJU3: "1"
         run: |
+          # run in a virtualenv to ensure dependencies will not conflict with the system python packages
+          sudo apt update
+          sudo apt install python3-venv -y
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install coverage[toml]
+
           for f in $(find -name '*requirements.txt'); do
               echo "${f}"
-              pip3 install --requirement "${f}"
+              .venv/bin/python -m pip install --requirement "${f}"
           done
+
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
       - name: Determine system architecture
         run: echo "SYSTEM_ARCH=$(uname -m)" >> $GITHUB_ENV
