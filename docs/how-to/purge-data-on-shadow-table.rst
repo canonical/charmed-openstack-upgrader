@@ -14,7 +14,7 @@ Usage examples
 --------------
 
 .. terminal::
-   :input cou plan --purge --purge-before-date 2000-01-02
+   cou plan --purge --purge-before-date 2000-01-02
 
 
 More information

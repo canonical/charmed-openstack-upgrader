@@ -1,6 +1,7 @@
 aodh
 api
 az
+AZs
 backoff
 BACKOFF
 barbican
@@ -23,6 +24,7 @@ innodb
 juju
 juju's
 libjuju
+logfile
 manila
 minimize
 mon
@@ -44,6 +46,7 @@ snapcraft
 STDOUT
 subcommand
 subcommands
+stringified
 Upgrader
 ussuri
 URI

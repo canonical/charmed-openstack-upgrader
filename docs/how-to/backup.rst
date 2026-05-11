@@ -23,7 +23,7 @@ Usage examples
 Plan:
 
 .. terminal::
-    :input: cou plan --no-backup
+    cou plan --no-backup
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
@@ -44,7 +44,7 @@ Plan:
 Upgrade:
 
 .. terminal::
-    :input: cou upgrade --no-backup
+    cou upgrade --no-backup
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
