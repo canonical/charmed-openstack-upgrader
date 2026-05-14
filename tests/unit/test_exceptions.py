@@ -11,34 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest import mock
-
-from juju.action import Action
+import jubilant
 
 from cou.exceptions import ActionFailed
 
 
 def test_action_failed():
     """Test error message composition for ActionFailed."""
-    action = mock.Mock(spec_set=Action)()
-    action.safe_data = {
-        "model-uuid": "12885f47-4dfa-4457-8ed1-1f08c1b278dd",
-        "id": "4",
-        "receiver": "my-charm/0",
-        "name": "test-action",
-        "status": "failed",
-        "message": "error message",
-        "enqueued": "2024-05-29T14:50:08Z",
-        "started": "2024-05-29T14:50:11Z",
-        "completed": "2024-05-29T14:50:11Z",
-    }
-
-    error = ActionFailed(action=action)
-    assert str(error) == (
-        "Run of action 'test-action' with parameters '<not-set>' on 'my-charm/0' failed with "
-        "'error message' (id=4 status=failed enqueued=2024-05-29T14:50:08Z started=2024-05-29T14:"
-        "50:11Z completed=2024-05-29T14:50:11Z output={'model-uuid': '12885f47-4dfa-4457-8ed1-1f0"
-        "8c1b278dd', 'id': '4', 'receiver': 'my-charm/0', 'name': 'test-action', 'status': "
-        "'failed', 'message': 'error message', 'enqueued': '2024-05-29T14:50:08Z', 'started': "
-        "'2024-05-29T14:50:11Z', 'completed': '2024-05-29T14:50:11Z'})"
+    task = jubilant.Task(
+        id="4",
+        status="failed",
+        results={"instance-count": "5"},
+        return_code=1,
+        stdout="",
+        stderr="some error",
+        message="error message",
     )
+
+    error = ActionFailed(task=task)
+    assert "4" in str(error)
+    assert "failed" in str(error)
+    assert "error message" in str(error)

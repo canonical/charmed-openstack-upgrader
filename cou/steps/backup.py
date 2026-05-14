@@ -61,20 +61,20 @@ async def backup(model: Model) -> Path:
     return local_file
 
 
-def _check_db_relations(app_config: dict) -> bool:
+def _check_db_relations(app_config) -> bool:
     """Check the db relations.
 
     Gets the openstack database mysql-innodb-cluster application if there are more than one
     application the one with the keystone relation is selected.
 
-    :param app_config: juju app config
-    :type app_config: str
+    :param app_config: jubilant AppStatus object
+    :type app_config: jubilant.statustypes.AppStatus
     :returns: True if it has a relation with keystone
     :rtype: bool
     """
-    for relation, app_list in app_config["relations"].items():
+    for relation, app_list in app_config.relations.items():
         if relation == "db-router":
-            if len([a for a in app_list if "keystone".casefold() in a.casefold()]) > 0:
+            if len([r for r in app_list if "keystone".casefold() in r.related_app.casefold()]) > 0:
                 return True
     return False
 
@@ -92,7 +92,7 @@ async def get_database_app_unit_name(model: Model) -> str:
     :rtype: ApplicationStatus
     """
     status = await model.get_status()
-    for app_name, app_config in status.applications.items():
+    for app_name, app_config in status.apps.items():
         charm_name = await model.get_charm_name(app_name)
         if charm_name == "mysql-innodb-cluster" and _check_db_relations(app_config):
             return list(app_config.units.keys())[0]

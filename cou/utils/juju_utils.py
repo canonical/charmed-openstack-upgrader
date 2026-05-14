@@ -17,23 +17,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
+import shlex
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, List, Optional, Sequence
 
 import jubilant
-from juju.action import Action
-from juju.application import Application as JujuApplication
-from juju.client._definitions import ApplicationStatus, Base, FullStatus
-from juju.client.connector import NoConnectionException
-from juju.client.jujudata import FileJujuData
-from juju.errors import JujuConnectionError, JujuError
-from juju.model import Model as JujuModel
-from juju.unit import Unit as JujuUnit
-from juju.utils import get_version_series
-from macaroonbakery.httpbakery import BakeryException
 from six import wraps
 
 from cou.exceptions import (
@@ -47,10 +39,6 @@ from cou.exceptions import (
 )
 from cou.utils.openstack import is_charm_supported
 
-# Increase Juju websocket connection MAX_FRAME_SIZE to 1024MiB to stop
-# "RPC: Connection closed, reconnecting" errors and then a failure in the log.
-# See https://github.com/juju/python-libjuju/issues/458 for more details
-JUJU_MAX_FRAME_SIZE: int = 2**30
 DEFAULT_TIMEOUT: int = int(os.environ.get("COU_TIMEOUT", 10))
 DEFAULT_MAX_WAIT: int = 5
 DEFAULT_WAIT: float = 1.1
@@ -58,19 +46,41 @@ DEFAULT_MODEL_RETRIES: int = int(os.environ.get("COU_MODEL_RETRIES", 5))
 DEFAULT_MODEL_RETRY_BACKOFF: int = int(os.environ.get("COU_MODEL_RETRY_BACKOFF", 2))
 DEFAULT_MODEL_IDLE_PERIOD: int = 30
 
+_VERSION_SERIES_MAP: dict[str, str] = {
+    "18.04": "bionic",
+    "20.04": "focal",
+    "22.04": "jammy",
+    "24.04": "noble",
+}
+
 logger = logging.getLogger(__name__)
 
 
-def _convert_base_to_series(base: Base) -> str:
+def _convert_base_to_series(base: jubilant.statustypes.FormattedBase) -> str:
     """Convert base to series.
 
-    :param base: Base object
-    :type base: juju.client._definitions.Base
+    :param base: FormattedBase object
+    :type base: jubilant.statustypes.FormattedBase
     :return: converted channel to series, e.g. 20.04 -> focal
     :rtype: str
     """
     version, *_ = base.channel.split("/")
-    return get_version_series(version)
+    return _VERSION_SERIES_MAP.get(version, version)
+
+
+def _parse_availability_zone(hardware: str) -> Optional[str]:
+    """Parse availability zone from hardware string.
+
+    :param hardware: Hardware string from juju status, e.g.
+        "arch=amd64 availability-zone=nova"
+    :type hardware: str
+    :return: Availability zone if present, else None
+    :rtype: Optional[str]
+    """
+    for part in hardware.split():
+        if part.startswith("availability-zone="):
+            return part.split("=", 1)[1]
+    return None
 
 
 def retry(
@@ -270,7 +280,7 @@ class JubilantModelMixin:
 
         # jubilant init only init the python object, no connection is created.
         # so it's safy to init every time.
-        _juju = jubilant.Juju(model=self._juju_data.current_model(), wait_timeout=timeout)
+        _juju = jubilant.Juju(model=self._juju.model, wait_timeout=timeout)
 
         ready_callable = self._get_ready_callable(status)
         error_callable = self._get_error_callable(raise_on_error, raise_on_blocked)
@@ -299,117 +309,71 @@ class Model(JubilantModelMixin):
     """
 
     def __init__(self, name: Optional[str]):
-        """COU Model initialization with name and juju.model.Model."""
-        self._juju_data = FileJujuData()
-        self._model = JujuModel(max_frame_size=JUJU_MAX_FRAME_SIZE, jujudata=self.juju_data)
+        """COU Model initialization with name and jubilant.Juju."""
         self._name = name
+        self._juju = jubilant.Juju(model=name)
 
     @property
     def connected(self) -> bool:
-        """Check if model is connected."""
+        """Check if model is accessible."""
         try:
-            connection = self._model.connection()
-            return connection is not None and connection.is_open
-        except NoConnectionException:
+            self._juju.show_model()
+            return True
+        except Exception:  # pylint: disable=broad-exception-caught
             return False
-
-    @property
-    def juju_data(self) -> FileJujuData:
-        """Juju data."""
-        return self._juju_data
 
     @property
     def name(self) -> str:
         """Return model name."""
-        if self.connected:
-            return self._model.name
+        if self._name is not None:
+            return self._name
+        return self._juju.show_model().short_name
 
+    async def connect(self) -> None:
+        """Validate the model is accessible.
+
+        In jubilant, connections are established implicitly per CLI call.
+        This method validates accessibility and caches the model name.
+        """
+        model_info = self._juju.show_model()
         if self._name is None:
-            self._name = self.juju_data.current_model(model_only=True)
+            self._name = model_info.short_name
 
-        return self._name
-
-    @retry(no_retry_exceptions=(ActionFailed,))
-    async def _get_waited_action_object(self, action: Action, raise_on_failure: bool) -> Action:
-        """Get waited action object.
-
-        To access action data from the returned action object, use `action_obj.data`, which
-        contains action parameters, results, status, and metadata. Alternatively, it is possible
-        to access action results directly with `action_obj.results`.
-
-        :param action: Action object
-        :type: Action
-        :param raise_on_failure: Whether to raise ActionFailed exception on failure, defaults
-                                 to False
-        :type raise_on_failure: bool
-        :return: the awaited action object
-        :rtype: Action
-        :raises ActionFailed: When the application status is in error (it's not 'completed').
-        """
-        action_obj = await action.wait()
-        if raise_on_failure and action_obj.status != "completed":
-            logger.error("action %s failed", action_obj)
-            raise ActionFailed(action)
-
-        return action_obj
-
-    async def _get_application(self, name: str) -> JujuApplication:
-        """Get juju.application.Application from model.
-
-        :param name: Name of application
-        :type name: str
-        :raises ApplicationNotFound: When application is not found in the model.
-        :return: Application
-        :rtype: JujuApplication
-        """
-        model = await self._get_model()
-        app = model.applications.get(name)
-        if app is None:
-            raise ApplicationNotFound(f"Application {name} was not found in model {model.name}.")
-
-        return app
-
-    async def _get_machines(self) -> dict[str, Machine]:
-        """Get all the machines in the model.
-
-        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
-        :rtype: dict[str, Machine]
-        """
-        model = await self._get_model()
-
-        return {
-            machine.id: Machine(
-                machine_id=machine.id,
-                apps_charms=self._get_machine_apps_and_charms(machine.id),
-                az=machine.hardware_characteristics.get("availability-zone"),
-            )
-            for machine in model.machines.values()
-        }
-
-    def _get_machine_apps_and_charms(self, machine_id: int) -> tuple[tuple[str, str], ...]:
-        """Get machine apps amd charm names.
+    def _get_machine_apps_and_charms(
+        self, machine_id: str, status: jubilant.Status
+    ) -> tuple[tuple[str, str], ...]:
+        """Get machine apps and charm names.
 
         :param machine_id: Machine id.
-        :type machine_id: int
+        :type machine_id: str
+        :param status: Jubilant Status object.
+        :type status: jubilant.Status
         :return: Tuple of tuple contains app name and charm name.
         :rtype: tuple[tuple[str, str], ...]
         """
         return tuple(
-            (str(unit.application), str(self._model.applications[unit.application].charm_name))
-            for unit in self._model.units.values()
-            if unit.machine.id == machine_id
+            (app_name, app_status.charm_name)
+            for app_name, app_status in status.apps.items()
+            for unit_status in app_status.units.values()
+            if unit_status.machine == machine_id
         )
 
-    async def _get_model(self) -> JujuModel:
-        """Get juju.model.Model and make sure that it is connected.
+    async def _get_machines(self, status: jubilant.Status) -> dict[str, Machine]:
+        """Get all the machines in the model.
 
-        :return: Model
-        :rtype: JujuModel
+        :param status: Optional pre-fetched jubilant Status. Fetched if not provided.
+        :type status: Optional[jubilant.Status]
+        :return: Dictionary of the machines found in the model. E.g: {'0': Machine0}
+        :rtype: dict[str, Machine]
         """
-        if not self.connected:
-            await self.connect()
-
-        return self._model
+        return {
+            machine_id: Machine(
+                machine_id=machine_id,
+                apps_charms=self._get_machine_apps_and_charms(machine_id, status),
+                az=_parse_availability_zone(machine_status.hardware),
+            )
+            for machine_id, machine_status in status.machines.items()
+        }
 
     async def _get_supported_apps(self) -> list[str]:
         """Get all applications supported by COU deployed in model.
@@ -417,36 +381,27 @@ class Model(JubilantModelMixin):
         :return: List of applications names supported by COU
         :rtype: list[str]
         """
-        model = await self._get_model()
+        status = self._juju.status()
         return [
-            name for name, app in model.applications.items() if is_charm_supported(app.charm_name)
+            app_name
+            for app_name, app_status in status.apps.items()
+            if is_charm_supported(app_status.charm_name)
         ]
 
-    async def get_unit(self, name: str) -> JujuUnit:
-        """Get juju.unit.unit from model.
+    async def get_unit(self, name: str) -> jubilant.statustypes.UnitStatus:
+        """Get jubilant UnitStatus from model.
 
         :param name: Name of unit
         :type name: str
         :raises UnitNotFound: When unit is not found in the model.
-        :return: Unit
-        :rtype: JujuUnit
+        :return: UnitStatus
+        :rtype: jubilant.statustypes.UnitStatus
         """
-        model = await self._get_model()
-        unit = model.units.get(name)
-        if unit is None:
-            raise UnitNotFound(f"Unit {name} was not found in model {model.name}.")
-
-        return unit
-
-    @retry(no_retry_exceptions=(BakeryException, JujuConnectionError))
-    async def connect(self) -> None:
-        """Make sure that model is connected."""
-        await self._model.disconnect()
-        await self._model.connect(
-            model_name=self._name,
-            retries=DEFAULT_MODEL_RETRIES,
-            retry_backoff=DEFAULT_MODEL_RETRY_BACKOFF,
-        )
+        status = self._juju.status()
+        for app_status in status.apps.values():
+            if name in app_status.units:
+                return app_status.units[name]
+        raise UnitNotFound(f"Unit {name} was not found in model {self.name}.")
 
     @retry
     async def get_applications(self) -> dict[str, Application]:
@@ -455,47 +410,66 @@ class Model(JubilantModelMixin):
         :returns: list of application with all information
         :rtype: list[Application]
         """
-        model = await self._get_model()
-        # note(rgildein): We get the applications from the Juju status, since we can get more
-        #                 information the status than from objects. e.g. workload_version for unit
-        full_status = await self.get_status()
-        machines = await self._get_machines()
+        status = await self.get_status()
+        machines = await self._get_machines(status)
 
-        return {
-            app: Application(
-                name=app,
-                can_upgrade_to=status.can_upgrade_to,
-                charm=model.applications[app].charm_name,
-                channel=status.charm_channel,
-                config=await model.applications[app].get_config(),
-                machines={
-                    unit.machine.id: machines[unit.machine.id]
-                    for unit in model.applications[app].units
-                },
-                model=self,
-                origin=status.charm.split(":")[0],
-                series=_convert_base_to_series(status.base),
-                subordinate_to=status.subordinate_to,
-                units={
-                    name: Unit(
-                        name,
-                        machines[unit.machine],
-                        unit.workload_version,
-                        [
-                            SubordinateUnit(
-                                subordinate,
-                                model.applications[subordinate.split("/")[0]].charm_name,
-                            )
-                            for subordinate, subordinate_unit in unit.subordinates.items()
-                        ],
-                    )
-                    for name, unit in status.units.items()
-                },
-                workload_version=status.workload_version,
-                actions=await model.applications[app].get_actions(),
+        result = {}
+        for app_name, app_status in status.apps.items():
+            config = json.loads(self._juju.cli("config", app_name, "--format", "json")).get(
+                "settings", {}
             )
-            for app, status in full_status.applications.items()
-        }
+
+            try:
+                actions_stdout = self._juju.cli("actions", app_name, "--format", "json")
+                actions_raw = json.loads(actions_stdout) if actions_stdout.strip() else {}
+                actions = {
+                    k: v.get("description", "") if isinstance(v, dict) else str(v)
+                    for k, v in actions_raw.items()
+                }
+            except (jubilant.CLIError, json.JSONDecodeError, ValueError):
+                actions = {}
+
+            app_machines = {}
+            for unit_status in app_status.units.values():
+                machine_id = unit_status.machine
+                if machine_id and machine_id in machines:
+                    app_machines[machine_id] = machines[machine_id]
+
+            units = {
+                unit_name: Unit(
+                    name=unit_name,
+                    machine=machines.get(unit_status.machine, Machine(unit_status.machine, ())),
+                    workload_version=unit_status.workload_status.version,
+                    subordinates=[
+                        SubordinateUnit(
+                            sub_name,
+                            status.apps[sub_name.split("/")[0]].charm_name,
+                        )
+                        for sub_name in unit_status.subordinates
+                    ],
+                )
+                for unit_name, unit_status in app_status.units.items()
+            }
+
+            series = _convert_base_to_series(app_status.base) if app_status.base else ""
+
+            result[app_name] = Application(
+                name=app_name,
+                can_upgrade_to=app_status.can_upgrade_to,
+                charm=app_status.charm,
+                channel=app_status.charm_channel,
+                config=config,
+                machines=app_machines,
+                model=self,
+                origin=app_status.charm_origin,
+                series=series,
+                subordinate_to=app_status.subordinate_to,
+                units=units,
+                workload_version=app_status.version,
+                actions=actions,
+            )
+
+        return result
 
     @retry(no_retry_exceptions=(ApplicationNotFound,))
     async def get_application_config(self, name: str) -> dict:
@@ -507,33 +481,38 @@ class Model(JubilantModelMixin):
         :rtype: dict
         :raises: ApplicationNotFound
         """
-        app = await self._get_application(name)
-        return await app.get_config()
+        try:
+            return json.loads(self._juju.cli("config", name, "--format", "json")).get(
+                "settings", {}
+            )
+        except jubilant.CLIError as e:
+            raise ApplicationNotFound(
+                f"Application {name} was not found in model {self.name}."
+            ) from e
 
     async def get_charm_name(self, application_name: str) -> str:
         """Get the charm name from the application.
 
         :param application_name: Name of application
         :type application_name: str
-        :raises ApplicationError: if charm_name is None
+        :raises ApplicationError: if charm_name is None or app not found
         :return: Charm name
         :rtype: str
         """
-        app = await self._get_application(application_name)
-        if app.charm_name is None:
+        status = self._juju.status()
+        app = status.apps.get(application_name)
+        if app is None or not app.charm_name:
             raise ApplicationError(f"Cannot obtain charm_name for {application_name}")
-
         return app.charm_name
 
     @retry
-    async def get_status(self) -> FullStatus:
+    async def get_status(self) -> jubilant.Status:
         """Return the full juju status output.
 
         :returns: Full juju status output
-        :rtype: FullStatus
+        :rtype: jubilant.Status
         """
-        model = await self._get_model()
-        return await model.get_status()
+        return self._juju.status()
 
     async def _dispatch_update_status_hook(self, unit_name: str) -> None:
         """Use dispatch to run the update-status hook.
@@ -591,14 +570,14 @@ class Model(JubilantModelMixin):
         logger.debug("Skipped updating status: file does not exist")
 
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
-    # `unit.run_action(...)` and the rest of the function is covered by retry.
+    # `juju.run(...)` and the rest of the function is covered by retry.
     async def run_action(
         self,
         unit_name: str,
         action_name: str,
         action_params: Optional[dict] = None,
         raise_on_failure: bool = False,
-    ) -> Action:
+    ) -> jubilant.Task:
         """Run action on given unit.
 
         :param unit_name: Name of unit to run action on
@@ -610,18 +589,21 @@ class Model(JubilantModelMixin):
         :param raise_on_failure: Raise ActionFailed exception on failure, defaults to False
         :type raise_on_failure: bool
         :raises UnitNotFound: When a valid unit cannot be found.
-        :raises ActionFailed: When the application status is in error (it's not 'completed').
-        :return: When status is different from "completed"
-        :rtype: Action
+        :raises ActionFailed: When the action status is in error (it's not 'completed').
+        :return: Task result
+        :rtype: jubilant.Task
         """
         action_params = action_params or {}
-        unit = await self.get_unit(unit_name)
-        action = await unit.run_action(action_name, **action_params)
-        action_obj = await self._get_waited_action_object(action, raise_on_failure)
-        return action_obj
+        try:
+            task = self._juju.run(unit_name, action_name, params=action_params or None)
+        except jubilant.TaskError as e:
+            if raise_on_failure:
+                raise ActionFailed(e.task) from e
+            return e.task
+        return task
 
     # NOTE (rgildein): There is no need to add retry here, because we don't want to repeat
-    # `unit.run(...)` and the rest of the function is static.
+    # `juju.exec(...)` and the rest of the function is static.
     async def run_on_unit(
         self, unit_name: str, command: str, timeout: Optional[int] = None
     ) -> dict[str, str]:
@@ -633,21 +615,29 @@ class Model(JubilantModelMixin):
         :type command: str
         :param timeout: How long in seconds to wait for command to complete
         :type timeout: Optional[int]
-        :returns: action.results {'return-code': 0, 'stderr': '', 'stdout': ''}
+        :returns: dict {'return-code': 0, 'stderr': '', 'stdout': ''}
         :rtype: dict[str, str]
         :raises UnitNotFound: When a valid unit cannot be found.
         :raises CommandRunFailed: When a command fails to run.
         """
         logger.debug("Running '%s' on '%s'", command, unit_name)
 
-        unit = await self.get_unit(unit_name)
-        action = await unit.run(command, timeout=timeout, block=True)
-        results = action.results
+        try:
+            task = self._juju.exec(command, unit=unit_name, wait=timeout)
+        except jubilant.TaskError as e:
+            result = {
+                "return-code": e.task.return_code,
+                "stdout": e.task.stdout,
+                "stderr": e.task.stderr,
+            }
+            raise CommandRunFailed(cmd=command, result=result) from e
+
+        results = {
+            "return-code": task.return_code,
+            "stdout": task.stdout,
+            "stderr": task.stderr,
+        }
         logger.debug("results: %s", results)
-
-        if results["return-code"] != 0:
-            raise CommandRunFailed(cmd=command, result=results)
-
         return results
 
     @retry(no_retry_exceptions=(ApplicationNotFound,))
@@ -659,8 +649,7 @@ class Model(JubilantModelMixin):
         :param configuration: Dictionary of configuration setting(s)
         :type configuration: dict[str, Any]
         """
-        app = await self._get_application(name)
-        await app.set_config(configuration)
+        self._juju.config(name, configuration)
 
     @retry(no_retry_exceptions=(UnitNotFound,))
     async def scp_from_unit(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -688,15 +677,18 @@ class Model(JubilantModelMixin):
         :type scp_opts: str
         :raises: UnitNotFound
         """
-        unit = await self.get_unit(unit_name)
-        await unit.scp_from(source, destination, user=user, proxy=proxy, scp_opts=scp_opts)
+        scp_options = shlex.split(scp_opts) if scp_opts else []
+        remote_path = (
+            f"{user}@{unit_name}:{source}" if user != "ubuntu" else f"{unit_name}:{source}"
+        )
+        self._juju.scp(remote_path, destination, scp_options=scp_options)
 
     @retry(
         no_retry_exceptions=(
             ApplicationNotFound,
             NotImplementedError,
             ValueError,
-            JujuError,
+            jubilant.CLIError,
         )
     )
     async def upgrade_charm(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -730,57 +722,59 @@ class Model(JubilantModelMixin):
         :type switch: str
         :raises: ApplicationNotFound
         """
-        app = await self._get_application(application_name)
-        await app.upgrade_charm(
-            channel=channel,
-            force_series=force_series,
-            force_units=force_units,
-            path=path,
-            revision=revision,
-            switch=switch,
-        )
+        if switch is not None:
+            args = ["refresh", application_name, "--switch", switch]
+            if channel is not None:
+                args.extend(["--channel", channel])
+            if force_series or force_units:
+                args.extend(["--force", "--force-base", "--force-units"])
+            self._juju.cli(*args)
+        else:
+            self._juju.refresh(
+                application_name,
+                channel=channel,
+                force=force_series or force_units,
+                path=path,
+                revision=revision,
+            )
 
     async def resolve_all(self) -> None:
         """Resolve all the units in the model if they are in error status."""
-        model = await self._get_model()
-        for _, juju_app in model.applications.items():
-            for unit in juju_app.units:
-                if unit.workload_status == "error":
-                    await unit.resolved(retry=True)
+        self._juju.cli("resolve", "--all")
 
     async def get_application_names(self, charm_name: str) -> list[str]:
         """Get application name by charm name.
 
         :param charm_name: charm name of application
         :type charm_name: str
-        :return: ApplicationStatus object
-        :rtype: ApplicationStatus
+        :return: List of application names with that charm
+        :rtype: list[str]
         :raises ApplicationNotFound: When charm is not found in the model.
         """
-        app_names = []
-        model = await self._get_model()
-        for app_name, app in model.applications.items():
-            if app.charm_name == charm_name:
-                app_names.append(app_name)
+        status = self._juju.status()
+        app_names = [
+            app_name
+            for app_name, app_status in status.apps.items()
+            if app_status.charm_name == charm_name
+        ]
         if not app_names:
             raise ApplicationNotFound(f"Cannot find '{charm_name}' charm in model '{self.name}'.")
         return app_names
 
-    async def get_application_status(self, app_name: str) -> ApplicationStatus:
-        """Get ApplicationStatus by charm name.
+    async def get_application_status(self, app_name: str) -> jubilant.statustypes.AppStatus:
+        """Get AppStatus by application name.
 
         :param app_name: name of application
         :type app_name: str
-        :return: ApplicationStatus object
-        :rtype: ApplicationStatus
+        :return: AppStatus object
+        :rtype: jubilant.statustypes.AppStatus
         :raises ApplicationNotFound: When application is not found in the model.
         """
-        model = await self._get_model()
-        status = await model.get_status(filters=[app_name])
-        for name, app in status.applications.items():
-            if name == app_name:
-                return app
-        raise ApplicationNotFound(f"Cannot find '{app_name}' in model '{self.name}'.")
+        status = self._juju.status()
+        app = status.apps.get(app_name)
+        if app is None:
+            raise ApplicationNotFound(f"Cannot find '{app_name}' in model '{self.name}'.")
+        return app
 
 
 def get_applications_by_charm_name(

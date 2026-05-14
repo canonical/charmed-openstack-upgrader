@@ -221,9 +221,7 @@ async def resume_nova_compute_unit(model: Model, unit: Unit) -> None:
 
     # If it failed because of https://bugs.launchpad.net/charm-ceilometer-agent/+bug/1947585 ,
     # apply the workaround.
-    if "Services not running that should be: ceilometer-agent-compute" in action.safe_data.get(
-        "message", ""
-    ):
+    if "Services not running that should be: ceilometer-agent-compute" in action.message:
         logger.debug("Resume failed because ceilometer-agent-compute not running.")
         logger.debug("Restarting ceilometer-agent-compute on %s", unit.name)
         await model.run_on_unit(unit.name, "sudo systemctl restart ceilometer-agent-compute")
