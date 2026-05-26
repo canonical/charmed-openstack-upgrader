@@ -52,6 +52,7 @@ from cou.exceptions import (
 )
 from cou.steps import PostUpgradeStep, PreUpgradeStep, UpgradePlan, ceph
 from cou.steps.analyze import Analysis
+from cou.steps.apt_sources import verify_apt_sources
 from cou.steps.backup import backup
 from cou.steps.hypervisor import HypervisorUpgradePlanner
 from cou.steps.nova_cloud_controller import archive, purge
@@ -108,6 +109,7 @@ async def verify_cloud(analysis_result: Analysis, args: CLIargs) -> None:
     :param args: CLI arguments
     :type args: CLIargs
     """
+    _verify_apt_sources(args, analysis_result)
     _verify_supported_series(analysis_result)
     _verify_highest_release_achieved(analysis_result)
     _verify_data_plane_ready_to_upgrade(args, analysis_result)
@@ -405,6 +407,83 @@ async def _verify_model_idle(analysis_result: Analysis) -> None:
         )
     except Exception as e:  # pylint: disable=broad-exception-caught
         PlanStatus.add_message(f"Model is not idle: {str(e)}", MessageType.ERROR)
+
+
+def _report_verification_result(message: str, force: bool) -> None:
+    """Report verification failure, adding the appropriate message to PlanStatus.
+
+    If --force is set the message is logged as a warning, otherwise it is logged
+    as an error with a hint about using --force to override.
+
+    :param message: Message to report
+    :type message: str
+    :param force: If True, add as WARNING; if False, add as ERROR
+    :type force: bool
+    """
+    if force:
+        PlanStatus.add_message(message, MessageType.WARNING)
+    else:
+        PlanStatus.add_message(
+            f"{message}\nUse --force to override this check.", MessageType.ERROR
+        )
+
+
+def _verify_apt_sources(args: CLIargs, analysis_result: Analysis) -> None:
+    """Verify APT sources on all machines are expected.
+
+    Check that all machines in the model only have expected APT sources configured
+    (standard Ubuntu archives, Ubuntu Cloud Archive, or Landscape mirrors).
+    Machines where apt-cache policy could not be run are reported, and the user
+    is advised to check them manually. If unexpected sources or failures are found
+    and --force is not set, an error message will be added to `PlanStatus`. If
+    --force is set, a warning message will be added instead.
+
+    :param args: CLI arguments
+    :type args: CLIargs
+    :param analysis_result: Analysis result
+    :type analysis_result: Analysis
+    """
+    try:
+        result = verify_apt_sources(analysis_result.model)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        message = f"Failed to verify APT sources: {str(e)}"
+        logger.error(message)
+        _report_verification_result(message, args.force)
+        return
+
+    sections: list[str] = []
+
+    if result.failed:
+        failed_details = "\n".join(
+            f"  - Machine {machine_id}: {error}"
+            for machine_id, error in sorted(result.failed.items())
+        )
+        sections.append(
+            "Failed to get apt-cache policy on the following machines. "
+            "It is advised to manually check apt-cache policy on these machines "
+            "before proceeding:\n"
+            f"{failed_details}"
+        )
+
+    if result.unexpected:
+        unexpected_details = "\n".join(
+            f"  - Machine {machine_id}: {', '.join(sorted(uris))}"
+            for machine_id, uris in sorted(result.unexpected.items())
+        )
+        sections.append(
+            "Unexpected APT sources found on machines. This may cause issues during the upgrade. "
+            "Only standard Ubuntu, Ubuntu Cloud Archive, and Landscape sources are expected.\n"
+            f"{unexpected_details}"
+        )
+
+    if not sections:
+        logger.info(
+            "Successfully verified APT sources on all machines, no unexpected sources found."
+        )
+        return
+
+    message = "\n".join(sections)
+    _report_verification_result(message, args.force)
 
 
 def _is_control_plane_upgraded(analysis_result: Analysis) -> bool:
