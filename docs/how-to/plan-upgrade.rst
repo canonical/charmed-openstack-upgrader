@@ -20,7 +20,7 @@ Output example
 ^^^^^^^^^^^^^^
 
 .. terminal::
-    :input: cou plan
+    cou plan
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔

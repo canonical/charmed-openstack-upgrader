@@ -113,7 +113,7 @@ Usage example
 ~~~~~~~~~~~~~
 
 .. terminal::
-    :input: cou upgrade
+    cou upgrade
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211917.log'
     Connected to 'test-model' ✔
@@ -184,7 +184,7 @@ Usage examples
 Non-interactive mode:
 
 .. terminal::
-    :input: cou upgrade --auto-approve
+    cou upgrade --auto-approve
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
@@ -203,7 +203,7 @@ Non-interactive mode:
 Non-interactive and quiet mode:
 
 .. terminal::
-    :input: cou upgrade --auto-approve --quiet
+    cou upgrade --auto-approve --quiet
 
     Upgrade cloud from 'ussuri' to 'victoria'
         Verify that all OpenStack applications are in idle state

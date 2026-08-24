@@ -20,7 +20,7 @@ Usage examples
 With a custom batch size:
 
 .. terminal::
-    :input: cou plan --archive-batch-size 200
+    cou plan --archive-batch-size 200
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
@@ -36,7 +36,7 @@ With a custom batch size:
 Disabling the archive step:
 
 .. terminal::
-    :input: cou plan --no-archive
+    cou plan --no-archive
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔

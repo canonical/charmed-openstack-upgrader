@@ -15,7 +15,7 @@ the process at any prompt.
 Usage example:
 
 .. terminal::
-    :input: cou upgrade
+    cou upgrade
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
@@ -53,12 +53,15 @@ the cloud may be left in an inconsistent state.
 Exiting before running upgrade plan:
 
 .. terminal::
-    :input: cou upgrade - # ctrl+c is pressed while connecting to the controller
+    cou upgrade - # ctrl+c is pressed while connecting to the controller
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connecting to 'default' model... ✖
     charmed-openstack-upgrader has been terminated
-    :input: cou upgrade # ctrl+c is pressed while the cloud is being analyzed
+
+.. terminal::
+    cou upgrade # ctrl+c is pressed while the cloud is being analyzed
+
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connecting to 'default' model... ✔
     Analyzing cloud... ✖
@@ -67,7 +70,7 @@ Exiting before running upgrade plan:
 Safe cancel:
 
 .. terminal::
-    :input: cou upgrade # ctrl+c is pressed once during the upgrade
+    cou upgrade # ctrl+c is pressed once during the upgrade
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
@@ -81,7 +84,7 @@ Safe cancel:
 Unsafe cancel:
 
 .. terminal::
-    :input: cou upgrade # ctrl+c is pressed twice during the upgrade
+    cou upgrade # ctrl+c is pressed twice during the upgrade
 
     Full execution log: '/home/ubuntu/.local/share/cou/log/cou-20231215211717.log'
     Connected to 'test-model' ✔
